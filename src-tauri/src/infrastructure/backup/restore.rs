@@ -14,26 +14,35 @@ use crate::infrastructure::sqlite::{
 
 /// Restores the database from a backup package at `backup_dir`.
 ///
-/// Steps (all pre-swap steps are read-only; live DB is untouched until step 5):
-/// 1. Read + validate manifest (format_version check)
-/// 2. Verify checksum: sha256(backup_dir/lifeweave.db) == manifest.db_sha256
-/// 3. Open staging connection; run integrity_check + foreign_key_check; close
-/// 4. Create pre-restore safety backup (live DB → _safety/)
-/// 5. Shutdown worker (closes live DB connection; WAL checkpointed)
-/// 6. Delete .db-wal and .db-shm side files (best-effort)
-/// 7. File swap: rename(live → .old), rename(backup → live)
-///    → on failure: rename(.old → live), reopen worker, return Storage error
-/// 8. Open new connection + run_migrations (no-op if schema matches) + spawn worker
-/// 9. Delete .old file (best-effort cleanup)
-/// 10. Return RestoreResult
+/// Pre-swap steps are read-only; the live DB is not mutated until the worker
+/// is shut down and the file swap begins.
+///
+/// Steps:
+/// 1. Acquire maintenance lock (serialises with concurrent backup/restore).
+/// 2. Inspect manifest — format_version check; no mutation.
+/// 3. Verify checksum: sha256(backup_dir/lifeweave.db) == manifest.db_sha256.
+/// 4. Integrity + FK checks on backup file (read-only connection, then closed).
+/// 5. Create pre-restore safety backup (live → _safety/) with WAL checkpoint.
+/// 6. Seal worker → Maintenance; shutdown worker; set Gone.
+/// 7. Delete WAL/SHM side files (best-effort).
+/// 8. File swap: rename(live → .old), rename(backup → live).
+///    On failure: rename(.old → live) if needed; reopen from live; return error.
+/// 9. Reopen new connection + run_migrations + spawn worker (install_worker).
+/// 10. Delete .old (best-effort) and return RestoreResult.
+///
+/// NOTE: This implementation is the Commit-1 transition that wires the new
+/// maintenance gate. Full blocker fixes (A/B/D/E/F) are applied in Commit 2.
 pub fn restore_db(
     runtime: &DatabaseRuntime,
     backup_dir: &Path,
 ) -> Result<RestoreResult, BackupError> {
-    // Step 1: Inspect manifest without mutation.
+    // Step 1: Acquire maintenance lock. Blocks if another backup/restore is running.
+    let _maint_guard = runtime.acquire_maintenance().map_err(BackupError::Db)?;
+
+    // Step 2: Inspect manifest without mutation.
     let manifest = BackupManifest::read_from_dir(backup_dir)?;
 
-    // Step 2: Verify checksum.
+    // Step 3: Verify checksum.
     let backup_db_path = backup_dir.join("lifeweave.db");
     let actual_hash = sha256_file(&backup_db_path)?;
     if actual_hash != manifest.db_sha256 {
@@ -43,7 +52,7 @@ pub fn restore_db(
         });
     }
 
-    // Step 3: SQLite integrity and FK checks on backup file.
+    // Step 4: SQLite integrity and FK checks on backup file.
     {
         let conn = open_file_connection(&backup_db_path).map_err(BackupError::Db)?;
         let ic: String = conn
@@ -62,14 +71,13 @@ pub fn restore_db(
         }
     }
 
-    // Step 4: Create pre-restore safety backup.
+    // Step 5: Create pre-restore safety backup.
     let live_path = runtime.db_path().to_path_buf();
     let safety_dir = live_path
         .parent()
         .unwrap_or(Path::new("."))
         .join("backups")
         .join("_safety");
-    // Remove previous safety backup if it exists.
     let _ = std::fs::remove_dir_all(&safety_dir);
     std::fs::create_dir_all(&safety_dir).map_err(BackupError::Io)?;
     let safety_db_path = safety_dir.join("lifeweave.db");
@@ -82,7 +90,6 @@ pub fn restore_db(
                 .map_err(crate::infrastructure::sqlite::DbError::Rusqlite)?;
             b.run_to_completion(100, Duration::ZERO, None)
                 .map_err(crate::infrastructure::sqlite::DbError::Rusqlite)?;
-            // Checkpoint WAL before shutdown to flush all pages to main DB file.
             let _: i64 = live_conn
                 .query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |r| r.get(0))
                 .unwrap_or(0);
@@ -90,38 +97,44 @@ pub fn restore_db(
         })
         .map_err(BackupError::Db)?;
 
-    // Step 5: Shut down worker (connection closes; WAL flushed).
-    runtime.shutdown_worker();
+    // Step 6: Seal worker, shut down (drains queue and closes connection), set Gone.
+    let worker_arc = runtime.seal_worker().map_err(BackupError::Db)?;
+    worker_arc.shutdown();
+    runtime.set_gone();
+    drop(worker_arc);
 
-    // Step 6: Delete WAL/SHM side files (best-effort; they should be gone after shutdown).
+    // Step 7: Delete WAL/SHM side files (should be absent after clean shutdown).
     let wal = PathBuf::from(format!("{}-wal", live_path.to_string_lossy()));
     let shm = PathBuf::from(format!("{}-shm", live_path.to_string_lossy()));
     let _ = std::fs::remove_file(&wal);
     let _ = std::fs::remove_file(&shm);
 
-    // Step 7: File swap.
+    // Step 8: File swap.
     let old_path = PathBuf::from(format!("{}.old", live_path.to_string_lossy()));
-    // Keep the old DB for rollback by renaming it aside.
     if let Err(e) = std::fs::rename(&live_path, &old_path) {
-        // Cannot even move the live DB aside — reopen and abort.
+        // Cannot move live aside; live file still intact; reopen it.
         let _ = reopen_worker(runtime, &live_path);
         return Err(BackupError::Io(e));
     }
-    // Place the backup DB at the live path.
     if let Err(e) = std::fs::rename(&backup_db_path, &live_path) {
-        // Swap failed — rename old DB back.
+        // Candidate install failed; restore old DB.
         let _ = std::fs::rename(&old_path, &live_path);
         let _ = reopen_worker(runtime, &live_path);
         return Err(BackupError::Io(e));
     }
 
-    // Step 8: Open new connection and spawn new worker.
-    reopen_worker(runtime, &live_path)?;
+    // Step 9: Open new connection and install new worker.
+    if let Err(e) = reopen_worker(runtime, &live_path) {
+        // Reopen failed; try to roll back to old DB.
+        let _ = std::fs::remove_file(&live_path);
+        let _ = std::fs::rename(&old_path, &live_path);
+        let _ = reopen_worker(runtime, &live_path);
+        return Err(e);
+    }
 
-    // Step 9: Delete .old file (best-effort).
+    // Step 10: Delete .old (best-effort) and return.
     let _ = std::fs::remove_file(&old_path);
 
-    // Step 10: Return result.
     Ok(RestoreResult {
         restored_at: chrono_now_rfc3339(),
         schema_version: manifest.schema_version,
@@ -134,7 +147,7 @@ fn reopen_worker(runtime: &DatabaseRuntime, path: &Path) -> Result<(), BackupErr
     let mut conn = open_file_connection(path).map_err(BackupError::Db)?;
     run_migrations(&mut conn).map_err(BackupError::Db)?;
     let worker = DbWorkerHandle::spawn(conn);
-    runtime.replace_worker(worker);
+    runtime.install_worker(worker);
     Ok(())
 }
 
@@ -181,7 +194,6 @@ mod tests {
         let (rt, _db) = make_file_runtime();
         let backups = temp_backups_dir();
 
-        // Create a record.
         let id1 = "019700000000-7fff-8000-0000-000000000001".to_string();
         rt.execute({
             let id1 = id1.clone();
@@ -189,11 +201,9 @@ mod tests {
         })
         .unwrap();
 
-        // Backup.
         let backup_result = backup_db(&rt, &backups).unwrap();
         let backup_dir = PathBuf::from(&backup_result.backup_dir);
 
-        // Archive the record (change state after backup).
         rt.execute({
             let id1 = id1.clone();
             move |conn| {
@@ -203,18 +213,15 @@ mod tests {
         })
         .unwrap();
 
-        // Confirm it is archived.
         let active = rt.execute(|conn| repo::list_active(conn)).unwrap();
         assert!(
             active.is_empty(),
             "record should be archived before restore"
         );
 
-        // Restore.
         let restore_result = restore_db(&rt, &backup_dir).unwrap();
         assert_eq!(restore_result.schema_version, 2);
 
-        // Confirm original data returned.
         let active = rt.execute(|conn| repo::list_active(conn)).unwrap();
         assert_eq!(active.len(), 1);
         assert_eq!(active[0].label, "Original label");
@@ -243,7 +250,6 @@ mod tests {
         let backup_result = backup_db(&rt, &backups).unwrap();
         let backup_dir = PathBuf::from(&backup_result.backup_dir);
 
-        // Tamper with the manifest checksum.
         let manifest_path = backup_dir.join("manifest.json");
         let mut m: serde_json::Value =
             serde_json::from_slice(&std::fs::read(&manifest_path).unwrap()).unwrap();
@@ -256,9 +262,8 @@ mod tests {
             "expected Checksum error, got {result:?}"
         );
 
-        // Live data must still be accessible.
         let active = rt.execute(|conn| repo::list_active(conn)).unwrap();
-        drop(active); // just confirm no panic / WorkerGone
+        drop(active);
     }
 
     #[test]
@@ -303,9 +308,7 @@ mod tests {
         let backup_result = backup_db(&rt, &backups).unwrap();
         let backup_dir = PathBuf::from(&backup_result.backup_dir);
 
-        // Overwrite backup DB with random bytes.
         std::fs::write(backup_dir.join("lifeweave.db"), b"this is not sqlite").unwrap();
-        // Update checksum in manifest to match the corrupted content so we pass step 2.
         let corrupt_hash = super::sha256_file(&backup_dir.join("lifeweave.db")).unwrap();
         let manifest_path = backup_dir.join("manifest.json");
         let mut m: serde_json::Value =
@@ -322,7 +325,6 @@ mod tests {
             "expected integrity or DB error for corrupt SQLite, got {result:?}"
         );
 
-        // Live data must still be accessible.
         let active = rt.execute(|conn| repo::list_active(conn)).unwrap();
         drop(active);
     }
@@ -332,7 +334,6 @@ mod tests {
         let (rt, _db) = make_file_runtime();
         let backups = temp_backups_dir();
 
-        // Create a record.
         let id1 = "019700000000-7fff-8000-0000-000000000002".to_string();
         rt.execute({
             let id1 = id1.clone();
@@ -343,7 +344,6 @@ mod tests {
         let backup_result = backup_db(&rt, &backups).unwrap();
         let backup_dir = PathBuf::from(&backup_result.backup_dir);
 
-        // Tamper checksum.
         let manifest_path = backup_dir.join("manifest.json");
         let mut m: serde_json::Value =
             serde_json::from_slice(&std::fs::read(&manifest_path).unwrap()).unwrap();
@@ -372,9 +372,6 @@ mod tests {
         let backup_result = backup_db(&rt, &backups).unwrap();
         let backup_dir = PathBuf::from(&backup_result.backup_dir);
 
-        // Corrupt the backup DB while keeping the original checksum → checksum passes,
-        // integrity check fails.
-        // (We update checksum too so the test targets integrity check failure.)
         std::fs::write(backup_dir.join("lifeweave.db"), b"not a database").unwrap();
         let corrupt_hash = super::sha256_file(&backup_dir.join("lifeweave.db")).unwrap();
         let manifest_path = backup_dir.join("manifest.json");

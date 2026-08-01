@@ -13,6 +13,7 @@ use crate::infrastructure::sqlite::{
 /// Creates a backup package at `backups_dir/lifeweave_backup_{unix_ms}/`.
 ///
 /// Steps:
+/// 0. Acquire maintenance lock (serialises with concurrent backup/restore).
 /// 1. Create staging dir: `backups_dir/.staging_{unix_ms}/`
 /// 2. Open staging DB connection
 /// 3. Copy live DB → staging DB via Online Backup API (inside worker thread)
@@ -28,6 +29,8 @@ pub fn backup_db(
     runtime: &DatabaseRuntime,
     backups_dir: &Path,
 ) -> Result<BackupResult, BackupError> {
+    // Acquire maintenance lock: serialises with concurrent restore operations.
+    let _maint_guard = runtime.acquire_maintenance().map_err(BackupError::Db)?;
     std::fs::create_dir_all(backups_dir).map_err(BackupError::Io)?;
 
     let unix_ms = std::time::SystemTime::now()

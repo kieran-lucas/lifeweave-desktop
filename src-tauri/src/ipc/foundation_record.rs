@@ -98,7 +98,10 @@ fn domain_to_ipc(e: DomainError) -> IpcError {
 
 fn db_to_ipc(e: DbError) -> IpcError {
     match e {
-        DbError::Rusqlite(_) | DbError::WorkerGone => IpcError::Storage,
+        DbError::Rusqlite(_)
+        | DbError::WorkerGone
+        | DbError::Maintenance
+        | DbError::FileNotFound { .. } => IpcError::Storage,
         DbError::PragmaAssertion { .. }
         | DbError::SchemaTooNew { .. }
         | DbError::InvalidMigrationList => IpcError::Corruption,

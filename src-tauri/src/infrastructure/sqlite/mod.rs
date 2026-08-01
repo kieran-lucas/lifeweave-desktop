@@ -17,6 +17,14 @@ pub enum DbError {
     Rusqlite(rusqlite::Error),
     /// The worker thread has stopped; the handle is no longer usable.
     WorkerGone,
+    /// A backup or restore operation is currently holding the maintenance lock.
+    /// The caller may retry after the maintenance operation completes.
+    Maintenance,
+    /// A required database file was not found. Used in recovery/restore paths
+    /// where silently creating a blank database would be wrong.
+    FileNotFound {
+        path: std::path::PathBuf,
+    },
     /// A PRAGMA did not produce the asserted value after being set.
     PragmaAssertion {
         pragma: &'static str,
