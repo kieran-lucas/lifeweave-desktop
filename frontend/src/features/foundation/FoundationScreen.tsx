@@ -3,9 +3,11 @@ import { useEffect, useRef, useState } from "react";
 import type { FoundationRecordView } from "../../ipc/generated/FoundationRecordView";
 import {
   archiveFoundationRecord,
+  backupDatabase,
   createFoundationRecord,
   listArchivedFoundationRecords,
   listFoundationRecords,
+  restoreDatabase,
   restoreFoundationRecord,
   updateFoundationRecord,
 } from "../../ipc/commands";
@@ -22,6 +24,9 @@ type PageState =
       archived: FoundationRecordView[];
       formError: string | null;
       edit: EditState;
+      backupDir: string | null;
+      backupMessage: string | null;
+      backupError: string | null;
     };
 
 function operationId(): string {
@@ -53,6 +58,9 @@ export function FoundationScreen() {
         archived,
         formError: null,
         edit: prev.kind === "ready" ? prev.edit : null,
+        backupDir: prev.kind === "ready" ? prev.backupDir : null,
+        backupMessage: prev.kind === "ready" ? prev.backupMessage : null,
+        backupError: null,
       }));
     } catch (e) {
       setState({ kind: "error", message: extractErrorMessage(e) });
@@ -125,6 +133,49 @@ export function FoundationScreen() {
       const msg = extractErrorMessage(e);
       setState((prev) =>
         prev.kind === "ready" ? { ...prev, formError: msg } : prev,
+      );
+    }
+  }
+
+  async function handleBackup() {
+    if (state.kind !== "ready") return;
+    try {
+      const result = await backupDatabase();
+      setState((prev) =>
+        prev.kind === "ready"
+          ? {
+              ...prev,
+              backupDir: result.backup_dir,
+              backupMessage: `Backup created at ${result.created_at}`,
+              backupError: null,
+            }
+          : prev,
+      );
+    } catch (e) {
+      setState((prev) =>
+        prev.kind === "ready"
+          ? { ...prev, backupError: extractErrorMessage(e), backupMessage: null }
+          : prev,
+      );
+    }
+  }
+
+  async function handleDbRestore() {
+    if (state.kind !== "ready" || !state.backupDir) return;
+    const dir = state.backupDir;
+    try {
+      await restoreDatabase(dir);
+      setState((prev) =>
+        prev.kind === "ready"
+          ? { ...prev, backupMessage: "Restore complete.", backupError: null }
+          : prev,
+      );
+      await load();
+    } catch (e) {
+      setState((prev) =>
+        prev.kind === "ready"
+          ? { ...prev, backupError: extractErrorMessage(e) }
+          : prev,
       );
     }
   }
@@ -205,6 +256,30 @@ export function FoundationScreen() {
           </p>
         )}
       </form>
+
+      <div className={styles.form} style={{ marginTop: "1rem" }}>
+        <button type="button" className={styles.button} onClick={handleBackup}>
+          Backup
+        </button>
+        <button
+          type="button"
+          className={styles.secondaryButton}
+          onClick={handleDbRestore}
+          disabled={!state.backupDir}
+        >
+          Restore
+        </button>
+      </div>
+      {state.backupMessage && (
+        <p className={styles.statusText} aria-live="polite">
+          {state.backupMessage}
+        </p>
+      )}
+      {state.backupError && (
+        <p className={styles.errorText} role="alert">
+          {state.backupError}
+        </p>
+      )}
 
       {active.length === 0 && archived.length === 0 && (
         <p className={styles.statusText}>No records yet. Add one above.</p>
