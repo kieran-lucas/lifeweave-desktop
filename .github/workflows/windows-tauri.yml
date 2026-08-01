@@ -7,6 +7,7 @@ on:
       - "src-tauri/**"
       - "package.json"
       - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
       - ".github/workflows/windows-tauri.yml"
   push:
     branches: [main]
@@ -15,6 +16,7 @@ on:
       - "src-tauri/**"
       - "package.json"
       - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
       - ".github/workflows/windows-tauri.yml"
   workflow_dispatch:
 
@@ -25,28 +27,56 @@ jobs:
   windows-tauri:
     name: Windows Tauri
     runs-on: windows-latest
+    if: ${{ hashFiles('pnpm-lock.yaml') != '' && hashFiles('src-tauri/Cargo.lock') != '' }}
     steps:
       - uses: actions/checkout@v6
-      - name: Setup-phase notice
-        if: ${{ hashFiles('pnpm-lock.yaml') == '' || hashFiles('src-tauri/Cargo.lock') == '' }}
-        shell: pwsh
-        run: Write-Host "Lockfiles are not present; Windows Tauri build remains non-blocking during setup."
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.17.0
+          run_install: false
+
       - uses: actions/setup-node@v6
-        if: ${{ hashFiles('pnpm-lock.yaml') != '' && hashFiles('src-tauri/Cargo.lock') != '' }}
         with:
           node-version-file: ".node-version"
           cache: "pnpm"
+
       - uses: dtolnay/rust-toolchain@stable
-        if: ${{ hashFiles('pnpm-lock.yaml') != '' && hashFiles('src-tauri/Cargo.lock') != '' }}
         with:
           components: rustfmt, clippy
-      - name: Enable pnpm
-        if: ${{ hashFiles('pnpm-lock.yaml') != '' && hashFiles('src-tauri/Cargo.lock') != '' }}
-        shell: pwsh
-        run: corepack enable
-      - name: Install
-        if: ${{ hashFiles('pnpm-lock.yaml') != '' && hashFiles('src-tauri/Cargo.lock') != '' }}
+
+      - name: Install workspace dependencies
         run: pnpm install --frozen-lockfile
-      - name: Build
-        if: ${{ hashFiles('pnpm-lock.yaml') != '' && hashFiles('src-tauri/Cargo.lock') != '' }}
-        run: pnpm --dir frontend tauri build
+
+      - name: Frontend typecheck
+        run: pnpm typecheck
+
+      - name: Frontend tests
+        run: pnpm test
+
+      - name: Frontend build
+        run: pnpm build
+
+      - name: Rust format check
+        run: cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check
+
+      - name: Rust lint
+        run: >-
+          cargo clippy
+          --manifest-path src-tauri/Cargo.toml
+          --locked --all-targets -- -D warnings
+
+      - name: Rust tests and TypeScript binding drift check
+        shell: pwsh
+        run: |
+          cargo test --manifest-path src-tauri/Cargo.toml --locked
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $diff = git diff --exit-code frontend/src/ipc/generated/ 2>&1
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "TypeScript binding drift detected. Run 'cargo test' locally and commit the regenerated files."
+            exit 1
+          }
+
+      - name: Tauri production build
+        shell: pwsh
+        run: node frontend/node_modules/@tauri-apps/cli/tauri.js build

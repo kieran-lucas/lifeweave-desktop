@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { App } from "./App";
 
 vi.mock("../ipc/commands", () => ({
-  healthCheck: vi.fn().mockResolvedValue({ status: "ok", setup_phase: true }),
+  healthCheck: vi.fn().mockResolvedValue({ status: "ok" }),
 }));
 
 describe("App", () => {
