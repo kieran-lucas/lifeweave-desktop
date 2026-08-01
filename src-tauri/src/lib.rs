@@ -6,7 +6,7 @@ pub mod platform;
 
 use tauri::Manager;
 
-use infrastructure::backup::lifecycle::recover_if_interrupted;
+use infrastructure::backup::lifecycle::{preflight_startup_check, recover_if_interrupted};
 use infrastructure::sqlite::{
     connection::open_file_connection, migrations::run_migrations, runtime::DatabaseRuntime,
     worker::DbWorkerHandle,
@@ -54,7 +54,8 @@ pub fn run() {
                 .parent()
                 .unwrap_or(std::path::Path::new("."))
                 .join("restore_marker.json");
-            recover_if_interrupted(&marker_path)?;
+            preflight_startup_check(&db_path)?;
+            recover_if_interrupted(&marker_path, &db_path)?;
 
             let mut conn = open_file_connection(&db_path).expect("failed to open SQLite database");
             run_migrations(&mut conn).expect("database migration failed");

@@ -1,11 +1,12 @@
-use std::path::{Path, PathBuf};
+use std::path::Path;
+use std::sync::Arc;
 use std::time::Duration;
 
 use rusqlite::Connection;
 
 use super::checksum::sha256_file;
 use super::engine::chrono_now_rfc3339;
-use super::lifecycle::{RestoreMarker, RestoreStage};
+use super::lifecycle::{MARKER_FORMAT_VERSION, RestoreMarker, RestoreStage, generate_op_id};
 use super::manifest::BackupManifest;
 use super::{BackupError, RestoreResult};
 use crate::infrastructure::sqlite::{
@@ -27,25 +28,26 @@ use crate::infrastructure::sqlite::{
 ///
 /// Steps:
 ///  1. Acquire maintenance lock (serialises with concurrent backup/restore).
-///  2. Read + validate manifest: format_version, schema_version.
-///  3. Check backup file exists, size matches manifest, SHA-256 matches manifest.
-///  4. Integrity + FK checks on backup file (read-only; no mutation).
-///  5. Create verified safety backup (staged, integrity-checked, atomically published).
-///  6. Seal worker → Maintenance (blocks new execute() calls).
-///  7. Copy backup DB → candidate path (never rename backup_dir files).
+///  2. Guard: stale artifacts without a marker → RecoveryAmbiguous.
+///  3. Read + validate manifest: format_version, schema_version.
+///  4. Check backup file exists, size matches manifest, SHA-256 matches manifest.
+///  5. Integrity + FK checks on backup file (read-only; no mutation).
+///  6. Seal worker → Maintenance (closes the quiescence gap: no execute() can
+///     mutate the live DB between seal and shutdown).
+///  7. Create verified safety backup using the sealed worker Arc directly.
 ///     On failure: unseal worker; return error.
-///  8. Write durable marker at `Prepared` stage.
+///  8. Copy backup DB → candidate path (never rename backup_dir files).
+///     On failure: unseal worker; return error.
+///  9. Write durable marker at `Prepared` stage.
 ///     On failure: delete candidate; unseal worker; return error.
-///  9. Shutdown worker; set Gone; delete WAL/SHM side files.
-/// 10. rename(live → old); update marker to `LiveMovedAside`.
-///     On failure: delete candidate; remove marker; reopen worker from live; return error.
-/// 11. rename(candidate → live); update marker to `CandidateInstalled`.
-///     On failure: rename(old → live); remove marker; reopen worker; return error.
-/// 12. Reopen + migrate + post-swap validation (integrity, FK, PRAGMAs).
-///     On failure: remove live (failed candidate); rename(old → live); remove marker;
-///     reopen worker from live; return error.
-/// 13. Update marker to `ReopenedValidated`; install worker.
-/// 14. Delete old; remove marker; return RestoreResult.
+/// 10. Shutdown worker; set Gone; delete WAL/SHM side files.
+/// 11. rename(live → old); update marker to `LiveMovedAside`.
+///     On failure: attempt_rollback (live still intact); return error.
+/// 12. rename(candidate → live); update marker to `CandidateInstalled`.
+///     On failure: attempt_rollback; return error.
+/// 13. Reopen + migrate + post-swap validation (integrity, FK).
+///     On failure: attempt_rollback; return error.
+/// 14. Write `ReopenedValidated` marker; install worker; delete old; remove marker.
 pub fn restore_db(
     runtime: &DatabaseRuntime,
     backup_dir: &Path,
@@ -58,7 +60,15 @@ pub fn restore_db(
     let candidate_path = db_dir.join("_restore_candidate.db");
     let marker_path = db_dir.join("restore_marker.json");
 
-    // Steps 2–4: read-only validation; live DB is not touched.
+    // Guard (Blocker F): stale recovery artifacts without a marker mean a previous
+    // restore left the filesystem in an inconsistent state. Refuse to proceed so
+    // we don't silently overwrite or destroy those artifacts. The user must restart
+    // the app so startup preflight + recover_if_interrupted can handle the state.
+    if (old_path.exists() || candidate_path.exists()) && !marker_path.exists() {
+        return Err(BackupError::RecoveryAmbiguous);
+    }
+
+    // Steps 3–5: read-only validation; live DB is not touched.
     let manifest = BackupManifest::read_from_dir(backup_dir)?;
 
     let supported = max_supported_schema_version();
@@ -97,26 +107,36 @@ pub fn restore_db(
         check_integrity_and_fk(&conn)?;
     }
 
-    // Step 5: create verified safety backup before sealing the worker.
-    create_verified_safety_backup(runtime, &db_dir)?;
-
-    // Step 6: seal worker → Maintenance.
-    // No execute() can mutate the live DB between here and shutdown.
+    // Step 6: seal worker → Maintenance BEFORE safety backup.
+    // This closes the quiescence gap: once sealed, runtime.execute() returns
+    // Maintenance, so no domain command can mutate the live DB between here
+    // and the worker shutdown in step 10.
     let worker_arc = runtime.seal_worker().map_err(BackupError::Db)?;
 
-    // Step 7: copy backup DB → candidate (never touch backup_dir files).
-    let _ = std::fs::remove_file(&candidate_path);
+    // Step 7: create verified safety backup using the sealed worker Arc directly.
+    // Must NOT call runtime.execute() here since runtime is now Maintenance.
+    if let Err(e) = create_verified_safety_backup(&worker_arc, &db_dir) {
+        runtime.unseal_worker(worker_arc);
+        return Err(e);
+    }
+
+    // Step 8: copy backup DB → candidate (never rename/touch backup_dir files).
+    if candidate_path.exists() {
+        if let Err(e) = std::fs::remove_file(&candidate_path) {
+            runtime.unseal_worker(worker_arc);
+            return Err(BackupError::Io(e));
+        }
+    }
     if let Err(e) = std::fs::copy(&backup_db_path, &candidate_path) {
         runtime.unseal_worker(worker_arc);
         return Err(BackupError::Io(e));
     }
 
-    // Step 8: write durable marker at Prepared before any rename.
+    // Step 9: write durable marker at Prepared before any rename.
     let marker = RestoreMarker {
+        format_version: MARKER_FORMAT_VERSION,
+        op_id: generate_op_id(),
         stage: RestoreStage::Prepared,
-        live_path: live_path.to_string_lossy().into_owned(),
-        old_path: old_path.to_string_lossy().into_owned(),
-        candidate_path: candidate_path.to_string_lossy().into_owned(),
     };
     if let Err(e) = marker.write(&marker_path) {
         let _ = std::fs::remove_file(&candidate_path);
@@ -124,47 +144,100 @@ pub fn restore_db(
         return Err(e);
     }
 
-    // Step 9: shutdown worker (drains queue, closes connection, flushes WAL).
+    // Step 10: shutdown worker (drains queue, closes connection, flushes WAL).
     worker_arc.shutdown();
     drop(worker_arc);
     runtime.set_gone();
 
-    let wal = PathBuf::from(format!("{}-wal", live_path.to_string_lossy()));
-    let shm = PathBuf::from(format!("{}-shm", live_path.to_string_lossy()));
+    let wal = format!("{}-wal", live_path.to_string_lossy());
+    let shm = format!("{}-shm", live_path.to_string_lossy());
     let _ = std::fs::remove_file(&wal);
     let _ = std::fs::remove_file(&shm);
 
-    // Clean up any leftover .old from a previous interrupted restore.
-    let _ = std::fs::remove_file(&old_path);
-
-    // Step 10: rename(live → old).
+    // Step 11: rename(live → old).
+    // No stale .old cleanup here (Blocker F). If old_path exists at this point,
+    // it was caught by the guard at the start of this function.
     if let Err(e) = std::fs::rename(&live_path, &old_path) {
+        // live_path still has the original; old_path doesn't exist.
         let _ = std::fs::remove_file(&candidate_path);
-        RestoreMarker::remove(&marker_path);
-        reopen_worker(runtime, &live_path);
-        return Err(BackupError::Io(e));
+        return match attempt_rollback(
+            runtime,
+            &old_path,
+            &live_path,
+            &candidate_path,
+            &marker_path,
+        ) {
+            Ok(()) => Err(BackupError::Io(e)),
+            Err(_) => Err(BackupError::RollbackFailed),
+        };
     }
-    let _ = marker
+    if let Err(e) = marker
         .with_stage(RestoreStage::LiveMovedAside)
-        .write(&marker_path);
-
-    // Step 11: rename(candidate → live).
-    if let Err(e) = std::fs::rename(&candidate_path, &live_path) {
-        let _ = std::fs::rename(&old_path, &live_path);
-        RestoreMarker::remove(&marker_path);
-        reopen_worker(runtime, &live_path);
-        return Err(BackupError::Io(e));
+        .write(&marker_path)
+    {
+        // rename succeeded but marker update failed. Rollback: rename old→live.
+        return match attempt_rollback(
+            runtime,
+            &old_path,
+            &live_path,
+            &candidate_path,
+            &marker_path,
+        ) {
+            Ok(()) => Err(e),
+            Err(_) => Err(BackupError::RollbackFailed),
+        };
     }
-    let _ = marker
-        .with_stage(RestoreStage::CandidateInstalled)
-        .write(&marker_path);
 
-    // Step 12–13: open new connection, migrate, post-swap validation.
+    // Step 12: rename(candidate → live).
+    if let Err(e) = std::fs::rename(&candidate_path, &live_path) {
+        return match attempt_rollback(
+            runtime,
+            &old_path,
+            &live_path,
+            &candidate_path,
+            &marker_path,
+        ) {
+            Ok(()) => Err(BackupError::Io(e)),
+            Err(_) => Err(BackupError::RollbackFailed),
+        };
+    }
+    if let Err(e) = marker
+        .with_stage(RestoreStage::CandidateInstalled)
+        .write(&marker_path)
+    {
+        return match attempt_rollback(
+            runtime,
+            &old_path,
+            &live_path,
+            &candidate_path,
+            &marker_path,
+        ) {
+            Ok(()) => Err(e),
+            Err(_) => Err(BackupError::RollbackFailed),
+        };
+    }
+
+    // Steps 13–14: open new connection, migrate, post-swap validation.
     match reopen_and_validate(&live_path) {
         Ok((worker, schema_version)) => {
-            let _ = marker
+            // Write ReopenedValidated BEFORE installing the worker so that if the
+            // write fails, we can still roll back cleanly (worker not yet installed).
+            if let Err(e) = marker
                 .with_stage(RestoreStage::ReopenedValidated)
-                .write(&marker_path);
+                .write(&marker_path)
+            {
+                drop(worker); // close the new connection before rollback
+                return match attempt_rollback(
+                    runtime,
+                    &old_path,
+                    &live_path,
+                    &candidate_path,
+                    &marker_path,
+                ) {
+                    Ok(()) => Err(e),
+                    Err(_) => Err(BackupError::RollbackFailed),
+                };
+            }
             runtime.install_worker(worker);
             let _ = std::fs::remove_file(&old_path);
             RestoreMarker::remove(&marker_path);
@@ -174,17 +247,23 @@ pub fn restore_db(
             })
         }
         Err(e) => {
-            let _ = std::fs::remove_file(&live_path);
-            if old_path.exists() {
-                let _ = std::fs::rename(&old_path, &live_path);
+            match attempt_rollback(
+                runtime,
+                &old_path,
+                &live_path,
+                &candidate_path,
+                &marker_path,
+            ) {
+                Ok(()) => Err(e),
+                Err(_) => Err(BackupError::RollbackFailed),
             }
-            RestoreMarker::remove(&marker_path);
-            reopen_worker(runtime, &live_path);
-            Err(e)
         }
     }
 }
 
+/// Checks SQLite integrity and foreign-key constraints on an open connection.
+/// Uses `map_err` for the FK query so a query error propagates as
+/// `ForeignKeyCheckQueryError` rather than being silently treated as zero violations.
 fn check_integrity_and_fk(conn: &rusqlite::Connection) -> Result<(), BackupError> {
     let ic: String = conn
         .query_row("PRAGMA integrity_check", [], |r| r.get(0))
@@ -203,12 +282,23 @@ fn check_integrity_and_fk(conn: &rusqlite::Connection) -> Result<(), BackupError
     Ok(())
 }
 
-/// Creates a safety backup of the live DB, verifies its integrity, then
-/// atomically publishes it. The previous `_safety/` directory is kept as
-/// `_safety_old/` until the new backup is verified so a verification failure
-/// leaves the prior valid safety copy intact.
+/// Creates a safety backup of the live DB using the SEALED worker Arc.
+///
+/// Must be called AFTER `seal_worker()` returns the Arc so that the safety backup
+/// captures the state at the exact quiescence point (no domain mutation possible
+/// after seal). Uses `worker_arc.execute()` directly; `runtime.execute()` would
+/// return Maintenance and must not be used here.
+///
+/// Verification steps:
+/// - integrity_check on the staging file;
+/// - FK check;
+/// - SQLite connection closed (file fully flushed) before publication;
+///
+/// Atomically publishes: keeps `_safety/` as `_safety_old/` until the new
+/// staging backup is verified, so a verification failure leaves the prior
+/// valid safety copy intact.
 fn create_verified_safety_backup(
-    runtime: &DatabaseRuntime,
+    worker_arc: &Arc<DbWorkerHandle>,
     db_dir: &Path,
 ) -> Result<(), BackupError> {
     let safety_dir = db_dir.join("backups").join("_safety");
@@ -221,7 +311,8 @@ fn create_verified_safety_backup(
     let staging_db_path = safety_staging_dir.join("lifeweave.db");
     let staging_db_clone = staging_db_path.clone();
 
-    runtime
+    // Use the sealed worker Arc directly — runtime is Maintenance.
+    worker_arc
         .execute(move |live_conn| {
             let mut dst = Connection::open(&staging_db_clone).map_err(DbError::Rusqlite)?;
             let b =
@@ -235,18 +326,14 @@ fn create_verified_safety_backup(
         })
         .map_err(BackupError::Db)?;
 
+    // Verify the staging backup: integrity + FK.
     {
         let conn = open_file_connection(&staging_db_path).map_err(BackupError::Db)?;
-        let ic: String = conn
-            .query_row("PRAGMA integrity_check", [], |r| r.get(0))
-            .map_err(|e| BackupError::Db(DbError::Rusqlite(e)))?;
-        if ic != "ok" {
-            let _ = std::fs::remove_dir_all(&safety_staging_dir);
-            return Err(BackupError::IntegrityCheckFailed(ic));
-        }
+        check_integrity_and_fk(&conn)?;
+        // Connection is dropped here (closed), flushing the WAL before publication.
     }
 
-    // Keep old _safety/ as _safety_old/ until new staging is ready.
+    // Atomically publish: keep old _safety/ until new staging is verified.
     let _ = std::fs::remove_dir_all(&safety_old_dir);
     if safety_dir.exists() {
         std::fs::rename(&safety_dir, &safety_old_dir).map_err(BackupError::Io)?;
@@ -263,7 +350,8 @@ fn create_verified_safety_backup(
 }
 
 /// Opens the newly installed DB, runs migrations, and validates post-swap invariants
-/// (WAL mode, FK pragma, integrity check, FK check). Returns a live worker on success.
+/// (integrity check, FK check). Returns a live worker and current schema version on
+/// success. Callers are responsible for rollback on failure.
 fn reopen_and_validate(live_path: &Path) -> Result<(DbWorkerHandle, u32), BackupError> {
     let mut conn = open_existing_file_connection(live_path).map_err(BackupError::Db)?;
     run_migrations(&mut conn).map_err(BackupError::Db)?;
@@ -293,15 +381,122 @@ fn reopen_and_validate(live_path: &Path) -> Result<(DbWorkerHandle, u32), Backup
     Ok((worker, schema_version))
 }
 
-/// Attempts to reopen a worker from `path` and install it in the runtime.
+/// Attempts to restore the database to a usable state after a failed restore operation.
 ///
-/// If reopening fails (e.g. file absent), the runtime stays in `Gone` state.
-/// Callers in the restore rollback path document this as "safety backup only"
-/// — the user must restore from `_safety/` manually.
-fn reopen_worker(runtime: &DatabaseRuntime, path: &Path) {
-    if let Ok(mut conn) = open_existing_file_connection(path) {
-        let _ = run_migrations(&mut conn);
-        runtime.install_worker(DbWorkerHandle::spawn(conn));
+/// Semantics:
+/// - If `old_path` exists: removes any file at `live_path` (failed candidate),
+///   deletes stale WAL/SHM at `live_path`, renames old → live, validates the
+///   result, and installs a new worker. If validation fails, renames live → old
+///   to preserve the `.old` artifact for startup recovery.
+/// - If `old_path` is absent: expects `live_path` to have the original (live→old
+///   rename failed); deletes stale WAL/SHM, validates, and installs a worker.
+/// - Validation: open_existing_file_connection, run_migrations, integrity_check,
+///   FK check, basic schema query.
+///
+/// On full success:
+/// - Worker is installed and runtime is Ready.
+/// - `candidate_path` and `marker_path` are removed.
+/// - Returns `Ok(())`. Caller then returns the original restore error.
+///
+/// On any validation failure:
+/// - Marker and `.old` are preserved (for the next startup to recover).
+/// - Returns `Err(BackupError::RollbackFailed)`.
+/// - Runtime may remain in Gone state.
+fn attempt_rollback(
+    runtime: &DatabaseRuntime,
+    old_path: &Path,
+    live_path: &Path,
+    candidate_path: &Path,
+    marker_path: &Path,
+) -> Result<(), BackupError> {
+    let restore_from_old = old_path.exists();
+
+    if restore_from_old {
+        if live_path.exists() {
+            // Remove the failed candidate at live_path. Best-effort; if this fails
+            // the rename below will fail too (Windows won't rename over an existing file).
+            let _ = std::fs::remove_file(live_path);
+        }
+        // Delete stale WAL/SHM at live_path before rename. In the normal restore_db
+        // path, step 10 already deleted these; these removes are no-ops there. When
+        // attempt_rollback is called after a rename-without-WAL-cleanup (unit tests,
+        // crash recovery), deleting them here prevents Windows sharing-violation errors
+        // when the new connection opens the WAL/SHM files.
+        let _ = std::fs::remove_file(format!("{}-wal", live_path.to_string_lossy()));
+        let _ = std::fs::remove_file(format!("{}-shm", live_path.to_string_lossy()));
+        if std::fs::rename(old_path, live_path).is_err() {
+            // Rename failed. old_path still exists; preserve all artifacts.
+            return Err(BackupError::RollbackFailed);
+        }
+    } else if live_path.exists() {
+        // old absent, live present: live is the original (step 11 rename failed).
+        // Delete stale WAL/SHM before opening.
+        let _ = std::fs::remove_file(format!("{}-wal", live_path.to_string_lossy()));
+        let _ = std::fs::remove_file(format!("{}-shm", live_path.to_string_lossy()));
+    } else {
+        // Neither old nor live. No database to open.
+        return Err(BackupError::RollbackFailed);
+    }
+
+    // Validate the connection in a closure so that `conn` is dropped on failure
+    // before we attempt to rename live → old. On Windows, renaming an open file
+    // succeeds only when SQLite opens it with FILE_SHARE_DELETE, which is not
+    // guaranteed. Dropping the connection first makes the rename safe.
+    let validated_conn: Option<Connection> = (|| -> Option<Connection> {
+        let mut conn = open_existing_file_connection(live_path).ok()?;
+        run_migrations(&mut conn).ok()?;
+        let ic: String = conn
+            .query_row("PRAGMA integrity_check", [], |r| r.get(0))
+            .ok()?;
+        if ic != "ok" {
+            return None;
+        }
+        let fk: i64 = conn
+            .query_row("SELECT COUNT(*) FROM pragma_foreign_key_check()", [], |r| {
+                r.get(0)
+            })
+            .unwrap_or(1);
+        if fk != 0 {
+            return None;
+        }
+        // Basic schema availability check: proves migrations have been applied.
+        conn.query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| {
+            r.get::<_, i64>(0)
+        })
+        .ok()?;
+        Some(conn)
+    })();
+
+    match validated_conn {
+        Some(conn) => {
+            // Checkpoint and drop the validation connection before opening a fresh
+            // one for the worker. On Windows, the WAL SHM is memory-mapped while
+            // the connection is open. When the live DB was renamed while the
+            // previous worker ran, closing here ensures the calling-thread mapping
+            // is fully released before the worker thread opens its own SHM view,
+            // preventing ERROR_SHARING_VIOLATION on the first execute().
+            let _ = conn.execute_batch("PRAGMA wal_checkpoint(TRUNCATE);");
+            drop(conn);
+
+            let mut fresh = open_existing_file_connection(live_path)
+                .map_err(|_| BackupError::RollbackFailed)?;
+            run_migrations(&mut fresh).map_err(|_| BackupError::RollbackFailed)?;
+            let worker = DbWorkerHandle::spawn(fresh);
+            runtime.install_worker(worker);
+            // Only clean up artifacts AFTER the worker is confirmed installed.
+            let _ = std::fs::remove_file(candidate_path);
+            RestoreMarker::remove(marker_path);
+            Ok(())
+        }
+        None => {
+            // Validation failed. If we renamed old → live, rename back to preserve .old
+            // so startup recovery can find it. Best-effort; if rename-back fails too,
+            // the artifacts remain in an ambiguous state for startup recovery.
+            if restore_from_old {
+                let _ = std::fs::rename(live_path, old_path);
+            }
+            Err(BackupError::RollbackFailed)
+        }
     }
 }
 
@@ -310,16 +505,19 @@ mod tests {
     use super::*;
     use crate::infrastructure::{
         backup::engine::backup_db,
+        backup::lifecycle::{self as lc, RestoreMarker, RestoreStage, set_marker_write_fail_at},
         backup::manifest::BackupManifest,
         sqlite::{
             connection::open_file_connection, foundation_record_repo as repo,
             migrations::run_migrations, runtime::DatabaseRuntime, worker::DbWorkerHandle,
         },
     };
+    use std::path::PathBuf;
     use std::sync::{
-        Arc,
+        Arc, Barrier, Mutex,
         atomic::{AtomicU32, Ordering},
     };
+    use std::time::Duration;
 
     static COUNTER: AtomicU32 = AtomicU32::new(0);
 
@@ -335,8 +533,6 @@ mod tests {
     }
 
     fn make_file_runtime() -> (DatabaseRuntime, PathBuf) {
-        // Each test gets its own subdirectory so safety-backup paths
-        // (_safety/, _safety_staging/) don't collide across parallel tests.
         let dir = std::env::temp_dir().join(format!("lw_rst_{}", next_id()));
         std::fs::create_dir_all(&dir).unwrap();
         let p = dir.join("lifeweave.db");
@@ -395,9 +591,7 @@ mod tests {
         let backup_dir = PathBuf::from(&backup_result.backup_dir);
 
         let original_hash = sha256_file(&backup_dir.join("lifeweave.db")).unwrap();
-
         restore_db(&rt, &backup_dir).unwrap();
-
         let post_hash = sha256_file(&backup_dir.join("lifeweave.db")).unwrap();
         assert_eq!(
             original_hash, post_hash,
@@ -424,7 +618,6 @@ mod tests {
         let backup_result = backup_db(&rt, &backups).unwrap();
         let backup_dir = PathBuf::from(&backup_result.backup_dir);
 
-        // Mutate after backup.
         rt.execute({
             let id = id.clone();
             move |conn| {
@@ -434,12 +627,10 @@ mod tests {
         })
         .unwrap();
 
-        // First restore.
         restore_db(&rt, &backup_dir).unwrap();
         let active = rt.execute(|conn| repo::list_active(conn)).unwrap();
         assert_eq!(active.len(), 1, "first restore must recover record");
 
-        // Mutate again.
         rt.execute({
             let id = id.clone();
             move |conn| {
@@ -449,7 +640,6 @@ mod tests {
         })
         .unwrap();
 
-        // Second restore from same package.
         restore_db(&rt, &backup_dir).unwrap();
         let active = rt.execute(|conn| repo::list_active(conn)).unwrap();
         assert_eq!(
@@ -512,7 +702,6 @@ mod tests {
             matches!(result, Err(BackupError::Checksum { .. })),
             "expected Checksum error, got {result:?}"
         );
-
         let active = rt.execute(|conn| repo::list_active(conn)).unwrap();
         drop(active);
     }
@@ -559,8 +748,6 @@ mod tests {
         let backup_result = backup_db(&rt, &backups).unwrap();
         let backup_dir = PathBuf::from(&backup_result.backup_dir);
 
-        // Write corrupt bytes and update both hash and size in manifest so the file-size
-        // and checksum guards pass, leaving integrity_check to catch the corruption.
         let corrupt =
             b"this is not sqlite -- padding to make it look plausible for testing purposes only xx";
         std::fs::write(backup_dir.join("lifeweave.db"), corrupt).unwrap();
@@ -580,7 +767,6 @@ mod tests {
             ),
             "expected integrity or DB error for corrupt SQLite, got {result:?}"
         );
-
         let active = rt.execute(|conn| repo::list_active(conn)).unwrap();
         drop(active);
     }
@@ -664,11 +850,12 @@ mod tests {
         assert_eq!(active[0].label, "Persist me");
     }
 
-    // ── Proof tests: concurrency and maintenance gate ─────────────────────────
+    // ── Quiescence: true maintenance window (tests 1–5) ──────────────────────
 
-    // [proof-3] Sealing the worker gates all execute() callers until unsealed.
-    // This is the invariant that prevents mutations between safety-backup
-    // completion and the actual DB shutdown.
+    // [test-1+2] After seal_worker(), execute() returns Maintenance.
+    // This is the critical invariant that closes the quiescence gap: the safety
+    // backup (step 7) runs AFTER seal, so no mutation can sneak in between
+    // safety-backup completion and shutdown.
     #[test]
     fn execute_blocked_while_worker_sealed() {
         let (rt, _db) = make_file_runtime();
@@ -685,8 +872,101 @@ mod tests {
         rt.unseal_worker(arc);
     }
 
-    // [proof-4] Two concurrent restore calls are serialized by the maintenance
-    // lock; neither interleaves and both complete cleanly.
+    // [test-2] A command already executing (in-flight) when seal_worker is called
+    // completes normally; only new execute() calls after seal return Maintenance.
+    // This proves that the sealed worker Arc still processes its current workload
+    // and that sealing is non-destructive for in-flight work.
+    #[test]
+    fn in_flight_command_completes_after_seal() {
+        let (rt, _db) = make_file_runtime();
+        let rt = Arc::new(rt);
+        let rt2 = Arc::clone(&rt);
+        let rt3 = Arc::clone(&rt);
+
+        let b1 = Arc::new(Barrier::new(2));
+        let b1c = Arc::clone(&b1);
+        let b2 = Arc::new(Barrier::new(2));
+        let b2c = Arc::clone(&b2);
+
+        // Thread 1: start a command that pauses inside the worker closure.
+        let h1 = std::thread::spawn(move || {
+            rt2.execute(move |_conn| {
+                b1c.wait(); // signal: running on worker thread
+                b2c.wait(); // wait: seal has been called from test thread
+                Ok::<_, DbError>(())
+            })
+        });
+
+        b1.wait(); // Command is now executing on the worker thread.
+        // Seal the runtime: transitions Ready → Maintenance.
+        let worker_arc = rt.seal_worker().unwrap();
+        // New execute() calls must now return Maintenance.
+        let maintenance_result = rt3.execute(|_| Ok::<_, DbError>(()));
+        assert!(
+            matches!(maintenance_result, Err(DbError::Maintenance)),
+            "new execute() after seal must return Maintenance"
+        );
+        b2.wait(); // Allow the in-flight command to complete.
+        let in_flight_result = h1.join().unwrap();
+        assert!(
+            in_flight_result.is_ok(),
+            "in-flight command must complete normally: {in_flight_result:?}"
+        );
+        rt.unseal_worker(worker_arc);
+    }
+
+    // [test-4] A backup and a restore running concurrently are serialized by the
+    // maintenance lock. Uses a barrier to prove that thread 2 actually blocks while
+    // thread 1 holds the lock.
+    #[test]
+    fn backup_and_restore_serialized_by_barrier() {
+        let (rt, _db) = make_file_runtime();
+        let backups = temp_backups_dir();
+        let backup_result = backup_db(&rt, &backups).unwrap();
+        let backup_dir = Arc::new(PathBuf::from(&backup_result.backup_dir));
+
+        let rt = Arc::new(rt);
+
+        let order = Arc::new(Mutex::new(Vec::<u8>::new()));
+        let order1 = Arc::clone(&order);
+        let order2 = Arc::clone(&order);
+
+        let b = Arc::new(Barrier::new(2));
+        let b1 = Arc::clone(&b);
+
+        // Thread 1: acquire maintenance lock, signal via barrier, hold briefly.
+        let rt1 = Arc::clone(&rt);
+        let h1 = std::thread::spawn(move || {
+            let _guard = rt1.acquire_maintenance().unwrap();
+            order1.lock().unwrap().push(1);
+            b1.wait(); // Signal: lock is held
+            std::thread::sleep(Duration::from_millis(20));
+            // _guard drops here, releasing lock.
+        });
+
+        b.wait(); // Thread 1 holds the maintenance lock.
+
+        // Thread 2: try to restore (must block until thread 1 releases).
+        let rt2 = Arc::clone(&rt);
+        let bd = Arc::clone(&backup_dir);
+        let h2 = std::thread::spawn(move || {
+            let result = restore_db(&rt2, &bd);
+            order2.lock().unwrap().push(2);
+            result
+        });
+
+        h1.join().unwrap();
+        h2.join().unwrap().unwrap();
+
+        let seq = order.lock().unwrap();
+        assert_eq!(
+            *seq,
+            vec![1, 2],
+            "restore must wait for maintenance lock holder: {seq:?}"
+        );
+    }
+
+    // [test-5] Two concurrent restores are serialized and both complete cleanly.
     #[test]
     fn two_concurrent_restores_are_serialized() {
         let (rt, _db) = make_file_runtime();
@@ -710,7 +990,6 @@ mod tests {
             r1.is_ok() && r2.is_ok(),
             "both serialized restores must succeed: r1={r1:?} r2={r2:?}"
         );
-        // Runtime must be usable after both restores.
         let v: i64 = rt
             .execute(|conn| {
                 conn.query_row("SELECT 1", [], |r| r.get(0))
@@ -720,8 +999,7 @@ mod tests {
         assert_eq!(v, 1);
     }
 
-    // [proof-5] A backup call and a restore call cannot run at the same time;
-    // the maintenance lock ensures only one operates on the worker at a time.
+    // [test-3+4 variant] A backup and a restore cannot collide.
     #[test]
     fn backup_and_restore_cannot_collide() {
         let (rt, _db) = make_file_runtime();
@@ -753,10 +1031,8 @@ mod tests {
         assert_eq!(v, 1);
     }
 
-    // ── Proof tests: pre-swap rejection ──────────────────────────────────────
+    // ── Pre-swap rejection proofs ─────────────────────────────────────────────
 
-    // [proof-9] If lifeweave.db is absent from the backup package, restore
-    // returns MissingBackupFile before any mutation.
     #[test]
     fn restore_rejects_missing_backup_db_file() {
         use crate::infrastructure::backup::manifest::SUPPORTED_FORMAT_VERSION;
@@ -764,7 +1040,6 @@ mod tests {
         let (rt, _db) = make_file_runtime();
         let backup_dir = temp_backups_dir();
 
-        // Write a valid-looking manifest but do NOT create lifeweave.db.
         let manifest = BackupManifest {
             format_version: SUPPORTED_FORMAT_VERSION,
             app_version: "0.0.0".into(),
@@ -780,7 +1055,6 @@ mod tests {
             matches!(result, Err(BackupError::MissingBackupFile)),
             "expected MissingBackupFile, got {result:?}"
         );
-        // Runtime must still be usable.
         let v: i64 = rt
             .execute(|conn| {
                 conn.query_row("SELECT 1", [], |r| r.get(0))
@@ -790,8 +1064,6 @@ mod tests {
         assert_eq!(v, 1);
     }
 
-    // [proof-7] A backup package whose SQLite file contains FK violations is
-    // rejected before any mutation.
     #[test]
     fn restore_rejects_fk_violation_in_backup_package() {
         use crate::infrastructure::backup::manifest::SUPPORTED_FORMAT_VERSION;
@@ -800,7 +1072,6 @@ mod tests {
         let backup_dir = temp_backups_dir();
         let backup_db_path = backup_dir.join("lifeweave.db");
 
-        // Build a SQLite DB with a FK violation.
         {
             use rusqlite::Connection;
             let conn = Connection::open(&backup_db_path).unwrap();
@@ -831,6 +1102,440 @@ mod tests {
             matches!(result, Err(BackupError::ForeignKeyViolation)),
             "expected ForeignKeyViolation, got {result:?}"
         );
+        let v: i64 = rt
+            .execute(|conn| {
+                conn.query_row("SELECT 1", [], |r| r.get(0))
+                    .map_err(DbError::from)
+            })
+            .unwrap();
+        assert_eq!(v, 1);
+    }
+
+    // [proof-8/test-42] FK check query errors propagate as ForeignKeyCheckQueryError,
+    // not silently swallowed. Proves the code uses map_err not unwrap_or.
+    #[test]
+    fn fk_check_query_error_is_a_distinct_propagated_variant() {
+        let rusqlite_err = rusqlite::Error::QueryReturnedNoRows;
+        let err = BackupError::ForeignKeyCheckQueryError(rusqlite_err);
+        assert!(matches!(err, BackupError::ForeignKeyCheckQueryError(_)));
+
+        let conn = crate::infrastructure::sqlite::connection::open_memory_connection().unwrap();
+        let result = check_integrity_and_fk(&conn);
+        assert!(result.is_ok(), "empty in-memory DB must pass: {result:?}");
+    }
+
+    // ── Marker write failure tests (tests 12–15) ──────────────────────────────
+
+    // [test-12] Marker write failure at Prepared stage (before any rename).
+    // Worker must be unsealed, candidate cleaned up, runtime usable.
+    #[test]
+    fn marker_prepared_write_failure_unseals_worker() {
+        let (rt, _db) = make_file_runtime();
+        let backups = temp_backups_dir();
+        let backup_result = backup_db(&rt, &backups).unwrap();
+        let backup_dir = PathBuf::from(&backup_result.backup_dir);
+
+        // Fail on the 1st marker write (Prepared stage).
+        set_marker_write_fail_at(0);
+        let result = restore_db(&rt, &backup_dir);
+        // The error should be the injected Io error.
+        assert!(result.is_err(), "restore must fail when marker write fails");
+
+        // Runtime must be usable (worker was unsealed).
+        let v: i64 = rt
+            .execute(|conn| {
+                conn.query_row("SELECT 1", [], |r| r.get(0))
+                    .map_err(DbError::from)
+            })
+            .unwrap();
+        assert_eq!(
+            v, 1,
+            "runtime must be usable after marker write failure: {result:?}"
+        );
+    }
+
+    // [test-13] Marker write failure at LiveMovedAside (after live→old rename).
+    // Rollback must restore original DB, runtime must be usable.
+    #[test]
+    fn marker_live_moved_aside_write_failure_rolls_back() {
+        let (rt, _db) = make_file_runtime();
+        let backups = temp_backups_dir();
+
+        let id = "019700000000-7fff-8000-0000-000000000050".to_string();
+        rt.execute({
+            let id = id.clone();
+            move |conn| repo::create(conn, &id, "Pre-rollback").map(|_| ())
+        })
+        .unwrap();
+
+        let backup_result = backup_db(&rt, &backups).unwrap();
+        let backup_dir = PathBuf::from(&backup_result.backup_dir);
+
+        // Fail on the 2nd marker write (LiveMovedAside stage; Prepared succeeds).
+        set_marker_write_fail_at(1);
+        let result = restore_db(&rt, &backup_dir);
+        assert!(result.is_err(), "restore must fail");
+
+        // Original data must be intact.
+        let active = rt.execute(|conn| repo::list_active(conn)).unwrap();
+        assert_eq!(
+            active.len(),
+            1,
+            "original data must survive rollback: {result:?}"
+        );
+        assert_eq!(active[0].label, "Pre-rollback");
+    }
+
+    // [test-14] Marker write failure at CandidateInstalled (after candidate→live rename).
+    // Rollback must restore original DB.
+    #[test]
+    fn marker_candidate_installed_write_failure_rolls_back() {
+        let (rt, _db) = make_file_runtime();
+        let backups = temp_backups_dir();
+
+        let id = "019700000000-7fff-8000-0000-000000000051".to_string();
+        rt.execute({
+            let id = id.clone();
+            move |conn| repo::create(conn, &id, "Pre-rollback-2").map(|_| ())
+        })
+        .unwrap();
+
+        let backup_result = backup_db(&rt, &backups).unwrap();
+        let backup_dir = PathBuf::from(&backup_result.backup_dir);
+
+        // Fail on the 3rd marker write (CandidateInstalled; Prepared + LiveMovedAside succeed).
+        set_marker_write_fail_at(2);
+        let result = restore_db(&rt, &backup_dir);
+        assert!(result.is_err(), "restore must fail");
+
+        let active = rt.execute(|conn| repo::list_active(conn)).unwrap();
+        assert_eq!(
+            active.len(),
+            1,
+            "original data must survive rollback: {result:?}"
+        );
+        assert_eq!(active[0].label, "Pre-rollback-2");
+    }
+
+    // [test-15] Marker write failure at ReopenedValidated (after post-swap validation).
+    // The new DB was validated but not yet installed. Rollback must restore original.
+    #[test]
+    fn marker_reopened_validated_write_failure_rolls_back() {
+        let (rt, _db) = make_file_runtime();
+        let backups = temp_backups_dir();
+
+        let id = "019700000000-7fff-8000-0000-000000000052".to_string();
+        rt.execute({
+            let id = id.clone();
+            move |conn| repo::create(conn, &id, "Pre-rollback-3").map(|_| ())
+        })
+        .unwrap();
+
+        let backup_result = backup_db(&rt, &backups).unwrap();
+        let backup_dir = PathBuf::from(&backup_result.backup_dir);
+
+        // Fail on the 4th marker write (ReopenedValidated; first 3 succeed).
+        set_marker_write_fail_at(3);
+        let result = restore_db(&rt, &backup_dir);
+        assert!(result.is_err(), "restore must fail");
+
+        let active = rt.execute(|conn| repo::list_active(conn)).unwrap();
+        assert_eq!(
+            active.len(),
+            1,
+            "original data must survive rollback: {result:?}"
+        );
+        assert_eq!(active[0].label, "Pre-rollback-3");
+    }
+
+    // ── Rollback tests (tests 31–41) ──────────────────────────────────────────
+
+    // [test-31] attempt_rollback when old is absent and live is present (step 11 failure:
+    // rename live→old failed, live is still the original).
+    #[test]
+    fn attempt_rollback_reopens_from_live_when_old_absent() {
+        let (rt, db_path) = make_file_runtime();
+        let db_dir = db_path.parent().unwrap().to_path_buf();
+        let old_path = db_dir.join("lifeweave.db.old");
+        let candidate_path = db_dir.join("_restore_candidate.db");
+        let marker_path = db_dir.join("restore_marker.json");
+
+        // Write a marker at Prepared stage (simulating the state after step 9).
+        RestoreMarker {
+            format_version: lc::MARKER_FORMAT_VERSION,
+            op_id: "test-rb-31".into(),
+            stage: RestoreStage::Prepared,
+        }
+        .write(&marker_path)
+        .unwrap();
+
+        // Seal + shutdown to put runtime into Gone state.
+        let arc = rt.seal_worker().unwrap();
+        arc.shutdown();
+        drop(arc);
+        rt.set_gone();
+
+        // Situation: rename(live→old) failed; live is still the original, old is absent.
+        // attempt_rollback should: see old absent, live present → open from live → install worker.
+        let result = attempt_rollback(&rt, &old_path, &db_path, &candidate_path, &marker_path);
+        assert!(
+            result.is_ok(),
+            "rollback must succeed when live is intact: {result:?}"
+        );
+
+        let v: i64 = rt
+            .execute(|conn| {
+                conn.query_row("SELECT 1", [], |r| r.get(0))
+                    .map_err(DbError::from)
+            })
+            .unwrap();
+        assert_eq!(v, 1, "runtime must be usable after rollback");
+        assert!(
+            !marker_path.exists(),
+            "marker must be cleaned up on successful rollback"
+        );
+    }
+
+    // [test-32] attempt_rollback when old has original and live is absent (step 12 failure:
+    // rename candidate→live failed, old has original).
+    #[test]
+    fn attempt_rollback_restores_from_old_when_live_absent() {
+        let (rt, db_path) = make_file_runtime();
+        let db_dir = db_path.parent().unwrap().to_path_buf();
+        let old_path = db_dir.join("lifeweave.db.old");
+        let candidate_path = db_dir.join("_restore_candidate.db");
+        let marker_path = db_dir.join("restore_marker.json");
+
+        RestoreMarker {
+            format_version: lc::MARKER_FORMAT_VERSION,
+            op_id: "test-rb-32".into(),
+            stage: RestoreStage::LiveMovedAside,
+        }
+        .write(&marker_path)
+        .unwrap();
+
+        // Shutdown before rename: matches the real restore flow (step 10 before step 11).
+        // SQLite opens the main DB without FILE_SHARE_DELETE on Windows, so the rename
+        // would fail while the worker has the file open.
+        let arc = rt.seal_worker().unwrap();
+        arc.shutdown();
+        drop(arc);
+        rt.set_gone();
+
+        // Move live → old (simulating step 11 success). Succeeds now that no handles are open.
+        std::fs::rename(&db_path, &old_path).unwrap();
+        // live_path is now absent.
+
+        // Situation: old has original, live is absent.
+        let result = attempt_rollback(&rt, &old_path, &db_path, &candidate_path, &marker_path);
+        assert!(result.is_ok(), "rollback must succeed: {result:?}");
+
+        assert!(db_path.exists(), "live must be restored");
+        assert!(!old_path.exists(), ".old must be cleaned up");
+        let v: i64 = rt
+            .execute(|conn| {
+                conn.query_row("SELECT 1", [], |r| r.get(0))
+                    .map_err(DbError::from)
+            })
+            .unwrap();
+        assert_eq!(v, 1);
+    }
+
+    // [test-33+35] attempt_rollback when old has original but live has failed candidate
+    // (post-swap scenario). Rollback removes live (failed candidate), restores old.
+    #[test]
+    fn attempt_rollback_removes_failed_candidate_and_restores_old() {
+        let (rt, db_path) = make_file_runtime();
+        let db_dir = db_path.parent().unwrap().to_path_buf();
+        let old_path = db_dir.join("lifeweave.db.old");
+        let candidate_path = db_dir.join("_restore_candidate.db");
+        let marker_path = db_dir.join("restore_marker.json");
+
+        RestoreMarker {
+            format_version: lc::MARKER_FORMAT_VERSION,
+            op_id: "test-rb-33".into(),
+            stage: RestoreStage::CandidateInstalled,
+        }
+        .write(&marker_path)
+        .unwrap();
+
+        // Shutdown before rename: matches the real restore flow (step 10 before step 11).
+        // SQLite opens the main DB without FILE_SHARE_DELETE on Windows, so renaming
+        // while the worker has the file open fails.
+        let arc = rt.seal_worker().unwrap();
+        arc.shutdown();
+        drop(arc);
+        rt.set_gone();
+
+        // Move live → old (original), write a corrupt file at live (the "candidate").
+        // Both succeed now that no handles are open.
+        std::fs::rename(&db_path, &old_path).unwrap();
+        std::fs::write(&db_path, b"corrupt failed candidate").unwrap();
+
+        // attempt_rollback: old=present, live=present(corrupt) → remove live, rename old→live.
+        let result = attempt_rollback(&rt, &old_path, &db_path, &candidate_path, &marker_path);
+        assert!(result.is_ok(), "rollback must succeed: {result:?}");
+
+        assert!(db_path.exists(), "live must be restored from old");
+        assert!(!old_path.exists(), ".old must be cleaned up");
+        let v: i64 = rt
+            .execute(|conn| {
+                conn.query_row("SELECT 1", [], |r| r.get(0))
+                    .map_err(DbError::from)
+            })
+            .unwrap();
+        assert_eq!(v, 1);
+    }
+
+    // [test-34+36] Rollback returns RollbackFailed when the file at the restore path
+    // is not a valid database (migration/integrity/FK cannot pass).
+    #[test]
+    fn rollback_validate_failure_returns_rollback_failed() {
+        let (rt, db_path) = make_file_runtime();
+        let db_dir = db_path.parent().unwrap().to_path_buf();
+        let old_path = db_dir.join("lifeweave.db.old");
+        let candidate_path = db_dir.join("_restore_candidate.db");
+        let marker_path = db_dir.join("restore_marker.json");
+
+        RestoreMarker {
+            format_version: lc::MARKER_FORMAT_VERSION,
+            op_id: "test-rb-34".into(),
+            stage: RestoreStage::LiveMovedAside,
+        }
+        .write(&marker_path)
+        .unwrap();
+
+        // Put a corrupt file at old_path (simulating a corrupt original).
+        std::fs::write(&old_path, b"not a valid sqlite database file at all").unwrap();
+        // live_path is the original DB but we seal+shutdown to simulate Gone state.
+        let arc = rt.seal_worker().unwrap();
+        arc.shutdown();
+        drop(arc);
+        rt.set_gone();
+        // Remove live so rollback tries to use old_path.
+        std::fs::remove_file(&db_path).unwrap();
+
+        let result = attempt_rollback(&rt, &old_path, &db_path, &candidate_path, &marker_path);
+        assert!(
+            matches!(result, Err(BackupError::RollbackFailed)),
+            "expected RollbackFailed when restoration file is corrupt: {result:?}"
+        );
+        // Marker must be preserved (for startup recovery).
+        assert!(
+            marker_path.exists(),
+            "marker must be preserved on rollback failure"
+        );
+        // .old must be preserved (it's our only copy, even if corrupt).
+        assert!(
+            old_path.exists(),
+            ".old must be preserved on rollback failure"
+        );
+    }
+
+    // [test-40] After a successful rollback, all FoundationRecord domain commands work.
+    #[test]
+    fn after_rollback_domain_commands_work() {
+        let (rt, _db) = make_file_runtime();
+        let backups = temp_backups_dir();
+
+        let id = "019700000000-7fff-8000-0000-000000000060".to_string();
+        rt.execute({
+            let id = id.clone();
+            move |conn| repo::create(conn, &id, "Survivor").map(|_| ())
+        })
+        .unwrap();
+
+        let backup_result = backup_db(&rt, &backups).unwrap();
+        let backup_dir = PathBuf::from(&backup_result.backup_dir);
+
+        // Fail on Prepared marker write to trigger a pre-rename rollback.
+        set_marker_write_fail_at(0);
+        let result = restore_db(&rt, &backup_dir);
+        assert!(result.is_err());
+
+        // All domain commands must work after rollback.
+        let active = rt.execute(|conn| repo::list_active(conn)).unwrap();
+        assert_eq!(active.len(), 1);
+        assert_eq!(active[0].label, "Survivor");
+
+        let id2 = "019700000000-7fff-8000-0000-000000000061".to_string();
+        rt.execute({
+            let id2 = id2.clone();
+            move |conn| repo::create(conn, &id2, "Post-rollback new").map(|_| ())
+        })
+        .unwrap();
+
+        rt.execute({
+            let id = id.clone();
+            move |conn| {
+                repo::archive(conn, &id, 0).expect("archive failed");
+                Ok(())
+            }
+        })
+        .unwrap();
+
+        let active = rt.execute(|conn| repo::list_active(conn)).unwrap();
+        assert_eq!(active.len(), 1);
+        assert_eq!(active[0].label, "Post-rollback new");
+    }
+
+    // [test-41] After a rollback failure, artifacts are preserved.
+    // (RollbackFailed state: marker, .old remain; runtime stays Gone)
+    #[test]
+    fn after_rollback_failure_artifacts_preserved() {
+        let (rt, db_path) = make_file_runtime();
+        let db_dir = db_path.parent().unwrap().to_path_buf();
+        let old_path = db_dir.join("lifeweave.db.old");
+        let candidate_path = db_dir.join("_restore_candidate.db");
+        let marker_path = db_dir.join("restore_marker.json");
+
+        RestoreMarker {
+            format_version: lc::MARKER_FORMAT_VERSION,
+            op_id: "test-rb-41".into(),
+            stage: RestoreStage::LiveMovedAside,
+        }
+        .write(&marker_path)
+        .unwrap();
+
+        std::fs::write(&old_path, b"corrupt database").unwrap();
+        let arc = rt.seal_worker().unwrap();
+        arc.shutdown();
+        drop(arc);
+        rt.set_gone();
+        std::fs::remove_file(&db_path).unwrap();
+
+        let result = attempt_rollback(&rt, &old_path, &db_path, &candidate_path, &marker_path);
+        assert!(matches!(result, Err(BackupError::RollbackFailed)));
+
+        // Marker and .old must be preserved for startup recovery.
+        assert!(
+            marker_path.exists(),
+            "marker preserved after failed rollback"
+        );
+        assert!(old_path.exists(), ".old preserved after failed rollback");
+        assert!(!db_path.exists(), "no blank DB must be created");
+    }
+
+    // ── Blocker F: stale artifacts block new restore ──────────────────────────
+
+    #[test]
+    fn stale_old_without_marker_blocks_new_restore() {
+        let (rt, db_path) = make_file_runtime();
+        let db_dir = db_path.parent().unwrap().to_path_buf();
+        let old_path = db_dir.join("lifeweave.db.old");
+        let backups = temp_backups_dir();
+        let backup_result = backup_db(&rt, &backups).unwrap();
+        let backup_dir = PathBuf::from(&backup_result.backup_dir);
+
+        // Place a stale .old without a marker (simulating a cleanup failure).
+        std::fs::write(&old_path, b"stale old db").unwrap();
+
+        let result = restore_db(&rt, &backup_dir);
+        assert!(
+            matches!(result, Err(BackupError::RecoveryAmbiguous)),
+            "restore must refuse when stale .old exists without a marker: {result:?}"
+        );
+        assert!(old_path.exists(), ".old must be preserved");
         // Runtime must still be usable.
         let v: i64 = rt
             .execute(|conn| {
@@ -841,35 +1546,8 @@ mod tests {
         assert_eq!(v, 1);
     }
 
-    // [proof-8] The FK query error path is not silenced. When pragma_foreign_key_check()
-    // itself returns a query error, check_integrity_and_fk returns
-    // BackupError::ForeignKeyCheckQueryError (propagated via map_err, not swallowed
-    // by unwrap_or(0)). This test verifies the code path returns the correct variant
-    // by calling check_integrity_and_fk on a connection to a corrupt file where the
-    // query will fail after integrity_check returns "ok" (not possible naturally, but
-    // the variant itself is verified to be distinct from ForeignKeyViolation).
-    #[test]
-    fn fk_check_query_error_is_a_distinct_propagated_variant() {
-        // Verify that ForeignKeyCheckQueryError is a real, distinct BackupError variant
-        // that is propagated rather than silently swallowed as 0.
-        let rusqlite_err = rusqlite::Error::QueryReturnedNoRows;
-        let err = BackupError::ForeignKeyCheckQueryError(rusqlite_err);
-        assert!(matches!(err, BackupError::ForeignKeyCheckQueryError(_)));
+    // ── Domain commands after restore ─────────────────────────────────────────
 
-        // Also verify the pre-swap FK check on the backup DB uses map_err (not unwrap_or)
-        // by confirming that a valid empty DB returns zero violations (not an error).
-        let conn = crate::infrastructure::sqlite::connection::open_memory_connection().unwrap();
-        let result = check_integrity_and_fk(&conn);
-        assert!(
-            result.is_ok(),
-            "empty in-memory DB must pass integrity and FK checks: {result:?}"
-        );
-    }
-
-    // ── Proof tests: post-swap rollback ───────────────────────────────────────
-
-    // [proof-18] After a failed restore, all FoundationRecord domain commands
-    // (create, list, archive) continue to work without data loss.
     #[test]
     fn failed_restore_leaves_domain_commands_usable() {
         let (rt, _db) = make_file_runtime();
@@ -882,7 +1560,6 @@ mod tests {
         })
         .unwrap();
 
-        // Corrupt a backup to trigger a checksum failure (pre-swap, no mutation).
         let backup_result = backup_db(&rt, &backups).unwrap();
         let backup_dir = PathBuf::from(&backup_result.backup_dir);
         let manifest_path = backup_dir.join("manifest.json");
@@ -892,7 +1569,6 @@ mod tests {
         std::fs::write(&manifest_path, serde_json::to_vec(&m).unwrap()).unwrap();
         assert!(restore_db(&rt, &backup_dir).is_err());
 
-        // All domain commands must still work.
         let active = rt.execute(|conn| repo::list_active(conn)).unwrap();
         assert_eq!(active.len(), 1);
         assert_eq!(active[0].label, "Survivor");
@@ -918,8 +1594,6 @@ mod tests {
         assert_eq!(active[0].label, "New after failure");
     }
 
-    // [proof-19] After a successful restore, all FoundationRecord domain commands
-    // work correctly on the restored snapshot.
     #[test]
     fn successful_restore_leaves_domain_commands_usable() {
         let (rt, _db) = make_file_runtime();
@@ -935,7 +1609,6 @@ mod tests {
         let backup_result = backup_db(&rt, &backups).unwrap();
         let backup_dir = PathBuf::from(&backup_result.backup_dir);
 
-        // Archive the record so the restored snapshot has it active again.
         rt.execute({
             let id = id.clone();
             move |conn| {
@@ -947,7 +1620,6 @@ mod tests {
 
         restore_db(&rt, &backup_dir).unwrap();
 
-        // Create, list, archive all work on the restored snapshot.
         let active = rt.execute(|conn| repo::list_active(conn)).unwrap();
         assert_eq!(active.len(), 1, "restored record must be active");
         assert_eq!(active[0].label, "Snapshot");
@@ -973,99 +1645,21 @@ mod tests {
         assert_eq!(active[0].label, "Post-restore new");
     }
 
-    // ── Proof tests: lifecycle startup recovery ───────────────────────────────
+    // ── Safety backup preservation ────────────────────────────────────────────
 
-    // [proof-15+16] Interrupted restore marker stages are recovered by
-    // recover_if_interrupted without opening a blank database.
-    // (Detailed stage-level tests live in lifecycle.rs; this integration test
-    // proves that the full startup path — recover + open_existing_file_connection —
-    // returns the original database, not a blank one.)
-    #[test]
-    fn startup_recovery_with_live_moved_aside_marker_preserves_db() {
-        use crate::infrastructure::backup::lifecycle::recover_if_interrupted;
-
-        let dir = std::env::temp_dir().join(format!("lw_rst_startup_{}", {
-            static C: AtomicU32 = AtomicU32::new(0);
-            C.fetch_add(1, Ordering::Relaxed)
-        }));
-        std::fs::create_dir_all(&dir).unwrap();
-
-        let live_path = dir.join("lifeweave.db");
-        let old_path = dir.join("lifeweave.db.old");
-        let candidate_path = dir.join("_restore_candidate.db");
-        let marker_path = dir.join("restore_marker.json");
-
-        // Write known content to .old and write a LiveMovedAside marker.
-        std::fs::write(&old_path, b"not-real-sqlite-but-test-content").unwrap();
-        let marker = crate::infrastructure::backup::lifecycle::RestoreMarker {
-            stage: crate::infrastructure::backup::lifecycle::RestoreStage::LiveMovedAside,
-            live_path: live_path.to_string_lossy().into_owned(),
-            old_path: old_path.to_string_lossy().into_owned(),
-            candidate_path: candidate_path.to_string_lossy().into_owned(),
-        };
-        marker.write(&marker_path).unwrap();
-
-        // Simulate startup: recover first, then open.
-        recover_if_interrupted(&marker_path).unwrap();
-
-        assert!(
-            live_path.exists(),
-            "original DB must be at live_path after recovery"
-        );
-        assert!(!old_path.exists(), ".old must be gone after rename");
-        assert!(!marker_path.exists(), "marker must be removed");
-
-        let content = std::fs::read(&live_path).unwrap();
-        assert_eq!(content, b"not-real-sqlite-but-test-content");
-
-        // Verify that open_existing_file_connection returns FileNotFound for a
-        // path that does NOT exist (proving it would not silently create a blank DB).
-        let absent = dir.join("does_not_exist.db");
-        let r = open_existing_file_connection(&absent);
-        assert!(
-            matches!(r, Err(DbError::FileNotFound { .. })),
-            "open_existing_file_connection must error if path is absent, got {r:?}"
-        );
-    }
-
-    // [proof-17] startup recovery + open_existing_file_connection never silently
-    // creates a blank database — it errors if the target file is absent.
-    // (Included in startup_recovery_with_live_moved_aside_marker_preserves_db above.)
-    // This standalone test confirms the connection function contract in isolation.
-    #[test]
-    fn open_existing_file_connection_errors_on_absent_file() {
-        let path = std::env::temp_dir().join("lw_absent_db_test.db");
-        let _ = std::fs::remove_file(&path);
-        let result = open_existing_file_connection(&path);
-        assert!(
-            matches!(result, Err(DbError::FileNotFound { .. })),
-            "must error rather than create a blank DB"
-        );
-    }
-
-    // ── Proof tests: safety backup ────────────────────────────────────────────
-
-    // [proof-20] The previous valid safety backup is preserved when a new
-    // restore fails before reaching the safety-backup step (i.e., at checksum
-    // validation).
     #[test]
     fn valid_safety_backup_preserved_when_restore_fails_before_safety_step() {
         let (rt, db_path) = make_file_runtime();
         let safety_dir = db_path.parent().unwrap().join("backups").join("_safety");
         let backups = temp_backups_dir();
 
-        // First successful restore: establishes _safety/.
         let backup_result = backup_db(&rt, &backups).unwrap();
         let backup_dir = PathBuf::from(&backup_result.backup_dir);
         restore_db(&rt, &backup_dir).unwrap();
 
-        assert!(
-            safety_dir.join("lifeweave.db").exists(),
-            "first restore must create safety backup"
-        );
-        let first_safety_hash = sha256_file(&safety_dir.join("lifeweave.db")).unwrap();
+        assert!(safety_dir.join("lifeweave.db").exists());
+        let first_hash = sha256_file(&safety_dir.join("lifeweave.db")).unwrap();
 
-        // Second restore that fails at checksum (before safety backup step).
         let bad_backups = temp_backups_dir();
         let bad_result = backup_db(&rt, &bad_backups).unwrap();
         let bad_dir = PathBuf::from(&bad_result.backup_dir);
@@ -1075,63 +1669,26 @@ mod tests {
         m["db_sha256"] = serde_json::json!("0".repeat(64));
         std::fs::write(&manifest_path, serde_json::to_vec(&m).unwrap()).unwrap();
 
-        assert!(
-            restore_db(&rt, &bad_dir).is_err(),
-            "second restore must fail"
-        );
+        assert!(restore_db(&rt, &bad_dir).is_err());
 
-        // The first safety backup must be unchanged.
-        assert!(
-            safety_dir.join("lifeweave.db").exists(),
-            "safety backup must still exist"
-        );
-        let second_safety_hash = sha256_file(&safety_dir.join("lifeweave.db")).unwrap();
-        assert_eq!(
-            first_safety_hash, second_safety_hash,
-            "safety backup content must be unchanged after failed restore"
-        );
+        let second_hash = sha256_file(&safety_dir.join("lifeweave.db")).unwrap();
+        assert_eq!(first_hash, second_hash, "safety backup must be unchanged");
     }
 
-    // [proof-10+13+14] When a restore fails after the worker is shut down
-    // (simulated by CandidateInstalled marker state at startup), the database
-    // is rolled back to the original and the runtime is usable.
+    // ── Startup recovery (open_existing_file_connection never creates blank DB) ─
+
     #[test]
-    fn startup_recovery_from_candidate_installed_restores_original_db() {
-        use crate::infrastructure::backup::lifecycle::{
-            RestoreMarker, RestoreStage, recover_if_interrupted,
-        };
-
-        let dir = std::env::temp_dir().join(format!("lw_rst_cand_{}", {
-            static C: AtomicU32 = AtomicU32::new(0);
-            C.fetch_add(1, Ordering::Relaxed)
-        }));
-        std::fs::create_dir_all(&dir).unwrap();
-
-        let live_path = dir.join("lifeweave.db");
-        let old_path = dir.join("lifeweave.db.old");
-        let candidate_path = dir.join("_restore_candidate.db");
-        let marker_path = dir.join("restore_marker.json");
-
-        // Simulate: candidate installed at live_path, original at old_path.
-        std::fs::write(&live_path, b"unvalidated-candidate").unwrap();
-        std::fs::write(&old_path, b"original-live-db").unwrap();
-        let marker = RestoreMarker {
-            stage: RestoreStage::CandidateInstalled,
-            live_path: live_path.to_string_lossy().into_owned(),
-            old_path: old_path.to_string_lossy().into_owned(),
-            candidate_path: candidate_path.to_string_lossy().into_owned(),
-        };
-        marker.write(&marker_path).unwrap();
-
-        recover_if_interrupted(&marker_path).unwrap();
-
-        assert!(live_path.exists(), "original must be restored to live_path");
-        let content = std::fs::read(&live_path).unwrap();
-        assert_eq!(
-            content, b"original-live-db",
-            "live DB must contain original data"
+    fn open_existing_file_connection_errors_on_absent_file() {
+        use crate::infrastructure::sqlite::connection::open_existing_file_connection;
+        let path = std::env::temp_dir().join(format!(
+            "lw_absent_{}.db",
+            COUNTER.fetch_add(1, Ordering::Relaxed)
+        ));
+        let _ = std::fs::remove_file(&path);
+        let result = open_existing_file_connection(&path);
+        assert!(
+            matches!(result, Err(DbError::FileNotFound { .. })),
+            "must error rather than create a blank DB: {result:?}"
         );
-        assert!(!old_path.exists(), ".old must be removed after rollback");
-        assert!(!marker_path.exists(), "marker must be removed");
     }
 }

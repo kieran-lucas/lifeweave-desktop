@@ -16,9 +16,13 @@ fn backup_to_ipc(e: BackupError) -> IpcError {
         | BackupError::PostSwapValidationFailed(_)
         | BackupError::ManifestParse(_)
         | BackupError::ManifestSerialize(_) => IpcError::Corruption,
-        BackupError::UnsupportedFormatVersion(_) | BackupError::SchemaVersionTooNew { .. } => {
-            IpcError::Unsupported
+        BackupError::UnsupportedFormatVersion(_)
+        | BackupError::SchemaVersionTooNew { .. }
+        | BackupError::RestoreMarkerUnsupported { .. } => IpcError::Unsupported,
+        BackupError::RestoreMarkerMalformed | BackupError::RecoveryAmbiguous => {
+            IpcError::Corruption
         }
+        BackupError::RestoreMarkerUnreadable(_) | BackupError::RollbackFailed => IpcError::Storage,
     }
 }
 

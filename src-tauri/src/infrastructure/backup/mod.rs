@@ -40,6 +40,28 @@ pub enum BackupError {
     PostSwapValidationFailed(String),
     ManifestParse(serde_json::Error),
     ManifestSerialize(serde_json::Error),
+    /// The restore marker file could not be read due to an I/O error other than
+    /// NotFound. Distinct from malformed so callers can distinguish transient
+    /// permission errors from persistent corruption.
+    RestoreMarkerUnreadable(std::io::Error),
+    /// The restore marker file exists but its content is invalid: empty, truncated,
+    /// or not parseable as the expected JSON structure.
+    RestoreMarkerMalformed,
+    /// The restore marker file parses correctly but carries a `format_version` not
+    /// known to this binary. Do not treat as absent — the file may describe a
+    /// critical in-progress operation.
+    RestoreMarkerUnsupported {
+        format_version: u32,
+    },
+    /// A rollback attempt failed. The runtime may be in Gone state. All artifacts
+    /// (marker, .old, candidate) are preserved so the next startup can attempt
+    /// recovery. Do not expose internal rollback details to the IPC layer.
+    RollbackFailed,
+    /// Recovery artifacts were found in a state that cannot be safely resolved
+    /// (e.g., stale .old without a marker, or a filesystem state that contradicts
+    /// the recorded stage). All artifacts preserved; startup must not create a
+    /// blank database when this is returned.
+    RecoveryAmbiguous,
 }
 
 impl std::fmt::Display for BackupError {
@@ -69,6 +91,26 @@ impl std::fmt::Display for BackupError {
             }
             BackupError::ManifestParse(_) => write!(f, "malformed manifest"),
             BackupError::ManifestSerialize(_) => write!(f, "manifest serialization error"),
+            BackupError::RestoreMarkerUnreadable(_) => write!(f, "restore marker unreadable"),
+            BackupError::RestoreMarkerMalformed => write!(f, "restore marker malformed"),
+            BackupError::RestoreMarkerUnsupported { format_version } => {
+                write!(
+                    f,
+                    "restore marker uses unsupported format version {format_version}"
+                )
+            }
+            BackupError::RollbackFailed => {
+                write!(
+                    f,
+                    "restore rollback failed; artifacts preserved for startup recovery"
+                )
+            }
+            BackupError::RecoveryAmbiguous => {
+                write!(
+                    f,
+                    "recovery artifacts in ambiguous state; startup must not create blank DB"
+                )
+            }
         }
     }
 }
@@ -76,7 +118,7 @@ impl std::fmt::Display for BackupError {
 impl std::error::Error for BackupError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
-            BackupError::Io(e) => Some(e),
+            BackupError::Io(e) | BackupError::RestoreMarkerUnreadable(e) => Some(e),
             BackupError::ManifestParse(e) | BackupError::ManifestSerialize(e) => Some(e),
             BackupError::ForeignKeyCheckQueryError(e) => Some(e),
             _ => None,
