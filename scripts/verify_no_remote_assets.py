@@ -23,7 +23,7 @@ def iter_files():
             yield scope
         elif scope.is_dir():
             for path in scope.rglob("*"):
-                if path.is_file() and path.suffix in TEXT_SUFFIXES and "gen" not in path.parts:
+                if path.is_file() and path.suffix in TEXT_SUFFIXES and "gen" not in path.parts and "target" not in path.parts:
                     yield path
 
 def main() -> int:

@@ -16,6 +16,6 @@
     "build": "pnpm --dir frontend build",
     "typecheck": "pnpm --dir frontend typecheck",
     "test": "pnpm --dir frontend test",
-    "tauri": "pnpm --dir frontend tauri"
+    "tauri": "node frontend/node_modules/@tauri-apps/cli/tauri.js"
   }
 }

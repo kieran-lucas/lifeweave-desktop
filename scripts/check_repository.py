@@ -45,7 +45,13 @@ def main() -> int:
         if ".git" in path.parts:
             continue
         if path.name in FORBIDDEN_NAMES and path.is_dir():
-            errors.append(f"forbidden generated/user directory present: {path.relative_to(ROOT)}")
+            ignored = subprocess.run(
+                ["git", "check-ignore", "-q", str(path)],
+                cwd=ROOT,
+                capture_output=True,
+            ).returncode == 0
+            if not ignored:
+                errors.append(f"forbidden generated/user directory present: {path.relative_to(ROOT)}")
         if path.is_file() and path.name.endswith(FORBIDDEN_SUFFIXES):
             errors.append(f"forbidden sensitive artifact present: {path.relative_to(ROOT)}")
 

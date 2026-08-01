@@ -11,7 +11,7 @@ try {
     python scripts/check_repository.py
 
     Write-Host "2/10 Checking required commands" -ForegroundColor Cyan
-    foreach ($command in @("git", "node", "corepack", "rustc", "cargo", "rustup", "python")) {
+    foreach ($command in @("git", "node", "npm", "rustc", "cargo", "rustup", "python")) {
         if (-not (Get-Command $command -ErrorAction SilentlyContinue)) {
             throw "Required command not found: $command. Run scripts/doctor.ps1 and install prerequisites."
         }
@@ -23,18 +23,25 @@ try {
     rustup component add rustfmt clippy
     if ($LASTEXITCODE -ne 0) { throw "rustup component add rustfmt clippy failed." }
 
-    Write-Host "4/10 Enabling pinned pnpm line" -ForegroundColor Cyan
-    corepack enable
-    corepack prepare pnpm@11.17.0 --activate
-    pnpm --version
+    Write-Host "4/10 Installing pinned pnpm" -ForegroundColor Cyan
+    npm install -g pnpm@11.17.0
+    if ($LASTEXITCODE -ne 0) { throw "npm install -g pnpm@11.17.0 failed." }
+    $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
+    $pnpmVersion = & pnpm --version 2>&1
+    Write-Host "pnpm version: $pnpmVersion"
+    if ($LASTEXITCODE -ne 0) { throw "pnpm --version failed after install." }
 
     Write-Host "5/10 Installing workspace dependencies" -ForegroundColor Cyan
-    pnpm install --frozen-lockfile=$false
+    pnpm install --no-frozen-lockfile
+    if ($LASTEXITCODE -ne 0) { throw "pnpm install failed." }
 
     Write-Host "6/10 Frontend checks" -ForegroundColor Cyan
     pnpm typecheck
+    if ($LASTEXITCODE -ne 0) { throw "pnpm typecheck failed." }
     pnpm test
+    if ($LASTEXITCODE -ne 0) { throw "pnpm test failed." }
     pnpm build
+    if ($LASTEXITCODE -ne 0) { throw "pnpm build failed." }
 
     Write-Host "7/10 Rust checks" -ForegroundColor Cyan
     cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check
@@ -42,7 +49,8 @@ try {
     cargo test --manifest-path src-tauri/Cargo.toml
 
     Write-Host "8/10 Tauri production build smoke" -ForegroundColor Cyan
-    pnpm --dir frontend tauri build
+    & ".\frontend\node_modules\.bin\tauri.CMD" build
+    if ($LASTEXITCODE -ne 0) { throw "Tauri production build failed." }
 
     Write-Host "9/10 Governance recheck" -ForegroundColor Cyan
     python scripts/verify_no_remote_assets.py

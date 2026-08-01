@@ -4,9 +4,9 @@
   "version": "0.0.0",
   "identifier": "dev.lifeweave.desktop",
   "build": {
-    "beforeDevCommand": "pnpm --dir ../frontend dev",
+    "beforeDevCommand": "pnpm --dir frontend dev",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "pnpm --dir ../frontend build",
+    "beforeBuildCommand": "pnpm --dir frontend build",
     "frontendDist": "../frontend/dist"
   },
   "app": {
