@@ -6,9 +6,13 @@ pub mod platform;
 
 use tauri::Manager;
 
-use infrastructure::backup::lifecycle::{preflight_startup_check, recover_if_interrupted};
+use infrastructure::backup::lifecycle::{
+    StartupDisposition, preflight_startup_check, recover_if_interrupted,
+};
 use infrastructure::sqlite::{
-    connection::open_file_connection, migrations::run_migrations, runtime::DatabaseRuntime,
+    connection::{open_existing_file_connection, open_file_connection},
+    migrations::run_migrations,
+    runtime::DatabaseRuntime,
     worker::DbWorkerHandle,
 };
 use ipc::backup::{backup_database, restore_database};
@@ -54,10 +58,14 @@ pub fn run() {
                 .parent()
                 .unwrap_or(std::path::Path::new("."))
                 .join("restore_marker.json");
-            preflight_startup_check(&db_path)?;
+            let disposition = preflight_startup_check(&db_path)?;
             recover_if_interrupted(&marker_path, &db_path)?;
 
-            let mut conn = open_file_connection(&db_path).expect("failed to open SQLite database");
+            let mut conn = match disposition {
+                StartupDisposition::PristineFirstRun => open_file_connection(&db_path),
+                StartupDisposition::ExistingOrRecovered => open_existing_file_connection(&db_path),
+            }
+            .expect("failed to open SQLite database");
             run_migrations(&mut conn).expect("database migration failed");
 
             let worker = DbWorkerHandle::spawn(conn);

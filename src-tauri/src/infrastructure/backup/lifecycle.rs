@@ -20,6 +20,8 @@ use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 
 use super::BackupError;
+use crate::infrastructure::sqlite::connection::open_readonly_connection;
+use crate::infrastructure::sqlite::migrations::max_supported_schema_version;
 
 /// Format version for the restore marker JSON. Increment when the schema changes
 /// in a backwards-incompatible way so recovery code can detect mismatches.
@@ -41,6 +43,17 @@ pub enum RestoreStage {
     /// The new worker was opened and post-swap checks passed.
     /// old_path still exists and can be deleted.
     ReopenedValidated,
+}
+
+/// Describes whether the app is starting fresh or reopening an existing database.
+/// Returned by `preflight_startup_check` so the caller can choose between
+/// `open_file_connection` (may create) and `open_existing_file_connection` (refuses to create).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StartupDisposition {
+    /// No prior database or recovery artifacts detected. Caller may create a new DB file.
+    PristineFirstRun,
+    /// A database file or recovery artifacts exist. Caller must not create a blank DB.
+    ExistingOrRecovered,
 }
 
 /// Durable marker written to disk before any file mutation during a restore.
@@ -105,7 +118,9 @@ impl RestoreMarker {
         }
 
         // Windows: rename fails if destination exists; remove first.
-        // If remove fails, the tmp cleanup still prevents partial state.
+        // If remove succeeds but rename fails, no marker will exist (tmp is also
+        // cleaned). The restore operation must abort; artifacts remain in place so
+        // the next startup triggers RecoveryAmbiguous rather than creating a blank DB.
         let _ = std::fs::remove_file(marker_path);
         std::fs::rename(&tmp_path, marker_path).map_err(|e| {
             let _ = std::fs::remove_file(&tmp_path);
@@ -183,43 +198,112 @@ pub(super) fn derive_sibling_paths(db_path: &Path) -> (PathBuf, PathBuf) {
     )
 }
 
-/// Lightweight check that `path` begins with the SQLite file-format magic header.
-/// Used in recovery to distinguish a SQLite file from an empty or corrupt placeholder
-/// without opening a connection.
-fn is_valid_sqlite_header(path: &Path) -> bool {
-    use std::io::Read;
-    let Ok(mut f) = std::fs::File::open(path) else {
-        return false;
+/// Opens `path` as a read-only SQLite connection and validates that the database
+/// passes integrity and foreign-key checks, has a readable `schema_migrations` table,
+/// and its schema version does not exceed the maximum supported version.
+///
+/// Returns `true` only if all checks pass. Returns `false` on any error or violation.
+fn validate_for_recovery(path: &Path) -> bool {
+    let conn = match open_readonly_connection(path) {
+        Ok(c) => c,
+        Err(_) => return false,
     };
-    let mut header = [0u8; 16];
-    f.read_exact(&mut header).is_ok() && header.starts_with(b"SQLite format 3\0")
+
+    let ic: rusqlite::Result<String> =
+        conn.query_row("PRAGMA integrity_check", [], |row| row.get(0));
+    if ic.as_deref() != Ok("ok") {
+        return false;
+    }
+
+    let fk_ok = conn
+        .prepare("PRAGMA foreign_key_check")
+        .and_then(|mut stmt| {
+            let mut rows = stmt.query([])?;
+            let mut count = 0usize;
+            while rows.next()?.is_some() {
+                count += 1;
+            }
+            Ok(count == 0)
+        })
+        .unwrap_or(false);
+    if !fk_ok {
+        return false;
+    }
+
+    let schema_version: rusqlite::Result<u32> = conn.query_row(
+        "SELECT COALESCE(MAX(version), 0) FROM schema_migrations",
+        [],
+        |row| row.get(0),
+    );
+    matches!(schema_version, Ok(v) if v <= max_supported_schema_version())
+}
+
+/// Removes a file during recovery. Supports test-seam failpoints.
+fn recovery_remove(path: &Path) -> std::io::Result<()> {
+    #[cfg(test)]
+    if RECOVERY_REMOVE_FAIL.with(|c| c.get()) {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::PermissionDenied,
+            "test-injected recovery remove failure",
+        ));
+    }
+    std::fs::remove_file(path)
+}
+
+/// Renames a file during recovery. Supports test-seam failpoints.
+fn recovery_rename(src: &Path, dst: &Path) -> std::io::Result<()> {
+    #[cfg(test)]
+    if RECOVERY_RENAME_FAIL.with(|c| c.get()) {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::PermissionDenied,
+            "test-injected recovery rename failure",
+        ));
+    }
+    std::fs::rename(src, dst)
 }
 
 /// Runs a startup preflight before the live database connection is opened.
 ///
 /// Call BEFORE `recover_if_interrupted` and BEFORE any `Connection::open` call.
 ///
-/// First-run DB creation is permitted only when ALL of these are absent:
-///   marker, marker tmp, `.old`, candidate.
+/// Returns `StartupDisposition::PristineFirstRun` only when ALL of these are absent:
+///   `lifeweave.db`, `lifeweave.db-wal`, `lifeweave.db-shm`, `restore_marker.json`,
+///   `restore_marker.json.tmp`, `lifeweave.db.old`, `_restore_candidate.db`.
 ///
-/// Detects and refuses to proceed if:
+/// Returns `StartupDisposition::ExistingOrRecovered` when any evidence of prior activity
+/// exists (DB file present, marker present, or DB present with WAL/SHM siblings).
+///
+/// Fails closed when:
+/// - WAL or SHM siblings exist but the main DB is absent (partial close or truncation).
 /// - A `.tmp` marker exists without a corresponding final marker (interrupted atomic write).
-/// - Recovery artifacts (`.old`, candidate) exist without a marker (marker write failed
-///   or cleanup failed after a previous interrupted restore).
-///
-/// Cleans up a stale `.tmp` when both `.tmp` and final marker are present (the rename
-/// succeeded; the tmp is leftover from a prior write cycle).
-pub fn preflight_startup_check(db_path: &Path) -> Result<(), BackupError> {
+/// - Recovery artifacts (`.old`, candidate) exist without a marker.
+pub fn preflight_startup_check(db_path: &Path) -> Result<StartupDisposition, BackupError> {
     let db_dir = db_path.parent().unwrap_or(Path::new("."));
     let marker_path = db_dir.join("restore_marker.json");
     let tmp_marker_str = format!("{}.tmp", marker_path.to_string_lossy());
     let tmp_marker_path = PathBuf::from(&tmp_marker_str);
     let (old_path, candidate_path) = derive_sibling_paths(db_path);
 
+    let db_name = db_path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("lifeweave.db");
+    let wal_path = db_dir.join(format!("{db_name}-wal"));
+    let shm_path = db_dir.join(format!("{db_name}-shm"));
+
+    let has_db = db_path.exists();
+    let has_wal = wal_path.exists();
+    let has_shm = shm_path.exists();
     let has_tmp = tmp_marker_path.exists();
     let has_marker = marker_path.exists();
     let has_old = old_path.exists();
     let has_candidate = candidate_path.exists();
+
+    // WAL or SHM without the main DB file indicates a partial close or filesystem
+    // truncation. Fail closed; do not create a blank DB over these artifacts.
+    if (has_wal || has_shm) && !has_db {
+        return Err(BackupError::RecoveryAmbiguous);
+    }
 
     if has_tmp && !has_marker {
         // Tmp without final: the atomic marker write was interrupted mid-rename.
@@ -235,14 +319,19 @@ pub fn preflight_startup_check(db_path: &Path) -> Result<(), BackupError> {
         let _ = std::fs::remove_file(&tmp_marker_path);
     }
 
-    // Clean state: first run or normal startup.
-    if !has_marker && !has_old && !has_candidate {
-        return Ok(());
+    // Truly clean state: no DB, no WAL/SHM, no marker, no artifacts.
+    if !has_db && !has_wal && !has_shm && !has_marker && !has_old && !has_candidate {
+        return Ok(StartupDisposition::PristineFirstRun);
     }
 
     // Marker present: recover_if_interrupted will handle it.
     if has_marker {
-        return Ok(());
+        return Ok(StartupDisposition::ExistingOrRecovered);
+    }
+
+    // DB exists without any recovery artifacts: normal startup.
+    if has_db && !has_old && !has_candidate {
+        return Ok(StartupDisposition::ExistingOrRecovered);
     }
 
     // Recovery artifacts without a marker. Either the marker write failed during
@@ -272,23 +361,25 @@ pub fn recover_if_interrupted(marker_path: &Path, db_path: &Path) -> Result<(), 
         RestoreStage::Prepared => {
             // Interrupted before any rename. Live DB must still be at db_path.
             // Candidate (if any) is a staging copy that was never installed.
-            let _ = std::fs::remove_file(&candidate_path);
-
             match (db_path.exists(), old_path.exists()) {
                 (true, _) => {
-                    // Normal case: live DB is intact.
+                    // Normal case: live DB is intact. Candidate is stale staging.
+                    let _ = std::fs::remove_file(&candidate_path);
                     RestoreMarker::remove(marker_path);
                     Ok(())
                 }
                 (false, true) => {
-                    // Unusual: live missing but old exists. Shouldn't happen at Prepared
-                    // (old is created only during LiveMovedAside), but recover anyway.
-                    std::fs::rename(&old_path, db_path).map_err(BackupError::Io)?;
+                    // Unusual: live missing but old exists. Restore old first, then
+                    // clean up candidate (which is no longer needed once authority is
+                    // established).
+                    recovery_rename(&old_path, db_path).map_err(BackupError::Io)?;
+                    let _ = std::fs::remove_file(&candidate_path);
                     RestoreMarker::remove(marker_path);
                     Ok(())
                 }
                 (false, false) => {
                     // Both missing. No copy of the database exists. Fail closed.
+                    // Preserve candidate (the only artifact, even if useless).
                     Err(BackupError::RecoveryAmbiguous)
                 }
             }
@@ -296,29 +387,40 @@ pub fn recover_if_interrupted(marker_path: &Path, db_path: &Path) -> Result<(), 
 
         RestoreStage::LiveMovedAside => {
             // rename(live → old) succeeded; rename(candidate → live) did not.
-            // Candidate (if any) is stale.
-            let _ = std::fs::remove_file(&candidate_path);
-
             match (db_path.exists(), old_path.exists()) {
                 (false, true) => {
-                    // Normal recovery: rename old → live.
-                    std::fs::rename(&old_path, db_path).map_err(BackupError::Io)?;
+                    // Normal recovery: rename old → live, then clean up.
+                    recovery_rename(&old_path, db_path).map_err(BackupError::Io)?;
+                    let _ = std::fs::remove_file(&candidate_path);
                     RestoreMarker::remove(marker_path);
                     Ok(())
                 }
                 (true, false) => {
-                    // Live is somehow present but old is missing. The marker says live was
-                    // moved aside, so whatever is at live_path is of unknown provenance.
-                    // Fail closed: do not delete this file; do not remove old.
-                    Err(BackupError::RecoveryAmbiguous)
+                    // Live present, old absent. This occurs after a successful rollback
+                    // that crashed before cleaning up the marker: old was renamed back to
+                    // live_path in a prior run. Validate live and proceed if it is a
+                    // valid database.
+                    if !validate_for_recovery(db_path) {
+                        return Err(BackupError::PostSwapValidationFailed(
+                            "live DB failed recovery validation during LiveMovedAside replay"
+                                .into(),
+                        ));
+                    }
+                    let _ = std::fs::remove_file(&candidate_path);
+                    RestoreMarker::remove(marker_path);
+                    Ok(())
                 }
                 (true, true) => {
-                    // Both exist. Cannot determine which is authoritative. Fail closed.
-                    // Neither file is deleted; manual or support-assisted recovery needed.
-                    Err(BackupError::RecoveryAmbiguous)
+                    // Both exist. Old is authoritative (it is the original DB; whatever
+                    // is at live_path is suspect). Remove the suspect file, restore old.
+                    std::fs::remove_file(db_path).map_err(BackupError::Io)?;
+                    recovery_rename(&old_path, db_path).map_err(BackupError::Io)?;
+                    let _ = std::fs::remove_file(&candidate_path);
+                    RestoreMarker::remove(marker_path);
+                    Ok(())
                 }
                 (false, false) => {
-                    // Both missing. No database. Fatal.
+                    // Both missing. No database. Fail closed.
                     Err(BackupError::RecoveryAmbiguous)
                 }
             }
@@ -326,57 +428,54 @@ pub fn recover_if_interrupted(marker_path: &Path, db_path: &Path) -> Result<(), 
 
         RestoreStage::CandidateInstalled => {
             // Both renames succeeded. live_path has the unvalidated candidate;
-            // old_path has the original. The staging candidate file was renamed away.
-            let _ = std::fs::remove_file(&candidate_path);
-
+            // old_path has the original (if rollback hasn't started).
             match (db_path.exists(), old_path.exists()) {
                 (true, true) => {
-                    // Normal conservative rollback: restore the original.
-                    // Remove the unvalidated candidate at live_path first.
+                    // Conservative rollback: old is authoritative. Remove the
+                    // unvalidated candidate at live_path, then restore old.
                     std::fs::remove_file(db_path).map_err(BackupError::Io)?;
-                    std::fs::rename(&old_path, db_path).map_err(BackupError::Io)?;
+                    recovery_rename(&old_path, db_path).map_err(BackupError::Io)?;
+                    let _ = std::fs::remove_file(&candidate_path);
                     RestoreMarker::remove(marker_path);
                     Ok(())
                 }
                 (true, false) => {
-                    // Old missing. Live is the only copy but we cannot confirm whether
-                    // it is the original or the unvalidated candidate. Fail closed.
+                    // Old missing. Live is the only copy; cannot confirm its provenance.
                     Err(BackupError::RecoveryAmbiguous)
                 }
                 (false, true) => {
-                    // Live missing but old exists. The candidate rename to live must have
-                    // partially succeeded then live was deleted. Old is still available.
-                    // Per spec: explicit recovery error (do not silently rename old here
-                    // since we don't know if live_path is safe to write to).
-                    Err(BackupError::RecoveryAmbiguous)
+                    // Live missing, old present. The candidate was removed during a
+                    // prior rollback attempt but the old→live rename did not complete.
+                    // Old is the authoritative original; restore it.
+                    recovery_rename(&old_path, db_path).map_err(BackupError::Io)?;
+                    let _ = std::fs::remove_file(&candidate_path);
+                    RestoreMarker::remove(marker_path);
+                    Ok(())
                 }
-                (false, false) => {
-                    // Both missing. Fatal.
-                    Err(BackupError::RecoveryAmbiguous)
-                }
+                (false, false) => Err(BackupError::RecoveryAmbiguous),
             }
         }
 
         RestoreStage::ReopenedValidated => {
             // Candidate was validated during restore. live_path has the new DB.
-            // old_path is stale cleanup. Candidate staging file was already renamed away.
-            let _ = std::fs::remove_file(&candidate_path);
-
+            // old_path is stale; candidate staging file was already renamed to live.
             if !db_path.exists() {
-                // Live gone. Keep old if present; fail closed.
                 return Err(BackupError::RecoveryAmbiguous);
             }
 
-            if !is_valid_sqlite_header(db_path) {
-                // Live exists but does not start with the SQLite magic bytes.
-                // Keep old; fail closed so the user can restore from safety backup.
+            if !validate_for_recovery(db_path) {
+                // Live exists but fails full validation. Keep old for recovery.
                 return Err(BackupError::PostSwapValidationFailed(
-                    "live DB failed SQLite header check during startup recovery".into(),
+                    "live DB failed recovery validation during ReopenedValidated replay".into(),
                 ));
             }
 
-            // Live looks good. Remove stale old and clean up.
-            let _ = std::fs::remove_file(&old_path);
+            // Live is valid. Attempt to remove stale old. If removal fails, keep
+            // the marker at ReopenedValidated so the next startup can retry the
+            // cleanup. Live remains usable.
+            if recovery_remove(&old_path).is_err() {
+                return Ok(());
+            }
             RestoreMarker::remove(marker_path);
             Ok(())
         }
@@ -398,9 +497,29 @@ pub(super) fn set_marker_write_fail_at(writes_before_fail: i32) {
     MARKER_WRITE_FAIL_AT.with(|c| c.set(writes_before_fail));
 }
 
+// cfg(test) failpoints for recovery_remove and recovery_rename.
+// Thread-local so parallel tests cannot interfere with each other.
+#[cfg(test)]
+thread_local! {
+    static RECOVERY_REMOVE_FAIL: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+    static RECOVERY_RENAME_FAIL: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+#[cfg(test)]
+pub(super) fn set_recovery_remove_fail(fail: bool) {
+    RECOVERY_REMOVE_FAIL.with(|c| c.set(fail));
+}
+
+#[cfg(test)]
+pub(super) fn set_recovery_rename_fail(fail: bool) {
+    RECOVERY_RENAME_FAIL.with(|c| c.set(fail));
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::infrastructure::sqlite::connection::open_file_connection;
+    use crate::infrastructure::sqlite::migrations::run_migrations;
     use std::sync::atomic::{AtomicU32, Ordering};
 
     static COUNTER: AtomicU32 = AtomicU32::new(0);
@@ -425,6 +544,13 @@ mod tests {
             op_id: "test-op".into(),
             stage,
         }
+    }
+
+    /// Creates a real, fully-migrated SQLite database at `path` for tests that
+    /// require full connection validation (not just header bytes).
+    fn make_real_db(path: &Path) {
+        let mut conn = open_file_connection(path).expect("open_file_connection failed");
+        run_migrations(&mut conn).expect("run_migrations failed");
     }
 
     fn make_paths(dir: &Path) -> (PathBuf, PathBuf, PathBuf, PathBuf, PathBuf) {
@@ -713,23 +839,25 @@ mod tests {
         assert!(!marker_path.exists());
     }
 
-    #[test] // test-20: LiveMovedAside + live and old both exist → fail closed
-    fn live_moved_aside_both_present_fails_closed() {
+    #[test] // test-20: LiveMovedAside + live and old both exist → old is authoritative
+    fn live_moved_aside_both_present_restores_old() {
         let dir = temp_dir();
-        let (db, old, _, marker_path, _) = make_paths(&dir);
+        let (db, old, cand, marker_path, _) = make_paths(&dir);
         write_bytes(&db, b"suspect at live_path");
         write_bytes(&old, b"original db");
+        write_bytes(&cand, b"stale candidate");
         make_marker(RestoreStage::LiveMovedAside)
             .write(&marker_path)
             .unwrap();
 
-        let result = recover_if_interrupted(&marker_path, &db);
-        assert!(
-            matches!(result, Err(BackupError::RecoveryAmbiguous)),
-            "expected RecoveryAmbiguous, got {result:?}"
-        );
-        assert!(db.exists(), "live must be preserved");
-        assert!(old.exists(), ".old must be preserved");
+        recover_if_interrupted(&marker_path, &db).unwrap();
+
+        assert!(db.exists(), "original must be at live_path after rollback");
+        let content = std::fs::read(&db).unwrap();
+        assert_eq!(content, b"original db", "live must have original content");
+        assert!(!old.exists(), ".old must be gone after rename");
+        assert!(!cand.exists(), "candidate must be cleaned up");
+        assert!(!marker_path.exists(), "marker must be removed");
     }
 
     #[test] // test-21: LiveMovedAside + neither exists → fail closed
@@ -786,34 +914,34 @@ mod tests {
         assert!(db.exists(), "live must be preserved");
     }
 
-    #[test] // test-24: CandidateInstalled + old exists but live missing → explicit error
-    fn candidate_installed_live_missing_old_present_fails_closed() {
+    #[test] // test-24: CandidateInstalled + old exists but live missing → restores old
+    fn candidate_installed_live_missing_old_present_restores_old() {
         let dir = temp_dir();
-        let (db, old, _, marker_path, _) = make_paths(&dir);
+        let (db, old, cand, marker_path, _) = make_paths(&dir);
         write_bytes(&old, b"original db");
+        write_bytes(&cand, b"stale candidate");
         make_marker(RestoreStage::CandidateInstalled)
             .write(&marker_path)
             .unwrap();
 
-        let result = recover_if_interrupted(&marker_path, &db);
-        assert!(
-            matches!(result, Err(BackupError::RecoveryAmbiguous)),
-            "expected RecoveryAmbiguous, got {result:?}"
-        );
-        assert!(old.exists(), ".old must be preserved");
-        assert!(!db.exists(), "blank DB must not be created");
+        recover_if_interrupted(&marker_path, &db).unwrap();
+
+        assert!(db.exists(), "original must be at live_path after restore");
+        let content = std::fs::read(&db).unwrap();
+        assert_eq!(content, b"original db", "live must have original content");
+        assert!(!old.exists(), ".old must be gone after rename");
+        assert!(!cand.exists(), "candidate must be cleaned up");
+        assert!(!marker_path.exists(), "marker must be removed");
     }
 
     // ── Filesystem reconciliation: ReopenedValidated (tests 25–27) ───────────
 
-    #[test] // test-25: ReopenedValidated + valid live + old
-    fn reopened_validated_valid_live_removes_old() {
+    #[test] // test-25: ReopenedValidated + real valid live + old → removes both old and marker
+    fn reopened_validated_real_valid_live_removes_old() {
         let dir = temp_dir();
         let (db, old, _, marker_path, _) = make_paths(&dir);
-        // Write real SQLite magic header so is_valid_sqlite_header passes.
-        let mut hdr = b"SQLite format 3\0".to_vec();
-        hdr.extend_from_slice(&[0u8; 84]);
-        write_bytes(&db, &hdr);
+        // Use a real, fully-migrated SQLite database so validate_for_recovery passes.
+        make_real_db(&db);
         write_bytes(&old, b"original db (stale)");
         make_marker(RestoreStage::ReopenedValidated)
             .write(&marker_path)
@@ -823,7 +951,7 @@ mod tests {
 
         assert!(db.exists(), "new DB must remain at live_path");
         assert!(!old.exists(), ".old must be removed");
-        assert!(!marker_path.exists());
+        assert!(!marker_path.exists(), "marker must be removed");
     }
 
     #[test] // test-26: ReopenedValidated + corrupt live + valid old → fail closed
@@ -879,5 +1007,206 @@ mod tests {
         );
         assert!(old.exists(), ".old must not be deleted");
         assert!(!db.exists(), "blank DB must not be created");
+    }
+
+    // ── StartupDisposition and WAL/SHM detection ──────────────────────────────
+
+    #[test]
+    fn pristine_first_run_permits_creation() {
+        let dir = temp_dir();
+        let (db, _, _, _, _) = make_paths(&dir);
+        // No DB, no WAL, no SHM, no marker, no old, no candidate.
+        let result = preflight_startup_check(&db);
+        assert!(
+            matches!(result, Ok(StartupDisposition::PristineFirstRun)),
+            "expected PristineFirstRun, got {result:?}"
+        );
+    }
+
+    #[test]
+    fn existing_db_returns_existing_or_recovered() {
+        let dir = temp_dir();
+        let (db, _, _, _, _) = make_paths(&dir);
+        write_bytes(&db, b"some database content");
+        let result = preflight_startup_check(&db);
+        assert!(
+            matches!(result, Ok(StartupDisposition::ExistingOrRecovered)),
+            "expected ExistingOrRecovered, got {result:?}"
+        );
+    }
+
+    #[test]
+    fn missing_main_plus_wal_fails_closed() {
+        let dir = temp_dir();
+        let (db, _, _, _, _) = make_paths(&dir);
+        let wal_path = dir.join("lifeweave.db-wal");
+        write_bytes(&wal_path, b"wal content");
+        // DB file does not exist.
+        let result = preflight_startup_check(&db);
+        assert!(
+            matches!(result, Err(BackupError::RecoveryAmbiguous)),
+            "expected RecoveryAmbiguous for WAL without DB, got {result:?}"
+        );
+        assert!(wal_path.exists(), "WAL must not be deleted by preflight");
+    }
+
+    #[test]
+    fn missing_main_plus_shm_fails_closed() {
+        let dir = temp_dir();
+        let (db, _, _, _, _) = make_paths(&dir);
+        let shm_path = dir.join("lifeweave.db-shm");
+        write_bytes(&shm_path, b"shm content");
+        // DB file does not exist.
+        let result = preflight_startup_check(&db);
+        assert!(
+            matches!(result, Err(BackupError::RecoveryAmbiguous)),
+            "expected RecoveryAmbiguous for SHM without DB, got {result:?}"
+        );
+        assert!(shm_path.exists(), "SHM must not be deleted by preflight");
+    }
+
+    #[test]
+    fn marker_present_returns_existing_or_recovered() {
+        let dir = temp_dir();
+        let (db, _, _, marker_path, _) = make_paths(&dir);
+        make_marker(RestoreStage::Prepared)
+            .write(&marker_path)
+            .unwrap();
+        // No DB file; but marker is present → ExistingOrRecovered, not PristineFirstRun.
+        let result = preflight_startup_check(&db);
+        assert!(
+            matches!(result, Ok(StartupDisposition::ExistingOrRecovered)),
+            "expected ExistingOrRecovered when marker present, got {result:?}"
+        );
+    }
+
+    // ── LiveMovedAside replay: live present, old absent ───────────────────────
+
+    #[test]
+    fn live_moved_aside_live_present_old_absent_validates_and_proceeds() {
+        let dir = temp_dir();
+        let (db, _, cand, marker_path, _) = make_paths(&dir);
+        // Replay scenario: old was successfully renamed back to live_path in a
+        // prior run, but the marker cleanup failed before completion.
+        make_real_db(&db);
+        write_bytes(&cand, b"stale candidate");
+        make_marker(RestoreStage::LiveMovedAside)
+            .write(&marker_path)
+            .unwrap();
+
+        recover_if_interrupted(&marker_path, &db).unwrap();
+
+        assert!(db.exists(), "live DB must still be present");
+        assert!(!cand.exists(), "stale candidate must be removed");
+        assert!(!marker_path.exists(), "marker must be removed");
+    }
+
+    #[test]
+    fn live_moved_aside_live_present_old_absent_invalid_fails_closed() {
+        let dir = temp_dir();
+        let (db, _, cand, marker_path, _) = make_paths(&dir);
+        write_bytes(&db, b"not a valid sqlite file at all");
+        write_bytes(&cand, b"stale candidate");
+        make_marker(RestoreStage::LiveMovedAside)
+            .write(&marker_path)
+            .unwrap();
+
+        let result = recover_if_interrupted(&marker_path, &db);
+        assert!(
+            matches!(result, Err(BackupError::PostSwapValidationFailed(_))),
+            "invalid live must fail closed, got {result:?}"
+        );
+        assert!(db.exists(), "live must be preserved");
+        assert!(cand.exists(), "candidate must be preserved on failure");
+        assert!(marker_path.exists(), "marker must be preserved on failure");
+    }
+
+    // ── ReopenedValidated: old deletion failure keeps marker for retry ─────────
+
+    #[test]
+    fn old_deletion_failure_after_validated_commit_keeps_marker_replayable() {
+        let dir = temp_dir();
+        let (db, old, _, marker_path, _) = make_paths(&dir);
+        make_real_db(&db);
+        write_bytes(&old, b"stale original");
+        make_marker(RestoreStage::ReopenedValidated)
+            .write(&marker_path)
+            .unwrap();
+
+        // Inject old-removal failure.
+        set_recovery_remove_fail(true);
+        let result = recover_if_interrupted(&marker_path, &db);
+        set_recovery_remove_fail(false);
+
+        // Live is usable; marker is kept at ReopenedValidated for retry.
+        assert!(
+            result.is_ok(),
+            "must return Ok even when old deletion fails: {result:?}"
+        );
+        assert!(db.exists(), "live DB must remain usable");
+        assert!(
+            old.exists(),
+            ".old must still exist (removal was injected to fail)"
+        );
+        assert!(marker_path.exists(), "marker must be kept for retry");
+
+        // Second call: old removal now succeeds → cleanup completes.
+        recover_if_interrupted(&marker_path, &db).unwrap();
+        assert!(!old.exists(), ".old must be removed on retry");
+        assert!(!marker_path.exists(), "marker must be removed on retry");
+        assert!(db.exists(), "live DB must still be present after cleanup");
+    }
+
+    // ── Rename failure preserves all artifacts ────────────────────────────────
+
+    #[test]
+    fn recovery_rename_failure_preserves_all_artifacts() {
+        let dir = temp_dir();
+        let (db, old, cand, marker_path, _) = make_paths(&dir);
+        write_bytes(&old, b"original db");
+        write_bytes(&cand, b"stale candidate");
+        make_marker(RestoreStage::LiveMovedAside)
+            .write(&marker_path)
+            .unwrap();
+
+        set_recovery_rename_fail(true);
+        let result = recover_if_interrupted(&marker_path, &db);
+        set_recovery_rename_fail(false);
+
+        assert!(
+            matches!(result, Err(BackupError::Io(_))),
+            "rename failure must return Io error, got {result:?}"
+        );
+        assert!(!db.exists(), "live DB must not exist (rename failed)");
+        assert!(old.exists(), ".old must be preserved when rename fails");
+        assert!(
+            cand.exists(),
+            "candidate must be preserved when rename fails"
+        );
+        assert!(
+            marker_path.exists(),
+            "marker must be preserved when rename fails"
+        );
+    }
+
+    // ── Idempotency: second call after clean recovery is a no-op ─────────────
+
+    #[test]
+    fn recovery_invoked_twice_is_idempotent() {
+        let dir = temp_dir();
+        let (db, old, _, marker_path, _) = make_paths(&dir);
+        write_bytes(&old, b"original db");
+        make_marker(RestoreStage::LiveMovedAside)
+            .write(&marker_path)
+            .unwrap();
+
+        // First call: restores old to live, removes marker.
+        recover_if_interrupted(&marker_path, &db).unwrap();
+        assert!(db.exists());
+        assert!(!marker_path.exists());
+
+        // Second call: no marker → returns Ok immediately.
+        recover_if_interrupted(&marker_path, &db).unwrap();
+        assert!(db.exists(), "live DB must remain after idempotent call");
     }
 }
