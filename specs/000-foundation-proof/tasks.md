@@ -55,6 +55,27 @@
 > hardened with checkpoint+drop+fresh-conn to avoid Windows ERROR_SHARING_VIOLATION;
 > test order corrected to match real restore flow (shutdown before rename). 138
 > Rust tests pass.
+>
+> **Stage E.1c Final Recovery Corrections** (commit `04ab588`): Four remaining
+> gaps in the lifecycle recovery contract closed. (A) `preflight_startup_check`
+> now returns `StartupDisposition` (`PristineFirstRun` / `ExistingOrRecovered`);
+> `lib.rs` calls `open_existing_file_connection` for `ExistingOrRecovered` to
+> prevent blank DB creation over recovery state; WAL/SHM present without main DB
+> fails closed. (B) Candidate is no longer deleted before the authoritative copy
+> is established — each stage renames/validates first, then cleans candidate, so
+> at least one copy survives a mid-rename crash. (C) Recovery matrix replay-safe:
+> `CandidateInstalled (false, true)` now restores old instead of
+> `RecoveryAmbiguous`; `LiveMovedAside (true, true)` removes suspect live and
+> restores old (old is authoritative); `LiveMovedAside (true, false)` validates
+> live via full SQLite connection and proceeds if valid (handles marker-cleanup
+> replay); `ReopenedValidated` replaces 16-byte magic header check with
+> `validate_for_recovery` (integrity_check + fk_check + schema_migrations readable
+> + schema_version ≤ max_supported). (D) If `.old` deletion fails in
+> `ReopenedValidated`, marker is preserved at `ReopenedValidated` (not removed) so
+> next startup can retry; live remains usable. `RestoreMarker::write` comment
+> corrected to describe the real guarantee. `recovery_remove`/`recovery_rename`
+> helpers added with thread-local failpoints. 148 Rust tests pass (10 new
+> lifecycle tests); 18 frontend tests pass; clippy clean; fmt clean.
 
 - [x] SQLite Online Backup API. — `rusqlite::backup::Backup::new(live_conn, &mut staging_conn).run_to_completion(100, Duration::ZERO, None)` used in `engine.rs` (backup), `restore.rs` (safety copy), and `lifecycle.rs` recovery; `rusqlite` `"backup"` feature enabled in `Cargo.toml` (commit `9edb5db`).
 - [x] Staging. — `backup_db` creates `.staging_{unix_ms}/` via `Backup` API, renames to final dir after checksum/manifest; `restore_db` copies backup DB to `_restore_candidate.db` under app DB dir (never renames `backup_dir/lifeweave.db`) so same package can be restored multiple times; staging artifacts cleaned on failure; `backup_package_is_not_mutated_by_restore` and `same_backup_can_be_restored_twice` tests confirm (commits `9edb5db`, `63281ce`).
@@ -64,8 +85,8 @@
 - [x] Automatic pre-restore safety copy/path. — Safety backup staged to `_safety_staging/`, integrity-checked, then atomically published to `_safety/`; previous `_safety/` kept as `_safety_old/` until new copy is verified so a staging failure leaves the prior valid copy intact; `restore_creates_safety_backup_first` and `valid_safety_backup_preserved_when_restore_fails_before_safety_step` tests confirm (commits `9edb5db`, Blocker-F fix `63281ce`).
 - [x] Integrity and foreign-key checks. — Pre-swap: `PRAGMA integrity_check` + `PRAGMA foreign_key_check` on backup file via `open_readonly_connection` (no WAL mode set; backup package not mutated); FK query errors propagate as `BackupError::ForeignKeyCheckQueryError` (not silenced); post-swap: integrity + FK + PRAGMA re-checked on newly installed DB before deleting `.old`; `restore_rejects_fk_violation_in_backup_package` and `fk_check_query_error_is_a_distinct_propagated_variant` tests confirm (commits `9edb5db`, Blockers E+FK-propagation `63281ce`).
 - [x] Close/atomic swap/reopen. — `seal_worker()` blocks new `execute()` calls (returns `Maintenance`) before shutdown; `shutdown()` closes connection and flushes WAL; Windows-safe rename sequence: `rename(live→old)` → `rename(candidate→live)`; `reopen_and_validate` runs migrations + post-swap validation before installing worker; `execute_blocked_while_worker_sealed` and `two_concurrent_restores_are_serialized` tests confirm gate (commits `9edb5db`, Blockers C+A fix `63281ce`).
-- [x] Failure rollback. — Durable `restore_marker.json` written at each rename stage (`Prepared / LiveMovedAside / CandidateInstalled / ReopenedValidated`); `recover_if_interrupted()` called at startup before DB open (prevents blank-DB creation); all rollback paths guarantee a usable worker via `reopen_worker` or `unseal_worker`; `startup_recovery_with_live_moved_aside_marker_preserves_db`, `startup_recovery_from_candidate_installed_restores_original_db`, `open_existing_file_connection_errors_on_absent_file`, `failed_restore_leaves_domain_commands_usable` tests confirm (commits `9edb5db`, Blockers A+D fix `63281ce`, proof tests `9d58544`).
-- [x] Round-trip test. — `round_trip_restore_recovers_exact_data`: create record → backup → archive → restore → `list_active` returns original; 106 Rust tests total pass (18 restore, 7 engine, 6 lifecycle, 3 manifest, 2 checksum, 7 runtime, 13 repo, 9 migration, 5 connection, 5 worker, 12 domain, 10 ipc); 18 frontend tests pass; `cargo clippy -- -D warnings` clean; `cargo fmt --check` clean (commits `9edb5db`, `f02b3c8`, `3c1de92`, `63281ce`, `9d58544`).
+- [x] Failure rollback. — Durable `restore_marker.json` written at each rename stage (`Prepared / LiveMovedAside / CandidateInstalled / ReopenedValidated`); `recover_if_interrupted()` called at startup before DB open (prevents blank-DB creation); all rollback paths guarantee a usable worker via `reopen_worker` or `unseal_worker`; candidate never deleted before authoritative copy established; `ReopenedValidated` old-removal failure keeps marker for retry (live remains usable); full matrix replay-safe (E.1c, commit `04ab588`); `startup_recovery_with_live_moved_aside_marker_preserves_db`, `startup_recovery_from_candidate_installed_restores_original_db`, `open_existing_file_connection_errors_on_absent_file`, `failed_restore_leaves_domain_commands_usable`, `old_deletion_failure_after_validated_commit_keeps_marker_replayable`, `candidate_installed_live_missing_old_present_restores_old` tests confirm (commits `9edb5db`, `63281ce`, `9d58544`, `80c1b60`, `04ab588`).
+- [x] Round-trip test. — `round_trip_restore_recovers_exact_data`: create record → backup → archive → restore → `list_active` returns original; 148 Rust tests total pass (after E.1c: 28 lifecycle, 18 restore, 7 engine, 3 manifest, 2 checksum, 9 runtime, 13 repo, 9 migration, 5 connection, 6 worker, 12 domain, 10 ipc); 18 frontend tests pass; `cargo clippy -- -D warnings` clean; `cargo fmt --check` clean (commits `9edb5db`, `f02b3c8`, `3c1de92`, `63281ce`, `9d58544`, `80c1b60`, `04ab588`).
 
 ## Quality
 - [ ] Strict CSP/capability review.
