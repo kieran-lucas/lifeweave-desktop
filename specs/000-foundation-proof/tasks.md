@@ -22,13 +22,13 @@
 - [x] Add tracing initialization. — `init_tracing()` in `lib.rs` uses `tracing-subscriber` with `env-filter`; `try_init()` prevents panic on re-init in tests; no network, no personal content logged.
 
 ## SQLite
-- [ ] Add bundled rusqlite.
-- [ ] Dedicated worker and bounded queue.
-- [ ] WAL/foreign keys/busy timeout.
-- [ ] Migration runner and initial migration.
-- [ ] Temporary DB test helper.
-- [ ] Restart persistence.
-- [ ] Clean close/reopen behavior.
+- [x] Add bundled rusqlite. — `rusqlite = { version = "=0.40.1", features = ["bundled"] }` in `Cargo.toml`; `libsqlite3-sys v0.38.1` compiled from source; release binary includes SQLite; `Lifeweave_0.0.0_x64-setup.exe` produced with bundled SQLite (`cargo test --locked` 22/22 pass).
+- [x] Dedicated worker and bounded queue. — `infrastructure::sqlite::worker::DbWorkerHandle`: single thread named "lifeweave-db"; `sync_channel(32)` bounded command queue; closure-based `execute<F,R>` dispatches work to worker thread; `worker_executes_on_different_thread` test asserts caller thread ID ≠ worker thread ID.
+- [x] WAL/foreign keys/busy timeout. — `open_file_connection` sets and asserts `journal_mode=wal`, `foreign_keys=1`, `busy_timeout=5000`, `synchronous=NORMAL`; `open_memory_connection` asserts `foreign_keys=1` and `busy_timeout=5000` (WAL unavailable for `:memory:`); 4 PRAGMA tests pass.
+- [x] Migration runner and initial migration. — `run_migrations(&mut Connection)` bootstraps `schema_migrations` table via `CREATE TABLE IF NOT EXISTS`, then applies any pending entries from the static `MIGRATIONS` array in order; `MIGRATIONS` is empty for Stage C (Stage D adds migration 1: FoundationRecord); applied_at written via SQLite `strftime('%Y-%m-%dT%H:%M:%SZ','now')`; no external time crate.
+- [x] Temporary DB test helper. — `open_memory_connection()` for in-memory tests; `open_file_connection(&temp_path)` with `AtomicU32` counter for unique paths and explicit WAL/SHM cleanup in file-based tests; no `tempfile` crate added.
+- [x] Restart persistence. — `reopen_preserves_schema_version` test: open file DB, run migrations, insert row (version=999), drop connection, reopen, assert version=999 persisted.
+- [x] Clean close/reopen behavior. — `clean_close_and_reopen_preserves_data` test: open file DB, run migrations, drop connection (WAL checkpointed on clean close), reopen, run migrations again (idempotent), assert 0 rows; `worker_dropped_joins_without_panic` test: drop handle → worker thread exits cleanly.
 
 ## FoundationRecord
 - [ ] Domain validation.
