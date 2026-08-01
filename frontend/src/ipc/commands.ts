@@ -10,14 +10,20 @@ export function healthCheck(): Promise<HealthCheck> {
   return invoke<HealthCheck>("health_check");
 }
 
+/** Returns all active (non-archived) foundation records, ordered by created_at ASC. */
+export function listFoundationRecords(): Promise<FoundationRecordView[]> {
+  return invoke<FoundationRecordView[]>("list_foundation_records");
+}
+
+/** Returns all archived foundation records, ordered by created_at ASC. */
+export function listArchivedFoundationRecords(): Promise<FoundationRecordView[]> {
+  return invoke<FoundationRecordView[]>("list_archived_foundation_records");
+}
+
 export function createFoundationRecord(
   input: CreateFoundationRecordInput,
 ): Promise<FoundationRecordView> {
   return invoke<FoundationRecordView>("create_foundation_record", { input });
-}
-
-export function listFoundationRecords(): Promise<FoundationRecordView[]> {
-  return invoke<FoundationRecordView[]>("list_foundation_records");
 }
 
 export function updateFoundationRecord(

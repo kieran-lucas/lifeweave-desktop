@@ -32,12 +32,15 @@
 
 ## FoundationRecord
 - [x] Domain validation. — `domain::foundation_record::validate_label` trims, rejects empty/too-long (>200 chars)/control chars; 7 domain unit tests pass.
-- [x] Create/list/update/archive/restore. — `infrastructure::sqlite::foundation_record_repo`: create (SQLite-generated 32-char hex ID via `lower(hex(randomblob(16)))`), list_active (active only, `archived_at IS NULL`), update (label + revision increment), archive (sets `archived_at`), restore (clears `archived_at`); 11 repo integration tests pass including `data_survives_close_reopen` and `ids_are_unique_across_inserts`.
+- [x] Create/list/update/archive/restore. — `foundation_record_repo`: `create(id, label)` with UUIDv7 caller-supplied ID, `list_active` (active only), `list_archived` (archived only), update, archive, restore; 13 repo integration tests pass; `list_archived_foundation_records` IPC command added; frontend calls both commands in parallel on mount.
 - [x] Atomic transactions. — Every mutation in `foundation_record_repo` runs inside `conn.transaction()`; rollback on stale-revision detected before commit.
 - [x] Generated frontend contracts. — `cargo test export_ipc_bindings` generates `FoundationRecordView.ts`, `CreateFoundationRecordInput.ts`, `UpdateFoundationRecordInput.ts`, `MutateFoundationRecordInput.ts`; `git diff --exit-code` confirms no drift.
-- [x] Minimal accessible UI states. — `FoundationScreen`: loading/error/empty/list with edit-in-place, archive, restore; `aria-labelledby`, `aria-label` on all interactive elements, `role="alert"` on errors, `aria-live` on loading; 9 frontend tests pass.
-- [x] Stale-revision behavior. — `RepoError::StaleRevision` returned when `revision != expected_revision`; mapped to `IpcError::StaleRevision` in handler; `update_stale_revision_returns_stale_revision_error` and `archive_stale_revision_returns_stale_revision_error` and `restore_stale_revision_returns_stale_revision_error` all pass.
-- [x] No real user content. — All test labels are synthetic placeholders ("Test record", "My first record", etc.); no PII in any committed file.
+- [x] Minimal accessible UI states. — `FoundationScreen` calls `listFoundationRecords()` + `listArchivedFoundationRecords()` in parallel; active/archived sections rendered from separate server responses; 12 frontend tests pass.
+- [x] Stale-revision behavior. — `RepoError::StaleRevision` returned when `revision != expected_revision`; mapped to `IpcError::StaleRevision` in handler; all three stale-revision tests pass.
+- [x] No real user content. — All test labels are synthetic placeholders; no PII in any committed file.
+- [x] Stable ID (UUIDv7). — `new_uuid_v7()` in IPC layer generates time-ordered UUID v7 before INSERT; 3 UUID tests (version nibble, uniqueness, 36-char format); `uuid = { version = "1", features = ["v7"] }` added with rationale note.
+- [x] Operation ID validated. — `validate_operation_id` on all 5 mutation commands: rejects empty, >128 chars, control chars; documented as correlation-only (not idempotency); 4 op_id tests pass.
+- [x] Integration proof. — `full_archive_restore_cycle_survives_reopen`: file-based DB, create → list_active → archive → list_active empty → list_archived sees rev 1 → restore → list_active sees rev 2 → list_archived empty → close/reopen → state persists.
 
 ## Backup/restore
 - [ ] SQLite Online Backup API.

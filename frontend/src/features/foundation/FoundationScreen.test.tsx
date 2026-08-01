@@ -7,7 +7,7 @@ import { FoundationScreen } from "./FoundationScreen";
 vi.mock("../../ipc/commands");
 
 const mockRecord = {
-  id: "abc123",
+  id: "019700000000-7fff-8000-0000-000000000001",
   label: "Test record",
   created_at: "2026-01-01T00:00:00Z",
   updated_at: "2026-01-01T00:00:00Z",
@@ -17,7 +17,7 @@ const mockRecord = {
 
 const archivedRecord = {
   ...mockRecord,
-  id: "def456",
+  id: "019700000000-7fff-8000-0000-000000000002",
   label: "Archived",
   archived_at: "2026-01-02T00:00:00Z",
   revision: 1,
@@ -25,6 +25,7 @@ const archivedRecord = {
 
 beforeEach(() => {
   vi.mocked(commands.listFoundationRecords).mockResolvedValue([]);
+  vi.mocked(commands.listArchivedFoundationRecords).mockResolvedValue([]);
   vi.mocked(commands.createFoundationRecord).mockResolvedValue(mockRecord);
   vi.mocked(commands.updateFoundationRecord).mockResolvedValue({
     ...mockRecord,
@@ -37,14 +38,12 @@ beforeEach(() => {
 
 describe("FoundationScreen", () => {
   it("shows loading state initially then renders heading", async () => {
-    vi.mocked(commands.listFoundationRecords).mockResolvedValue([]);
     render(<FoundationScreen />);
     expect(screen.getByText(/Loading/)).toBeInTheDocument();
     await screen.findByRole("heading", { name: "Foundation Records" });
   });
 
-  it("shows empty state when no records", async () => {
-    vi.mocked(commands.listFoundationRecords).mockResolvedValue([]);
+  it("shows empty state when no records exist in either list", async () => {
     render(<FoundationScreen />);
     await screen.findByText(/No records yet/);
   });
@@ -57,10 +56,25 @@ describe("FoundationScreen", () => {
     await screen.findByText("Storage error");
   });
 
-  it("renders active records from list", async () => {
+  it("renders active records from list_foundation_records", async () => {
     vi.mocked(commands.listFoundationRecords).mockResolvedValue([mockRecord]);
     render(<FoundationScreen />);
     await screen.findByText("Test record");
+  });
+
+  it("renders archived records from list_archived_foundation_records", async () => {
+    vi.mocked(commands.listArchivedFoundationRecords).mockResolvedValue([
+      archivedRecord,
+    ]);
+    render(<FoundationScreen />);
+    await screen.findByRole("button", { name: "Restore Archived" });
+  });
+
+  it("calls both list commands on mount", async () => {
+    render(<FoundationScreen />);
+    await screen.findByRole("heading", { name: "Foundation Records" });
+    expect(commands.listFoundationRecords).toHaveBeenCalledTimes(1);
+    expect(commands.listArchivedFoundationRecords).toHaveBeenCalledTimes(1);
   });
 
   it("creates a record when form submitted", async () => {
@@ -84,7 +98,6 @@ describe("FoundationScreen", () => {
   });
 
   it("shows validation error when create fails", async () => {
-    vi.mocked(commands.listFoundationRecords).mockResolvedValue([]);
     vi.mocked(commands.createFoundationRecord).mockRejectedValue({
       message: "Label is required.",
     });
@@ -99,12 +112,13 @@ describe("FoundationScreen", () => {
     await screen.findByText("Label is required.");
   });
 
-  it("archives a record", async () => {
+  it("archives a record: active list empties, archived list gains the record", async () => {
     vi.mocked(commands.listFoundationRecords)
       .mockResolvedValueOnce([mockRecord])
-      .mockResolvedValueOnce([
-        { ...mockRecord, archived_at: "2026-01-02T00:00:00Z" },
-      ]);
+      .mockResolvedValueOnce([]);
+    vi.mocked(commands.listArchivedFoundationRecords)
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ ...mockRecord, archived_at: "2026-01-02T00:00:00Z", revision: 1 }]);
 
     render(<FoundationScreen />);
     await screen.findByText("Test record");
@@ -116,15 +130,21 @@ describe("FoundationScreen", () => {
         expect.objectContaining({ id: mockRecord.id, expected_revision: 0 }),
       );
     });
+    await screen.findByRole("button", { name: "Restore Test record" });
   });
 
-  it("restores an archived record", async () => {
+  it("restores an archived record: archived list empties, active list gains the record", async () => {
     vi.mocked(commands.listFoundationRecords)
-      .mockResolvedValueOnce([archivedRecord])
+      .mockResolvedValueOnce([])
       .mockResolvedValueOnce([{ ...archivedRecord, archived_at: null, revision: 2 }]);
+    vi.mocked(commands.listArchivedFoundationRecords)
+      .mockResolvedValueOnce([archivedRecord])
+      .mockResolvedValueOnce([]);
 
     render(<FoundationScreen />);
-    const restoreBtn = await screen.findByRole("button", { name: "Restore Archived" });
+    const restoreBtn = await screen.findByRole("button", {
+      name: "Restore Archived",
+    });
 
     fireEvent.click(restoreBtn);
 
@@ -133,10 +153,13 @@ describe("FoundationScreen", () => {
         expect.objectContaining({ id: archivedRecord.id }),
       );
     });
+    await screen.findByText("Archived");
+    expect(
+      screen.queryByRole("button", { name: "Restore Archived" }),
+    ).not.toBeInTheDocument();
   });
 
   it("Add button is disabled when input is empty", async () => {
-    vi.mocked(commands.listFoundationRecords).mockResolvedValue([]);
     render(<FoundationScreen />);
     await screen.findByRole("heading", { name: "Foundation Records" });
     expect(screen.getByRole("button", { name: "Add" })).toBeDisabled();

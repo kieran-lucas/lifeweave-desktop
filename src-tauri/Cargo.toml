@@ -24,6 +24,11 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 # Alternatives: system SQLite (version drift risk), sqlx (async overhead not warranted
 # for a single writer). License: MIT. Bundle impact: ~0.8 MB binary increase.
 rusqlite = { version = "=0.40.1", features = ["bundled"] }
+# Stage D: stable record IDs. UUIDv7 chosen over v4 because monotonic sort-order
+# makes pagination and debugging deterministic; over SQLite randomblob because the
+# ID is generated on the application side before INSERT, which makes testing and
+# tracing easier. License: Apache-2.0 OR MIT. Zero transitive deps beyond getrandom.
+uuid = { version = "1", features = ["v7"] }
 
 [dev-dependencies]
 ts-rs = { version = "10", features = ["serde-compat"] }

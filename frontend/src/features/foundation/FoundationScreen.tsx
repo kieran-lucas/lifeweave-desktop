@@ -4,6 +4,7 @@ import type { FoundationRecordView } from "../../ipc/generated/FoundationRecordV
 import {
   archiveFoundationRecord,
   createFoundationRecord,
+  listArchivedFoundationRecords,
   listFoundationRecords,
   restoreFoundationRecord,
   updateFoundationRecord,
@@ -17,8 +18,8 @@ type PageState =
   | { kind: "error"; message: string }
   | {
       kind: "ready";
-      records: FoundationRecordView[];
-      creating: boolean;
+      active: FoundationRecordView[];
+      archived: FoundationRecordView[];
       formError: string | null;
       edit: EditState;
     };
@@ -42,11 +43,14 @@ export function FoundationScreen() {
 
   async function load() {
     try {
-      const records = await listFoundationRecords();
+      const [active, archived] = await Promise.all([
+        listFoundationRecords(),
+        listArchivedFoundationRecords(),
+      ]);
       setState((prev) => ({
         kind: "ready",
-        records,
-        creating: false,
+        active,
+        archived,
         formError: null,
         edit: prev.kind === "ready" ? prev.edit : null,
       }));
@@ -58,12 +62,6 @@ export function FoundationScreen() {
   useEffect(() => {
     void load();
   }, []);
-
-  useEffect(() => {
-    if (state.kind === "ready" && state.creating) {
-      createInputRef.current?.focus();
-    }
-  }, [state.kind === "ready" && state.creating]);
 
   useEffect(() => {
     if (state.kind === "ready" && state.edit) {
@@ -173,8 +171,7 @@ export function FoundationScreen() {
     );
   }
 
-  const active = state.records.filter((r) => r.archived_at === null);
-  const archived = state.records.filter((r) => r.archived_at !== null);
+  const { active, archived } = state;
 
   return (
     <section className={styles.screen} aria-labelledby="fr-heading">

@@ -10,8 +10,8 @@ use infrastructure::sqlite::{
     connection::open_file_connection, migrations::run_migrations, worker::DbWorkerHandle,
 };
 use ipc::foundation_record::{
-    archive_foundation_record, create_foundation_record, list_foundation_records,
-    restore_foundation_record, update_foundation_record,
+    archive_foundation_record, create_foundation_record, list_archived_foundation_records,
+    list_foundation_records, restore_foundation_record, update_foundation_record,
 };
 
 /// Initialize the local tracing subscriber.
@@ -58,6 +58,7 @@ pub fn run() {
             ipc::health_check,
             create_foundation_record,
             list_foundation_records,
+            list_archived_foundation_records,
             update_foundation_record,
             archive_foundation_record,
             restore_foundation_record,
