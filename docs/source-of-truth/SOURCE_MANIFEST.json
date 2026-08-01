@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "source_file": "docs/source-of-truth/SIEU_DAC_TA_TICH_HOP_SAN_PHAM_CONG_NGHE_TASK_LIFE_SYSTEM(1).md",
+  "original_filename": "SIEU_DAC_TA_TICH_HOP_SAN_PHAM_CONG_NGHE_TASK_LIFE_SYSTEM(1).md",
+  "byte_count": 165171,
+  "line_count": 4637,
+  "sha256": "9c422927c09e26431d71b1ef5ab6306891a3e7c15ece0fc808bedf6f6689540a",
+  "copied_at": "2026-08-01T14:36:00+07:00",
+  "copy_policy": "byte-for-byte; do not normalize line endings or edit in place",
+  "authority": "Single Source of Truth; derived documents must not override it"
+}

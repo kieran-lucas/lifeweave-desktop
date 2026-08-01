@@ -1,0 +1,68 @@
+# Node/frontend
+node_modules/
+.pnpm-store/
+dist/
+coverage/
+.vite/
+*.tsbuildinfo
+
+# Rust/Tauri
+target/
+src-tauri/target/
+src-tauri/gen/
+*.pdb
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.pfx
+*.p12
+*.key
+*.cer
+
+# User data and SQLite
+*.sqlite
+*.sqlite3
+*.db
+*.db-wal
+*.db-shm
+AppData/
+user-data/
+backups/
+logs/
+diagnostics/
+attachments/
+assets/user/
+
+# Test/build output
+test-results/
+playwright-report/
+allure-results/
+screenshots/actual/
+screenshots/diff/
+*.profraw
+*.trace
+
+# IDE/OS
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+.idea/
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Temporary
+*.tmp
+*.temp
+*.bak
+*.swp
+~$*
+
+# Python governance tooling
+__pycache__/
+*.py[cod]

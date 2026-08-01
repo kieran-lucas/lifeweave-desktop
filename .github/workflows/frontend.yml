@@ -1,0 +1,53 @@
+name: Frontend
+
+on:
+  pull_request:
+    paths:
+      - "frontend/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "tsconfig.base.json"
+      - ".github/workflows/frontend.yml"
+  push:
+    branches: [main]
+    paths:
+      - "frontend/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "tsconfig.base.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup-phase notice
+        if: ${{ hashFiles('pnpm-lock.yaml') == '' }}
+        run: echo "pnpm-lock.yaml is not present; run Windows bootstrap before making this check required."
+      - uses: actions/setup-node@v6
+        if: ${{ hashFiles('pnpm-lock.yaml') != '' }}
+        with:
+          node-version-file: ".node-version"
+          cache: "pnpm"
+      - name: Enable pnpm
+        if: ${{ hashFiles('pnpm-lock.yaml') != '' }}
+        run: corepack enable
+      - name: Install
+        if: ${{ hashFiles('pnpm-lock.yaml') != '' }}
+        run: pnpm install --frozen-lockfile
+      - name: Typecheck
+        if: ${{ hashFiles('pnpm-lock.yaml') != '' }}
+        run: pnpm typecheck
+      - name: Test
+        if: ${{ hashFiles('pnpm-lock.yaml') != '' }}
+        run: pnpm test
+      - name: Build
+        if: ${{ hashFiles('pnpm-lock.yaml') != '' }}
+        run: pnpm build

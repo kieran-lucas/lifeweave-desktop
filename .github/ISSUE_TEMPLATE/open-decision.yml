@@ -1,0 +1,37 @@
+name: Open decision
+description: Resolve a product or architecture decision without implementation-by-assumption
+title: "[Decision] "
+labels: ["type:decision", "decision:open"]
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Exact decision
+    validations:
+      required: true
+  - type: textarea
+    id: source
+    attributes:
+      label: Source context
+      description: Cite original lines and current registry/ADR.
+    validations:
+      required: true
+  - type: textarea
+    id: options
+    attributes:
+      label: Concrete options
+      description: Include consequences, reversibility, data and UX impact.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence required
+      description: User research, prototype, benchmark, or test needed.
+    validations:
+      required: true
+  - type: textarea
+    id: recommendation
+    attributes:
+      label: Current recommendation
+      description: State uncertainty; do not implement until accepted.
