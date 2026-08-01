@@ -1,3 +1,4 @@
+pub mod backup;
 pub mod error;
 pub mod foundation_record;
 

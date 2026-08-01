@@ -10,6 +10,7 @@ use infrastructure::sqlite::{
     connection::open_file_connection, migrations::run_migrations, runtime::DatabaseRuntime,
     worker::DbWorkerHandle,
 };
+use ipc::backup::{backup_database, restore_database};
 use ipc::foundation_record::{
     archive_foundation_record, create_foundation_record, list_archived_foundation_records,
     list_foundation_records, restore_foundation_record, update_foundation_record,
@@ -63,6 +64,8 @@ pub fn run() {
             update_foundation_record,
             archive_foundation_record,
             restore_foundation_record,
+            backup_database,
+            restore_database,
         ])
         .run(tauri::generate_context!())
         .expect("failed to run Lifeweave");

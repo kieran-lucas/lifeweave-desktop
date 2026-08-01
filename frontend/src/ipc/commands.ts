@@ -1,5 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 
+import type { BackupResult } from "./generated/BackupResult";
+import type { RestoreResult } from "./generated/RestoreResult";
 import type { HealthCheck } from "./generated/HealthCheck";
 import type { FoundationRecordView } from "./generated/FoundationRecordView";
 import type { CreateFoundationRecordInput } from "./generated/CreateFoundationRecordInput";
@@ -42,4 +44,14 @@ export function restoreFoundationRecord(
   input: MutateFoundationRecordInput,
 ): Promise<void> {
   return invoke<void>("restore_foundation_record", { input });
+}
+
+/** Creates a backup package and returns the backup location and checksum. */
+export function backupDatabase(): Promise<BackupResult> {
+  return invoke<BackupResult>("backup_database");
+}
+
+/** Restores the database from the backup at backupDir. */
+export function restoreDatabase(backupDir: string): Promise<RestoreResult> {
+  return invoke<RestoreResult>("restore_database", { backupDir });
 }
