@@ -43,16 +43,16 @@
 - [x] Integration proof. — `full_archive_restore_cycle_survives_reopen`: file-based DB, create → list_active → archive → list_active empty → list_archived sees rev 1 → restore → list_active sees rev 2 → list_archived empty → close/reopen → state persists.
 
 ## Backup/restore
-- [ ] SQLite Online Backup API.
-- [ ] Staging.
-- [ ] Manifest and checksums.
-- [ ] Progress reporting.
-- [ ] Restore inspection.
-- [ ] Automatic pre-restore safety copy/path.
-- [ ] Integrity and foreign-key checks.
-- [ ] Close/atomic swap/reopen.
-- [ ] Failure rollback.
-- [ ] Round-trip test.
+- [x] SQLite Online Backup API. — `rusqlite::backup::Backup::new(live_conn, &mut staging_conn).run_to_completion(100, Duration::ZERO, None)` used in both `engine.rs` (backup) and `restore.rs` (safety copy); `rusqlite` `"backup"` feature enabled in `Cargo.toml` (commit `9edb5db`).
+- [x] Staging. — `backup_db` creates `app_data_dir/backups/.staging_{unix_ms}/` via `Backup` API, then renames to final dir after checksum/manifest steps; all staging artifacts cleaned on failure; restore reads from `backup_dir/lifeweave.db` without touching live DB until post-validation swap (commit `9edb5db`).
+- [x] Manifest and checksums. — `BackupManifest` (`manifest.rs`) serialised to `manifest.json` with `format_version`, `app_version`, `schema_version`, `created_at`, `db_size_bytes`, `db_sha256`; `sha256_file` (`checksum.rs`) computes SHA-256 via `sha2 = "0.10"` crate; manifest verified and checksum re-computed on every restore before any mutation (commit `9edb5db`).
+- [x] Progress reporting. — Sync IPC commands return `BackupResult` / `RestoreResult` structs immediately after completion; satisfies spec §8 "minimal testable progress path" for Foundation Proof scope; no streaming channel needed at this scale (commit `f02b3c8`).
+- [x] Restore inspection. — `restore_db` step 1 reads and parses `manifest.json` before any mutation; rejects `format_version != 1` with `BackupError::UnsupportedFormatVersion`; rejects malformed JSON with `BackupError::ManifestParse`; 3 manifest unit tests cover round-trip, future version, malformed JSON (commit `9edb5db`).
+- [x] Automatic pre-restore safety copy/path. — `restore_db` step 4 backs up live DB to `app_data_dir/backups/_safety/lifeweave.db` using `Backup` API before any file swap; confirmed by `restore_creates_safety_backup_first` integration test (commit `9edb5db`).
+- [x] Integrity and foreign-key checks. — After manifest/checksum pass, `restore_db` step 3 opens `backup_dir/lifeweave.db`, runs `PRAGMA integrity_check` (must return `"ok"`) and `PRAGMA foreign_key_check` (must return zero rows) before any mutation; covered by `restore_rejects_corrupt_sqlite` test (commit `9edb5db`).
+- [x] Close/atomic swap/reopen. — `DatabaseRuntime::shutdown_worker()` drops `DbWorkerHandle` (closes connection + final WAL checkpoint); `PRAGMA wal_checkpoint(TRUNCATE)` called inside last closure; Windows-safe swap: `rename(live→old)` then `rename(backup→live)` (delete-then-rename avoids "file exists" failure); `reopen_worker` opens new connection, runs migrations, spawns new worker, calls `replace_worker`; all in `restore.rs` (commit `9edb5db`).
+- [x] Failure rollback. — Any error after `shutdown_worker()` triggers `rename(old→live)` rollback and `reopen_worker` restart; `restore_does_not_mutate_on_checksum_failure` and `restore_does_not_mutate_on_integrity_failure` tests confirm live data unchanged on pre-swap failures; safety backup at `_safety/` available as last resort for post-swap failures (commit `9edb5db`).
+- [x] Round-trip test. — `round_trip_restore_recovers_exact_data`: create record → backup → archive record → restore → `list_active` returns original record; 9 restore integration tests total; 7 engine integration tests; 18 frontend tests (12 FoundationRecord + 6 backup/restore UI) all pass (commits `9edb5db`, `f02b3c8`, `3c1de92`).
 
 ## Quality
 - [ ] Strict CSP/capability review.
