@@ -20,6 +20,15 @@ pub enum DbError {
         expected: String,
         actual: String,
     },
+    /// The database was written by a newer binary. Opening it could corrupt data.
+    /// The caller must surface a user-visible upgrade prompt; do not write to the DB.
+    SchemaTooNew {
+        stored: u32,
+        supported: u32,
+    },
+    /// The migration list is malformed: versions are not strictly ascending.
+    /// This is a programmer error that must be caught in CI, not in production.
+    InvalidMigrationList,
 }
 
 impl From<rusqlite::Error> for DbError {
