@@ -1,4 +1,8 @@
-mod ipc;
+pub mod application;
+pub mod domain;
+pub mod infrastructure;
+pub mod ipc;
+pub mod platform;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
