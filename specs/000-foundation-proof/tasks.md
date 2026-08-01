@@ -47,6 +47,14 @@
 > **Stage E.1 Safety Closure** (commits `63281ce`, `9d58544`): Six blockers
 > identified after original Stage E implementation were fixed before sign-off.
 > Evidence per item is updated below to include the closure commits.
+>
+> **Stage E.1b Remaining Safety Blockers** (commit `80c1b60`): RestoreMarker no
+> longer stores paths; atomic marker writes via tmp→sync_all→rename; thread-local
+> failpoints for fault injection; preflight_startup_check + recover_if_interrupted
+> in correct startup order; RecoveryAmbiguous guard in restore_db; attempt_rollback
+> hardened with checkpoint+drop+fresh-conn to avoid Windows ERROR_SHARING_VIOLATION;
+> test order corrected to match real restore flow (shutdown before rename). 138
+> Rust tests pass.
 
 - [x] SQLite Online Backup API. — `rusqlite::backup::Backup::new(live_conn, &mut staging_conn).run_to_completion(100, Duration::ZERO, None)` used in `engine.rs` (backup), `restore.rs` (safety copy), and `lifecycle.rs` recovery; `rusqlite` `"backup"` feature enabled in `Cargo.toml` (commit `9edb5db`).
 - [x] Staging. — `backup_db` creates `.staging_{unix_ms}/` via `Backup` API, renames to final dir after checksum/manifest; `restore_db` copies backup DB to `_restore_candidate.db` under app DB dir (never renames `backup_dir/lifeweave.db`) so same package can be restored multiple times; staging artifacts cleaned on failure; `backup_package_is_not_mutated_by_restore` and `same_backup_can_be_restored_twice` tests confirm (commits `9edb5db`, `63281ce`).
