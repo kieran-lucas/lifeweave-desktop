@@ -7,7 +7,8 @@ pub mod platform;
 use tauri::Manager;
 
 use infrastructure::sqlite::{
-    connection::open_file_connection, migrations::run_migrations, worker::DbWorkerHandle,
+    connection::open_file_connection, migrations::run_migrations,
+    runtime::DatabaseRuntime, worker::DbWorkerHandle,
 };
 use ipc::foundation_record::{
     archive_foundation_record, create_foundation_record, list_archived_foundation_records,
@@ -51,7 +52,7 @@ pub fn run() {
             run_migrations(&mut conn).expect("database migration failed");
 
             let worker = DbWorkerHandle::spawn(conn);
-            app.manage(worker);
+            app.manage(DatabaseRuntime::new(db_path.clone(), worker));
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

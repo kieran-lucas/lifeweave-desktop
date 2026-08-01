@@ -6,7 +6,7 @@ use crate::domain::foundation_record::{DomainError, validate_label};
 use crate::infrastructure::sqlite::foundation_record_repo::{
     self as repo, FoundationRecordRow, RepoError,
 };
-use crate::infrastructure::sqlite::{DbError, worker::DbWorkerHandle};
+use crate::infrastructure::sqlite::{DbError, runtime::DatabaseRuntime};
 use crate::ipc::error::IpcError;
 
 #[derive(Debug, Clone, Serialize)]
@@ -116,7 +116,7 @@ fn repo_to_ipc(e: RepoError) -> IpcError {
 #[tauri::command]
 #[tracing::instrument(level = "info", skip(state, input), fields(op = %input.operation_id))]
 pub fn create_foundation_record(
-    state: State<'_, DbWorkerHandle>,
+    state: State<'_, DatabaseRuntime>,
     input: CreateFoundationRecordInput,
 ) -> Result<FoundationRecordView, IpcError> {
     validate_operation_id(&input.operation_id)?;
@@ -131,7 +131,7 @@ pub fn create_foundation_record(
 #[tauri::command]
 #[tracing::instrument(level = "info", skip(state))]
 pub fn list_foundation_records(
-    state: State<'_, DbWorkerHandle>,
+    state: State<'_, DatabaseRuntime>,
 ) -> Result<Vec<FoundationRecordView>, IpcError> {
     state
         .execute(|conn| repo::list_active(conn))
@@ -142,7 +142,7 @@ pub fn list_foundation_records(
 #[tauri::command]
 #[tracing::instrument(level = "info", skip(state))]
 pub fn list_archived_foundation_records(
-    state: State<'_, DbWorkerHandle>,
+    state: State<'_, DatabaseRuntime>,
 ) -> Result<Vec<FoundationRecordView>, IpcError> {
     state
         .execute(|conn| repo::list_archived(conn))
@@ -153,7 +153,7 @@ pub fn list_archived_foundation_records(
 #[tauri::command]
 #[tracing::instrument(level = "info", skip(state, input), fields(op = %input.operation_id))]
 pub fn update_foundation_record(
-    state: State<'_, DbWorkerHandle>,
+    state: State<'_, DatabaseRuntime>,
     input: UpdateFoundationRecordInput,
 ) -> Result<FoundationRecordView, IpcError> {
     validate_operation_id(&input.operation_id)?;
@@ -169,7 +169,7 @@ pub fn update_foundation_record(
 #[tauri::command]
 #[tracing::instrument(level = "info", skip(state, input), fields(op = %input.operation_id))]
 pub fn archive_foundation_record(
-    state: State<'_, DbWorkerHandle>,
+    state: State<'_, DatabaseRuntime>,
     input: MutateFoundationRecordInput,
 ) -> Result<(), IpcError> {
     validate_operation_id(&input.operation_id)?;
@@ -184,7 +184,7 @@ pub fn archive_foundation_record(
 #[tauri::command]
 #[tracing::instrument(level = "info", skip(state, input), fields(op = %input.operation_id))]
 pub fn restore_foundation_record(
-    state: State<'_, DbWorkerHandle>,
+    state: State<'_, DatabaseRuntime>,
     input: MutateFoundationRecordInput,
 ) -> Result<(), IpcError> {
     validate_operation_id(&input.operation_id)?;

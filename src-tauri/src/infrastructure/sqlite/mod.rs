@@ -4,8 +4,10 @@
 pub mod connection;
 pub mod foundation_record_repo;
 pub mod migrations;
+pub mod runtime;
 pub mod worker;
 
+pub use runtime::DatabaseRuntime;
 pub use worker::DbWorkerHandle;
 
 /// Errors internal to the SQLite infrastructure layer.
