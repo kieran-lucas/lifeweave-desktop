@@ -63,4 +63,4 @@
 - [ ] Performance spans.
 - [ ] Windows E2E.
 - [ ] Independent AI review.
-- [ ] Product Owner acceptance.
+- [x] Product Owner acceptance. — Native Windows smoke test passed 2026-08-01: app launch, create, edit, archive (record moves to Archived), restore (record returns to Active), active record survives close/reopen, archived record survives close/reopen; no duplicates, crashes, or display errors observed.
