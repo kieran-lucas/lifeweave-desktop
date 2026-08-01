@@ -5,15 +5,17 @@ import { App } from "./App";
 
 vi.mock("../ipc/commands", () => ({
   healthCheck: vi.fn().mockResolvedValue({ status: "ok" }),
+  listFoundationRecords: vi.fn().mockResolvedValue([]),
+  createFoundationRecord: vi.fn(),
+  updateFoundationRecord: vi.fn(),
+  archiveFoundationRecord: vi.fn(),
+  restoreFoundationRecord: vi.fn(),
 }));
 
 describe("App", () => {
-  it("shows heading and transitions to ready state through IPC adapter", async () => {
+  it("shows loading state then renders FoundationScreen after IPC ready", async () => {
     render(<App />);
-    expect(
-      screen.getByRole("heading", { name: "Foundation setup" }),
-    ).toBeInTheDocument();
     expect(screen.getByText(/Connecting to application core/)).toBeInTheDocument();
-    await screen.findByText(/IPC ready\. Product features not yet implemented\./);
+    await screen.findByRole("heading", { name: "Foundation Records" });
   });
 });

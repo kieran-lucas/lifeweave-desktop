@@ -2,6 +2,7 @@
 // No ORM. No async runtime. All writes are serialized through DbWorkerHandle.
 
 pub mod connection;
+pub mod foundation_record_repo;
 pub mod migrations;
 pub mod worker;
 

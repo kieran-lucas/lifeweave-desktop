@@ -14,27 +14,44 @@ struct Migration {
 /// - never remove or reorder an entry after it has been applied to any database;
 /// - changes to released schema must go through a new migration;
 /// - each entry runs atomically inside its own transaction.
-static MIGRATIONS: &[Migration] = &[Migration {
-    version: 1,
-    // `db_metadata` is an infrastructure key-value store for database-level
-    // operational metadata (creation timestamp, app version at creation, etc.).
-    // It is not a domain entity and contains no user content.
-    // Rationale: backup manifests, diagnostics, and upgrade tooling need a
-    // stable place to read database identity without parsing schema_migrations.
-    // To extend it in future: add new keys via INSERT in a new migration;
-    // to add columns: ALTER TABLE in a new migration — never edit migration 1.
-    sql: "CREATE TABLE db_metadata (
-            key        TEXT PRIMARY KEY NOT NULL,
-            value      TEXT NOT NULL,
-            updated_at TEXT NOT NULL
-        );
-        INSERT INTO db_metadata (key, value, updated_at)
-            VALUES (
-                'created_at',
-                strftime('%Y-%m-%dT%H:%M:%SZ', 'now'),
-                strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
+static MIGRATIONS: &[Migration] = &[
+    Migration {
+        version: 1,
+        // `db_metadata` is an infrastructure key-value store for database-level
+        // operational metadata (creation timestamp, app version at creation, etc.).
+        // It is not a domain entity and contains no user content.
+        // Rationale: backup manifests, diagnostics, and upgrade tooling need a
+        // stable place to read database identity without parsing schema_migrations.
+        // To extend it in future: add new keys via INSERT in a new migration;
+        // to add columns: ALTER TABLE in a new migration — never edit migration 1.
+        sql: "CREATE TABLE db_metadata (
+                key        TEXT PRIMARY KEY NOT NULL,
+                value      TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
+            INSERT INTO db_metadata (key, value, updated_at)
+                VALUES (
+                    'created_at',
+                    strftime('%Y-%m-%dT%H:%M:%SZ', 'now'),
+                    strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
+                );",
+    },
+    Migration {
+        version: 2,
+        // `foundation_records` is the first domain entity — a temporary Foundation Proof
+        // entity establishing one complete vertical data path (create/list/update/archive/restore).
+        // ID is SQLite-generated 32-char hex; revision is optimistic-concurrency counter.
+        // archived_at NULL means active; non-NULL means archived (soft delete, not physical delete).
+        sql: "CREATE TABLE foundation_records (
+                id          TEXT PRIMARY KEY NOT NULL,
+                label       TEXT NOT NULL CHECK(length(trim(label)) > 0 AND length(label) <= 200),
+                created_at  TEXT NOT NULL,
+                updated_at  TEXT NOT NULL,
+                revision    INTEGER NOT NULL DEFAULT 0 CHECK(revision >= 0),
+                archived_at TEXT
             );",
-}];
+    },
+];
 
 /// Bootstraps the migration tracking table and applies any pending migrations.
 ///
@@ -129,7 +146,7 @@ mod tests {
         let mut conn = open_memory_connection().unwrap();
         run_migrations(&mut conn).unwrap();
 
-        assert_eq!(current_schema_version(&conn).unwrap(), 1);
+        assert_eq!(current_schema_version(&conn).unwrap(), 2);
 
         let count: i64 = conn
             .query_row("SELECT COUNT(*) FROM db_metadata", [], |r| r.get(0))
@@ -139,11 +156,11 @@ mod tests {
             "db_metadata must have at least the created_at seed row"
         );
 
-        // schema_migrations has exactly one row
+        // schema_migrations has exactly two rows (migration 1 + migration 2)
         let mig_count: i64 = conn
             .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
             .unwrap();
-        assert_eq!(mig_count, 1);
+        assert_eq!(mig_count, 2);
     }
 
     #[test]
@@ -152,12 +169,12 @@ mod tests {
         run_migrations(&mut conn).unwrap();
         run_migrations(&mut conn).unwrap();
 
-        // Version stays at 1; no duplicate schema_migrations rows
-        assert_eq!(current_schema_version(&conn).unwrap(), 1);
+        // Version stays at 2; no duplicate schema_migrations rows
+        assert_eq!(current_schema_version(&conn).unwrap(), 2);
         let mig_count: i64 = conn
             .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
             .unwrap();
-        assert_eq!(mig_count, 1);
+        assert_eq!(mig_count, 2);
     }
 
     // ── Validation ────────────────────────────────────────────────────────────
@@ -215,7 +232,7 @@ mod tests {
         match run_migrations_with(&mut conn, MIGRATIONS) {
             Err(DbError::SchemaTooNew { stored, supported }) => {
                 assert_eq!(stored, 9999);
-                assert_eq!(supported, 1);
+                assert_eq!(supported, 2);
             }
             other => panic!("expected SchemaTooNew, got {other:?}"),
         }
@@ -251,7 +268,7 @@ mod tests {
         {
             let mut conn = open_file_connection(&path).unwrap();
             run_migrations(&mut conn).unwrap();
-            assert_eq!(current_schema_version(&conn).unwrap(), 1);
+            assert_eq!(current_schema_version(&conn).unwrap(), 2);
             // Confirm the schema object created by migration 1 exists
             let count: i64 = conn
                 .query_row("SELECT COUNT(*) FROM db_metadata", [], |r| r.get(0))
@@ -265,7 +282,7 @@ mod tests {
             run_migrations(&mut conn).unwrap();
             assert_eq!(
                 current_schema_version(&conn).unwrap(),
-                1,
+                2,
                 "schema version must survive close/reopen"
             );
             let count: i64 = conn
@@ -278,7 +295,7 @@ mod tests {
                 .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
                 .unwrap();
             assert_eq!(
-                mig_count, 1,
+                mig_count, 2,
                 "no duplicate migration records after reopen + re-run"
             );
         }

@@ -31,13 +31,13 @@
 - [x] Clean close/reopen behavior. — `clean_close_and_reopen_preserves_data`: write `test_marker='persisted_value'` to `db_metadata`, close (WAL checkpointed), reopen, read back `'persisted_value'` — real data survival confirmed. `worker_dropped_joins_without_panic`: drop handle → worker thread exits cleanly. `reopened_connection_enforces_foreign_keys`: FK PRAGMA re-applied on every open (per-connection, not persisted by SQLite).
 
 ## FoundationRecord
-- [ ] Domain validation.
-- [ ] Create/list/update/archive/restore.
-- [ ] Atomic transactions.
-- [ ] Generated frontend contracts.
-- [ ] Minimal accessible UI states.
-- [ ] Stale-revision behavior.
-- [ ] No real user content.
+- [x] Domain validation. — `domain::foundation_record::validate_label` trims, rejects empty/too-long (>200 chars)/control chars; 7 domain unit tests pass.
+- [x] Create/list/update/archive/restore. — `infrastructure::sqlite::foundation_record_repo`: create (SQLite-generated 32-char hex ID via `lower(hex(randomblob(16)))`), list_active (active only, `archived_at IS NULL`), update (label + revision increment), archive (sets `archived_at`), restore (clears `archived_at`); 11 repo integration tests pass including `data_survives_close_reopen` and `ids_are_unique_across_inserts`.
+- [x] Atomic transactions. — Every mutation in `foundation_record_repo` runs inside `conn.transaction()`; rollback on stale-revision detected before commit.
+- [x] Generated frontend contracts. — `cargo test export_ipc_bindings` generates `FoundationRecordView.ts`, `CreateFoundationRecordInput.ts`, `UpdateFoundationRecordInput.ts`, `MutateFoundationRecordInput.ts`; `git diff --exit-code` confirms no drift.
+- [x] Minimal accessible UI states. — `FoundationScreen`: loading/error/empty/list with edit-in-place, archive, restore; `aria-labelledby`, `aria-label` on all interactive elements, `role="alert"` on errors, `aria-live` on loading; 9 frontend tests pass.
+- [x] Stale-revision behavior. — `RepoError::StaleRevision` returned when `revision != expected_revision`; mapped to `IpcError::StaleRevision` in handler; `update_stale_revision_returns_stale_revision_error` and `archive_stale_revision_returns_stale_revision_error` and `restore_stale_revision_returns_stale_revision_error` all pass.
+- [x] No real user content. — All test labels are synthetic placeholders ("Test record", "My first record", etc.); no PII in any committed file.
 
 ## Backup/restore
 - [ ] SQLite Online Backup API.

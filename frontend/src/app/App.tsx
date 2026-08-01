@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { healthCheck } from "../ipc/commands";
+import { FoundationScreen } from "../features/foundation/FoundationScreen";
 import * as styles from "./App.css";
 
 type IpcStatus = "loading" | "ready" | "error";
@@ -16,15 +17,13 @@ export function App() {
 
   return (
     <main className={styles.shell}>
-      <section className={styles.panel} aria-labelledby="setup-title">
-        <p className={styles.eyebrow}>Lifeweave Desktop</p>
-        <h1 id="setup-title">Foundation setup</h1>
-        <p aria-live="polite">
-          {ipcStatus === "loading" && "Connecting to application core…"}
-          {ipcStatus === "ready" && "IPC ready. Product features not yet implemented."}
-          {ipcStatus === "error" && "Application core unavailable."}
-        </p>
-      </section>
+      {ipcStatus === "loading" && (
+        <p aria-live="polite">Connecting to application core…</p>
+      )}
+      {ipcStatus === "error" && (
+        <p role="alert">Application core unavailable.</p>
+      )}
+      {ipcStatus === "ready" && <FoundationScreen />}
     </main>
   );
 }

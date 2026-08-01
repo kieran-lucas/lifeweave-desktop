@@ -1,4 +1,5 @@
 pub mod error;
+pub mod foundation_record;
 
 use serde::Serialize;
 
@@ -31,11 +32,24 @@ mod tests {
 
     #[test]
     fn export_ipc_bindings() {
+        use foundation_record::{
+            CreateFoundationRecordInput, FoundationRecordView, MutateFoundationRecordInput,
+            UpdateFoundationRecordInput,
+        };
+
         let out = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .parent()
             .expect("CARGO_MANIFEST_DIR has no parent")
             .join("frontend/src/ipc/generated/");
         HealthCheck::export_all_to(&out).expect("ts binding export failed for HealthCheck");
         error::IpcError::export_all_to(&out).expect("ts binding export failed for IpcError");
+        FoundationRecordView::export_all_to(&out)
+            .expect("ts binding export failed for FoundationRecordView");
+        CreateFoundationRecordInput::export_all_to(&out)
+            .expect("ts binding export failed for CreateFoundationRecordInput");
+        UpdateFoundationRecordInput::export_all_to(&out)
+            .expect("ts binding export failed for UpdateFoundationRecordInput");
+        MutateFoundationRecordInput::export_all_to(&out)
+            .expect("ts binding export failed for MutateFoundationRecordInput");
     }
 }
