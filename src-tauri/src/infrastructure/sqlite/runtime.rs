@@ -62,8 +62,7 @@ impl DatabaseRuntime {
 mod tests {
     use super::*;
     use crate::infrastructure::sqlite::{
-        connection::open_memory_connection,
-        migrations::run_migrations,
+        connection::open_memory_connection, migrations::run_migrations,
     };
 
     fn make_runtime() -> DatabaseRuntime {
@@ -76,10 +75,12 @@ mod tests {
     #[test]
     fn runtime_execute_delegates_to_worker() {
         let rt = make_runtime();
-        let v: i64 = rt.execute(|conn| {
-            conn.query_row("SELECT 42", [], |r| r.get(0))
-                .map_err(DbError::from)
-        }).unwrap();
+        let v: i64 = rt
+            .execute(|conn| {
+                conn.query_row("SELECT 42", [], |r| r.get(0))
+                    .map_err(DbError::from)
+            })
+            .unwrap();
         assert_eq!(v, 42);
     }
 
@@ -103,10 +104,12 @@ mod tests {
         run_migrations(&mut new_conn).unwrap();
         rt.replace_worker(DbWorkerHandle::spawn(new_conn));
 
-        let v: i64 = rt.execute(|conn| {
-            conn.query_row("SELECT 99", [], |r| r.get(0))
-                .map_err(DbError::from)
-        }).unwrap();
+        let v: i64 = rt
+            .execute(|conn| {
+                conn.query_row("SELECT 99", [], |r| r.get(0))
+                    .map_err(DbError::from)
+            })
+            .unwrap();
         assert_eq!(v, 99);
     }
 }
