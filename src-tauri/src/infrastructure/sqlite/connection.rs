@@ -6,12 +6,36 @@ use super::DbError;
 
 /// Opens and fully configures a file-based SQLite connection.
 ///
+/// Creates the file if it does not exist (normal first-run behavior).
 /// Asserts WAL journal mode, foreign_keys ON, and busy_timeout after setting them.
 /// Returns an error if any assertion fails rather than silently continuing.
 pub fn open_file_connection(path: &Path) -> Result<Connection, DbError> {
     let conn = Connection::open(path)?;
     apply_pragmas(&conn, true)?;
     Ok(conn)
+}
+
+/// Opens a file-based SQLite connection, refusing to create a new file.
+///
+/// Used in restore and recovery paths where silently creating a blank database
+/// would be catastrophic. Returns `DbError::FileNotFound` if `path` does not exist.
+pub fn open_existing_file_connection(path: &Path) -> Result<Connection, DbError> {
+    if !path.exists() {
+        return Err(DbError::FileNotFound {
+            path: path.to_path_buf(),
+        });
+    }
+    open_file_connection(path)
+}
+
+/// Opens a read-only SQLite connection without modifying the database file.
+///
+/// Unlike `open_file_connection`, this does not set WAL mode or any other
+/// pragma that writes to the file. Used to inspect backup packages without
+/// mutating them.
+pub fn open_readonly_connection(path: &Path) -> Result<Connection, DbError> {
+    use rusqlite::OpenFlags;
+    Connection::open_with_flags(path, OpenFlags::SQLITE_OPEN_READ_ONLY).map_err(DbError::Rusqlite)
 }
 
 /// Opens an in-memory SQLite connection for tests.

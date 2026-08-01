@@ -6,13 +6,19 @@ use crate::ipc::error::IpcError;
 
 fn backup_to_ipc(e: BackupError) -> IpcError {
     match e {
-        BackupError::Db(_) | BackupError::Io(_) => IpcError::Storage,
+        BackupError::Db(_) | BackupError::Io(_) | BackupError::MissingBackupFile => {
+            IpcError::Storage
+        }
         BackupError::Checksum { .. }
         | BackupError::IntegrityCheckFailed(_)
         | BackupError::ForeignKeyViolation
+        | BackupError::ForeignKeyCheckQueryError(_)
+        | BackupError::PostSwapValidationFailed(_)
         | BackupError::ManifestParse(_)
         | BackupError::ManifestSerialize(_) => IpcError::Corruption,
-        BackupError::UnsupportedFormatVersion(_) => IpcError::Unsupported,
+        BackupError::UnsupportedFormatVersion(_) | BackupError::SchemaVersionTooNew { .. } => {
+            IpcError::Unsupported
+        }
     }
 }
 

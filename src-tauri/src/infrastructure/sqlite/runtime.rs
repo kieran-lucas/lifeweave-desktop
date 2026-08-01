@@ -124,6 +124,19 @@ impl DatabaseRuntime {
         let mut guard = self.inner.lock().unwrap();
         *guard = RuntimeInner::Ready(Arc::new(worker));
     }
+
+    /// Transitions `Maintenance → Ready` with the worker Arc returned by
+    /// `seal_worker()`, without shutting the worker down.
+    ///
+    /// Used when an error occurs after sealing but before the connection has
+    /// been closed. Avoids the overhead of a full shutdown + reopen round-trip
+    /// and ensures no window where `execute()` would return `WorkerGone`.
+    ///
+    /// Must only be called while holding the maintenance guard.
+    pub(crate) fn unseal_worker(&self, worker: Arc<DbWorkerHandle>) {
+        let mut guard = self.inner.lock().unwrap();
+        *guard = RuntimeInner::Ready(worker);
+    }
 }
 
 #[cfg(test)]
@@ -231,6 +244,21 @@ mod tests {
         worker_arc.shutdown();
         rt.set_gone();
         drop(worker_arc);
+    }
+
+    #[test]
+    fn runtime_unseal_worker_restores_execute_without_shutdown() {
+        let rt = make_runtime();
+        let worker_arc = rt.seal_worker().unwrap();
+        // Simulate an early rollback: reverse the seal without shutting down.
+        rt.unseal_worker(worker_arc);
+        let v: i64 = rt
+            .execute(|conn| {
+                conn.query_row("SELECT 77", [], |r| r.get(0))
+                    .map_err(DbError::from)
+            })
+            .unwrap();
+        assert_eq!(v, 77);
     }
 
     #[test]

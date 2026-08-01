@@ -61,6 +61,15 @@ pub fn run_migrations(conn: &mut Connection) -> Result<(), DbError> {
     run_migrations_with(conn, MIGRATIONS)
 }
 
+/// The highest schema version this binary knows how to apply or open.
+///
+/// Restore rejects backup packages whose `schema_version` exceeds this value,
+/// because the binary would not know how to run any forward migrations they may
+/// require and cannot guarantee data compatibility.
+pub fn max_supported_schema_version() -> u32 {
+    MIGRATIONS.last().map(|m| m.version).unwrap_or(0)
+}
+
 /// Returns `MAX(version)` from `schema_migrations`, or `0` if no rows exist.
 pub fn current_schema_version(conn: &Connection) -> Result<u32, DbError> {
     let v: i64 = conn.query_row(
