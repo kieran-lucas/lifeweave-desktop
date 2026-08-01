@@ -6,7 +6,9 @@ use rusqlite::Connection;
 
 use super::checksum::sha256_file;
 use super::engine::chrono_now_rfc3339;
-use super::lifecycle::{MARKER_FORMAT_VERSION, RestoreMarker, RestoreStage, generate_op_id};
+use super::lifecycle::{
+    MARKER_FORMAT_VERSION, RestoreMarker, RestoreStage, generate_op_id, remove_if_exists,
+};
 use super::manifest::BackupManifest;
 use super::{BackupError, RestoreResult};
 use crate::infrastructure::sqlite::{
@@ -60,11 +62,16 @@ pub fn restore_db(
     let candidate_path = db_dir.join("_restore_candidate.db");
     let marker_path = db_dir.join("restore_marker.json");
 
+    // Guard: if a marker exists at any stage, a previous restore's cleanup is still
+    // in progress or pending. Block new restores until the next startup resolves it.
+    if marker_path.exists() {
+        return Err(BackupError::RecoveryPending);
+    }
     // Guard (Blocker F): stale recovery artifacts without a marker mean a previous
     // restore left the filesystem in an inconsistent state. Refuse to proceed so
     // we don't silently overwrite or destroy those artifacts. The user must restart
     // the app so startup preflight + recover_if_interrupted can handle the state.
-    if (old_path.exists() || candidate_path.exists()) && !marker_path.exists() {
+    if old_path.exists() || candidate_path.exists() {
         return Err(BackupError::RecoveryAmbiguous);
     }
 
@@ -168,6 +175,7 @@ pub fn restore_db(
             &marker_path,
         ) {
             Ok(()) => Err(BackupError::Io(e)),
+            Err(BackupError::RecoveryPending) => Err(BackupError::RecoveryPending),
             Err(_) => Err(BackupError::RollbackFailed),
         };
     }
@@ -184,6 +192,7 @@ pub fn restore_db(
             &marker_path,
         ) {
             Ok(()) => Err(e),
+            Err(BackupError::RecoveryPending) => Err(BackupError::RecoveryPending),
             Err(_) => Err(BackupError::RollbackFailed),
         };
     }
@@ -198,6 +207,7 @@ pub fn restore_db(
             &marker_path,
         ) {
             Ok(()) => Err(BackupError::Io(e)),
+            Err(BackupError::RecoveryPending) => Err(BackupError::RecoveryPending),
             Err(_) => Err(BackupError::RollbackFailed),
         };
     }
@@ -213,6 +223,7 @@ pub fn restore_db(
             &marker_path,
         ) {
             Ok(()) => Err(e),
+            Err(BackupError::RecoveryPending) => Err(BackupError::RecoveryPending),
             Err(_) => Err(BackupError::RollbackFailed),
         };
     }
@@ -235,12 +246,21 @@ pub fn restore_db(
                     &marker_path,
                 ) {
                     Ok(()) => Err(e),
+                    Err(BackupError::RecoveryPending) => Err(BackupError::RecoveryPending),
                     Err(_) => Err(BackupError::RollbackFailed),
                 };
             }
             runtime.install_worker(worker);
-            let _ = std::fs::remove_file(&old_path);
-            RestoreMarker::remove(&marker_path);
+            // Checked idempotent cleanup. Marker is removed only after BOTH
+            // artifact cleanups succeed. If either fails, the marker is kept at
+            // ReopenedValidated so the next startup retries cleanup. The live DB
+            // is authoritative and usable regardless; the next restore attempt will
+            // see the marker and return RecoveryPending.
+            let old_ok = remove_if_exists(&old_path).is_ok();
+            let cand_ok = remove_if_exists(&candidate_path).is_ok();
+            if old_ok && cand_ok {
+                let _ = RestoreMarker::remove(&marker_path);
+            }
             Ok(RestoreResult {
                 restored_at: chrono_now_rfc3339(),
                 schema_version,
@@ -255,6 +275,7 @@ pub fn restore_db(
                 &marker_path,
             ) {
                 Ok(()) => Err(e),
+                Err(BackupError::RecoveryPending) => Err(BackupError::RecoveryPending),
                 Err(_) => Err(BackupError::RollbackFailed),
             }
         }
@@ -483,9 +504,13 @@ fn attempt_rollback(
             run_migrations(&mut fresh).map_err(|_| BackupError::RollbackFailed)?;
             let worker = DbWorkerHandle::spawn(fresh);
             runtime.install_worker(worker);
-            // Only clean up artifacts AFTER the worker is confirmed installed.
-            let _ = std::fs::remove_file(candidate_path);
-            RestoreMarker::remove(marker_path);
+            // Clean candidate only after worker is confirmed installed.
+            // If candidate removal fails, keep the marker so the next startup can
+            // retry cleanup. Worker is installed and runtime is Ready.
+            if remove_if_exists(candidate_path).is_err() {
+                return Err(BackupError::RecoveryPending);
+            }
+            let _ = RestoreMarker::remove(marker_path);
             Ok(())
         }
         None => {
@@ -505,7 +530,10 @@ mod tests {
     use super::*;
     use crate::infrastructure::{
         backup::engine::backup_db,
-        backup::lifecycle::{self as lc, RestoreMarker, RestoreStage, set_marker_write_fail_at},
+        backup::lifecycle::{
+            self as lc, RestoreMarker, RestoreStage, set_marker_write_fail_at,
+            set_remove_if_exists_fail_at,
+        },
         backup::manifest::BackupManifest,
         sqlite::{
             connection::open_file_connection, foundation_record_repo as repo,
@@ -1690,5 +1718,165 @@ mod tests {
             matches!(result, Err(DbError::FileNotFound { .. })),
             "must error rather than create a blank DB: {result:?}"
         );
+    }
+
+    // ── E1d: pending marker blocks new restore ───────────────────────────────
+
+    // A restore_marker.json at any stage prevents a new restore from starting.
+    // The guard returns RecoveryPending so the IPC layer can tell the frontend
+    // to restart rather than reporting corruption.
+    #[test]
+    fn pending_marker_blocks_new_restore() {
+        let (rt, db_path) = make_file_runtime();
+        let db_dir = db_path.parent().unwrap().to_path_buf();
+        let marker_path = db_dir.join("restore_marker.json");
+        let backups = temp_backups_dir();
+        let backup_result = backup_db(&rt, &backups).unwrap();
+        let backup_dir = PathBuf::from(&backup_result.backup_dir);
+
+        // Place a marker at ReopenedValidated (cleanup-pending state).
+        RestoreMarker {
+            format_version: lc::MARKER_FORMAT_VERSION,
+            op_id: "e1d-pending".into(),
+            stage: RestoreStage::ReopenedValidated,
+        }
+        .write(&marker_path)
+        .unwrap();
+
+        let result = restore_db(&rt, &backup_dir);
+        assert!(
+            matches!(result, Err(BackupError::RecoveryPending)),
+            "restore must be blocked when marker exists: {result:?}"
+        );
+        // Runtime must still be usable (guard fired before any mutation).
+        let v: i64 = rt
+            .execute(|conn| {
+                conn.query_row("SELECT 1", [], |r| r.get(0))
+                    .map_err(DbError::from)
+            })
+            .unwrap();
+        assert_eq!(v, 1);
+        // Clean up so the runtime teardown succeeds.
+        let _ = RestoreMarker::remove(&marker_path);
+    }
+
+    // ── E1d: old cleanup failure after restore success keeps marker ──────────
+
+    // If .old removal fails during restore finalization, the marker is preserved
+    // at ReopenedValidated. The restore STILL reports success (live DB is usable).
+    // The next restore attempt sees the marker and returns RecoveryPending.
+    #[test]
+    fn old_cleanup_failure_after_restore_keeps_marker_and_blocks_next_restore() {
+        let (rt, db_path) = make_file_runtime();
+        let db_dir = db_path.parent().unwrap().to_path_buf();
+        let marker_path = db_dir.join("restore_marker.json");
+        let backups = temp_backups_dir();
+        let backup_result = backup_db(&rt, &backups).unwrap();
+        let backup_dir = PathBuf::from(&backup_result.backup_dir);
+
+        // Inject .old removal failure during finalization (the 1st remove_if_exists call).
+        set_remove_if_exists_fail_at(0);
+        let result = restore_db(&rt, &backup_dir);
+        // Countdown auto-resets to -1 after firing.
+
+        // Restore itself succeeds (live DB is the restored snapshot).
+        assert!(
+            result.is_ok(),
+            "restore must succeed even if old cleanup fails: {result:?}"
+        );
+
+        // Marker must still exist (cleanup incomplete).
+        assert!(
+            marker_path.exists(),
+            "marker must be kept at ReopenedValidated"
+        );
+
+        // Runtime must be usable.
+        let v: i64 = rt
+            .execute(|conn| {
+                conn.query_row("SELECT 1", [], |r| r.get(0))
+                    .map_err(DbError::from)
+            })
+            .unwrap();
+        assert_eq!(v, 1);
+
+        // Next restore attempt must be blocked.
+        let backups2 = temp_backups_dir();
+        let backup_result2 = backup_db(&rt, &backups2).unwrap();
+        let backup_dir2 = PathBuf::from(&backup_result2.backup_dir);
+        let blocked = restore_db(&rt, &backup_dir2);
+        assert!(
+            matches!(blocked, Err(BackupError::RecoveryPending)),
+            "second restore must be blocked by pending marker: {blocked:?}"
+        );
+
+        // Clean up (simulate what startup recovery would do).
+        let _ = RestoreMarker::remove(&marker_path);
+    }
+
+    // ── E1d: candidate cleanup failure in rollback returns RecoveryPending ──
+
+    // If candidate removal fails in attempt_rollback after a successful rollback,
+    // the function returns RecoveryPending (not RollbackFailed). The runtime is
+    // Ready (worker installed from old) and the marker is preserved for retry.
+    #[test]
+    fn candidate_cleanup_failure_in_rollback_returns_recovery_pending_not_rollback_failed() {
+        let (rt, db_path) = make_file_runtime();
+        let db_dir = db_path.parent().unwrap().to_path_buf();
+        let old_path = db_dir.join("lifeweave.db.old");
+        let candidate_path = db_dir.join("_restore_candidate.db");
+        let marker_path = db_dir.join("restore_marker.json");
+
+        // Record the original data so we can confirm rollback succeeded.
+        let id = "019700000000-7fff-8000-0000-000000001001".to_string();
+        rt.execute({
+            let id = id.clone();
+            move |conn| repo::create(conn, &id, "Rollback survivor").map(|_| ())
+        })
+        .unwrap();
+
+        // Set up: marker at LiveMovedAside, old has original, candidate is stale.
+        RestoreMarker {
+            format_version: lc::MARKER_FORMAT_VERSION,
+            op_id: "e1d-rb".into(),
+            stage: RestoreStage::LiveMovedAside,
+        }
+        .write(&marker_path)
+        .unwrap();
+
+        let arc = rt.seal_worker().unwrap();
+        arc.shutdown();
+        drop(arc);
+        rt.set_gone();
+
+        std::fs::rename(&db_path, &old_path).unwrap();
+        std::fs::write(&candidate_path, b"stale candidate").unwrap();
+
+        // Inject candidate removal failure (the remove_if_exists call in attempt_rollback).
+        set_remove_if_exists_fail_at(0);
+        let result = attempt_rollback(&rt, &old_path, &db_path, &candidate_path, &marker_path);
+
+        assert!(
+            matches!(result, Err(BackupError::RecoveryPending)),
+            "attempt_rollback must return RecoveryPending when candidate cleanup fails: {result:?}"
+        );
+
+        // Worker must be installed (runtime is Ready) — rollback succeeded.
+        let v: i64 = rt
+            .execute(|conn| {
+                conn.query_row("SELECT 1", [], |r| r.get(0))
+                    .map_err(DbError::from)
+            })
+            .unwrap();
+        assert_eq!(v, 1, "runtime must be Ready after rollback");
+
+        // Marker must be preserved.
+        assert!(marker_path.exists(), "marker must be kept for retry");
+        // Candidate must still exist (cleanup failed).
+        assert!(candidate_path.exists(), "candidate must be preserved");
+
+        // Clean up.
+        let _ = RestoreMarker::remove(&marker_path);
+        let _ = std::fs::remove_file(&candidate_path);
     }
 }

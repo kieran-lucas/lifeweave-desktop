@@ -62,6 +62,10 @@ pub enum BackupError {
     /// the recorded stage). All artifacts preserved; startup must not create a
     /// blank database when this is returned.
     RecoveryAmbiguous,
+    /// A previous restore completed and the live DB is usable, but cleanup
+    /// artifacts (.old, candidate, or the marker itself) were not fully removed.
+    /// Another restore is blocked until the next startup resolves the cleanup.
+    RecoveryPending,
 }
 
 impl std::fmt::Display for BackupError {
@@ -109,6 +113,12 @@ impl std::fmt::Display for BackupError {
                 write!(
                     f,
                     "recovery artifacts in ambiguous state; startup must not create blank DB"
+                )
+            }
+            BackupError::RecoveryPending => {
+                write!(
+                    f,
+                    "previous restore cleanup is pending; restart to resolve before attempting another restore"
                 )
             }
         }

@@ -22,7 +22,9 @@ fn backup_to_ipc(e: BackupError) -> IpcError {
         BackupError::RestoreMarkerMalformed | BackupError::RecoveryAmbiguous => {
             IpcError::Corruption
         }
-        BackupError::RestoreMarkerUnreadable(_) | BackupError::RollbackFailed => IpcError::Storage,
+        BackupError::RestoreMarkerUnreadable(_)
+        | BackupError::RollbackFailed
+        | BackupError::RecoveryPending => IpcError::Storage,
     }
 }
 

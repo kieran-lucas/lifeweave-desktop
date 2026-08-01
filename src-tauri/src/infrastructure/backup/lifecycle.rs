@@ -160,9 +160,15 @@ impl RestoreMarker {
         Ok(Some(marker))
     }
 
-    /// Best-effort removal of the marker file. Never fails; leaves file on error.
-    pub fn remove(marker_path: &Path) {
-        let _ = std::fs::remove_file(marker_path);
+    /// Removes the marker file. Returns the underlying I/O result so callers can
+    /// observe whether the removal succeeded. `NotFound` is treated as success
+    /// (idempotent: the marker is already gone).
+    pub fn remove(marker_path: &Path) -> std::io::Result<()> {
+        match std::fs::remove_file(marker_path) {
+            Ok(()) => Ok(()),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),
+            Err(e) => Err(e),
+        }
     }
 
     /// Returns a clone of this marker with the stage updated.
@@ -238,18 +244,6 @@ fn validate_for_recovery(path: &Path) -> bool {
     matches!(schema_version, Ok(v) if v <= max_supported_schema_version())
 }
 
-/// Removes a file during recovery. Supports test-seam failpoints.
-fn recovery_remove(path: &Path) -> std::io::Result<()> {
-    #[cfg(test)]
-    if RECOVERY_REMOVE_FAIL.with(|c| c.get()) {
-        return Err(std::io::Error::new(
-            std::io::ErrorKind::PermissionDenied,
-            "test-injected recovery remove failure",
-        ));
-    }
-    std::fs::remove_file(path)
-}
-
 /// Renames a file during recovery. Supports test-seam failpoints.
 fn recovery_rename(src: &Path, dst: &Path) -> std::io::Result<()> {
     #[cfg(test)]
@@ -260,6 +254,40 @@ fn recovery_rename(src: &Path, dst: &Path) -> std::io::Result<()> {
         ));
     }
     std::fs::rename(src, dst)
+}
+
+/// Removes `path` if it exists. `NotFound` is treated as success (idempotent).
+/// Uses a countdown failpoint for tests: set 0 to fail the next call, 1 to fail
+/// the second call, etc. `-1` disables the failpoint.
+pub(super) fn remove_if_exists(path: &Path) -> Result<(), BackupError> {
+    #[cfg(test)]
+    {
+        let should_fail = REMOVE_IF_EXISTS_FAIL_AT.with(|c| {
+            let n = c.get();
+            if n >= 0 {
+                if n == 0 {
+                    c.set(-1);
+                    true
+                } else {
+                    c.set(n - 1);
+                    false
+                }
+            } else {
+                false
+            }
+        });
+        if should_fail {
+            return Err(BackupError::Io(std::io::Error::new(
+                std::io::ErrorKind::PermissionDenied,
+                "test-injected remove_if_exists failure",
+            )));
+        }
+    }
+    match std::fs::remove_file(path) {
+        Ok(()) => Ok(()),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(e) => Err(BackupError::Io(e)),
+    }
 }
 
 /// Runs a startup preflight before the live database connection is opened.
@@ -316,7 +344,15 @@ pub fn preflight_startup_check(db_path: &Path) -> Result<StartupDisposition, Bac
     if has_tmp && has_marker {
         // Both present: tmp is stale from an interrupted marker update cycle
         // (write succeeded, but the process died before cleanup). Final is authoritative.
-        let _ = std::fs::remove_file(&tmp_marker_path);
+        // Fail closed if removal fails: we cannot determine which copy to trust.
+        #[cfg(test)]
+        if PREFLIGHT_TMP_REMOVE_FAIL.with(|c| c.get()) {
+            return Err(BackupError::Io(std::io::Error::new(
+                std::io::ErrorKind::PermissionDenied,
+                "test-injected preflight tmp remove failure",
+            )));
+        }
+        std::fs::remove_file(&tmp_marker_path).map_err(BackupError::Io)?;
     }
 
     // Truly clean state: no DB, no WAL/SHM, no marker, no artifacts.
@@ -362,19 +398,31 @@ pub fn recover_if_interrupted(marker_path: &Path, db_path: &Path) -> Result<(), 
             // Interrupted before any rename. Live DB must still be at db_path.
             // Candidate (if any) is a staging copy that was never installed.
             match (db_path.exists(), old_path.exists()) {
-                (true, _) => {
-                    // Normal case: live DB is intact. Candidate is stale staging.
+                (true, true) => {
+                    // Unusual: both live and old exist. Old is a stale artifact from
+                    // a previous restore that did not complete cleanup. Remove it along
+                    // with the candidate and marker. If old removal fails, keep the
+                    // marker so the next startup retries — removing stale old without
+                    // a marker would leave the fs in RecoveryAmbiguous state.
                     let _ = std::fs::remove_file(&candidate_path);
-                    RestoreMarker::remove(marker_path);
+                    if remove_if_exists(&old_path).is_err() {
+                        return Ok(());
+                    }
+                    let _ = RestoreMarker::remove(marker_path);
+                    Ok(())
+                }
+                (true, false) => {
+                    // Normal: live DB is intact. Candidate is stale staging.
+                    let _ = std::fs::remove_file(&candidate_path);
+                    let _ = RestoreMarker::remove(marker_path);
                     Ok(())
                 }
                 (false, true) => {
                     // Unusual: live missing but old exists. Restore old first, then
-                    // clean up candidate (which is no longer needed once authority is
-                    // established).
+                    // clean up candidate (authority established before cleanup).
                     recovery_rename(&old_path, db_path).map_err(BackupError::Io)?;
                     let _ = std::fs::remove_file(&candidate_path);
-                    RestoreMarker::remove(marker_path);
+                    let _ = RestoreMarker::remove(marker_path);
                     Ok(())
                 }
                 (false, false) => {
@@ -392,7 +440,7 @@ pub fn recover_if_interrupted(marker_path: &Path, db_path: &Path) -> Result<(), 
                     // Normal recovery: rename old → live, then clean up.
                     recovery_rename(&old_path, db_path).map_err(BackupError::Io)?;
                     let _ = std::fs::remove_file(&candidate_path);
-                    RestoreMarker::remove(marker_path);
+                    let _ = RestoreMarker::remove(marker_path);
                     Ok(())
                 }
                 (true, false) => {
@@ -407,7 +455,7 @@ pub fn recover_if_interrupted(marker_path: &Path, db_path: &Path) -> Result<(), 
                         ));
                     }
                     let _ = std::fs::remove_file(&candidate_path);
-                    RestoreMarker::remove(marker_path);
+                    let _ = RestoreMarker::remove(marker_path);
                     Ok(())
                 }
                 (true, true) => {
@@ -416,7 +464,7 @@ pub fn recover_if_interrupted(marker_path: &Path, db_path: &Path) -> Result<(), 
                     std::fs::remove_file(db_path).map_err(BackupError::Io)?;
                     recovery_rename(&old_path, db_path).map_err(BackupError::Io)?;
                     let _ = std::fs::remove_file(&candidate_path);
-                    RestoreMarker::remove(marker_path);
+                    let _ = RestoreMarker::remove(marker_path);
                     Ok(())
                 }
                 (false, false) => {
@@ -436,7 +484,7 @@ pub fn recover_if_interrupted(marker_path: &Path, db_path: &Path) -> Result<(), 
                     std::fs::remove_file(db_path).map_err(BackupError::Io)?;
                     recovery_rename(&old_path, db_path).map_err(BackupError::Io)?;
                     let _ = std::fs::remove_file(&candidate_path);
-                    RestoreMarker::remove(marker_path);
+                    let _ = RestoreMarker::remove(marker_path);
                     Ok(())
                 }
                 (true, false) => {
@@ -449,7 +497,7 @@ pub fn recover_if_interrupted(marker_path: &Path, db_path: &Path) -> Result<(), 
                     // Old is the authoritative original; restore it.
                     recovery_rename(&old_path, db_path).map_err(BackupError::Io)?;
                     let _ = std::fs::remove_file(&candidate_path);
-                    RestoreMarker::remove(marker_path);
+                    let _ = RestoreMarker::remove(marker_path);
                     Ok(())
                 }
                 (false, false) => Err(BackupError::RecoveryAmbiguous),
@@ -457,26 +505,43 @@ pub fn recover_if_interrupted(marker_path: &Path, db_path: &Path) -> Result<(), 
         }
 
         RestoreStage::ReopenedValidated => {
-            // Candidate was validated during restore. live_path has the new DB.
-            // old_path is stale; candidate staging file was already renamed to live.
+            // Candidate was validated during restore. live_path should have the new DB.
+            // old_path (if still present) is stale and should be cleaned up.
+
             if !db_path.exists() {
+                // Live missing. Try to auto-restore from .old if it exists and is valid.
+                if old_path.exists() && validate_for_recovery(&old_path) {
+                    recovery_rename(&old_path, db_path).map_err(BackupError::Io)?;
+                    let _ = RestoreMarker::remove(marker_path);
+                    return Ok(());
+                }
                 return Err(BackupError::RecoveryAmbiguous);
             }
 
             if !validate_for_recovery(db_path) {
-                // Live exists but fails full validation. Keep old for recovery.
+                // Live invalid. Try to auto-restore from .old if it exists and is valid.
+                if old_path.exists() && validate_for_recovery(&old_path) {
+                    std::fs::remove_file(db_path).map_err(BackupError::Io)?;
+                    recovery_rename(&old_path, db_path).map_err(BackupError::Io)?;
+                    let _ = RestoreMarker::remove(marker_path);
+                    return Ok(());
+                }
+                // Neither live nor old is usable. Fail closed; preserve all artifacts.
                 return Err(BackupError::PostSwapValidationFailed(
                     "live DB failed recovery validation during ReopenedValidated replay".into(),
                 ));
             }
 
-            // Live is valid. Attempt to remove stale old. If removal fails, keep
-            // the marker at ReopenedValidated so the next startup can retry the
-            // cleanup. Live remains usable.
-            if recovery_remove(&old_path).is_err() {
+            // Live is valid. Attempt idempotent removal of stale old. NotFound is
+            // success (already removed). If removal fails for another reason, keep
+            // the marker at ReopenedValidated so the next startup retries cleanup.
+            // Live remains authoritative and usable either way.
+            if remove_if_exists(&old_path).is_err() {
                 return Ok(());
             }
-            RestoreMarker::remove(marker_path);
+            // Also clean candidate if it unexpectedly lingered.
+            let _ = remove_if_exists(&candidate_path);
+            let _ = RestoreMarker::remove(marker_path);
             Ok(())
         }
     }
@@ -497,22 +562,29 @@ pub(super) fn set_marker_write_fail_at(writes_before_fail: i32) {
     MARKER_WRITE_FAIL_AT.with(|c| c.set(writes_before_fail));
 }
 
-// cfg(test) failpoints for recovery_remove and recovery_rename.
-// Thread-local so parallel tests cannot interfere with each other.
+// cfg(test) failpoints. Thread-local so parallel tests cannot interfere.
 #[cfg(test)]
 thread_local! {
-    static RECOVERY_REMOVE_FAIL: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
     static RECOVERY_RENAME_FAIL: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
-}
-
-#[cfg(test)]
-pub(super) fn set_recovery_remove_fail(fail: bool) {
-    RECOVERY_REMOVE_FAIL.with(|c| c.set(fail));
+    // Countdown for remove_if_exists: N ≥ 0 means fail after N successes; -1 = disabled.
+    static REMOVE_IF_EXISTS_FAIL_AT: std::cell::Cell<i32> = const { std::cell::Cell::new(-1) };
+    // Boolean for preflight stale-tmp removal.
+    static PREFLIGHT_TMP_REMOVE_FAIL: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
 }
 
 #[cfg(test)]
 pub(super) fn set_recovery_rename_fail(fail: bool) {
     RECOVERY_RENAME_FAIL.with(|c| c.set(fail));
+}
+
+#[cfg(test)]
+pub(super) fn set_remove_if_exists_fail_at(n: i32) {
+    REMOVE_IF_EXISTS_FAIL_AT.with(|c| c.set(n));
+}
+
+#[cfg(test)]
+pub(super) fn set_preflight_tmp_remove_fail(fail: bool) {
+    PREFLIGHT_TMP_REMOVE_FAIL.with(|c| c.set(fail));
 }
 
 #[cfg(test)]
@@ -1133,10 +1205,10 @@ mod tests {
             .write(&marker_path)
             .unwrap();
 
-        // Inject old-removal failure.
-        set_recovery_remove_fail(true);
+        // Inject old-removal failure via the remove_if_exists countdown failpoint.
+        set_remove_if_exists_fail_at(0);
         let result = recover_if_interrupted(&marker_path, &db);
-        set_recovery_remove_fail(false);
+        // Countdown auto-resets to -1 after firing; no explicit reset needed.
 
         // Live is usable; marker is kept at ReopenedValidated for retry.
         assert!(
@@ -1187,6 +1259,84 @@ mod tests {
             marker_path.exists(),
             "marker must be preserved when rename fails"
         );
+    }
+
+    // ── Prepared (true, true): stale .old removed along with marker ──────────
+
+    #[test]
+    fn prepared_live_and_old_both_present_removes_stale_old() {
+        let dir = temp_dir();
+        let (db, old, cand, marker_path, _) = make_paths(&dir);
+        write_bytes(&db, b"live db");
+        write_bytes(&old, b"stale old from prior restore");
+        write_bytes(&cand, b"stale candidate");
+        make_marker(RestoreStage::Prepared)
+            .write(&marker_path)
+            .unwrap();
+
+        recover_if_interrupted(&marker_path, &db).unwrap();
+
+        assert!(db.exists(), "live DB must remain intact");
+        assert!(!old.exists(), "stale .old must be removed");
+        assert!(!cand.exists(), "candidate must be removed");
+        assert!(!marker_path.exists(), "marker must be removed");
+    }
+
+    #[test]
+    fn prepared_live_and_old_old_removal_failure_keeps_marker() {
+        let dir = temp_dir();
+        let (db, old, cand, marker_path, _) = make_paths(&dir);
+        write_bytes(&db, b"live db");
+        write_bytes(&old, b"stale old from prior restore");
+        write_bytes(&cand, b"stale candidate");
+        make_marker(RestoreStage::Prepared)
+            .write(&marker_path)
+            .unwrap();
+
+        // Inject old-removal failure.
+        set_remove_if_exists_fail_at(0);
+        let result = recover_if_interrupted(&marker_path, &db);
+
+        assert!(
+            result.is_ok(),
+            "must return Ok even when old removal fails: {result:?}"
+        );
+        assert!(db.exists(), "live DB must remain intact");
+        assert!(old.exists(), ".old must be preserved on removal failure");
+        assert!(!cand.exists(), "candidate should still be removed");
+        assert!(marker_path.exists(), "marker must be kept for retry");
+
+        // Retry: old removal now succeeds.
+        recover_if_interrupted(&marker_path, &db).unwrap();
+        assert!(!old.exists(), ".old must be removed on retry");
+        assert!(!marker_path.exists(), "marker must be removed on retry");
+    }
+
+    // ── Stale tmp + final marker + tmp removal failure ────────────────────────
+
+    #[test]
+    fn stale_tmp_with_final_and_tmp_removal_failure_fails_closed() {
+        let dir = temp_dir();
+        let (db, _, _, marker_path, tmp_marker_path) = make_paths(&dir);
+        write_bytes(&db, b"SQLite format 3\0 dummy");
+        make_marker(RestoreStage::Prepared)
+            .write(&marker_path)
+            .unwrap();
+        write_bytes(&tmp_marker_path, b"stale tmp");
+
+        set_preflight_tmp_remove_fail(true);
+        let result = preflight_startup_check(&db);
+        set_preflight_tmp_remove_fail(false);
+
+        assert!(
+            matches!(result, Err(BackupError::Io(_))),
+            "tmp removal failure must fail closed: {result:?}"
+        );
+        assert!(
+            tmp_marker_path.exists(),
+            "tmp must be preserved on removal failure"
+        );
+        assert!(marker_path.exists(), "final marker must be preserved");
     }
 
     // ── Idempotency: second call after clean recovery is a no-op ─────────────
