@@ -1,7 +1,8 @@
 # ADR 0002 — Preserve TypeScript 6 and evaluate TypeScript 7 separately
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-08-01
+- Accepted: 2026-08-01
 - Decision owner: Product Owner
 - Trigger: TypeScript 7 released after the source locked TypeScript 6
 
@@ -9,7 +10,7 @@
 
 The immutable source locks TypeScript 6 strict. TypeScript 7.0 is now released. Automatically switching to “latest” would violate a locked source decision, while permanently ignoring the current ecosystem may create avoidable technical debt.
 
-## Proposed decision
+## Decision
 
 For Foundation bootstrap:
 - depend on `typescript: npm:@typescript/typescript6@6.0.2`;

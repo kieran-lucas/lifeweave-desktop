@@ -35,7 +35,44 @@ $results += Test-Command -Name "corepack"
 $results += Test-Command -Name "pnpm"
 $results += Test-Command -Name "rustc"
 $results += Test-Command -Name "cargo"
+$results += Test-Command -Name "rustup"
 $results += Test-Command -Name "python"
+
+Write-Host "`nRust toolchain components (read-only check):" -ForegroundColor Cyan
+$rustupPresent = $null -ne (Get-Command "rustup" -ErrorAction SilentlyContinue)
+if ($rustupPresent) {
+    $installedTargets = & rustup target list --installed 2>&1
+    if ($installedTargets -match "x86_64-pc-windows-msvc") {
+        Write-Host "[OK] target x86_64-pc-windows-msvc" -ForegroundColor Green
+        $results += $true
+    }
+    else {
+        Write-Host "[MISSING] target x86_64-pc-windows-msvc (bootstrap will add it)" -ForegroundColor Red
+        $results += $false
+    }
+
+    $installedComponents = & rustup component list --installed 2>&1
+    if ($installedComponents -match "rustfmt") {
+        Write-Host "[OK] component rustfmt" -ForegroundColor Green
+        $results += $true
+    }
+    else {
+        Write-Host "[MISSING] component rustfmt (bootstrap will add it)" -ForegroundColor Red
+        $results += $false
+    }
+
+    if ($installedComponents -match "clippy") {
+        Write-Host "[OK] component clippy" -ForegroundColor Green
+        $results += $true
+    }
+    else {
+        Write-Host "[MISSING] component clippy (bootstrap will add it)" -ForegroundColor Red
+        $results += $false
+    }
+}
+else {
+    Write-Host "[SKIP] rustup not found; cannot check target/components" -ForegroundColor Yellow
+}
 
 Write-Host "`nVisual Studio C++ build environment:" -ForegroundColor Cyan
 $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"

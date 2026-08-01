@@ -1,66 +1,53 @@
-# Branching and Pull Request Workflow
+# Commit and Push Workflow
 
-## Branch naming
+This is a solo-owner private repository. The Product Owner has authorized direct commits and pushes to `main`. No branch or pull request is required. This is the permanent repository workflow.
 
-- `docs/<issue>-<description>`
-- `feature/<issue>-<description>`
-- `fix/<issue>-<description>`
-- `prototype/<issue>-<description>`
-- `test/<issue>-<description>`
-- AI-created local branches may use `agent/<description>`.
+## Commit discipline
 
-## One branch, one coherent outcome
+Each commit must represent one coherent, in-scope outcome. Avoid combining:
+- feature implementation + broad refactor;
+- schema change + unrelated visual polish;
+- two independent features in one commit.
 
-Avoid:
-- feature + broad refactor;
-- schema + unrelated visual polish;
-- two agents writing the same files;
-- “cleanup” with no acceptance criteria.
+## Required pre-commit sequence
 
-## Pull request lifecycle
+1. Run all relevant governance and integrity checks.
+2. Run `git diff --check` to catch whitespace issues.
+3. Audit the full diff; confirm every changed file is in scope.
+4. Stage only in-scope files (`git add <specific-files>`).
+5. Commit with an imperative subject.
+6. Push to `main`.
+7. Report commit SHA, files changed, checks run, and remaining risks.
 
-1. Approved issue/spec.
-2. Create branch/worktree.
-3. Open Draft PR early.
-4. Implement minimal vertical behavior.
-5. Run checks and attach evidence.
-6. Independent model reviews.
-7. Writer fixes findings.
-8. Re-run checks.
-9. Product Owner performs UX acceptance.
-10. Squash merge.
-11. Issue closes and status updates.
+## Prohibited in all cases
 
-## Required PR evidence
+- Force-push or history rewrite without explicit Product Owner instruction.
+- Staging files outside the stated scope.
+- Committing user databases, backups, logs, secrets, certificates, or personal assets.
+- Merging from another branch without Product Owner direction.
 
-- linked issue and active spec;
-- explicit out-of-scope;
-- files/areas changed;
-- data/migration impact;
-- dependencies added/removed;
-- exact commands and outcomes;
-- screenshots for UI states;
-- keyboard/accessibility evidence;
-- performance trace if critical;
-- reviewer identity/model and findings;
-- Product Owner acceptance notes;
-- rollback/recovery note for risky changes.
+## Worktrees for isolated experiments
 
-## Worktrees
-
-Use separate worktrees for write-heavy agents:
+Worktrees remain useful for PROTOTYPE-GATED work that must not touch `main` until a prototype gate passes:
 
 ```powershell
-git worktree add ../lifeweave-feature-12 -b feature/12-conflict-engine main
-git worktree add ../lifeweave-review-12 -b review/12-conflict-review main
+git worktree add ../lifeweave-proto-12 -b prototype/12-radial-fan main
 ```
 
-Do not point two agents at the same working directory.
+A prototype worktree is cleaned up or merged only after the gate decision is recorded in an ADR.
 
-## Merge policy
+## Commit style
 
-- squash merge;
-- PR title becomes commit subject;
-- no force-push after review unless reviewers are notified;
-- release/migration commits remain easy to audit;
-- never bypass failing data-integrity checks.
+Imperative subject, present tense, lowercase:
+- `establish source integrity checks`
+- `implement foundation database worker`
+- `fix exact-slot conflict validation`
+- `harden project setup`
+
+## Evidence
+
+Because there is no PR template to fill, the agent must report inline after each push:
+- exact commands run and their output;
+- commit SHA;
+- files changed;
+- unresolved risks.

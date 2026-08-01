@@ -90,13 +90,22 @@ An agent may not say “done”, “fixed”, or “all tests pass” without re
 
 ## 8. Git behavior
 
-- Never commit directly to `main`.
-- One coherent issue/spec per branch and pull request.
-- Write-heavy agents use separate branches/worktrees.
-- The writer does not provide the final independent review.
-- Do not stage unrelated user changes.
-- Do not rewrite history or force-push without explicit Product Owner approval.
-- Do not commit real user databases, backups, logs, secrets, certificates, or personal assets.
+This is a solo-owner private repository. The Product Owner has authorized agents to commit and push directly to `main`. This is the permanent repository workflow, not an agent-inferred exception or temporary shortcut.
+
+Authorized:
+- Commit and push directly to `main` after completing all checks and diff review.
+
+Required before every commit:
+- Run all relevant governance and integrity checks; report pass/fail.
+- Audit the full diff; list every file staged and confirm each is in scope.
+- Stage only files within the stated scope of the commit.
+- Report the commit SHA and any remaining risks after push.
+
+Prohibited in all cases:
+- Force-push or rewrite published history without explicit Product Owner instruction.
+- Commit files outside the stated scope of a change.
+- Commit real user databases, backups, logs, secrets, certificates, or personal assets.
+- Merge from another branch without Product Owner direction.
 
 ## 9. Required response to ambiguity
 

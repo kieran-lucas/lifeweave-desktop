@@ -1,14 +1,15 @@
 # ADR 0003 — Separate Core Product from Expansion Vision
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-08-01
+- Accepted: 2026-08-01
 - Decision owner: Product Owner
 
 ## Context
 
 The immutable source retains both a focused local Task/Life application and an advanced narrative authoring platform. Implementing all systems in one critical path creates schedule, migration, editor, performance, and AI-context risk.
 
-## Proposed decision
+## Decision
 
 Preserve every source requirement, but schedule:
 - Task, objective analytics, Life tree, basic leaf, backup/recovery as Core;
@@ -20,4 +21,4 @@ This ADR does not delete or rewrite the original. It controls implementation act
 
 ## Acceptance
 
-Product Owner approval is required before this becomes Accepted.
+Accepted. Core/Expansion scheduling separation is a governance control only; it does not alter, remove, or reorder any original source content.
