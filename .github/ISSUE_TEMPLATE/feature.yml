@@ -1,0 +1,56 @@
+name: Feature
+description: Implement an approved product behavior
+title: "[Feature] "
+labels: ["type:feature", "needs-spec"]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What observable user outcome is needed?
+    validations:
+      required: true
+  - type: textarea
+    id: source
+    attributes:
+      label: Source and decision status
+      description: Cite immutable-source lines, ADR, and LOCKED/OPEN/PROTOTYPE-GATED status.
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Required behavior
+      description: Concrete behavior, states, and edge cases.
+    validations:
+      required: true
+  - type: textarea
+    id: out
+    attributes:
+      label: Out of scope
+      description: Explicitly prevent adjacent scope.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      value: |
+        - [ ]
+        - [ ]
+        - [ ]
+    validations:
+      required: true
+  - type: checkboxes
+    id: invariants
+    attributes:
+      label: Invariants
+      options:
+        - label: No OPEN/DEFERRED behavior is being assumed.
+          required: true
+        - label: Data/migration impact is stated.
+          required: true
+        - label: Accessibility and keyboard behavior are stated.
+          required: true
+        - label: Required evidence is stated.
+          required: true

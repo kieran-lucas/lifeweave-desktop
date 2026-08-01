@@ -1,0 +1,21 @@
+{
+  "name": "lifeweave-desktop",
+  "private": true,
+  "version": "0.0.0",
+  "packageManager": "pnpm@11.17.0",
+  "engines": {
+    "node": "24.x",
+    "pnpm": "11.x"
+  },
+  "scripts": {
+    "source:verify": "python scripts/verify_source_integrity.py",
+    "governance:check": "python scripts/check_repository.py",
+    "index:check": "python scripts/generate_spec_index.py --check && python scripts/generate_coverage_matrix.py --check",
+    "verify": "pnpm source:verify && pnpm governance:check && pnpm index:check",
+    "dev": "pnpm --dir frontend dev",
+    "build": "pnpm --dir frontend build",
+    "typecheck": "pnpm --dir frontend typecheck",
+    "test": "pnpm --dir frontend test",
+    "tauri": "pnpm --dir frontend tauri"
+  }
+}

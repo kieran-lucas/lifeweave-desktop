@@ -1,0 +1,37 @@
+name: Prototype gate
+description: Measure a PROTOTYPE-GATED decision
+title: "[Prototype] "
+labels: ["type:prototype", "decision:prototype-gated"]
+body:
+  - type: textarea
+    id: hypothesis
+    attributes:
+      label: Hypothesis
+    validations:
+      required: true
+  - type: textarea
+    id: variants
+    attributes:
+      label: Variants
+      description: Use the same fixtures and constraints.
+    validations:
+      required: true
+  - type: textarea
+    id: metrics
+    attributes:
+      label: Metrics and threshold
+      description: Define pass/fail before running.
+    validations:
+      required: true
+  - type: textarea
+    id: isolation
+    attributes:
+      label: Isolation and cleanup
+      description: Prototype branch/worktree, no production schema/dependency leakage.
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Decision output
+      description: ADR, rejected option, and retained evidence.
