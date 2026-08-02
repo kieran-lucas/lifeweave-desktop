@@ -16,6 +16,7 @@ import type { CreateRecurringTaskInput } from "./generated/CreateRecurringTaskIn
 import type { RecurringOccurrenceView } from "./generated/RecurringOccurrenceView";
 import type { UpdateRecurringOccurrenceInput } from "./generated/UpdateRecurringOccurrenceInput";
 import type { TodayItemView } from "./generated/TodayItemView";
+import type { MonthProjection } from "./generated/MonthProjection";
 
 export function healthCheck(): Promise<HealthCheck> {
   return invoke<HealthCheck>("health_check");
@@ -80,3 +81,5 @@ export const createRecurringTask = (input: CreateRecurringTaskInput) => invoke<s
 export const listRecurringOccurrences = (localDate: string) => invoke<RecurringOccurrenceView[]>("list_recurring_occurrences", { localDate });
 export const updateRecurringOccurrence = (input: UpdateRecurringOccurrenceInput) => invoke<void>("update_recurring_occurrence", { input });
 export const listTodayItems = (localDate: string) => invoke<TodayItemView[]>("list_today_items", { localDate });
+export const getMonthProjection = (year: number, month: number, selectedDate: string, today: string) =>
+  invoke<MonthProjection>("get_month_projection", { year, month, selectedDate, today });

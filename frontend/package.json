@@ -12,6 +12,7 @@
     "tauri": "tauri"
   },
   "dependencies": {
+    "@internationalized/date": "3.12.2",
     "@tanstack/react-query": "5.85.5",
     "@tauri-apps/api": "2.11.1",
     "@vanilla-extract/css": "1.21.1",

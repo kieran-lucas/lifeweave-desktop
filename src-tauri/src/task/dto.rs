@@ -134,3 +134,27 @@ pub struct TodayItemView {
     pub priority: String,
     pub is_override: bool,
 }
+
+#[derive(Debug, Clone, Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct CalendarDayProjection {
+    pub date: String,
+    pub is_today: bool,
+    pub is_selected: bool,
+    pub task_count: i32,
+    pub scheduled_minutes: i32,
+    pub category_icon_keys: Vec<String>,
+    pub extra_category_count: i32,
+    pub morning_load_ratio: f64,
+    pub afternoon_load_ratio: f64,
+    pub evening_load_ratio: f64,
+    pub has_missed: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct MonthProjection {
+    pub month: String,
+    pub algorithm_version: i32,
+    pub days: Vec<CalendarDayProjection>,
+}

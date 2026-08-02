@@ -1,7 +1,8 @@
 use crate::infrastructure::sqlite::{DbError, runtime::DatabaseRuntime};
 use crate::ipc::error::IpcError;
 use crate::task::{
-    dto::{CreateTaskInput, TaskCategoryView, TaskView, UpdateTaskInput},
+    calendar,
+    dto::{CreateTaskInput, MonthProjection, TaskCategoryView, TaskView, UpdateTaskInput},
     repository::{self, TaskError},
 };
 use tauri::State;
@@ -109,6 +110,29 @@ pub fn list_today_items(
 ) -> Result<Vec<crate::task::dto::TodayItemView>, IpcError> {
     state
         .execute(move |conn| Ok(repository::today_items(conn, &local_date)))
+        .map_err(map_db)?
+        .map_err(map_task)
+}
+
+#[tauri::command]
+#[tracing::instrument(skip(state, selected_date, today))]
+pub fn get_month_projection(
+    state: State<'_, DatabaseRuntime>,
+    year: i32,
+    month: u32,
+    selected_date: String,
+    today: String,
+) -> Result<MonthProjection, IpcError> {
+    state
+        .execute(move |conn| {
+            Ok(calendar::month_projection(
+                conn,
+                year,
+                month,
+                &selected_date,
+                &today,
+            ))
+        })
         .map_err(map_db)?
         .map_err(map_task)
 }

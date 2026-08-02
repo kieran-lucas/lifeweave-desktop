@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, beforeEach, vi } from "vitest";
 
 import { App } from "./App";
@@ -17,6 +17,7 @@ vi.mock("../ipc/commands", () => ({
   listTasksForDate: vi.fn().mockResolvedValue([]),
   listTodayItems: vi.fn().mockResolvedValue([]),
   listTaskCategories: vi.fn().mockResolvedValue([]),
+  getMonthProjection: vi.fn().mockResolvedValue({ month: "2026-08", algorithm_version: 1, days: [] }),
   createTask: vi.fn(), updateTask: vi.fn(), deleteTask: vi.fn(),
 }));
 
@@ -56,5 +57,27 @@ describe("App shell", () => {
     fireEvent.click(screen.getByRole("button", { name: "Settings" }));
     expect(await screen.findByRole("heading", { name: "Settings" })).toBeInTheDocument();
     expect(await screen.findByRole("heading", { name: "Foundation Records" })).toBeInTheDocument();
+  });
+
+  it("keeps selected-day state in the shell and defaults create to it", async () => {
+    renderApp();
+    await screen.findByRole("heading", { name: "Today" });
+    const week=screen.getByRole("navigation",{name:"Week navigation"});
+    const other=within(week).getAllByRole("button").find(button=>button.getAttribute("aria-pressed")==="false")!;
+    fireEvent.click(other);
+    const selectedLabel=await screen.findByText(/Selected day ·/);
+    const selectedIso=selectedLabel.textContent!.split(" · ")[1]!;
+    fireEvent.click(screen.getByRole("button",{name:"Create task"}));
+    expect(screen.getByLabelText("Date")).toHaveValue(selectedIso);
+  });
+
+  it("activates a Calendar cell by returning to the day timeline", async () => {
+    renderApp();
+    await screen.findByRole("heading", { name: "Today" });
+    fireEvent.click(screen.getByRole("button",{name:"Calendar"}));
+    const grid=await screen.findByRole("grid");
+    fireEvent.click(within(grid).getAllByRole("button")[10]!);
+    expect(await screen.findByRole("heading",{name:"Today"})).toBeInTheDocument();
+    expect(screen.queryByRole("grid")).not.toBeInTheDocument();
   });
 });

@@ -1,3 +1,4 @@
+pub mod calendar;
 pub mod conflict;
 pub mod domain;
 pub mod dto;

@@ -22,9 +22,9 @@ use ipc::foundation_record::{
     list_foundation_records, restore_foundation_record, update_foundation_record,
 };
 use ipc::task::{
-    create_recurring_task, create_task, delete_task, list_recurring_occurrences,
-    list_task_categories, list_tasks_for_date, list_today_items, update_recurring_occurrence,
-    update_task,
+    create_recurring_task, create_task, delete_task, get_month_projection,
+    list_recurring_occurrences, list_task_categories, list_tasks_for_date, list_today_items,
+    update_recurring_occurrence, update_task,
 };
 
 /// Initialize the local tracing subscriber.
@@ -131,6 +131,7 @@ pub fn run() {
             list_recurring_occurrences,
             update_recurring_occurrence,
             list_today_items,
+            get_month_projection,
         ])
         .run(tauri::generate_context!())
         .expect("failed to run Lifeweave");

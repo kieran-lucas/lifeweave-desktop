@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import { healthCheck } from "../ipc/commands";
 import { FoundationScreen } from "../features/foundation/FoundationScreen";
 import { TodayScreen } from "../features/task/today/TodayScreen";
+import { CalendarScreen } from "../features/calendar/CalendarScreen";
+import { localToday } from "../features/calendar/date";
 import * as styles from "./App.css";
 
 type Destination = "today" | "calendar" | "analytics" | "life" | "settings";
@@ -38,6 +40,7 @@ function Placeholder({ destination, heading }: { destination: Destination; headi
 export function App() {
   const [ipcStatus, setIpcStatus] = useState<"loading" | "ready" | "error">("loading");
   const [destination, setDestination] = useState<Destination>("today");
+  const [selectedDate, setSelectedDate] = useState(localToday);
   const [taskSidebarMode, setTaskSidebarMode] = useState<SidebarMode>(readSidebarMode);
   const [lifeAutoCollapsed, setLifeAutoCollapsed] = useState(false);
   const headingRef = useRef<HTMLElement>(null);
@@ -53,6 +56,11 @@ export function App() {
 
   const collapsed = lifeAutoCollapsed || taskSidebarMode === "collapsed";
   const selectDestination = (next: Destination) => setDestination(next);
+  const activateCalendarDate = (date: string) => {
+    setSelectedDate(date);
+    setDestination("today");
+    requestAnimationFrame(() => document.getElementById("today-heading")?.focus({ preventScroll: true }));
+  };
   const heading = destinations.find((item) => item.id === destination)?.label ?? "Today";
 
   return (
@@ -82,8 +90,9 @@ export function App() {
         {ipcStatus === "loading" && <p className={styles.coreStatus} aria-live="polite">Connecting to application core…</p>}
         {ipcStatus === "error" && <p className={styles.coreStatus} role="alert">Application core unavailable.</p>}
         {ipcStatus === "ready" && destination === "settings" && <section ref={headingRef} className={styles.destination} aria-labelledby="settings-heading"><h1 id="settings-heading" tabIndex={-1} className={styles.heading}>Settings</h1><p className={styles.lede}>Application preferences and foundation verification tools.</p><div className={styles.foundationPanel}><h2>Foundation tools</h2><p>Development-only backup and FoundationRecord verification.</p><FoundationScreen /></div></section>}
-        {ipcStatus === "ready" && destination !== "settings" && destination === "today" && <div ref={(node) => { headingRef.current = node; }}><TodayScreen /></div>}
-        {ipcStatus === "ready" && destination !== "settings" && destination !== "today" && <div ref={(node) => { headingRef.current = node; }}><Placeholder destination={destination} heading={heading} /></div>}
+        {ipcStatus === "ready" && destination === "today" && <div ref={(node) => { headingRef.current = node; }}><TodayScreen selectedDate={selectedDate} onSelectedDateChange={setSelectedDate} /></div>}
+        {ipcStatus === "ready" && destination === "calendar" && <div ref={(node) => { headingRef.current = node; }}><CalendarScreen selectedDate={selectedDate} today={localToday()} onActivateDate={activateCalendarDate} /></div>}
+        {ipcStatus === "ready" && destination !== "settings" && destination !== "today" && destination !== "calendar" && <div ref={(node) => { headingRef.current = node; }}><Placeholder destination={destination} heading={heading} /></div>}
       </main>
     </div>
   );

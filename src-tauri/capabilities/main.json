@@ -27,6 +27,7 @@
     "allow-create-recurring-task",
     "allow-list-recurring-occurrences",
     "allow-update-recurring-occurrence",
-    "allow-list-today-items"
+    "allow-list-today-items",
+    "allow-get-month-projection"
   ]
 }
