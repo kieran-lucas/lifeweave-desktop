@@ -173,6 +173,17 @@ Task 2 remains active and blocked by verified P0/P1 findings. Task 3 is not allo
 - Full gates: cargo check/fmt/clippy/test, frontend typecheck/test/build, generated binding drift, repository governance/source integrity/no-remote scan, and Tauri production NSIS build passed. Artifact: `src-tauri/target/release/bundle/nsis/Lifeweave_0.0.0_x64-setup.exe`.
 - Status: Task 2 active — remediation implemented, independent re-audit required. Task 3 remains prohibited. P2 debt F-04–F-06 remains deferred.
 
+### Task 2 Independent Re-audit — Blocked
+
+- Re-audited HEAD: `ff1f7945124cc3d78c3e123264ddcbfe046cf731`.
+- F-01: closed; admission mutex/lease and deterministic drain tests verified.
+- F-03: closed; sidecar-first rollback ordering and startup replay verified.
+- Candidate-cleanup P1: closed; redundant sync removed and candidate-first/marker-second helper behavior verified.
+- F-02-R1 P0: remains open. After candidate hash/size/integrity validation, `_restore_candidate.db` is reopened only by pathname for swap; an external mutation/replacement before `durable_rename` is not detected or prevented. This violates exact authenticated-bytes identity and blocks Task 3.
+- Independent baseline: 191 Rust tests, 123 focused backup tests, 19 frontend tests; check/fmt/clippy/typecheck/build/governance/source-integrity/no-remote checks passed.
+- Report: `docs/audits/task-02-reaudit.md`.
+- Status: Task 2 remains active and BLOCKED. Task 3 remains prohibited.
+
 ## Quality
 - [ ] Strict CSP/capability review.
 - [ ] No disallowed remote resource.
