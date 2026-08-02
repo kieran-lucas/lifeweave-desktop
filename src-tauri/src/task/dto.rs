@@ -7,6 +7,99 @@ pub struct TaskCategoryView {
     pub name: String,
     pub icon_key: String,
     pub color_key: String,
+    pub weekly_minimum_minutes: Option<i32>,
+    pub weekly_target_minutes: Option<i32>,
+    pub goal_revision: i32,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct UpdateCategoryGoalsInput {
+    pub category_id: String,
+    pub weekly_minimum_minutes: Option<i32>,
+    pub weekly_target_minutes: Option<i32>,
+    pub expected_revision: i32,
+    pub operation_id: String,
+    pub observed_local_date: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+#[serde(rename_all = "snake_case")]
+pub enum AnalyticsPeriodKind {
+    Week,
+    Month,
+    Year,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct AnalyticsProjectionInput {
+    pub period_kind: AnalyticsPeriodKind,
+    pub anchor_local_date: String,
+    pub observed_local_date: String,
+    pub observed_local_minute: i32,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct AnalyticsCategoryView {
+    pub category_id: String,
+    pub category_name: String,
+    pub category_icon_key: String,
+    pub category_color_key: String,
+    pub scheduled_minutes: i32,
+    pub weekly_minimum_minutes: Option<i32>,
+    pub weekly_target_minutes: Option<i32>,
+    pub minimum_attained_minutes: i32,
+    pub target_attained_minutes: i32,
+    pub minimum_shortfall_minutes: i32,
+    pub target_shortfall_minutes: i32,
+    pub minimum_overage_minutes: i32,
+    pub target_overage_minutes: i32,
+    pub eligible_week_count: i32,
+    pub minimum_week_count: i32,
+    pub target_week_count: i32,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct AnalyticsCompletionDistributionView {
+    pub state_id: String,
+    pub label: String,
+    pub visual_token: String,
+    pub count: i32,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct AnalyticsStreakView {
+    pub category_id: String,
+    pub threshold_kind: String,
+    pub current_length: i32,
+    pub longest_length: i32,
+    pub current_start: Option<String>,
+    pub longest_start: Option<String>,
+    pub last_break_week: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct AnalyticsProjection {
+    pub period_kind: AnalyticsPeriodKind,
+    pub period_start: String,
+    pub period_end: String,
+    pub is_complete: bool,
+    pub algorithm_version: i32,
+    pub computed_at: String,
+    pub source_revision: String,
+    pub scheduled_minutes: i32,
+    pub task_count: i32,
+    pub evaluated_count: i32,
+    pub missed_count: i32,
+    pub categories: Vec<AnalyticsCategoryView>,
+    pub completion_distribution: Vec<AnalyticsCompletionDistributionView>,
+    pub streaks: Vec<AnalyticsStreakView>,
 }
 #[derive(Debug, Clone, Serialize)]
 #[cfg_attr(test, derive(ts_rs::TS))]

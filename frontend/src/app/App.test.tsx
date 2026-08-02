@@ -19,6 +19,8 @@ vi.mock("../ipc/commands", () => ({
   listTaskCategories: vi.fn().mockResolvedValue([]),
   getMonthProjection: vi.fn().mockResolvedValue({ month: "2026-08", algorithm_version: 1, days: [] }),
   listCompletionStates: vi.fn().mockResolvedValue([]), evaluateTask: vi.fn(), undoTaskEvaluation: vi.fn(),
+  getAnalyticsProjection: vi.fn().mockResolvedValue({period_kind:"week",period_start:"2026-07-27",period_end:"2026-08-02",is_complete:true,algorithm_version:1,computed_at:"1",source_revision:"0",scheduled_minutes:0,task_count:0,evaluated_count:0,missed_count:0,categories:[],completion_distribution:[],streaks:[]}),
+  updateCategoryGoals: vi.fn(),
   createTask: vi.fn(), updateTask: vi.fn(), deleteTask: vi.fn(),
 }));
 
@@ -38,6 +40,15 @@ describe("App shell", () => {
     fireEvent.click(screen.getByRole("button", { name: "Calendar" }));
     expect(await screen.findByRole("heading", { name: "Calendar" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Calendar" })).toHaveAttribute("aria-current", "page");
+  });
+
+  it("opens objective Analytics instead of the former placeholder", async () => {
+    renderApp();
+    await screen.findByRole("heading", { name: "Today" });
+    fireEvent.click(screen.getByRole("button", { name: "Analytics" }));
+    expect(await screen.findByRole("heading", { name: "Analytics" })).toBeInTheDocument();
+    expect(await screen.findByText("Scheduled time")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Analytics placeholder")).not.toBeInTheDocument();
   });
 
   it("persists collapse and restores the task preference after Life System", async () => {

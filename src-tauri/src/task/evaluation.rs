@@ -133,6 +133,7 @@ pub(crate) fn evaluate_at(
         params![input.operation_id,subject.kind,subject.task_id,subject.series_id,subject.original_local_date,previous,evaluation_id,evaluated_at],
     )?;
     let result = evaluation_by_id(&tx, &evaluation_id)?;
+    crate::task::analytics::bump_source_revision(&tx)?;
     tx.commit()?;
     Ok(result)
 }
@@ -174,6 +175,7 @@ pub fn undo(
         params![operation_id, timestamp()],
     )?;
     let result = current_view(&tx, &subject)?;
+    crate::task::analytics::bump_source_revision(&tx)?;
     tx.commit()?;
     Ok(result)
 }

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-update-category-goals"
+description = "Enables the update_category_goals command without any pre-configured scope."
+commands.allow = ["update_category_goals"]
+
+[[permission]]
+identifier = "deny-update-category-goals"
+description = "Denies the update_category_goals command without any pre-configured scope."
+commands.deny = ["update_category_goals"]

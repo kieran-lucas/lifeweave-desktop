@@ -4,6 +4,8 @@ import { healthCheck } from "../ipc/commands";
 import { FoundationScreen } from "../features/foundation/FoundationScreen";
 import { TodayScreen } from "../features/task/today/TodayScreen";
 import { CalendarScreen } from "../features/calendar/CalendarScreen";
+import { AnalyticsScreen } from "../features/analytics/AnalyticsScreen";
+import { CategoryGoals } from "../features/analytics/CategoryGoals";
 import { localToday } from "../features/calendar/date";
 import * as styles from "./App.css";
 
@@ -89,10 +91,11 @@ export function App() {
       <main className={styles.viewport}>
         {ipcStatus === "loading" && <p className={styles.coreStatus} aria-live="polite">Connecting to application core…</p>}
         {ipcStatus === "error" && <p className={styles.coreStatus} role="alert">Application core unavailable.</p>}
-        {ipcStatus === "ready" && destination === "settings" && <section ref={headingRef} className={styles.destination} aria-labelledby="settings-heading"><h1 id="settings-heading" tabIndex={-1} className={styles.heading}>Settings</h1><p className={styles.lede}>Application preferences and foundation verification tools.</p><div className={styles.foundationPanel}><h2>Foundation tools</h2><p>Development-only backup and FoundationRecord verification.</p><FoundationScreen /></div></section>}
+        {ipcStatus === "ready" && destination === "settings" && <section ref={headingRef} className={styles.destination} aria-labelledby="settings-heading"><h1 id="settings-heading" tabIndex={-1} className={styles.heading}>Settings</h1><p className={styles.lede}>Application preferences and foundation verification tools.</p><CategoryGoals/><div className={styles.foundationPanel}><h2>Foundation tools</h2><p>Development-only backup and FoundationRecord verification.</p><FoundationScreen /></div></section>}
         {ipcStatus === "ready" && destination === "today" && <div ref={(node) => { headingRef.current = node; }}><TodayScreen selectedDate={selectedDate} onSelectedDateChange={setSelectedDate} /></div>}
         {ipcStatus === "ready" && destination === "calendar" && <div ref={(node) => { headingRef.current = node; }}><CalendarScreen selectedDate={selectedDate} today={localToday()} onActivateDate={activateCalendarDate} /></div>}
-        {ipcStatus === "ready" && destination !== "settings" && destination !== "today" && destination !== "calendar" && <div ref={(node) => { headingRef.current = node; }}><Placeholder destination={destination} heading={heading} /></div>}
+        {ipcStatus === "ready" && destination === "analytics" && <div ref={(node) => { headingRef.current = node; }}><AnalyticsScreen/></div>}
+        {ipcStatus === "ready" && destination !== "settings" && destination !== "today" && destination !== "calendar" && destination !== "analytics" && <div ref={(node) => { headingRef.current = node; }}><Placeholder destination={destination} heading={heading} /></div>}
       </main>
     </div>
   );

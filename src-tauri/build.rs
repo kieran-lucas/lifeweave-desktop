@@ -24,6 +24,8 @@ fn main() {
             "list_completion_states",
             "evaluate_task",
             "undo_task_evaluation",
+            "update_category_goals",
+            "get_analytics_projection",
         ]),
     ))
     .expect("failed to generate Tauri ACL manifest");

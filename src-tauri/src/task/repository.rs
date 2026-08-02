@@ -97,7 +97,7 @@ fn row(r: &rusqlite::Row<'_>) -> rusqlite::Result<TaskView> {
     })
 }
 pub fn categories(conn: &Connection) -> Result<Vec<TaskCategoryView>, TaskError> {
-    let mut st=conn.prepare("SELECT id,name,icon_key,color_key FROM task_categories WHERE archived_at IS NULL ORDER BY id")?;
+    let mut st=conn.prepare("SELECT id,name,icon_key,color_key,weekly_minimum_minutes,weekly_target_minutes,goal_revision FROM task_categories WHERE archived_at IS NULL ORDER BY id")?;
     Ok(st
         .query_map([], |r| {
             Ok(TaskCategoryView {
@@ -105,6 +105,9 @@ pub fn categories(conn: &Connection) -> Result<Vec<TaskCategoryView>, TaskError>
                 name: r.get::<_, String>(1)?,
                 icon_key: r.get::<_, String>(2)?,
                 color_key: r.get::<_, String>(3)?,
+                weekly_minimum_minutes: r.get(4)?,
+                weekly_target_minutes: r.get(5)?,
+                goal_revision: r.get(6)?,
             })
         })?
         .collect::<Result<Vec<_>, _>>()?)
@@ -132,7 +135,8 @@ pub fn create(conn: &Connection, input: CreateTaskInput) -> Result<TaskView, Tas
     )?;
     let id = id();
     let t = now();
-    conn.execute(
+    let tx = conn.unchecked_transaction()?;
+    tx.execute(
         "INSERT INTO tasks VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?9)",
         params![
             id,
@@ -146,7 +150,10 @@ pub fn create(conn: &Connection, input: CreateTaskInput) -> Result<TaskView, Tas
             t
         ],
     )?;
-    conn.query_row("SELECT id,local_date,start_minute,end_minute,title,description,category_id,priority,created_at,updated_at FROM tasks WHERE id=?1",params![id],row).map_err(Into::into)
+    let result=tx.query_row("SELECT id,local_date,start_minute,end_minute,title,description,category_id,priority,created_at,updated_at FROM tasks WHERE id=?1",params![id],row)?;
+    crate::task::analytics::bump_source_revision(&tx)?;
+    tx.commit()?;
+    Ok(result)
 }
 pub fn update(conn: &Connection, input: UpdateTaskInput) -> Result<TaskView, TaskError> {
     let create = CreateTaskInput {
@@ -170,13 +177,20 @@ pub fn update(conn: &Connection, input: UpdateTaskInput) -> Result<TaskView, Tas
         Some(&input.id),
     )?;
     let t = now();
-    if conn.execute("UPDATE tasks SET local_date=?2,start_minute=?3,end_minute=?4,title=?5,description=?6,category_id=?7,priority=?8,updated_at=?9 WHERE id=?1",params![input.id,input.local_date,input.start_minute,input.end_minute,input.title.trim(),input.description,input.category_id,p.as_str(),t])?==0{return Err(TaskError::NotFound)}
-    conn.query_row("SELECT id,local_date,start_minute,end_minute,title,description,category_id,priority,created_at,updated_at FROM tasks WHERE id=?1",params![input.id],row).map_err(Into::into)
+    let tx = conn.unchecked_transaction()?;
+    if tx.execute("UPDATE tasks SET local_date=?2,start_minute=?3,end_minute=?4,title=?5,description=?6,category_id=?7,priority=?8,updated_at=?9 WHERE id=?1",params![input.id,input.local_date,input.start_minute,input.end_minute,input.title.trim(),input.description,input.category_id,p.as_str(),t])?==0{return Err(TaskError::NotFound)}
+    let result=tx.query_row("SELECT id,local_date,start_minute,end_minute,title,description,category_id,priority,created_at,updated_at FROM tasks WHERE id=?1",params![input.id],row)?;
+    crate::task::analytics::bump_source_revision(&tx)?;
+    tx.commit()?;
+    Ok(result)
 }
 pub fn delete(conn: &Connection, id: &str) -> Result<(), TaskError> {
-    if conn.execute("DELETE FROM tasks WHERE id=?1", params![id])? == 0 {
+    let tx = conn.unchecked_transaction()?;
+    if tx.execute("DELETE FROM tasks WHERE id=?1", params![id])? == 0 {
         Err(TaskError::NotFound)
     } else {
+        crate::task::analytics::bump_source_revision(&tx)?;
+        tx.commit()?;
         Ok(())
     }
 }
@@ -253,6 +267,7 @@ pub fn create_recurring(
     let id = id();
     let t = now();
     tx.execute("INSERT INTO task_series(id,title,description,category_id,priority,start_minute,end_minute,dtstart_local_date,timezone_id,rrule,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",params![id,input.title.trim(),input.description,input.category_id,priority.as_str(),input.start_minute,input.end_minute,input.local_date,"local",rule,t,t])?;
+    crate::task::analytics::bump_source_revision(&tx)?;
     tx.commit()?;
     Ok(id)
 }
@@ -596,6 +611,7 @@ pub fn update_recurring(
             }
         }
     }
+    crate::task::analytics::bump_source_revision(&tx)?;
     tx.commit()?;
     Ok(())
 }

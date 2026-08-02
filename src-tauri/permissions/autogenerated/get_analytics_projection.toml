@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-get-analytics-projection"
+description = "Enables the get_analytics_projection command without any pre-configured scope."
+commands.allow = ["get_analytics_projection"]
+
+[[permission]]
+identifier = "deny-get-analytics-projection"
+description = "Denies the get_analytics_projection command without any pre-configured scope."
+commands.deny = ["get_analytics_projection"]

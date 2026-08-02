@@ -31,6 +31,8 @@
     "allow-get-month-projection",
     "allow-list-completion-states",
     "allow-evaluate-task",
-    "allow-undo-task-evaluation"
+    "allow-undo-task-evaluation",
+    "allow-update-category-goals",
+    "allow-get-analytics-projection"
   ]
 }

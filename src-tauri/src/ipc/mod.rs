@@ -70,5 +70,12 @@ mod tests {
         crate::task::dto::TaskEvaluationView::export_all_to(&out).unwrap();
         crate::task::dto::EvaluateTaskInput::export_all_to(&out).unwrap();
         crate::task::dto::UndoTaskEvaluationInput::export_all_to(&out).unwrap();
+        crate::task::dto::UpdateCategoryGoalsInput::export_all_to(&out).unwrap();
+        crate::task::dto::AnalyticsPeriodKind::export_all_to(&out).unwrap();
+        crate::task::dto::AnalyticsProjectionInput::export_all_to(&out).unwrap();
+        crate::task::dto::AnalyticsCategoryView::export_all_to(&out).unwrap();
+        crate::task::dto::AnalyticsCompletionDistributionView::export_all_to(&out).unwrap();
+        crate::task::dto::AnalyticsStreakView::export_all_to(&out).unwrap();
+        crate::task::dto::AnalyticsProjection::export_all_to(&out).unwrap();
     }
 }

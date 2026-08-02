@@ -74,6 +74,21 @@ static MIGRATIONS: &[Migration] = &[
             CREATE TABLE evaluation_operations (operation_id TEXT PRIMARY KEY NOT NULL, subject_kind TEXT NOT NULL CHECK(subject_kind IN ('one_off','recurring')), task_id TEXT, series_id TEXT, original_local_date TEXT, previous_evaluation_id TEXT REFERENCES task_evaluations(id), new_evaluation_id TEXT NOT NULL REFERENCES task_evaluations(id), created_at TEXT NOT NULL, undone_at TEXT, CHECK((subject_kind='one_off' AND task_id IS NOT NULL AND series_id IS NULL AND original_local_date IS NULL) OR (subject_kind='recurring' AND task_id IS NULL AND series_id IS NOT NULL AND original_local_date IS NOT NULL)));
             CREATE INDEX evaluation_operations_subject ON evaluation_operations(subject_kind,task_id,series_id,original_local_date,created_at);",
     },
+    Migration {
+        version: 6,
+        sql: "ALTER TABLE task_categories ADD COLUMN weekly_minimum_minutes INTEGER CHECK(weekly_minimum_minutes IS NULL OR weekly_minimum_minutes BETWEEN 0 AND 10080);
+            ALTER TABLE task_categories ADD COLUMN weekly_target_minutes INTEGER CHECK(weekly_target_minutes IS NULL OR weekly_target_minutes BETWEEN 0 AND 10080);
+            ALTER TABLE task_categories ADD COLUMN goal_revision INTEGER NOT NULL DEFAULT 0 CHECK(goal_revision >= 0);
+            CREATE TABLE category_goal_history (category_id TEXT NOT NULL REFERENCES task_categories(id), effective_week_start TEXT NOT NULL, weekly_minimum_minutes INTEGER, weekly_target_minutes INTEGER, goal_revision INTEGER NOT NULL, created_at TEXT NOT NULL, PRIMARY KEY(category_id,effective_week_start), CHECK((weekly_minimum_minutes IS NULL AND weekly_target_minutes IS NULL) OR (weekly_minimum_minutes IS NOT NULL AND weekly_target_minutes IS NOT NULL AND weekly_minimum_minutes BETWEEN 0 AND weekly_target_minutes AND weekly_target_minutes <= 10080)));
+            CREATE TABLE category_goal_operations (operation_id TEXT PRIMARY KEY NOT NULL, category_id TEXT NOT NULL, weekly_minimum_minutes INTEGER, weekly_target_minutes INTEGER, effective_week_start TEXT NOT NULL, result_revision INTEGER NOT NULL, created_at TEXT NOT NULL);
+            CREATE TABLE analytics_meta (id INTEGER PRIMARY KEY CHECK(id=1), source_revision INTEGER NOT NULL, algorithm_version INTEGER NOT NULL); INSERT INTO analytics_meta VALUES(1,0,1);
+            CREATE TABLE analytics_period_aggregates (period_kind TEXT NOT NULL, period_start TEXT NOT NULL, period_end TEXT NOT NULL, observed_local_date TEXT NOT NULL, observed_local_minute INTEGER NOT NULL CHECK(observed_local_minute BETWEEN 0 AND 1439), source_revision INTEGER NOT NULL, algorithm_version INTEGER NOT NULL, computed_at TEXT NOT NULL, scheduled_minutes INTEGER NOT NULL, task_count INTEGER NOT NULL, evaluated_count INTEGER NOT NULL, missed_count INTEGER NOT NULL, PRIMARY KEY(period_kind,period_start));
+            CREATE TABLE analytics_category_aggregates (period_kind TEXT NOT NULL, period_start TEXT NOT NULL, category_id TEXT NOT NULL, category_name_snapshot TEXT NOT NULL, category_icon_key_snapshot TEXT NOT NULL, category_color_key_snapshot TEXT NOT NULL, scheduled_minutes INTEGER NOT NULL, configured_weekly_minimum INTEGER, configured_weekly_target INTEGER, minimum_attained_minutes INTEGER NOT NULL, target_attained_minutes INTEGER NOT NULL, minimum_shortfall_minutes INTEGER NOT NULL, target_shortfall_minutes INTEGER NOT NULL, minimum_overage_minutes INTEGER NOT NULL, target_overage_minutes INTEGER NOT NULL, eligible_week_count INTEGER NOT NULL, minimum_week_count INTEGER NOT NULL, target_week_count INTEGER NOT NULL, source_revision INTEGER NOT NULL, algorithm_version INTEGER NOT NULL, PRIMARY KEY(period_kind,period_start,category_id));
+            CREATE TABLE analytics_completion_distribution (period_kind TEXT NOT NULL, period_start TEXT NOT NULL, state_id TEXT NOT NULL, state_label_snapshot TEXT NOT NULL, state_visual_snapshot TEXT NOT NULL, count INTEGER NOT NULL, source_revision INTEGER NOT NULL, algorithm_version INTEGER NOT NULL, PRIMARY KEY(period_kind,period_start,state_id,state_label_snapshot,state_visual_snapshot));
+            CREATE TABLE analytics_category_streaks (category_id TEXT NOT NULL, threshold_kind TEXT NOT NULL, through_week_start TEXT NOT NULL, current_length INTEGER NOT NULL, longest_length INTEGER NOT NULL, current_start TEXT, longest_start TEXT, last_break_week TEXT, algorithm_version INTEGER NOT NULL, source_revision INTEGER NOT NULL, PRIMARY KEY(category_id,threshold_kind,through_week_start));
+            CREATE INDEX category_goal_history_effective ON category_goal_history(category_id,effective_week_start);
+            CREATE INDEX analytics_period_revision ON analytics_period_aggregates(source_revision,algorithm_version);",
+    },
 ];
 
 /// Bootstraps the migration tracking table and applies any pending migrations.
@@ -178,7 +193,7 @@ mod tests {
         let mut conn = open_memory_connection().unwrap();
         run_migrations(&mut conn).unwrap();
 
-        assert_eq!(current_schema_version(&conn).unwrap(), 5);
+        assert_eq!(current_schema_version(&conn).unwrap(), 6);
 
         let count: i64 = conn
             .query_row("SELECT COUNT(*) FROM db_metadata", [], |r| r.get(0))
@@ -188,11 +203,11 @@ mod tests {
             "db_metadata must have at least the created_at seed row"
         );
 
-        // schema_migrations has exactly two rows (migration 1 + migration 2)
+        // Every immutable migration is recorded exactly once.
         let mig_count: i64 = conn
             .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
             .unwrap();
-        assert_eq!(mig_count, 5);
+        assert_eq!(mig_count, 6);
     }
 
     #[test]
@@ -201,12 +216,12 @@ mod tests {
         run_migrations(&mut conn).unwrap();
         run_migrations(&mut conn).unwrap();
 
-        // Version stays at 2; no duplicate schema_migrations rows
-        assert_eq!(current_schema_version(&conn).unwrap(), 5);
+        // The latest version remains stable; no duplicate migration rows.
+        assert_eq!(current_schema_version(&conn).unwrap(), 6);
         let mig_count: i64 = conn
             .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
             .unwrap();
-        assert_eq!(mig_count, 5);
+        assert_eq!(mig_count, 6);
     }
 
     // ── Validation ────────────────────────────────────────────────────────────
@@ -264,7 +279,7 @@ mod tests {
         match run_migrations_with(&mut conn, MIGRATIONS) {
             Err(DbError::SchemaTooNew { stored, supported }) => {
                 assert_eq!(stored, 9999);
-                assert_eq!(supported, 5);
+                assert_eq!(supported, 6);
             }
             other => panic!("expected SchemaTooNew, got {other:?}"),
         }
@@ -300,7 +315,7 @@ mod tests {
         {
             let mut conn = open_file_connection(&path).unwrap();
             run_migrations(&mut conn).unwrap();
-            assert_eq!(current_schema_version(&conn).unwrap(), 5);
+            assert_eq!(current_schema_version(&conn).unwrap(), 6);
             // Confirm the schema object created by migration 1 exists
             let count: i64 = conn
                 .query_row("SELECT COUNT(*) FROM db_metadata", [], |r| r.get(0))
@@ -314,7 +329,7 @@ mod tests {
             run_migrations(&mut conn).unwrap();
             assert_eq!(
                 current_schema_version(&conn).unwrap(),
-                5,
+                6,
                 "schema version must survive close/reopen"
             );
             let count: i64 = conn
@@ -327,7 +342,7 @@ mod tests {
                 .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
                 .unwrap();
             assert_eq!(
-                mig_count, 5,
+                mig_count, 6,
                 "no duplicate migration records after reopen + re-run"
             );
         }

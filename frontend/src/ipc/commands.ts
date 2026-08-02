@@ -21,6 +21,9 @@ import type { CompletionStateView } from "./generated/CompletionStateView";
 import type { EvaluateTaskInput } from "./generated/EvaluateTaskInput";
 import type { TaskEvaluationView } from "./generated/TaskEvaluationView";
 import type { UndoTaskEvaluationInput } from "./generated/UndoTaskEvaluationInput";
+import type { AnalyticsProjection } from "./generated/AnalyticsProjection";
+import type { AnalyticsProjectionInput } from "./generated/AnalyticsProjectionInput";
+import type { UpdateCategoryGoalsInput } from "./generated/UpdateCategoryGoalsInput";
 
 export function healthCheck(): Promise<HealthCheck> {
   return invoke<HealthCheck>("health_check");
@@ -90,3 +93,5 @@ export const getMonthProjection = (year: number, month: number, selectedDate: st
 export const listCompletionStates = () => invoke<CompletionStateView[]>("list_completion_states");
 export const evaluateTask = (input: EvaluateTaskInput) => invoke<TaskEvaluationView>("evaluate_task", { input });
 export const undoTaskEvaluation = (input: UndoTaskEvaluationInput) => invoke<TaskEvaluationView|null>("undo_task_evaluation", { input });
+export const getAnalyticsProjection = (input: AnalyticsProjectionInput) => invoke<AnalyticsProjection>("get_analytics_projection", { input });
+export const updateCategoryGoals = (input: UpdateCategoryGoalsInput) => invoke<TaskCategoryView>("update_category_goals", { input });

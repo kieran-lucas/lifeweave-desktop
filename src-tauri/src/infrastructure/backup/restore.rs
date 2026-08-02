@@ -742,10 +742,15 @@ mod tests {
         },
     };
     use crate::task::{
-        dto::{CreateTaskInput, EvaluateTaskInput},
+        analytics,
+        dto::{
+            AnalyticsPeriodKind, AnalyticsProjectionInput, CreateTaskInput, EvaluateTaskInput,
+            UpdateCategoryGoalsInput,
+        },
         evaluation::{self, ObservedLocalTime},
         repository as task_repository,
     };
+    use chrono::{Datelike, Local, Timelike};
     use std::path::PathBuf;
     use std::sync::{
         Arc, Barrier, Mutex,
@@ -810,7 +815,7 @@ mod tests {
         );
 
         let restore_result = restore_db(&rt, &backup_dir).unwrap();
-        assert_eq!(restore_result.schema_version, 5);
+        assert_eq!(restore_result.schema_version, 6);
 
         let active = rt.execute(|conn| repo::list_active(conn)).unwrap();
         assert_eq!(active.len(), 1);
@@ -905,6 +910,79 @@ mod tests {
         assert_eq!(label, "Met expectation");
         assert_eq!(history_count, 1);
         assert_eq!(operation_count, 1);
+    }
+
+    #[test]
+    fn category_goals_and_rebuildable_analytics_survive_backup_restore() {
+        let (rt, _db) = make_file_runtime();
+        let backups = temp_backups_dir();
+        let now = Local::now();
+        let today = format!("{:04}-{:02}-{:02}", now.year(), now.month(), now.day());
+        let minute = (now.hour() * 60 + now.minute()) as i32;
+        let today_for_setup = today.clone();
+        rt.execute(move |conn| {
+            analytics::update_category_goals(
+                conn,
+                UpdateCategoryGoalsInput {
+                    category_id: "general".into(),
+                    weekly_minimum_minutes: Some(90),
+                    weekly_target_minutes: Some(180),
+                    expected_revision: 0,
+                    operation_id: "backup-analytics-goal".into(),
+                    observed_local_date: today_for_setup.clone(),
+                },
+            )
+            .unwrap();
+            analytics::projection(
+                conn,
+                AnalyticsProjectionInput {
+                    period_kind: AnalyticsPeriodKind::Week,
+                    anchor_local_date: today_for_setup.clone(),
+                    observed_local_date: today_for_setup,
+                    observed_local_minute: minute,
+                },
+            )
+            .unwrap();
+            Ok(())
+        })
+        .unwrap();
+        let backup_dir = PathBuf::from(backup_db(&rt, &backups).unwrap().backup_dir);
+        let today_for_mutation = today.clone();
+        rt.execute(move |conn| {
+            analytics::update_category_goals(
+                conn,
+                UpdateCategoryGoalsInput {
+                    category_id: "general".into(),
+                    weekly_minimum_minutes: Some(300),
+                    weekly_target_minutes: Some(360),
+                    expected_revision: 1,
+                    operation_id: "backup-analytics-later".into(),
+                    observed_local_date: today_for_mutation,
+                },
+            )
+            .unwrap();
+            Ok(())
+        })
+        .unwrap();
+
+        restore_db(&rt, &backup_dir).unwrap();
+        let (minimum, target, revision, aggregate_count) = rt
+            .execute(|conn| {
+                let goals = conn.query_row(
+                    "SELECT weekly_minimum_minutes,weekly_target_minutes,goal_revision FROM task_categories WHERE id='general'",
+                    [],
+                    |row| Ok((row.get::<_, i32>(0)?, row.get::<_, i32>(1)?, row.get::<_, i32>(2)?)),
+                )?;
+                let aggregate_count: i64 = conn.query_row(
+                    "SELECT COUNT(*) FROM analytics_period_aggregates",
+                    [],
+                    |row| row.get(0),
+                )?;
+                Ok((goals.0, goals.1, goals.2, aggregate_count))
+            })
+            .unwrap();
+        assert_eq!((minimum, target, revision), (90, 180, 1));
+        assert_eq!(aggregate_count, 1);
     }
 
     // F-02: replacing the package source at the validated-source boundary must

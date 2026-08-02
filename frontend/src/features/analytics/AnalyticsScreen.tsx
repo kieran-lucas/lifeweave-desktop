@@ -1,0 +1,29 @@
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { parseDate } from "@internationalized/date";
+import { useEffect, useMemo, useState } from "react";
+import { getAnalyticsProjection } from "../../ipc/commands";
+import type { AnalyticsPeriodKind } from "../../ipc/generated/AnalyticsPeriodKind";
+import { localToday } from "../calendar/date";
+import { CategoryIcon } from "../task/categoryIcons";
+import * as styles from "./AnalyticsScreen.css";
+
+const kinds:AnalyticsPeriodKind[]=["week","month","year"];
+const duration=(minutes:number)=>`${Math.floor(minutes/60)}h ${minutes%60}m`;
+function moveDate(date:string,kind:AnalyticsPeriodKind,amount:number){const value=parseDate(date);return (kind==="week"?value.add({weeks:amount}):kind==="month"?value.add({months:amount}):value.add({years:amount})).toString();}
+
+export function AnalyticsScreen(){
+ const [kind,setKind]=useState<AnalyticsPeriodKind>("week"),[anchor,setAnchor]=useState(localToday());
+ const client=useQueryClient(),now=new Date(),today=localToday(),observedMinute=now.getHours()*60+now.getMinutes();
+ const analyticsInput=useMemo(()=>({period_kind:kind,anchor_local_date:anchor,observed_local_date:today,observed_local_minute:observedMinute}),[kind,anchor,today,observedMinute]);
+ const query=useQuery({queryKey:["analytics",kind,anchor,today],queryFn:()=>getAnalyticsProjection(analyticsInput),placeholderData:previous=>previous});
+ useEffect(()=>{for(const amount of [-1,1]){const adjacent=moveDate(anchor,kind,amount);void client.prefetchQuery({queryKey:["analytics",kind,adjacent,today],queryFn:()=>getAnalyticsProjection({...analyticsInput,anchor_local_date:adjacent})})}},[client,kind,anchor,today,analyticsInput]);
+ const data=query.data;
+ const distributionTotal=data?.completion_distribution.reduce((sum,item)=>sum+item.count,0)??0;
+ return <section className={styles.root} aria-labelledby="analytics-heading"><header><p className={styles.eyebrow}>Objective Analytics · scheduled time</p><h1 id="analytics-heading" tabIndex={-1}>Analytics</h1><div role="tablist" aria-label="Analytics period">{kinds.map(value=><button key={value} role="tab" aria-selected={kind===value} onClick={()=>setKind(value)}>{value[0]!.toUpperCase()+value.slice(1)}</button>)}</div><div className={styles.periodNav}><button aria-label="Previous period" onClick={()=>setAnchor(moveDate(anchor,kind,-1))}>Previous</button><strong>{data?`${data.period_start} – ${data.period_end}`:anchor}</strong><button aria-label="Next period" onClick={()=>setAnchor(moveDate(anchor,kind,1))}>Next</button><button onClick={()=>setAnchor(today)}>Current period</button></div></header>
+ {query.isLoading&&<p aria-live="polite">Loading objective Analytics…</p>}{query.isError&&<p role="alert">Unable to load objective Analytics.</p>}
+ {data&&<><section aria-labelledby="scheduled-overview"><h2 id="scheduled-overview">Scheduled overview</h2><p className={styles.primary}><strong>{duration(data.scheduled_minutes)}</strong><span>Scheduled time</span></p><dl className={styles.facts}><div><dt>Scheduled tasks</dt><dd>{data.task_count}</dd></div><div><dt>Evaluated</dt><dd>{data.evaluated_count}</dd></div><div><dt>Missed</dt><dd>{data.missed_count}</dd></div></dl></section>
+ <section aria-labelledby="category-time"><h2 id="category-time">Category scheduled time</h2>{data.categories.length===0?<p>No scheduled tasks in this period.</p>:<ul className={styles.categories}>{data.categories.map(category=><li key={category.category_id}><h3><CategoryIcon iconKey={category.category_icon_key} label={`Category ${category.category_name}`}/> {category.category_name}</h3><p>{duration(category.scheduled_minutes)} scheduled</p>{category.weekly_minimum_minutes===null?<p>Weekly minimum and target not configured.</p>:<><label>Weekly minimum <progress value={Math.min(category.scheduled_minutes,category.weekly_minimum_minutes)} max={category.weekly_minimum_minutes||1}/></label><p>{category.minimum_shortfall_minutes>0?`${duration(category.minimum_shortfall_minutes)} short of minimum`:`${duration(category.minimum_overage_minutes)} over minimum`}</p><label>Weekly target <progress value={Math.min(category.scheduled_minutes,category.weekly_target_minutes!)} max={category.weekly_target_minutes||1}/></label><p>{category.target_shortfall_minutes>0?`${duration(category.target_shortfall_minutes)} short of target`:`${duration(category.target_overage_minutes)} over target`}</p>{kind!=="week"&&<p>{category.minimum_week_count} of {category.eligible_week_count} completed weeks met minimum; {category.target_week_count} met target.</p>}</>}</li>)}</ul>}</section>
+ <section aria-labelledby="objective-streaks"><h2 id="objective-streaks">Objective streaks</h2>{data.streaks.length===0?<p>No configured completed-week streaks yet.</p>:<ul>{data.streaks.map(streak=><li key={`${streak.category_id}-${streak.threshold_kind}`}>{streak.category_id} {streak.threshold_kind}: current {streak.current_length} weeks; longest {streak.longest_length} weeks.</li>)}</ul>}</section>
+ <section aria-labelledby="completion-distribution"><h2 id="completion-distribution">Completion distribution</h2>{data.completion_distribution.length===0?<p>No evaluations in this period.</p>:<><div className={styles.distribution} aria-hidden="true">{data.completion_distribution.map(item=><progress key={`${item.state_id}-${item.label}`} value={item.count} max={distributionTotal} data-visual={item.visual_token}/>)}</div><table><caption>Evaluation counts</caption><thead><tr><th>State</th><th>Tasks</th></tr></thead><tbody>{data.completion_distribution.map(item=><tr key={`${item.state_id}-${item.label}`}><th>{item.label}</th><td>{item.count}</td></tr>)}</tbody></table></>}</section></>}
+ </section>;
+}

@@ -1,10 +1,11 @@
 use crate::infrastructure::sqlite::{DbError, runtime::DatabaseRuntime};
 use crate::ipc::error::IpcError;
 use crate::task::{
-    calendar,
+    analytics, calendar,
     dto::{
-        CompletionStateView, CreateTaskInput, EvaluateTaskInput, MonthProjection, TaskCategoryView,
-        TaskEvaluationView, TaskView, UndoTaskEvaluationInput, UpdateTaskInput,
+        AnalyticsProjection, AnalyticsProjectionInput, CompletionStateView, CreateTaskInput,
+        EvaluateTaskInput, MonthProjection, TaskCategoryView, TaskEvaluationView, TaskView,
+        UndoTaskEvaluationInput, UpdateCategoryGoalsInput, UpdateTaskInput,
     },
     evaluation,
     repository::{self, TaskError},
@@ -21,6 +22,30 @@ fn map_db(e: DbError) -> IpcError {
         | DbError::InvalidMigrationList => IpcError::Corruption,
         _ => IpcError::Storage,
     }
+}
+
+#[tauri::command]
+#[tracing::instrument(skip(state, input))]
+pub fn update_category_goals(
+    state: State<'_, DatabaseRuntime>,
+    input: UpdateCategoryGoalsInput,
+) -> Result<TaskCategoryView, IpcError> {
+    state
+        .execute(move |conn| Ok(analytics::update_category_goals(conn, input)))
+        .map_err(map_db)?
+        .map_err(map_task)
+}
+
+#[tauri::command]
+#[tracing::instrument(skip(state, input))]
+pub fn get_analytics_projection(
+    state: State<'_, DatabaseRuntime>,
+    input: AnalyticsProjectionInput,
+) -> Result<AnalyticsProjection, IpcError> {
+    state
+        .execute(move |conn| Ok(analytics::projection(conn, input)))
+        .map_err(map_db)?
+        .map_err(map_task)
 }
 fn map_task(e: TaskError) -> IpcError {
     match e {

@@ -1,0 +1,16 @@
+import { globalStyle, style } from "@vanilla-extract/css";
+export const root=style({display:"flex",flexDirection:"column",gap:32,maxWidth:960});
+export const eyebrow=style({margin:0,color:"var(--text-muted)"});
+export const periodNav=style({display:"flex",flexWrap:"wrap",gap:10,alignItems:"center",marginTop:12});
+export const primary=style({display:"flex",flexDirection:"column",gap:4});
+globalStyle(`${primary} strong`,{fontSize:"clamp(2rem,5vw,4rem)",fontVariantNumeric:"tabular-nums"});
+globalStyle(`${primary} span`,{color:"var(--text-muted)"});
+export const facts=style({display:"grid",gridTemplateColumns:"repeat(3,minmax(0,1fr))",gap:12});
+globalStyle(`${facts} div`,{borderTop:"1px solid var(--border-subtle)",paddingTop:10});
+globalStyle(`${facts} dt`,{color:"var(--text-muted)"});
+globalStyle(`${facts} dd`,{margin:0,fontSize:24});
+export const categories=style({listStyle:"none",padding:0,display:"grid",gap:20});
+globalStyle(`${categories} li`,{borderTop:"1px solid var(--border-subtle)",paddingTop:12});
+globalStyle(`${categories} progress`,{display:"block",width:"min(100%,520px)",accentColor:"var(--accent)"});
+export const distribution=style({display:"grid",gap:3,maxWidth:520});
+globalStyle(`${distribution} progress`,{width:"100%",height:8,accentColor:"var(--accent)"});
