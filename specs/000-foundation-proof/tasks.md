@@ -322,3 +322,14 @@ Task 13/60 is complete. Task 14/60 is the only allowed next action. The live roa
 - [x] Exact evidence: frontend 94; full Rust 272; Task 46; backup 131; required `life` filter 85; security/governance/generated DTO/ACL and NSIS pass. See `docs/audits/task-14-life-edit.md`.
 
 Task 14/60 is complete. Task 15/60 is the only allowed next action. Narrative Canvas, Basic Leaf content, final visual worlds, Task/Life linking and the whole Life System remain out of scope.
+
+### Task 15 — Basic Leaf Document Core + Read/Edit/Recovery
+
+- [x] Migration 9 adds one versioned Core document per active Life leaf, bounded committed history, distinct recovery drafts and stable local asset authority.
+- [x] Static Reader does not mount Tiptap; focused Edit and unified/remark Markdown adapters load only on demand.
+- [x] Autosave, explicit Save, optimistic revision conflicts, draft recover/discard, safe links/inert code, Core images and tables are implemented through typed IPC.
+- [x] Asset MIME/decode/size/dimension/checksum validation and metadata-stripped portable export remain contained and path-free at IPC.
+- [x] Backup/restore includes referenced image originals with traversal, count, size, checksum and candidate-database cross-validation.
+- [x] Exact evidence: frontend 111; full Rust 288; Task 46; Life 85; Document 14; backup 135; governance/security/generated DTO/ACL, code splitting, NSIS and isolated native relaunch passed. See `docs/audits/task-15-basic-leaf.md`.
+
+Task 15/60 is complete. Task 16/60 is the only allowed next action. Narrative Canvas and the whole product remain incomplete.

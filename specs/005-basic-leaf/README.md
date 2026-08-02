@@ -1,8 +1,8 @@
 # Slice 005 — Basic Leaf
 
-Status: **Not active.**
+Status: **Task 15 implemented and verified.**
 
-This directory is a roadmap reservation only. It is not an approved implementation spec.
+The Product Owner activated this slice through the Task 15 execution contract on 2026-08-02. The immutable source remains authoritative; the execution package records the calibrated Core-only boundary.
 
 Activation requires:
 1. prior slice gate;
@@ -12,4 +12,4 @@ Activation requires:
 5. explicit out-of-scope;
 6. risk/test plan for data-sensitive work.
 
-Do not install dependencies, create schema, add navigation, or implement placeholders for this slice before activation.
+Implementation and verification evidence: `docs/audits/task-15-basic-leaf.md` and ADR 0005. Narrative Canvas remains outside this completed slice.

@@ -136,3 +136,12 @@ Task 10/60 Week Strip + Calendar Month Projection is the only allowed next actio
 - The Edit workspace uses exact-pinned d3 geometry and dnd-kit pointer/keyboard sensors, DragOverlay, parent/sibling zones, preview connectors and authoritative rollback/reconciliation.
 - Evidence: frontend 94/94; Rust 272/272; Task 46/46; backup 131/131; required `life` filter 85/85; governance/security/generated DTO/ACL, scale fixtures, backup/reopen, NSIS and two-session isolated native smoke passed. See `docs/audits/task-14-life-edit.md`.
 - Task 14/60 is complete. Task 15/60 is the only allowed next action. Narrative Canvas, Basic Leaf content, final visual worlds, Task/Life linking and the whole Life System remain outside this slice.
+
+## Task 15/60 — Basic Leaf Document Core + Read/Edit/Recovery
+
+- Implementation commit: `624e573b6ac746b35e6f46f510e8019832d44390`.
+- Migration 9 adds versioned Basic Leaf JSON, bounded committed revisions, distinct recovery drafts, local stable-ID image authority and document/asset reference tracking. ADR 0005 records the Core canonical-model decision; Narrative Canvas remains inactive.
+- Static Reader, lazy focused Tiptap editor, accessible autosave/recovery states, safe Markdown adapters and atomic metadata-stripped portable export are integrated with Life leaf navigation.
+- Backup format 2 packages referenced asset originals and restores only after checksum, containment and candidate-DB cross-validation.
+- Evidence: frontend 111/111; Rust 288/288; Task 46/46; Life 85/85; Document 14/14; backup 135/135; governance/security/generated DTO/ACL, NSIS and sentinel-isolated native relaunch passed. See `docs/audits/task-15-basic-leaf.md`.
+- Task 15/60 is complete. Task 16/60 is the only allowed next action. Narrative Canvas, search/knowledge features and the whole product remain incomplete.
