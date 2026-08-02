@@ -201,6 +201,16 @@ Task 2 remains active and blocked by verified P0/P1 findings. Task 3 is not allo
 - Task 2/60 is complete with non-blocking audit debt. Task 3/60 is the only allowed next action. Stage E, Foundation and production-safe restore are not declared complete.
 - Report: `docs/audits/task-02-final.md`.
 
+### Task 3 — Opaque Backup ID and Progress Boundary
+
+- Implementation HEAD: `c5b77dd123420915010834dbb54f0cc5275b0769` (`replace backup paths with opaque ids`).
+- `BackupId` is backend-owned and strictly validated as `lifeweave_backup_<digits>`; resolution canonicalizes beneath the managed backups root and rejects traversal, absolute syntax, symlink escape, unknown and malformed packages.
+- `BackupSummary` contains only opaque ID and safe metadata. `restore_database` no longer accepts a filesystem path. Catalog listing is deterministic newest-first and excludes staging/safety/unrelated/incomplete packages.
+- Typed `BackupProgress` events expose coarse operation phases without paths, SQL or user content; success emits `completed`, while failures do not.
+- Foundation harness now loads/selects catalog IDs, refreshes after backup, restores by ID, exposes accessible progress/error state, and disables conflicting operations.
+- Task 3 evidence: Rust ID/catalog tests, full backup/recovery suite, frontend suite, generated DTO drift, governance, Tauri build and native smoke are recorded at final HEAD.
+- F-06 is closed. F-04/F-05 and GitHub CI remain non-blocking debt. Task 4/60 is the only next action; no Task 4 implementation is included here.
+
 ## Quality
 - [ ] Strict CSP/capability review.
 - [ ] No disallowed remote resource.

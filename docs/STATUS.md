@@ -43,6 +43,15 @@ The 60-task roadmap is the execution and coordination layer. It does not replace
 ## Active slice
 `specs/000-foundation-proof`
 
+## Task 3/60 — Backup IPC boundary
+
+- Implementation candidate: opaque `BackupId` values are strict `lifeweave_backup_<digits>` identities resolved only beneath the backend-owned `backups` root.
+- `BackupSummary` and `BackupProgress` are path-free renderer DTOs; catalog listing excludes staging, safety, malformed and unrelated directories.
+- `restore_database` accepts only `backup_id`; Foundation UI selects catalog metadata and renders typed operation phases without filesystem paths.
+- F-06 raw-path IPC is closed. Task 4/60 security, CSP and capabilities is the only next action after final gates.
+- Task 3 implementation commit: `c5b77dd` (`replace backup paths with opaque ids`); final gate evidence follows.
+- F-04/F-05 and lack of independent GitHub CI remain non-blocking debt. Stage E, Foundation and production-safe restore are not declared complete.
+
 ## Product implementation boundaries
 
 - App Shell has not started.
