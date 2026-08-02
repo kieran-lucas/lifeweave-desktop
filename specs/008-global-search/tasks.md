@@ -21,6 +21,6 @@
 
 ### All tests pass
 
-- 322 Rust tests (including 19 search-specific tests)
+- 324 Rust tests (including 19 search-specific tests + file-backed smoke + realistic 10k/1k/5k/5k performance fixture)
 - 18 GlobalSearchDialog frontend tests
-- Full frontend test suite (133 passing; 3 pre-existing TodayScreen failures unrelated to Task 18)
+- Full frontend test suite: 136 passing, 0 failed

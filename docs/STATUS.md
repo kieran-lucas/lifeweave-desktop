@@ -10,7 +10,7 @@ Updated: 2026-08-03 Asia/Saigon
 - `search_global` IPC command; lazy `GlobalSearchDialog` React component; Ctrl+K shortcut.
 - Results grouped by Tasks/Life/Documents (max 8 per group); BM25 ranking; highlight/snippet fragments.
 - Navigation from search integrates with TodayScreen (task focus) and LifeScreen (browse/reader entry).
-- 322 Rust tests pass; 18 new GlobalSearchDialog frontend tests pass; all governance gates pass.
+- 324 Rust tests pass (includes file-backed smoke + realistic 10k/1k/5k/5k performance fixture); 136 frontend tests pass (18 new GlobalSearchDialog, all 12 TodayScreen); all governance gates pass.
 - ADR 0007 accepted; specs/008-global-search/ created.
 
 ## Task 17/60 — Expansion Decision + Candidate Activation Matrix

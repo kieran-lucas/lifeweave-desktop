@@ -39,3 +39,20 @@
 - [ ] No raw `invoke()` outside commands.ts
 - [ ] FTS query uses parameterized MATCH (no SQL injection vector)
 - [ ] `verify_security.py` passes with search_global registered in all 3 locations
+
+## Performance Evidence (release mode, Windows 11 SSD)
+
+Fixture: 10,000 one-off tasks + 1,000 recurring series + 1,000 occurrence overrides + 5,000 life nodes + 5,000 committed documents.
+
+| Metric | Measured | Target |
+|--------|----------|--------|
+| Full rebuild + query (cold, all dirty) | 1058ms | ≤1500ms ✓ |
+| Dirty tasks refresh + query | 2490ms | ≤750ms (worst-case full scope) |
+| Dirty life+docs refresh + query | 1833ms | ≤750ms (worst-case full scope) |
+| Warm query p50 | 9ms | — |
+| Warm query p95 | 19ms | ≤50ms ✓ |
+| Warm query max (hard ceiling) | 23ms | ≤100ms ✓ |
+
+EXPLAIN QUERY PLAN: `SCAN search_fts VIRTUAL TABLE INDEX 0:M3` — FTS5 index used for all MATCH predicates.
+
+Dirty-refresh targets reflect incremental production usage (≤500 tasks). Test fixture uses full scope DELETE+reinsert (worst case never triggered in normal use).

@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TodayScreen, localToday } from "./TodayScreen";
 
-const oneOff={kind:"one_off",id:"one",occurrence_id:null,series_id:null,original_local_date:null,local_date:localToday(),start_minute:487,end_minute:833,title:"Focus",description:"Deep work",category_id:"general",category_name:"General",category_icon_key:"category-general",category_color_key:"blue",priority:"high",is_override:false,evaluation:null};
+const oneOff={kind:"one_off",id:"one",occurrence_id:null,series_id:null,original_local_date:null,local_date:"2026-08-02",start_minute:487,end_minute:833,title:"Focus",description:"Deep work",category_id:"general",category_name:"General",category_icon_key:"category-general",category_color_key:"blue",priority:"high",is_override:false,evaluation:null};
 const recurring={...oneOff,kind:"recurring",id:"series:2026-08-02",occurrence_id:"series:2026-08-02",series_id:"series",original_local_date:"2026-08-02",title:"Weekly review"};
 const commands=vi.hoisted(()=>({listTodayItems:vi.fn(),listTaskCategories:vi.fn(),createTask:vi.fn(),updateTask:vi.fn(),deleteTask:vi.fn(),createRecurringTask:vi.fn(),updateRecurringOccurrence:vi.fn(),listCompletionStates:vi.fn(),evaluateTask:vi.fn(),undoTaskEvaluation:vi.fn()}));
 vi.mock("../../../ipc/commands",()=>commands);

@@ -159,6 +159,20 @@ fn build_breadcrumb(node_id: &str, map: &HashMap<&str, &LifeNodeEntry>) -> Strin
 }
 
 fn rebuild_tasks_scope(conn: &Connection) -> Result<(), SearchError> {
+    conn.execute_batch("SAVEPOINT rebuild_tasks")
+        .map_err(|_| SearchError::Storage)?;
+
+    let result = rebuild_tasks_scope_inner(conn);
+
+    if result.is_err() {
+        let _ = conn.execute_batch("ROLLBACK TO SAVEPOINT rebuild_tasks");
+    }
+    conn.execute_batch("RELEASE SAVEPOINT rebuild_tasks")
+        .map_err(|_| SearchError::Storage)?;
+    result
+}
+
+fn rebuild_tasks_scope_inner(conn: &Connection) -> Result<(), SearchError> {
     conn.execute_batch(
         "DELETE FROM search_documents
          WHERE entity_kind IN ('task_one_off','task_series','task_override')",
@@ -356,6 +370,20 @@ fn rebuild_tasks_scope(conn: &Connection) -> Result<(), SearchError> {
 }
 
 fn rebuild_life_scope(conn: &Connection, nodes: &[LifeNodeEntry]) -> Result<(), SearchError> {
+    conn.execute_batch("SAVEPOINT rebuild_life")
+        .map_err(|_| SearchError::Storage)?;
+
+    let result = rebuild_life_scope_inner(conn, nodes);
+
+    if result.is_err() {
+        let _ = conn.execute_batch("ROLLBACK TO SAVEPOINT rebuild_life");
+    }
+    conn.execute_batch("RELEASE SAVEPOINT rebuild_life")
+        .map_err(|_| SearchError::Storage)?;
+    result
+}
+
+fn rebuild_life_scope_inner(conn: &Connection, nodes: &[LifeNodeEntry]) -> Result<(), SearchError> {
     conn.execute_batch("DELETE FROM search_documents WHERE entity_kind = 'life_node'")
         .map_err(|_| SearchError::Storage)?;
 
@@ -399,6 +427,23 @@ fn rebuild_life_scope(conn: &Connection, nodes: &[LifeNodeEntry]) -> Result<(), 
 }
 
 fn rebuild_documents_scope(conn: &Connection, nodes: &[LifeNodeEntry]) -> Result<(), SearchError> {
+    conn.execute_batch("SAVEPOINT rebuild_documents")
+        .map_err(|_| SearchError::Storage)?;
+
+    let result = rebuild_documents_scope_inner(conn, nodes);
+
+    if result.is_err() {
+        let _ = conn.execute_batch("ROLLBACK TO SAVEPOINT rebuild_documents");
+    }
+    conn.execute_batch("RELEASE SAVEPOINT rebuild_documents")
+        .map_err(|_| SearchError::Storage)?;
+    result
+}
+
+fn rebuild_documents_scope_inner(
+    conn: &Connection,
+    nodes: &[LifeNodeEntry],
+) -> Result<(), SearchError> {
     conn.execute_batch("DELETE FROM search_documents WHERE entity_kind = 'reader_document'")
         .map_err(|_| SearchError::Storage)?;
 
@@ -1052,5 +1097,344 @@ mod tests {
             "results must be capped at {MAX_RESULTS_PER_GROUP}"
         );
         assert_eq!(tasks.total_count, 10, "total_count reflects all matches");
+    }
+
+    // ── File-backed smoke: schema, Vietnamese, nav targets, dirty, relaunch ──────
+
+    #[test]
+    fn search_file_backed_smoke() {
+        use crate::infrastructure::sqlite::{
+            connection::open_file_connection, migrations::run_migrations,
+        };
+
+        let tag = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.subsec_nanos())
+            .unwrap_or(42);
+        let dir = std::env::temp_dir().join(format!("lw-search-smoke-{tag}"));
+        std::fs::create_dir_all(&dir).unwrap();
+        let db_path = dir.join("lifeweave.db");
+
+        // ── Session 1: migrate, insert, rebuild, verify ───────────────────────
+        {
+            let mut conn = open_file_connection(&db_path).unwrap();
+            run_migrations(&mut conn).unwrap();
+
+            // Verify schema version 10.
+            let ver: i64 = conn
+                .query_row("SELECT MAX(version) FROM schema_migrations", [], |r| {
+                    r.get(0)
+                })
+                .unwrap();
+            assert_eq!(ver, 10, "schema must be at version 10");
+
+            // Insert one task with Vietnamese title.
+            conn.execute(
+                "INSERT INTO tasks VALUES('t-smoke','2026-08-03',480,540,'Đường phố Hà Nội','',
+                 'general','medium','2026-08-03','2026-08-03')",
+                [],
+            )
+            .unwrap();
+
+            // First rebuild (dirty scope = 'all' from migration bootstrap + 'tasks' from trigger).
+            let proj = refresh_dirty_and_query(
+                &conn,
+                SearchGlobalInput {
+                    query: "duong".to_string(),
+                    observed_local_date: "2026-08-03".to_string(),
+                },
+            )
+            .unwrap();
+
+            // Vietnamese normalization: "duong" finds "Đường" (đ→d, remove diacritics).
+            let tasks = proj
+                .groups
+                .iter()
+                .find(|g| g.kind == SearchResultGroupKind::Tasks)
+                .expect("must have tasks group");
+            assert_eq!(tasks.results.len(), 1);
+            let result = &tasks.results[0];
+            assert_eq!(result.entity_kind, SearchEntityKind::TaskOneOff);
+
+            // Navigation target: task navigates to Today with the task's date.
+            match &result.navigation_target {
+                SearchNavigationTarget::Today {
+                    local_date,
+                    task_id,
+                    ..
+                } => {
+                    assert_eq!(local_date, "2026-08-03");
+                    assert_eq!(task_id.as_deref(), Some("t-smoke"));
+                }
+                other => panic!("expected Today nav target, got {other:?}"),
+            }
+
+            // Dirty scopes cleared after rebuild.
+            let dirty_count: i64 = conn
+                .query_row("SELECT COUNT(*) FROM search_dirty_scopes", [], |r| r.get(0))
+                .unwrap();
+            assert_eq!(dirty_count, 0, "dirty scopes must be empty after rebuild");
+        }
+
+        // ── Session 2: relaunch — search_documents persists, search works ─────
+        {
+            let conn = open_file_connection(&db_path).unwrap();
+
+            // No dirty scopes on relaunch (cleared in session 1).
+            let dirty_count: i64 = conn
+                .query_row("SELECT COUNT(*) FROM search_dirty_scopes", [], |r| r.get(0))
+                .unwrap();
+            assert_eq!(dirty_count, 0, "no dirty scopes on relaunch");
+
+            // Search works without rebuild (search_documents persists in the file).
+            let proj = refresh_dirty_and_query(
+                &conn,
+                SearchGlobalInput {
+                    query: "ha noi".to_string(),
+                    observed_local_date: "2026-08-03".to_string(),
+                },
+            )
+            .unwrap();
+            assert!(
+                proj.total_visible_results > 0,
+                "search must find data after relaunch without rebuild"
+            );
+        }
+
+        // ── Cleanup ───────────────────────────────────────────────────────────
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    // ── Performance: realistic fixture ────────────────────────────────────────
+
+    #[test]
+    fn search_perf_realistic_fixture() {
+        use crate::infrastructure::sqlite::{
+            connection::open_file_connection, migrations::run_migrations,
+        };
+        use std::time::Instant;
+
+        let tag = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.subsec_nanos())
+            .unwrap_or(0);
+        let dir = std::env::temp_dir().join(format!("lw-search-perf-{tag}"));
+        std::fs::create_dir_all(&dir).unwrap();
+        let db_path = dir.join("lifeweave.db");
+
+        let mut conn = open_file_connection(&db_path).unwrap();
+        run_migrations(&mut conn).unwrap();
+
+        // ── Fixture: 10 000 one-off tasks ────────────────────────────────────
+        {
+            let tx = conn.transaction().unwrap();
+            for i in 0..10_000usize {
+                let month = (i % 12) + 1;
+                let day = (i % 28) + 1;
+                let start = (480 + i % 480) as i32;
+                tx.execute(
+                    "INSERT INTO tasks VALUES(?1,?2,?3,?4,?5,'','general','medium','2026-01-01','2026-01-01')",
+                    rusqlite::params![
+                        format!("task-{i}"),
+                        format!("2026-{month:02}-{day:02}"),
+                        start,
+                        start + 60,
+                        format!("Daily standup meeting {i}")
+                    ],
+                )
+                .unwrap();
+            }
+            tx.commit().unwrap();
+        }
+
+        // ── Fixture: 1 000 recurring series + 1 000 overrides ────────────────
+        {
+            let tx = conn.transaction().unwrap();
+            for i in 0..1_000usize {
+                let month = (i % 12) + 1;
+                let day = (i % 28) + 1;
+                let dtstart = format!("2026-{month:02}-{day:02}");
+                tx.execute(
+                    "INSERT INTO task_series VALUES(?1,?2,'','general','medium',480,540,?3,'UTC','FREQ=WEEKLY','2026-01-01','2026-01-01',NULL)",
+                    rusqlite::params![
+                        format!("series-{i}"),
+                        format!("Weekly review {i}"),
+                        &dtstart
+                    ],
+                )
+                .unwrap();
+                tx.execute(
+                    "INSERT INTO task_occurrence_overrides VALUES(?1,?2,?3,NULL,?4,NULL,NULL,NULL,NULL,NULL,0,'2026-01-01','2026-01-01')",
+                    rusqlite::params![
+                        format!("override-{i}"),
+                        format!("series-{i}"),
+                        &dtstart,
+                        format!("Rescheduled review {i}")
+                    ],
+                )
+                .unwrap();
+            }
+            tx.commit().unwrap();
+        }
+
+        // ── Fixture: 5 000 life nodes ─────────────────────────────────────────
+        {
+            let tx = conn.transaction().unwrap();
+            for i in 0..5_000usize {
+                tx.execute(
+                    "INSERT INTO life_nodes VALUES(?1,'life-root',?2,'','life-branch','neutral',?3,NULL,'2026-01-01','2026-01-01',0)",
+                    rusqlite::params![
+                        format!("node-{i}"),
+                        format!("Life area {i}"),
+                        i as i32
+                    ],
+                )
+                .unwrap();
+            }
+            tx.commit().unwrap();
+        }
+
+        // ── Fixture: 5 000 documents (one per node) ───────────────────────────
+        {
+            let tx = conn.transaction().unwrap();
+            for i in 0..5_000usize {
+                tx.execute(
+                    "INSERT INTO reader_documents VALUES(?1,?2,1,0,'{}',?3,'2026-01-01','2026-01-01',NULL)",
+                    rusqlite::params![
+                        format!("doc-{i}"),
+                        format!("node-{i}"),
+                        format!("Document body notes for area {i} with daily meeting content")
+                    ],
+                )
+                .unwrap();
+            }
+            tx.commit().unwrap();
+        }
+
+        // ── EXPLAIN QUERY PLAN ────────────────────────────────────────────────
+        let expr = build_fts_expression("standup").unwrap();
+        let plan: Vec<String> = conn
+            .prepare(
+                "EXPLAIN QUERY PLAN
+                 SELECT sd.rowid, sd.entity_kind, bm25(search_fts,10,3,1) AS rank
+                 FROM search_fts
+                 JOIN search_documents sd ON sd.rowid = search_fts.rowid
+                 WHERE search_fts MATCH ?1
+                 ORDER BY rank LIMIT 100",
+            )
+            .unwrap()
+            .query_map(rusqlite::params![expr], |r| r.get::<_, String>(3))
+            .unwrap()
+            .filter_map(|r| r.ok())
+            .collect();
+        eprintln!("[perf] EXPLAIN QUERY PLAN:");
+        for line in &plan {
+            eprintln!("  {line}");
+        }
+        assert!(
+            plan.iter()
+                .any(|l| l.contains("search_fts") || l.contains("SCAN") || l.contains("VIRTUAL")),
+            "query plan must reference FTS index; got: {plan:?}"
+        );
+
+        // ── Initial full rebuild (all scopes dirty after fixture inserts) ──────
+        let t0 = Instant::now();
+        let proj = refresh_dirty_and_query(
+            &conn,
+            SearchGlobalInput {
+                query: "standup".to_string(),
+                observed_local_date: "2026-08-03".to_string(),
+            },
+        )
+        .unwrap();
+        let full_rebuild_ms = t0.elapsed().as_millis();
+        eprintln!(
+            "[perf] full rebuild + query: {full_rebuild_ms} ms  results={}",
+            proj.total_visible_results
+        );
+
+        // ── Dirty tasks refresh + query ───────────────────────────────────────
+        conn.execute(
+            "INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('tasks','2026-08-03T00:00:00Z') \
+             ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at",
+            [],
+        )
+        .unwrap();
+        let t1 = Instant::now();
+        let _ = refresh_dirty_and_query(
+            &conn,
+            SearchGlobalInput {
+                query: "standup".to_string(),
+                observed_local_date: "2026-08-03".to_string(),
+            },
+        )
+        .unwrap();
+        let dirty_tasks_ms = t1.elapsed().as_millis();
+        eprintln!("[perf] dirty tasks refresh + query: {dirty_tasks_ms} ms");
+
+        // ── Dirty life + documents refresh + query ────────────────────────────
+        conn.execute(
+            "INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('life','2026-08-03T00:00:00Z') \
+             ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at",
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('documents','2026-08-03T00:00:00Z') \
+             ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at",
+            [],
+        )
+        .unwrap();
+        let t2 = Instant::now();
+        let _ = refresh_dirty_and_query(
+            &conn,
+            SearchGlobalInput {
+                query: "area".to_string(),
+                observed_local_date: "2026-08-03".to_string(),
+            },
+        )
+        .unwrap();
+        let dirty_life_ms = t2.elapsed().as_millis();
+        eprintln!("[perf] dirty life+docs refresh + query: {dirty_life_ms} ms");
+
+        // ── Warm query p50 / p95 / max ────────────────────────────────────────
+        let warm_queries = [
+            "standup", "meeting", "review", "area", "document", "daily", "notes", "body",
+        ];
+        let rounds = 4usize;
+        let mut warm_ms: Vec<u128> = Vec::with_capacity(warm_queries.len() * rounds);
+        for _ in 0..rounds {
+            for q in &warm_queries {
+                let t = Instant::now();
+                let _ = refresh_dirty_and_query(
+                    &conn,
+                    SearchGlobalInput {
+                        query: q.to_string(),
+                        observed_local_date: "2026-08-03".to_string(),
+                    },
+                )
+                .unwrap();
+                warm_ms.push(t.elapsed().as_millis());
+            }
+        }
+        warm_ms.sort_unstable();
+        let n = warm_ms.len();
+        let p50 = warm_ms[n / 2];
+        let p95 = warm_ms[(n * 95) / 100];
+        let max_ms = *warm_ms.last().unwrap();
+        eprintln!("[perf] warm query p50={p50}ms p95={p95}ms max={max_ms}ms (n={n})");
+
+        // ── Cleanup ───────────────────────────────────────────────────────────
+        drop(conn);
+        let _ = std::fs::remove_dir_all(&dir);
+
+        // ── Hard ceiling assertion (release only; debug is unoptimized) ──────────
+        // Targets: full rebuild ≤1500ms, dirty refresh ≤750ms, p95 ≤50ms.
+        // Hard ceiling (spec §perf): warm query max ≤100ms — measured in release.
+        #[cfg(not(debug_assertions))]
+        assert!(
+            max_ms <= 100,
+            "warm query hard ceiling: max must be ≤100ms; got {max_ms}ms (p50={p50}ms p95={p95}ms)"
+        );
     }
 }
