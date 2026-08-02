@@ -13,15 +13,16 @@ The 60-task roadmap is the execution and coordination layer. It does not replace
 - Task 2/60: blocking remediation candidate is implemented; independent re-audit is now the only allowed next action.
 - F-01 remediation: `199d07d` (`linearize database maintenance admission`).
 - F-02/F-03 remediation: `56d6940` (`bind restore validation to installed candidate`).
+- Candidate-cleanup P1 remediation: `b121818` (`preserve restore marker on candidate cleanup failure`); redundant candidate sync removed and candidate-first/marker-second cleanup regression-tested.
 - Task 3/60 remains prohibited until independent Task 2 re-audit passes.
 - Stage E, Foundation Proof, and production-safe backup/restore are not declared complete.
 
 ## Task 2 audit evidence
 
 - Audit scope HEAD: `cb6df7912f396084e244f836208f71085c27dc9d`.
-- Remediation candidate implementation HEAD: `56d6940` (evidence documentation follows in the remediation-readiness commit).
+- Remediation candidate implementation HEAD: `b121818` (candidate-cleanup remediation; evidence documentation follows in the readiness commit).
 - Report: `docs/audits/task-02-backup-restore.md`.
-- Remediation gates so far: fmt/clippy passed; 190 Rust tests passed; focused backup tests 122 passed; frontend typecheck, 2 files / 19 tests, and Vite production build passed.
+- Remediation gates so far: fmt/clippy/check passed; 191 Rust tests passed; focused backup tests 123 passed; frontend typecheck, 2 files / 19 tests, and Vite production build passed; Tauri NSIS bundle rebuilt successfully.
 - Blocking findings remain subject to independent re-audit; remediation evidence is not an audit PASS.
 - P2 debt: best-effort directory flush, backup publication durability barriers, and raw-path IPC deferred to Task 3.
 

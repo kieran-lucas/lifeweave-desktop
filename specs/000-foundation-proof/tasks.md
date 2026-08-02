@@ -164,6 +164,15 @@ Task 2 remains active and blocked by verified P0/P1 findings. Task 3 is not allo
 - Full frontend evidence: typecheck passed; 2 files / 19 tests passed; Vite production build passed. Governance/integrity passed; Tauri release build produced `src-tauri/target/release/bundle/nsis/Lifeweave_0.0.0_x64-setup.exe`; native dev smoke reached Vite ready, Rust compile/run, and one live desktop process for 25 seconds before its exact process tree was stopped.
 - Status: remediation candidate implemented; independent Task 2 re-audit required. Task 3 remains prohibited.
 
+### Task 2 Candidate Cleanup Remediation
+
+- Remediation commit: `b121818` (`preserve restore marker on candidate cleanup failure`).
+- Root cause fixed: removed the redundant post-validation candidate `sync_all()` failure path that could best-effort delete both candidate and marker independently.
+- Invariant: `copy_candidate()` is the single checked candidate durability barrier; prepared cleanup removes the candidate first and removes the marker only after candidate removal succeeds.
+- Regression evidence: `candidate_cleanup_failure_preserves_prepared_marker_and_startup_replays` passed; it verifies live database usability, candidate/marker preservation under injected cleanup failure, then actual startup preflight/replay convergence. Focused backup suite: 123 passed; full Rust suite: 191 passed.
+- Full gates: cargo check/fmt/clippy/test, frontend typecheck/test/build, generated binding drift, repository governance/source integrity/no-remote scan, and Tauri production NSIS build passed. Artifact: `src-tauri/target/release/bundle/nsis/Lifeweave_0.0.0_x64-setup.exe`.
+- Status: Task 2 active — remediation implemented, independent re-audit required. Task 3 remains prohibited. P2 debt F-04–F-06 remains deferred.
+
 ## Quality
 - [ ] Strict CSP/capability review.
 - [ ] No disallowed remote resource.

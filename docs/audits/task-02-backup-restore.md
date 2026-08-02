@@ -222,3 +222,14 @@ Remediation is implemented in the working implementation lineage, but this docum
 `BLOCKED — remediation implemented, independent re-audit required`
 
 Task 2 remains active. F-01 and F-02 were P0 and F-03 was P1 at the audited implementation HEAD; remediation is now present in commits `199d07d` and `56d6940`, but independent re-audit is required. This does not declare Stage E, Foundation, Product Owner acceptance, or production-safe backup/restore.
+
+### Candidate-cleanup P1 remediation
+
+- Remediation status: implemented, pending independent re-audit.
+- Remediation commit: `b121818` (`preserve restore marker on candidate cleanup failure`).
+- Root cause: `restore_db` performed a second candidate `sync_all()` after candidate validation. Its failure path independently best-effort removed the candidate and marker, allowing a candidate-without-marker state.
+- Design: the redundant second sync was removed. `copy_candidate()` is now the single checked candidate durability barrier; all prepared-artifact cleanup uses candidate-first, marker-second ordering with checked errors.
+- Regression test: `candidate_cleanup_failure_preserves_prepared_marker_and_startup_replays` injects candidate removal failure, verifies live/candidate/marker preservation, then runs startup preflight and replay to convergence.
+- Remaining uncertainty: independent re-audit must confirm the same ordering under real Windows sharing conditions.
+
+Verdict remains: `BLOCKED — remediation implemented, independent re-audit required`.
