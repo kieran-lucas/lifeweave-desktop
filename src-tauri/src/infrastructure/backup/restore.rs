@@ -303,6 +303,8 @@ pub fn restore_db(
     }
 
     // Step 12: rename(candidate → live) with durability barrier.
+    // The candidate pathname is not trusted after pre-validation. Authenticate
+    // the installed live file again before promoting the marker.
     if let Err(e) = durable_rename(&candidate_path, &live_path) {
         return match attempt_rollback(
             runtime,
@@ -312,6 +314,19 @@ pub fn restore_db(
             &marker_path,
         ) {
             Ok(()) => Err(BackupError::Io(e)),
+            Err(BackupError::RecoveryPending) => Err(BackupError::RecoveryPending),
+            Err(_) => Err(BackupError::RollbackFailed),
+        };
+    }
+    if let Err(e) = validate_candidate(&live_path, &manifest, supported) {
+        return match attempt_rollback(
+            runtime,
+            &old_path,
+            &live_path,
+            &candidate_path,
+            &marker_path,
+        ) {
+            Ok(()) => Err(e),
             Err(BackupError::RecoveryPending) => Err(BackupError::RecoveryPending),
             Err(_) => Err(BackupError::RollbackFailed),
         };
@@ -883,6 +898,81 @@ mod tests {
         let active = rt.execute(|conn| repo::list_active(conn)).unwrap();
         assert_eq!(active.len(), 1);
         assert_eq!(active[0].label, "Snapshot A");
+    }
+
+    #[test]
+    fn f02_r1_candidate_replacement_after_prevalidation_rolls_back() {
+        let (rt, db_path) = make_file_runtime();
+        let backups_a = temp_backups_dir();
+        let backups_b = temp_backups_dir();
+        let id_a = "019700000000-7fff-8000-0000-000000000105".to_string();
+        rt.execute({
+            let id_a = id_a.clone();
+            move |conn| repo::create(conn, &id_a, "Snapshot A").map(|_| ())
+        })
+        .unwrap();
+        let backup_a = backup_db(&rt, &backups_a).unwrap();
+        let backup_a_dir = PathBuf::from(&backup_a.backup_dir);
+
+        let (rt_b, _db_b) = make_file_runtime();
+        let id_b = "019700000000-7fff-8000-0000-000000000106".to_string();
+        rt_b.execute({
+            let id_b = id_b.clone();
+            move |conn| repo::create(conn, &id_b, "Snapshot B").map(|_| ())
+        })
+        .unwrap();
+        let backup_b = backup_db(&rt_b, &backups_b).unwrap();
+        let replacement = PathBuf::from(&backup_b.backup_dir).join("lifeweave.db");
+        let candidate = db_path.parent().unwrap().join("_restore_candidate.db");
+        let replacement_for_hook = replacement.clone();
+        let candidate_for_hook = candidate.clone();
+        set_restore_test_hook(Some(Box::new(move |point| {
+            if point == RestoreTestPoint::AfterCandidateValidation {
+                std::fs::copy(&replacement_for_hook, &candidate_for_hook).unwrap();
+            }
+        })));
+        let result = restore_db(&rt, &backup_a_dir);
+        set_restore_test_hook(None);
+
+        assert!(result.is_err(), "candidate replacement must be rejected");
+        let active = rt.execute(|conn| repo::list_active(conn)).unwrap();
+        assert_eq!(active.len(), 1);
+        assert_eq!(active[0].label, "Snapshot A");
+        assert!(
+            !candidate.exists(),
+            "rollback must clean replaced candidate"
+        );
+    }
+
+    #[test]
+    fn f02_r1_candidate_in_place_mutation_after_prevalidation_rolls_back() {
+        let (rt, db_path) = make_file_runtime();
+        let backups = temp_backups_dir();
+        let id = "019700000000-7fff-8000-0000-000000000107".to_string();
+        rt.execute({
+            let id = id.clone();
+            move |conn| repo::create(conn, &id, "Snapshot A").map(|_| ())
+        })
+        .unwrap();
+        let backup = backup_db(&rt, &backups).unwrap();
+        let backup_dir = PathBuf::from(&backup.backup_dir);
+        let candidate = db_path.parent().unwrap().join("_restore_candidate.db");
+        let candidate_for_hook = candidate.clone();
+        set_restore_test_hook(Some(Box::new(move |point| {
+            if point == RestoreTestPoint::AfterCandidateValidation {
+                let mut bytes = std::fs::read(&candidate_for_hook).unwrap();
+                bytes[0] ^= 0xff;
+                std::fs::write(&candidate_for_hook, bytes).unwrap();
+            }
+        })));
+        let result = restore_db(&rt, &backup_dir);
+        set_restore_test_hook(None);
+
+        assert!(result.is_err(), "candidate mutation must be rejected");
+        let active = rt.execute(|conn| repo::list_active(conn)).unwrap();
+        assert_eq!(active.len(), 1);
+        assert_eq!(active[0].label, "Snapshot A");
+        assert!(!candidate.exists(), "rollback must clean mutated candidate");
     }
 
     #[test]
