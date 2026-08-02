@@ -64,4 +64,9 @@
 - dogfooding.
 
 ## Slice 007 — Expansion Decision
-Evaluate score, prediction, Narrative Canvas, visual worlds, Search, tags, backlinks, Outline, Noteboard, and Graph independently. No automatic implementation.
+
+Task 17 evaluates Score, Prediction, Narrative Canvas, Visual Worlds, Global Search, Tags, Backlinks, Outline, Noteboard and Graph independently.
+
+Portfolio recommendation: **Global Search is the sole next activation candidate**, pending Product Owner approval. Task 17 itself changes no product behavior.
+
+Task 18 remains unnamed/prohibited until the Product Owner approves, rejects or modifies the recommendation.

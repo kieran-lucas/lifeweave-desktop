@@ -1,15 +1,9 @@
 # Slice 007 — Expansion Decision
 
-Status: **Not active.**
+Status: **Task 17 decision package active; no expansion feature implemented.**
 
-This directory is a roadmap reservation only. It is not an approved implementation spec.
+Task 17 evaluates Score, Prediction, Narrative Canvas, Visual Worlds, Global Search, Tags, Backlinks, Outline, Noteboard and Graph independently.
 
-Activation requires:
-1. prior slice gate;
-2. Product Owner scope confirmation;
-3. source/decision references;
-4. `spec.md`, `plan.md`, `tasks.md`, `acceptance.md`;
-5. explicit out-of-scope;
-6. risk/test plan for data-sensitive work.
+The accepted portfolio recommendation is Global Search as the sole next activation candidate, pending Product Owner approval. All other candidates remain held or deferred according to `docs/audits/task-17-expansion-decision.md`.
 
-Do not install dependencies, create schema, add navigation, or implement placeholders for this slice before activation.
+No dependency, schema, route, IPC, capability or product behavior is activated by this slice.

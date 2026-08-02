@@ -2,6 +2,15 @@
 
 Updated: 2026-08-02 Asia/Saigon
 
+## Task 17/60 — Expansion Decision + Candidate Activation Matrix
+
+- PASS at `(this commit; see git log -1)`; evidence: `docs/audits/task-17-expansion-decision.md`.
+- All ten candidates were evaluated independently against hard filters, a disclosed weighted model, prerequisite constraints and a four-profile/four-million-sample sensitivity analysis.
+- Global Search is the sole `ACTIVATE_NEXT` recommendation.
+- Recommended Task 18 title: `Global Search Core + Vietnamese-Normalized Unified Retrieval`.
+- No product dependency, migration, IPC, capability, route, UI or behavior was added.
+- Product Owner approval is the only allowed next action. Task 18/60 remains prohibited until approval.
+
 ## Task 16/60 — Core Hardening + Release-Candidate Dogfooding
 
 - PASS at implementation commit `44ba9c558d25324d2ea4303fad2120b1022b93d3`; evidence: `docs/audits/task-16-core-hardening.md`.
