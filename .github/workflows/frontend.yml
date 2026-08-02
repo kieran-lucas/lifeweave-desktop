@@ -9,7 +9,6 @@ on:
       - "pnpm-workspace.yaml"
       - "tsconfig.base.json"
       - ".github/workflows/frontend.yml"
-      - ".github/workflows/frontend.yml"
   push:
     branches: [main]
     paths:
@@ -18,6 +17,7 @@ on:
       - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"
       - "tsconfig.base.json"
+      - ".github/workflows/frontend.yml"
   workflow_dispatch:
 
 permissions:
