@@ -236,4 +236,20 @@ describe("FoundationScreen", () => {
     await screen.findByText("Restore failed.");
     expect(screen.getByText("Test record")).toBeInTheDocument();
   });
+
+  it("restore RecoveryPending shows restart guidance without internal details", async () => {
+    vi.mocked(commands.listFoundationRecords).mockResolvedValue([mockRecord]);
+    vi.mocked(commands.restoreDatabase).mockRejectedValue({ code: "RecoveryPending" });
+    render(<FoundationScreen />);
+    await screen.findByText("Test record");
+    fireEvent.click(screen.getByRole("button", { name: "Backup" }));
+    await screen.findByText(/Backup created at/);
+    fireEvent.click(screen.getByRole("button", { name: "Restore" }));
+    await screen.findByText(/Restart the application to complete cleanup/);
+    // Must not expose internal error details.
+    expect(screen.queryByText(/RecoveryPending/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/marker/)).not.toBeInTheDocument();
+    // Original list must still be visible.
+    expect(screen.getByText("Test record")).toBeInTheDocument();
+  });
 });

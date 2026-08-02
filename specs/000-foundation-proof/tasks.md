@@ -85,11 +85,34 @@
 > "filesystem corruption". `attempt_rollback()` returns `RecoveryPending`
 > when rollback succeeds but candidate cleanup fails (worker is Ready).
 > `Prepared (true, true)` now removes stale .old before removing the marker.
-> `ReopenedValidated` auto-restores from valid .old when live is
-> invalid/missing. `preflight_startup_check` fails closed on stale-tmp
-> removal failure. `RestoreMarker::remove` returns `io::Result` (observable).
-> `recovery_remove` removed (replaced by `remove_if_exists` everywhere). 154
-> Rust tests pass (+6 new); 18 frontend tests pass; clippy clean; fmt clean.
+> `preflight_startup_check` fails closed on stale-tmp removal failure.
+> `RestoreMarker::remove` returns `io::Result` (observable). `recovery_remove`
+> removed (replaced by `remove_if_exists` everywhere). Note: the
+> `ReopenedValidated` auto-restore-from-.old behavior mentioned in an earlier
+> draft was not shipped; `ReopenedValidated` fails closed when live is
+> invalid/missing (corrected in commit `655df2b`). 154 Rust tests pass at this
+> commit; 18 frontend tests pass; clippy clean; fmt clean.
+>
+> **Stage E.1d Independent Audit** (commits `655df2b`, current): Six findings
+> from independent Codex audit implemented. (F1 BLOCKER) WAL/SHM cleanup in
+> `restore_db` step 10 and `attempt_rollback` treats NotFound as success, all
+> other errors as fatal — aborts before live→old rename; attempt_rollback on
+> failure. (F2 BLOCKER) `RestoreMarker::write` now uses atomic rename-replace
+> (MoveFileExW MOVEFILE_REPLACE_EXISTING) — eliminated delete-before-rename
+> crash window where neither old nor new marker existed. Candidate durability
+> barrier: `sync_all()` via `GENERIC_WRITE` handle (FlushFileBuffers requires
+> GENERIC_WRITE on Windows) before marker write. (F3 HIGH) `CandidateInstalled
+> (true, false)` validates live and proceeds rather than returning
+> `RecoveryAmbiguous`, making rollback-crash replay converge without requiring
+> manual intervention. (F4 HIGH) All recovery branches use checked
+> `remove_if_exists` for candidate cleanup: NotFound=success; marker preserved
+> if cleanup fails; Prepared, LiveMovedAside, and CandidateInstalled all
+> covered. (F5 MEDIUM) `IpcError::RecoveryPending` added as a distinct variant
+> (was collapsing to `Storage`); TS binding regenerated; frontend shows restart
+> guidance instead of generic error; `RecoveryPending` test added. (F6 LOW)
+> Tasks.md corrected: stale ReopenedValidated auto-restore claim removed;
+> accurate evidence recorded. 176 Rust tests pass (+22 new); 19 frontend tests
+> pass (+1 RecoveryPending); clippy clean; fmt clean.
 
 - [x] SQLite Online Backup API. — `rusqlite::backup::Backup::new(live_conn, &mut staging_conn).run_to_completion(100, Duration::ZERO, None)` used in `engine.rs` (backup), `restore.rs` (safety copy), and `lifecycle.rs` recovery; `rusqlite` `"backup"` feature enabled in `Cargo.toml` (commit `9edb5db`).
 - [x] Staging. — `backup_db` creates `.staging_{unix_ms}/` via `Backup` API, renames to final dir after checksum/manifest; `restore_db` copies backup DB to `_restore_candidate.db` under app DB dir (never renames `backup_dir/lifeweave.db`) so same package can be restored multiple times; staging artifacts cleaned on failure; `backup_package_is_not_mutated_by_restore` and `same_backup_can_be_restored_twice` tests confirm (commits `9edb5db`, `63281ce`).
@@ -99,8 +122,8 @@
 - [x] Automatic pre-restore safety copy/path. — Safety backup staged to `_safety_staging/`, integrity-checked, then atomically published to `_safety/`; previous `_safety/` kept as `_safety_old/` until new copy is verified so a staging failure leaves the prior valid copy intact; `restore_creates_safety_backup_first` and `valid_safety_backup_preserved_when_restore_fails_before_safety_step` tests confirm (commits `9edb5db`, Blocker-F fix `63281ce`).
 - [x] Integrity and foreign-key checks. — Pre-swap: `PRAGMA integrity_check` + `PRAGMA foreign_key_check` on backup file via `open_readonly_connection` (no WAL mode set; backup package not mutated); FK query errors propagate as `BackupError::ForeignKeyCheckQueryError` (not silenced); post-swap: integrity + FK + PRAGMA re-checked on newly installed DB before deleting `.old`; `restore_rejects_fk_violation_in_backup_package` and `fk_check_query_error_is_a_distinct_propagated_variant` tests confirm (commits `9edb5db`, Blockers E+FK-propagation `63281ce`).
 - [x] Close/atomic swap/reopen. — `seal_worker()` blocks new `execute()` calls (returns `Maintenance`) before shutdown; `shutdown()` closes connection and flushes WAL; Windows-safe rename sequence: `rename(live→old)` → `rename(candidate→live)`; `reopen_and_validate` runs migrations + post-swap validation before installing worker; `execute_blocked_while_worker_sealed` and `two_concurrent_restores_are_serialized` tests confirm gate (commits `9edb5db`, Blockers C+A fix `63281ce`).
-- [x] Failure rollback. — Durable `restore_marker.json` written at each rename stage (`Prepared / LiveMovedAside / CandidateInstalled / ReopenedValidated`); `recover_if_interrupted()` called at startup before DB open (prevents blank-DB creation); all rollback paths guarantee a usable worker via `reopen_worker` or `unseal_worker`; candidate never deleted before authoritative copy established; `ReopenedValidated` old-removal failure keeps marker for retry (live remains usable); full matrix replay-safe (E.1c, commit `04ab588`); cleanup convergence contract enforced (E.1d, commit `540f1df`): `remove_if_exists` treats NotFound as success; marker removed only after both old+candidate cleanups succeed; `RecoveryPending` returned by guard when any marker exists; `attempt_rollback` returns `RecoveryPending` (not `RollbackFailed`) when rollback succeeds but candidate cleanup fails; `Prepared (true, true)` removes stale old explicitly; `ReopenedValidated` auto-restores from valid old when live invalid/missing; `preflight_startup_check` fails closed on stale-tmp removal failure; `RestoreMarker::remove` returns observable `io::Result`; `pending_marker_blocks_new_restore`, `old_cleanup_failure_after_restore_keeps_marker_and_blocks_next_restore`, `candidate_cleanup_failure_in_rollback_returns_recovery_pending_not_rollback_failed`, `prepared_live_and_old_both_present_removes_stale_old`, `stale_tmp_with_final_and_tmp_removal_failure_fails_closed` confirm (commits `9edb5db`, `63281ce`, `9d58544`, `80c1b60`, `04ab588`, `540f1df`).
-- [x] Round-trip test. — `round_trip_restore_recovers_exact_data`: create record → backup → archive → restore → `list_active` returns original; 154 Rust tests total pass (after E.1d: 31 lifecycle, 21 restore, 7 engine, 3 manifest, 2 checksum, 9 runtime, 13 repo, 9 migration, 5 connection, 6 worker, 12 domain, 10 ipc); 18 frontend tests pass; `cargo clippy -- -D warnings` clean; `cargo fmt --check` clean (commits `9edb5db`, `f02b3c8`, `3c1de92`, `63281ce`, `9d58544`, `80c1b60`, `04ab588`, `540f1df`).
+- [x] Failure rollback. — Durable `restore_marker.json` written at each rename stage (`Prepared / LiveMovedAside / CandidateInstalled / ReopenedValidated`); `recover_if_interrupted()` called at startup before DB open (prevents blank-DB creation); all rollback paths guarantee a usable worker via `reopen_worker` or `unseal_worker`; candidate never deleted before authoritative copy established; `ReopenedValidated` old-removal failure keeps marker for retry (live remains usable); full matrix replay-safe (E.1c, commit `04ab588`); cleanup convergence contract enforced (E.1d, commit `540f1df`): `remove_if_exists` treats NotFound as success; marker removed only after both old+candidate cleanups succeed; `RecoveryPending` returned by guard when any marker exists; `attempt_rollback` returns `RecoveryPending` (not `RollbackFailed`) when rollback succeeds but candidate cleanup fails; `Prepared (true, true)` removes stale old explicitly; `preflight_startup_check` fails closed on stale-tmp removal failure; `RestoreMarker::remove` returns observable `io::Result`; `pending_marker_blocks_new_restore`, `old_cleanup_failure_after_restore_keeps_marker_and_blocks_next_restore`, `candidate_cleanup_failure_in_rollback_returns_recovery_pending_not_rollback_failed`, `prepared_live_and_old_both_present_removes_stale_old`, `stale_tmp_with_final_and_tmp_removal_failure_fails_closed` confirm (commits `9edb5db`, `63281ce`, `9d58544`, `80c1b60`, `04ab588`, `540f1df`); E.1d audit (commits `655df2b`, current): WAL/SHM deletion fatal on non-NotFound error in both `restore_db` and `attempt_rollback`; `RestoreMarker::write` atomic-replace (no delete-before-rename gap); candidate `sync_all` via GENERIC_WRITE handle; `CandidateInstalled (true, false)` validates live instead of `RecoveryAmbiguous`; all recovery branches use checked candidate cleanup (marker preserved on failure); `IpcError::RecoveryPending` distinct variant (not Storage); `f1-a..f1-e`, `f2-marker`, `f3-a..f3-c`, `f4-a..f4-g` tests confirm.
+- [x] Round-trip test. — `round_trip_restore_recovers_exact_data`: create record → backup → archive → restore → `list_active` returns original; 176 Rust tests total pass (after E.1d audit: +22 new tests in lifecycle and restore for findings F1–F4, +2 in ipc/backup for F5); 19 frontend tests pass (+1 RecoveryPending); `cargo clippy -- -D warnings` clean; `cargo fmt --check` clean; release build clean (commits `9edb5db`, `f02b3c8`, `3c1de92`, `63281ce`, `9d58544`, `80c1b60`, `04ab588`, `540f1df`, `655df2b`, current).
 
 ## Quality
 - [ ] Strict CSP/capability review.

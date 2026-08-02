@@ -40,6 +40,14 @@ function extractErrorMessage(e: unknown): string {
   return "An unexpected error occurred.";
 }
 
+function isRecoveryPendingError(e: unknown): boolean {
+  return !!(
+    e &&
+    typeof e === "object" &&
+    (e as { code?: unknown }).code === "RecoveryPending"
+  );
+}
+
 export function FoundationScreen() {
   const [state, setState] = useState<PageState>({ kind: "loading" });
   const [newLabel, setNewLabel] = useState("");
@@ -172,9 +180,12 @@ export function FoundationScreen() {
       );
       await load();
     } catch (e) {
+      const msg = isRecoveryPendingError(e)
+        ? "Restart the application to complete cleanup, then try again."
+        : extractErrorMessage(e);
       setState((prev) =>
         prev.kind === "ready"
-          ? { ...prev, backupError: extractErrorMessage(e) }
+          ? { ...prev, backupError: msg, backupMessage: null }
           : prev,
       );
     }

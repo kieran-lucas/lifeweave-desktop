@@ -22,9 +22,8 @@ fn backup_to_ipc(e: BackupError) -> IpcError {
         BackupError::RestoreMarkerMalformed | BackupError::RecoveryAmbiguous => {
             IpcError::Corruption
         }
-        BackupError::RestoreMarkerUnreadable(_)
-        | BackupError::RollbackFailed
-        | BackupError::RecoveryPending => IpcError::Storage,
+        BackupError::RecoveryPending => IpcError::RecoveryPending,
+        BackupError::RestoreMarkerUnreadable(_) | BackupError::RollbackFailed => IpcError::Storage,
     }
 }
 
@@ -64,7 +63,26 @@ pub fn restore_database(
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use ts_rs::TS as _;
+
+    #[test]
+    fn recovery_pending_maps_to_ipc_recovery_pending() {
+        let ipc = backup_to_ipc(BackupError::RecoveryPending);
+        assert!(
+            matches!(ipc, IpcError::RecoveryPending),
+            "BackupError::RecoveryPending must map to IpcError::RecoveryPending, got {ipc:?}"
+        );
+    }
+
+    #[test]
+    fn rollback_failed_maps_to_storage_not_recovery_pending() {
+        let ipc = backup_to_ipc(BackupError::RollbackFailed);
+        assert!(
+            matches!(ipc, IpcError::Storage),
+            "BackupError::RollbackFailed must map to IpcError::Storage, got {ipc:?}"
+        );
+    }
 
     #[test]
     fn export_backup_ipc_bindings() {
@@ -79,5 +97,8 @@ mod tests {
         BackupResult::export_all_to(&out).expect("ts binding export failed for BackupResult");
         RestoreResult::export_all_to(&out).expect("ts binding export failed for RestoreResult");
         BackupManifest::export_all_to(&out).expect("ts binding export failed for BackupManifest");
+        // IpcError is exported from ipc::mod::tests::export_ipc_bindings, but
+        // regenerate here to ensure RecoveryPending is reflected in the drift check.
+        IpcError::export_all_to(&out).expect("ts binding export failed for IpcError");
     }
 }

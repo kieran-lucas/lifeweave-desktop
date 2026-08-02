@@ -117,11 +117,11 @@ impl RestoreMarker {
             f.sync_all().map_err(BackupError::Io)?;
         }
 
-        // Windows: rename fails if destination exists; remove first.
-        // If remove succeeds but rename fails, no marker will exist (tmp is also
-        // cleaned). The restore operation must abort; artifacts remain in place so
-        // the next startup triggers RecoveryAmbiguous rather than creating a blank DB.
-        let _ = std::fs::remove_file(marker_path);
+        // Atomic replace: on Windows, std::fs::rename uses MoveFileExW with
+        // MOVEFILE_REPLACE_EXISTING, so the old marker is never absent during
+        // the transition. The previous delete-then-rename pattern had a crash
+        // window where no marker existed. If this rename fails, tmp is cleaned;
+        // the old marker (if any) remains intact.
         std::fs::rename(&tmp_path, marker_path).map_err(|e| {
             let _ = std::fs::remove_file(&tmp_path);
             BackupError::Io(e)
@@ -401,10 +401,12 @@ pub fn recover_if_interrupted(marker_path: &Path, db_path: &Path) -> Result<(), 
                 (true, true) => {
                     // Unusual: both live and old exist. Old is a stale artifact from
                     // a previous restore that did not complete cleanup. Remove it along
-                    // with the candidate and marker. If old removal fails, keep the
-                    // marker so the next startup retries — removing stale old without
-                    // a marker would leave the fs in RecoveryAmbiguous state.
-                    let _ = std::fs::remove_file(&candidate_path);
+                    // with the candidate and marker. Candidate removed first (checked);
+                    // if either removal fails, keep marker so next startup retries —
+                    // removing marker without cleaning artifacts leaves RecoveryAmbiguous.
+                    if remove_if_exists(&candidate_path).is_err() {
+                        return Ok(());
+                    }
                     if remove_if_exists(&old_path).is_err() {
                         return Ok(());
                     }
@@ -413,7 +415,10 @@ pub fn recover_if_interrupted(marker_path: &Path, db_path: &Path) -> Result<(), 
                 }
                 (true, false) => {
                     // Normal: live DB is intact. Candidate is stale staging.
-                    let _ = std::fs::remove_file(&candidate_path);
+                    // Marker removed only after candidate cleanup succeeds.
+                    if remove_if_exists(&candidate_path).is_err() {
+                        return Ok(());
+                    }
                     let _ = RestoreMarker::remove(marker_path);
                     Ok(())
                 }
@@ -421,7 +426,9 @@ pub fn recover_if_interrupted(marker_path: &Path, db_path: &Path) -> Result<(), 
                     // Unusual: live missing but old exists. Restore old first, then
                     // clean up candidate (authority established before cleanup).
                     recovery_rename(&old_path, db_path).map_err(BackupError::Io)?;
-                    let _ = std::fs::remove_file(&candidate_path);
+                    if remove_if_exists(&candidate_path).is_err() {
+                        return Ok(());
+                    }
                     let _ = RestoreMarker::remove(marker_path);
                     Ok(())
                 }
@@ -439,7 +446,9 @@ pub fn recover_if_interrupted(marker_path: &Path, db_path: &Path) -> Result<(), 
                 (false, true) => {
                     // Normal recovery: rename old → live, then clean up.
                     recovery_rename(&old_path, db_path).map_err(BackupError::Io)?;
-                    let _ = std::fs::remove_file(&candidate_path);
+                    if remove_if_exists(&candidate_path).is_err() {
+                        return Ok(());
+                    }
                     let _ = RestoreMarker::remove(marker_path);
                     Ok(())
                 }
@@ -454,7 +463,9 @@ pub fn recover_if_interrupted(marker_path: &Path, db_path: &Path) -> Result<(), 
                                 .into(),
                         ));
                     }
-                    let _ = std::fs::remove_file(&candidate_path);
+                    if remove_if_exists(&candidate_path).is_err() {
+                        return Ok(());
+                    }
                     let _ = RestoreMarker::remove(marker_path);
                     Ok(())
                 }
@@ -463,7 +474,9 @@ pub fn recover_if_interrupted(marker_path: &Path, db_path: &Path) -> Result<(), 
                     // is at live_path is suspect). Remove the suspect file, restore old.
                     std::fs::remove_file(db_path).map_err(BackupError::Io)?;
                     recovery_rename(&old_path, db_path).map_err(BackupError::Io)?;
-                    let _ = std::fs::remove_file(&candidate_path);
+                    if remove_if_exists(&candidate_path).is_err() {
+                        return Ok(());
+                    }
                     let _ = RestoreMarker::remove(marker_path);
                     Ok(())
                 }
@@ -483,20 +496,37 @@ pub fn recover_if_interrupted(marker_path: &Path, db_path: &Path) -> Result<(), 
                     // unvalidated candidate at live_path, then restore old.
                     std::fs::remove_file(db_path).map_err(BackupError::Io)?;
                     recovery_rename(&old_path, db_path).map_err(BackupError::Io)?;
-                    let _ = std::fs::remove_file(&candidate_path);
+                    if remove_if_exists(&candidate_path).is_err() {
+                        return Ok(());
+                    }
                     let _ = RestoreMarker::remove(marker_path);
                     Ok(())
                 }
                 (true, false) => {
-                    // Old missing. Live is the only copy; cannot confirm its provenance.
-                    Err(BackupError::RecoveryAmbiguous)
+                    // Live present, old absent. This occurs after attempt_rollback
+                    // renamed old→live but crashed before updating the marker.
+                    // Validate live; if it passes, treat it as the recovered original.
+                    // Marker removal occurs only after candidate cleanup succeeds.
+                    if !validate_for_recovery(db_path) {
+                        return Err(BackupError::PostSwapValidationFailed(
+                            "live DB failed recovery validation during CandidateInstalled replay"
+                                .into(),
+                        ));
+                    }
+                    if remove_if_exists(&candidate_path).is_err() {
+                        return Ok(());
+                    }
+                    let _ = RestoreMarker::remove(marker_path);
+                    Ok(())
                 }
                 (false, true) => {
                     // Live missing, old present. The candidate was removed during a
                     // prior rollback attempt but the old→live rename did not complete.
                     // Old is the authoritative original; restore it.
                     recovery_rename(&old_path, db_path).map_err(BackupError::Io)?;
-                    let _ = std::fs::remove_file(&candidate_path);
+                    if remove_if_exists(&candidate_path).is_err() {
+                        return Ok(());
+                    }
                     let _ = RestoreMarker::remove(marker_path);
                     Ok(())
                 }
@@ -964,7 +994,7 @@ mod tests {
         assert!(!cand.exists());
     }
 
-    #[test] // test-23: CandidateInstalled + live exists but old missing → explicit error
+    #[test] // test-23: CandidateInstalled + live exists but old missing + corrupt live → fail closed
     fn candidate_installed_live_present_old_missing_fails_closed() {
         let dir = temp_dir();
         let (db, _, _, marker_path, _) = make_paths(&dir);
@@ -975,8 +1005,8 @@ mod tests {
 
         let result = recover_if_interrupted(&marker_path, &db);
         assert!(
-            matches!(result, Err(BackupError::RecoveryAmbiguous)),
-            "expected RecoveryAmbiguous, got {result:?}"
+            matches!(result, Err(BackupError::PostSwapValidationFailed(_))),
+            "expected PostSwapValidationFailed (corrupt live, no old), got {result:?}"
         );
         assert!(db.exists(), "live must be preserved");
     }
@@ -1288,8 +1318,8 @@ mod tests {
             .write(&marker_path)
             .unwrap();
 
-        // Inject old-removal failure.
-        set_remove_if_exists_fail_at(0);
+        // Inject old-removal failure (skip 1 success = candidate removal, then fail old removal).
+        set_remove_if_exists_fail_at(1);
         let result = recover_if_interrupted(&marker_path, &db);
 
         assert!(
@@ -1390,5 +1420,300 @@ mod tests {
         // Second call: no marker → returns Ok immediately.
         recover_if_interrupted(&marker_path, &db).unwrap();
         assert!(db.exists(), "live DB must remain after idempotent call");
+    }
+
+    // ── Finding 3: CandidateInstalled rollback replay ─────────────────────────
+
+    // [f3-a] CandidateInstalled + live present + old absent: attempt_rollback
+    // renamed old→live but crashed before marker update. Live is the recovered
+    // original. Recovery must validate live and proceed, not return RecoveryAmbiguous.
+    #[test]
+    fn candidate_installed_live_present_old_absent_validates_and_recovers() {
+        let dir = temp_dir();
+        let (db, old, cand, marker_path, _) = make_paths(&dir);
+        // Real valid database at live_path (simulates restored original).
+        make_real_db(&db);
+        write_bytes(&cand, b"stale candidate");
+        make_marker(RestoreStage::CandidateInstalled)
+            .write(&marker_path)
+            .unwrap();
+        // old is absent (simulates successful old→live rename in attempt_rollback).
+
+        let result = recover_if_interrupted(&marker_path, &db);
+        assert!(
+            result.is_ok(),
+            "recovery must succeed when live is valid and old is absent: {result:?}"
+        );
+        assert!(db.exists(), "live DB must remain usable");
+        assert!(!old.exists(), ".old must remain absent");
+        assert!(!cand.exists(), "candidate must be cleaned up");
+        assert!(!marker_path.exists(), "marker must be removed");
+    }
+
+    // [f3-b] CandidateInstalled + corrupt live + old absent → fail closed.
+    // If live is not a valid database, recovery cannot proceed safely.
+    #[test]
+    fn candidate_installed_corrupt_live_old_absent_fails_closed() {
+        let dir = temp_dir();
+        let (db, _, cand, marker_path, _) = make_paths(&dir);
+        write_bytes(&db, b"this is NOT a valid sqlite database");
+        write_bytes(&cand, b"stale candidate");
+        make_marker(RestoreStage::CandidateInstalled)
+            .write(&marker_path)
+            .unwrap();
+
+        let result = recover_if_interrupted(&marker_path, &db);
+        assert!(
+            matches!(result, Err(BackupError::PostSwapValidationFailed(_))),
+            "corrupt live with no old must fail closed: {result:?}"
+        );
+        assert!(db.exists(), "live must be preserved");
+        assert!(cand.exists(), "candidate must be preserved");
+        assert!(marker_path.exists(), "marker must be preserved");
+    }
+
+    // [f3-c] Repeated recovery after a rollback-crash at CandidateInstalled
+    // converges without producing RecoveryAmbiguous.
+    #[test]
+    fn candidate_installed_rollback_crash_replay_converges() {
+        let dir = temp_dir();
+        let (db, _, cand, marker_path, _) = make_paths(&dir);
+        make_real_db(&db);
+        write_bytes(&cand, b"stale candidate");
+        make_marker(RestoreStage::CandidateInstalled)
+            .write(&marker_path)
+            .unwrap();
+
+        // First recovery call: should clean up and succeed.
+        recover_if_interrupted(&marker_path, &db).unwrap();
+        assert!(!marker_path.exists(), "marker removed after first recovery");
+        assert!(!cand.exists(), "candidate cleaned after first recovery");
+        assert!(db.exists(), "live intact");
+
+        // Second call is a no-op (no marker).
+        recover_if_interrupted(&marker_path, &db).unwrap();
+        assert!(
+            db.exists(),
+            "live still present after idempotent second call"
+        );
+    }
+
+    // ── Finding 4: checked candidate cleanup in Prepared stage ────────────────
+
+    // [f4-a] Prepared(true,false): candidate removal failure keeps marker for retry.
+    #[test]
+    fn prepared_live_present_candidate_removal_failure_keeps_marker() {
+        let dir = temp_dir();
+        let (db, _, cand, marker_path, _) = make_paths(&dir);
+        write_bytes(&db, b"live db");
+        write_bytes(&cand, b"stale candidate");
+        make_marker(RestoreStage::Prepared)
+            .write(&marker_path)
+            .unwrap();
+
+        set_remove_if_exists_fail_at(0); // fail first remove_if_exists (candidate)
+        let result = recover_if_interrupted(&marker_path, &db);
+
+        assert!(result.is_ok(), "must return Ok: {result:?}");
+        assert!(db.exists(), "live must be intact");
+        assert!(cand.exists(), "candidate preserved (removal failed)");
+        assert!(marker_path.exists(), "marker kept for retry");
+
+        // Retry: removal succeeds.
+        recover_if_interrupted(&marker_path, &db).unwrap();
+        assert!(!cand.exists(), "candidate removed on retry");
+        assert!(!marker_path.exists(), "marker removed on retry");
+    }
+
+    // [f4-b] Prepared(false,true): candidate removal failure after rename keeps marker.
+    #[test]
+    fn prepared_live_missing_old_present_candidate_removal_failure_keeps_marker() {
+        let dir = temp_dir();
+        let (db, old, cand, marker_path, _) = make_paths(&dir);
+        write_bytes(&old, b"original db");
+        write_bytes(&cand, b"stale candidate");
+        make_marker(RestoreStage::Prepared)
+            .write(&marker_path)
+            .unwrap();
+
+        // Rename succeeds, then candidate removal fails (1st remove_if_exists call
+        // after the rename).
+        set_remove_if_exists_fail_at(0);
+        let result = recover_if_interrupted(&marker_path, &db);
+
+        assert!(result.is_ok(), "must return Ok: {result:?}");
+        assert!(db.exists(), "live must exist (renamed from old)");
+        assert!(!old.exists(), ".old must be gone (renamed)");
+        assert!(cand.exists(), "candidate preserved (removal failed)");
+        assert!(marker_path.exists(), "marker kept for retry");
+
+        // Retry succeeds.
+        recover_if_interrupted(&marker_path, &db).unwrap();
+        assert!(!cand.exists());
+        assert!(!marker_path.exists());
+    }
+
+    // ── Finding 4: checked candidate cleanup in LiveMovedAside stage ──────────
+
+    // [f4-c] LiveMovedAside(false,true): candidate removal failure keeps marker.
+    #[test]
+    fn live_moved_aside_old_present_candidate_removal_failure_keeps_marker() {
+        let dir = temp_dir();
+        let (db, old, cand, marker_path, _) = make_paths(&dir);
+        make_real_db(&old); // retry re-validates live (renamed from old) via validate_for_recovery
+        write_bytes(&cand, b"stale candidate");
+        make_marker(RestoreStage::LiveMovedAside)
+            .write(&marker_path)
+            .unwrap();
+
+        set_remove_if_exists_fail_at(0);
+        let result = recover_if_interrupted(&marker_path, &db);
+
+        assert!(result.is_ok(), "must return Ok: {result:?}");
+        assert!(db.exists(), "live restored from old");
+        assert!(!old.exists(), ".old renamed to live");
+        assert!(cand.exists(), "candidate preserved");
+        assert!(marker_path.exists(), "marker kept");
+
+        // Retry succeeds.
+        recover_if_interrupted(&marker_path, &db).unwrap();
+        assert!(!cand.exists());
+        assert!(!marker_path.exists());
+    }
+
+    // [f4-d] LiveMovedAside(true,false): candidate removal failure keeps marker.
+    #[test]
+    fn live_moved_aside_live_present_old_absent_candidate_removal_failure_keeps_marker() {
+        let dir = temp_dir();
+        let (db, _, cand, marker_path, _) = make_paths(&dir);
+        make_real_db(&db);
+        write_bytes(&cand, b"stale candidate");
+        make_marker(RestoreStage::LiveMovedAside)
+            .write(&marker_path)
+            .unwrap();
+
+        set_remove_if_exists_fail_at(0);
+        let result = recover_if_interrupted(&marker_path, &db);
+
+        assert!(result.is_ok(), "must return Ok: {result:?}");
+        assert!(db.exists(), "live intact");
+        assert!(cand.exists(), "candidate preserved");
+        assert!(marker_path.exists(), "marker kept");
+
+        recover_if_interrupted(&marker_path, &db).unwrap();
+        assert!(!cand.exists());
+        assert!(!marker_path.exists());
+    }
+
+    // ── Finding 4: checked candidate cleanup in CandidateInstalled stage ──────
+
+    // [f4-e] CandidateInstalled(true,true): candidate removal failure keeps marker.
+    #[test]
+    fn candidate_installed_both_present_candidate_removal_failure_keeps_marker() {
+        let dir = temp_dir();
+        let (db, old, cand, marker_path, _) = make_paths(&dir);
+        write_bytes(&db, b"unvalidated candidate");
+        make_real_db(&old); // retry re-validates live (renamed from old) via validate_for_recovery
+        write_bytes(&cand, b"stale candidate file");
+        make_marker(RestoreStage::CandidateInstalled)
+            .write(&marker_path)
+            .unwrap();
+
+        set_remove_if_exists_fail_at(0); // fail candidate removal after old→live rename
+        let result = recover_if_interrupted(&marker_path, &db);
+
+        assert!(result.is_ok(), "must return Ok: {result:?}");
+        assert!(db.exists(), "live restored from old");
+        assert!(!old.exists(), ".old renamed to live");
+        assert!(cand.exists(), "candidate preserved");
+        assert!(marker_path.exists(), "marker kept");
+
+        // Retry succeeds: now at CandidateInstalled(live=true, old=false).
+        recover_if_interrupted(&marker_path, &db).unwrap();
+        assert!(!cand.exists());
+        assert!(!marker_path.exists());
+    }
+
+    // [f4-f] CandidateInstalled(false,true): candidate removal failure keeps marker.
+    #[test]
+    fn candidate_installed_live_missing_old_present_candidate_removal_failure_keeps_marker() {
+        let dir = temp_dir();
+        let (db, old, cand, marker_path, _) = make_paths(&dir);
+        make_real_db(&old); // retry re-validates live (renamed from old) via validate_for_recovery
+        write_bytes(&cand, b"stale candidate");
+        make_marker(RestoreStage::CandidateInstalled)
+            .write(&marker_path)
+            .unwrap();
+
+        set_remove_if_exists_fail_at(0);
+        let result = recover_if_interrupted(&marker_path, &db);
+
+        assert!(result.is_ok(), "must return Ok: {result:?}");
+        assert!(db.exists(), "live restored from old");
+        assert!(!old.exists(), ".old renamed to live");
+        assert!(cand.exists(), "candidate preserved");
+        assert!(marker_path.exists(), "marker kept");
+
+        recover_if_interrupted(&marker_path, &db).unwrap();
+        assert!(!cand.exists());
+        assert!(!marker_path.exists());
+    }
+
+    // [f4-g] CandidateInstalled(true,false) with valid live: candidate removal failure keeps marker.
+    #[test]
+    fn candidate_installed_valid_live_old_absent_candidate_removal_failure_keeps_marker() {
+        let dir = temp_dir();
+        let (db, _, cand, marker_path, _) = make_paths(&dir);
+        make_real_db(&db);
+        write_bytes(&cand, b"stale candidate");
+        make_marker(RestoreStage::CandidateInstalled)
+            .write(&marker_path)
+            .unwrap();
+
+        set_remove_if_exists_fail_at(0);
+        let result = recover_if_interrupted(&marker_path, &db);
+
+        assert!(result.is_ok(), "must return Ok: {result:?}");
+        assert!(db.exists(), "live intact");
+        assert!(cand.exists(), "candidate preserved");
+        assert!(marker_path.exists(), "marker kept");
+
+        recover_if_interrupted(&marker_path, &db).unwrap();
+        assert!(!cand.exists());
+        assert!(!marker_path.exists());
+    }
+
+    // ── Finding 2: crash-consistent marker write ──────────────────────────────
+
+    // Verify that writing a new marker when an old one exists does not leave
+    // a window where neither file is present. The tmp file is cleaned up after
+    // a successful rename, and only one of {old marker, new marker} exists at
+    // any point (guaranteed by the rename-replace semantics on Windows/NTFS).
+    #[test]
+    fn marker_write_replaces_existing_atomically_without_delete_first() {
+        let dir = temp_dir();
+        let (_, _, _, marker_path, tmp_marker_path) = make_paths(&dir);
+
+        // Write initial marker.
+        make_marker(RestoreStage::Prepared)
+            .write(&marker_path)
+            .unwrap();
+        assert!(marker_path.exists(), "initial marker must exist");
+        assert!(!tmp_marker_path.exists(), "no tmp after write");
+
+        // Write updated marker over the existing one.
+        make_marker(RestoreStage::LiveMovedAside)
+            .write(&marker_path)
+            .unwrap();
+
+        // Final marker must be the new one; no tmp residue.
+        assert!(marker_path.exists(), "marker must exist after update");
+        assert!(!tmp_marker_path.exists(), "no tmp after update");
+        let m = RestoreMarker::read(&marker_path).unwrap().unwrap();
+        assert_eq!(
+            m.stage,
+            RestoreStage::LiveMovedAside,
+            "updated marker must reflect new stage"
+        );
     }
 }

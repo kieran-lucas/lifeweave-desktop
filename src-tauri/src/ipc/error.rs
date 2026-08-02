@@ -20,6 +20,11 @@ pub enum IpcError {
     Corruption,
     /// The requested operation or format version is not supported.
     Unsupported,
+    /// A previous restore completed and the live DB is usable, but cleanup
+    /// artifacts have not been fully removed. Restart the application to
+    /// resolve before attempting another restore. No filesystem details are
+    /// included in this variant.
+    RecoveryPending,
 }
 
 #[cfg(test)]
@@ -44,6 +49,7 @@ mod tests {
             ("Storage", IpcError::Storage),
             ("Corruption", IpcError::Corruption),
             ("Unsupported", IpcError::Unsupported),
+            ("RecoveryPending", IpcError::RecoveryPending),
         ];
         for (expected_code, err) in cases {
             let json = serde_json::to_value(err).unwrap();

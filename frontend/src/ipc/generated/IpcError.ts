@@ -4,4 +4,4 @@
  * IPC-safe error envelope. Stable discriminants, no raw SQL, no file paths,
  * no stack traces. All variants are safe to transmit to the frontend.
  */
-export type IpcError = { "code": "Validation", message: string, } | { "code": "NotFound" } | { "code": "StaleRevision" } | { "code": "Storage" } | { "code": "Corruption" } | { "code": "Unsupported" };
+export type IpcError = { "code": "Validation", message: string, } | { "code": "NotFound" } | { "code": "StaleRevision" } | { "code": "Storage" } | { "code": "Corruption" } | { "code": "Unsupported" } | { "code": "RecoveryPending" };
