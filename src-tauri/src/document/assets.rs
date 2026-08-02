@@ -2,6 +2,7 @@ use super::{
     domain::{self, DocumentError, MAX_ASSET_BYTES},
     dto::{DocumentAssetBytes, DocumentAssetView, ImportDocumentAssetInput},
 };
+use crate::infrastructure::durability;
 use rusqlite::{Connection, OptionalExtension, params};
 use sha2::{Digest, Sha256};
 use std::path::Path;
@@ -123,6 +124,11 @@ pub fn import(
     let relative = format!("assets/original/{id}.{ext}");
     let dir = root.join("assets/original");
     std::fs::create_dir_all(&dir)?;
+    let canonical_root = root.canonicalize()?;
+    let canonical_dir = dir.canonicalize()?;
+    if !canonical_dir.starts_with(&canonical_root) {
+        return Err(DocumentError::Validation("Asset storage escaped app data."));
+    }
     let final_path = root.join(&relative);
     let temp = dir.join(format!(".{id}.tmp"));
     {
@@ -134,7 +140,7 @@ pub fn import(
         f.write_all(&input.bytes)?;
         f.sync_all()?;
     }
-    std::fs::rename(&temp, &final_path)?;
+    durability::durable_rename(&temp, &final_path)?;
     let result = conn.execute(
         "INSERT INTO assets VALUES(?1,?2,?3,?4,?5,?6,?7,?8,'usable',?9)",
         params![
@@ -150,6 +156,7 @@ pub fn import(
         ],
     );
     if let Err(e) = result {
+        let _ = durability::durable_remove_file(&final_path);
         return Err(e.into());
     }
     get(conn, root, &id).map(|v| v.asset)

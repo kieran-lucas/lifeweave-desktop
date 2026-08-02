@@ -2,4 +2,5 @@
 // Sub-modules (sqlite, filesystem, diagnostics) are activated in Stage C.
 
 pub mod backup;
+pub mod durability;
 pub mod sqlite;

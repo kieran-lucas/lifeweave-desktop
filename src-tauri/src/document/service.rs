@@ -1,4 +1,5 @@
 use super::{assets, domain::DocumentError, dto::*, repository};
+use crate::infrastructure::durability;
 use crate::{
     infrastructure::sqlite::{DbError, runtime::DatabaseRuntime},
     ipc::error::IpcError,
@@ -116,15 +117,22 @@ pub fn export_reader_markdown(
     let result = (|| -> Result<(), IpcError> {
         std::fs::create_dir(&staging).map_err(|_| IpcError::Storage)?;
         std::fs::create_dir(staging.join("assets")).map_err(|_| IpcError::Storage)?;
-        std::fs::write(staging.join(&view.file_name), view.markdown.as_bytes())
+        durability::durable_write(&staging.join(&view.file_name), view.markdown.as_bytes())
             .map_err(|_| IpcError::Storage)?;
         for (asset_id, mime, relative) in export_assets {
             let bytes = std::fs::read(root.join(relative)).map_err(|_| IpcError::Storage)?;
             let safe = assets::sanitized_export(&bytes, &mime).map_err(map)?;
-            std::fs::write(staging.join("assets").join(asset_id), safe)
+            durability::durable_write(&staging.join("assets").join(asset_id), &safe)
                 .map_err(|_| IpcError::Storage)?;
         }
-        std::fs::rename(&staging, published).map_err(|_| IpcError::Storage)
+        durability::sync_tree(&staging).map_err(|_| IpcError::Storage)?;
+        durability::durable_rename(&staging, &published).map_err(|_| IpcError::Storage)?;
+        let published_markdown =
+            std::fs::read(published.join(&view.file_name)).map_err(|_| IpcError::Storage)?;
+        if published_markdown != view.markdown.as_bytes() {
+            return Err(IpcError::Storage);
+        }
+        Ok(())
     })();
     if result.is_err() {
         let _ = std::fs::remove_dir_all(&staging);

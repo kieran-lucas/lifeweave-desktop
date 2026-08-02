@@ -13,6 +13,7 @@ use super::lifecycle::{
 };
 use super::manifest::BackupManifest;
 use super::{BackupError, RestoreResult};
+use crate::infrastructure::durability;
 use crate::infrastructure::sqlite::{
     DbError,
     connection::{open_existing_file_connection, open_file_connection, open_readonly_connection},
@@ -229,7 +230,7 @@ fn validate_and_install_assets(
             .open(&temp)
             .and_then(|file| file.sync_all())
             .map_err(BackupError::Io)?;
-        std::fs::rename(&temp, &target).map_err(BackupError::Io)?;
+        durability::durable_rename(&temp, &target).map_err(BackupError::Io)?;
     }
     Ok(())
 }
@@ -557,7 +558,7 @@ fn create_verified_safety_backup(
     let safety_staging_dir = db_dir.join("backups").join("_safety_staging");
     let safety_old_dir = db_dir.join("backups").join("_safety_old");
 
-    let _ = std::fs::remove_dir_all(&safety_staging_dir);
+    let _ = durability::durable_remove_dir_all(&safety_staging_dir);
     std::fs::create_dir_all(&safety_staging_dir).map_err(BackupError::Io)?;
 
     let staging_db_path = safety_staging_dir.join("lifeweave.db");
@@ -614,19 +615,20 @@ fn create_verified_safety_backup(
         check_integrity_and_fk(&conn)?;
         // Connection is dropped here (closed), flushing the WAL before publication.
     }
+    durability::sync_tree(&safety_staging_dir).map_err(BackupError::Io)?;
 
     // Atomically publish: keep old _safety/ until new staging is verified.
-    let _ = std::fs::remove_dir_all(&safety_old_dir);
+    let _ = durability::durable_remove_dir_all(&safety_old_dir);
     if safety_dir.exists() {
-        std::fs::rename(&safety_dir, &safety_old_dir).map_err(BackupError::Io)?;
+        durable_rename(&safety_dir, &safety_old_dir).map_err(BackupError::Io)?;
     }
-    std::fs::rename(&safety_staging_dir, &safety_dir).map_err(|e| {
+    durable_rename(&safety_staging_dir, &safety_dir).map_err(|e| {
         if safety_old_dir.exists() {
-            let _ = std::fs::rename(&safety_old_dir, &safety_dir);
+            let _ = durable_rename(&safety_old_dir, &safety_dir);
         }
         BackupError::Io(e)
     })?;
-    let _ = std::fs::remove_dir_all(&safety_old_dir);
+    let _ = durability::durable_remove_dir_all(&safety_old_dir);
 
     Ok(())
 }
@@ -711,9 +713,9 @@ fn attempt_rollback(
             }
         }
         if live_path.exists() {
-            std::fs::remove_file(live_path).map_err(|_| BackupError::RollbackFailed)?;
+            durability::durable_remove_file(live_path).map_err(|_| BackupError::RollbackFailed)?;
         }
-        if std::fs::rename(old_path, live_path).is_err() {
+        if durable_rename(old_path, live_path).is_err() {
             // Rename failed. old_path still exists; preserve all artifacts.
             return Err(BackupError::RollbackFailed);
         }
@@ -815,7 +817,7 @@ fn attempt_rollback(
             // so startup recovery can find it. Best-effort; if rename-back fails too,
             // the artifacts remain in an ambiguous state for startup recovery.
             if restore_from_old {
-                let _ = std::fs::rename(live_path, old_path);
+                let _ = durable_rename(live_path, old_path);
             }
             Err(BackupError::RollbackFailed)
         }

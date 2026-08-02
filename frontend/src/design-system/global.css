@@ -70,3 +70,24 @@ select {
     transition-duration: 0.01ms !important;
   }
 }
+
+@media (forced-colors: active) {
+  :root {
+    --accent: Highlight;
+    --focus-ring: Highlight;
+    --border-subtle: CanvasText;
+    --text-primary: CanvasText;
+    --text-muted: CanvasText;
+    --surface: Canvas;
+    --app-background: Canvas;
+    --sidebar-background: Canvas;
+  }
+
+  button,
+  input,
+  textarea,
+  select,
+  [role="button"] {
+    forced-color-adjust: auto;
+  }
+}

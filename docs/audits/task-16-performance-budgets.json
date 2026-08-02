@@ -1,0 +1,6 @@
+{
+  "main_js_bytes": { "baseline": 484253, "maximum": 535000 },
+  "editor_lazy_bytes": { "baseline": 442791, "maximum": 490000 },
+  "markdown_lazy_bytes": { "baseline": 116541, "maximum": 129000 },
+  "total_js_bytes": { "baseline": 1044464, "maximum": 1150000 }
+}

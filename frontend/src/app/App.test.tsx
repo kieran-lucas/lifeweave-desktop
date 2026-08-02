@@ -3,6 +3,7 @@ import { describe, expect, it, beforeEach, vi } from "vitest";
 
 import { App } from "./App";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import axe from "axe-core";
 
 const renderApp = () => render(<QueryClientProvider client={new QueryClient()}><App /></QueryClientProvider>);
 
@@ -102,5 +103,22 @@ describe("App shell", () => {
     fireEvent.click(within(grid).getAllByRole("button")[10]!);
     expect(await screen.findByRole("heading",{name:"Today"})).toBeInTheDocument();
     expect(screen.queryByRole("grid")).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ["Today", "Today"],
+    ["Calendar", "Calendar"],
+    ["Analytics", "Analytics"],
+    ["Life System", "Life"],
+    ["Settings", "Settings"],
+  ])("has no automated WCAG violations in the %s route fixture", async (button, heading) => {
+    const { container } = renderApp();
+    await screen.findByRole("heading", { name: "Today" });
+    if (button !== "Today") fireEvent.click(screen.getByRole("button", { name: button }));
+    await screen.findByRole("heading", { name: heading });
+    const result = await axe.run(container, {
+      runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"] },
+    });
+    expect(result.violations).toEqual([]);
   });
 });

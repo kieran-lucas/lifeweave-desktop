@@ -20,6 +20,7 @@ use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 
 use super::BackupError;
+use crate::infrastructure::durability;
 use crate::infrastructure::sqlite::connection::open_readonly_connection;
 use crate::infrastructure::sqlite::migrations::max_supported_schema_version;
 
@@ -165,11 +166,7 @@ impl RestoreMarker {
     /// observe whether the removal succeeded. `NotFound` is treated as success
     /// (idempotent: the marker is already gone).
     pub fn remove(marker_path: &Path) -> std::io::Result<()> {
-        match std::fs::remove_file(marker_path) {
-            Ok(()) => Ok(()),
-            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),
-            Err(e) => Err(e),
-        }
+        durability::durable_remove_file(marker_path)
     }
 
     /// Returns a clone of this marker with the stage updated.
@@ -245,56 +242,6 @@ fn validate_for_recovery(path: &Path) -> bool {
     matches!(schema_version, Ok(v) if v <= max_supported_schema_version())
 }
 
-/// Flushes parent-directory metadata to disk after a rename.
-///
-/// On Windows, opens the parent directory with `GENERIC_WRITE |
-/// FILE_FLAG_BACKUP_SEMANTICS` and calls `FlushFileBuffers`. This ensures
-/// the rename (already committed to the NTFS journal) is also flushed to
-/// stable storage before the next marker or database-swap step, providing a
-/// defensible ordering barrier across power failures.
-///
-/// On other platforms, fsyncs the parent directory file descriptor, which on
-/// Linux/macOS guarantees directory-entry ordering across a power failure.
-///
-/// Best-effort: failures are silently ignored. The NTFS journal already
-/// provides individual-operation crash recovery; the flush strengthens
-/// inter-operation ordering.
-fn flush_parent_dir(path: &Path) {
-    let parent = match path.parent() {
-        Some(p) if !p.as_os_str().is_empty() => p,
-        _ => return,
-    };
-
-    #[cfg(target_os = "windows")]
-    {
-        use std::os::windows::fs::OpenOptionsExt as _;
-        use std::os::windows::io::AsRawHandle as _;
-        use windows_sys::Win32::Storage::FileSystem::FlushFileBuffers;
-
-        const FILE_FLAG_BACKUP_SEMANTICS: u32 = 0x0200_0000;
-
-        let Ok(dir) = std::fs::OpenOptions::new()
-            .write(true)
-            .custom_flags(FILE_FLAG_BACKUP_SEMANTICS)
-            .open(parent)
-        else {
-            return;
-        };
-        // SAFETY: `dir` owns a valid HANDLE obtained from CreateFileW; FlushFileBuffers
-        // is an idempotent metadata-flush syscall with no aliasing requirements.
-        unsafe {
-            FlushFileBuffers(dir.as_raw_handle() as _);
-        }
-    }
-
-    #[cfg(not(target_os = "windows"))]
-    {
-        if let Ok(dir) = std::fs::File::open(parent) {
-            let _ = dir.sync_all();
-        }
-    }
-}
-
 /// Renames `src` to `dst` and flushes the parent directory's metadata to disk.
 ///
 /// The flush establishes an ordering barrier: content written to `dst` (via
@@ -302,9 +249,7 @@ fn flush_parent_dir(path: &Path) {
 /// this sequence, preventing a power failure from persisting a later directory
 /// rename without an earlier file-content sync.
 pub(super) fn durable_rename(src: &Path, dst: &Path) -> std::io::Result<()> {
-    std::fs::rename(src, dst)?;
-    flush_parent_dir(dst);
-    Ok(())
+    durability::durable_rename(src, dst)
 }
 
 /// Renames a file during recovery. Supports test-seam failpoints.
@@ -352,11 +297,7 @@ pub(super) fn remove_if_exists(path: &Path) -> Result<(), BackupError> {
             )));
         }
     }
-    match std::fs::remove_file(path) {
-        Ok(()) => Ok(()),
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),
-        Err(e) => Err(BackupError::Io(e)),
-    }
+    durability::durable_remove_file(path).map_err(BackupError::Io)
 }
 
 /// Runs a startup preflight before the live database connection is opened.
@@ -421,7 +362,7 @@ pub fn preflight_startup_check(db_path: &Path) -> Result<StartupDisposition, Bac
                 "test-injected preflight tmp remove failure",
             )));
         }
-        std::fs::remove_file(&tmp_marker_path).map_err(BackupError::Io)?;
+        durability::durable_remove_file(&tmp_marker_path).map_err(BackupError::Io)?;
     }
 
     // Truly clean state: no DB, no WAL/SHM, no marker, no artifacts.
@@ -541,7 +482,7 @@ pub fn recover_if_interrupted(marker_path: &Path, db_path: &Path) -> Result<(), 
                 (true, true) => {
                     // Both exist. Old is authoritative (it is the original DB; whatever
                     // is at live_path is suspect). Remove the suspect file, restore old.
-                    std::fs::remove_file(db_path).map_err(BackupError::Io)?;
+                    durability::durable_remove_file(db_path).map_err(BackupError::Io)?;
                     recovery_rename(&old_path, db_path).map_err(BackupError::Io)?;
                     if remove_if_exists(&candidate_path).is_err() {
                         return Ok(());
@@ -576,7 +517,7 @@ pub fn recover_if_interrupted(marker_path: &Path, db_path: &Path) -> Result<(), 
                     // is still open: abort rather than expose old to stale WAL pages.
                     remove_if_exists(&ci_wal)?;
                     remove_if_exists(&ci_shm)?;
-                    std::fs::remove_file(db_path).map_err(BackupError::Io)?;
+                    durability::durable_remove_file(db_path).map_err(BackupError::Io)?;
                     recovery_rename(&old_path, db_path).map_err(BackupError::Io)?;
                     if remove_if_exists(&candidate_path).is_err() {
                         return Ok(());

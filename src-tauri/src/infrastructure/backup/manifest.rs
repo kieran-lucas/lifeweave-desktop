@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::path::Path;
 
 use super::BackupError;
+use crate::infrastructure::durability;
 
 pub const SUPPORTED_FORMAT_VERSION: u32 = 2;
 
@@ -29,7 +30,8 @@ pub struct BackupManifest {
 impl BackupManifest {
     pub fn write_to_dir(&self, dir: &Path) -> Result<(), BackupError> {
         let json = serde_json::to_string_pretty(self).map_err(BackupError::ManifestSerialize)?;
-        std::fs::write(dir.join("manifest.json"), json).map_err(BackupError::Io)
+        durability::durable_write(&dir.join("manifest.json"), json.as_bytes())
+            .map_err(BackupError::Io)
     }
 
     pub fn read_from_dir(dir: &Path) -> Result<Self, BackupError> {

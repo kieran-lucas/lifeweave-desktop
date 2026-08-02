@@ -6,6 +6,7 @@ use rusqlite::Connection;
 use super::checksum::sha256_file;
 use super::manifest::{BackupAssetEntry, BackupManifest, SUPPORTED_FORMAT_VERSION};
 use super::{BackupError, BackupId, BackupResult, BackupSummary};
+use crate::infrastructure::durability;
 use crate::infrastructure::sqlite::{
     connection::open_file_connection, migrations::current_schema_version, runtime::DatabaseRuntime,
 };
@@ -61,6 +62,12 @@ pub fn backup_db(
         return Err(BackupError::Db(e));
     }
 
+    durability::sync_file(&staging_db_path)
+        .inspect_err(|_| {
+            let _ = std::fs::remove_dir_all(&staging_dir);
+        })
+        .map_err(BackupError::Io)?;
+
     // Compute checksum of the backup DB file.
     let db_sha256 = sha256_file(&staging_db_path).inspect_err(|_| {
         let _ = std::fs::remove_dir_all(&staging_dir);
@@ -109,6 +116,7 @@ pub fn backup_db(
                 std::fs::create_dir_all(parent).map_err(BackupError::Io)?;
             }
             std::fs::copy(&source, &target).map_err(BackupError::Io)?;
+            durability::sync_file(&target).map_err(BackupError::Io)?;
             let byte_size = std::fs::metadata(&target).map_err(BackupError::Io)?.len();
             assets.push(BackupAssetEntry {
                 relative_path: relative,
@@ -136,12 +144,20 @@ pub fn backup_db(
         let _ = std::fs::remove_dir_all(&staging_dir);
     })?;
 
+    verify_package(&staging_dir, &manifest)?;
+    durability::sync_tree(&staging_dir).map_err(BackupError::Io)?;
+
     // Atomic rename: staging dir → final dir.
     let final_dir = backups_dir.join(format!("lifeweave_backup_{unix_ms}"));
-    std::fs::rename(&staging_dir, &final_dir).map_err(|e| {
+    durability::durable_rename(&staging_dir, &final_dir).map_err(|e| {
         let _ = std::fs::remove_dir_all(&staging_dir);
         BackupError::Io(e)
     })?;
+
+    if let Err(error) = verify_package(&final_dir, &manifest) {
+        let _ = durability::durable_remove_dir_all(&final_dir);
+        return Err(error);
+    }
 
     Ok(BackupResult {
         backup_dir: final_dir.to_string_lossy().into_owned(),
@@ -150,6 +166,54 @@ pub fn backup_db(
         created_at,
         db_size_bytes,
     })
+}
+
+fn verify_package(directory: &Path, expected: &BackupManifest) -> Result<(), BackupError> {
+    let reopened = BackupManifest::read_from_dir(directory)?;
+    if reopened.db_size_bytes != expected.db_size_bytes
+        || reopened.db_sha256 != expected.db_sha256
+        || reopened.assets.len() != expected.assets.len()
+    {
+        return Err(BackupError::PostSwapValidationFailed(
+            "published backup metadata differs from staging authority".into(),
+        ));
+    }
+    let database = directory.join("lifeweave.db");
+    if std::fs::metadata(&database).map_err(BackupError::Io)?.len() != reopened.db_size_bytes {
+        return Err(BackupError::PostSwapValidationFailed(
+            "published database size differs from manifest".into(),
+        ));
+    }
+    let actual = sha256_file(&database)?;
+    if actual != reopened.db_sha256 {
+        return Err(BackupError::Checksum {
+            expected: reopened.db_sha256,
+            actual,
+        });
+    }
+    let connection = open_file_connection(&database).map_err(BackupError::Db)?;
+    let integrity: String = connection
+        .query_row("PRAGMA integrity_check", [], |row| row.get(0))
+        .map_err(|error| BackupError::Db(error.into()))?;
+    if integrity != "ok" {
+        return Err(BackupError::IntegrityCheckFailed(integrity));
+    }
+    for asset in &reopened.assets {
+        let path = directory.join(&asset.relative_path);
+        if std::fs::metadata(&path).map_err(BackupError::Io)?.len() != asset.byte_size {
+            return Err(BackupError::PostSwapValidationFailed(
+                "published asset size differs from manifest".into(),
+            ));
+        }
+        let actual = sha256_file(&path)?;
+        if actual != asset.sha256 {
+            return Err(BackupError::Checksum {
+                expected: asset.sha256.clone(),
+                actual,
+            });
+        }
+    }
+    Ok(())
 }
 
 const BACKUP_PREFIX: &str = "lifeweave_backup_";
@@ -372,6 +436,20 @@ mod tests {
         let result = backup_db(&rt, &backups).unwrap();
         assert!(result.db_size_bytes > 0);
         assert_eq!(result.db_sha256.len(), 64, "SHA-256 must be 64 hex chars");
+    }
+
+    #[test]
+    fn durability_barrier_failure_never_publishes_a_successful_backup() {
+        let (runtime, _db) = make_file_runtime();
+        let backups = temp_backups_dir();
+        crate::infrastructure::durability::fail_after(0);
+        assert!(backup_db(&runtime, &backups).is_err());
+        assert!(list_backups(&backups).unwrap().is_empty());
+        assert!(
+            std::fs::read_dir(&backups)
+                .unwrap()
+                .all(|entry| !entry.unwrap().file_name().to_string_lossy().starts_with(BACKUP_PREFIX))
+        );
     }
 
     #[test]

@@ -45,6 +45,7 @@
     "@types/react-dom": "19.2.3",
     "@vanilla-extract/vite-plugin": "5.2.5",
     "@vitejs/plugin-react": "6.0.4",
+    "axe-core": "4.12.1",
     "jsdom": "28.0.0",
     "typescript": "npm:@typescript/typescript6@6.0.2",
     "vite": "8.1.5",
