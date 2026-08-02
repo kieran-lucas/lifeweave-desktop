@@ -17,5 +17,6 @@
     "typecheck": "pnpm --dir frontend typecheck",
     "test": "pnpm --dir frontend test",
     "tauri": "node frontend/node_modules/@tauri-apps/cli/tauri.js"
+    ,"e2e:windows": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run_windows_e2e.ps1"
   }
 }

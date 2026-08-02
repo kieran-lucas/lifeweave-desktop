@@ -1,5 +1,8 @@
 packages:
   - frontend
+  - e2e-tests
 allowBuilds:
   esbuild: true
   "@tauri-apps/cli": true
+  edgedriver: true
+  geckodriver: true

@@ -34,7 +34,7 @@ def main() -> int:
             errors.append(f"missing required file: {rel}")
 
     for path in ROOT.rglob("*.json"):
-        if ".git" in path.parts:
+        if ".git" in path.parts or "node_modules" in path.parts or "target" in path.parts:
             continue
         try:
             json.loads(path.read_text(encoding="utf-8"))
@@ -42,7 +42,7 @@ def main() -> int:
             errors.append(f"invalid JSON {path.relative_to(ROOT)}: {exc}")
 
     for path in ROOT.rglob("*"):
-        if ".git" in path.parts:
+        if ".git" in path.parts or "node_modules" in path.parts or "target" in path.parts:
             continue
         if path.name in FORBIDDEN_NAMES and path.is_dir():
             ignored = subprocess.run(

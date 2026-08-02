@@ -49,6 +49,12 @@ The 60-task roadmap is the execution and coordination layer. It does not replace
 ## Active slice
 `specs/000-foundation-proof`
 
+## Task 5/60 — Native Windows Foundation E2E
+
+- Harness implementation is present under `e2e-tests/` with isolated `target/e2e-data` profiles and an E2E-only Cargo feature.
+- Rust/frontend/production build gates pass, but the real WebDriver scenario is pending because `msedgedriver.exe` is unavailable and its download endpoint was unreachable in this environment.
+- Task 5 remains active; Task 6 Product Owner acceptance is prohibited until native E2E passes. Stage E and Foundation are not accepted.
+
 ## Task 3/60 — Backup IPC boundary
 
 - Implementation candidate: opaque `BackupId` values are strict `lifeweave_backup_<digits>` identities resolved only beneath the backend-owned `backups` root.

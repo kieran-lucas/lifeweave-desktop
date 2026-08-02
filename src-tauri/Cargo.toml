@@ -6,6 +6,9 @@ authors = ["Lifeweave contributors"]
 edition = "2024"
 rust-version = "1.85"
 
+[features]
+e2e-test = []
+
 [lib]
 name = "lifeweave_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]

@@ -220,6 +220,13 @@ Task 2 remains active and blocked by verified P0/P1 findings. Task 3 is not allo
 - Evidence: `docs/audits/task-04-security.md`; implementation commit `b2fc303a76531019fa93365386d3a89ecd296596`, evidence finalized on the current pushed HEAD; Rust 195 tests, frontend 19 tests, Tauri NSIS build, governance and native smoke gates passed. F-06 remains closed; F-04/F-05 and lack of independent GitHub CI remain non-blocking debt.
 - Task 5/60 native Windows Foundation E2E is the only next action. Stage E, Foundation, product UI completion and production security certification are not declared.
 
+### Task 5 — Native Windows Foundation E2E
+
+- Harness implementation: `e2e-tests/` with WebdriverIO and external `tauri-driver`; `pnpm e2e:windows` builds the E2E-only feature and uses isolated `target/e2e-data` profiles.
+- Isolation override is compiled only with `e2e-test`, requires an absolute path beneath the test-owned root, and is covered by Rust tests. Normal production build has no E2E backdoor.
+- Rust 195 tests, frontend 19 tests, verification, typecheck, clippy/fmt, and normal NSIS production build passed.
+- Native scenario is not yet evidenced: `msedgedriver.exe` was unavailable and the Microsoft download endpoint failed DNS resolution. The harness fails closed and retains failure logs. Task 5 remains active; Task 6 acceptance is prohibited.
+
 ## Quality
 - [ ] Strict CSP/capability review.
 - [ ] No disallowed remote resource.

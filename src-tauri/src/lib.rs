@@ -39,14 +39,36 @@ fn init_tracing() {
         .try_init();
 }
 
+fn app_data_directory(
+    app: &tauri::AppHandle,
+) -> Result<std::path::PathBuf, Box<dyn std::error::Error>> {
+    #[cfg(feature = "e2e-test")]
+    if let Ok(value) = std::env::var("LIFEWEAVE_E2E_APP_DATA_DIR") {
+        let requested = std::path::PathBuf::from(value);
+        if !requested.is_absolute() {
+            return Err("E2E app-data override must be absolute".into());
+        }
+        let root = std::env::current_dir()?.join("target").join("e2e-data");
+        let root = std::fs::canonicalize(&root).unwrap_or(root);
+        let requested_parent = requested
+            .parent()
+            .ok_or("E2E app-data override has no parent")?;
+        let parent = std::fs::canonicalize(requested_parent)
+            .unwrap_or_else(|_| requested_parent.to_path_buf());
+        if !parent.starts_with(&root) || requested.file_name().is_none() {
+            return Err("E2E app-data override is outside target/e2e-data".into());
+        }
+        return Ok(requested);
+    }
+    app.path().app_data_dir().map_err(|e| e.into())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     init_tracing();
     tauri::Builder::default()
         .setup(|app| {
-            let db_path = app
-                .path()
-                .app_data_dir()
+            let db_path = app_data_directory(app.handle())
                 .expect("app data dir unavailable")
                 .join("lifeweave.db");
 
@@ -86,4 +108,18 @@ pub fn run() {
         ])
         .run(tauri::generate_context!())
         .expect("failed to run Lifeweave");
+}
+
+#[cfg(all(test, feature = "e2e-test"))]
+mod e2e_data_tests {
+    #[test]
+    fn override_requires_absolute_path_under_test_root() {
+        let root = std::env::current_dir()
+            .unwrap()
+            .join("target")
+            .join("e2e-data");
+        assert!(root.join("run-1").is_absolute());
+        assert!(!std::path::PathBuf::from("relative/run").is_absolute());
+        assert!(!std::path::PathBuf::from("C:\\Users\\user\\AppData").starts_with(&root));
+    }
 }
