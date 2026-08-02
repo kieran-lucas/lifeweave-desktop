@@ -2632,18 +2632,17 @@ mod tests {
 
     // ── Finding 7: WAL sharing violation runs through full restore flow ───────
 
-    // [f7-real-wal-lock] Locking the derived WAL path and running the full
-    // restore_db flow proves that step-10 WAL deletion aborts the restore
-    // and the Prepared marker (F4 fix) is preserved for startup recovery.
-    // Supersedes the unit test [f1-e] which only tests remove_if_exists in isolation.
-    #[cfg(target_os = "windows")]
+    // [f7-wal-fail-failpoint] Simulating a persistent sharing violation on WAL
+    // deletion via REMOVE_IF_EXISTS_ALWAYS_FAIL proves that step-10 WAL deletion
+    // aborts the restore and the Prepared marker (F4 fix) is preserved for startup
+    // recovery. Using the failpoint avoids the SQLite WAL file-lock conflict that
+    // would occur if we tried to lock the WAL while the worker held it open in WAL
+    // mode. The F4 invariant (marker not pre-deleted before attempt_rollback) is what
+    // matters; the mechanism of failure is irrelevant to startup recovery correctness.
     #[test]
-    fn full_restore_with_locked_wal_path_preserves_live_db_and_prepared_marker() {
-        use std::os::windows::fs::OpenOptionsExt;
-
+    fn full_restore_with_failing_wal_deletion_preserves_live_db_and_prepared_marker() {
         let (rt, db_path) = make_file_runtime();
         let db_dir = db_path.parent().unwrap().to_path_buf();
-        let wal_path = db_dir.join("lifeweave.db-wal");
         let old_path = db_dir.join("lifeweave.db.old");
         let marker_path = db_dir.join("restore_marker.json");
         let candidate_path = db_dir.join("_restore_candidate.db");
@@ -2651,7 +2650,7 @@ mod tests {
         let id = "019700000000-7fff-8000-0000-000000003001".to_string();
         rt.execute({
             let id = id.clone();
-            move |conn| repo::create(conn, &id, "WAL-lock survivor").map(|_| ())
+            move |conn| repo::create(conn, &id, "WAL-fail survivor").map(|_| ())
         })
         .unwrap();
 
@@ -2659,26 +2658,16 @@ mod tests {
         let backup_result = backup_db(&rt, &backups).unwrap();
         let backup_dir = PathBuf::from(&backup_result.backup_dir);
 
-        // Create and exclusively lock the derived WAL path before restore.
-        // The live DB is in DELETE journal mode so the worker does not hold the WAL;
-        // the checkpoint in step 7 returns (0,0,0) (no WAL pages). Step 10 then
-        // tries to delete the file and hits ERROR_SHARING_VIOLATION.
-        std::fs::write(&wal_path, b"fake wal for locking").unwrap();
-        let _wal_lock = std::fs::OpenOptions::new()
-            .write(true)
-            .share_mode(0) // FILE_SHARE_NONE
-            .open(&wal_path)
-            .expect("lock derived WAL path");
-
+        // Simulate a persistent sharing violation: all remove_if_exists calls fail.
+        // Step 10 tries to delete WAL/SHM and hits the injected error; attempt_rollback
+        // also hits it when it tries to clean WAL/SHM before reopening live.
+        set_remove_if_exists_always_fail(true);
         let result = restore_db(&rt, &backup_dir);
-        drop(_wal_lock);
+        set_remove_if_exists_always_fail(false);
 
-        assert!(
-            result.is_err(),
-            "restore must fail with locked WAL: {result:?}"
-        );
+        assert!(result.is_err(), "restore must fail: {result:?}");
 
-        // Live→old rename must not have happened.
+        // Live→old rename must not have happened (step 11 never ran).
         assert!(!old_path.exists(), ".old must not exist");
         assert!(db_path.exists(), "live DB must be intact");
 
@@ -2703,8 +2692,5 @@ mod tests {
         assert!(!marker_path.exists(), "marker cleaned by startup");
         assert!(!candidate_path.exists(), "candidate cleaned by startup");
         assert!(db_path.exists(), "live DB intact after startup recovery");
-
-        // Clean up locked WAL (released before startup recovery).
-        let _ = std::fs::remove_file(&wal_path);
     }
 }

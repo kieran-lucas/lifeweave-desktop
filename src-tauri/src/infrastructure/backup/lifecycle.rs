@@ -1711,7 +1711,8 @@ mod tests {
             .write(&marker_path)
             .unwrap();
 
-        set_remove_if_exists_fail_at(0); // fail candidate removal after old→live rename
+        // Calls 0 and 1 are the WAL/SHM removals (F1 fix); call 2 is candidate removal.
+        set_remove_if_exists_fail_at(2); // fail candidate removal after old→live rename
         let result = recover_if_interrupted(&marker_path, &db);
 
         assert!(result.is_ok(), "must return Ok: {result:?}");
