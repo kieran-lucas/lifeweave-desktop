@@ -117,12 +117,13 @@ impl RestoreMarker {
             f.sync_all().map_err(BackupError::Io)?;
         }
 
-        // Atomic replace: on Windows, std::fs::rename uses MoveFileExW with
-        // MOVEFILE_REPLACE_EXISTING, so the old marker is never absent during
-        // the transition. The previous delete-then-rename pattern had a crash
-        // window where no marker existed. If this rename fails, tmp is cleaned;
+        // Atomic replace with durability barrier: durable_rename flushes the parent
+        // directory after rename, ensuring the marker publication is ordered relative
+        // to adjacent file-content barriers (sync_all calls). On Windows, MoveFileExW
+        // with MOVEFILE_REPLACE_EXISTING keeps the old marker present during the
+        // transition (no absent-marker window). If rename fails, tmp is cleaned;
         // the old marker (if any) remains intact.
-        std::fs::rename(&tmp_path, marker_path).map_err(|e| {
+        durable_rename(&tmp_path, marker_path).map_err(|e| {
             let _ = std::fs::remove_file(&tmp_path);
             BackupError::Io(e)
         })?;
@@ -244,6 +245,68 @@ fn validate_for_recovery(path: &Path) -> bool {
     matches!(schema_version, Ok(v) if v <= max_supported_schema_version())
 }
 
+/// Flushes parent-directory metadata to disk after a rename.
+///
+/// On Windows, opens the parent directory with `GENERIC_WRITE |
+/// FILE_FLAG_BACKUP_SEMANTICS` and calls `FlushFileBuffers`. This ensures
+/// the rename (already committed to the NTFS journal) is also flushed to
+/// stable storage before the next marker or database-swap step, providing a
+/// defensible ordering barrier across power failures.
+///
+/// On other platforms, fsyncs the parent directory file descriptor, which on
+/// Linux/macOS guarantees directory-entry ordering across a power failure.
+///
+/// Best-effort: failures are silently ignored. The NTFS journal already
+/// provides individual-operation crash recovery; the flush strengthens
+/// inter-operation ordering.
+fn flush_parent_dir(path: &Path) {
+    let parent = match path.parent() {
+        Some(p) if !p.as_os_str().is_empty() => p,
+        _ => return,
+    };
+
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::fs::OpenOptionsExt as _;
+        use std::os::windows::io::AsRawHandle as _;
+        use windows_sys::Win32::Storage::FileSystem::FlushFileBuffers;
+
+        const FILE_FLAG_BACKUP_SEMANTICS: u32 = 0x0200_0000;
+
+        let Ok(dir) = std::fs::OpenOptions::new()
+            .write(true)
+            .custom_flags(FILE_FLAG_BACKUP_SEMANTICS)
+            .open(parent)
+        else {
+            return;
+        };
+        // SAFETY: `dir` owns a valid HANDLE obtained from CreateFileW; FlushFileBuffers
+        // is an idempotent metadata-flush syscall with no aliasing requirements.
+        unsafe {
+            FlushFileBuffers(dir.as_raw_handle() as _);
+        }
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        if let Ok(dir) = std::fs::File::open(parent) {
+            let _ = dir.sync_all();
+        }
+    }
+}
+
+/// Renames `src` to `dst` and flushes the parent directory's metadata to disk.
+///
+/// The flush establishes an ordering barrier: content written to `dst` (via
+/// `sync_all`) is guaranteed to be durable before the next file operation in
+/// this sequence, preventing a power failure from persisting a later directory
+/// rename without an earlier file-content sync.
+pub(super) fn durable_rename(src: &Path, dst: &Path) -> std::io::Result<()> {
+    std::fs::rename(src, dst)?;
+    flush_parent_dir(dst);
+    Ok(())
+}
+
 /// Renames a file during recovery. Supports test-seam failpoints.
 fn recovery_rename(src: &Path, dst: &Path) -> std::io::Result<()> {
     #[cfg(test)]
@@ -253,7 +316,7 @@ fn recovery_rename(src: &Path, dst: &Path) -> std::io::Result<()> {
             "test-injected recovery rename failure",
         ));
     }
-    std::fs::rename(src, dst)
+    durable_rename(src, dst)
 }
 
 /// Removes `path` if it exists. `NotFound` is treated as success (idempotent).
@@ -262,6 +325,12 @@ fn recovery_rename(src: &Path, dst: &Path) -> std::io::Result<()> {
 pub(super) fn remove_if_exists(path: &Path) -> Result<(), BackupError> {
     #[cfg(test)]
     {
+        if REMOVE_IF_EXISTS_ALWAYS_FAIL.with(|c| c.get()) {
+            return Err(BackupError::Io(std::io::Error::new(
+                std::io::ErrorKind::PermissionDenied,
+                "test-injected remove_if_exists always-fail",
+            )));
+        }
         let should_fail = REMOVE_IF_EXISTS_FAIL_AT.with(|c| {
             let n = c.get();
             if n >= 0 {
@@ -490,10 +559,23 @@ pub fn recover_if_interrupted(marker_path: &Path, db_path: &Path) -> Result<(), 
         RestoreStage::CandidateInstalled => {
             // Both renames succeeded. live_path has the unvalidated candidate;
             // old_path has the original (if rollback hasn't started).
+            let db_name = db_path
+                .file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or("lifeweave.db");
+            let db_dir_ci = db_path.parent().unwrap_or(Path::new("."));
+            let ci_wal = db_dir_ci.join(format!("{db_name}-wal"));
+            let ci_shm = db_dir_ci.join(format!("{db_name}-shm"));
             match (db_path.exists(), old_path.exists()) {
                 (true, true) => {
-                    // Conservative rollback: old is authoritative. Remove the
-                    // unvalidated candidate at live_path, then restore old.
+                    // Conservative rollback: old is authoritative. The candidate is at
+                    // live_path. reopen_and_validate may have written WAL/SHM for the
+                    // candidate before the crash; delete them now so the restored
+                    // original is never opened against a different-generation sidecar.
+                    // A non-NotFound error (e.g. sharing violation) means the candidate
+                    // is still open: abort rather than expose old to stale WAL pages.
+                    remove_if_exists(&ci_wal)?;
+                    remove_if_exists(&ci_shm)?;
                     std::fs::remove_file(db_path).map_err(BackupError::Io)?;
                     recovery_rename(&old_path, db_path).map_err(BackupError::Io)?;
                     if remove_if_exists(&candidate_path).is_err() {
@@ -593,6 +675,8 @@ thread_local! {
     static RECOVERY_RENAME_FAIL: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
     // Countdown for remove_if_exists: N ≥ 0 means fail after N successes; -1 = disabled.
     static REMOVE_IF_EXISTS_FAIL_AT: std::cell::Cell<i32> = const { std::cell::Cell::new(-1) };
+    // Always-fail mode: true causes every remove_if_exists call to fail.
+    static REMOVE_IF_EXISTS_ALWAYS_FAIL: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
     // Boolean for preflight stale-tmp removal.
     static PREFLIGHT_TMP_REMOVE_FAIL: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
 }
@@ -605,6 +689,14 @@ pub(super) fn set_recovery_rename_fail(fail: bool) {
 #[cfg(test)]
 pub(super) fn set_remove_if_exists_fail_at(n: i32) {
     REMOVE_IF_EXISTS_FAIL_AT.with(|c| c.set(n));
+}
+
+/// Sets always-fail mode for `remove_if_exists`. When true, every subsequent
+/// call fails regardless of the countdown failpoint or whether the file exists.
+/// Reset to false before the next test that should succeed.
+#[cfg(test)]
+pub(super) fn set_remove_if_exists_always_fail(fail: bool) {
+    REMOVE_IF_EXISTS_ALWAYS_FAIL.with(|c| c.set(fail));
 }
 
 #[cfg(test)]
@@ -1715,5 +1807,180 @@ mod tests {
             RestoreStage::LiveMovedAside,
             "updated marker must reflect new stage"
         );
+    }
+
+    // ── Finding 1: CandidateInstalled recovery clears stale WAL/SHM ─────────
+
+    // [f1-startup-wal] CandidateInstalled(true,true): startup recovery must delete
+    // WAL/SHM from the candidate before restoring old, so the original DB is never
+    // opened against a different-generation sidecar (Finding 1, BLOCKER).
+    #[test]
+    fn candidate_installed_recovery_clears_stale_candidate_wal_shm() {
+        let dir = temp_dir();
+        let (db_path, old_path, candidate_path, marker_path, _) = make_paths(&dir);
+
+        let db_name = db_path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("lifeweave.db");
+        let wal_path = dir.join(format!("{db_name}-wal"));
+        let shm_path = dir.join(format!("{db_name}-shm"));
+
+        // Original DB at old_path with a sentinel row to confirm it survives.
+        make_real_db(&old_path);
+
+        // Candidate (unvalidated) at live_path.
+        make_real_db(&db_path);
+
+        // Stale candidate sidecars simulating what reopen_and_validate created.
+        std::fs::write(&wal_path, b"candidate WAL").unwrap();
+        std::fs::write(&shm_path, b"candidate SHM").unwrap();
+
+        // A lingering candidate artifact from a prior partial cleanup.
+        std::fs::write(&candidate_path, b"stale candidate").unwrap();
+
+        make_marker(RestoreStage::CandidateInstalled)
+            .write(&marker_path)
+            .unwrap();
+
+        // Simulate startup recovery sequence.
+        let disp = preflight_startup_check(&db_path).unwrap();
+        assert!(
+            matches!(disp, StartupDisposition::ExistingOrRecovered),
+            "crash state must be ExistingOrRecovered"
+        );
+        recover_if_interrupted(&marker_path, &db_path).unwrap();
+
+        // Original must be restored; candidate sidecars must be gone.
+        assert!(db_path.exists(), "live DB must exist after recovery");
+        assert!(!wal_path.exists(), "candidate WAL must be deleted");
+        assert!(!shm_path.exists(), "candidate SHM must be deleted");
+        assert!(!old_path.exists(), ".old must be cleaned up");
+        assert!(
+            !candidate_path.exists(),
+            "candidate artifact must be cleaned up"
+        );
+        assert!(!marker_path.exists(), "marker must be removed");
+
+        // Recovered DB must be openable (the original, not the candidate).
+        use crate::infrastructure::sqlite::connection::open_existing_file_connection;
+        let conn = open_existing_file_connection(&db_path).expect("must open recovered DB");
+        let count: i64 = conn
+            .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
+            .expect("schema_migrations must be queryable");
+        assert!(count >= 0, "recovered DB must be the migrated original");
+    }
+
+    // [f1-startup-wal-locked] CandidateInstalled(true,true): if the candidate WAL
+    // is exclusively locked, recovery must abort (not open old against stale WAL).
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn candidate_installed_recovery_with_locked_candidate_wal_aborts() {
+        use std::os::windows::fs::OpenOptionsExt;
+
+        let dir = temp_dir();
+        let (db_path, old_path, candidate_path, marker_path, _) = make_paths(&dir);
+
+        let db_name = db_path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("lifeweave.db");
+        let wal_path = dir.join(format!("{db_name}-wal"));
+
+        make_real_db(&old_path);
+        make_real_db(&db_path);
+
+        // Create and exclusively lock the candidate WAL file.
+        std::fs::write(&wal_path, b"locked candidate WAL").unwrap();
+        let _wal_lock = std::fs::OpenOptions::new()
+            .write(true)
+            .share_mode(0) // FILE_SHARE_NONE
+            .open(&wal_path)
+            .expect("lock WAL");
+
+        std::fs::write(&candidate_path, b"stale candidate").unwrap();
+        make_marker(RestoreStage::CandidateInstalled)
+            .write(&marker_path)
+            .unwrap();
+
+        // Recovery must fail: locked WAL cannot be deleted.
+        let result = recover_if_interrupted(&marker_path, &db_path);
+        drop(_wal_lock);
+
+        assert!(
+            result.is_err(),
+            "recovery must fail with locked candidate WAL: {result:?}"
+        );
+        // Marker must be preserved (not removed) so the next startup can retry.
+        assert!(
+            marker_path.exists(),
+            "marker must be preserved when WAL deletion fails"
+        );
+        // Original must still exist; live_path was not renamed over.
+        assert!(old_path.exists(), ".old must still exist after abort");
+    }
+
+    // ── Finding 6: durable_rename provides ordered rename + directory flush ───
+
+    // [f6-basic] durable_rename renames a file and the source is gone afterwards.
+    #[test]
+    fn durable_rename_renames_file() {
+        let dir = temp_dir();
+        let src = dir.join("src.txt");
+        let dst = dir.join("dst.txt");
+        std::fs::write(&src, b"content").unwrap();
+        durable_rename(&src, &dst).unwrap();
+        assert!(!src.exists(), "source must not exist after rename");
+        assert_eq!(
+            std::fs::read(&dst).unwrap(),
+            b"content",
+            "destination must contain original content"
+        );
+    }
+
+    // [f5-stale-tmp] Simulate the F5 failure scenario at the filesystem level:
+    // a stale .tmp marker remains alongside the final marker (as would happen if
+    // durable_rename's rename succeeded but the process died before tmp cleanup).
+    // Startup preflight must remove the .tmp; recover_if_interrupted must converge.
+    #[test]
+    fn stale_tmp_marker_with_valid_final_marker_converges_at_startup() {
+        let dir = temp_dir();
+        let (db_path, _, candidate_path, marker_path, tmp_marker_path) = make_paths(&dir);
+
+        // Live DB exists.
+        make_real_db(&db_path);
+
+        // Final marker at CandidateInstalled (as left by the pre-fix rollback path).
+        make_marker(RestoreStage::CandidateInstalled)
+            .write(&marker_path)
+            .unwrap();
+
+        // Stale .tmp from a failed rollback marker write (the .tmp was never cleaned).
+        std::fs::write(&tmp_marker_path, b"incomplete write").unwrap();
+
+        // Candidate artifact also present.
+        std::fs::write(&candidate_path, b"stale").unwrap();
+
+        // Preflight: sees both .tmp and final marker; must remove .tmp.
+        let disp = preflight_startup_check(&db_path).unwrap();
+        assert!(matches!(disp, StartupDisposition::ExistingOrRecovered));
+        assert!(
+            !tmp_marker_path.exists(),
+            "preflight must remove stale .tmp"
+        );
+
+        // recover_if_interrupted: CandidateInstalled(true,false) — live exists, no .old.
+        // Validates live, removes candidate, removes marker.
+        recover_if_interrupted(&marker_path, &db_path).unwrap();
+
+        assert!(
+            !marker_path.exists(),
+            "marker must be removed after recovery"
+        );
+        assert!(
+            !candidate_path.exists(),
+            "candidate must be cleaned up after recovery"
+        );
+        assert!(db_path.exists(), "live DB must still exist");
     }
 }

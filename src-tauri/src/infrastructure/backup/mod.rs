@@ -53,6 +53,14 @@ pub enum BackupError {
     RestoreMarkerUnsupported {
         format_version: u32,
     },
+    /// The WAL checkpoint did not complete before the connection was closed.
+    /// Some committed pages may exist only in the WAL file. The WAL must not be
+    /// deleted and the restore must not proceed until checkpoint is confirmed complete.
+    WalCheckpointIncomplete {
+        busy: i64,
+        log: i64,
+        checkpointed: i64,
+    },
     /// A rollback attempt failed. The runtime may be in Gone state. All artifacts
     /// (marker, .old, candidate) are preserved so the next startup can attempt
     /// recovery. Do not expose internal rollback details to the IPC layer.
@@ -103,6 +111,15 @@ impl std::fmt::Display for BackupError {
                     "restore marker uses unsupported format version {format_version}"
                 )
             }
+            BackupError::WalCheckpointIncomplete {
+                busy,
+                log,
+                checkpointed,
+            } => write!(
+                f,
+                "WAL checkpoint incomplete (busy={busy}, log={log}, checkpointed={checkpointed}); \
+                 committed pages may remain in WAL — restore aborted"
+            ),
             BackupError::RollbackFailed => {
                 write!(
                     f,

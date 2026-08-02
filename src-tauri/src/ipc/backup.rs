@@ -23,6 +23,7 @@ fn backup_to_ipc(e: BackupError) -> IpcError {
             IpcError::Corruption
         }
         BackupError::RecoveryPending => IpcError::RecoveryPending,
+        BackupError::WalCheckpointIncomplete { .. } => IpcError::Storage,
         BackupError::RestoreMarkerUnreadable(_) | BackupError::RollbackFailed => IpcError::Storage,
     }
 }

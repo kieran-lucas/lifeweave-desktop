@@ -34,6 +34,14 @@ uuid = { version = "1", features = ["v7"] }
 # sha2 is more universally recognized for file-integrity use.
 sha2 = "0.10"
 
+# Directory-metadata durability barrier for the restore swap sequence (Finding F6).
+# windows-sys is already a transitive dependency through tauri v2.11.2; adding as a
+# direct target-gated dependency to call FlushFileBuffers on parent directory handles
+# without raw extern declarations. Zero additional binary weight on Windows; absent on
+# other targets.
+[target.'cfg(target_os = "windows")'.dependencies]
+windows-sys = { version = "0.61", features = ["Win32_Storage_FileSystem", "Win32_Foundation"] }
+
 [dev-dependencies]
 ts-rs = { version = "10", features = ["serde-compat"] }
 

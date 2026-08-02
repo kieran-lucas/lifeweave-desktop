@@ -7,7 +7,8 @@ use rusqlite::Connection;
 use super::checksum::sha256_file;
 use super::engine::chrono_now_rfc3339;
 use super::lifecycle::{
-    MARKER_FORMAT_VERSION, RestoreMarker, RestoreStage, generate_op_id, remove_if_exists,
+    MARKER_FORMAT_VERSION, RestoreMarker, RestoreStage, durable_rename, generate_op_id,
+    remove_if_exists,
 };
 use super::manifest::BackupManifest;
 use super::{BackupError, RestoreResult};
@@ -127,21 +128,43 @@ pub fn restore_db(
         return Err(e);
     }
 
-    // Step 8: copy backup DB → candidate (never rename/touch backup_dir files).
+    // Step 8a: write durable marker at Prepared BEFORE creating the candidate.
+    // This ensures that if copy or sync partially creates the candidate and then
+    // fails uncleanably, startup recovery sees a Prepared marker rather than
+    // RecoveryAmbiguous (candidate-without-marker). The marker write is the only
+    // step that must not fail silently: if it fails here, no candidate exists yet
+    // so the state is clean.
+    let marker = RestoreMarker {
+        format_version: MARKER_FORMAT_VERSION,
+        op_id: generate_op_id(),
+        stage: RestoreStage::Prepared,
+    };
+    if let Err(e) = marker.write(&marker_path) {
+        runtime.unseal_worker(worker_arc);
+        return Err(e);
+    }
+
+    // Step 8b: copy backup DB → candidate (never rename/touch backup_dir files).
+    // On failure, attempt best-effort candidate cleanup. The Prepared marker already
+    // exists, so if cleanup fails, startup recovery will remove the partial artifact.
     if candidate_path.exists() {
         if let Err(e) = std::fs::remove_file(&candidate_path) {
+            // Stale candidate from a prior restore that this guard missed. This is
+            // caught by the guard at the top of this function; reaching here means
+            // the file appeared concurrently. Treat as I/O error.
             runtime.unseal_worker(worker_arc);
             return Err(BackupError::Io(e));
         }
     }
     if let Err(e) = std::fs::copy(&backup_db_path, &candidate_path) {
+        let _ = std::fs::remove_file(&candidate_path);
         runtime.unseal_worker(worker_arc);
         return Err(BackupError::Io(e));
     }
-    // Durability barrier: flush candidate bytes to disk before writing the marker.
-    // Without this, a power loss between copy and marker write could leave a
-    // partially-written candidate that passes the size check but has corrupt content.
-    // Must open with write permission: FlushFileBuffers requires GENERIC_WRITE on Windows.
+    // Step 8c: durability barrier — flush candidate bytes to disk before the renames.
+    // Without this, a power loss between copy and live→old rename could leave a
+    // partially-written candidate. Must open with write permission: FlushFileBuffers
+    // requires GENERIC_WRITE on Windows.
     {
         let sync_result = std::fs::OpenOptions::new()
             .write(true)
@@ -154,17 +177,7 @@ pub fn restore_db(
         }
     }
 
-    // Step 9: write durable marker at Prepared before any rename.
-    let marker = RestoreMarker {
-        format_version: MARKER_FORMAT_VERSION,
-        op_id: generate_op_id(),
-        stage: RestoreStage::Prepared,
-    };
-    if let Err(e) = marker.write(&marker_path) {
-        let _ = std::fs::remove_file(&candidate_path);
-        runtime.unseal_worker(worker_arc);
-        return Err(e);
-    }
+    // Step 9 (marker already written in 8a — no separate step needed).
 
     // Step 10: shutdown worker (drains queue, closes connection, flushes WAL).
     worker_arc.shutdown();
@@ -174,12 +187,14 @@ pub fn restore_db(
     // Delete WAL/SHM before the live→old rename. NotFound = success (already
     // absent). Any other error (e.g. Windows sharing-violation) is fatal: abort
     // before touching the live DB. Attempt rollback to reinstall the worker.
+    // IMPORTANT: do NOT pre-delete the candidate or marker before calling
+    // attempt_rollback. If rollback also fails (same sidecar still locked), the
+    // Prepared marker must be preserved so startup recovery can replay safely.
+    // Pre-deleting the marker here would leave candidate-without-marker = RecoveryAmbiguous.
     let wal_path = std::path::PathBuf::from(format!("{}-wal", live_path.to_string_lossy()));
     let shm_path = std::path::PathBuf::from(format!("{}-shm", live_path.to_string_lossy()));
     for sidecar in [&wal_path, &shm_path] {
         if let Err(e) = remove_if_exists(sidecar) {
-            let _ = std::fs::remove_file(&candidate_path);
-            let _ = RestoreMarker::remove(&marker_path);
             return match attempt_rollback(
                 runtime,
                 &old_path,
@@ -194,10 +209,10 @@ pub fn restore_db(
         }
     }
 
-    // Step 11: rename(live → old).
+    // Step 11: rename(live → old) with durability barrier.
     // No stale .old cleanup here (Blocker F). If old_path exists at this point,
     // it was caught by the guard at the start of this function.
-    if let Err(e) = std::fs::rename(&live_path, &old_path) {
+    if let Err(e) = durable_rename(&live_path, &old_path) {
         // live_path still has the original; old_path doesn't exist.
         let _ = std::fs::remove_file(&candidate_path);
         return match attempt_rollback(
@@ -230,8 +245,8 @@ pub fn restore_db(
         };
     }
 
-    // Step 12: rename(candidate → live).
-    if let Err(e) = std::fs::rename(&candidate_path, &live_path) {
+    // Step 12: rename(candidate → live) with durability barrier.
+    if let Err(e) = durable_rename(&candidate_path, &live_path) {
         return match attempt_rollback(
             runtime,
             &old_path,
@@ -373,12 +388,42 @@ fn create_verified_safety_backup(
                 rusqlite::backup::Backup::new(live_conn, &mut dst).map_err(DbError::Rusqlite)?;
             b.run_to_completion(100, Duration::ZERO, None)
                 .map_err(DbError::Rusqlite)?;
-            let _: i64 = live_conn
-                .query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |r| r.get(0))
-                .unwrap_or(0);
             Ok(())
         })
         .map_err(BackupError::Db)?;
+
+    // Checkpoint and confirm all committed WAL pages are in the main file before
+    // the worker is shut down and WAL/SHM are deleted. Returns (busy, log, ckptd).
+    // busy != 0 means a reader snapshot blocked the checkpoint; log != ckptd means
+    // not all frames were moved to the main file. Either condition means committed
+    // data remains only in the WAL — abort the restore to prevent data loss.
+    let (ckpt_busy, ckpt_log, ckpt_ckptd): (i64, i64, i64) = worker_arc
+        .execute(|live_conn| {
+            live_conn
+                .query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |r| {
+                    Ok((r.get(0)?, r.get(1)?, r.get(2)?))
+                })
+                .map_err(DbError::Rusqlite)
+        })
+        .map_err(BackupError::Db)?;
+
+    // cfg(test) failpoint: simulates an incomplete checkpoint result.
+    #[cfg(test)]
+    if CHECKPOINT_FAIL.with(|c| c.get()) {
+        return Err(BackupError::WalCheckpointIncomplete {
+            busy: 1,
+            log: 100,
+            checkpointed: 0,
+        });
+    }
+
+    if ckpt_busy != 0 || ckpt_log != ckpt_ckptd {
+        return Err(BackupError::WalCheckpointIncomplete {
+            busy: ckpt_busy,
+            log: ckpt_log,
+            checkpointed: ckpt_ckptd,
+        });
+    }
 
     // Verify the staging backup: integrity + FK.
     {
@@ -469,6 +514,11 @@ fn attempt_rollback(
     let wal_path = std::path::PathBuf::from(format!("{}-wal", live_path.to_string_lossy()));
     let shm_path = std::path::PathBuf::from(format!("{}-shm", live_path.to_string_lossy()));
 
+    // Tracks whether a LiveMovedAside rollback marker was successfully written.
+    // True when restore_from_old is false (no .tmp scratch file was created, so
+    // the existing marker can always be safely removed after cleanup).
+    let mut rollback_marker_written = !restore_from_old;
+
     if restore_from_old {
         if live_path.exists() {
             // Remove the failed candidate at live_path. Best-effort; if this fails
@@ -488,14 +538,20 @@ fn attempt_rollback(
         }
         // Durably record that old→live rename succeeded so that next-startup
         // CandidateInstalled(true,false) recovery validates live rather than
-        // returning RecoveryAmbiguous. Best-effort: if the write fails, the
-        // CandidateInstalled(true,false) fix in recover_if_interrupted handles it.
+        // returning RecoveryAmbiguous.
+        // Track whether the write succeeded: if it fails after creating a .tmp
+        // scratch file that cannot be cleaned up, the final marker must NOT be
+        // removed — removing it while .tmp exists leaves has_tmp && !has_marker,
+        // which preflight maps to RestoreMarkerUnreadable (fails indefinitely).
+        // On write failure the final marker is preserved at its old stage
+        // (e.g. CandidateInstalled); startup CandidateInstalled(true,false)
+        // then validates live and cleans up correctly.
         let rollback_marker = RestoreMarker {
             format_version: MARKER_FORMAT_VERSION,
             op_id: "rollback".into(),
             stage: RestoreStage::LiveMovedAside,
         };
-        let _ = rollback_marker.write(marker_path);
+        rollback_marker_written = rollback_marker.write(marker_path).is_ok();
     } else if live_path.exists() {
         // old absent, live present: live is the original (step 11 rename failed).
         // Delete stale WAL/SHM before opening. NotFound = success; other errors → abort.
@@ -560,8 +616,18 @@ fn attempt_rollback(
             if remove_if_exists(candidate_path).is_err() {
                 return Err(BackupError::RecoveryPending);
             }
-            let _ = RestoreMarker::remove(marker_path);
-            Ok(())
+            // Remove the final marker ONLY if the rollback-transition write succeeded.
+            // If the write failed, there may be a stale .tmp scratch file; removing
+            // the final marker while .tmp exists creates has_tmp && !has_marker, which
+            // preflight maps to RestoreMarkerUnreadable — the app cannot start until
+            // manually recovered. Keeping the final marker lets preflight clean the .tmp
+            // (has_tmp && has_marker) and recover_if_interrupted resolve the state.
+            if rollback_marker_written {
+                let _ = RestoreMarker::remove(marker_path);
+                Ok(())
+            } else {
+                Err(BackupError::RecoveryPending)
+            }
         }
         None => {
             // Validation failed. If we renamed old → live, rename back to preserve .old
@@ -575,6 +641,18 @@ fn attempt_rollback(
     }
 }
 
+// cfg(test) failpoint: simulates an incomplete WAL checkpoint result inside
+// create_verified_safety_backup. Thread-local so parallel tests do not interfere.
+#[cfg(test)]
+thread_local! {
+    static CHECKPOINT_FAIL: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+#[cfg(test)]
+pub(super) fn set_checkpoint_fail(fail: bool) {
+    CHECKPOINT_FAIL.with(|c| c.set(fail));
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -582,7 +660,7 @@ mod tests {
         backup::engine::backup_db,
         backup::lifecycle::{
             self as lc, RestoreMarker, RestoreStage, set_marker_write_fail_at,
-            set_remove_if_exists_fail_at,
+            set_remove_if_exists_always_fail, set_remove_if_exists_fail_at,
         },
         backup::manifest::BackupManifest,
         sqlite::{
@@ -2313,5 +2391,320 @@ mod tests {
         // Clean up.
         let _ = RestoreMarker::remove(&marker_path);
         let _ = std::fs::remove_file(&candidate_path);
+    }
+
+    // ── Finding 2: WAL checkpoint validated before WAL deletion ──────────────
+
+    // [f2-checkpoint-fail] If create_verified_safety_backup detects an incomplete
+    // checkpoint (busy or log != checkpointed), restore must abort before
+    // shutting down the worker or touching the live DB.
+    #[test]
+    fn incomplete_wal_checkpoint_aborts_restore_before_worker_shutdown() {
+        let (rt, db_path) = make_file_runtime();
+        let db_dir = db_path.parent().unwrap().to_path_buf();
+        let old_path = db_dir.join("lifeweave.db.old");
+        let marker_path = db_dir.join("restore_marker.json");
+        let backups = temp_backups_dir();
+        let backup_result = backup_db(&rt, &backups).unwrap();
+        let backup_dir = PathBuf::from(&backup_result.backup_dir);
+
+        // Inject incomplete-checkpoint result inside create_verified_safety_backup.
+        set_checkpoint_fail(true);
+        let result = restore_db(&rt, &backup_dir);
+        set_checkpoint_fail(false);
+
+        assert!(
+            matches!(result, Err(BackupError::WalCheckpointIncomplete { .. })),
+            "restore must fail with WalCheckpointIncomplete: {result:?}"
+        );
+
+        // No rename must have happened; live DB must be intact.
+        assert!(!old_path.exists(), ".old must not exist");
+        assert!(db_path.exists(), "live DB must be intact");
+
+        // Worker must be reinstated (unseal_worker on safety-backup failure).
+        let v: i64 = rt
+            .execute(|conn| {
+                conn.query_row("SELECT 1", [], |r| r.get(0))
+                    .map_err(DbError::from)
+            })
+            .unwrap();
+        assert_eq!(v, 1, "runtime must remain usable after checkpoint abort");
+
+        // Marker must not exist (failure was before step 8a).
+        assert!(!marker_path.exists(), "no marker must be written");
+    }
+
+    // ── Finding 3: Prepared marker written before candidate copy ─────────────
+
+    // [f3-partial-candidate] If a partial candidate remains alongside a Prepared
+    // marker (as produced by the new pre-copy write), startup recovery must resolve
+    // the state cleanly without RecoveryAmbiguous.
+    #[test]
+    fn prepared_marker_with_partial_candidate_resolves_at_startup() {
+        let (rt, db_path) = make_file_runtime();
+        let db_dir = db_path.parent().unwrap().to_path_buf();
+        let candidate_path = db_dir.join("_restore_candidate.db");
+        let marker_path = db_dir.join("restore_marker.json");
+
+        // Simulate: Prepared marker written, then candidate copy partially succeeded
+        // but could not be cleaned up on failure.
+        RestoreMarker {
+            format_version: lc::MARKER_FORMAT_VERSION,
+            op_id: "f3-partial".into(),
+            stage: RestoreStage::Prepared,
+        }
+        .write(&marker_path)
+        .unwrap();
+        std::fs::write(&candidate_path, b"partial copy").unwrap();
+
+        use crate::infrastructure::backup::lifecycle::{
+            preflight_startup_check, recover_if_interrupted,
+        };
+
+        // Startup sequence: preflight accepts the marker; recover cleans the partial candidate.
+        let disp = preflight_startup_check(&db_path).unwrap();
+        assert!(
+            matches!(
+                disp,
+                crate::infrastructure::backup::lifecycle::StartupDisposition::ExistingOrRecovered
+            ),
+            "Prepared marker must be seen as ExistingOrRecovered"
+        );
+        recover_if_interrupted(&marker_path, &db_path).unwrap();
+
+        // After recovery: live DB intact, partial candidate and marker removed.
+        assert!(db_path.exists(), "live DB must survive recovery");
+        assert!(
+            !candidate_path.exists(),
+            "partial candidate must be cleaned"
+        );
+        assert!(!marker_path.exists(), "marker must be removed");
+
+        // Worker is still active (restore was aborted before worker shutdown).
+        let v: i64 = rt
+            .execute(|conn| {
+                conn.query_row("SELECT 1", [], |r| r.get(0))
+                    .map_err(DbError::from)
+            })
+            .unwrap();
+        assert_eq!(v, 1, "runtime must still be usable");
+    }
+
+    // ── Finding 4: WAL deletion failure preserves Prepared marker ────────────
+
+    // [f4-always-fail] When remove_if_exists always fails (simulating a persistent
+    // sharing violation on both WAL deletion in step 10 AND in attempt_rollback),
+    // the Prepared marker and candidate must be preserved so startup recovery can
+    // replay the Prepared state cleanly.
+    #[test]
+    fn wal_deletion_failure_preserves_prepared_marker_and_candidate_for_startup() {
+        let (rt, db_path) = make_file_runtime();
+        let db_dir = db_path.parent().unwrap().to_path_buf();
+        let marker_path = db_dir.join("restore_marker.json");
+        let candidate_path = db_dir.join("_restore_candidate.db");
+        let old_path = db_dir.join("lifeweave.db.old");
+        let backups = temp_backups_dir();
+        let backup_result = backup_db(&rt, &backups).unwrap();
+        let backup_dir = PathBuf::from(&backup_result.backup_dir);
+
+        // Always fail: step-10 WAL deletion fails AND rollback WAL deletion fails.
+        set_remove_if_exists_always_fail(true);
+        let result = restore_db(&rt, &backup_dir);
+        set_remove_if_exists_always_fail(false);
+
+        assert!(result.is_err(), "restore must fail: {result:?}");
+
+        // No file rename must have occurred.
+        assert!(
+            !old_path.exists(),
+            ".old must not exist (no rename happened)"
+        );
+        assert!(db_path.exists(), "live DB must be intact");
+
+        // Prepared marker and candidate must both be preserved.
+        assert!(marker_path.exists(), "Prepared marker must be preserved");
+        let m = RestoreMarker::read(&marker_path).unwrap().unwrap();
+        assert_eq!(
+            m.stage,
+            RestoreStage::Prepared,
+            "preserved marker must be at Prepared stage"
+        );
+        assert!(candidate_path.exists(), "candidate must be preserved");
+
+        // Startup recovery resolves the Prepared state cleanly.
+        use crate::infrastructure::backup::lifecycle::{
+            preflight_startup_check, recover_if_interrupted,
+        };
+        preflight_startup_check(&db_path).unwrap();
+        recover_if_interrupted(&marker_path, &db_path).unwrap();
+        assert!(
+            !marker_path.exists(),
+            "marker must be cleaned up by startup"
+        );
+        assert!(
+            !candidate_path.exists(),
+            "candidate must be cleaned up by startup"
+        );
+        assert!(
+            db_path.exists(),
+            "live DB must be intact after startup recovery"
+        );
+    }
+
+    // ── Finding 5: rollback marker write failure preserves final marker ───────
+
+    // [f5-rollback-marker-fail] When the rollback marker write fails, attempt_rollback
+    // must return RecoveryPending (worker installed) instead of Ok, and must NOT
+    // remove the final marker. Startup recovery then converges via the preserved marker.
+    #[test]
+    fn rollback_marker_write_failure_preserves_final_marker_and_returns_recovery_pending() {
+        let (rt, db_path) = make_file_runtime();
+        let db_dir = db_path.parent().unwrap().to_path_buf();
+        let old_path = db_dir.join("lifeweave.db.old");
+        let candidate_path = db_dir.join("_restore_candidate.db");
+        let marker_path = db_dir.join("restore_marker.json");
+
+        // Set up CandidateInstalled state: old has the original, live has the candidate.
+        RestoreMarker {
+            format_version: lc::MARKER_FORMAT_VERSION,
+            op_id: "f5-marker-fail".into(),
+            stage: RestoreStage::CandidateInstalled,
+        }
+        .write(&marker_path)
+        .unwrap();
+
+        let arc = rt.seal_worker().unwrap();
+        arc.shutdown();
+        drop(arc);
+        rt.set_gone();
+        std::fs::rename(&db_path, &old_path).unwrap();
+        std::fs::write(&candidate_path, b"stale candidate").unwrap();
+
+        // Inject rollback marker write failure.
+        set_marker_write_fail_at(0);
+        let result = attempt_rollback(&rt, &old_path, &db_path, &candidate_path, &marker_path);
+
+        // Must return RecoveryPending (worker installed, marker preserved).
+        assert!(
+            matches!(result, Err(BackupError::RecoveryPending)),
+            "must return RecoveryPending when rollback marker write fails: {result:?}"
+        );
+
+        // Worker must be installed and runtime usable.
+        let v: i64 = rt
+            .execute(|conn| {
+                conn.query_row("SELECT 1", [], |r| r.get(0))
+                    .map_err(DbError::from)
+            })
+            .unwrap();
+        assert_eq!(
+            v, 1,
+            "runtime must be usable after rollback with failed marker write"
+        );
+
+        // Final marker must be preserved (NOT removed), still at CandidateInstalled.
+        assert!(marker_path.exists(), "final marker must be preserved");
+        let m = RestoreMarker::read(&marker_path).unwrap().unwrap();
+        assert_eq!(
+            m.stage,
+            RestoreStage::CandidateInstalled,
+            "preserved marker must still be at CandidateInstalled"
+        );
+
+        // Startup recovery: CandidateInstalled(true,false) — live=recovered, no old.
+        // Validates live, removes candidate (already gone), removes marker.
+        use crate::infrastructure::backup::lifecycle::{
+            preflight_startup_check, recover_if_interrupted,
+        };
+        preflight_startup_check(&db_path).unwrap();
+        recover_if_interrupted(&marker_path, &db_path).unwrap();
+
+        assert!(
+            !marker_path.exists(),
+            "marker must be gone after startup recovery"
+        );
+        assert!(
+            db_path.exists(),
+            "live DB must exist after startup recovery"
+        );
+    }
+
+    // ── Finding 7: WAL sharing violation runs through full restore flow ───────
+
+    // [f7-real-wal-lock] Locking the derived WAL path and running the full
+    // restore_db flow proves that step-10 WAL deletion aborts the restore
+    // and the Prepared marker (F4 fix) is preserved for startup recovery.
+    // Supersedes the unit test [f1-e] which only tests remove_if_exists in isolation.
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn full_restore_with_locked_wal_path_preserves_live_db_and_prepared_marker() {
+        use std::os::windows::fs::OpenOptionsExt;
+
+        let (rt, db_path) = make_file_runtime();
+        let db_dir = db_path.parent().unwrap().to_path_buf();
+        let wal_path = db_dir.join("lifeweave.db-wal");
+        let old_path = db_dir.join("lifeweave.db.old");
+        let marker_path = db_dir.join("restore_marker.json");
+        let candidate_path = db_dir.join("_restore_candidate.db");
+
+        let id = "019700000000-7fff-8000-0000-000000003001".to_string();
+        rt.execute({
+            let id = id.clone();
+            move |conn| repo::create(conn, &id, "WAL-lock survivor").map(|_| ())
+        })
+        .unwrap();
+
+        let backups = temp_backups_dir();
+        let backup_result = backup_db(&rt, &backups).unwrap();
+        let backup_dir = PathBuf::from(&backup_result.backup_dir);
+
+        // Create and exclusively lock the derived WAL path before restore.
+        // The live DB is in DELETE journal mode so the worker does not hold the WAL;
+        // the checkpoint in step 7 returns (0,0,0) (no WAL pages). Step 10 then
+        // tries to delete the file and hits ERROR_SHARING_VIOLATION.
+        std::fs::write(&wal_path, b"fake wal for locking").unwrap();
+        let _wal_lock = std::fs::OpenOptions::new()
+            .write(true)
+            .share_mode(0) // FILE_SHARE_NONE
+            .open(&wal_path)
+            .expect("lock derived WAL path");
+
+        let result = restore_db(&rt, &backup_dir);
+        drop(_wal_lock);
+
+        assert!(
+            result.is_err(),
+            "restore must fail with locked WAL: {result:?}"
+        );
+
+        // Live→old rename must not have happened.
+        assert!(!old_path.exists(), ".old must not exist");
+        assert!(db_path.exists(), "live DB must be intact");
+
+        // With F4 fix: Prepared marker preserved (not pre-deleted before rollback).
+        assert!(
+            marker_path.exists(),
+            "Prepared marker must be preserved for startup recovery"
+        );
+        let m = RestoreMarker::read(&marker_path).unwrap().unwrap();
+        assert_eq!(
+            m.stage,
+            RestoreStage::Prepared,
+            "marker must be at Prepared"
+        );
+
+        // Startup recovery resolves the Prepared state.
+        use crate::infrastructure::backup::lifecycle::{
+            preflight_startup_check, recover_if_interrupted,
+        };
+        preflight_startup_check(&db_path).unwrap();
+        recover_if_interrupted(&marker_path, &db_path).unwrap();
+        assert!(!marker_path.exists(), "marker cleaned by startup");
+        assert!(!candidate_path.exists(), "candidate cleaned by startup");
+        assert!(db_path.exists(), "live DB intact after startup recovery");
+
+        // Clean up locked WAL (released before startup recovery).
+        let _ = std::fs::remove_file(&wal_path);
     }
 }
