@@ -91,3 +91,11 @@ The first production-shaped Task slice is implemented: migration 3, category see
 Task 9/60 is complete at implementation commit `9a12ed933bda7b064f0baa64abad9bc26b0c21d4`. Exact-pinned Rust RFC 5545 expansion, a typed unified Today projection, user-controlled recurrence creation, moved/cancelled overrides, all three atomic edit/delete scopes, 366-day conflict validation, and accessible recurring UI flows are verified. Rust 214/214, task-focused 19/19, backup-focused 127/127, and frontend 30/30 passed; governance/security, generated bindings, release NSIS build, isolated native launch, and file-backed recurrence reopen smoke passed. Evidence: `docs/audits/task-09-recurrence.md`.
 
 Task 10/60 Week Strip + Calendar Month Projection is the only allowed next action. Existing F-04/F-05, CI, and WebDriver attachment debt remains non-blocking. Calendar month UI, completion assessment, Analytics, and the whole Task System are not declared complete.
+
+## Task 10/60 — Week Strip + Calendar Month Projection
+
+- Implemented at `af2ba267a3ab5af4b4b1e0a9a88005a9b65adbeb`: one app-level selected local date, a locale-aware seven-day Week Strip, and an accessible five/six-row Calendar month grid.
+- `MonthProjection` algorithm v1 performs one bounded DB-worker operation, combining one-offs, recurrence, moved overrides and cancellations without per-cell IPC. It exposes aggregate counts/duration/category icons/period-union load/missed markers and no task content.
+- Evidence: frontend 41/41; Rust 219/219; task 24/24; backup 127/127; verify/typecheck/build/check/fmt/clippy/security/generated DTO/NSIS gates passed. Sentinel-isolated native launch remained alive 21 seconds and cleaned its synthetic profile.
+- Report: `docs/audits/task-10-calendar.md`.
+- Task 10/60 is complete. Task 11/60 is the only allowed next action; the live roadmap does not yet name it. Completion evaluation, Analytics, missed-state persistence, M3, and the entire Task System are not declared complete.

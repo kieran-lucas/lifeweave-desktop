@@ -262,3 +262,15 @@ Migration 4 remains immutable and provides normalized series/override authority.
 Evidence: Rust 214 passed, task-focused 19 passed, backup-focused 127 passed, frontend 30 passed; verify/typecheck/build/check/fmt/clippy, generated ACL/bindings, NSIS build, isolated native launch, and file-backed recurrence reopen/split smoke passed. See `docs/audits/task-09-recurrence.md`.
 
 Task 9/60 is complete. Task 10/60 owns only Week Strip + Calendar Month Projection.
+
+### Task 10 — Week Strip + Calendar Month Projection
+
+- [x] App-level session selected date defaults to machine-local Today and drives both Today query and Create Task date.
+- [x] Seven-day locale-aware Week Strip with separate Today/selected semantics and exact previous/next-week movement.
+- [x] One typed bounded `get_month_projection` command; one-offs, recurring occurrences, moved overrides and cancellations aggregate without per-day IPC.
+- [x] Versioned aggregation v1: task count, summed scheduled duration, ranked/capped category icons, union period load and operational unevaluated-past marker.
+- [x] Separate accessible Calendar month destination with seven columns, five/six rows, aggregate-only cells, roving focus and full keyboard navigation.
+- [x] Calendar activation selects the date and returns to Today without opening Create or remounting the App Shell.
+- [x] Exact evidence: frontend 41/41; Rust 219/219; task 24/24; backup 127/127; governance/security/generated bindings/release NSIS/native isolated launch passed. See `docs/audits/task-10-calendar.md`.
+
+Task 10/60 is complete. Task 11/60 is the only allowed next action. The live roadmap does not name Task 11, so no title is inferred here.
