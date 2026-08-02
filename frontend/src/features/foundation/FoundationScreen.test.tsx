@@ -24,12 +24,12 @@ const archivedRecord = {
 };
 
 const mockBackupResult = {
-  backup_dir: "C:\\AppData\\lifeweave\\backups\\lifeweave_backup_1",
-  db_sha256: "a".repeat(64),
+  backup_id: "lifeweave_backup_1",
   schema_version: 2,
   created_at: "2026-08-01T12:00:00Z",
   db_size_bytes: BigInt(4096),
 };
+const mockBackups = [mockBackupResult];
 
 const mockRestoreResult = {
   restored_at: "2026-08-01T12:01:00Z",
@@ -48,6 +48,7 @@ beforeEach(() => {
   vi.mocked(commands.archiveFoundationRecord).mockResolvedValue(undefined);
   vi.mocked(commands.restoreFoundationRecord).mockResolvedValue(undefined);
   vi.mocked(commands.backupDatabase).mockResolvedValue(mockBackupResult);
+  vi.mocked(commands.listBackups).mockResolvedValue(mockBackups);
   vi.mocked(commands.restoreDatabase).mockResolvedValue(mockRestoreResult);
 });
 

@@ -15,7 +15,7 @@ use infrastructure::sqlite::{
     runtime::DatabaseRuntime,
     worker::DbWorkerHandle,
 };
-use ipc::backup::{backup_database, restore_database};
+use ipc::backup::{backup_database, list_backups, restore_database};
 use ipc::foundation_record::{
     archive_foundation_record, create_foundation_record, list_archived_foundation_records,
     list_foundation_records, restore_foundation_record, update_foundation_record,
@@ -81,6 +81,7 @@ pub fn run() {
             archive_foundation_record,
             restore_foundation_record,
             backup_database,
+            list_backups,
             restore_database,
         ])
         .run(tauri::generate_context!())

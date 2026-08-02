@@ -5,7 +5,7 @@ use rusqlite::Connection;
 
 use super::checksum::sha256_file;
 use super::manifest::{BackupManifest, SUPPORTED_FORMAT_VERSION};
-use super::{BackupError, BackupResult};
+use super::{BackupError, BackupId, BackupResult, BackupSummary};
 use crate::infrastructure::sqlite::{
     connection::open_file_connection, migrations::current_schema_version, runtime::DatabaseRuntime,
 };
@@ -109,6 +109,90 @@ pub fn backup_db(
         created_at,
         db_size_bytes,
     })
+}
+
+const BACKUP_PREFIX: &str = "lifeweave_backup_";
+
+pub fn validate_backup_id(id: &BackupId) -> Result<(), BackupError> {
+    let value = id.0.as_str();
+    if value.len() < BACKUP_PREFIX.len() + 1
+        || value.len() > 96
+        || !value.starts_with(BACKUP_PREFIX)
+        || !value[BACKUP_PREFIX.len()..]
+            .bytes()
+            .all(|b| b.is_ascii_digit())
+    {
+        return Err(BackupError::InvalidBackupId);
+    }
+    Ok(())
+}
+
+pub fn resolve_backup_id(root: &Path, id: &BackupId) -> Result<std::path::PathBuf, BackupError> {
+    validate_backup_id(id)?;
+    let root = root
+        .canonicalize()
+        .map_err(|_| BackupError::BackupNotFound)?;
+    let candidate = root.join(&id.0);
+    let canonical = candidate
+        .canonicalize()
+        .map_err(|_| BackupError::BackupNotFound)?;
+    if canonical.parent() != Some(root.as_path()) || !canonical.is_dir() {
+        return Err(BackupError::InvalidBackupId);
+    }
+    let manifest =
+        BackupManifest::read_from_dir(&canonical).map_err(|_| BackupError::BackupNotFound)?;
+    let db = canonical.join("lifeweave.db");
+    if !db.is_file()
+        || std::fs::metadata(&db)
+            .map_err(|_| BackupError::BackupNotFound)?
+            .len()
+            != manifest.db_size_bytes
+    {
+        return Err(BackupError::BackupNotFound);
+    }
+    Ok(canonical)
+}
+
+pub fn list_backups(root: &Path) -> Result<Vec<BackupSummary>, BackupError> {
+    let mut entries = Vec::new();
+    let Ok(read_dir) = std::fs::read_dir(root) else {
+        return Ok(entries);
+    };
+    for entry in read_dir.flatten() {
+        let path = entry.path();
+        if !path.is_dir() {
+            continue;
+        }
+        let Some(name) = path.file_name().and_then(|n| n.to_str()) else {
+            continue;
+        };
+        let id = BackupId(name.to_owned());
+        if validate_backup_id(&id).is_err() {
+            continue;
+        }
+        let Ok(manifest) = BackupManifest::read_from_dir(&path) else {
+            continue;
+        };
+        let db = path.join("lifeweave.db");
+        let Ok(meta) = std::fs::metadata(&db) else {
+            continue;
+        };
+        if meta.len() != manifest.db_size_bytes {
+            continue;
+        }
+        entries.push(BackupSummary {
+            backup_id: id,
+            schema_version: manifest.schema_version,
+            created_at: manifest.created_at,
+            db_size_bytes: manifest.db_size_bytes,
+        });
+    }
+    entries.sort_by(|a, b| {
+        b.created_at
+            .cmp(&a.created_at)
+            .then_with(|| b.backup_id.0.cmp(&a.backup_id.0))
+    });
+    Ok(entries)
 }
 
 /// Returns the current time as an RFC3339 UTC string without depending on
@@ -247,6 +331,38 @@ mod tests {
         let result = backup_db(&rt, &backups).unwrap();
         assert!(result.db_size_bytes > 0);
         assert_eq!(result.db_sha256.len(), 64, "SHA-256 must be 64 hex chars");
+    }
+
+    #[test]
+    fn backup_ids_are_strict_and_contained() {
+        for value in [
+            "",
+            "..",
+            "C:\\escape",
+            "lifeweave_backup_x",
+            "lifeweave_backup_1/..",
+        ] {
+            assert!(validate_backup_id(&BackupId(value.into())).is_err());
+        }
+        assert!(validate_backup_id(&BackupId("lifeweave_backup_123".into())).is_ok());
+    }
+
+    #[test]
+    fn catalog_lists_only_valid_final_packages() {
+        let (rt, _db) = make_file_runtime();
+        let backups = temp_backups_dir();
+        let result = backup_db(&rt, &backups).unwrap();
+        std::fs::create_dir_all(backups.join(".staging_999")).unwrap();
+        std::fs::create_dir_all(backups.join("unrelated")).unwrap();
+        let listed = list_backups(&backups).unwrap();
+        assert_eq!(listed.len(), 1);
+        assert_eq!(
+            listed[0].backup_id.0,
+            PathBuf::from(result.backup_dir)
+                .file_name()
+                .unwrap()
+                .to_string_lossy()
+        );
     }
 
     #[test]

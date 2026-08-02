@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 
-import type { BackupResult } from "./generated/BackupResult";
+import type { BackupSummary } from "./generated/BackupSummary";
+import type { BackupProgress } from "./generated/BackupProgress";
 import type { RestoreResult } from "./generated/RestoreResult";
 import type { HealthCheck } from "./generated/HealthCheck";
 import type { FoundationRecordView } from "./generated/FoundationRecordView";
@@ -47,11 +48,17 @@ export function restoreFoundationRecord(
 }
 
 /** Creates a backup package and returns the backup location and checksum. */
-export function backupDatabase(): Promise<BackupResult> {
-  return invoke<BackupResult>("backup_database");
+export function backupDatabase(): Promise<BackupSummary> {
+  return invoke<BackupSummary>("backup_database");
 }
 
-/** Restores the database from the backup at backupDir. */
-export function restoreDatabase(backupDir: string): Promise<RestoreResult> {
-  return invoke<RestoreResult>("restore_database", { backupDir });
+export function listBackups(): Promise<BackupSummary[]> {
+  return invoke<BackupSummary[]>("list_backups");
 }
+
+/** Restores a backend-owned backup selected by opaque identity. */
+export function restoreDatabase(backupId: string): Promise<RestoreResult> {
+  return invoke<RestoreResult>("restore_database", { backupId });
+}
+
+export type { BackupProgress };

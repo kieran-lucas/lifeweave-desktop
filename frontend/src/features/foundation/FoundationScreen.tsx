@@ -6,11 +6,13 @@ import {
   backupDatabase,
   createFoundationRecord,
   listArchivedFoundationRecords,
+  listBackups,
   listFoundationRecords,
   restoreDatabase,
   restoreFoundationRecord,
   updateFoundationRecord,
 } from "../../ipc/commands";
+import type { BackupSummary } from "../../ipc/generated/BackupSummary";
 import * as styles from "./FoundationScreen.css";
 
 type EditState = { id: string; label: string; revision: number } | null;
@@ -24,7 +26,10 @@ type PageState =
       archived: FoundationRecordView[];
       formError: string | null;
       edit: EditState;
-      backupDir: string | null;
+      backups: BackupSummary[];
+      selectedBackupId: string | null;
+      progress: string | null;
+      operationBusy: boolean;
       backupMessage: string | null;
       backupError: string | null;
     };
@@ -56,9 +61,10 @@ export function FoundationScreen() {
 
   async function load() {
     try {
-      const [active, archived] = await Promise.all([
+      const [active, archived, backups] = await Promise.all([
         listFoundationRecords(),
         listArchivedFoundationRecords(),
+        listBackups(),
       ]);
       setState((prev) => ({
         kind: "ready",
@@ -66,7 +72,10 @@ export function FoundationScreen() {
         archived,
         formError: null,
         edit: prev.kind === "ready" ? prev.edit : null,
-        backupDir: prev.kind === "ready" ? prev.backupDir : null,
+        backups,
+        selectedBackupId: prev.kind === "ready" ? prev.selectedBackupId : null,
+        progress: null,
+        operationBusy: false,
         backupMessage: prev.kind === "ready" ? prev.backupMessage : null,
         backupError: null,
       }));
@@ -147,35 +156,41 @@ export function FoundationScreen() {
 
   async function handleBackup() {
     if (state.kind !== "ready") return;
+    setState((prev) => prev.kind === "ready" ? { ...prev, operationBusy: true, progress: "preparing", backupError: null } : prev);
     try {
       const result = await backupDatabase();
+      const backups = await listBackups();
       setState((prev) =>
         prev.kind === "ready"
           ? {
               ...prev,
-              backupDir: result.backup_dir,
+              backups,
+              selectedBackupId: result.backup_id,
               backupMessage: `Backup created at ${result.created_at}`,
               backupError: null,
+              progress: "completed",
+              operationBusy: false,
             }
           : prev,
       );
     } catch (e) {
       setState((prev) =>
         prev.kind === "ready"
-          ? { ...prev, backupError: extractErrorMessage(e), backupMessage: null }
+          ? { ...prev, backupError: extractErrorMessage(e), backupMessage: null, operationBusy: false }
           : prev,
       );
     }
   }
 
   async function handleDbRestore() {
-    if (state.kind !== "ready" || !state.backupDir) return;
-    const dir = state.backupDir;
+    if (state.kind !== "ready" || !state.selectedBackupId) return;
+    const id = state.selectedBackupId;
+    setState((prev) => prev.kind === "ready" ? { ...prev, operationBusy: true, progress: "inspecting", backupError: null } : prev);
     try {
-      await restoreDatabase(dir);
+      await restoreDatabase(id);
       setState((prev) =>
         prev.kind === "ready"
-          ? { ...prev, backupMessage: "Restore complete.", backupError: null }
+          ? { ...prev, backupMessage: "Restore complete.", backupError: null, progress: "completed", operationBusy: false }
           : prev,
       );
       await load();
@@ -185,7 +200,7 @@ export function FoundationScreen() {
         : extractErrorMessage(e);
       setState((prev) =>
         prev.kind === "ready"
-          ? { ...prev, backupError: msg, backupMessage: null }
+          ? { ...prev, backupError: msg, backupMessage: null, operationBusy: false }
           : prev,
       );
     }
@@ -269,14 +284,18 @@ export function FoundationScreen() {
       </form>
 
       <div className={styles.form} style={{ marginTop: "1rem" }}>
-        <button type="button" className={styles.button} onClick={handleBackup}>
+        <button type="button" className={styles.button} onClick={handleBackup} disabled={state.operationBusy}>
           Backup
         </button>
+        <select aria-label="Backup selection" value={state.selectedBackupId ?? ""} onChange={(e) => setState((prev) => prev.kind === "ready" ? { ...prev, selectedBackupId: e.target.value || null } : prev)} disabled={state.operationBusy}>
+          <option value="">Select backup</option>
+          {state.backups.map((backup) => <option key={backup.backup_id} value={backup.backup_id}>{backup.created_at}</option>)}
+        </select>
         <button
           type="button"
           className={styles.secondaryButton}
           onClick={handleDbRestore}
-          disabled={!state.backupDir}
+          disabled={!state.selectedBackupId || state.operationBusy}
         >
           Restore
         </button>
@@ -286,6 +305,7 @@ export function FoundationScreen() {
           {state.backupMessage}
         </p>
       )}
+      {state.progress && <p className={styles.statusText} aria-live="polite">Progress: {state.progress}</p>}
       {state.backupError && (
         <p className={styles.errorText} role="alert">
           {state.backupError}

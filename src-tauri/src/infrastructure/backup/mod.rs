@@ -9,6 +9,7 @@ pub mod manifest;
 pub mod restore;
 
 pub use engine::backup_db;
+pub use engine::list_backups;
 pub use restore::restore_db;
 
 use crate::infrastructure::sqlite::DbError;
@@ -17,6 +18,8 @@ use crate::infrastructure::sqlite::DbError;
 /// frontend — mapped to `IpcError` in `ipc::backup`.
 #[derive(Debug)]
 pub enum BackupError {
+    InvalidBackupId,
+    BackupNotFound,
     Db(DbError),
     Io(std::io::Error),
     Checksum {
@@ -79,6 +82,8 @@ pub enum BackupError {
 impl std::fmt::Display for BackupError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            BackupError::InvalidBackupId => write!(f, "invalid backup identity"),
+            BackupError::BackupNotFound => write!(f, "backup not found"),
             BackupError::Db(e) => write!(f, "database error: {e:?}"),
             BackupError::Io(_) => write!(f, "I/O error"),
             BackupError::Checksum { .. } => write!(f, "checksum mismatch"),
@@ -155,13 +160,35 @@ impl std::error::Error for BackupError {
 
 /// Returned to the IPC layer after a successful backup.
 #[derive(Debug, serde::Serialize)]
-#[cfg_attr(test, derive(ts_rs::TS))]
 pub struct BackupResult {
+    /// Internal package location. This type never crosses the IPC boundary.
     pub backup_dir: String,
     pub db_sha256: String,
     pub schema_version: u32,
     pub created_at: String,
     pub db_size_bytes: u64,
+}
+
+/// Opaque renderer-facing identity for a managed backup package.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct BackupId(pub String);
+
+/// Safe metadata returned to the renderer. It intentionally contains no path.
+#[derive(Debug, Clone, serde::Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct BackupSummary {
+    pub backup_id: BackupId,
+    pub schema_version: u32,
+    pub created_at: String,
+    pub db_size_bytes: u64,
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct BackupProgress {
+    pub operation: String,
+    pub phase: String,
 }
 
 /// Returned to the IPC layer after a successful restore.
