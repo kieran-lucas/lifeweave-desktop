@@ -197,7 +197,7 @@ pub fn restore_db(
         return Err(BackupError::MissingBackupFile);
     }
 
-    // Step 8a: write durable marker at Prepared BEFORE creating the candidate.
+    // Step 6: write durable marker at Prepared BEFORE creating the candidate.
     // This ensures that if copy or sync partially creates the candidate and then
     // fails uncleanably, startup recovery sees a Prepared marker rather than
     // RecoveryAmbiguous (candidate-without-marker). The marker write is the only
@@ -210,9 +210,9 @@ pub fn restore_db(
     };
     marker.write(&marker_path)?;
 
-    // Step 8b: copy backup DB → candidate (never rename/touch backup_dir files).
-    // On failure, attempt best-effort candidate cleanup. The Prepared marker already
-    // exists, so if cleanup fails, startup recovery will remove the partial artifact.
+    // Step 7: copy and validate the candidate (never rename/touch backup_dir files).
+    // copy_candidate is the single checked candidate durability barrier. Candidate
+    // cleanup always precedes marker cleanup, preserving replayability on failure.
     #[cfg(test)]
     run_restore_test_hook(RestoreTestPoint::BeforeCandidateCopy);
     if let Err(e) = copy_candidate(&backup_db_path, &candidate_path)
@@ -226,23 +226,6 @@ pub fn restore_db(
     #[cfg(test)]
     run_restore_test_hook(RestoreTestPoint::AfterCandidateValidation);
     // Step 8c: durability barrier — flush candidate bytes to disk before the renames.
-    // Without this, a power loss between copy and live→old rename could leave a
-    // partially-written candidate. Must open with write permission: FlushFileBuffers
-    // requires GENERIC_WRITE on Windows.
-    {
-        let sync_result = std::fs::OpenOptions::new()
-            .write(true)
-            .open(&candidate_path)
-            .and_then(|f| f.sync_all());
-        if let Err(e) = sync_result {
-            let _ = std::fs::remove_file(&candidate_path);
-            let _ = RestoreMarker::remove(&marker_path);
-            return Err(BackupError::Io(e));
-        }
-    }
-
-    // Step 9 (marker already written in 8a — no separate step needed).
-
     // Close admission atomically and drain every admitted command before taking
     // the safety snapshot. The candidate is already validated and is the only
     // file installed after this point.
@@ -253,7 +236,7 @@ pub fn restore_db(
         return Err(e);
     }
 
-    // Step 10: shutdown worker (drains queue, closes connection, flushes WAL).
+    // Step 9: shutdown worker (drains queue, closes connection, flushes WAL).
     worker_arc.shutdown();
     drop(worker_arc);
     runtime.set_gone();
@@ -2393,6 +2376,54 @@ mod tests {
         run_migrations(&mut conn).unwrap();
         let value: i64 = conn.query_row("SELECT 1", [], |row| row.get(0)).unwrap();
         assert_eq!(value, 1);
+    }
+
+    // Candidate preparation invariant: candidate cleanup is checked before the
+    // Prepared marker can be removed, and the resulting state replays at startup.
+    #[test]
+    fn candidate_cleanup_failure_preserves_prepared_marker_and_startup_replays() {
+        let (rt, db_path) = make_file_runtime();
+        let db_dir = db_path.parent().unwrap().to_path_buf();
+        let candidate_path = db_dir.join("_restore_candidate.db");
+        let marker_path = db_dir.join("restore_marker.json");
+        std::fs::write(&candidate_path, b"partial candidate").unwrap();
+        RestoreMarker {
+            format_version: lc::MARKER_FORMAT_VERSION,
+            op_id: "candidate-cleanup-p1".into(),
+            stage: RestoreStage::Prepared,
+        }
+        .write(&marker_path)
+        .unwrap();
+
+        set_remove_if_exists_fail_at(0);
+        let cleanup = remove_prepared_artifacts(&candidate_path, &marker_path);
+        set_remove_if_exists_fail_at(-1);
+        assert!(cleanup.is_err(), "injected candidate cleanup must fail");
+        assert!(db_path.exists(), "live database must remain untouched");
+        assert!(
+            candidate_path.exists(),
+            "failed candidate cleanup preserves candidate"
+        );
+        assert!(marker_path.exists(), "marker must remain with candidate");
+
+        let disposition = lc::preflight_startup_check(&db_path).unwrap();
+        assert!(matches!(
+            disposition,
+            lc::StartupDisposition::ExistingOrRecovered
+        ));
+        lc::recover_if_interrupted(&marker_path, &db_path).unwrap();
+        assert!(!candidate_path.exists(), "startup replay removes candidate");
+        assert!(
+            !marker_path.exists(),
+            "startup replay removes marker after candidate"
+        );
+        let value: i64 = rt
+            .execute(|conn| {
+                conn.query_row("SELECT 1", [], |row| row.get(0))
+                    .map_err(DbError::from)
+            })
+            .unwrap();
+        assert_eq!(value, 1, "live database remains usable");
     }
 
     // [f1-e] Windows real sharing-violation: prove that remove_if_exists returns Err
