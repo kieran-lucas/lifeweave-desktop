@@ -445,11 +445,13 @@ mod tests {
         crate::infrastructure::durability::fail_after(0);
         assert!(backup_db(&runtime, &backups).is_err());
         assert!(list_backups(&backups).unwrap().is_empty());
-        assert!(
-            std::fs::read_dir(&backups)
+        assert!(std::fs::read_dir(&backups).unwrap().all(|entry| {
+            !entry
                 .unwrap()
-                .all(|entry| !entry.unwrap().file_name().to_string_lossy().starts_with(BACKUP_PREFIX))
-        );
+                .file_name()
+                .to_string_lossy()
+                .starts_with(BACKUP_PREFIX)
+        }));
     }
 
     #[test]

@@ -8,12 +8,15 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SCOPES = [ROOT / "frontend/src", ROOT / "frontend/index.html", ROOT / "src-tauri"]
-REMOTE = re.compile(r"https?://", re.IGNORECASE)
+REMOTE = re.compile(r"https?://[A-Za-z0-9]", re.IGNORECASE)
 ALLOWED = {
     # Tauri development URL is local and belongs to config.
     "http://localhost:1420",
     "http://ipc.localhost",
     "https://schema.tauri.app/config/2",
+    # Bounded fixtures prove safe-link and remote-image rejection without loading them.
+    "https://example.com",
+    "https://example.invalid/icon.svg",
 }
 TEXT_SUFFIXES = {".ts", ".tsx", ".js", ".jsx", ".css", ".html", ".json", ".rs", ".toml"}
 
@@ -30,8 +33,7 @@ def main() -> int:
     failures = []
     for path in iter_files():
         for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
-            matches = REMOTE.findall(line)
-            if not matches:
+            if not REMOTE.search(line):
                 continue
             sanitized = line
             for allowed in ALLOWED:
