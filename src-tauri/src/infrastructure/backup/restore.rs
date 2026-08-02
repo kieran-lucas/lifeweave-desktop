@@ -1,3 +1,4 @@
+use std::io::{Read as _, Write as _};
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
@@ -19,6 +20,110 @@ use crate::infrastructure::sqlite::{
     runtime::DatabaseRuntime,
     worker::DbWorkerHandle,
 };
+
+#[cfg(test)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum RestoreTestPoint {
+    BeforeCandidateCopy,
+    DuringCandidateCopy,
+    AfterCandidateValidation,
+}
+
+#[cfg(test)]
+type RestoreTestHook = Box<dyn FnMut(RestoreTestPoint)>;
+
+#[cfg(test)]
+thread_local! {
+    static RESTORE_TEST_HOOK: std::cell::RefCell<Option<RestoreTestHook>> =
+        std::cell::RefCell::new(None);
+}
+
+#[cfg(test)]
+fn set_restore_test_hook(hook: Option<Box<dyn FnMut(RestoreTestPoint)>>) {
+    RESTORE_TEST_HOOK.with(|slot| *slot.borrow_mut() = hook);
+}
+
+#[cfg(test)]
+fn run_restore_test_hook(point: RestoreTestPoint) {
+    RESTORE_TEST_HOOK.with(|slot| {
+        if let Some(hook) = slot.borrow_mut().as_mut() {
+            hook(point);
+        }
+    });
+}
+
+fn remove_prepared_artifacts(candidate_path: &Path, marker_path: &Path) -> Result<(), BackupError> {
+    remove_if_exists(candidate_path)?;
+    RestoreMarker::remove(marker_path).map_err(BackupError::Io)
+}
+
+fn copy_candidate(source_path: &Path, candidate_path: &Path) -> Result<(), BackupError> {
+    let mut source = std::fs::File::open(source_path).map_err(BackupError::Io)?;
+    let mut candidate = std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(candidate_path)
+        .map_err(BackupError::Io)?;
+    let mut buffer = [0_u8; 64 * 1024];
+    let mut first_chunk = true;
+
+    loop {
+        let read = source.read(&mut buffer).map_err(BackupError::Io)?;
+        if read == 0 {
+            break;
+        }
+        candidate
+            .write_all(&buffer[..read])
+            .map_err(BackupError::Io)?;
+        if first_chunk {
+            first_chunk = false;
+            #[cfg(test)]
+            run_restore_test_hook(RestoreTestPoint::DuringCandidateCopy);
+        }
+    }
+
+    candidate.sync_all().map_err(BackupError::Io)
+}
+
+fn validate_candidate(
+    candidate_path: &Path,
+    manifest: &BackupManifest,
+    supported_schema: u32,
+) -> Result<(), BackupError> {
+    let candidate_size = std::fs::metadata(candidate_path)
+        .map_err(BackupError::Io)?
+        .len();
+    if candidate_size != manifest.db_size_bytes {
+        return Err(BackupError::Checksum {
+            expected: manifest.db_size_bytes.to_string(),
+            actual: candidate_size.to_string(),
+        });
+    }
+
+    let candidate_hash = sha256_file(candidate_path)?;
+    if candidate_hash != manifest.db_sha256 {
+        return Err(BackupError::Checksum {
+            expected: manifest.db_sha256.clone(),
+            actual: candidate_hash,
+        });
+    }
+
+    let conn = open_readonly_connection(candidate_path).map_err(BackupError::Db)?;
+    check_integrity_and_fk(&conn)?;
+    let actual_schema = current_schema_version(&conn).map_err(BackupError::Db)?;
+    if actual_schema > supported_schema {
+        return Err(BackupError::SchemaVersionTooNew {
+            backup_version: actual_schema,
+            supported: supported_schema,
+        });
+    }
+    if actual_schema != manifest.schema_version {
+        return Err(BackupError::PostSwapValidationFailed(
+            "candidate schema version does not match manifest".into(),
+        ));
+    }
+    Ok(())
+}
 
 /// Restores the database from the backup package at `backup_dir`.
 ///
@@ -92,42 +197,6 @@ pub fn restore_db(
         return Err(BackupError::MissingBackupFile);
     }
 
-    let file_size = std::fs::metadata(&backup_db_path)
-        .map_err(BackupError::Io)?
-        .len();
-    if file_size != manifest.db_size_bytes {
-        return Err(BackupError::Checksum {
-            expected: manifest.db_size_bytes.to_string(),
-            actual: file_size.to_string(),
-        });
-    }
-
-    let actual_hash = sha256_file(&backup_db_path)?;
-    if actual_hash != manifest.db_sha256 {
-        return Err(BackupError::Checksum {
-            expected: manifest.db_sha256.clone(),
-            actual: actual_hash,
-        });
-    }
-
-    {
-        let conn = open_readonly_connection(&backup_db_path).map_err(BackupError::Db)?;
-        check_integrity_and_fk(&conn)?;
-    }
-
-    // Step 6: seal worker → Maintenance BEFORE safety backup.
-    // This closes the quiescence gap: once sealed, runtime.execute() returns
-    // Maintenance, so no domain command can mutate the live DB between here
-    // and the worker shutdown in step 10.
-    let worker_arc = runtime.seal_worker().map_err(BackupError::Db)?;
-
-    // Step 7: create verified safety backup using the sealed worker Arc directly.
-    // Must NOT call runtime.execute() here since runtime is now Maintenance.
-    if let Err(e) = create_verified_safety_backup(&worker_arc, &db_dir) {
-        runtime.unseal_worker(worker_arc);
-        return Err(e);
-    }
-
     // Step 8a: write durable marker at Prepared BEFORE creating the candidate.
     // This ensures that if copy or sync partially creates the candidate and then
     // fails uncleanably, startup recovery sees a Prepared marker rather than
@@ -139,28 +208,23 @@ pub fn restore_db(
         op_id: generate_op_id(),
         stage: RestoreStage::Prepared,
     };
-    if let Err(e) = marker.write(&marker_path) {
-        runtime.unseal_worker(worker_arc);
-        return Err(e);
-    }
+    marker.write(&marker_path)?;
 
     // Step 8b: copy backup DB → candidate (never rename/touch backup_dir files).
     // On failure, attempt best-effort candidate cleanup. The Prepared marker already
     // exists, so if cleanup fails, startup recovery will remove the partial artifact.
-    if candidate_path.exists() {
-        if let Err(e) = std::fs::remove_file(&candidate_path) {
-            // Stale candidate from a prior restore that this guard missed. This is
-            // caught by the guard at the top of this function; reaching here means
-            // the file appeared concurrently. Treat as I/O error.
-            runtime.unseal_worker(worker_arc);
-            return Err(BackupError::Io(e));
-        }
+    #[cfg(test)]
+    run_restore_test_hook(RestoreTestPoint::BeforeCandidateCopy);
+    if let Err(e) = copy_candidate(&backup_db_path, &candidate_path)
+        .and_then(|_| validate_candidate(&candidate_path, &manifest, supported))
+    {
+        return match remove_prepared_artifacts(&candidate_path, &marker_path) {
+            Ok(()) => Err(e),
+            Err(cleanup_error) => Err(cleanup_error),
+        };
     }
-    if let Err(e) = std::fs::copy(&backup_db_path, &candidate_path) {
-        let _ = std::fs::remove_file(&candidate_path);
-        runtime.unseal_worker(worker_arc);
-        return Err(BackupError::Io(e));
-    }
+    #[cfg(test)]
+    run_restore_test_hook(RestoreTestPoint::AfterCandidateValidation);
     // Step 8c: durability barrier — flush candidate bytes to disk before the renames.
     // Without this, a power loss between copy and live→old rename could leave a
     // partially-written candidate. Must open with write permission: FlushFileBuffers
@@ -172,12 +236,22 @@ pub fn restore_db(
             .and_then(|f| f.sync_all());
         if let Err(e) = sync_result {
             let _ = std::fs::remove_file(&candidate_path);
-            runtime.unseal_worker(worker_arc);
+            let _ = RestoreMarker::remove(&marker_path);
             return Err(BackupError::Io(e));
         }
     }
 
     // Step 9 (marker already written in 8a — no separate step needed).
+
+    // Close admission atomically and drain every admitted command before taking
+    // the safety snapshot. The candidate is already validated and is the only
+    // file installed after this point.
+    let worker_arc = runtime.seal_worker().map_err(BackupError::Db)?;
+    if let Err(e) = create_verified_safety_backup(&worker_arc, &db_dir) {
+        runtime.unseal_worker(worker_arc);
+        let _ = remove_prepared_artifacts(&candidate_path, &marker_path);
+        return Err(e);
+    }
 
     // Step 10: shutdown worker (drains queue, closes connection, flushes WAL).
     worker_arc.shutdown();
@@ -520,17 +594,15 @@ fn attempt_rollback(
     let mut rollback_marker_written = !restore_from_old;
 
     if restore_from_old {
-        if live_path.exists() {
-            // Remove the failed candidate at live_path. Best-effort; if this fails
-            // the rename below will fail too (Windows won't rename over an existing file).
-            let _ = std::fs::remove_file(live_path);
-        }
-        // Delete stale WAL/SHM before rename. NotFound = success (already absent).
-        // Any other error (e.g. sharing violation) → cannot safely open DB; abort.
+        // Delete candidate WAL/SHM before removing the candidate main file. A
+        // sharing violation must leave both live and .old intact for replay.
         for sidecar in [&wal_path, &shm_path] {
             if remove_if_exists(sidecar).is_err() {
                 return Err(BackupError::RollbackFailed);
             }
+        }
+        if live_path.exists() {
+            std::fs::remove_file(live_path).map_err(|_| BackupError::RollbackFailed)?;
         }
         if std::fs::rename(old_path, live_path).is_err() {
             // Rename failed. old_path still exists; preserve all artifacts.
@@ -664,8 +736,11 @@ mod tests {
         },
         backup::manifest::BackupManifest,
         sqlite::{
-            connection::open_file_connection, foundation_record_repo as repo,
-            migrations::run_migrations, runtime::DatabaseRuntime, worker::DbWorkerHandle,
+            connection::{open_existing_file_connection, open_file_connection},
+            foundation_record_repo as repo,
+            migrations::run_migrations,
+            runtime::DatabaseRuntime,
+            worker::DbWorkerHandle,
         },
     };
     use std::path::PathBuf;
@@ -737,6 +812,94 @@ mod tests {
         let active = rt.execute(|conn| repo::list_active(conn)).unwrap();
         assert_eq!(active.len(), 1);
         assert_eq!(active[0].label, "Original label");
+    }
+
+    // F-02: replacing the package source at the validated-source boundary must
+    // never install a different database under the original manifest.
+    #[test]
+    fn f02_replacement_at_source_boundary_is_rejected_without_live_mutation() {
+        let (rt, db_path) = make_file_runtime();
+        let backups_a = temp_backups_dir();
+        let backups_b = temp_backups_dir();
+        let id_a = "019700000000-7fff-8000-0000-000000000101".to_string();
+        rt.execute({
+            let id_a = id_a.clone();
+            move |conn| repo::create(conn, &id_a, "Snapshot A").map(|_| ())
+        })
+        .unwrap();
+        let backup_a = backup_db(&rt, &backups_a).unwrap();
+        let backup_a_dir = PathBuf::from(&backup_a.backup_dir);
+        let original_a = db_path.with_extension("a-original.db");
+        std::fs::copy(backup_a_dir.join("lifeweave.db"), &original_a).unwrap();
+
+        let (rt_b, _db_b) = make_file_runtime();
+        let id_b = "019700000000-7fff-8000-0000-000000000102".to_string();
+        rt_b.execute({
+            let id_b = id_b.clone();
+            move |conn| repo::create(conn, &id_b, "Snapshot B").map(|_| ())
+        })
+        .unwrap();
+        let backup_b = backup_db(&rt_b, &backups_b).unwrap();
+        let replacement = PathBuf::from(&backup_b.backup_dir).join("lifeweave.db");
+        let package_source = backup_a_dir.join("lifeweave.db");
+        let package_source_for_hook = package_source.clone();
+        let replacement_for_hook = replacement.clone();
+        set_restore_test_hook(Some(Box::new(move |point| {
+            if point == RestoreTestPoint::BeforeCandidateCopy {
+                std::fs::copy(&replacement_for_hook, &package_source_for_hook).unwrap();
+            }
+        })));
+        let result = restore_db(&rt, &backup_a_dir);
+        set_restore_test_hook(None);
+
+        assert!(result.is_err(), "manifest A must reject replacement DB B");
+        let active = rt.execute(|conn| repo::list_active(conn)).unwrap();
+        assert_eq!(active.len(), 1);
+        assert_eq!(active[0].label, "Snapshot A");
+        std::fs::copy(&original_a, &package_source).unwrap();
+    }
+
+    // F-02: once the exact candidate has passed identity validation, a later
+    // source replacement cannot alter the file that will be swapped in.
+    #[test]
+    fn f02_source_replacement_after_candidate_validation_does_not_change_restore() {
+        let (rt, _db) = make_file_runtime();
+        let backups_a = temp_backups_dir();
+        let backups_b = temp_backups_dir();
+        let id_a = "019700000000-7fff-8000-0000-000000000103".to_string();
+        rt.execute({
+            let id_a = id_a.clone();
+            move |conn| repo::create(conn, &id_a, "Snapshot A").map(|_| ())
+        })
+        .unwrap();
+        let backup_a = backup_db(&rt, &backups_a).unwrap();
+        let backup_a_dir = PathBuf::from(&backup_a.backup_dir);
+        let (rt_b, _db_b) = make_file_runtime();
+        let id_b = "019700000000-7fff-8000-0000-000000000104".to_string();
+        rt_b.execute({
+            let id_b = id_b.clone();
+            move |conn| repo::create(conn, &id_b, "Snapshot B").map(|_| ())
+        })
+        .unwrap();
+        let backup_b = backup_db(&rt_b, &backups_b).unwrap();
+        let replacement = PathBuf::from(&backup_b.backup_dir).join("lifeweave.db");
+        let package_source = backup_a_dir.join("lifeweave.db");
+        let replacement_for_hook = replacement.clone();
+        set_restore_test_hook(Some(Box::new(move |point| {
+            if point == RestoreTestPoint::AfterCandidateValidation {
+                std::fs::copy(&replacement_for_hook, &package_source).unwrap();
+            }
+        })));
+        let result = restore_db(&rt, &backup_a_dir);
+        set_restore_test_hook(None);
+
+        assert!(
+            result.is_ok(),
+            "validated candidate should be installable: {result:?}"
+        );
+        let active = rt.execute(|conn| repo::list_active(conn)).unwrap();
+        assert_eq!(active.len(), 1);
+        assert_eq!(active[0].label, "Snapshot A");
     }
 
     #[test]
@@ -1054,8 +1217,18 @@ mod tests {
         });
 
         b1.wait(); // Command is now executing on the worker thread.
-        // Seal the runtime: transitions Ready → Maintenance.
-        let worker_arc = rt.seal_worker().unwrap();
+        // Seal the runtime on another thread: it transitions to Maintenance and
+        // waits for the admitted command to finish before returning the worker.
+        let seal_rt = Arc::clone(&rt);
+        let (sealed_tx, sealed_rx) = std::sync::mpsc::channel();
+        let (worker_tx, worker_rx) = std::sync::mpsc::channel();
+        let seal_thread = std::thread::spawn(move || {
+            let worker_arc = seal_rt
+                .seal_worker_with_admission_hook(|| sealed_tx.send(()).unwrap())
+                .unwrap();
+            worker_tx.send(worker_arc).unwrap();
+        });
+        sealed_rx.recv().unwrap();
         // New execute() calls must now return Maintenance.
         let maintenance_result = rt3.execute(|_| Ok::<_, DbError>(()));
         assert!(
@@ -1068,7 +1241,9 @@ mod tests {
             in_flight_result.is_ok(),
             "in-flight command must complete normally: {in_flight_result:?}"
         );
+        let worker_arc = worker_rx.recv().unwrap();
         rt.unseal_worker(worker_arc);
+        seal_thread.join().unwrap();
     }
 
     // [test-4] A backup and a restore running concurrently are serialized by the
@@ -2161,6 +2336,63 @@ mod tests {
         let _ = std::fs::rename(&old_path, &db_path);
         let _ = RestoreMarker::remove(&marker_path);
         let _ = std::fs::remove_file(&candidate_path);
+    }
+
+    // F-03: a sidecar failure must not remove the live candidate before startup
+    // can replay the authoritative .old copy.
+    #[test]
+    fn f03_locked_sidecar_preserves_live_and_startup_replays_old() {
+        let (rt, db_path) = make_file_runtime();
+        let db_dir = db_path.parent().unwrap().to_path_buf();
+        let old_path = db_dir.join("lifeweave.db.old");
+        let candidate_path = db_dir.join("_restore_candidate.db");
+        let marker_path = db_dir.join("restore_marker.json");
+        let wal_path = PathBuf::from(format!("{}-wal", db_path.to_string_lossy()));
+
+        std::fs::copy(&db_path, &old_path).unwrap();
+        std::fs::write(&candidate_path, b"stale candidate").unwrap();
+        std::fs::write(&wal_path, b"candidate wal").unwrap();
+        RestoreMarker {
+            format_version: lc::MARKER_FORMAT_VERSION,
+            op_id: "f03-locked-sidecar".into(),
+            stage: RestoreStage::CandidateInstalled,
+        }
+        .write(&marker_path)
+        .unwrap();
+
+        let arc = rt.seal_worker().unwrap();
+        arc.shutdown();
+        drop(arc);
+        rt.set_gone();
+
+        set_remove_if_exists_fail_at(0);
+        let rollback = attempt_rollback(&rt, &old_path, &db_path, &candidate_path, &marker_path);
+        set_remove_if_exists_fail_at(-1);
+        assert!(matches!(rollback, Err(BackupError::RollbackFailed)));
+        assert!(
+            db_path.exists(),
+            "live candidate must remain after sidecar failure"
+        );
+        assert!(old_path.exists(), ".old must remain authoritative");
+        assert!(wal_path.exists(), "locked sidecar artifact must remain");
+        assert!(marker_path.exists(), "marker must remain replayable");
+
+        let disposition = lc::preflight_startup_check(&db_path).unwrap();
+        assert!(matches!(
+            disposition,
+            lc::StartupDisposition::ExistingOrRecovered
+        ));
+        lc::recover_if_interrupted(&marker_path, &db_path).unwrap();
+        assert!(db_path.exists());
+        assert!(!old_path.exists());
+        assert!(!candidate_path.exists());
+        assert!(!wal_path.exists());
+        assert!(!marker_path.exists());
+
+        let mut conn = open_existing_file_connection(&db_path).unwrap();
+        run_migrations(&mut conn).unwrap();
+        let value: i64 = conn.query_row("SELECT 1", [], |row| row.get(0)).unwrap();
+        assert_eq!(value, 1);
     }
 
     // [f1-e] Windows real sharing-violation: prove that remove_if_exists returns Err
