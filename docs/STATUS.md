@@ -19,7 +19,7 @@ The 60-task roadmap is the execution and coordination layer. It does not replace
 ## Task 2 audit evidence
 
 - Audit scope HEAD: `cb6df7912f396084e244f836208f71085c27dc9d`.
-- Remediation candidate HEAD: pending evidence commit after code commits `199d07d` and `56d6940`.
+- Remediation candidate implementation HEAD: `56d6940` (evidence documentation follows in the remediation-readiness commit).
 - Report: `docs/audits/task-02-backup-restore.md`.
 - Remediation gates so far: fmt/clippy passed; 190 Rust tests passed; focused backup tests 122 passed; frontend typecheck, 2 files / 19 tests, and Vite production build passed.
 - Blocking findings remain subject to independent re-audit; remediation evidence is not an audit PASS.
