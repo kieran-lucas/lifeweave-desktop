@@ -42,7 +42,7 @@ The 60-task roadmap is the execution and coordination layer. It does not replace
 
 ## Task 4/60 — Security, CSP and capabilities
 
-- Implemented at final HEAD `f5e40843718ab4717ec7fd4bf1ad794e110c01d7`; Task 5/60 native Windows Foundation E2E is the only next action.
+- Implemented in commit `b2fc303a76531019fa93365386d3a89ecd296596`; evidence is finalized on the current pushed HEAD. Task 5/60 native Windows Foundation E2E is the only next action.
 - Evidence: `docs/audits/task-04-security.md`; explicit Windows-only `main-capability`, generated command ACL, strict production CSP, path-free IPC logging, and deterministic `scripts/verify_security.py` integrated into `pnpm verify`.
 - Task 4 does not declare Stage E, Foundation, product UI completion, or production security certification. F-04/F-05 and lack of independent GitHub CI remain non-blocking debt.
 
