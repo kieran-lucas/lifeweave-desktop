@@ -39,22 +39,9 @@ Start private. Reassess public visibility only after:
 
 ## 3. Ruleset for `main`
 
-After `.setup-phase` is removed:
+This is a solo-owner private repository operating under the direct-to-main workflow described in `docs/BRANCHING_AND_PR_WORKFLOW.md`. Branch protection rulesets are not enabled.
 
-- require pull request;
-- block direct push;
-- block force push and deletion;
-- require conversation resolution;
-- require branch to be up to date where practical;
-- require status checks:
-  - `Source integrity`
-  - `Governance`
-  - `Frontend`
-  - `Rust`
-  - `Windows Tauri`
-- do not require another human account approval for a solo project; instead require documented writer-independent AI review plus Product Owner merge.
-
-During setup phase, require only Source integrity and Governance.
+The five required status checks (`Source integrity`, `Governance`, `Frontend`, `Rust`, `Windows Tauri`) existed and passed at the Task 16 checkpoint. The Product Owner subsequently reduced the standing CI policy to one optional manual clean build (`workflow_dispatch` only). Remote CI is not a task-completion gate; local evidence is authoritative.
 
 ## 4. GitHub Project
 

@@ -13,14 +13,17 @@ def require(condition: bool, message: str) -> None:
 
 
 workflows = sorted((ROOT / ".github" / "workflows").glob("*.yml"))
-require(len(workflows) >= 4, "independent workflow coverage is missing")
-for workflow in workflows:
-    text = workflow.read_text(encoding="utf-8")
-    require("permissions:\n  contents: read" in text, f"{workflow.name} lacks least privilege")
-    require("concurrency:" in text and "cancel-in-progress: true" in text, f"{workflow.name} lacks cancellation")
-    require("timeout-minutes:" in text, f"{workflow.name} lacks a job timeout")
-    for action in re.findall(r"uses:\s*([^\s#]+)", text):
-        require(bool(re.search(r"@[0-9a-f]{40}$", action)), f"{workflow.name} action is not commit-pinned: {action}")
+require(len(workflows) == 1, f"expected exactly one workflow, found {len(workflows)}: {[w.name for w in workflows]}")
+manual = workflows[0]
+require(manual.name == "manual-clean-build.yml", f"unexpected workflow file: {manual.name}")
+manual_text = manual.read_text(encoding="utf-8")
+require("workflow_dispatch" in manual_text, "manual-clean-build.yml is not dispatch-only")
+require("push:" not in manual_text and "pull_request:" not in manual_text and "schedule:" not in manual_text,
+        "manual-clean-build.yml has an automatic trigger")
+require("permissions:\n  contents: read" in manual_text, "manual-clean-build.yml lacks least privilege")
+require("timeout-minutes:" in manual_text, "manual-clean-build.yml lacks a job timeout")
+for action in re.findall(r"uses:\s*([^\s#]+)", manual_text):
+    require(bool(re.search(r"@[0-9a-f]{40}$", action)), f"manual-clean-build.yml action is not commit-pinned: {action}")
 
 tauri = (ROOT / "src-tauri" / "tauri.conf.json").read_text(encoding="utf-8")
 require("unsafe-eval" not in tauri, "production CSP permits unsafe-eval")
@@ -42,4 +45,4 @@ package = (ROOT / "frontend" / "package.json").read_text(encoding="utf-8")
 for forbidden in ("react-flow", "@tiptap/extension-collaboration", "@sentry", "posthog"):
     require(forbidden not in package, f"forbidden expansion/telemetry dependency present: {forbidden}")
 
-print(f"Core hardening policy verified across {len(workflows)} independent workflows.")
+print("Core hardening policy verified: one manual-dispatch-only clean build workflow.")

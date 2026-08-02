@@ -6,10 +6,18 @@ Updated: 2026-08-02 Asia/Saigon
 
 - PASS at implementation commit `44ba9c558d25324d2ea4303fad2120b1022b93d3`; evidence: `docs/audits/task-16-core-hardening.md`.
 - F-04/F-05 are closed by checked Windows publication barriers and reopen/checksum verification before backup success.
-- Independent CI now has five least-privilege, timeout/cancellation, commit-pinned checks; branch protection remains a Product Owner repository-setting action.
+- Five independent least-privilege, timeout/cancellation, commit-pinned CI workflows passed at the Task 16 checkpoint.
 - Frontend 118 and Rust 292 tests pass; normal unsigned NSIS build and contained two-session `core-rc-44ba9c5` dogfood pass.
 - Native WebDriver click-through and manual alternate-DPI/screen-reader hardware checks remain explicit evidence limitations. No M8 feature was activated.
 - Task 17/60 is the only allowed next action; the live roadmap does not name it.
+
+## CI policy (post–Task 16 Product Owner correction)
+
+The Product Owner subsequently reduced the standing CI policy. The five workflows that existed and passed at the Task 16 checkpoint have been removed. One optional `workflow_dispatch`-only manual clean Windows build (`manual-clean-build.yml`) remains.
+
+Remote CI is not a task-completion gate. Local evidence is authoritative for normal development. No polling is permitted.
+
+Run the manual clean build only when: preparing an installer for external distribution; changing Node, pnpm, Rust, Tauri, Windows packaging, action/toolchain pins, or lockfile structure; diagnosing a suspected environment-only failure; or the Product Owner explicitly requests it.
 
 ## Phase
 **Foundation Proof**
