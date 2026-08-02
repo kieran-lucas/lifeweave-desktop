@@ -39,11 +39,13 @@ fn init_tracing() {
         .try_init();
 }
 
+#[cfg(feature = "e2e-test")]
 fn app_data_directory(
-    app: &tauri::AppHandle,
+    _app: &tauri::AppHandle,
 ) -> Result<std::path::PathBuf, Box<dyn std::error::Error>> {
-    #[cfg(feature = "e2e-test")]
-    if let Ok(value) = std::env::var("LIFEWEAVE_E2E_APP_DATA_DIR") {
+    {
+        let value = std::env::var("LIFEWEAVE_E2E_APP_DATA_DIR")
+            .map_err(|_| "LIFEWEAVE_E2E_APP_DATA_DIR is required for e2e-test")?;
         let requested = std::path::PathBuf::from(value);
         if !requested.is_absolute() {
             return Err("E2E app-data override must be absolute".into());
@@ -55,11 +57,22 @@ fn app_data_directory(
             .ok_or("E2E app-data override has no parent")?;
         let parent = std::fs::canonicalize(requested_parent)
             .unwrap_or_else(|_| requested_parent.to_path_buf());
-        if !parent.starts_with(&root) || requested.file_name().is_none() {
+        let sentinel = requested.join(".lifeweave-e2e-sentinel");
+        if !parent.starts_with(&root)
+            || requested.file_name().is_none()
+            || requested.parent() != Some(root.as_path())
+            || !sentinel.is_file()
+        {
             return Err("E2E app-data override is outside target/e2e-data".into());
         }
-        return Ok(requested);
+        Ok(requested)
     }
+}
+
+#[cfg(not(feature = "e2e-test"))]
+fn app_data_directory(
+    app: &tauri::AppHandle,
+) -> Result<std::path::PathBuf, Box<dyn std::error::Error>> {
     app.path().app_data_dir().map_err(|e| e.into())
 }
 

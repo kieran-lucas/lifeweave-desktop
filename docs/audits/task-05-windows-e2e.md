@@ -29,11 +29,11 @@ restart, backup catalog and restore flow with accessible selectors.
 
 ## Current limitation
 
-The native scenario could not execute in this environment because Edge
-WebDriver was not installed and the Microsoft driver endpoint was unavailable
-for automatic download (`msedgedriver.azureedge.net` DNS failure). The harness
-fails closed with this diagnostic and retains per-run logs on failure. No native
-E2E scenario count or acceptance claim is recorded.
+The native scenario could not execute in this environment because no local
+matching `msedgedriver.exe` was installed. The harness now requires an explicit
+`MSEDGEDRIVER_PATH`, performs no network download, fails closed, and retains
+per-run logs on failure. No native E2E scenario count or acceptance claim is
+recorded.
 
 ## Status
 
