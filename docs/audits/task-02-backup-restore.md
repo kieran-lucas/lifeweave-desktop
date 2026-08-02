@@ -189,8 +189,36 @@ No separate P3 finding. Naming/comment issues that materially overstate safety a
 - Extend the recovery matrix with every “main removed, sidecar retained, marker present” boundary.
 - Add deterministic scheduler instrumentation around runtime admission, queueing, and sealing.
 
+## Blocking remediation candidate
+
+Remediation is implemented in the working implementation lineage, but this document remains an independent-audit record and is not being marked as passed.
+
+### F-01 remediation
+
+- Remediation status: implemented, pending independent re-audit.
+- Remediation commit: `199d07d` (`linearize database maintenance admission`).
+- Design: `DatabaseRuntime` now stores lifecycle state and an in-flight admission count under one mutex. Admission increments before worker cloning; an RAII lease remains through enqueue and completion. `seal_worker()` changes lifecycle to `Maintenance` atomically and waits on a condition variable until all admitted leases drain.
+- Regression tests: `f01_admitted_before_enqueue_completes_before_seal_returns`, `f01_multiple_admitted_callers_and_error_path_drain`, plus the updated in-flight seal test.
+- Remaining uncertainty: Windows independent re-audit must verify the intended scheduling invariant against the full application command surface.
+
+### F-02 remediation
+
+- Remediation status: implemented, pending independent re-audit.
+- Remediation commit: `56d6940` (`bind restore validation to installed candidate`).
+- Design: restore writes a `Prepared` marker, copies into a managed candidate, flushes it, validates candidate size/SHA-256/read-only SQLite integrity/FK/schema, and never reopens the package source for installation after validation. Only the validated candidate is swapped.
+- Regression tests: `f02_replacement_at_source_boundary_is_rejected_without_live_mutation` and `f02_source_replacement_after_candidate_validation_does_not_change_restore`.
+- Remaining uncertainty: independent review must confirm package replacement behavior on the target Windows filesystem under real external sharing conditions.
+
+### F-03 remediation
+
+- Remediation status: implemented, pending independent re-audit.
+- Remediation commit: `56d6940` (`bind restore validation to installed candidate`).
+- Design: rollback removes candidate WAL/SHM before removing the failed candidate main file; any sidecar failure returns while both live and `.old` remain. After the failure is released, marker-guided startup replay restores `.old` and converges artifacts.
+- Regression tests: `f03_locked_sidecar_preserves_live_and_startup_replays_old`, existing real Windows sharing-violation test, and existing startup replay matrix.
+- Remaining uncertainty: independent re-audit must exercise the real Windows lock boundary, not only the deterministic failpoint seam.
+
 ## Verdict
 
-`BLOCKED`
+`BLOCKED — remediation implemented, independent re-audit required`
 
-Task 2 remains active. Verified findings F-01 and F-02 are P0; F-03 is P1. Task 3 is not allowed until the blocking findings are corrected and independently re-audited. This verdict does not declare Stage E, Foundation, Product Owner acceptance, or production-safe backup/restore.
+Task 2 remains active. F-01 and F-02 were P0 and F-03 was P1 at the audited implementation HEAD; remediation is now present in commits `199d07d` and `56d6940`, but independent re-audit is required. This does not declare Stage E, Foundation, Product Owner acceptance, or production-safe backup/restore.

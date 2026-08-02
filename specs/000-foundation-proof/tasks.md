@@ -156,6 +156,14 @@ Task 1 implementation candidate is ready for independent Task 2 audit.
 
 Task 2 remains active and blocked by verified P0/P1 findings. Task 3 is not allowed.
 
+### Task 2 Blocking Remediation Candidate
+
+- F-01 implementation: `199d07d` (`linearize database maintenance admission`). Admission is now counted under the lifecycle mutex, held through enqueue/completion by RAII, and drained by `seal_worker()` before safety snapshot.
+- F-02/F-03 implementation: `56d6940` (`bind restore validation to installed candidate`). Restore validates the exact managed candidate before swap; rollback removes sidecars before destructive live removal and startup replay is covered.
+- Regression evidence: 190 Rust tests passed; focused backup/recovery suite 122 passed; F-01 tests `f01_admitted_before_enqueue_completes_before_seal_returns` and `f01_multiple_admitted_callers_and_error_path_drain`; F-02 tests `f02_replacement_at_source_boundary_is_rejected_without_live_mutation` and `f02_source_replacement_after_candidate_validation_does_not_change_restore`; F-03 test `f03_locked_sidecar_preserves_live_and_startup_replays_old`.
+- Full frontend evidence so far: typecheck passed; 2 files / 19 tests passed; Vite production build passed. Governance and native production/launch gates remain required before push closure.
+- Status: remediation candidate implemented; independent Task 2 re-audit required. Task 3 remains prohibited.
+
 ## Quality
 - [ ] Strict CSP/capability review.
 - [ ] No disallowed remote resource.
