@@ -127,3 +127,12 @@ Task 10/60 Week Strip + Calendar Month Projection is the only allowed next actio
 - Evidence: frontend 78/78; Rust 255/255; Task 46/46; Life repository 11/11; backup 130/130; governance/security/generated bindings/ACL, indexed bounded queries, file reopen/backup-restore, normal NSIS, and sentinel-isolated native smoke passed.
 - Report: `docs/audits/task-13-life-browse.md`.
 - Task 13/60 is complete. Task 14/60 is the only allowed next action; the live roadmap does not name it. Life Edit, full-tree UI, Narrative Canvas, Basic Leaf content, the final visual-world engine, and the entire Life System are not declared complete.
+
+## Task 14/60 — Life Edit Core + Full-Tree Reparent/Reorder
+
+- Implementation commit: `b02a5db3b3c571b4a1a79410fbb00b43444a9f6e`.
+- Migration 8 adds bounded idempotent Life operation/inverse authority and persisted Edit mode; atomic Rust commands cover metadata, archive/restore, reorder, recursive-CTE-safe reparent and latest-operation undo.
+- One indexed full-tree Edit projection keeps active and archived rows separate. Browse remains strictly focal-node plus direct children.
+- The Edit workspace uses exact-pinned d3 geometry and dnd-kit pointer/keyboard sensors, DragOverlay, parent/sibling zones, preview connectors and authoritative rollback/reconciliation.
+- Evidence: frontend 94/94; Rust 272/272; Task 46/46; backup 131/131; required `life` filter 85/85; governance/security/generated DTO/ACL, scale fixtures, backup/reopen, NSIS and two-session isolated native smoke passed. See `docs/audits/task-14-life-edit.md`.
+- Task 14/60 is complete. Task 15/60 is the only allowed next action. Narrative Canvas, Basic Leaf content, final visual worlds, Task/Life linking and the whole Life System remain outside this slice.
