@@ -1,5 +1,5 @@
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::sync::{Arc, Condvar, Mutex, MutexGuard};
 
 use rusqlite::Connection;
 
@@ -17,6 +17,11 @@ pub(crate) enum RuntimeInner {
     Gone,
 }
 
+struct AdmissionState {
+    lifecycle: RuntimeInner,
+    in_flight: usize,
+}
+
 /// Tauri managed state that owns the SQLite worker and allows the worker to be
 /// replaced after a restore operation.
 ///
@@ -30,13 +35,33 @@ pub(crate) enum RuntimeInner {
 /// 4. `install_worker()` transitions any state to `Ready`.
 /// 5. `unseal_worker()` returns to `Ready` from `Maintenance` without shutdown.
 ///    Used for early rollback before the worker was shut down.
-/// 6. No method acquires `maintenance_lock` and `inner` simultaneously, so
+/// 6. No method acquires `maintenance_lock` and `admission` simultaneously, so
 ///    there is no deadlock between the two locks.
 pub struct DatabaseRuntime {
     db_path: PathBuf,
     /// Serialises backup and restore operations. Held for the entire operation.
     maintenance_lock: Mutex<()>,
-    inner: Mutex<RuntimeInner>,
+    admission: Mutex<AdmissionState>,
+    admission_drained: Condvar,
+}
+
+struct AdmissionLease<'a> {
+    runtime: &'a DatabaseRuntime,
+}
+
+impl Drop for AdmissionLease<'_> {
+    fn drop(&mut self) {
+        let mut guard = self
+            .runtime
+            .admission
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        debug_assert!(guard.in_flight > 0);
+        guard.in_flight -= 1;
+        if guard.in_flight == 0 {
+            self.runtime.admission_drained.notify_all();
+        }
+    }
 }
 
 impl DatabaseRuntime {
@@ -44,7 +69,11 @@ impl DatabaseRuntime {
         Self {
             db_path,
             maintenance_lock: Mutex::new(()),
-            inner: Mutex::new(RuntimeInner::Ready(Arc::new(worker))),
+            admission: Mutex::new(AdmissionState {
+                lifecycle: RuntimeInner::Ready(Arc::new(worker)),
+                in_flight: 0,
+            }),
+            admission_drained: Condvar::new(),
         }
     }
 
@@ -54,9 +83,9 @@ impl DatabaseRuntime {
 
     /// Dispatches a closure to the worker thread and blocks until it completes.
     ///
-    /// Acquires the `inner` lock only long enough to clone the worker Arc, then
-    /// releases it before dispatching. This prevents a deadlock where restore
-    /// code holds `inner` while waiting for a worker closure to complete.
+    /// Admission increments an in-flight lease while cloning the worker. The
+    /// lease is held through enqueue and completion, so maintenance cannot pass
+    /// an admitted caller before its command is accounted for.
     ///
     /// Returns `DbError::Maintenance` if a backup or restore holds the gate.
     /// Returns `DbError::WorkerGone` if the worker has been shut down.
@@ -65,14 +94,29 @@ impl DatabaseRuntime {
         F: FnOnce(&mut Connection) -> Result<R, DbError> + Send + 'static,
         R: Send + 'static,
     {
+        self.execute_impl(f, || {})
+    }
+
+    fn execute_impl<F, R, H>(&self, f: F, after_admission: H) -> Result<R, DbError>
+    where
+        F: FnOnce(&mut Connection) -> Result<R, DbError> + Send + 'static,
+        R: Send + 'static,
+        H: FnOnce(),
+    {
         let worker = {
-            let guard = self.inner.lock().unwrap();
-            match &*guard {
-                RuntimeInner::Ready(arc) => Ok(Arc::clone(arc)),
+            let mut guard = self.admission.lock().map_err(|_| DbError::WorkerGone)?;
+            match &guard.lifecycle {
+                RuntimeInner::Ready(arc) => {
+                    let worker = Arc::clone(arc);
+                    guard.in_flight += 1;
+                    Ok(worker)
+                }
                 RuntimeInner::Maintenance => Err(DbError::Maintenance),
                 RuntimeInner::Gone => Err(DbError::WorkerGone),
             }
         }?;
+        let _lease = AdmissionLease { runtime: self };
+        after_admission();
         worker.execute(f)
     }
 
@@ -96,14 +140,58 @@ impl DatabaseRuntime {
     ///
     /// Must only be called while holding the maintenance guard.
     pub(crate) fn seal_worker(&self) -> Result<Arc<DbWorkerHandle>, DbError> {
-        let mut guard = self.inner.lock().unwrap();
-        match std::mem::replace(&mut *guard, RuntimeInner::Maintenance) {
-            RuntimeInner::Ready(arc) => Ok(arc),
+        self.seal_worker_impl(|| {})
+    }
+
+    fn seal_worker_impl<H>(&self, after_seal: H) -> Result<Arc<DbWorkerHandle>, DbError>
+    where
+        H: FnOnce(),
+    {
+        let mut guard = self.admission.lock().map_err(|_| DbError::WorkerGone)?;
+        let worker = match std::mem::replace(&mut guard.lifecycle, RuntimeInner::Maintenance) {
+            RuntimeInner::Ready(arc) => arc,
             other => {
-                *guard = other;
-                Err(DbError::Maintenance)
+                guard.lifecycle = other;
+                return Err(DbError::Maintenance);
             }
+        };
+        after_seal();
+        while guard.in_flight != 0 {
+            guard = match self.admission_drained.wait(guard) {
+                Ok(guard) => guard,
+                Err(poisoned) => {
+                    let mut guard = poisoned.into_inner();
+                    guard.lifecycle = RuntimeInner::Ready(Arc::clone(&worker));
+                    return Err(DbError::WorkerGone);
+                }
+            };
         }
+        Ok(worker)
+    }
+
+    #[cfg(test)]
+    pub(crate) fn execute_with_admission_hook<F, R, H>(
+        &self,
+        f: F,
+        after_admission: H,
+    ) -> Result<R, DbError>
+    where
+        F: FnOnce(&mut Connection) -> Result<R, DbError> + Send + 'static,
+        R: Send + 'static,
+        H: FnOnce(),
+    {
+        self.execute_impl(f, after_admission)
+    }
+
+    #[cfg(test)]
+    pub(crate) fn seal_worker_with_admission_hook<H>(
+        &self,
+        after_seal: H,
+    ) -> Result<Arc<DbWorkerHandle>, DbError>
+    where
+        H: FnOnce(),
+    {
+        self.seal_worker_impl(after_seal)
     }
 
     /// Transitions `Maintenance → Gone`. Must only be called after `arc.shutdown()`
@@ -111,8 +199,12 @@ impl DatabaseRuntime {
     ///
     /// Must only be called while holding the maintenance guard.
     pub(crate) fn set_gone(&self) {
-        let mut guard = self.inner.lock().unwrap();
-        *guard = RuntimeInner::Gone;
+        let mut guard = self
+            .admission
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        debug_assert_eq!(guard.in_flight, 0);
+        guard.lifecycle = RuntimeInner::Gone;
     }
 
     /// Installs a new worker, transitioning any state to `Ready`.
@@ -121,8 +213,12 @@ impl DatabaseRuntime {
     /// (rollback path where shutdown already happened). Must only be called while
     /// holding the maintenance guard.
     pub(crate) fn install_worker(&self, worker: DbWorkerHandle) {
-        let mut guard = self.inner.lock().unwrap();
-        *guard = RuntimeInner::Ready(Arc::new(worker));
+        let mut guard = self
+            .admission
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        debug_assert_eq!(guard.in_flight, 0);
+        guard.lifecycle = RuntimeInner::Ready(Arc::new(worker));
     }
 
     /// Transitions `Maintenance → Ready` with the worker Arc returned by
@@ -134,8 +230,12 @@ impl DatabaseRuntime {
     ///
     /// Must only be called while holding the maintenance guard.
     pub(crate) fn unseal_worker(&self, worker: Arc<DbWorkerHandle>) {
-        let mut guard = self.inner.lock().unwrap();
-        *guard = RuntimeInner::Ready(worker);
+        let mut guard = self
+            .admission
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        debug_assert_eq!(guard.in_flight, 0);
+        guard.lifecycle = RuntimeInner::Ready(worker);
     }
 }
 
@@ -145,7 +245,7 @@ mod tests {
     use crate::infrastructure::sqlite::{
         connection::open_memory_connection, migrations::run_migrations,
     };
-    use std::sync::Arc;
+    use std::sync::{Arc, Barrier, mpsc};
     use std::thread;
 
     fn make_runtime() -> DatabaseRuntime {
@@ -286,5 +386,128 @@ mod tests {
             vec![1, 2],
             "second caller must wait for first to release"
         );
+    }
+
+    // F-01: admission is linearized before enqueue. Once maintenance closes
+    // admission, seal cannot pass the drain barrier until this caller completes.
+    #[test]
+    fn f01_admitted_before_enqueue_completes_before_seal_returns() {
+        let rt = Arc::new(make_runtime());
+        let admitted = Arc::new(Barrier::new(2));
+        let release = Arc::new(Barrier::new(2));
+
+        let mutation_rt = Arc::clone(&rt);
+        let mutation_admitted = Arc::clone(&admitted);
+        let mutation_release = Arc::clone(&release);
+        let mutation = thread::spawn(move || {
+            mutation_rt.execute_with_admission_hook(
+                |conn| {
+                    conn.execute_batch(
+                        "CREATE TABLE f01_probe(value INTEGER NOT NULL);\n\
+                         INSERT INTO f01_probe(value) VALUES (41);",
+                    )
+                    .map_err(DbError::from)
+                },
+                move || {
+                    mutation_admitted.wait();
+                    mutation_release.wait();
+                },
+            )
+        });
+
+        admitted.wait();
+
+        let seal_rt = Arc::clone(&rt);
+        let (sealed_tx, sealed_rx) = mpsc::channel();
+        let (worker_tx, worker_rx) = mpsc::channel();
+        let seal = thread::spawn(move || {
+            let worker = seal_rt
+                .seal_worker_with_admission_hook(|| sealed_tx.send(()).unwrap())
+                .unwrap();
+            worker_tx.send(worker).unwrap();
+        });
+
+        sealed_rx.recv().unwrap();
+        assert!(matches!(rt.execute(|_| Ok(())), Err(DbError::Maintenance)));
+        assert!(
+            matches!(worker_rx.try_recv(), Err(mpsc::TryRecvError::Empty)),
+            "seal must wait for the admitted caller before returning the worker"
+        );
+
+        release.wait();
+        mutation.join().unwrap().unwrap();
+        let worker = worker_rx.recv().unwrap();
+        let value: i64 = worker
+            .execute(|conn| {
+                conn.query_row("SELECT value FROM f01_probe", [], |row| row.get(0))
+                    .map_err(DbError::from)
+            })
+            .unwrap();
+        assert_eq!(value, 41, "the quiesced worker must contain the mutation");
+
+        worker.shutdown();
+        rt.set_gone();
+        drop(worker);
+        seal.join().unwrap();
+    }
+
+    // F-01: every admitted caller, including one returning an error, releases
+    // its lease and allows the maintenance barrier to complete without deadlock.
+    #[test]
+    fn f01_multiple_admitted_callers_and_error_path_drain() {
+        let rt = Arc::new(make_runtime());
+        let admitted = Arc::new(Barrier::new(3));
+        let release = Arc::new(Barrier::new(3));
+        let mut callers = Vec::new();
+
+        for should_error in [false, true] {
+            let caller_rt = Arc::clone(&rt);
+            let caller_admitted = Arc::clone(&admitted);
+            let caller_release = Arc::clone(&release);
+            callers.push(thread::spawn(move || {
+                caller_rt.execute_with_admission_hook(
+                    move |_| {
+                        if should_error {
+                            Err(DbError::WorkerGone)
+                        } else {
+                            Ok(())
+                        }
+                    },
+                    move || {
+                        caller_admitted.wait();
+                        caller_release.wait();
+                    },
+                )
+            }));
+        }
+
+        admitted.wait();
+        let seal_rt = Arc::clone(&rt);
+        let (sealed_tx, sealed_rx) = mpsc::channel();
+        let (worker_tx, worker_rx) = mpsc::channel();
+        let seal = thread::spawn(move || {
+            let worker = seal_rt
+                .seal_worker_with_admission_hook(|| sealed_tx.send(()).unwrap())
+                .unwrap();
+            worker_tx.send(worker).unwrap();
+        });
+
+        sealed_rx.recv().unwrap();
+        assert!(matches!(
+            worker_rx.try_recv(),
+            Err(mpsc::TryRecvError::Empty)
+        ));
+        release.wait();
+
+        assert!(callers.remove(0).join().unwrap().is_ok());
+        assert!(matches!(
+            callers.remove(0).join().unwrap(),
+            Err(DbError::WorkerGone)
+        ));
+        let worker = worker_rx.recv().unwrap();
+        worker.shutdown();
+        rt.set_gone();
+        drop(worker);
+        seal.join().unwrap();
     }
 }
