@@ -52,6 +52,7 @@ fn main() {
             "export_reader_markdown",
             "import_document_asset",
             "get_document_asset",
+            "search_global",
         ]),
     ))
     .expect("failed to generate Tauri ACL manifest");

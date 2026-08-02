@@ -1,6 +1,7 @@
 pub mod backup;
 pub mod error;
 pub mod foundation_record;
+pub mod search;
 pub mod task;
 
 use serde::Serialize;
@@ -115,5 +116,14 @@ mod tests {
         DocumentAssetView::export_all_to(&out).unwrap();
         DocumentAssetIdInput::export_all_to(&out).unwrap();
         DocumentAssetBytes::export_all_to(&out).unwrap();
+        use crate::search::dto::*;
+        SearchGlobalInput::export_all_to(&out).unwrap();
+        SearchEntityKind::export_all_to(&out).unwrap();
+        SearchNavigationTarget::export_all_to(&out).unwrap();
+        SearchTextFragment::export_all_to(&out).unwrap();
+        SearchResultView::export_all_to(&out).unwrap();
+        SearchResultGroupKind::export_all_to(&out).unwrap();
+        SearchResultGroup::export_all_to(&out).unwrap();
+        GlobalSearchProjection::export_all_to(&out).unwrap();
     }
 }

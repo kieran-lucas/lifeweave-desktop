@@ -53,6 +53,8 @@ import type { ImportDocumentAssetInput } from "./generated/ImportDocumentAssetIn
 import type { DocumentAssetView } from "./generated/DocumentAssetView";
 import type { DocumentAssetIdInput } from "./generated/DocumentAssetIdInput";
 import type { DocumentAssetBytes } from "./generated/DocumentAssetBytes";
+import type { SearchGlobalInput } from "./generated/SearchGlobalInput";
+import type { GlobalSearchProjection } from "./generated/GlobalSearchProjection";
 
 export function healthCheck(): Promise<HealthCheck> {
   return invoke<HealthCheck>("health_check");
@@ -150,3 +152,4 @@ export const importReaderMarkdown = (input: ImportReaderMarkdownInput) => invoke
 export const exportReaderMarkdown = (input: ReaderDocumentIdInput) => invoke<MarkdownExportView>("export_reader_markdown", { input });
 export const importDocumentAsset = (input: ImportDocumentAssetInput) => invoke<DocumentAssetView>("import_document_asset", { input });
 export const getDocumentAsset = (input: DocumentAssetIdInput) => invoke<DocumentAssetBytes>("get_document_asset", { input });
+export const searchGlobal = (input: SearchGlobalInput) => invoke<GlobalSearchProjection>("search_global", { input });

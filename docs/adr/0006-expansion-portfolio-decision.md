@@ -1,6 +1,7 @@
 # ADR 0006 — Expansion portfolio priority
 
-- Status: Proposed for Product Owner approval
+- Status: Accepted
+- Accepted: 2026-08-03
 - Date: 2026-08-02
 - Decision owner: Product Owner
 - Scope: Task 17 / Slice 007 only

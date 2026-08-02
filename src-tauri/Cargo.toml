@@ -36,6 +36,9 @@ uuid = { version = "1", features = ["v7"] }
 # zero non-digest transitive deps, no network. Alternative blake3 is faster but
 # sha2 is more universally recognized for file-integrity use.
 sha2 = "0.10"
+# Vietnamese-normalized global search. NFKD decomposition + combining-mark strip + đ→d mapping.
+# Exact-pinned so normalization output is deterministic across builds.
+unicode-normalization = "=0.1.25"
 # Task recurrence is parsed and expanded in Rust using the RFC 5545 engine
 # locked by the product specification. Both versions are exact-pinned so the
 # local-date projection cannot drift with a transitive update.

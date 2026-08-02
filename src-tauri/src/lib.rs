@@ -5,6 +5,7 @@ pub mod infrastructure;
 pub mod ipc;
 pub mod life;
 pub mod platform;
+pub mod search;
 pub mod task;
 
 use tauri::Manager;
@@ -28,6 +29,7 @@ use ipc::foundation_record::{
     archive_foundation_record, create_foundation_record, list_archived_foundation_records,
     list_foundation_records, restore_foundation_record, update_foundation_record,
 };
+use ipc::search::search_global;
 use ipc::task::{
     create_recurring_task, create_task, delete_task, evaluate_task, get_analytics_projection,
     get_month_projection, list_completion_states, list_recurring_occurrences, list_task_categories,
@@ -177,6 +179,7 @@ pub fn run() {
             export_reader_markdown,
             import_document_asset,
             get_document_asset,
+            search_global,
         ])
         .run(tauri::generate_context!())
         .expect("failed to run Lifeweave");

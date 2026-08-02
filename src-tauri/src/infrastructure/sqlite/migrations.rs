@@ -189,6 +189,119 @@ static MIGRATIONS: &[Migration] = &[
               WHEN NEW.archived_at IS NULL AND EXISTS(SELECT 1 FROM reader_documents WHERE life_node_id=NEW.parent_id AND archived_at IS NULL)
               BEGIN SELECT RAISE(ABORT,'document node cannot gain an active child'); END;",
     },
+    Migration {
+        version: 10,
+        sql: "
+            CREATE TABLE search_documents (
+                rowid INTEGER PRIMARY KEY,
+                entity_kind TEXT NOT NULL CHECK(entity_kind IN (
+                    'task_one_off','task_series','task_override',
+                    'life_node','reader_document'
+                )),
+                entity_id TEXT NOT NULL,
+                navigation_id TEXT NOT NULL,
+                title TEXT NOT NULL,
+                context_text TEXT NOT NULL,
+                body_text TEXT NOT NULL,
+                normalized_title TEXT NOT NULL,
+                normalized_context TEXT NOT NULL,
+                normalized_body TEXT NOT NULL,
+                local_date TEXT,
+                original_local_date TEXT,
+                source_updated_at TEXT NOT NULL,
+                UNIQUE(entity_kind, entity_id)
+            );
+            CREATE VIRTUAL TABLE search_fts USING fts5(
+                normalized_title,
+                normalized_context,
+                normalized_body,
+                content='search_documents',
+                content_rowid='rowid',
+                tokenize='unicode61 remove_diacritics 2',
+                prefix='2 3 4'
+            );
+            CREATE TRIGGER search_fts_ai AFTER INSERT ON search_documents BEGIN
+                INSERT INTO search_fts(rowid,normalized_title,normalized_context,normalized_body)
+                VALUES (new.rowid,new.normalized_title,new.normalized_context,new.normalized_body);
+            END;
+            CREATE TRIGGER search_fts_ad AFTER DELETE ON search_documents BEGIN
+                INSERT INTO search_fts(search_fts,rowid,normalized_title,normalized_context,normalized_body)
+                VALUES ('delete',old.rowid,old.normalized_title,old.normalized_context,old.normalized_body);
+            END;
+            CREATE TRIGGER search_fts_au AFTER UPDATE ON search_documents BEGIN
+                INSERT INTO search_fts(search_fts,rowid,normalized_title,normalized_context,normalized_body)
+                VALUES ('delete',old.rowid,old.normalized_title,old.normalized_context,old.normalized_body);
+                INSERT INTO search_fts(rowid,normalized_title,normalized_context,normalized_body)
+                VALUES (new.rowid,new.normalized_title,new.normalized_context,new.normalized_body);
+            END;
+            CREATE TABLE search_dirty_scopes (
+                scope TEXT PRIMARY KEY NOT NULL CHECK(scope IN ('tasks','life','documents','all')),
+                queued_at TEXT NOT NULL
+            );
+            CREATE TRIGGER search_dirty_tasks_ai AFTER INSERT ON tasks BEGIN
+                INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('tasks',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+                ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at; END;
+            CREATE TRIGGER search_dirty_tasks_au AFTER UPDATE ON tasks BEGIN
+                INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('tasks',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+                ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at; END;
+            CREATE TRIGGER search_dirty_tasks_ad AFTER DELETE ON tasks BEGIN
+                INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('tasks',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+                ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at; END;
+            CREATE TRIGGER search_dirty_series_ai AFTER INSERT ON task_series BEGIN
+                INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('tasks',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+                ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at; END;
+            CREATE TRIGGER search_dirty_series_au AFTER UPDATE ON task_series BEGIN
+                INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('tasks',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+                ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at; END;
+            CREATE TRIGGER search_dirty_series_ad AFTER DELETE ON task_series BEGIN
+                INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('tasks',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+                ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at; END;
+            CREATE TRIGGER search_dirty_overrides_ai AFTER INSERT ON task_occurrence_overrides BEGIN
+                INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('tasks',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+                ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at; END;
+            CREATE TRIGGER search_dirty_overrides_au AFTER UPDATE ON task_occurrence_overrides BEGIN
+                INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('tasks',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+                ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at; END;
+            CREATE TRIGGER search_dirty_overrides_ad AFTER DELETE ON task_occurrence_overrides BEGIN
+                INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('tasks',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+                ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at; END;
+            CREATE TRIGGER search_dirty_categories_au AFTER UPDATE ON task_categories BEGIN
+                INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('tasks',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+                ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at; END;
+            CREATE TRIGGER search_dirty_life_ai AFTER INSERT ON life_nodes BEGIN
+                INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('life',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+                ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at;
+                INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('documents',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+                ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at; END;
+            CREATE TRIGGER search_dirty_life_au AFTER UPDATE ON life_nodes BEGIN
+                INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('life',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+                ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at;
+                INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('documents',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+                ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at; END;
+            CREATE TRIGGER search_dirty_life_ad AFTER DELETE ON life_nodes BEGIN
+                INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('life',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+                ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at;
+                INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('documents',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+                ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at; END;
+            CREATE TRIGGER search_dirty_docs_ai AFTER INSERT ON reader_documents BEGIN
+                INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('documents',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+                ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at; END;
+            CREATE TRIGGER search_dirty_docs_au AFTER UPDATE ON reader_documents BEGIN
+                INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('documents',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+                ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at; END;
+            CREATE TRIGGER search_dirty_docs_ad AFTER DELETE ON reader_documents BEGIN
+                INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('documents',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+                ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at; END;
+            CREATE TABLE search_meta (
+                id INTEGER PRIMARY KEY CHECK(id=1),
+                algorithm_version INTEGER NOT NULL,
+                last_full_rebuild_at TEXT
+            );
+            INSERT INTO search_meta VALUES(1, 1, NULL);
+            INSERT INTO search_dirty_scopes(scope,queued_at)
+                VALUES('all',strftime('%Y-%m-%dT%H:%M:%SZ','now'));
+        ",
+    },
 ];
 
 /// Bootstraps the migration tracking table and applies any pending migrations.
@@ -293,7 +406,7 @@ mod tests {
         let mut conn = open_memory_connection().unwrap();
         run_migrations(&mut conn).unwrap();
 
-        assert_eq!(current_schema_version(&conn).unwrap(), 9);
+        assert_eq!(current_schema_version(&conn).unwrap(), 10);
 
         let count: i64 = conn
             .query_row("SELECT COUNT(*) FROM db_metadata", [], |r| r.get(0))
@@ -307,7 +420,7 @@ mod tests {
         let mig_count: i64 = conn
             .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
             .unwrap();
-        assert_eq!(mig_count, 9);
+        assert_eq!(mig_count, 10);
     }
 
     #[test]
@@ -317,11 +430,11 @@ mod tests {
         run_migrations(&mut conn).unwrap();
 
         // The latest version remains stable; no duplicate migration rows.
-        assert_eq!(current_schema_version(&conn).unwrap(), 9);
+        assert_eq!(current_schema_version(&conn).unwrap(), 10);
         let mig_count: i64 = conn
             .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
             .unwrap();
-        assert_eq!(mig_count, 9);
+        assert_eq!(mig_count, 10);
     }
 
     #[test]
@@ -410,7 +523,7 @@ mod tests {
         match run_migrations_with(&mut conn, MIGRATIONS) {
             Err(DbError::SchemaTooNew { stored, supported }) => {
                 assert_eq!(stored, 9999);
-                assert_eq!(supported, 9);
+                assert_eq!(supported, 10);
             }
             other => panic!("expected SchemaTooNew, got {other:?}"),
         }
@@ -446,7 +559,7 @@ mod tests {
         {
             let mut conn = open_file_connection(&path).unwrap();
             run_migrations(&mut conn).unwrap();
-            assert_eq!(current_schema_version(&conn).unwrap(), 9);
+            assert_eq!(current_schema_version(&conn).unwrap(), 10);
             // Confirm the schema object created by migration 1 exists
             let count: i64 = conn
                 .query_row("SELECT COUNT(*) FROM db_metadata", [], |r| r.get(0))
@@ -460,7 +573,7 @@ mod tests {
             run_migrations(&mut conn).unwrap();
             assert_eq!(
                 current_schema_version(&conn).unwrap(),
-                9,
+                10,
                 "schema version must survive close/reopen"
             );
             let count: i64 = conn
@@ -473,7 +586,7 @@ mod tests {
                 .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
                 .unwrap();
             assert_eq!(
-                mig_count, 9,
+                mig_count, 10,
                 "no duplicate migration records after reopen + re-run"
             );
         }

@@ -59,6 +59,7 @@
     "allow-import-reader-markdown",
     "allow-export-reader-markdown",
     "allow-import-document-asset",
-    "allow-get-document-asset"
+    "allow-get-document-asset",
+    "allow-search-global"
   ]
 }

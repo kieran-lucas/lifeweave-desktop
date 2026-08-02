@@ -21,7 +21,8 @@ function useConnectors(container:React.RefObject<HTMLDivElement|null>,focal:Reac
  return lines;
 }
 
-export function LifeScreen(){
+type EntryRequest = { requestId: string; nodeId: string; mode: "browse" | "reader" } | null;
+export function LifeScreen({entryRequest}:{entryRequest?:EntryRequest}={}){
  const client=useQueryClient();const reduced=useReducedMotion();
  const [nodeId,setNodeId]=useState<string>();const [page,setPage]=useState(0);const [mode,setMode]=useState<Mode>("browse");const [initialized,setInitialized]=useState(false);const [history,setHistory]=useState<HistoryEntry[]>([]);const [reader,setReader]=useState<LifeNodeView|PinnedLifeNodeView>();const [busy,setBusy]=useState(false);
  const sceneRef=useRef<HTMLDivElement>(null),focalRef=useRef<HTMLDivElement>(null),childRefs=useRef(new Map<string,HTMLElement>()),restoreFocus=useRef<string|undefined>(undefined);
@@ -31,6 +32,7 @@ export function LifeScreen(){
  useEffect(()=>{if(!browse.data||initialized)return;const preferred=browse.data.preferred_mode as Mode;const safe=preferred==="reader"&&!browse.data.selected.is_leaf?"browse":preferred;setMode(safe);if(preferred==="reader"&&browse.data.selected.is_leaf)setReader(browse.data.selected);setInitialized(true);},[browse.data,initialized]);
  useEffect(()=>{if(!browse.data||!initialized)return;const selected=browse.data.selected.id;saveLifeNavigationPreference({node_id:selected,mode,path_version:1,viewport_anchor:restoreFocus.current??null}).catch(()=>{});},[browse.data,initialized,mode]);
  useEffect(()=>{if(mode==="browse"&&browse.data)requestAnimationFrame(()=>{const target=restoreFocus.current?document.querySelector<HTMLElement>(`[data-life-id="${restoreFocus.current}"]`):document.querySelector<HTMLElement>("[data-life-focal]");target?.focus({preventScroll:true});restoreFocus.current=undefined;});},[browse.data,mode]);
+ useEffect(()=>{if(!entryRequest||!initialized)return;if(entryRequest.mode==="reader"){const node=browse.data?.children.find(c=>c.id===entryRequest.nodeId)??browse.data?.selected;if(node&&node.is_leaf){setHistory(v=>[...v,{nodeId:browse.data?.selected.id??entryRequest.nodeId,page,mode:"browse"}]);setReader(node);setMode("reader");return;}setNodeId(entryRequest.nodeId);setPage(0);setMode("browse");}else{goTo(entryRequest.nodeId);}},[entryRequest,initialized]);
  const pin=useMutation({mutationFn:(value:{id:string;pinned:boolean})=>value.pinned?unpinLifeNode({node_id:value.id}):pinLifeNode({node_id:value.id}),onSuccess:()=>{void client.invalidateQueries({queryKey:["life"]});}});
  const navigate=(node:LifeNodeView|PinnedLifeNodeView,originMode:"browse"|"pinned"=mode==="pinned"?"pinned":"browse")=>{if(busy||("available" in node&&!node.available))return;setBusy(true);const id="id" in node?node.id:node.node_id;if(node.is_leaf){setHistory(v=>[...v,{nodeId:browse.data?.selected.id??id,page,mode:originMode,focusId:id}]);setReader(node);setMode("reader");setBusy(false);return;}setHistory(v=>[...v,{nodeId:browse.data?.selected.id??id,page,mode:originMode,focusId:id}]);setNodeId(id);setPage(0);setMode("browse");setTimeout(()=>setBusy(false),reduced?0:320);};
  const goTo=(id:string)=>{if(browse.data?.selected.id!==id)setHistory(v=>[...v,{nodeId:browse.data?.selected.id??id,page,mode:"browse"}]);setNodeId(id);setPage(0);setMode("browse");};

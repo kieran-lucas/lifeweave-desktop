@@ -67,6 +67,15 @@
 
 Task 17 evaluates Score, Prediction, Narrative Canvas, Visual Worlds, Global Search, Tags, Backlinks, Outline, Noteboard and Graph independently.
 
-Portfolio recommendation: **Global Search is the sole next activation candidate**, pending Product Owner approval. Task 17 itself changes no product behavior.
+Portfolio recommendation accepted: **Global Search activated as Task 18.** All other candidates remain held or deferred per `docs/audits/task-17-expansion-decision.md`.
 
-Task 18 remains unnamed/prohibited until the Product Owner approves, rejects or modifies the recommendation.
+## Slice 008 — Global Search
+
+Task 18 implements FTS5 global search with Vietnamese normalization, dirty-scope rebuild queue, `search_global` IPC command, and lazy React search dialog.
+
+- SQLite FTS5 external-content index (`search_documents` + `search_fts`)
+- Dirty-scope triggers on Tasks, Life, and Documents source tables
+- BM25 ranking with weighted columns (title=10, context=3, body=1)
+- Vietnamese diacritic normalization: NFKD + combining mark removal + đ/Đ→d
+- APG combobox dialog; Ctrl+K shortcut; sidebar search button
+- Navigation integration with TodayScreen and LifeScreen

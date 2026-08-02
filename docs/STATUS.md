@@ -1,6 +1,17 @@
 # Project Status
 
-Updated: 2026-08-02 Asia/Saigon
+Updated: 2026-08-03 Asia/Saigon
+
+## Task 18/60 — Global Search Core + Vietnamese-Normalized Unified Retrieval
+
+- PASS at `(this commit; see git log -1)`; evidence: `docs/audits/task-18-global-search.md`.
+- Migration 10 adds FTS5 external-content index with dirty-scope rebuild queue and 22 source-table triggers.
+- Vietnamese normalization: NFKD decomposition + combining mark removal + đ/Đ→d hard-map.
+- `search_global` IPC command; lazy `GlobalSearchDialog` React component; Ctrl+K shortcut.
+- Results grouped by Tasks/Life/Documents (max 8 per group); BM25 ranking; highlight/snippet fragments.
+- Navigation from search integrates with TodayScreen (task focus) and LifeScreen (browse/reader entry).
+- 322 Rust tests pass; 18 new GlobalSearchDialog frontend tests pass; all governance gates pass.
+- ADR 0007 accepted; specs/008-global-search/ created.
 
 ## Task 17/60 — Expansion Decision + Candidate Activation Matrix
 
