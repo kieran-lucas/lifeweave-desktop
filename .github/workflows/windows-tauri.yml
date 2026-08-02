@@ -32,7 +32,6 @@ jobs:
     name: Windows Tauri
     runs-on: windows-latest
     timeout-minutes: 60
-    if: ${{ hashFiles('pnpm-lock.yaml') != '' && hashFiles('src-tauri/Cargo.lock') != '' }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
