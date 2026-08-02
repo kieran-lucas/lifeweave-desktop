@@ -257,4 +257,4 @@ Task 2 remains active and blocked by verified P0/P1 findings. Task 3 is not allo
 Implemented schema migration 3 and dedicated task domain/repository/IPC plus Today create/edit/delete, date-aware exact-minute controls, TanStack Query state, accessible dialog behavior, local-date timeline periods, conflict validation and exact-interval grouping. Evidence: `docs/audits/task-08-task-core-today.md`. Rust 198 tests and frontend 25 tests pass. Task 9 is the next boundary; recurrence, Calendar, Analytics and Life behavior remain deferred.
 ### Task 9 — Recurring task series
 
-Migration 4 adds normalized series/override storage. Typed recurring creation and bounded Today projection support daily/weekly/monthly rule forms without future materialization. Task 10 owns Calendar projection and complete occurrence-scope editing.
+Migration 4 adds normalized series/override storage. Typed recurring creation, bounded daily/weekly/monthly projection, moved/cancelled overrides and occurrence scope mutation are implemented without future materialization. Task 10 owns Calendar projection.

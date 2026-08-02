@@ -291,6 +291,43 @@ pub fn recurring_for_date(
             });
         }
     }
+    // Include occurrences moved into this displayed date, even when their original
+    // recurrence date is earlier; identity remains series + original date.
+    let mut moved = conn.prepare("SELECT s.id,s.title,s.description,s.category_id,s.priority,s.start_minute,s.end_minute,o.original_local_date,o.title_override,o.description_override,o.category_id_override,o.priority_override,o.start_minute_override,o.end_minute_override FROM task_series s JOIN task_occurrence_overrides o ON o.series_id=s.id WHERE s.archived_at IS NULL AND o.replacement_local_date=?1 AND o.cancelled=0")?;
+    for r in moved.query_map(params![date], |r| {
+        Ok((
+            r.get::<_, String>(0)?,
+            r.get::<_, String>(1)?,
+            r.get::<_, String>(2)?,
+            r.get::<_, String>(3)?,
+            r.get::<_, String>(4)?,
+            r.get::<_, i32>(5)?,
+            r.get::<_, i32>(6)?,
+            r.get::<_, String>(7)?,
+            r.get::<_, Option<String>>(8)?,
+            r.get::<_, Option<String>>(9)?,
+            r.get::<_, Option<String>>(10)?,
+            r.get::<_, Option<String>>(11)?,
+            r.get::<_, Option<i32>>(12)?,
+            r.get::<_, Option<i32>>(13)?,
+        ))
+    })? {
+        let (sid, title, desc, cat, pri, start, end, orig, to, do_, co, po, so, eo) = r?;
+        out.push(crate::task::dto::RecurringOccurrenceView {
+            occurrence_id: format!("{sid}:{orig}"),
+            series_id: sid,
+            original_local_date: orig,
+            local_date: date.to_string(),
+            start_minute: so.unwrap_or(start),
+            end_minute: eo.unwrap_or(end),
+            title: to.unwrap_or(title),
+            description: do_.unwrap_or(desc),
+            category_id: co.unwrap_or(cat),
+            priority: po.unwrap_or(pri),
+            is_recurring: true,
+            is_override: true,
+        });
+    }
     Ok(out)
 }
 
@@ -349,7 +386,7 @@ fn occurrence_matches(start: &str, date: &str, rule: &str) -> bool {
             _ => {}
         }
     }
-    if until.as_deref().is_some_and(|u| date > u) {
+    if until.is_some_and(|u| date > u) {
         return false;
     }
     let hit = match freq {
@@ -369,7 +406,7 @@ fn occurrence_matches(start: &str, date: &str, rule: &str) -> bool {
     if !hit {
         return false;
     }
-    count.map_or(true, |c: i32| {
+    count.is_none_or(|c: i32| {
         let n = match freq {
             "DAILY" => diff,
             "WEEKLY" => diff / 7,
