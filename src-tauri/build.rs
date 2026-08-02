@@ -16,6 +16,8 @@ fn main() {
             "create_task",
             "update_task",
             "delete_task",
+            "create_recurring_task",
+            "list_recurring_occurrences",
         ]),
     ))
     .expect("failed to generate Tauri ACL manifest");

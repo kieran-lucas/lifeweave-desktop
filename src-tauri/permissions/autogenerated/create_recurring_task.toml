@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-create-recurring-task"
+description = "Enables the create_recurring_task command without any pre-configured scope."
+commands.allow = ["create_recurring_task"]
+
+[[permission]]
+identifier = "deny-create-recurring-task"
+description = "Denies the create_recurring_task command without any pre-configured scope."
+commands.deny = ["create_recurring_task"]

@@ -173,3 +173,110 @@ pub fn delete(conn: &Connection, id: &str) -> Result<(), TaskError> {
         Ok(())
     }
 }
+
+#[allow(dead_code)]
+fn next_day(date: &str) -> String {
+    let (y, m, d) = (
+        date[0..4].parse::<i32>().unwrap(),
+        date[5..7].parse::<i32>().unwrap(),
+        date[8..10].parse::<i32>().unwrap(),
+    );
+    let md = [
+        31,
+        if y % 4 == 0 && (y % 100 != 0 || y % 400 == 0) {
+            29
+        } else {
+            28
+        },
+        31,
+        30,
+        31,
+        30,
+        31,
+        31,
+        30,
+        31,
+        30,
+        31,
+    ];
+    let (ny, nm, nd) = if d < md[(m - 1) as usize] {
+        (y, m, d + 1)
+    } else if m < 12 {
+        (y, m + 1, 1)
+    } else {
+        (y + 1, 1, 1)
+    };
+    format!("{ny:04}-{nm:02}-{nd:02}")
+}
+pub fn create_recurring(
+    conn: &Connection,
+    input: crate::task::dto::CreateRecurringTaskInput,
+) -> Result<String, TaskError> {
+    if !validate_date(&input.local_date) || !validate_range(input.start_minute, input.end_minute) {
+        return Err(TaskError::Validation("Invalid recurrence date or time."));
+    }
+    if input.interval < 1 || !matches!(input.frequency.as_str(), "daily" | "weekly" | "monthly") {
+        return Err(TaskError::Validation("Unsupported recurrence rule."));
+    }
+    if !category_exists(conn, &input.category_id)? {
+        return Err(TaskError::Validation("Choose an active category."));
+    }
+    let rule = match input.frequency.as_str() {
+        "daily" => format!("FREQ=DAILY;INTERVAL={}", input.interval),
+        "weekly" => format!(
+            "FREQ=WEEKLY;INTERVAL={};BYDAY={}",
+            input.interval,
+            input
+                .weekdays
+                .iter()
+                .map(|v| v.to_string())
+                .collect::<Vec<_>>()
+                .join(",")
+        ),
+        _ => format!("FREQ=MONTHLY;INTERVAL={}", input.interval),
+    };
+    let id = id();
+    let t = now();
+    conn.execute("INSERT INTO task_series(id,title,description,category_id,priority,start_minute,end_minute,dtstart_local_date,timezone_id,rrule,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",params![id,input.title.trim(),input.description,input.category_id,input.priority,input.start_minute,input.end_minute,input.local_date,"local",rule,t,t])?;
+    Ok(id)
+}
+pub fn recurring_for_date(
+    conn: &Connection,
+    date: &str,
+) -> Result<Vec<crate::task::dto::RecurringOccurrenceView>, TaskError> {
+    let mut st=conn.prepare("SELECT id,title,description,category_id,priority,start_minute,end_minute,dtstart_local_date,rrule FROM task_series WHERE archived_at IS NULL AND dtstart_local_date<=?1")?;
+    let mut out = Vec::new();
+    for r in st.query_map(params![date], |r| {
+        Ok((
+            r.get::<_, String>(0)?,
+            r.get(1)?,
+            r.get(2)?,
+            r.get(3)?,
+            r.get(4)?,
+            r.get(5)?,
+            r.get(6)?,
+            r.get::<_, String>(7)?,
+            r.get::<_, String>(8)?,
+        ))
+    })? {
+        let (id, title, desc, cat, pri, start, end, dt, rule) = r?;
+        let daily = rule.starts_with("FREQ=DAILY");
+        if daily || dt == date {
+            out.push(crate::task::dto::RecurringOccurrenceView {
+                occurrence_id: format!("{id}:{date}"),
+                series_id: id,
+                original_local_date: dt,
+                local_date: date.to_string(),
+                start_minute: start,
+                end_minute: end,
+                title,
+                description: desc,
+                category_id: cat,
+                priority: pri,
+                is_recurring: true,
+                is_override: false,
+            });
+        }
+    }
+    Ok(out)
+}

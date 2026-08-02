@@ -58,5 +58,8 @@ mod tests {
         TaskView::export_all_to(&out).unwrap();
         CreateTaskInput::export_all_to(&out).unwrap();
         UpdateTaskInput::export_all_to(&out).unwrap();
+        use crate::task::dto::{CreateRecurringTaskInput, RecurringOccurrenceView};
+        CreateRecurringTaskInput::export_all_to(&out).unwrap();
+        RecurringOccurrenceView::export_all_to(&out).unwrap();
     }
 }

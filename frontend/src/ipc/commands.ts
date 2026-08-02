@@ -12,6 +12,8 @@ import type { TaskCategoryView } from "./generated/TaskCategoryView";
 import type { TaskView } from "./generated/TaskView";
 import type { CreateTaskInput } from "./generated/CreateTaskInput";
 import type { UpdateTaskInput } from "./generated/UpdateTaskInput";
+import type { CreateRecurringTaskInput } from "./generated/CreateRecurringTaskInput";
+import type { RecurringOccurrenceView } from "./generated/RecurringOccurrenceView";
 
 export function healthCheck(): Promise<HealthCheck> {
   return invoke<HealthCheck>("health_check");
@@ -72,3 +74,5 @@ export const listTasksForDate = (localDate: string) => invoke<TaskView[]>("list_
 export const createTask = (input: CreateTaskInput) => invoke<TaskView>("create_task", { input });
 export const updateTask = (input: UpdateTaskInput) => invoke<TaskView>("update_task", { input });
 export const deleteTask = (id: string) => invoke<void>("delete_task", { id });
+export const createRecurringTask = (input: CreateRecurringTaskInput) => invoke<string>("create_recurring_task", { input });
+export const listRecurringOccurrences = (localDate: string) => invoke<RecurringOccurrenceView[]>("list_recurring_occurrences", { localDate });

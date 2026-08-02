@@ -23,6 +23,8 @@
     "allow-list-tasks-for-date",
     "allow-create-task",
     "allow-update-task",
-    "allow-delete-task"
+    "allow-delete-task",
+    "allow-create-recurring-task",
+    "allow-list-recurring-occurrences"
   ]
 }

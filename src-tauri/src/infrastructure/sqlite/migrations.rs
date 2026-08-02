@@ -55,6 +55,10 @@ static MIGRATIONS: &[Migration] = &[
         version: 3,
         sql: "CREATE TABLE task_categories (id TEXT PRIMARY KEY NOT NULL, name TEXT NOT NULL, icon_key TEXT NOT NULL, color_key TEXT NOT NULL, archived_at TEXT); CREATE TABLE tasks (id TEXT PRIMARY KEY NOT NULL, local_date TEXT NOT NULL, start_minute INTEGER NOT NULL CHECK(start_minute >= 0 AND start_minute <= 1439), end_minute INTEGER NOT NULL CHECK(end_minute >= 1 AND end_minute <= 1440 AND start_minute < end_minute), title TEXT NOT NULL CHECK(length(trim(title)) > 0 AND length(title) <= 200), description TEXT NOT NULL, category_id TEXT NOT NULL REFERENCES task_categories(id), priority TEXT NOT NULL CHECK(priority IN ('low','medium','high')), created_at TEXT NOT NULL, updated_at TEXT NOT NULL); CREATE INDEX tasks_by_date ON tasks(local_date,start_minute,end_minute); CREATE INDEX tasks_conflict_lookup ON tasks(local_date,start_minute,end_minute); INSERT INTO task_categories(id,name,icon_key,color_key) VALUES ('general','General','category-general','blue');",
     },
+    Migration {
+        version: 4,
+        sql: "CREATE TABLE task_series (id TEXT PRIMARY KEY NOT NULL, title TEXT NOT NULL, description TEXT NOT NULL, category_id TEXT NOT NULL REFERENCES task_categories(id), priority TEXT NOT NULL CHECK(priority IN ('low','medium','high')), start_minute INTEGER NOT NULL, end_minute INTEGER NOT NULL, dtstart_local_date TEXT NOT NULL, timezone_id TEXT NOT NULL, rrule TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, archived_at TEXT); CREATE TABLE task_occurrence_overrides (id TEXT PRIMARY KEY NOT NULL, series_id TEXT NOT NULL REFERENCES task_series(id) ON DELETE CASCADE, original_local_date TEXT NOT NULL, replacement_local_date TEXT, title_override TEXT, description_override TEXT, category_id_override TEXT, priority_override TEXT, start_minute_override INTEGER, end_minute_override INTEGER, cancelled INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, UNIQUE(series_id, original_local_date)); CREATE INDEX task_series_dates ON task_series(dtstart_local_date, archived_at); CREATE INDEX task_overrides_dates ON task_occurrence_overrides(series_id, original_local_date);",
+    },
 ];
 
 /// Bootstraps the migration tracking table and applies any pending migrations.
@@ -159,7 +163,7 @@ mod tests {
         let mut conn = open_memory_connection().unwrap();
         run_migrations(&mut conn).unwrap();
 
-        assert_eq!(current_schema_version(&conn).unwrap(), 3);
+        assert_eq!(current_schema_version(&conn).unwrap(), 4);
 
         let count: i64 = conn
             .query_row("SELECT COUNT(*) FROM db_metadata", [], |r| r.get(0))
@@ -173,7 +177,7 @@ mod tests {
         let mig_count: i64 = conn
             .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
             .unwrap();
-        assert_eq!(mig_count, 3);
+        assert_eq!(mig_count, 4);
     }
 
     #[test]
@@ -183,11 +187,11 @@ mod tests {
         run_migrations(&mut conn).unwrap();
 
         // Version stays at 2; no duplicate schema_migrations rows
-        assert_eq!(current_schema_version(&conn).unwrap(), 3);
+        assert_eq!(current_schema_version(&conn).unwrap(), 4);
         let mig_count: i64 = conn
             .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
             .unwrap();
-        assert_eq!(mig_count, 3);
+        assert_eq!(mig_count, 4);
     }
 
     // ── Validation ────────────────────────────────────────────────────────────
@@ -245,7 +249,7 @@ mod tests {
         match run_migrations_with(&mut conn, MIGRATIONS) {
             Err(DbError::SchemaTooNew { stored, supported }) => {
                 assert_eq!(stored, 9999);
-                assert_eq!(supported, 3);
+                assert_eq!(supported, 4);
             }
             other => panic!("expected SchemaTooNew, got {other:?}"),
         }
@@ -281,7 +285,7 @@ mod tests {
         {
             let mut conn = open_file_connection(&path).unwrap();
             run_migrations(&mut conn).unwrap();
-            assert_eq!(current_schema_version(&conn).unwrap(), 3);
+            assert_eq!(current_schema_version(&conn).unwrap(), 4);
             // Confirm the schema object created by migration 1 exists
             let count: i64 = conn
                 .query_row("SELECT COUNT(*) FROM db_metadata", [], |r| r.get(0))
@@ -295,7 +299,7 @@ mod tests {
             run_migrations(&mut conn).unwrap();
             assert_eq!(
                 current_schema_version(&conn).unwrap(),
-                3,
+                4,
                 "schema version must survive close/reopen"
             );
             let count: i64 = conn
@@ -308,7 +312,7 @@ mod tests {
                 .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
                 .unwrap();
             assert_eq!(
-                mig_count, 3,
+                mig_count, 4,
                 "no duplicate migration records after reopen + re-run"
             );
         }
