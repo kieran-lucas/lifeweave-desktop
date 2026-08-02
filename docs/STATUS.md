@@ -70,3 +70,10 @@ The 60-task roadmap is the execution and coordination layer. It does not replace
 - Product Task System feature implementation has not started.
 - Task 3 backup ID/progress work has not started and remains prohibited pending independent Task 2 re-audit.
 - Public distribution/signing remains out of scope.
+
+## Task 6/60 — Foundation Product Owner acceptance
+
+- Task 5/60 disposition: `PASS WITH DEBT`; the tested Tauri/WDIO attachment layer remained incompatible, but native launch smoke, Rust/frontend gates and production build passed with no verified product P0/P1.
+- Product Owner response: `PASS` on isolated profile `po-accept-ef7e91fddb2642ac8c979fb7e82d1d21`.
+- Accepted flow: startup, create/edit/archive/restore, backup, mutation to Gamma, restore to Beta, and same-profile relaunch persistence with Gamma absent.
+- Task 7/60 first App Shell milestone is the only allowed next action. Stage E and the whole product are not declared complete or production-certified.

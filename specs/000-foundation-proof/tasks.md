@@ -142,6 +142,14 @@
 
 Task 1 implementation candidate is ready for independent Task 2 audit.
 
+### Task 6 — Foundation Product Owner Acceptance
+
+- Task 5 disposition: `PASS WITH DEBT`; the native WebDriver attachment limitation remains audit debt without a verified product defect.
+- Objective gates: frontend 19 tests, Rust 195 tests, focused backup 127 tests, verify, typecheck, fmt, clippy, production build and NSIS bundle passed.
+- Product Owner response: `PASS` after observing the isolated native flow: create/edit/archive/restore, backup, mutate Beta to Gamma, restore Beta, and relaunch persistence with Gamma absent.
+- Acceptance profile was synthetic and sentinel-contained under `target/e2e-data`; no normal AppData was used. Same-profile relaunch reached Vite ready and a live native process, then the owned process tree was stopped.
+- Task 6 acceptance is complete. Task 7/60 is the only allowed next action. Stage E and Foundation are not accepted as a whole until later roadmap gates.
+
 ### Stage E.1f — Task 2 Independent Backup/Restore Audit
 
 - Independent audit scope HEAD: `cb6df7912f396084e244f836208f71085c27dc9d` on clean Windows `main`; no production code was changed.
