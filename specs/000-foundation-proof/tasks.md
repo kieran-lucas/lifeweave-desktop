@@ -184,6 +184,14 @@ Task 2 remains active and blocked by verified P0/P1 findings. Task 3 is not allo
 - Report: `docs/audits/task-02-reaudit.md`.
 - Status: Task 2 remains active and BLOCKED. Task 3 remains prohibited.
 
+### Task 2 F-02-R1 Remediation Candidate
+
+- Implementation commit: `666f7ae` (`verify installed restore candidate identity`).
+- Design: after candidate→live rename, the installed live file is reauthenticated against the original manifest (size, SHA-256, read-only integrity/FK/schema) while marker remains `LiveMovedAside`; only then is `CandidateInstalled` written.
+- Regression evidence: `f02_r1_candidate_replacement_after_prevalidation_rolls_back` and `f02_r1_candidate_in_place_mutation_after_prevalidation_rolls_back` passed; both preserve Snapshot A through checked rollback. Focused backup: 125 passed; full Rust: 193 passed; frontend: 19 passed.
+- Full gates: check/fmt/clippy, frontend typecheck/test/build, generated binding drift, source integrity, repository governance, no-remote scan, diff check, Tauri NSIS build and native launch smoke passed.
+- Status: Task 2 active — F-02-R1 remediation implemented, independent re-audit required. Task 3 remains prohibited. P2 debt F-04–F-06 remains deferred.
+
 ## Quality
 - [ ] Strict CSP/capability review.
 - [ ] No disallowed remote resource.

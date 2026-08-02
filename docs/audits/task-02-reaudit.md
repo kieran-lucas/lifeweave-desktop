@@ -83,3 +83,15 @@ Reviewed the complete remediation delta from `2581e4a` through `ff1f794`, includ
 `BLOCKED`
 
 F-01, F-03, and the candidate-cleanup P1 are closed. F-02 remains a verified P0 because the validated managed candidate is not bound immutably to the bytes later installed. Task 2 remains active and Task 3 is prohibited.
+
+### F-02-R1 remediation candidate
+
+- Remediation status: implemented, pending independent re-audit.
+- Exact implementation commit: `666f7ae` (`verify installed restore candidate identity`).
+- Identity boundary: after `candidate → live`, `validate_candidate(&live_path, &manifest, supported)` rechecks exact size, SHA-256, read-only integrity, FK, and schema identity against the original manifest before `CandidateInstalled` marker promotion.
+- Marker ordering: the marker remains `LiveMovedAside` during installed-live authentication; it is promoted only after authentication succeeds.
+- Rollback behavior: any mismatch calls checked `attempt_rollback()` while `.old` remains authoritative; candidate/live sidecars are handled before old restoration and the runtime is reopened or reports typed recovery pending.
+- Regression tests: `f02_r1_candidate_replacement_after_prevalidation_rolls_back`, `f02_r1_candidate_in_place_mutation_after_prevalidation_rolls_back`, existing source-boundary and package-reuse tests.
+- Remaining uncertainty: independent re-audit must verify crash replay specifically between candidate→live and the final identity check on Windows.
+
+Status remains: Task 2 active — F-02-R1 remediation implemented, independent re-audit required. Task 3 remains prohibited.
