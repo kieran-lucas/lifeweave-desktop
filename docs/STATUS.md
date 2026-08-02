@@ -14,7 +14,7 @@ The 60-task roadmap is the execution and coordination layer. It does not replace
 - F-01 remediation: `199d07d` (`linearize database maintenance admission`).
 - F-02/F-03 remediation: `56d6940` (`bind restore validation to installed candidate`).
 - Candidate-cleanup P1 remediation: `b121818` (`preserve restore marker on candidate cleanup failure`); redundant candidate sync removed and candidate-first/marker-second cleanup regression-tested.
-- Independent re-audit at `50f7f0fb1344e75b868f4e7ebd44e871e49a46e5` found F-02-R1 P0; remediation candidate `666f7ae` now authenticates installed live bytes before marker promotion. Task 2 remains active; one independent re-audit is required. Task 3/60 remains prohibited.
+- Final independent audit at `0106628c5f7849502d262d1357a8be485cdd9d01` closed all known P0/P1 findings. Task 2/60 is complete with non-blocking audit debt; Task 3/60 is the only allowed next action.
 - Stage E, Foundation Proof, and production-safe backup/restore are not declared complete.
 
 ## Task 2 audit evidence
@@ -23,9 +23,10 @@ The 60-task roadmap is the execution and coordination layer. It does not replace
 - Remediation candidate implementation HEAD: `b121818` (candidate-cleanup remediation; evidence documentation follows in the readiness commit).
 - Report: `docs/audits/task-02-backup-restore.md`.
 - Independent re-audit report: `docs/audits/task-02-reaudit.md`.
-- F-02-R1 remediation: `666f7ae` (`verify installed restore candidate identity`); exact installed-live validation is pending independent re-audit.
+- F-02-R1 remediation: `666f7ae` (`verify installed restore candidate identity`); exact installed-live validation was confirmed by the final independent audit.
+- Final audit report: `docs/audits/task-02-final.md`; verdict `PASS WITH DEBT`.
 - Remediation gates so far: fmt/clippy/check passed; 191 Rust tests passed; focused backup tests 123 passed; frontend typecheck, 2 files / 19 tests, and Vite production build passed; Tauri NSIS bundle rebuilt successfully.
-- Blocking findings remain subject to independent re-audit; remediation evidence is not an audit PASS.
+- Blocking findings are closed by the final independent audit; remaining items are P2/P3 debt only.
 - P2 debt: best-effort directory flush, backup publication durability barriers, and raw-path IPC deferred to Task 3.
 
 ## Task 1 build evidence

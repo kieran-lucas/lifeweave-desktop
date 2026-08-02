@@ -192,6 +192,15 @@ Task 2 remains active and blocked by verified P0/P1 findings. Task 3 is not allo
 - Full gates: check/fmt/clippy, frontend typecheck/test/build, generated binding drift, source integrity, repository governance, no-remote scan, diff check, Tauri NSIS build and native launch smoke passed.
 - Status: Task 2 active — F-02-R1 remediation implemented, independent re-audit required. Task 3 remains prohibited. P2 debt F-04–F-06 remains deferred.
 
+### Task 2 Final Independent Audit
+
+- Audited HEAD: `0106628c5f7849502d262d1357a8be485cdd9d01`.
+- Verdict: `PASS WITH DEBT`.
+- F-01 admission, F-02 source/candidate identity, F-02-R1 installed-live authentication, F-03 rollback authority, and candidate-cleanup marker preservation: closed.
+- Evidence: F-02-R1 focused 2 passed; focused backup 125 passed; full Rust 193 passed; frontend 19 passed; check/fmt/clippy/typecheck/build/governance/source-integrity/no-remote/Tauri NSIS/native smoke all passed.
+- Task 2/60 is complete with non-blocking audit debt. Task 3/60 is the only allowed next action. Stage E, Foundation and production-safe restore are not declared complete.
+- Report: `docs/audits/task-02-final.md`.
+
 ## Quality
 - [ ] Strict CSP/capability review.
 - [ ] No disallowed remote resource.
