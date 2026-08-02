@@ -61,5 +61,6 @@ mod tests {
         use crate::task::dto::{CreateRecurringTaskInput, RecurringOccurrenceView};
         CreateRecurringTaskInput::export_all_to(&out).unwrap();
         RecurringOccurrenceView::export_all_to(&out).unwrap();
+        crate::task::dto::UpdateRecurringOccurrenceInput::export_all_to(&out).unwrap();
     }
 }

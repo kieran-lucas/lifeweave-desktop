@@ -77,3 +77,26 @@ pub struct CreateRecurringTaskInput {
     pub until: Option<String>,
     pub count: Option<i32>,
 }
+#[derive(Debug, Deserialize, Clone)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+#[serde(rename_all = "snake_case")]
+pub enum OccurrenceEditScope {
+    OnlyThisOccurrence,
+    ThisAndFuture,
+    EntireSeries,
+}
+#[derive(Debug, Deserialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct UpdateRecurringOccurrenceInput {
+    pub series_id: String,
+    pub original_local_date: String,
+    pub replacement_local_date: Option<String>,
+    pub title: Option<String>,
+    pub description: Option<String>,
+    pub category_id: Option<String>,
+    pub priority: Option<String>,
+    pub start_minute: Option<i32>,
+    pub end_minute: Option<i32>,
+    pub scope: OccurrenceEditScope,
+    pub cancelled: bool,
+}

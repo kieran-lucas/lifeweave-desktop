@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-update-recurring-occurrence"
+description = "Enables the update_recurring_occurrence command without any pre-configured scope."
+commands.allow = ["update_recurring_occurrence"]
+
+[[permission]]
+identifier = "deny-update-recurring-occurrence"
+description = "Denies the update_recurring_occurrence command without any pre-configured scope."
+commands.deny = ["update_recurring_occurrence"]

@@ -88,4 +88,4 @@ The 60-task roadmap is the execution and coordination layer. It does not replace
 The first production-shaped Task slice is implemented: migration 3, category seed, typed task CRUD/conflict validation, and a Today timeline with exact-minute date-aware create/edit/delete, TanStack Query state, accessible dialog behavior and exact-interval grouping. Rust tests: 198; frontend tests: 25. Task 9 is the next roadmap action; recurrence, assessment and other product domains remain unopened.
 ## Task 9 — Recurrence
 
-Task series schema, constrained recurrence creation and bounded Today occurrence projection are implemented. Task 10 is the next action; full Calendar projection and occurrence-scope editing remain deferred.
+Task 9 remediation is active: bounded recurrence expansion and occurrence override infrastructure are implemented, but complete three-scope UI/atomic split behavior remains before Task 10 can open.

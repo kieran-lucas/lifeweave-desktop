@@ -101,3 +101,14 @@ pub fn list_recurring_occurrences(
         .map_err(map_db)?
         .map_err(map_task)
 }
+
+#[tauri::command]
+pub fn update_recurring_occurrence(
+    state: State<'_, DatabaseRuntime>,
+    input: crate::task::dto::UpdateRecurringOccurrenceInput,
+) -> Result<(), IpcError> {
+    state
+        .execute(move |conn| Ok(repository::update_recurring(conn, input)))
+        .map_err(map_db)?
+        .map_err(map_task)
+}
