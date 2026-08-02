@@ -13,8 +13,9 @@ Implemented on `main` from the Task 7 shell baseline. This slice adds schema mig
 
 ## Evidence
 
-- Rust: `cargo test --locked` — 195 passed; backup-focused suite — 127 passed.
-- Frontend: typecheck passed; Vitest — 22 passed across 2 files; production Vite build passed.
+- Rust: `cargo test --locked` — 198 passed; backup-focused suite — 127 passed.
+- Frontend: typecheck passed; Vitest — 25 passed across 3 files; production Vite build passed.
+- Today now uses TanStack Query server-state authority, a date-aware form, exact-minute hour/minute controls, focus-trapped dialog behavior, session-only selection, semantic grouped timeline rows and accessible category/assessment columns.
 - `pnpm verify`, fmt, clippy, generated bindings and `git diff --check` passed.
 - Production Tauri build was run; NSIS output is under `src-tauri/target/release/bundle/nsis/`.
 - Native smoke uses the existing isolated synthetic profile and does not exercise real user data.

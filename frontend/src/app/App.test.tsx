@@ -2,6 +2,9 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, beforeEach, vi } from "vitest";
 
 import { App } from "./App";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+const renderApp = () => render(<QueryClientProvider client={new QueryClient()}><App /></QueryClientProvider>);
 
 vi.mock("../ipc/commands", () => ({
   healthCheck: vi.fn().mockResolvedValue({ status: "ok" }),
@@ -20,14 +23,14 @@ describe("App shell", () => {
   beforeEach(() => window.localStorage.clear());
 
   it("defaults to Today and exposes the locked navigation order", async () => {
-    render(<App />);
+    renderApp();
     await screen.findByRole("heading", { name: "Today" });
     expect(screen.getAllByRole("navigation")[0]).toHaveAccessibleName("Primary navigation");
-    expect(screen.getAllByRole("button").map((button) => button.textContent)).toContain("Create task");
+    expect(screen.getByRole("button", { name: "Create task" })).toBeInTheDocument();
   });
 
   it("navigates destinations and exposes the active item", async () => {
-    render(<App />);
+    renderApp();
     await screen.findByRole("heading", { name: "Today" });
     fireEvent.click(screen.getByRole("button", { name: "Calendar" }));
     expect(await screen.findByRole("heading", { name: "Calendar" })).toBeInTheDocument();
@@ -35,7 +38,7 @@ describe("App shell", () => {
   });
 
   it("persists collapse and restores the task preference after Life System", async () => {
-    render(<App />);
+    renderApp();
     await screen.findByRole("heading", { name: "Today" });
     fireEvent.click(screen.getByRole("button", { name: "Collapse sidebar" }));
     expect(screen.getByRole("button", { name: "Expand sidebar" })).toBeInTheDocument();
@@ -46,7 +49,7 @@ describe("App shell", () => {
   });
 
   it("keeps Foundation tools under Settings", async () => {
-    render(<App />);
+    renderApp();
     await screen.findByRole("heading", { name: "Today" });
     expect(screen.queryByRole("heading", { name: "Foundation Records" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Settings" }));

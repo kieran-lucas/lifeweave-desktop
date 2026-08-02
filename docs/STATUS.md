@@ -85,4 +85,4 @@ The 60-task roadmap is the execution and coordination layer. It does not replace
 - Task 8/60 is the only allowed next action. Task System, final App Shell branding and product feature behavior remain unimplemented.
 ## Task 8 — Task Core + Today vertical slice
 
-The first production-shaped Task slice is implemented: migration 3, category seed, typed task CRUD/conflict validation, and a Today timeline with exact-interval grouping. Task 9 is the next roadmap action; recurrence, assessment and other product domains remain unopened.
+The first production-shaped Task slice is implemented: migration 3, category seed, typed task CRUD/conflict validation, and a Today timeline with exact-minute date-aware create/edit/delete, TanStack Query state, accessible dialog behavior and exact-interval grouping. Rust tests: 198; frontend tests: 25. Task 9 is the next roadmap action; recurrence, assessment and other product domains remain unopened.
