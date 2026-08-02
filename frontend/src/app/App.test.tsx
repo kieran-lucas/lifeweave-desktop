@@ -15,6 +15,7 @@ vi.mock("../ipc/commands", () => ({
   archiveFoundationRecord: vi.fn(), restoreFoundationRecord: vi.fn(),
   backupDatabase: vi.fn(), restoreDatabase: vi.fn(),
   listTasksForDate: vi.fn().mockResolvedValue([]),
+  listTodayItems: vi.fn().mockResolvedValue([]),
   listTaskCategories: vi.fn().mockResolvedValue([]),
   createTask: vi.fn(), updateTask: vi.fn(), deleteTask: vi.fn(),
 }));

@@ -101,6 +101,17 @@ pub fn list_recurring_occurrences(
         .map_err(map_db)?
         .map_err(map_task)
 }
+#[tauri::command]
+#[tracing::instrument(skip(state))]
+pub fn list_today_items(
+    state: State<'_, DatabaseRuntime>,
+    local_date: String,
+) -> Result<Vec<crate::task::dto::TodayItemView>, IpcError> {
+    state
+        .execute(move |conn| Ok(repository::today_items(conn, &local_date)))
+        .map_err(map_db)?
+        .map_err(map_task)
+}
 
 #[tauri::command]
 pub fn update_recurring_occurrence(

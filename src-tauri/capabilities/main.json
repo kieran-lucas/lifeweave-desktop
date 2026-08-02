@@ -26,6 +26,7 @@
     "allow-delete-task",
     "allow-create-recurring-task",
     "allow-list-recurring-occurrences",
-    "allow-update-recurring-occurrence"
+    "allow-update-recurring-occurrence",
+    "allow-list-today-items"
   ]
 }

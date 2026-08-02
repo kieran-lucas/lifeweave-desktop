@@ -99,4 +99,38 @@ pub struct UpdateRecurringOccurrenceInput {
     pub end_minute: Option<i32>,
     pub scope: OccurrenceEditScope,
     pub cancelled: bool,
+    pub frequency: Option<String>,
+    pub interval: Option<i32>,
+    pub weekdays: Option<Vec<i32>>,
+    pub until: Option<String>,
+    pub count: Option<i32>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+#[serde(rename_all = "snake_case")]
+pub enum TodayItemKind {
+    OneOff,
+    Recurring,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct TodayItemView {
+    pub kind: TodayItemKind,
+    pub id: String,
+    pub occurrence_id: Option<String>,
+    pub series_id: Option<String>,
+    pub original_local_date: Option<String>,
+    pub local_date: String,
+    pub start_minute: i32,
+    pub end_minute: i32,
+    pub title: String,
+    pub description: String,
+    pub category_id: String,
+    pub category_name: String,
+    pub category_icon_key: String,
+    pub category_color_key: String,
+    pub priority: String,
+    pub is_override: bool,
 }

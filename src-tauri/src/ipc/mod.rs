@@ -62,5 +62,7 @@ mod tests {
         CreateRecurringTaskInput::export_all_to(&out).unwrap();
         RecurringOccurrenceView::export_all_to(&out).unwrap();
         crate::task::dto::UpdateRecurringOccurrenceInput::export_all_to(&out).unwrap();
+        crate::task::dto::TodayItemView::export_all_to(&out).unwrap();
+        crate::task::dto::TodayItemKind::export_all_to(&out).unwrap();
     }
 }

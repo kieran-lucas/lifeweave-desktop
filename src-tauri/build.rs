@@ -19,6 +19,7 @@ fn main() {
             "create_recurring_task",
             "list_recurring_occurrences",
             "update_recurring_occurrence",
+            "list_today_items",
         ]),
     ))
     .expect("failed to generate Tauri ACL manifest");
