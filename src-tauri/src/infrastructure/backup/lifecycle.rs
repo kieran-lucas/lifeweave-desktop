@@ -509,24 +509,15 @@ pub fn recover_if_interrupted(marker_path: &Path, db_path: &Path) -> Result<(), 
             // old_path (if still present) is stale and should be cleaned up.
 
             if !db_path.exists() {
-                // Live missing. Try to auto-restore from .old if it exists and is valid.
-                if old_path.exists() && validate_for_recovery(&old_path) {
-                    recovery_rename(&old_path, db_path).map_err(BackupError::Io)?;
-                    let _ = RestoreMarker::remove(marker_path);
-                    return Ok(());
-                }
+                // Live missing at a committed stage. Do not auto-restore .old: that
+                // would silently undo writes made after the restore succeeded. Fail
+                // closed and preserve all artifacts for manual recovery.
                 return Err(BackupError::RecoveryAmbiguous);
             }
 
             if !validate_for_recovery(db_path) {
-                // Live invalid. Try to auto-restore from .old if it exists and is valid.
-                if old_path.exists() && validate_for_recovery(&old_path) {
-                    std::fs::remove_file(db_path).map_err(BackupError::Io)?;
-                    recovery_rename(&old_path, db_path).map_err(BackupError::Io)?;
-                    let _ = RestoreMarker::remove(marker_path);
-                    return Ok(());
-                }
-                // Neither live nor old is usable. Fail closed; preserve all artifacts.
+                // Live invalid. Same reasoning: restoring .old would silently undo
+                // post-restore writes. Preserve all artifacts for manual recovery.
                 return Err(BackupError::PostSwapValidationFailed(
                     "live DB failed recovery validation during ReopenedValidated replay".into(),
                 ));
@@ -539,8 +530,12 @@ pub fn recover_if_interrupted(marker_path: &Path, db_path: &Path) -> Result<(), 
             if remove_if_exists(&old_path).is_err() {
                 return Ok(());
             }
-            // Also clean candidate if it unexpectedly lingered.
-            let _ = remove_if_exists(&candidate_path);
+            // Also clean candidate if it unexpectedly lingered. If removal fails,
+            // keep the marker so the next startup retries — removing marker without
+            // cleaning candidate would leave candidate without a marker (RecoveryAmbiguous).
+            if remove_if_exists(&candidate_path).is_err() {
+                return Ok(());
+            }
             let _ = RestoreMarker::remove(marker_path);
             Ok(())
         }
@@ -1310,6 +1305,43 @@ mod tests {
         recover_if_interrupted(&marker_path, &db).unwrap();
         assert!(!old.exists(), ".old must be removed on retry");
         assert!(!marker_path.exists(), "marker must be removed on retry");
+    }
+
+    // ── ReopenedValidated: candidate deletion failure keeps marker for retry ──
+
+    #[test]
+    fn candidate_deletion_failure_in_reopened_validated_keeps_marker_replayable() {
+        let dir = temp_dir();
+        let (db, old, cand, marker_path, _) = make_paths(&dir);
+        make_real_db(&db);
+        write_bytes(&old, b"stale original");
+        write_bytes(&cand, b"stale candidate");
+        make_marker(RestoreStage::ReopenedValidated)
+            .write(&marker_path)
+            .unwrap();
+
+        // set_remove_if_exists_fail_at(1): skip 1 success (old removal), then fail
+        // on the 2nd call (candidate removal).
+        set_remove_if_exists_fail_at(1);
+        let result = recover_if_interrupted(&marker_path, &db);
+
+        assert!(
+            result.is_ok(),
+            "must return Ok even when candidate deletion fails: {result:?}"
+        );
+        assert!(db.exists(), "live DB must remain usable");
+        assert!(!old.exists(), ".old must have been removed successfully");
+        assert!(
+            cand.exists(),
+            "candidate must still exist (removal was injected to fail)"
+        );
+        assert!(marker_path.exists(), "marker must be kept for retry");
+
+        // Second call: candidate removal now succeeds → full cleanup.
+        recover_if_interrupted(&marker_path, &db).unwrap();
+        assert!(!cand.exists(), "candidate must be removed on retry");
+        assert!(!marker_path.exists(), "marker must be removed on retry");
+        assert!(db.exists(), "live DB must still be present after cleanup");
     }
 
     // ── Stale tmp + final marker + tmp removal failure ────────────────────────
