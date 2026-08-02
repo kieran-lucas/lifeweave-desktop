@@ -217,7 +217,7 @@ Task 2 remains active and blocked by verified P0/P1 findings. Task 3 is not allo
 - `src-tauri/build.rs` explicitly inventories all registered commands and generates exact `allow-*` permissions; `scripts/verify_security.py` checks parity and rejects stale or unexpected capabilities.
 - Production CSP has explicit self-only script/style sources, no `unsafe-eval`, no `unsafe-inline`, no wildcard/remote assets, and restrictive object/base/frame/form directives. IPC uses only the pinned internal `http://ipc.localhost` connect source.
 - Operation IDs and user DTOs are skipped from tracing; renderer contracts remain typed and path-free. Frontend security checks reject dynamic HTML, eval, raw invoke outside the adapter, fetch, WebSocket and iframe.
-- Evidence: `docs/audits/task-04-security.md`; final HEAD `b2fc303a76531019fa93365386d3a89ecd296596`; Rust 195 tests, frontend 19 tests, Tauri NSIS build, governance and native smoke gates passed. F-06 remains closed; F-04/F-05 and lack of independent GitHub CI remain non-blocking debt.
+- Evidence: `docs/audits/task-04-security.md`; final HEAD `f5e40843718ab4717ec7fd4bf1ad794e110c01d7`; Rust 195 tests, frontend 19 tests, Tauri NSIS build, governance and native smoke gates passed. F-06 remains closed; F-04/F-05 and lack of independent GitHub CI remain non-blocking debt.
 - Task 5/60 native Windows Foundation E2E is the only next action. Stage E, Foundation, product UI completion and production security certification are not declared.
 
 ## Quality
