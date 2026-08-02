@@ -9,9 +9,18 @@ Updated: 2026-08-02 Asia/Saigon
 
 The 60-task roadmap is the execution and coordination layer. It does not replace the immutable source of truth in `docs/source-of-truth/`.
 
-- Task 1/60: implementation candidate closed at verified implementation HEAD `14038c52921717ec25ea12d3f02dbb43a294ddcb`.
-- Next and only allowed action: Task 2/60, independent backup/restore audit.
+- Task 1/60: implementation candidate recorded at implementation HEAD `cb6df7912f396084e244f836208f71085c27dc9d`.
+- Task 2/60: independent backup/restore audit is active and `BLOCKED` by F-01 (P0 runtime admission race), F-02 (P0 package identity TOCTOU), and F-03 (P1 non-convergent locked-sidecar rollback).
+- Task 3/60 is not allowed until those findings are corrected and independently re-audited.
 - Stage E, Foundation Proof, and production-safe backup/restore are not declared complete.
+
+## Task 2 audit evidence
+
+- Audit scope HEAD: `cb6df7912f396084e244f836208f71085c27dc9d`.
+- Report: `docs/audits/task-02-backup-restore.md`.
+- Baseline gates remain clean: fmt/clippy passed; 185 Rust tests passed; focused backup tests 119 passed; frontend typecheck, 2 files / 19 tests, and Vite production build passed.
+- Blocking verdict rests on complete source-level state/interleaving proofs and existing real Windows sharing-violation evidence, not on checklist or test names.
+- P2 debt: best-effort directory flush, backup publication durability barriers, and raw-path IPC deferred to Task 3.
 
 ## Task 1 build evidence
 
@@ -31,5 +40,5 @@ The 60-task roadmap is the execution and coordination layer. It does not replace
 
 - App Shell has not started.
 - Product Task System feature implementation has not started.
-- Task 3 backup ID/progress work has not started.
+- Task 3 backup ID/progress work has not started and remains prohibited while Task 2 is blocked.
 - Public distribution/signing remains out of scope.

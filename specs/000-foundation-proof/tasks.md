@@ -142,6 +142,20 @@
 
 Task 1 implementation candidate is ready for independent Task 2 audit.
 
+### Stage E.1f — Task 2 Independent Backup/Restore Audit
+
+- Independent audit scope HEAD: `cb6df7912f396084e244f836208f71085c27dc9d` on clean Windows `main`; no production code was changed.
+- Baseline evidence: fmt and clippy `--all-targets -- -D warnings` passed; full Rust suite 185 passed / 0 failed / 0 ignored (3.34s); focused backup suite 119 passed / 0 failed / 0 ignored (1.33s); 185 tests listed; frontend typecheck passed; Vitest 2 files / 19 tests passed (4.72s); Vite 8.1.5 production build passed (24 modules, 479ms).
+- Verdict: `BLOCKED`.
+- F-01 (P0): `DatabaseRuntime::execute` releases its state gate after cloning the worker but before enqueue, so a previously admitted mutation can enqueue after the safety snapshot, return success, and be lost when restore deletes `.old`.
+- F-02 (P0): restore validates the external backup file, closes it, and later reopens the path for candidate copy without rechecking candidate identity; a different valid database can be installed and reported as the selected snapshot.
+- F-03 (P1): `attempt_rollback` removes the live candidate before deleting WAL/SHM; a Windows sharing violation can leave main missing + sidecar present + valid `.old`/marker, and startup preflight blocks marker replay as `RecoveryAmbiguous`.
+- Non-blocking debt: ignored/best-effort directory flush results, missing explicit backup publication durability barriers, and raw backup path IPC reserved for Task 3.
+- Full evidence, exact call paths, state matrix, remediation, and missing tests: `docs/audits/task-02-backup-restore.md`.
+- No real Product Owner/AppData database or backup was used. No Task 3 implementation was opened.
+
+Task 2 remains active and blocked by verified P0/P1 findings. Task 3 is not allowed.
+
 ## Quality
 - [ ] Strict CSP/capability review.
 - [ ] No disallowed remote resource.
