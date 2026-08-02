@@ -3,6 +3,7 @@ pub mod domain;
 pub mod infrastructure;
 pub mod ipc;
 pub mod platform;
+pub mod task;
 
 use tauri::Manager;
 
@@ -20,6 +21,7 @@ use ipc::foundation_record::{
     archive_foundation_record, create_foundation_record, list_archived_foundation_records,
     list_foundation_records, restore_foundation_record, update_foundation_record,
 };
+use ipc::task::{create_task, delete_task, list_task_categories, list_tasks_for_date, update_task};
 
 /// Initialize the local tracing subscriber.
 ///
@@ -116,6 +118,11 @@ pub fn run() {
             backup_database,
             list_backups,
             restore_database,
+            list_task_categories,
+            list_tasks_for_date,
+            create_task,
+            update_task,
+            delete_task,
         ])
         .run(tauri::generate_context!())
         .expect("failed to run Lifeweave");

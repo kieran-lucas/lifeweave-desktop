@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { healthCheck } from "../ipc/commands";
 import { FoundationScreen } from "../features/foundation/FoundationScreen";
+import { TodayScreen } from "../features/task/today/TodayScreen";
 import * as styles from "./App.css";
 
 type Destination = "today" | "calendar" | "analytics" | "life" | "settings";
@@ -81,7 +82,8 @@ export function App() {
         {ipcStatus === "loading" && <p className={styles.coreStatus} aria-live="polite">Connecting to application core…</p>}
         {ipcStatus === "error" && <p className={styles.coreStatus} role="alert">Application core unavailable.</p>}
         {ipcStatus === "ready" && destination === "settings" && <section ref={headingRef} className={styles.destination} aria-labelledby="settings-heading"><h1 id="settings-heading" tabIndex={-1} className={styles.heading}>Settings</h1><p className={styles.lede}>Application preferences and foundation verification tools.</p><div className={styles.foundationPanel}><h2>Foundation tools</h2><p>Development-only backup and FoundationRecord verification.</p><FoundationScreen /></div></section>}
-        {ipcStatus === "ready" && destination !== "settings" && <div ref={(node) => { headingRef.current = node; }}><Placeholder destination={destination} heading={heading} /></div>}
+        {ipcStatus === "ready" && destination !== "settings" && destination === "today" && <div ref={(node) => { headingRef.current = node; }}><TodayScreen /></div>}
+        {ipcStatus === "ready" && destination !== "settings" && destination !== "today" && <div ref={(node) => { headingRef.current = node; }}><Placeholder destination={destination} heading={heading} /></div>}
       </main>
     </div>
   );

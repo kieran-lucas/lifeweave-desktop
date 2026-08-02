@@ -144,7 +144,7 @@ mod tests {
         handle.execute(run_migrations).unwrap();
         let version = handle.execute(|conn| current_schema_version(conn)).unwrap();
         // Migrations 1 (db_metadata) and 2 (foundation_records) applied; version must be 2.
-        assert_eq!(version, 2);
+        assert_eq!(version, 3);
     }
 
     #[test]

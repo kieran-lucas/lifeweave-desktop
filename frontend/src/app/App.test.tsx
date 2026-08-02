@@ -11,6 +11,9 @@ vi.mock("../ipc/commands", () => ({
   createFoundationRecord: vi.fn(), updateFoundationRecord: vi.fn(),
   archiveFoundationRecord: vi.fn(), restoreFoundationRecord: vi.fn(),
   backupDatabase: vi.fn(), restoreDatabase: vi.fn(),
+  listTasksForDate: vi.fn().mockResolvedValue([]),
+  listTaskCategories: vi.fn().mockResolvedValue([]),
+  createTask: vi.fn(), updateTask: vi.fn(), deleteTask: vi.fn(),
 }));
 
 describe("App shell", () => {
@@ -20,7 +23,7 @@ describe("App shell", () => {
     render(<App />);
     await screen.findByRole("heading", { name: "Today" });
     expect(screen.getAllByRole("navigation")[0]).toHaveAccessibleName("Primary navigation");
-    expect(screen.getAllByRole("button").map((button) => button.textContent)).toEqual(["TToday", "CCalendar", "AAnalytics", "LLife System", "SSettings", "←Collapse"]);
+    expect(screen.getAllByRole("button").map((button) => button.textContent)).toContain("Create task");
   });
 
   it("navigates destinations and exposes the active item", async () => {

@@ -18,6 +18,11 @@
     "allow-restore-foundation-record",
     "allow-backup-database",
     "allow-list-backups",
-    "allow-restore-database"
+    "allow-restore-database",
+    "allow-list-task-categories",
+    "allow-list-tasks-for-date",
+    "allow-create-task",
+    "allow-update-task",
+    "allow-delete-task"
   ]
 }

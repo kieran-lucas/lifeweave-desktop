@@ -1,6 +1,7 @@
 pub mod backup;
 pub mod error;
 pub mod foundation_record;
+pub mod task;
 
 use serde::Serialize;
 
@@ -52,5 +53,10 @@ mod tests {
             .expect("ts binding export failed for UpdateFoundationRecordInput");
         MutateFoundationRecordInput::export_all_to(&out)
             .expect("ts binding export failed for MutateFoundationRecordInput");
+        use crate::task::dto::{CreateTaskInput, TaskCategoryView, TaskView, UpdateTaskInput};
+        TaskCategoryView::export_all_to(&out).unwrap();
+        TaskView::export_all_to(&out).unwrap();
+        CreateTaskInput::export_all_to(&out).unwrap();
+        UpdateTaskInput::export_all_to(&out).unwrap();
     }
 }

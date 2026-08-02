@@ -11,6 +11,11 @@ fn main() {
             "backup_database",
             "list_backups",
             "restore_database",
+            "list_task_categories",
+            "list_tasks_for_date",
+            "create_task",
+            "update_task",
+            "delete_task",
         ]),
     ))
     .expect("failed to generate Tauri ACL manifest");

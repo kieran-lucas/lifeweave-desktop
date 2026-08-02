@@ -51,6 +51,10 @@ static MIGRATIONS: &[Migration] = &[
                 archived_at TEXT
             );",
     },
+    Migration {
+        version: 3,
+        sql: "CREATE TABLE task_categories (id TEXT PRIMARY KEY NOT NULL, name TEXT NOT NULL, icon_key TEXT NOT NULL, color_key TEXT NOT NULL, archived_at TEXT); CREATE TABLE tasks (id TEXT PRIMARY KEY NOT NULL, local_date TEXT NOT NULL, start_minute INTEGER NOT NULL CHECK(start_minute >= 0 AND start_minute <= 1439), end_minute INTEGER NOT NULL CHECK(end_minute >= 1 AND end_minute <= 1440 AND start_minute < end_minute), title TEXT NOT NULL CHECK(length(trim(title)) > 0 AND length(title) <= 200), description TEXT NOT NULL, category_id TEXT NOT NULL REFERENCES task_categories(id), priority TEXT NOT NULL CHECK(priority IN ('low','medium','high')), created_at TEXT NOT NULL, updated_at TEXT NOT NULL); CREATE INDEX tasks_by_date ON tasks(local_date,start_minute,end_minute); CREATE INDEX tasks_conflict_lookup ON tasks(local_date,start_minute,end_minute); INSERT INTO task_categories(id,name,icon_key,color_key) VALUES ('general','General','category-general','blue');",
+    },
 ];
 
 /// Bootstraps the migration tracking table and applies any pending migrations.
@@ -155,7 +159,7 @@ mod tests {
         let mut conn = open_memory_connection().unwrap();
         run_migrations(&mut conn).unwrap();
 
-        assert_eq!(current_schema_version(&conn).unwrap(), 2);
+        assert_eq!(current_schema_version(&conn).unwrap(), 3);
 
         let count: i64 = conn
             .query_row("SELECT COUNT(*) FROM db_metadata", [], |r| r.get(0))
@@ -169,7 +173,7 @@ mod tests {
         let mig_count: i64 = conn
             .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
             .unwrap();
-        assert_eq!(mig_count, 2);
+        assert_eq!(mig_count, 3);
     }
 
     #[test]
@@ -179,11 +183,11 @@ mod tests {
         run_migrations(&mut conn).unwrap();
 
         // Version stays at 2; no duplicate schema_migrations rows
-        assert_eq!(current_schema_version(&conn).unwrap(), 2);
+        assert_eq!(current_schema_version(&conn).unwrap(), 3);
         let mig_count: i64 = conn
             .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
             .unwrap();
-        assert_eq!(mig_count, 2);
+        assert_eq!(mig_count, 3);
     }
 
     // ── Validation ────────────────────────────────────────────────────────────
@@ -241,7 +245,7 @@ mod tests {
         match run_migrations_with(&mut conn, MIGRATIONS) {
             Err(DbError::SchemaTooNew { stored, supported }) => {
                 assert_eq!(stored, 9999);
-                assert_eq!(supported, 2);
+                assert_eq!(supported, 3);
             }
             other => panic!("expected SchemaTooNew, got {other:?}"),
         }
@@ -277,7 +281,7 @@ mod tests {
         {
             let mut conn = open_file_connection(&path).unwrap();
             run_migrations(&mut conn).unwrap();
-            assert_eq!(current_schema_version(&conn).unwrap(), 2);
+            assert_eq!(current_schema_version(&conn).unwrap(), 3);
             // Confirm the schema object created by migration 1 exists
             let count: i64 = conn
                 .query_row("SELECT COUNT(*) FROM db_metadata", [], |r| r.get(0))
@@ -291,7 +295,7 @@ mod tests {
             run_migrations(&mut conn).unwrap();
             assert_eq!(
                 current_schema_version(&conn).unwrap(),
-                2,
+                3,
                 "schema version must survive close/reopen"
             );
             let count: i64 = conn
@@ -304,7 +308,7 @@ mod tests {
                 .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
                 .unwrap();
             assert_eq!(
-                mig_count, 2,
+                mig_count, 3,
                 "no duplicate migration records after reopen + re-run"
             );
         }

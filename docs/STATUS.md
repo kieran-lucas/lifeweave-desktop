@@ -83,3 +83,6 @@ The 60-task roadmap is the execution and coordination layer. It does not replace
 - Implemented and verified at the next commit: Today-default CSS Grid shell, fixed 220px/68px navigation rail, typed destinations, Settings-hosted Foundation tools, persisted Task sidebar mode and Life System auto-collapse/restore.
 - Frontend: 22 tests passed; Rust: 195 tests; focused backup: 127 tests; verify/typecheck/build/check/fmt/clippy/NSIS/native smoke passed.
 - Task 8/60 is the only allowed next action. Task System, final App Shell branding and product feature behavior remain unimplemented.
+## Task 8 — Task Core + Today vertical slice
+
+The first production-shaped Task slice is implemented: migration 3, category seed, typed task CRUD/conflict validation, and a Today timeline with exact-interval grouping. Task 9 is the next roadmap action; recurrence, assessment and other product domains remain unopened.

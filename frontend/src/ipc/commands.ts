@@ -8,6 +8,10 @@ import type { FoundationRecordView } from "./generated/FoundationRecordView";
 import type { CreateFoundationRecordInput } from "./generated/CreateFoundationRecordInput";
 import type { UpdateFoundationRecordInput } from "./generated/UpdateFoundationRecordInput";
 import type { MutateFoundationRecordInput } from "./generated/MutateFoundationRecordInput";
+import type { TaskCategoryView } from "./generated/TaskCategoryView";
+import type { TaskView } from "./generated/TaskView";
+import type { CreateTaskInput } from "./generated/CreateTaskInput";
+import type { UpdateTaskInput } from "./generated/UpdateTaskInput";
 
 export function healthCheck(): Promise<HealthCheck> {
   return invoke<HealthCheck>("health_check");
@@ -62,3 +66,9 @@ export function restoreDatabase(backupId: string): Promise<RestoreResult> {
 }
 
 export type { BackupProgress };
+
+export const listTaskCategories = () => invoke<TaskCategoryView[]>("list_task_categories");
+export const listTasksForDate = (localDate: string) => invoke<TaskView[]>("list_tasks_for_date", { localDate });
+export const createTask = (input: CreateTaskInput) => invoke<TaskView>("create_task", { input });
+export const updateTask = (input: UpdateTaskInput) => invoke<TaskView>("update_task", { input });
+export const deleteTask = (id: string) => invoke<void>("delete_task", { id });

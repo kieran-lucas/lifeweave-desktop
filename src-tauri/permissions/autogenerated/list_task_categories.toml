@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-list-task-categories"
+description = "Enables the list_task_categories command without any pre-configured scope."
+commands.allow = ["list_task_categories"]
+
+[[permission]]
+identifier = "deny-list-task-categories"
+description = "Denies the list_task_categories command without any pre-configured scope."
+commands.deny = ["list_task_categories"]

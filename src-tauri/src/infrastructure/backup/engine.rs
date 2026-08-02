@@ -321,7 +321,7 @@ mod tests {
         let backups = temp_backups_dir();
         let result = backup_db(&rt, &backups).unwrap();
         // Migration 2 is the latest; schema_version must reflect that.
-        assert_eq!(result.schema_version, 2);
+        assert_eq!(result.schema_version, 3);
     }
 
     #[test]

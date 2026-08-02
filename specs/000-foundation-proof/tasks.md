@@ -252,3 +252,6 @@ Task 2 remains active and blocked by verified P0/P1 findings. Task 3 is not allo
 - [ ] Windows E2E.
 - [ ] Independent AI review.
 - [x] Product Owner acceptance. — Native Windows smoke test passed 2026-08-01: app launch, create, edit, archive (record moves to Archived), restore (record returns to Active), active record survives close/reopen, archived record survives close/reopen; no duplicates, crashes, or display errors observed.
+### Task 8 — Task Core + Today vertical slice
+
+Implemented schema migration 3 and dedicated task domain/repository/IPC plus Today create/edit/delete, local-date timeline periods, conflict validation and exact-interval grouping. Evidence: `docs/audits/task-08-task-core-today.md`. Task 9 is the next boundary; recurrence, Calendar, Analytics and Life behavior remain deferred.
