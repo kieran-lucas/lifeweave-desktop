@@ -15,15 +15,43 @@ New-Item -ItemType Directory -Force -Path $run | Out-Null
 New-Item -ItemType File -Path (Join-Path $run '.lifeweave-e2e-sentinel') | Out-Null
 try {
   if (-not (Get-Command tauri-driver -ErrorAction SilentlyContinue)) { throw 'tauri-driver is required' }
+  if ([Environment]::Is64BitOperatingSystem -eq $false) { throw 'only 64-bit Windows is supported' }
+  $webViewKey = 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}'
+  $runtime = (Get-ItemProperty -Path $webViewKey -Name pv -ErrorAction SilentlyContinue).pv
+  if (-not $runtime -or $runtime -eq '0.0.0.0' -or $runtime -notmatch '^\d+\.\d+\.\d+\.\d+$') { throw 'WebView2 Runtime version was not found in the official registry key' }
+  Write-Host "Detected WebView2 Runtime $runtime"
+  $driverCache = Join-Path $repo "target\e2e-tools\msedgedriver\$runtime\msedgedriver.exe"
   $nativeDriver = $env:MSEDGEDRIVER_PATH
-  if (-not $nativeDriver -or -not (Test-Path -LiteralPath $nativeDriver)) {
-    throw 'MSEDGEDRIVER_PATH must point to a locally installed matching WebView2 driver; no network download is attempted'
+  if ($nativeDriver) {
+    if (-not (Test-Path -LiteralPath $nativeDriver)) { throw 'MSEDGEDRIVER_PATH does not exist' }
+  } elseif (Test-Path -LiteralPath $driverCache) {
+    $nativeDriver = $driverCache
+  } else {
+    $tmpZip = Join-Path $run 'edgedriver.zip'
+    $tmpDir = Join-Path $run 'driver-extract'
+    New-Item -ItemType Directory -Force -Path $tmpDir | Out-Null
+    $url = "https://msedgedriver.microsoft.com/$runtime/edgedriver_win64.zip"
+    try { Invoke-WebRequest -Uri $url -OutFile $tmpZip -TimeoutSec 60 } catch { & curl.exe --fail --location --retry 2 --max-time 120 $url --output $tmpZip; if ($LASTEXITCODE -ne 0) { throw "driver download failed: $($_.Exception.Message)" } }
+    Expand-Archive -LiteralPath $tmpZip -DestinationPath $tmpDir -Force
+    $downloaded = Join-Path $tmpDir 'edgedriver.exe'
+    if (-not (Test-Path $downloaded)) { throw 'driver archive did not contain edgedriver.exe' }
+    New-Item -ItemType Directory -Force -Path (Split-Path $driverCache) | Out-Null
+    Move-Item -LiteralPath $downloaded -Destination $driverCache -Force
+    $nativeDriver = $driverCache
   }
+  $signature = Get-AuthenticodeSignature -LiteralPath $nativeDriver
+  if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notmatch 'Microsoft') { throw 'Edge WebDriver Authenticode signature is not valid Microsoft code' }
+  $versionOutput = & $nativeDriver --version 2>&1 | Out-String
+  if ($versionOutput -notmatch $runtime.Substring(0, $runtime.LastIndexOf('.'))) { throw "driver version does not match WebView2 Runtime: $versionOutput" }
+  Write-Host "Using Edge WebDriver $versionOutput"
+  $env:MSEDGEDRIVER_TELEMETRY_OPTOUT = '1'
   $env:LIFEWEAVE_E2E_APP_DATA_DIR = $run
+  $env:LIFEWEAVE_E2E_ROOT = (Resolve-Path $dataRoot).Path
   pnpm --dir frontend build
   if ($LASTEXITCODE -ne 0) { throw 'frontend build failed' }
   cargo build --manifest-path src-tauri/Cargo.toml --features e2e-test
   if ($LASTEXITCODE -ne 0) { throw 'E2E binary build failed' }
+  $env:LIFEWEAVE_E2E_BINARY = (Resolve-Path 'src-tauri\target\debug\lifeweave-desktop.exe').Path
   foreach ($phase in @('phase1-lifecycle.e2e.ts','phase2-backup-restore.e2e.ts','phase3-restart.e2e.ts')) {
     $out = Join-Path $run "$phase.out.log"; $err = Join-Path $run "$phase.err.log"
     $driver = Start-Process -FilePath 'tauri-driver.exe' -ArgumentList '--native-driver', $nativeDriver, '--port','4444' -RedirectStandardOutput $out -RedirectStandardError $err -PassThru
@@ -42,6 +70,7 @@ try {
 } finally {
   if ($driver -and -not $driver.HasExited) { Stop-Process -Id $driver.Id -Force -ErrorAction SilentlyContinue }
   Remove-Item Env:LIFEWEAVE_E2E_APP_DATA_DIR -ErrorAction SilentlyContinue
+  Remove-Item Env:LIFEWEAVE_E2E_ROOT -ErrorAction SilentlyContinue
   Remove-Item -LiteralPath $lock -Force -ErrorAction SilentlyContinue
   if ($success) {
     Remove-Item -LiteralPath $run -Recurse -Force -ErrorAction SilentlyContinue

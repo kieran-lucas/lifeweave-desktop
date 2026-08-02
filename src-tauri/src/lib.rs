@@ -50,17 +50,15 @@ fn app_data_directory(
         if !requested.is_absolute() {
             return Err("E2E app-data override must be absolute".into());
         }
-        let root = std::env::current_dir()?.join("target").join("e2e-data");
+        let root = std::env::var("LIFEWEAVE_E2E_ROOT")
+            .map(std::path::PathBuf::from)
+            .unwrap_or(std::env::current_dir()?.join("target").join("e2e-data"));
         let root = std::fs::canonicalize(&root).unwrap_or(root);
-        let requested_parent = requested
-            .parent()
-            .ok_or("E2E app-data override has no parent")?;
-        let parent = std::fs::canonicalize(requested_parent)
-            .unwrap_or_else(|_| requested_parent.to_path_buf());
+        let canonical_requested = std::fs::canonicalize(&requested)
+            .map_err(|_| "E2E app-data override directory does not exist")?;
         let sentinel = requested.join(".lifeweave-e2e-sentinel");
-        if !parent.starts_with(&root)
-            || requested.file_name().is_none()
-            || requested.parent() != Some(root.as_path())
+        if !canonical_requested.starts_with(&root)
+            || canonical_requested == root
             || !sentinel.is_file()
         {
             return Err("E2E app-data override is outside target/e2e-data".into());

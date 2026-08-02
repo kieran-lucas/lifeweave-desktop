@@ -12,7 +12,7 @@ export const config: Options.Testrunner = {
   path: "/",
   capabilities: [{
     browserName: "wry",
-    "tauri:options": { application: "../src-tauri/target/debug/lifeweave-desktop.exe" },
+    "tauri:options": { application: process.env.LIFEWEAVE_E2E_BINARY ?? "" },
   }],
   mochaOpts: { timeout: 120_000 },
 };

@@ -29,11 +29,12 @@ restart, backup catalog and restore flow with accessible selectors.
 
 ## Current limitation
 
-The native scenario could not execute in this environment because no local
-matching `msedgedriver.exe` was installed. The harness now requires an explicit
-`MSEDGEDRIVER_PATH`, performs no network download, fails closed, and retains
-per-run logs on failure. No native E2E scenario count or acceptance claim is
-recorded.
+The matching WebView2 Runtime (150.0.4078.105) and Microsoft-signed Edge
+WebDriver were acquired from the current official host and cached beneath
+`target/e2e-tools`. A real WebDriver session now starts, but the Tauri window
+attaches as an `about:blank` context and the Foundation UI is not exposed to
+the session. The harness retains logs and fails closed; no native E2E pass or
+acceptance claim is recorded until the Tauri/WebDriver attachment is corrected.
 
 ## Status
 

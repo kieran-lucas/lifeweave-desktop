@@ -1,7 +1,8 @@
-import { $, expect } from "@wdio/globals";
+import { $, browser, expect } from "@wdio/globals";
 
 describe("Phase 1 — native lifecycle", () => {
   it("creates, edits, archives and restores a record", async () => {
+    await browser.url("http://tauri.localhost");
     await expect($("h1=Foundation Records")).toBeDisplayed();
     await expect($("text=No records yet. Add one above.")).toBeDisplayed();
     await $("input[aria-label='New record label']").setValue("E2E Alpha");
