@@ -257,4 +257,8 @@ Task 2 remains active and blocked by verified P0/P1 findings. Task 3 is not allo
 Implemented schema migration 3 and dedicated task domain/repository/IPC plus Today create/edit/delete, date-aware exact-minute controls, TanStack Query state, accessible dialog behavior, local-date timeline periods, conflict validation and exact-interval grouping. Evidence: `docs/audits/task-08-task-core-today.md`. Rust 198 tests and frontend 25 tests pass. Task 9 is the next boundary; recurrence, Calendar, Analytics and Life behavior remain deferred.
 ### Task 9 — Recurring task series
 
-Migration 4 adds normalized series/override storage. Typed recurring creation, bounded daily/weekly/monthly projection, moved/cancelled overrides and occurrence scope mutation are implemented without future materialization. Task 10 owns Calendar projection.
+Migration 4 remains immutable and provides normalized series/override authority. Corrective closure at implementation commit `9a12ed933bda7b064f0baa64abad9bc26b0c21d4` adds exact-pinned Rust `rrule 0.14.0` expansion; a typed unified Today projection; real interval/weekday/count/until creation controls and bounded preview; moved/cancelled occurrence projection; and Only this / This and future / Entire series edit and delete flows. Split, override transfer, archive, and conflict rejection are transactional through the database worker.
+
+Evidence: Rust 214 passed, task-focused 19 passed, backup-focused 127 passed, frontend 30 passed; verify/typecheck/build/check/fmt/clippy, generated ACL/bindings, NSIS build, isolated native launch, and file-backed recurrence reopen/split smoke passed. See `docs/audits/task-09-recurrence.md`.
+
+Task 9/60 is complete. Task 10/60 owns only Week Strip + Calendar Month Projection.

@@ -88,4 +88,6 @@ The 60-task roadmap is the execution and coordination layer. It does not replace
 The first production-shaped Task slice is implemented: migration 3, category seed, typed task CRUD/conflict validation, and a Today timeline with exact-minute date-aware create/edit/delete, TanStack Query state, accessible dialog behavior and exact-interval grouping. Rust tests: 198; frontend tests: 25. Task 9 is the next roadmap action; recurrence, assessment and other product domains remain unopened.
 ## Task 9 — Recurrence
 
-Task 9 recurring series, bounded projection and occurrence scope infrastructure are implemented. Task 10 owns Week Strip and Calendar Month Projection.
+Task 9/60 is complete at implementation commit `9a12ed933bda7b064f0baa64abad9bc26b0c21d4`. Exact-pinned Rust RFC 5545 expansion, a typed unified Today projection, user-controlled recurrence creation, moved/cancelled overrides, all three atomic edit/delete scopes, 366-day conflict validation, and accessible recurring UI flows are verified. Rust 214/214, task-focused 19/19, backup-focused 127/127, and frontend 30/30 passed; governance/security, generated bindings, release NSIS build, isolated native launch, and file-backed recurrence reopen smoke passed. Evidence: `docs/audits/task-09-recurrence.md`.
+
+Task 10/60 Week Strip + Calendar Month Projection is the only allowed next action. Existing F-04/F-05, CI, and WebDriver attachment debt remains non-blocking. Calendar month UI, completion assessment, Analytics, and the whole Task System are not declared complete.
