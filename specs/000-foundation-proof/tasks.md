@@ -211,6 +211,15 @@ Task 2 remains active and blocked by verified P0/P1 findings. Task 3 is not allo
 - Task 3 evidence: Rust ID/catalog tests, full backup/recovery suite, frontend suite, generated DTO drift, governance, Tauri build and native smoke are recorded at final HEAD.
 - F-06 is closed. F-04/F-05 and GitHub CI remain non-blocking debt. Task 4/60 is the only next action; no Task 4 implementation is included here.
 
+### Task 4 — Security, CSP and Capabilities
+
+- Threat boundary: untrusted WebView JavaScript is constrained to typed IPC commands exposed by the Windows-only `main-capability`; no remote capability or broad core/plugin authority is enabled.
+- `src-tauri/build.rs` explicitly inventories all registered commands and generates exact `allow-*` permissions; `scripts/verify_security.py` checks parity and rejects stale or unexpected capabilities.
+- Production CSP has explicit self-only script/style sources, no `unsafe-eval`, no `unsafe-inline`, no wildcard/remote assets, and restrictive object/base/frame/form directives. IPC uses only the pinned internal `http://ipc.localhost` connect source.
+- Operation IDs and user DTOs are skipped from tracing; renderer contracts remain typed and path-free. Frontend security checks reject dynamic HTML, eval, raw invoke outside the adapter, fetch, WebSocket and iframe.
+- Evidence: `docs/audits/task-04-security.md`; Rust/frontend/Tauri/governance/native smoke gates passed on the final pushed HEAD. F-06 remains closed; F-04/F-05 and lack of independent GitHub CI remain non-blocking debt.
+- Task 5/60 native Windows Foundation E2E is the only next action. Stage E, Foundation, product UI completion and production security certification are not declared.
+
 ## Quality
 - [ ] Strict CSP/capability review.
 - [ ] No disallowed remote resource.

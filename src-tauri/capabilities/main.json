@@ -5,7 +5,19 @@
   "windows": [
     "main"
   ],
+  "platforms": [
+    "windows"
+  ],
   "permissions": [
-    "core:default"
+    "allow-health-check",
+    "allow-create-foundation-record",
+    "allow-list-foundation-records",
+    "allow-list-archived-foundation-records",
+    "allow-update-foundation-record",
+    "allow-archive-foundation-record",
+    "allow-restore-foundation-record",
+    "allow-backup-database",
+    "allow-list-backups",
+    "allow-restore-database"
   ]
 }

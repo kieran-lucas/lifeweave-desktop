@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-restore-foundation-record"
+description = "Enables the restore_foundation_record command without any pre-configured scope."
+commands.allow = ["restore_foundation_record"]
+
+[[permission]]
+identifier = "deny-restore-foundation-record"
+description = "Denies the restore_foundation_record command without any pre-configured scope."
+commands.deny = ["restore_foundation_record"]

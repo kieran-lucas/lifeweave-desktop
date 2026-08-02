@@ -40,6 +40,12 @@ The 60-task roadmap is the execution and coordination layer. It does not replace
 - Automated desktop smoke: Vite ready, Rust dev compile passed, native process remained alive 32.7s without captured startup fatal/panic/IPC initialization error.
 - Visual Product Owner confirmation remains pending; full native E2E belongs to Task 5.
 
+## Task 4/60 — Security, CSP and capabilities
+
+- Implemented at the current Task 4 final HEAD; Task 5/60 native Windows Foundation E2E is the only next action.
+- Evidence: `docs/audits/task-04-security.md`; explicit Windows-only `main-capability`, generated command ACL, strict production CSP, path-free IPC logging, and deterministic `scripts/verify_security.py` integrated into `pnpm verify`.
+- Task 4 does not declare Stage E, Foundation, product UI completion, or production security certification. F-04/F-05 and lack of independent GitHub CI remain non-blocking debt.
+
 ## Active slice
 `specs/000-foundation-proof`
 

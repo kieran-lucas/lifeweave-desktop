@@ -90,7 +90,7 @@ pub fn list_backups(app: tauri::AppHandle) -> Result<Vec<BackupSummary>, IpcErro
 /// All validation (checksum, integrity, version) happens before any mutation.
 /// On failure, live data remains usable.
 #[tauri::command]
-#[tracing::instrument(level = "info", skip(state))]
+#[tracing::instrument(level = "info", skip(app, state))]
 pub fn restore_database(
     app: tauri::AppHandle,
     state: State<'_, DatabaseRuntime>,

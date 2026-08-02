@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-list-archived-foundation-records"
+description = "Enables the list_archived_foundation_records command without any pre-configured scope."
+commands.allow = ["list_archived_foundation_records"]
+
+[[permission]]
+identifier = "deny-list-archived-foundation-records"
+description = "Denies the list_archived_foundation_records command without any pre-configured scope."
+commands.deny = ["list_archived_foundation_records"]

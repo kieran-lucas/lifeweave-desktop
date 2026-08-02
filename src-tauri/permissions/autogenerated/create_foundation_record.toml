@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-create-foundation-record"
+description = "Enables the create_foundation_record command without any pre-configured scope."
+commands.allow = ["create_foundation_record"]
+
+[[permission]]
+identifier = "deny-create-foundation-record"
+description = "Denies the create_foundation_record command without any pre-configured scope."
+commands.deny = ["create_foundation_record"]

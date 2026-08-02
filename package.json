@@ -11,7 +11,7 @@
     "source:verify": "python scripts/verify_source_integrity.py",
     "governance:check": "python scripts/check_repository.py",
     "index:check": "python scripts/generate_spec_index.py --check && python scripts/generate_coverage_matrix.py --check",
-    "verify": "pnpm source:verify && pnpm governance:check && pnpm index:check",
+    "verify": "pnpm source:verify && pnpm governance:check && pnpm index:check && python scripts/verify_security.py",
     "dev": "pnpm --dir frontend dev",
     "build": "pnpm --dir frontend build",
     "typecheck": "pnpm --dir frontend typecheck",

@@ -117,7 +117,7 @@ fn repo_to_ipc(e: RepoError) -> IpcError {
 }
 
 #[tauri::command]
-#[tracing::instrument(level = "info", skip(state, input), fields(op = %input.operation_id))]
+#[tracing::instrument(level = "info", skip(state, input))]
 pub fn create_foundation_record(
     state: State<'_, DatabaseRuntime>,
     input: CreateFoundationRecordInput,
@@ -154,7 +154,7 @@ pub fn list_archived_foundation_records(
 }
 
 #[tauri::command]
-#[tracing::instrument(level = "info", skip(state, input), fields(op = %input.operation_id))]
+#[tracing::instrument(level = "info", skip(state, input))]
 pub fn update_foundation_record(
     state: State<'_, DatabaseRuntime>,
     input: UpdateFoundationRecordInput,
@@ -170,7 +170,7 @@ pub fn update_foundation_record(
 }
 
 #[tauri::command]
-#[tracing::instrument(level = "info", skip(state, input), fields(op = %input.operation_id))]
+#[tracing::instrument(level = "info", skip(state, input))]
 pub fn archive_foundation_record(
     state: State<'_, DatabaseRuntime>,
     input: MutateFoundationRecordInput,
@@ -185,7 +185,7 @@ pub fn archive_foundation_record(
 }
 
 #[tauri::command]
-#[tracing::instrument(level = "info", skip(state, input), fields(op = %input.operation_id))]
+#[tracing::instrument(level = "info", skip(state, input))]
 pub fn restore_foundation_record(
     state: State<'_, DatabaseRuntime>,
     input: MutateFoundationRecordInput,

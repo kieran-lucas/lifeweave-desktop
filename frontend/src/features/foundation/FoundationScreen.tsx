@@ -283,7 +283,7 @@ export function FoundationScreen() {
         )}
       </form>
 
-      <div className={styles.form} style={{ marginTop: "1rem" }}>
+      <div className={`${styles.form} ${styles.operationBar}`}>
         <button type="button" className={styles.button} onClick={handleBackup} disabled={state.operationBusy}>
           Backup
         </button>
@@ -322,7 +322,7 @@ export function FoundationScreen() {
             <li key={record.id} className={styles.item}>
               {state.edit?.id === record.id ? (
                 <form
-                  style={{ display: "contents" }}
+                  className={styles.contentsForm}
                   onSubmit={(e) => handleUpdate(e, record)}
                   aria-label={`Edit ${record.label}`}
                 >
