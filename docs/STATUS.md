@@ -1,40 +1,35 @@
 # Project Status
 
-Updated: 2026-08-01 Asia/Bangkok
+Updated: 2026-08-02 Asia/Saigon
 
 ## Phase
-**Phase 0 — source preservation and project governance**
+**Foundation Proof**
 
-## Completed in this setup pack
-- exact source copy and checksum;
-- heading index and full coverage matrix;
-- AI Constitution and agent instructions;
-- Core/Expansion separation;
-- architecture and cross-cutting contracts;
-- GitHub issue/PR/workflow setup;
-- Windows doctor/bootstrap scripts;
-- minimal Tauri/React skeleton;
-- Foundation Proof spec package;
-- archive manifest and validation tooling.
+## Execution roadmap
 
-## Not yet proven
-- registry install;
-- generated lockfiles;
-- frontend/Rust compilation;
-- Tauri Windows production build;
-- SQLite implementation;
-- product UI;
-- final schema;
-- public distribution.
+The 60-task roadmap is the execution and coordination layer. It does not replace the immutable source of truth in `docs/source-of-truth/`.
+
+- Task 1/60: implementation candidate closed at verified implementation HEAD `14038c52921717ec25ea12d3f02dbb43a294ddcb`.
+- Next and only allowed action: Task 2/60, independent backup/restore audit.
+- Stage E, Foundation Proof, and production-safe backup/restore are not declared complete.
+
+## Task 1 build evidence
+
+- `cargo check --locked --all-targets`, fmt, and clippy with `-D warnings`: passed on Windows.
+- Rust: 185 passed, 0 failed, 0 ignored.
+- Frontend: 2 test files / 19 tests passed; typecheck and Vite production build passed.
+- Generated TypeScript bindings: no drift.
+- Source integrity, 402-heading index, full coverage, repository governance, no-remote scan, and diff check: passed.
+- Tauri release build: passed; unsigned development NSIS artifact created at `src-tauri/target/release/bundle/nsis/Lifeweave_0.0.0_x64-setup.exe`.
+- Automated desktop smoke: Vite ready, Rust dev compile passed, native process remained alive 32.7s without captured startup fatal/panic/IPC initialization error.
+- Visual Product Owner confirmation remains pending; full native E2E belongs to Task 5.
 
 ## Active slice
 `specs/000-foundation-proof`
 
-## Immediate next actions
-1. Extract on Windows.
-2. Run source verification and doctor.
-3. Run bootstrap.
-4. Review and commit generated lockfiles.
-5. Push private GitHub repository.
-6. Open setup PR.
-7. Remove `.setup-phase` only after baseline CI passes.
+## Product implementation boundaries
+
+- App Shell has not started.
+- Product Task System feature implementation has not started.
+- Task 3 backup ID/progress work has not started.
+- Public distribution/signing remains out of scope.

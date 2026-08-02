@@ -27,7 +27,7 @@ Run `python scripts/verify_source_integrity.py` before any governance or impleme
 
 ## Repository state
 
-This setup pack establishes governance, documentation, validation scripts, GitHub templates, CI scaffolding, and a minimal Tauri/React bootstrap skeleton. It intentionally does **not** claim the product is implemented.
+The active Foundation Proof slice now has a compiled and tested Rust/SQLite path, typed frontend bindings, a Windows Tauri production build, and an automated native launch smoke. Task 1 is an implementation candidate ready for Task 2 independent backup/restore audit; this does **not** claim Stage E, Foundation, restore production safety, or the product itself is complete.
 
 Current active slice:
 
@@ -67,7 +67,3 @@ See [`docs/TECHNOLOGY_BASELINE.md`](docs/TECHNOLOGY_BASELINE.md) for the dated v
 - [Architecture](docs/ARCHITECTURE.md)
 - [Roadmap](docs/ROADMAP.md)
 - [Current status](docs/STATUS.md)
-
-## Setup-phase note
-
-The repository contains a `.setup-phase` marker. Source-integrity and governance checks run immediately. Frontend, Rust, and Windows build workflows remain non-blocking until bootstrap produces verified lockfiles. Remove `.setup-phase` only through a pull request after the Foundation Proof bootstrap gate passes.
