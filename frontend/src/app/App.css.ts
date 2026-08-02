@@ -1,26 +1,20 @@
-import { style } from "@vanilla-extract/css";
+import { globalStyle, style } from "@vanilla-extract/css";
 
-export const shell = style({
-  minHeight: "100vh",
-  display: "grid",
-  placeItems: "center",
-  padding: "32px",
-});
-
-export const panel = style({
-  width: "min(680px, 100%)",
-  border: "1px solid var(--border-subtle)",
-  borderRadius: "20px",
-  padding: "32px",
-  background: "var(--surface)",
-  boxShadow: "0 20px 60px rgb(0 0 0 / 0.08)",
-});
-
-export const eyebrow = style({
-  margin: 0,
-  fontSize: "0.75rem",
-  fontWeight: 700,
-  letterSpacing: "0.12em",
-  textTransform: "uppercase",
-  color: "var(--accent)",
-});
+export const appRoot = style({ display: "grid", gridTemplateColumns: "220px minmax(0, 1fr)", width: "100vw", height: "100vh", overflow: "hidden", background: "var(--app-background)", selectors: { "&[data-sidebar-mode=collapsed]": { gridTemplateColumns: "68px minmax(0, 1fr)" } } });
+export const sidebar = style({ display: "flex", flexDirection: "column", minWidth: 0, padding: "24px 14px", borderRight: "1px solid var(--border-subtle)", background: "var(--sidebar-background)", transition: "width 160ms ease, padding 160ms ease" });
+export const brand = style({ padding: "0 12px 28px", fontWeight: 750, letterSpacing: "-0.02em", color: "var(--text-primary)" });
+export const navGroup = style({ display: "grid", gap: 5 });
+export const navButton = style({ display: "flex", alignItems: "center", gap: 12, minHeight: 42, width: "100%", padding: "8px 11px", border: 0, borderRadius: 10, background: "transparent", color: "var(--text-muted)", textAlign: "left", cursor: "pointer", selectors: { "&[aria-current=page]": { background: "var(--active-background)", color: "var(--text-primary)", fontWeight: 700 }, "&:hover": { background: "var(--active-background)" }, "&:focus-visible": { outline: "3px solid var(--focus-ring)", outlineOffset: 2 } } });
+export const navIcon = style({ display: "grid", placeItems: "center", width: 24, height: 24, borderRadius: 7, fontSize: 12, fontWeight: 800, background: "var(--icon-background)" });
+export const navLabel = style({ overflow: "hidden", whiteSpace: "nowrap" });
+globalStyle(`${appRoot}[data-sidebar-mode=collapsed] .${navLabel}`, { display: "none" });
+globalStyle(`${appRoot}[data-sidebar-mode=collapsed] .${brand}`, { fontSize: 0, paddingInline: 11 });
+export const divider = style({ height: 1, margin: "12px 10px", background: "var(--border-subtle)" });
+export const collapseButton = style({ marginTop: "auto", display: "flex", gap: 12, alignItems: "center", minHeight: 42, padding: "8px 11px", border: 0, borderRadius: 10, background: "transparent", color: "var(--text-muted)", cursor: "pointer" });
+export const viewport = style({ minWidth: 0, minHeight: 0, overflow: "auto", padding: "clamp(24px, 5vw, 64px)" });
+export const destination = style({ width: "min(900px, 100%)", margin: "0 auto", paddingBottom: 64 });
+export const heading = style({ margin: "0 0 10px", color: "var(--text-primary)", fontSize: "clamp(1.8rem, 3vw, 2.5rem)", letterSpacing: "-0.04em" });
+export const lede = style({ margin: "0 0 28px", color: "var(--text-muted)", fontSize: "1.05rem" });
+export const placeholder = style({ minHeight: 220, display: "grid", placeItems: "center", padding: 32, border: "1px dashed var(--border-subtle)", borderRadius: 16, color: "var(--text-muted)", background: "var(--surface)" });
+export const foundationPanel = style({ padding: "24px 0" });
+export const coreStatus = style({ color: "var(--text-muted)" });

@@ -7,6 +7,14 @@
   --surface: #ffffff;
   --border-subtle: #dce2e8;
   --accent: #476dd6;
+  --app-background: #f5f7fa;
+  --sidebar-background: #ffffff;
+  --surface: #ffffff;
+  --text-primary: #18202a;
+  --text-muted: #647080;
+  --active-background: #e9efff;
+  --icon-background: #edf1f6;
+  --focus-ring: #476dd6;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -14,6 +22,13 @@
     color: #e8edf3;
     background: #11161d;
     --surface: #181f28;
+    --app-background: #11161d;
+    --sidebar-background: #181f28;
+    --text-primary: #e8edf3;
+    --text-muted: #aeb9c6;
+    --active-background: #293754;
+    --icon-background: #2a3441;
+    --focus-ring: #91adff;
     --border-subtle: #303b47;
     --accent: #91adff;
   }

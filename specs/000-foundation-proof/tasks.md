@@ -150,6 +150,13 @@ Task 1 implementation candidate is ready for independent Task 2 audit.
 - Acceptance profile was synthetic and sentinel-contained under `target/e2e-data`; no normal AppData was used. Same-profile relaunch reached Vite ready and a live native process, then the owned process tree was stopped.
 - Task 6 acceptance is complete. Task 7/60 is the only allowed next action. Stage E and Foundation are not accepted as a whole until later roadmap gates.
 
+### Task 7 — First App Shell milestone
+
+- Built the first real desktop shell: Today-default destination viewport, semantic fixed sidebar in locked navigation order, expanded/collapsed modes, persisted Task preference and Life System auto-collapse/restore.
+- Moved existing FoundationRecord/backup harness into Settings; no Task, Calendar, Analytics or Life domain implementation was added.
+- Frontend evidence: 22 tests across 2 files; typecheck/build passed. Rust 195 tests, focused backup 127 tests, governance, production NSIS and isolated native smoke passed.
+- Task 8/60 is the only allowed next action. Stage E, Foundation and final product design remain unclaimed.
+
 ### Stage E.1f — Task 2 Independent Backup/Restore Audit
 
 - Independent audit scope HEAD: `cb6df7912f396084e244f836208f71085c27dc9d` on clean Windows `main`; no production code was changed.
