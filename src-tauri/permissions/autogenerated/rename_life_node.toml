@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-rename-life-node"
+description = "Enables the rename_life_node command without any pre-configured scope."
+commands.allow = ["rename_life_node"]
+
+[[permission]]
+identifier = "deny-rename-life-node"
+description = "Denies the rename_life_node command without any pre-configured scope."
+commands.deny = ["rename_life_node"]

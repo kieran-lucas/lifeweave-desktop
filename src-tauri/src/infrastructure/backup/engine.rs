@@ -321,7 +321,7 @@ mod tests {
         let backups = temp_backups_dir();
         let result = backup_db(&rt, &backups).unwrap();
         // The manifest must carry the latest immutable migration version.
-        assert_eq!(result.schema_version, 6);
+        assert_eq!(result.schema_version, 7);
     }
 
     #[test]

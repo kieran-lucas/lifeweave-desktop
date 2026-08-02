@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-save-life-navigation-preference"
+description = "Enables the save_life_navigation_preference command without any pre-configured scope."
+commands.allow = ["save_life_navigation_preference"]
+
+[[permission]]
+identifier = "deny-save-life-navigation-preference"
+description = "Denies the save_life_navigation_preference command without any pre-configured scope."
+commands.deny = ["save_life_navigation_preference"]

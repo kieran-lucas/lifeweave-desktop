@@ -77,5 +77,18 @@ mod tests {
         crate::task::dto::AnalyticsCompletionDistributionView::export_all_to(&out).unwrap();
         crate::task::dto::AnalyticsStreakView::export_all_to(&out).unwrap();
         crate::task::dto::AnalyticsProjection::export_all_to(&out).unwrap();
+        use crate::life::dto::*;
+        LifeNodeView::export_all_to(&out).unwrap();
+        LifeBrowseProjection::export_all_to(&out).unwrap();
+        PinnedLifeNodeView::export_all_to(&out).unwrap();
+        GetLifeBrowseInput::export_all_to(&out).unwrap();
+        CreateLifeNodeInput::export_all_to(&out).unwrap();
+        RenameLifeNodeInput::export_all_to(&out).unwrap();
+        UpdateLifeNodeSummaryInput::export_all_to(&out).unwrap();
+        MutateLifeNodeInput::export_all_to(&out).unwrap();
+        LifeNodeIdInput::export_all_to(&out).unwrap();
+        SaveLifeNavigationPreferenceInput::export_all_to(&out).unwrap();
+        LifeMutationResult::export_all_to(&out).unwrap();
+        LifeNavigationPreferenceView::export_all_to(&out).unwrap();
     }
 }

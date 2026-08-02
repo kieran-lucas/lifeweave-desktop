@@ -22,6 +22,8 @@ vi.mock("../ipc/commands", () => ({
   getAnalyticsProjection: vi.fn().mockResolvedValue({period_kind:"week",period_start:"2026-07-27",period_end:"2026-08-02",is_complete:true,algorithm_version:1,computed_at:"1",source_revision:"0",scheduled_minutes:0,task_count:0,evaluated_count:0,missed_count:0,categories:[],completion_distribution:[],streaks:[]}),
   updateCategoryGoals: vi.fn(),
   createTask: vi.fn(), updateTask: vi.fn(), deleteTask: vi.fn(),
+  getLifeBrowseProjection: vi.fn().mockResolvedValue({root_id:"life-root",selected:{id:"life-root",title:"Life",short_description:"Your personal structure begins here.",icon_key:"life-root",branch_theme_id:"neutral",child_count:0,is_leaf:true,is_pinned:false,revision:0},parent:null,children:[],breadcrumb:[],selected_is_pinned:false,child_page:0,child_page_count:1,tree_revision:0,resolved_from_fallback:false,preferred_mode:"browse",viewport_anchor:null}),
+  getPinnedLifeNodes: vi.fn().mockResolvedValue([]), pinLifeNode: vi.fn(), unpinLifeNode: vi.fn(), saveLifeNavigationPreference: vi.fn().mockResolvedValue({}),
 }));
 
 describe("App shell", () => {
@@ -60,6 +62,15 @@ describe("App shell", () => {
     fireEvent.click(screen.getByRole("button", { name: "Today" }));
     expect(screen.getByRole("button", { name: "Expand sidebar" })).toBeInTheDocument();
     expect(window.localStorage.getItem("lifeweave.task-sidebar-mode.v1")).toBe("collapsed");
+  });
+
+  it("opens the real two-level Life Browse instead of a placeholder", async () => {
+    renderApp();
+    await screen.findByRole("heading", { name: "Today" });
+    fireEvent.click(screen.getByRole("button", { name: "Life System" }));
+    expect(await screen.findByRole("heading", { name: "Life" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Pinned" })).toBeInTheDocument();
+    expect(screen.queryByLabelText("Life System placeholder")).not.toBeInTheDocument();
   });
 
   it("keeps Foundation tools under Settings", async () => {

@@ -815,11 +815,89 @@ mod tests {
         );
 
         let restore_result = restore_db(&rt, &backup_dir).unwrap();
-        assert_eq!(restore_result.schema_version, 6);
+        assert_eq!(restore_result.schema_version, 7);
 
         let active = rt.execute(|conn| repo::list_active(conn)).unwrap();
         assert_eq!(active.len(), 1);
         assert_eq!(active[0].label, "Original label");
+    }
+
+    #[test]
+    fn life_tree_pins_and_navigation_survive_backup_restore() {
+        use crate::life::{
+            domain::ROOT_ID,
+            dto::{CreateLifeNodeInput, GetLifeBrowseInput, SaveLifeNavigationPreferenceInput},
+            repository as life_repository,
+        };
+        let (rt, _db) = make_file_runtime();
+        let backups = temp_backups_dir();
+        let branch = rt
+            .execute(|conn| {
+                life_repository::create(
+                    conn,
+                    CreateLifeNodeInput {
+                        parent_id: ROOT_ID.into(),
+                        title: "Synthetic branch".into(),
+                        short_description: "Backup fixture".into(),
+                        icon_key: "life-branch".into(),
+                        branch_theme_id: "neutral".into(),
+                    },
+                )
+                .map_err(|_| crate::infrastructure::sqlite::DbError::WorkerGone)
+            })
+            .unwrap();
+        let id = branch.node.id.clone();
+        rt.execute({
+            let id = id.clone();
+            move |conn| {
+                life_repository::set_pin(conn, &id, true)
+                    .and_then(|_| {
+                        life_repository::save_preference(
+                            conn,
+                            SaveLifeNavigationPreferenceInput {
+                                node_id: id,
+                                mode: "browse".into(),
+                                path_version: 1,
+                                viewport_anchor: None,
+                            },
+                        )
+                    })
+                    .map(|_| ())
+                    .map_err(|_| crate::infrastructure::sqlite::DbError::WorkerGone)
+            }
+        })
+        .unwrap();
+        let package = PathBuf::from(backup_db(&rt, &backups).unwrap().backup_dir);
+        rt.execute({
+            let id = id.clone();
+            move |conn| {
+                life_repository::archive(
+                    conn,
+                    crate::life::dto::MutateLifeNodeInput {
+                        node_id: id,
+                        expected_revision: 0,
+                    },
+                )
+                .map(|_| ())
+                .map_err(|_| crate::infrastructure::sqlite::DbError::WorkerGone)
+            }
+        })
+        .unwrap();
+        restore_db(&rt, &package).unwrap();
+        let restored = rt
+            .execute(|conn| {
+                life_repository::browse(
+                    conn,
+                    GetLifeBrowseInput {
+                        node_id: None,
+                        child_page: 0,
+                    },
+                )
+                .map_err(|_| crate::infrastructure::sqlite::DbError::WorkerGone)
+            })
+            .unwrap();
+        assert_eq!(restored.selected.title, "Synthetic branch");
+        assert!(restored.selected.is_pinned);
     }
 
     #[test]

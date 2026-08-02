@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-pin-life-node"
+description = "Enables the pin_life_node command without any pre-configured scope."
+commands.allow = ["pin_life_node"]
+
+[[permission]]
+identifier = "deny-pin-life-node"
+description = "Denies the pin_life_node command without any pre-configured scope."
+commands.deny = ["pin_life_node"]

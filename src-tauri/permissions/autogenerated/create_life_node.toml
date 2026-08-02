@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-create-life-node"
+description = "Enables the create_life_node command without any pre-configured scope."
+commands.allow = ["create_life_node"]
+
+[[permission]]
+identifier = "deny-create-life-node"
+description = "Denies the create_life_node command without any pre-configured scope."
+commands.deny = ["create_life_node"]

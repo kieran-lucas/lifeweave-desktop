@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-unpin-life-node"
+description = "Enables the unpin_life_node command without any pre-configured scope."
+commands.allow = ["unpin_life_node"]
+
+[[permission]]
+identifier = "deny-unpin-life-node"
+description = "Denies the unpin_life_node command without any pre-configured scope."
+commands.deny = ["unpin_life_node"]

@@ -89,6 +89,27 @@ static MIGRATIONS: &[Migration] = &[
             CREATE INDEX category_goal_history_effective ON category_goal_history(category_id,effective_week_start);
             CREATE INDEX analytics_period_revision ON analytics_period_aggregates(source_revision,algorithm_version);",
     },
+    Migration {
+        version: 7,
+        sql: "CREATE TABLE life_nodes (
+                id TEXT PRIMARY KEY NOT NULL, parent_id TEXT REFERENCES life_nodes(id),
+                title TEXT NOT NULL CHECK(length(trim(title)) BETWEEN 1 AND 120),
+                short_description TEXT NOT NULL CHECK(length(short_description) <= 320),
+                icon_key TEXT NOT NULL, branch_theme_id TEXT NOT NULL, sort_key INTEGER NOT NULL,
+                archived_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
+                revision INTEGER NOT NULL DEFAULT 0 CHECK(revision >= 0));
+            CREATE INDEX life_nodes_children ON life_nodes(parent_id, archived_at, sort_key, id);
+            CREATE UNIQUE INDEX life_single_root ON life_nodes((parent_id IS NULL)) WHERE parent_id IS NULL;
+            CREATE TABLE life_tree_meta (singleton INTEGER PRIMARY KEY CHECK(singleton=1), root_node_id TEXT NOT NULL REFERENCES life_nodes(id), tree_revision INTEGER NOT NULL DEFAULT 0 CHECK(tree_revision>=0));
+            INSERT INTO life_nodes VALUES ('life-root',NULL,'Life','Your personal structure begins here.','life-root','neutral',0,NULL,strftime('%s','now'),strftime('%s','now'),0);
+            INSERT INTO life_tree_meta VALUES (1,'life-root',0);
+            CREATE TRIGGER life_root_protected BEFORE UPDATE OF parent_id, archived_at ON life_nodes WHEN OLD.id='life-root' AND (NEW.parent_id IS NOT NULL OR NEW.archived_at IS NOT NULL) BEGIN SELECT RAISE(ABORT,'protected life root'); END;
+            CREATE TRIGGER life_root_delete_protected BEFORE DELETE ON life_nodes WHEN OLD.id='life-root' BEGIN SELECT RAISE(ABORT,'protected life root'); END;
+            CREATE TABLE life_node_pins (node_id TEXT PRIMARY KEY NOT NULL REFERENCES life_nodes(id), sort_key INTEGER NOT NULL, created_at TEXT NOT NULL);
+            CREATE INDEX life_pins_order ON life_node_pins(sort_key,node_id);
+            CREATE TABLE life_navigation_preferences (singleton INTEGER PRIMARY KEY CHECK(singleton=1), last_life_node_id TEXT NOT NULL REFERENCES life_nodes(id), last_life_mode TEXT NOT NULL CHECK(last_life_mode IN ('browse','pinned','reader')), path_version INTEGER NOT NULL DEFAULT 1, viewport_anchor TEXT, updated_at TEXT NOT NULL);
+            INSERT INTO life_navigation_preferences VALUES (1,'life-root','browse',1,NULL,strftime('%s','now'));",
+    },
 ];
 
 /// Bootstraps the migration tracking table and applies any pending migrations.
@@ -193,7 +214,7 @@ mod tests {
         let mut conn = open_memory_connection().unwrap();
         run_migrations(&mut conn).unwrap();
 
-        assert_eq!(current_schema_version(&conn).unwrap(), 6);
+        assert_eq!(current_schema_version(&conn).unwrap(), 7);
 
         let count: i64 = conn
             .query_row("SELECT COUNT(*) FROM db_metadata", [], |r| r.get(0))
@@ -207,7 +228,7 @@ mod tests {
         let mig_count: i64 = conn
             .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
             .unwrap();
-        assert_eq!(mig_count, 6);
+        assert_eq!(mig_count, 7);
     }
 
     #[test]
@@ -217,11 +238,11 @@ mod tests {
         run_migrations(&mut conn).unwrap();
 
         // The latest version remains stable; no duplicate migration rows.
-        assert_eq!(current_schema_version(&conn).unwrap(), 6);
+        assert_eq!(current_schema_version(&conn).unwrap(), 7);
         let mig_count: i64 = conn
             .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
             .unwrap();
-        assert_eq!(mig_count, 6);
+        assert_eq!(mig_count, 7);
     }
 
     // ── Validation ────────────────────────────────────────────────────────────
@@ -279,7 +300,7 @@ mod tests {
         match run_migrations_with(&mut conn, MIGRATIONS) {
             Err(DbError::SchemaTooNew { stored, supported }) => {
                 assert_eq!(stored, 9999);
-                assert_eq!(supported, 6);
+                assert_eq!(supported, 7);
             }
             other => panic!("expected SchemaTooNew, got {other:?}"),
         }
@@ -315,7 +336,7 @@ mod tests {
         {
             let mut conn = open_file_connection(&path).unwrap();
             run_migrations(&mut conn).unwrap();
-            assert_eq!(current_schema_version(&conn).unwrap(), 6);
+            assert_eq!(current_schema_version(&conn).unwrap(), 7);
             // Confirm the schema object created by migration 1 exists
             let count: i64 = conn
                 .query_row("SELECT COUNT(*) FROM db_metadata", [], |r| r.get(0))
@@ -329,7 +350,7 @@ mod tests {
             run_migrations(&mut conn).unwrap();
             assert_eq!(
                 current_schema_version(&conn).unwrap(),
-                6,
+                7,
                 "schema version must survive close/reopen"
             );
             let count: i64 = conn
@@ -342,7 +363,7 @@ mod tests {
                 .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
                 .unwrap();
             assert_eq!(
-                mig_count, 6,
+                mig_count, 7,
                 "no duplicate migration records after reopen + re-run"
             );
         }

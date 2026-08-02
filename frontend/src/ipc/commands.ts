@@ -24,6 +24,17 @@ import type { UndoTaskEvaluationInput } from "./generated/UndoTaskEvaluationInpu
 import type { AnalyticsProjection } from "./generated/AnalyticsProjection";
 import type { AnalyticsProjectionInput } from "./generated/AnalyticsProjectionInput";
 import type { UpdateCategoryGoalsInput } from "./generated/UpdateCategoryGoalsInput";
+import type { GetLifeBrowseInput } from "./generated/GetLifeBrowseInput";
+import type { LifeBrowseProjection } from "./generated/LifeBrowseProjection";
+import type { PinnedLifeNodeView } from "./generated/PinnedLifeNodeView";
+import type { LifeNodeIdInput } from "./generated/LifeNodeIdInput";
+import type { LifeMutationResult } from "./generated/LifeMutationResult";
+import type { SaveLifeNavigationPreferenceInput } from "./generated/SaveLifeNavigationPreferenceInput";
+import type { LifeNavigationPreferenceView } from "./generated/LifeNavigationPreferenceView";
+import type { CreateLifeNodeInput } from "./generated/CreateLifeNodeInput";
+import type { RenameLifeNodeInput } from "./generated/RenameLifeNodeInput";
+import type { UpdateLifeNodeSummaryInput } from "./generated/UpdateLifeNodeSummaryInput";
+import type { MutateLifeNodeInput } from "./generated/MutateLifeNodeInput";
 
 export function healthCheck(): Promise<HealthCheck> {
   return invoke<HealthCheck>("health_check");
@@ -95,3 +106,13 @@ export const evaluateTask = (input: EvaluateTaskInput) => invoke<TaskEvaluationV
 export const undoTaskEvaluation = (input: UndoTaskEvaluationInput) => invoke<TaskEvaluationView|null>("undo_task_evaluation", { input });
 export const getAnalyticsProjection = (input: AnalyticsProjectionInput) => invoke<AnalyticsProjection>("get_analytics_projection", { input });
 export const updateCategoryGoals = (input: UpdateCategoryGoalsInput) => invoke<TaskCategoryView>("update_category_goals", { input });
+export const getLifeBrowseProjection = (input: GetLifeBrowseInput) => invoke<LifeBrowseProjection>("get_life_browse_projection", { input });
+export const getPinnedLifeNodes = () => invoke<PinnedLifeNodeView[]>("get_pinned_life_nodes");
+export const pinLifeNode = (input: LifeNodeIdInput) => invoke<LifeMutationResult>("pin_life_node", { input });
+export const unpinLifeNode = (input: LifeNodeIdInput) => invoke<LifeMutationResult>("unpin_life_node", { input });
+export const saveLifeNavigationPreference = (input: SaveLifeNavigationPreferenceInput) => invoke<LifeNavigationPreferenceView>("save_life_navigation_preference", { input });
+export const createLifeNode = (input: CreateLifeNodeInput) => invoke<LifeMutationResult>("create_life_node", { input });
+export const renameLifeNode = (input: RenameLifeNodeInput) => invoke<LifeMutationResult>("rename_life_node", { input });
+export const updateLifeNodeSummary = (input: UpdateLifeNodeSummaryInput) => invoke<LifeMutationResult>("update_life_node_summary", { input });
+export const archiveLifeNode = (input: MutateLifeNodeInput) => invoke<LifeMutationResult>("archive_life_node", { input });
+export const restoreLifeNode = (input: MutateLifeNodeInput) => invoke<LifeMutationResult>("restore_life_node", { input });

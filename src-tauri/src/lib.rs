@@ -2,6 +2,7 @@ pub mod application;
 pub mod domain;
 pub mod infrastructure;
 pub mod ipc;
+pub mod life;
 pub mod platform;
 pub mod task;
 
@@ -26,6 +27,11 @@ use ipc::task::{
     get_month_projection, list_completion_states, list_recurring_occurrences, list_task_categories,
     list_tasks_for_date, list_today_items, undo_task_evaluation, update_category_goals,
     update_recurring_occurrence, update_task,
+};
+use life::service::{
+    archive_life_node, create_life_node, get_life_browse_projection, get_pinned_life_nodes,
+    pin_life_node, rename_life_node, restore_life_node, save_life_navigation_preference,
+    unpin_life_node, update_life_node_summary,
 };
 
 /// Initialize the local tracing subscriber.
@@ -138,6 +144,16 @@ pub fn run() {
             undo_task_evaluation,
             update_category_goals,
             get_analytics_projection,
+            get_life_browse_projection,
+            get_pinned_life_nodes,
+            create_life_node,
+            rename_life_node,
+            update_life_node_summary,
+            archive_life_node,
+            restore_life_node,
+            pin_life_node,
+            unpin_life_node,
+            save_life_navigation_preference,
         ])
         .run(tauri::generate_context!())
         .expect("failed to run Lifeweave");

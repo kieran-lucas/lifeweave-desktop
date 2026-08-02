@@ -6,6 +6,7 @@ import { TodayScreen } from "../features/task/today/TodayScreen";
 import { CalendarScreen } from "../features/calendar/CalendarScreen";
 import { AnalyticsScreen } from "../features/analytics/AnalyticsScreen";
 import { CategoryGoals } from "../features/analytics/CategoryGoals";
+import { LifeScreen } from "../features/life/LifeScreen";
 import { localToday } from "../features/calendar/date";
 import * as styles from "./App.css";
 
@@ -25,18 +26,6 @@ function readSidebarMode(): SidebarMode {
     const value = window.localStorage.getItem(preferenceKey);
     return value === "collapsed" ? "collapsed" : "expanded";
   } catch { return "expanded"; }
-}
-
-function Placeholder({ destination, heading }: { destination: Destination; heading: string }) {
-  return (
-    <section className={styles.destination} aria-labelledby={`${destination}-heading`}>
-      <h1 id={`${destination}-heading`} tabIndex={-1} className={styles.heading}>{heading}</h1>
-      <p className={styles.lede}>
-        {destination === "today" ? "Your upcoming Task System landing area will live here." : `${heading} is reserved for its upcoming product slice.`}
-      </p>
-      <div className={styles.placeholder} aria-label={`${heading} placeholder`}>Foundation milestone complete. Product work begins in a later task.</div>
-    </section>
-  );
 }
 
 export function App() {
@@ -63,8 +52,6 @@ export function App() {
     setDestination("today");
     requestAnimationFrame(() => document.getElementById("today-heading")?.focus({ preventScroll: true }));
   };
-  const heading = destinations.find((item) => item.id === destination)?.label ?? "Today";
-
   return (
     <div className={styles.appRoot} data-sidebar-mode={collapsed ? "collapsed" : "expanded"}>
       <nav className={styles.sidebar} aria-label="Primary navigation">
@@ -95,7 +82,7 @@ export function App() {
         {ipcStatus === "ready" && destination === "today" && <div ref={(node) => { headingRef.current = node; }}><TodayScreen selectedDate={selectedDate} onSelectedDateChange={setSelectedDate} /></div>}
         {ipcStatus === "ready" && destination === "calendar" && <div ref={(node) => { headingRef.current = node; }}><CalendarScreen selectedDate={selectedDate} today={localToday()} onActivateDate={activateCalendarDate} /></div>}
         {ipcStatus === "ready" && destination === "analytics" && <div ref={(node) => { headingRef.current = node; }}><AnalyticsScreen/></div>}
-        {ipcStatus === "ready" && destination !== "settings" && destination !== "today" && destination !== "calendar" && destination !== "analytics" && <div ref={(node) => { headingRef.current = node; }}><Placeholder destination={destination} heading={heading} /></div>}
+        {ipcStatus === "ready" && destination === "life" && <div ref={(node) => { headingRef.current = node; }}><LifeScreen/></div>}
       </main>
     </div>
   );

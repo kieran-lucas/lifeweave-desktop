@@ -33,6 +33,16 @@
     "allow-evaluate-task",
     "allow-undo-task-evaluation",
     "allow-update-category-goals",
-    "allow-get-analytics-projection"
+    "allow-get-analytics-projection",
+    "allow-get-life-browse-projection",
+    "allow-get-pinned-life-nodes",
+    "allow-create-life-node",
+    "allow-rename-life-node",
+    "allow-update-life-node-summary",
+    "allow-archive-life-node",
+    "allow-restore-life-node",
+    "allow-pin-life-node",
+    "allow-unpin-life-node",
+    "allow-save-life-navigation-preference"
   ]
 }

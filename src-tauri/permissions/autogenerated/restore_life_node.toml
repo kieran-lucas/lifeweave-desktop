@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-restore-life-node"
+description = "Enables the restore_life_node command without any pre-configured scope."
+commands.allow = ["restore_life_node"]
+
+[[permission]]
+identifier = "deny-restore-life-node"
+description = "Denies the restore_life_node command without any pre-configured scope."
+commands.deny = ["restore_life_node"]
