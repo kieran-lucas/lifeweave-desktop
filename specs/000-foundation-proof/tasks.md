@@ -274,3 +274,15 @@ Task 9/60 is complete. Task 10/60 owns only Week Strip + Calendar Month Projecti
 - [x] Exact evidence: frontend 41/41; Rust 219/219; task 24/24; backup 127/127; governance/security/generated bindings/release NSIS/native isolated launch passed. See `docs/audits/task-10-calendar.md`.
 
 Task 10/60 is complete. Task 11/60 is the only allowed next action. The live roadmap does not name Task 11, so no title is inferred here.
+
+### Task 11 — Completion Evaluation Core + Equal-Emphasis Radial Fan
+
+- [x] Immutable migration 5 seeds four stable, archiveable completion states with backend-only integer basis-point values.
+- [x] One-off and recurring-occurrence evaluations retain immutable state snapshots, current/history authority, unique idempotent operations, and atomic latest-operation undo.
+- [x] Rust validates active state, stable subject identity, cancellation/archive status, and retrospective temporal eligibility through an explicit machine-local clock boundary.
+- [x] Unified Today projections include the current safe evaluation without exposing hidden values or issuing per-row evaluation IPC.
+- [x] Calendar missed semantics exclude evaluated past items and return after undo.
+- [x] Today rows expose accessible closed rings and a portalled equal-size polar fan with keyboard navigation, focus restoration, viewport collision handling, compact fallback, reduced-motion compatibility, optimistic rollback, and backend-backed Undo.
+- [x] Exact evidence: frontend 54/54; Rust 229/229; Task 33/33; backup 128/128; governance/security/generated bindings/ACL, normal NSIS build, file-backed persistence/backup-restore, and sentinel-isolated native launch passed. See `docs/audits/task-11-completion-evaluation.md`.
+
+Task 11/60 is complete. Task 12/60 is the only allowed next action. Prediction, completion-state Settings, Analytics, M3, and the entire Task System remain outside this completed slice.

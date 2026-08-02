@@ -99,3 +99,11 @@ Task 10/60 Week Strip + Calendar Month Projection is the only allowed next actio
 - Evidence: frontend 41/41; Rust 219/219; task 24/24; backup 127/127; verify/typecheck/build/check/fmt/clippy/security/generated DTO/NSIS gates passed. Sentinel-isolated native launch remained alive 21 seconds and cleaned its synthetic profile.
 - Report: `docs/audits/task-10-calendar.md`.
 - Task 10/60 is complete. Task 11/60 is the only allowed next action; the live roadmap does not yet name it. Completion evaluation, Analytics, missed-state persistence, M3, and the entire Task System are not declared complete.
+
+## Task 11/60 — Completion Evaluation Core + Equal-Emphasis Radial Fan
+
+- Implemented at `b9020541837f6ee3c8da502a701c5cf59ab21353`: immutable migration 5, stable seeded completion states, occurrence-aware evaluation history, idempotent atomic evaluate/undo, Today projection integration, and evaluation-aware Calendar missed semantics.
+- Today rows now expose an accessible 44px assessment ring and a portalled equal-emphasis polar fan with roving keyboard focus, viewport-aware orientation/compact fallback, optimistic reconciliation, failure rollback, and backend-backed Undo.
+- Evidence: frontend 54/54; Rust 229/229; Task 33/33; backup 128/128; verify/typecheck/build/check/fmt/clippy/security/generated DTO/ACL/NSIS and sentinel-isolated native launch passed.
+- Report: `docs/audits/task-11-completion-evaluation.md`.
+- Task 11/60 is complete. Task 12/60 is the only allowed next action. Prediction, completion-state Settings, Analytics, M3, and the whole Task System are not declared complete.
