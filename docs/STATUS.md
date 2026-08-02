@@ -2,6 +2,15 @@
 
 Updated: 2026-08-02 Asia/Saigon
 
+## Task 16/60 — Core Hardening + Release-Candidate Dogfooding
+
+- PASS at implementation commit `44ba9c558d25324d2ea4303fad2120b1022b93d3`; evidence: `docs/audits/task-16-core-hardening.md`.
+- F-04/F-05 are closed by checked Windows publication barriers and reopen/checksum verification before backup success.
+- Independent CI now has five least-privilege, timeout/cancellation, commit-pinned checks; branch protection remains a Product Owner repository-setting action.
+- Frontend 118 and Rust 292 tests pass; normal unsigned NSIS build and contained two-session `core-rc-44ba9c5` dogfood pass.
+- Native WebDriver click-through and manual alternate-DPI/screen-reader hardware checks remain explicit evidence limitations. No M8 feature was activated.
+- Task 17/60 is the only allowed next action; the live roadmap does not name it.
+
 ## Phase
 **Foundation Proof**
 

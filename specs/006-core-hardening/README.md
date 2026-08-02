@@ -1,15 +1,7 @@
 # Slice 006 — Core Hardening
 
-Status: **Not active.**
+Status: **Task 16 execution completed; evidence pending final commit.**
 
-This directory is a roadmap reservation only. It is not an approved implementation spec.
+The Product Owner activated the bounded M7 hardening execution in Task 16. The immutable source remains authoritative; this directory still does not invent expansion behavior.
 
-Activation requires:
-1. prior slice gate;
-2. Product Owner scope confirmation;
-3. source/decision references;
-4. `spec.md`, `plan.md`, `tasks.md`, `acceptance.md`;
-5. explicit out-of-scope;
-6. risk/test plan for data-sensitive work.
-
-Do not install dependencies, create schema, add navigation, or implement placeholders for this slice before activation.
+Task 16 remained implementation hardening only: durability/recovery, accessibility, responsive evidence, performance/security gates, independent CI and contained RC dogfooding. M8 product expansion stayed prohibited. Acceptance evidence is recorded in `docs/audits/task-16-core-hardening.md` and its supporting reports.

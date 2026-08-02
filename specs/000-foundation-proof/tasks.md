@@ -333,3 +333,15 @@ Task 14/60 is complete. Task 15/60 is the only allowed next action. Narrative Ca
 - [x] Exact evidence: frontend 111; full Rust 288; Task 46; Life 85; Document 14; backup 135; governance/security/generated DTO/ACL, code splitting, NSIS and isolated native relaunch passed. See `docs/audits/task-15-basic-leaf.md`.
 
 Task 15/60 is complete. Task 16/60 is the only allowed next action. Narrative Canvas and the whole product remain incomplete.
+
+### Task 16 — Core Hardening + Release-Candidate Dogfooding
+
+- [x] F-04 checked directory/publication durability across restore, backup, assets and portable export.
+- [x] F-05 withhold-success backup publication, full staging/final verification and failpoint proof.
+- [x] Route-level error containment, five-destination axe coverage, forced-colors and reduced-motion contracts.
+- [x] Measured production bundle regression budgets and preserved lazy editor/Markdown chunks.
+- [x] Least-privilege independent Source integrity, Governance, Frontend, Rust and Windows Tauri workflows with pinned actions, cancellation and timeouts.
+- [x] Normal unsigned NSIS candidate plus sentinel-contained two-session native/file-backed RC dogfood.
+- [x] Exact evidence: frontend 118; Rust 292; Task 46; Life 85; Document 14; Analytics 13; backup 136. See `docs/audits/task-16-core-hardening.md`.
+
+Task 16/60 is complete. Task 17/60 is the only allowed next action. No M8 expansion, public release, updater or code-signing claim is made.
