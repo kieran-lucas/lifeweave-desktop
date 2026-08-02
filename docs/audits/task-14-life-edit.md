@@ -45,7 +45,7 @@
 - Rust check/fmt/clippy: passed. Full Rust: 272; Task: 46; backup: 131; required `life` filter: 85.
 - An initial parallel full-Rust run exposed residual thread-local backup failpoints on reused test threads. Test fixture initialization now resets them; repeated full and focused backup suites pass without a restore production-code change.
 - Generated bindings have no post-generation drift.
-- Normal production NSIS build passed: `src-tauri/target/release/bundle/nsis/Lifeweave_0.0.0_x64-setup.exe`, 3,454,928 bytes.
+- Normal production NSIS build passed: `src-tauri/target/release/bundle/nsis/Lifeweave_0.0.0_x64-setup.exe`, 3,455,566 bytes.
 
 ## Native and file-backed smoke
 
