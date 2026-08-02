@@ -3,7 +3,15 @@ use std::path::Path;
 
 use super::BackupError;
 
-pub const SUPPORTED_FORMAT_VERSION: u32 = 1;
+pub const SUPPORTED_FORMAT_VERSION: u32 = 2;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct BackupAssetEntry {
+    pub relative_path: String,
+    pub byte_size: u64,
+    pub sha256: String,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[cfg_attr(test, derive(ts_rs::TS))]
@@ -14,6 +22,8 @@ pub struct BackupManifest {
     pub created_at: String,
     pub db_size_bytes: u64,
     pub db_sha256: String,
+    #[serde(default)]
+    pub assets: Vec<BackupAssetEntry>,
 }
 
 impl BackupManifest {
@@ -26,7 +36,7 @@ impl BackupManifest {
         let bytes = std::fs::read(dir.join("manifest.json")).map_err(BackupError::Io)?;
         let manifest: BackupManifest =
             serde_json::from_slice(&bytes).map_err(BackupError::ManifestParse)?;
-        if manifest.format_version != SUPPORTED_FORMAT_VERSION {
+        if manifest.format_version == 0 || manifest.format_version > SUPPORTED_FORMAT_VERSION {
             return Err(BackupError::UnsupportedFormatVersion(
                 manifest.format_version,
             ));
@@ -57,6 +67,7 @@ mod tests {
             created_at: "2026-08-01T00:00:00Z".into(),
             db_size_bytes: 4096,
             db_sha256: "abc123".into(),
+            assets: Vec::new(),
         }
     }
 

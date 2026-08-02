@@ -101,5 +101,19 @@ mod tests {
         UndoLifeOperationInput::export_all_to(&out).unwrap();
         LifeEditNodeView::export_all_to(&out).unwrap();
         LifeEditProjection::export_all_to(&out).unwrap();
+        use crate::document::dto::*;
+        ReaderDocumentView::export_all_to(&out).unwrap();
+        ReaderDocumentProjection::export_all_to(&out).unwrap();
+        ReaderNodeInput::export_all_to(&out).unwrap();
+        CreateReaderDocumentInput::export_all_to(&out).unwrap();
+        SaveReaderDocumentInput::export_all_to(&out).unwrap();
+        SaveReaderDraftInput::export_all_to(&out).unwrap();
+        ReaderDocumentIdInput::export_all_to(&out).unwrap();
+        ImportReaderMarkdownInput::export_all_to(&out).unwrap();
+        MarkdownExportView::export_all_to(&out).unwrap();
+        ImportDocumentAssetInput::export_all_to(&out).unwrap();
+        DocumentAssetView::export_all_to(&out).unwrap();
+        DocumentAssetIdInput::export_all_to(&out).unwrap();
+        DocumentAssetBytes::export_all_to(&out).unwrap();
     }
 }

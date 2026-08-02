@@ -1,0 +1,22 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { BasicLeafReader } from "./BasicLeafReader";
+
+const api=vi.hoisted(()=>({get:vi.fn(),create:vi.fn(),discard:vi.fn(),recover:vi.fn(),importMd:vi.fn(),exportMd:vi.fn(),asset:vi.fn()}));
+vi.mock("../../../ipc/commands",()=>({getReaderDocument:api.get,createReaderDocument:api.create,discardReaderDraft:api.discard,recoverReaderDraft:api.recover,importReaderMarkdown:api.importMd,exportReaderMarkdown:api.exportMd,getDocumentAsset:api.asset}));
+vi.mock("./BasicLeafEditor",()=>({default:()=> <div role="region" aria-label="Focused document editor">Editor loaded</div>}));
+const doc={id:"00000000-0000-7000-8000-000000000111",life_node_id:"00000000-0000-7000-8000-000000000112",schema_version:1,revision:1,canonical_json:'{"type":"doc","content":[{"type":"heading","attrs":{"level":2},"content":[{"type":"text","text":"Static heading"}]},{"type":"paragraph","content":[{"type":"text","text":"Safe copy","marks":[{"type":"bold"}]}]}]}',plain_text:"Static heading\nSafe copy",updated_at:"2026-08-02T00:00:00Z"};
+const projection=(extra={})=>({life_node_id:doc.life_node_id,document:doc,draft_state:"none",draft_json:null,draft_base_revision:null,...extra});
+const mount=()=>render(<QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false},mutations:{retry:false}}})}><BasicLeafReader nodeId={doc.life_node_id}/></QueryClientProvider>);
+
+describe("Basic Leaf Reader",()=>{
+ beforeEach(()=>{api.get.mockResolvedValue(projection());api.create.mockResolvedValue(doc);api.discard.mockResolvedValue(projection());api.recover.mockResolvedValue({...doc,revision:2});api.exportMd.mockResolvedValue({export_id:"x",file_name:"leaf.md",markdown:"# Leaf"});});
+ it("shows Create document for an empty leaf",async()=>{api.get.mockResolvedValue(projection({document:null}));mount();expect(await screen.findByRole("button",{name:"Create document"})).toBeInTheDocument();});
+ it("renders committed content statically",async()=>{mount();expect(await screen.findByRole("heading",{name:"Static heading"})).toBeInTheDocument();expect(screen.getByText("Safe copy").tagName).toBe("STRONG");expect(screen.queryByRole("textbox")).not.toBeInTheDocument();});
+ it("lazy-loads focused Edit only after activation",async()=>{mount();expect(await screen.findByText("Safe copy")).toBeInTheDocument();expect(screen.queryByRole("region",{name:"Focused document editor"})).not.toBeInTheDocument();fireEvent.click(screen.getByRole("button",{name:"Edit document"}));expect(await screen.findByRole("region",{name:"Focused document editor"})).toBeInTheDocument();});
+ it("offers recover and discard for interrupted drafts",async()=>{api.get.mockResolvedValue(projection({draft_state:"available",draft_json:doc.canonical_json,draft_base_revision:1}));mount();expect(await screen.findByRole("heading",{name:"Recoverable draft"})).toBeInTheDocument();fireEvent.click(screen.getByRole("button",{name:"Recover draft"}));await waitFor(()=>expect(api.recover).toHaveBeenCalledWith({document_id:doc.id}));});
+ it("preserves a stale recovery conflict",async()=>{api.get.mockResolvedValue(projection({draft_state:"conflict",draft_json:doc.canonical_json,draft_base_revision:0}));api.recover.mockRejectedValue(new Error("stale"));mount();fireEvent.click(await screen.findByRole("button",{name:"Recover draft"}));expect(await screen.findByText(/Both copies remain preserved/)).toBeInTheDocument();});
+ it("discards only the recovery draft",async()=>{api.get.mockResolvedValue(projection({draft_state:"available",draft_json:doc.canonical_json,draft_base_revision:1}));mount();fireEvent.click(await screen.findByRole("button",{name:"Discard draft"}));await waitFor(()=>expect(api.discard).toHaveBeenCalledWith({document_id:doc.id}));expect(api.recover).not.toHaveBeenCalled();});
+ it("degrades corrupt committed content to a repairable placeholder",async()=>{api.get.mockResolvedValue(projection({document:{...doc,canonical_json:'{"type":"scene"}'}}));mount();expect(await screen.findByRole("alert")).toHaveTextContent(/unsupported content/);});
+});

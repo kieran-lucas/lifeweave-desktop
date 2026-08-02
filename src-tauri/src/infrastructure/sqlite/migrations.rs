@@ -137,6 +137,58 @@ static MIGRATIONS: &[Migration] = &[
             CREATE INDEX life_operations_latest ON life_operations(tree_revision_after DESC, created_at DESC);
             CREATE INDEX life_operations_target ON life_operations(target_node_id, tree_revision_after DESC);",
     },
+    Migration {
+        version: 9,
+        sql: "CREATE TABLE reader_documents (
+                id TEXT PRIMARY KEY NOT NULL,
+                life_node_id TEXT NOT NULL REFERENCES life_nodes(id),
+                schema_version INTEGER NOT NULL CHECK(schema_version=1),
+                revision INTEGER NOT NULL DEFAULT 0 CHECK(revision>=0),
+                canonical_json TEXT NOT NULL CHECK(length(canonical_json)<=1048576),
+                plain_text TEXT NOT NULL CHECK(length(plain_text)<=524288),
+                created_at TEXT NOT NULL, updated_at TEXT NOT NULL, archived_at TEXT,
+                UNIQUE(life_node_id));
+            CREATE INDEX reader_documents_node ON reader_documents(life_node_id,archived_at);
+            CREATE TABLE reader_document_revisions (
+                id TEXT PRIMARY KEY NOT NULL, document_id TEXT NOT NULL REFERENCES reader_documents(id),
+                revision INTEGER NOT NULL, canonical_json TEXT NOT NULL CHECK(length(canonical_json)<=1048576),
+                plain_text TEXT NOT NULL CHECK(length(plain_text)<=524288), reason TEXT NOT NULL,
+                created_at TEXT NOT NULL, UNIQUE(document_id,revision));
+            CREATE INDEX reader_revisions_recent ON reader_document_revisions(document_id,revision DESC);
+            CREATE TABLE reader_document_drafts (
+                document_id TEXT PRIMARY KEY NOT NULL REFERENCES reader_documents(id),
+                base_revision INTEGER NOT NULL CHECK(base_revision>=0),
+                draft_json TEXT NOT NULL CHECK(length(draft_json)<=1048576),
+                updated_at TEXT NOT NULL, recovery_state TEXT NOT NULL CHECK(recovery_state IN ('available','conflict')));
+            CREATE TABLE reader_save_operations (
+                operation_id TEXT PRIMARY KEY NOT NULL, document_id TEXT NOT NULL REFERENCES reader_documents(id),
+                result_revision INTEGER NOT NULL, created_at TEXT NOT NULL);
+            CREATE TABLE assets (
+                id TEXT PRIMARY KEY NOT NULL, checksum TEXT NOT NULL UNIQUE,
+                original_name TEXT NOT NULL CHECK(length(original_name) BETWEEN 1 AND 255),
+                sniffed_mime TEXT NOT NULL CHECK(sniffed_mime IN ('image/png','image/jpeg','image/webp','image/gif')),
+                byte_size INTEGER NOT NULL CHECK(byte_size BETWEEN 1 AND 10485760),
+                width INTEGER NOT NULL CHECK(width BETWEEN 1 AND 12000),
+                height INTEGER NOT NULL CHECK(height BETWEEN 1 AND 12000),
+                relative_original_path TEXT NOT NULL UNIQUE,
+                status TEXT NOT NULL CHECK(status IN ('usable','missing','corrupt')),
+                created_at TEXT NOT NULL);
+            CREATE TABLE document_assets (
+                document_id TEXT NOT NULL REFERENCES reader_documents(id),
+                asset_id TEXT NOT NULL REFERENCES assets(id),
+                reference_count INTEGER NOT NULL CHECK(reference_count>0),
+                PRIMARY KEY(document_id,asset_id));
+            CREATE INDEX document_assets_asset ON document_assets(asset_id,document_id);
+            CREATE TRIGGER reader_document_leaf_insert BEFORE INSERT ON reader_documents
+              WHEN EXISTS(SELECT 1 FROM life_nodes WHERE parent_id=NEW.life_node_id AND archived_at IS NULL)
+              BEGIN SELECT RAISE(ABORT,'document node must remain a leaf'); END;
+            CREATE TRIGGER reader_document_child_insert BEFORE INSERT ON life_nodes
+              WHEN NEW.archived_at IS NULL AND EXISTS(SELECT 1 FROM reader_documents WHERE life_node_id=NEW.parent_id AND archived_at IS NULL)
+              BEGIN SELECT RAISE(ABORT,'document node cannot gain an active child'); END;
+            CREATE TRIGGER reader_document_child_move BEFORE UPDATE OF parent_id,archived_at ON life_nodes
+              WHEN NEW.archived_at IS NULL AND EXISTS(SELECT 1 FROM reader_documents WHERE life_node_id=NEW.parent_id AND archived_at IS NULL)
+              BEGIN SELECT RAISE(ABORT,'document node cannot gain an active child'); END;",
+    },
 ];
 
 /// Bootstraps the migration tracking table and applies any pending migrations.
@@ -241,7 +293,7 @@ mod tests {
         let mut conn = open_memory_connection().unwrap();
         run_migrations(&mut conn).unwrap();
 
-        assert_eq!(current_schema_version(&conn).unwrap(), 8);
+        assert_eq!(current_schema_version(&conn).unwrap(), 9);
 
         let count: i64 = conn
             .query_row("SELECT COUNT(*) FROM db_metadata", [], |r| r.get(0))
@@ -255,7 +307,7 @@ mod tests {
         let mig_count: i64 = conn
             .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
             .unwrap();
-        assert_eq!(mig_count, 8);
+        assert_eq!(mig_count, 9);
     }
 
     #[test]
@@ -265,11 +317,11 @@ mod tests {
         run_migrations(&mut conn).unwrap();
 
         // The latest version remains stable; no duplicate migration rows.
-        assert_eq!(current_schema_version(&conn).unwrap(), 8);
+        assert_eq!(current_schema_version(&conn).unwrap(), 9);
         let mig_count: i64 = conn
             .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
             .unwrap();
-        assert_eq!(mig_count, 8);
+        assert_eq!(mig_count, 9);
     }
 
     #[test]
@@ -282,7 +334,7 @@ mod tests {
             [],
         )
         .unwrap();
-        run_migrations(&mut conn).unwrap();
+        run_migrations_with(&mut conn, &MIGRATIONS[..8]).unwrap();
         assert_eq!(current_schema_version(&conn).unwrap(), 8);
         assert_eq!(
             conn.query_row("SELECT COUNT(*) FROM life_nodes", [], |r| r
@@ -358,7 +410,7 @@ mod tests {
         match run_migrations_with(&mut conn, MIGRATIONS) {
             Err(DbError::SchemaTooNew { stored, supported }) => {
                 assert_eq!(stored, 9999);
-                assert_eq!(supported, 8);
+                assert_eq!(supported, 9);
             }
             other => panic!("expected SchemaTooNew, got {other:?}"),
         }
@@ -394,7 +446,7 @@ mod tests {
         {
             let mut conn = open_file_connection(&path).unwrap();
             run_migrations(&mut conn).unwrap();
-            assert_eq!(current_schema_version(&conn).unwrap(), 8);
+            assert_eq!(current_schema_version(&conn).unwrap(), 9);
             // Confirm the schema object created by migration 1 exists
             let count: i64 = conn
                 .query_row("SELECT COUNT(*) FROM db_metadata", [], |r| r.get(0))
@@ -408,7 +460,7 @@ mod tests {
             run_migrations(&mut conn).unwrap();
             assert_eq!(
                 current_schema_version(&conn).unwrap(),
-                8,
+                9,
                 "schema version must survive close/reopen"
             );
             let count: i64 = conn
@@ -421,7 +473,7 @@ mod tests {
                 .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
                 .unwrap();
             assert_eq!(
-                mig_count, 8,
+                mig_count, 9,
                 "no duplicate migration records after reopen + re-run"
             );
         }

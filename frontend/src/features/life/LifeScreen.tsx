@@ -6,6 +6,7 @@ import type { LifeNodeView } from "../../ipc/generated/LifeNodeView";
 import type { PinnedLifeNodeView } from "../../ipc/generated/PinnedLifeNodeView";
 import * as styles from "./LifeScreen.css";
 import { LifeEditWorkspace } from "./LifeEditWorkspace";
+import { BasicLeafReader } from "./document/BasicLeafReader";
 
 type Mode="browse"|"edit"|"pinned"|"reader";
 type HistoryEntry={nodeId:string;page:number;mode:"browse"|"pinned";focusId?:string};
@@ -37,7 +38,7 @@ export function LifeScreen(){
  if(browse.isLoading)return <p className={styles.status} aria-live="polite">Loading Life System…</p>;
  if(browse.isError||!browse.data)return <section className={styles.screen}><h1 className={styles.heading}>Life System</h1><p role="alert">Life System could not be loaded. Your tree context is preserved.</p></section>;
  const projection=browse.data;
- if(mode==="reader"&&reader)return <section className={styles.reader} aria-labelledby="life-reader-title"><button className={styles.quietButton} onClick={back}>← Back to Life Browse</button><motion.div layoutId={`life-node-${"id" in reader?reader.id:reader.node_id}`} className={styles.readerHero}><NodeIcon iconKey={reader.icon_key}/><h1 id="life-reader-title" className={styles.heading}>{reader.title}</h1><p className={styles.nodeDescription}>{reader.short_description}</p><div className={styles.readerEmpty}><h2>Reader</h2><p>Content has not been created for this leaf yet.</p></div></motion.div></section>;
+ if(mode==="reader"&&reader){const readerId="id" in reader?reader.id:reader.node_id;return <section className={styles.reader} aria-labelledby="life-reader-title"><button className={styles.quietButton} onClick={back}>← Back to Life Browse</button><motion.div layoutId={`life-node-${readerId}`} className={styles.readerHero}><NodeIcon iconKey={reader.icon_key}/><h1 id="life-reader-title" className={styles.heading}>{reader.title}</h1><p className={styles.nodeDescription}>{reader.short_description}</p><BasicLeafReader nodeId={readerId}/></motion.div></section>;}
  return <section className={styles.screen} aria-labelledby="life-heading">
   <header className={styles.header}><div><h1 id="life-heading" className={styles.heading} tabIndex={-1}>Life System</h1><p className={styles.nodeDescription}>{mode==="edit"?"Edit the complete structure with atomic moves and undo.":"Browse one branch at a time."}</p></div><div className={styles.modes} aria-label="Life view"><button className={styles.modeButton} aria-pressed={mode==="browse"} onClick={()=>setMode("browse")}>Browse</button><button className={styles.modeButton} aria-pressed={mode==="edit"} onClick={()=>setMode("edit")}>Edit</button><button className={styles.modeButton} aria-pressed={mode==="pinned"} onClick={()=>setMode("pinned")}>Pinned</button></div></header>
   {mode==="edit"?<LifeEditWorkspace initialNodeId={projection.selected.id} onBrowse={id=>{setNodeId(id);setPage(0);setMode("browse");}}/>:mode==="pinned"?<PinnedView items={pins.data??[]} loading={pins.isLoading} onActivate={node=>navigate(node,"pinned")} onUnpin={id=>pin.mutate({id,pinned:true})}/>:<>

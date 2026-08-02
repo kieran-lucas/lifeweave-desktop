@@ -144,7 +144,7 @@ mod tests {
         handle.execute(run_migrations).unwrap();
         let version = handle.execute(|conn| current_schema_version(conn)).unwrap();
         // The worker applies every immutable migration known to this binary.
-        assert_eq!(version, 8);
+        assert_eq!(version, 9);
     }
 
     #[test]

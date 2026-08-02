@@ -147,7 +147,7 @@ mod tests {
 
     #[test]
     fn export_backup_ipc_bindings() {
-        use crate::infrastructure::backup::manifest::BackupManifest;
+        use crate::infrastructure::backup::manifest::{BackupAssetEntry, BackupManifest};
         use crate::infrastructure::backup::{BackupProgress, BackupSummary, RestoreResult};
 
         let out = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -159,6 +159,8 @@ mod tests {
         BackupProgress::export_all_to(&out).expect("ts binding export failed for BackupProgress");
         RestoreResult::export_all_to(&out).expect("ts binding export failed for RestoreResult");
         BackupManifest::export_all_to(&out).expect("ts binding export failed for BackupManifest");
+        BackupAssetEntry::export_all_to(&out)
+            .expect("ts binding export failed for BackupAssetEntry");
         // IpcError is exported from ipc::mod::tests::export_ipc_bindings, but
         // regenerate here to ensure RecoveryPending is reflected in the drift check.
         IpcError::export_all_to(&out).expect("ts binding export failed for IpcError");

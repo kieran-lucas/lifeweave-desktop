@@ -42,6 +42,16 @@ fn main() {
             "pin_life_node",
             "unpin_life_node",
             "save_life_navigation_preference",
+            "get_reader_document",
+            "create_reader_document",
+            "save_reader_document",
+            "save_reader_draft",
+            "discard_reader_draft",
+            "recover_reader_draft",
+            "import_reader_markdown",
+            "export_reader_markdown",
+            "import_document_asset",
+            "get_document_asset",
         ]),
     ))
     .expect("failed to generate Tauri ACL manifest");

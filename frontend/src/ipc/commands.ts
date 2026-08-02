@@ -40,6 +40,19 @@ import type { ReorderLifeSiblingInput } from "./generated/ReorderLifeSiblingInpu
 import type { ReparentLifeNodeInput } from "./generated/ReparentLifeNodeInput";
 import type { UndoLifeOperationInput } from "./generated/UndoLifeOperationInput";
 import type { LifeEditProjection } from "./generated/LifeEditProjection";
+import type { ReaderDocumentProjection } from "./generated/ReaderDocumentProjection";
+import type { ReaderDocumentView } from "./generated/ReaderDocumentView";
+import type { ReaderNodeInput } from "./generated/ReaderNodeInput";
+import type { CreateReaderDocumentInput } from "./generated/CreateReaderDocumentInput";
+import type { SaveReaderDocumentInput } from "./generated/SaveReaderDocumentInput";
+import type { SaveReaderDraftInput } from "./generated/SaveReaderDraftInput";
+import type { ReaderDocumentIdInput } from "./generated/ReaderDocumentIdInput";
+import type { ImportReaderMarkdownInput } from "./generated/ImportReaderMarkdownInput";
+import type { MarkdownExportView } from "./generated/MarkdownExportView";
+import type { ImportDocumentAssetInput } from "./generated/ImportDocumentAssetInput";
+import type { DocumentAssetView } from "./generated/DocumentAssetView";
+import type { DocumentAssetIdInput } from "./generated/DocumentAssetIdInput";
+import type { DocumentAssetBytes } from "./generated/DocumentAssetBytes";
 
 export function healthCheck(): Promise<HealthCheck> {
   return invoke<HealthCheck>("health_check");
@@ -127,3 +140,13 @@ export const setLifeNodeThemeVariant = (input: EditLifeNodeAppearanceInput) => i
 export const reorderLifeSibling = (input: ReorderLifeSiblingInput) => invoke<LifeMutationResult>("reorder_life_sibling", { input });
 export const reparentLifeNode = (input: ReparentLifeNodeInput) => invoke<LifeMutationResult>("reparent_life_node", { input });
 export const undoLifeOperation = (input: UndoLifeOperationInput) => invoke<LifeMutationResult>("undo_life_operation", { input });
+export const getReaderDocument = (input: ReaderNodeInput) => invoke<ReaderDocumentProjection>("get_reader_document", { input });
+export const createReaderDocument = (input: CreateReaderDocumentInput) => invoke<ReaderDocumentView>("create_reader_document", { input });
+export const saveReaderDocument = (input: SaveReaderDocumentInput) => invoke<ReaderDocumentView>("save_reader_document", { input });
+export const saveReaderDraft = (input: SaveReaderDraftInput) => invoke<ReaderDocumentProjection>("save_reader_draft", { input });
+export const discardReaderDraft = (input: ReaderDocumentIdInput) => invoke<ReaderDocumentProjection>("discard_reader_draft", { input });
+export const recoverReaderDraft = (input: ReaderDocumentIdInput) => invoke<ReaderDocumentView>("recover_reader_draft", { input });
+export const importReaderMarkdown = (input: ImportReaderMarkdownInput) => invoke<ReaderDocumentView>("import_reader_markdown", { input });
+export const exportReaderMarkdown = (input: ReaderDocumentIdInput) => invoke<MarkdownExportView>("export_reader_markdown", { input });
+export const importDocumentAsset = (input: ImportDocumentAssetInput) => invoke<DocumentAssetView>("import_document_asset", { input });
+export const getDocumentAsset = (input: DocumentAssetIdInput) => invoke<DocumentAssetBytes>("get_document_asset", { input });

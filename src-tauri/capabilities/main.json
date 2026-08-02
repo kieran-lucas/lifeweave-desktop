@@ -49,6 +49,16 @@
     "allow-undo-life-operation",
     "allow-pin-life-node",
     "allow-unpin-life-node",
-    "allow-save-life-navigation-preference"
+    "allow-save-life-navigation-preference",
+    "allow-get-reader-document",
+    "allow-create-reader-document",
+    "allow-save-reader-document",
+    "allow-save-reader-draft",
+    "allow-discard-reader-draft",
+    "allow-recover-reader-draft",
+    "allow-import-reader-markdown",
+    "allow-export-reader-markdown",
+    "allow-import-document-asset",
+    "allow-get-document-asset"
   ]
 }

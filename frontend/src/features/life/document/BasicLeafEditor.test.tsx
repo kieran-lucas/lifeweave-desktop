@@ -1,0 +1,22 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const api=vi.hoisted(()=>({save:vi.fn(),draft:vi.fn(),asset:vi.fn()}));
+const tiptap=vi.hoisted(()=>{const chain:Record<string,ReturnType<typeof vi.fn>>={};for(const name of ["focus","toggleBold","toggleItalic","toggleHeading","toggleBulletList","toggleOrderedList","toggleBlockquote","toggleCodeBlock","extendMarkRange","setLink","insertTable","setImage","run"])chain[name]=vi.fn(()=>chain);return{chain,config:undefined as undefined|{onUpdate?:()=>void}};});
+vi.mock("../../../ipc/commands",()=>({saveReaderDocument:api.save,saveReaderDraft:api.draft,importDocumentAsset:api.asset}));
+vi.mock("@tiptap/react",()=>({EditorContent:()=> <div role="textbox" aria-label="Document body"/>,useEditor:(config:{onUpdate?:()=>void})=>{tiptap.config=config;return{chain:()=>tiptap.chain,isActive:()=>false,getJSON:()=>({type:"doc",content:[{type:"paragraph",content:[{type:"text",text:"Draft"}]}]}),state:{}};}}));
+vi.mock("@tiptap/core",()=>({Node:{create:(value:unknown)=>value}}));
+vi.mock("@tiptap/extension-image",()=>({default:{extend:()=>({configure:()=>({})})}}));
+vi.mock("@tiptap/extension-link",()=>({default:{configure:()=>({})}}));
+vi.mock("@tiptap/extension-table",()=>({TableKit:{}}));
+vi.mock("@tiptap/starter-kit",()=>({default:{configure:()=>({})}}));
+import BasicLeafEditor from "./BasicLeafEditor";
+
+const document={id:"00000000-0000-7000-8000-000000000211",life_node_id:"00000000-0000-7000-8000-000000000212",schema_version:1,revision:3,canonical_json:'{"type":"doc","content":[{"type":"paragraph"}]}',plain_text:"",updated_at:"now"};
+describe("focused Basic Leaf editor",()=>{
+ beforeEach(()=>{api.save.mockResolvedValue({...document,revision:4});api.draft.mockResolvedValue({});api.asset.mockResolvedValue({asset_id:"00000000-0000-7000-8000-000000000213",original_name:"x.png",mime:"image/png",byte_size:4,width:1,height:1,status:"usable"});});
+ it("exposes only the bounded Core toolbar",()=>{render(<BasicLeafEditor document={document} onCommitted={vi.fn()} onCancel={vi.fn()}/>);expect(screen.getByRole("button",{name:"Bold"})).toBeInTheDocument();expect(screen.getByRole("button",{name:"Table"})).toBeInTheDocument();expect(screen.queryByText(/scene|template|canvas/i)).not.toBeInTheDocument();});
+ it("explicit Save sends canonical JSON with the authoritative revision",async()=>{const committed=vi.fn();render(<BasicLeafEditor document={document} onCommitted={committed} onCancel={vi.fn()}/>);fireEvent.click(screen.getByRole("button",{name:"Save"}));await waitFor(()=>expect(api.save).toHaveBeenCalledWith(expect.objectContaining({document_id:document.id,expected_revision:3,schema_version:1,canonical_json:expect.stringContaining("Draft")})));expect(await screen.findByRole("status")).toHaveTextContent("Saved");});
+ it("failed Save exposes recovery status without leaving Edit",async()=>{api.save.mockRejectedValue(new Error("storage"));render(<BasicLeafEditor document={document} onCommitted={vi.fn()} onCancel={vi.fn()}/>);fireEvent.click(screen.getByRole("button",{name:"Save"}));expect(await screen.findByRole("alert")).toHaveTextContent(/recoverable draft is preserved/);expect(screen.getByRole("textbox",{name:"Document body"})).toBeInTheDocument();});
+ it("provides accessible image import without exposing a filesystem path",()=>{render(<BasicLeafEditor document={document} onCommitted={vi.fn()} onCancel={vi.fn()}/>);const input=screen.getByLabelText("Image");expect(input).toHaveAttribute("accept","image/png,image/jpeg,image/webp,image/gif");expect(document.canonical_json).not.toMatch(/[A-Z]:\\/);});
+});

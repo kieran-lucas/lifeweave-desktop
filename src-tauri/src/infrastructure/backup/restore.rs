@@ -122,6 +122,115 @@ fn validate_candidate(
             "candidate schema version does not match manifest".into(),
         ));
     }
+    if actual_schema >= 9 {
+        let mut statement = conn
+            .prepare("SELECT DISTINCT a.relative_original_path FROM assets a JOIN document_assets da ON da.asset_id=a.id WHERE a.status='usable' ORDER BY a.relative_original_path")
+            .map_err(|_| BackupError::PostSwapValidationFailed("asset manifest validation failed".into()))?;
+        let required = statement
+            .query_map([], |row| row.get::<_, String>(0))
+            .map_err(|_| {
+                BackupError::PostSwapValidationFailed("asset manifest validation failed".into())
+            })?
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|_| {
+                BackupError::PostSwapValidationFailed("asset manifest validation failed".into())
+            })?;
+        let declared = manifest
+            .assets
+            .iter()
+            .map(|entry| entry.relative_path.clone())
+            .collect::<Vec<_>>();
+        if required != declared {
+            return Err(BackupError::PostSwapValidationFailed(
+                "backup asset manifest does not match the database".into(),
+            ));
+        }
+    }
+    Ok(())
+}
+
+const MAX_BACKUP_ASSETS: usize = 10_000;
+const MAX_BACKUP_ASSET_BYTES: u64 = 1024 * 1024 * 1024;
+
+fn validate_and_install_assets(
+    backup_dir: &Path,
+    app_data_dir: &Path,
+    manifest: &BackupManifest,
+) -> Result<(), BackupError> {
+    use std::collections::HashSet;
+
+    if manifest.assets.len() > MAX_BACKUP_ASSETS {
+        return Err(BackupError::PostSwapValidationFailed(
+            "backup contains too many assets".into(),
+        ));
+    }
+    let mut seen = HashSet::new();
+    let mut total = 0_u64;
+    for asset in &manifest.assets {
+        let relative = Path::new(&asset.relative_path);
+        let components = relative.components().collect::<Vec<_>>();
+        if relative.is_absolute()
+            || components.len() != 3
+            || components[0].as_os_str() != "assets"
+            || components[1].as_os_str() != "original"
+            || !seen.insert(asset.relative_path.as_str())
+        {
+            return Err(BackupError::PostSwapValidationFailed(
+                "backup asset identity is invalid".into(),
+            ));
+        }
+        total = total.checked_add(asset.byte_size).ok_or_else(|| {
+            BackupError::PostSwapValidationFailed("backup asset size overflow".into())
+        })?;
+        if total > MAX_BACKUP_ASSET_BYTES {
+            return Err(BackupError::PostSwapValidationFailed(
+                "backup assets exceed the restore limit".into(),
+            ));
+        }
+        let source = backup_dir.join(relative);
+        let metadata = std::fs::symlink_metadata(&source).map_err(BackupError::Io)?;
+        if !metadata.file_type().is_file() || metadata.len() != asset.byte_size {
+            return Err(BackupError::PostSwapValidationFailed(
+                "backup asset is missing or invalid".into(),
+            ));
+        }
+        let actual = sha256_file(&source)?;
+        if actual != asset.sha256 {
+            return Err(BackupError::Checksum {
+                expected: asset.sha256.clone(),
+                actual,
+            });
+        }
+    }
+
+    // Asset originals are immutable and content-addressed in metadata. Installing
+    // them additively before the database swap cannot invalidate the live DB; a
+    // failed restore can at worst leave an unreferenced, verified local original.
+    for asset in &manifest.assets {
+        let relative = Path::new(&asset.relative_path);
+        let source = backup_dir.join(relative);
+        let target = app_data_dir.join(relative);
+        if target.exists() {
+            if sha256_file(&target)? != asset.sha256 {
+                return Err(BackupError::PostSwapValidationFailed(
+                    "an existing asset conflicts with the backup".into(),
+                ));
+            }
+            continue;
+        }
+        let parent = target.parent().ok_or_else(|| {
+            BackupError::PostSwapValidationFailed("backup asset target is invalid".into())
+        })?;
+        std::fs::create_dir_all(parent).map_err(BackupError::Io)?;
+        let temp = parent.join(format!(".restore-{}.tmp", generate_op_id()));
+        std::fs::copy(&source, &temp).map_err(BackupError::Io)?;
+        std::fs::OpenOptions::new()
+            .write(true)
+            .open(&temp)
+            .and_then(|file| file.sync_all())
+            .map_err(BackupError::Io)?;
+        std::fs::rename(&temp, &target).map_err(BackupError::Io)?;
+    }
     Ok(())
 }
 
@@ -196,6 +305,8 @@ pub fn restore_db(
     if !backup_db_path.exists() {
         return Err(BackupError::MissingBackupFile);
     }
+
+    validate_and_install_assets(backup_dir, &db_dir, &manifest)?;
 
     // Step 6: write durable marker at Prepared BEFORE creating the candidate.
     // This ensures that if copy or sync partially creates the candidate and then
@@ -784,6 +895,64 @@ mod tests {
         (rt, p)
     }
 
+    #[test]
+    fn asset_restore_rejects_traversal_and_corruption() {
+        use crate::infrastructure::backup::manifest::BackupAssetEntry;
+        let package = temp_backups_dir();
+        let target = temp_backups_dir();
+        let mut manifest = BackupManifest {
+            format_version: 2,
+            app_version: "0.0.0".into(),
+            schema_version: 9,
+            created_at: "now".into(),
+            db_size_bytes: 0,
+            db_sha256: String::new(),
+            assets: vec![BackupAssetEntry {
+                relative_path: "../escape.png".into(),
+                byte_size: 1,
+                sha256: "x".into(),
+            }],
+        };
+        assert!(validate_and_install_assets(&package, &target, &manifest).is_err());
+        let relative = "assets/original/00000000-0000-7000-8000-000000000999.png";
+        let source = package.join(relative);
+        std::fs::create_dir_all(source.parent().unwrap()).unwrap();
+        std::fs::write(&source, b"asset").unwrap();
+        manifest.assets[0] = BackupAssetEntry {
+            relative_path: relative.into(),
+            byte_size: 5,
+            sha256: "wrong".into(),
+        };
+        assert!(validate_and_install_assets(&package, &target, &manifest).is_err());
+    }
+
+    #[test]
+    fn asset_restore_installs_verified_original_additively() {
+        use crate::infrastructure::backup::manifest::BackupAssetEntry;
+        let package = temp_backups_dir();
+        let target = temp_backups_dir();
+        let relative = "assets/original/00000000-0000-7000-8000-000000000998.png";
+        let source = package.join(relative);
+        std::fs::create_dir_all(source.parent().unwrap()).unwrap();
+        std::fs::write(&source, b"asset").unwrap();
+        let manifest = BackupManifest {
+            format_version: 2,
+            app_version: "0.0.0".into(),
+            schema_version: 9,
+            created_at: "now".into(),
+            db_size_bytes: 0,
+            db_sha256: String::new(),
+            assets: vec![BackupAssetEntry {
+                relative_path: relative.into(),
+                byte_size: 5,
+                sha256: sha256_file(&source).unwrap(),
+            }],
+        };
+        validate_and_install_assets(&package, &target, &manifest).unwrap();
+        assert_eq!(std::fs::read(target.join(relative)).unwrap(), b"asset");
+        validate_and_install_assets(&package, &target, &manifest).unwrap();
+    }
+
     // ── Core round-trip ───────────────────────────────────────────────────────
 
     #[test]
@@ -817,11 +986,72 @@ mod tests {
         );
 
         let restore_result = restore_db(&rt, &backup_dir).unwrap();
-        assert_eq!(restore_result.schema_version, 8);
+        assert_eq!(restore_result.schema_version, 9);
 
         let active = rt.execute(|conn| repo::list_active(conn)).unwrap();
         assert_eq!(active.len(), 1);
         assert_eq!(active[0].label, "Original label");
+    }
+
+    #[test]
+    fn document_revision_draft_and_asset_round_trip_restore() {
+        use crate::document::{assets, dto as document_dto, repository as documents};
+        let (rt, db) = make_file_runtime();
+        let app_root = db.parent().unwrap().to_path_buf();
+        let app_root_for_write = app_root.clone();
+        let (document_id, asset_id, relative_path) = rt
+            .execute(move |conn| {
+                let node = crate::life::repository::create(
+                    conn,
+                    crate::life::dto::CreateLifeNodeInput {
+                        parent_id: "life-root".into(), title: "Document leaf".into(),
+                        short_description: String::new(), icon_key: "life-leaf".into(),
+                        branch_theme_id: "neutral".into(),
+                    },
+                ).map_err(|_| DbError::InvalidMigrationList)?.node;
+                let document = documents::create(conn, document_dto::CreateReaderDocumentInput {
+                    life_node_id: node.id, operation_id: "backup-document-create".into(),
+                }).map_err(|_| DbError::InvalidMigrationList)?;
+                let asset = assets::import(conn, &app_root_for_write, document_dto::ImportDocumentAssetInput {
+                    original_name: "pixel.png".into(), bytes: assets::tiny_png(),
+                }).map_err(|_| DbError::InvalidMigrationList)?;
+                let json = format!(r#"{{"type":"doc","content":[{{"type":"paragraph","content":[{{"type":"text","text":"Committed"}}]}},{{"type":"image","attrs":{{"assetId":"{}","alt":"pixel"}}}}]}}"#, asset.asset_id);
+                let saved = documents::save(conn, document_dto::SaveReaderDocumentInput {
+                    document_id: document.id.clone(), expected_revision: 0, schema_version: 1,
+                    canonical_json: json, operation_id: "backup-document-save".into(),
+                }).map_err(|_| DbError::InvalidMigrationList)?;
+                documents::save_draft(conn, document_dto::SaveReaderDraftInput {
+                    document_id: document.id.clone(), base_revision: saved.revision,
+                    canonical_json: r#"{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Recover me"}]}]}"#.into(),
+                }).map_err(|_| DbError::InvalidMigrationList)?;
+                let relative: String = conn.query_row("SELECT relative_original_path FROM assets WHERE id=?1", [&asset.asset_id], |row| row.get(0))?;
+                Ok((document.id, asset.asset_id, relative))
+            }).unwrap();
+        let backups = temp_backups_dir();
+        let backup = backup_db(&rt, &backups).unwrap();
+        std::fs::remove_file(app_root.join(&relative_path)).unwrap();
+        rt.execute({ let id=document_id.clone(); move |conn| { conn.execute("DELETE FROM reader_document_drafts WHERE document_id=?1", [&id])?; conn.execute("UPDATE reader_documents SET canonical_json='{}',plain_text='',revision=revision+1 WHERE id=?1", [&id])?; Ok(()) }}).unwrap();
+        restore_db(&rt, Path::new(&backup.backup_dir)).unwrap();
+        let app_root_for_read = app_root.clone();
+        rt.execute(move |conn| {
+            let revision: i32 = conn.query_row(
+                "SELECT revision FROM reader_documents WHERE id=?1",
+                [&document_id],
+                |row| row.get(0),
+            )?;
+            let drafts: i64 = conn.query_row(
+                "SELECT COUNT(*) FROM reader_document_drafts WHERE document_id=?1",
+                [&document_id],
+                |row| row.get(0),
+            )?;
+            assert_eq!(revision, 1);
+            assert_eq!(drafts, 1);
+            let bytes = assets::get(conn, &app_root_for_read, &asset_id)
+                .map_err(|_| DbError::InvalidMigrationList)?;
+            assert_eq!(bytes.asset.original_name, "pixel.png");
+            Ok(())
+        })
+        .unwrap();
     }
 
     #[test]
@@ -1769,6 +1999,7 @@ mod tests {
             created_at: "2026-08-01T00:00:00Z".into(),
             db_size_bytes: 4096,
             db_sha256: "a".repeat(64),
+            assets: Vec::new(),
         };
         manifest.write_to_dir(&backup_dir).unwrap();
 
@@ -1816,6 +2047,7 @@ mod tests {
             created_at: "2026-08-01T00:00:00Z".into(),
             db_size_bytes: file_size,
             db_sha256: hash,
+            assets: Vec::new(),
         };
         manifest.write_to_dir(&backup_dir).unwrap();
 

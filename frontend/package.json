@@ -18,11 +18,22 @@
     "@internationalized/date": "3.12.2",
     "@tanstack/react-query": "5.85.5",
     "@tauri-apps/api": "2.11.1",
+    "@tiptap/core": "3.29.2",
+    "@tiptap/extension-image": "3.29.2",
+    "@tiptap/extension-link": "3.29.2",
+    "@tiptap/extension-table": "3.29.2",
+    "@tiptap/pm": "3.29.2",
+    "@tiptap/react": "3.29.2",
+    "@tiptap/starter-kit": "3.29.2",
     "@vanilla-extract/css": "1.21.1",
     "d3-hierarchy": "3.1.2",
     "motion": "12.43.0",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "remark-gfm": "4.0.1",
+    "remark-parse": "11.0.0",
+    "remark-stringify": "11.0.0",
+    "unified": "11.0.5"
   },
   "devDependencies": {
     "@tauri-apps/cli": "2.11.4",

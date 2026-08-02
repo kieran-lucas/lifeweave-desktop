@@ -1,4 +1,5 @@
 pub mod application;
+pub mod document;
 pub mod domain;
 pub mod infrastructure;
 pub mod ipc;
@@ -8,6 +9,11 @@ pub mod task;
 
 use tauri::Manager;
 
+use document::service::{
+    create_reader_document, discard_reader_draft, export_reader_markdown, get_document_asset,
+    get_reader_document, import_document_asset, import_reader_markdown, recover_reader_draft,
+    save_reader_document, save_reader_draft,
+};
 use infrastructure::backup::lifecycle::{
     StartupDisposition, preflight_startup_check, recover_if_interrupted,
 };
@@ -161,6 +167,16 @@ pub fn run() {
             pin_life_node,
             unpin_life_node,
             save_life_navigation_preference,
+            get_reader_document,
+            create_reader_document,
+            save_reader_document,
+            save_reader_draft,
+            discard_reader_draft,
+            recover_reader_draft,
+            import_reader_markdown,
+            export_reader_markdown,
+            import_document_asset,
+            get_document_asset,
         ])
         .run(tauri::generate_context!())
         .expect("failed to run Lifeweave");

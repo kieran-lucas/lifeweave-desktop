@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-create-reader-document"
+description = "Enables the create_reader_document command without any pre-configured scope."
+commands.allow = ["create_reader_document"]
+
+[[permission]]
+identifier = "deny-create-reader-document"
+description = "Denies the create_reader_document command without any pre-configured scope."
+commands.deny = ["create_reader_document"]

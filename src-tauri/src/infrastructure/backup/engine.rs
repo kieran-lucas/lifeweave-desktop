@@ -4,7 +4,7 @@ use std::time::Duration;
 use rusqlite::Connection;
 
 use super::checksum::sha256_file;
-use super::manifest::{BackupManifest, SUPPORTED_FORMAT_VERSION};
+use super::manifest::{BackupAssetEntry, BackupManifest, SUPPORTED_FORMAT_VERSION};
 use super::{BackupError, BackupId, BackupResult, BackupSummary};
 use crate::infrastructure::sqlite::{
     connection::open_file_connection, migrations::current_schema_version, runtime::DatabaseRuntime,
@@ -82,6 +82,46 @@ pub fn backup_db(
     let created_at = chrono_now_rfc3339();
     let app_version = env!("CARGO_PKG_VERSION").to_string();
 
+    let assets = (|| -> Result<Vec<BackupAssetEntry>, BackupError> {
+        let mut assets = Vec::new();
+        let conn = open_file_connection(&staging_db_path).map_err(BackupError::Db)?;
+        let mut statement = conn
+            .prepare("SELECT DISTINCT a.relative_original_path FROM assets a JOIN document_assets da ON da.asset_id=a.id WHERE a.status='usable' ORDER BY a.relative_original_path")
+            .map_err(|e| BackupError::Db(e.into()))?;
+        let paths = statement
+            .query_map([], |row| row.get::<_, String>(0))
+            .map_err(|e| BackupError::Db(e.into()))?
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|e| BackupError::Db(e.into()))?;
+        let app_root = runtime.db_path().parent().unwrap_or(Path::new("."));
+        for relative in paths {
+            if relative.contains("..")
+                || Path::new(&relative).is_absolute()
+                || !relative.starts_with("assets/original/")
+            {
+                return Err(BackupError::PostSwapValidationFailed(
+                    "invalid asset identity".into(),
+                ));
+            }
+            let source = app_root.join(&relative);
+            let target = staging_dir.join(&relative);
+            if let Some(parent) = target.parent() {
+                std::fs::create_dir_all(parent).map_err(BackupError::Io)?;
+            }
+            std::fs::copy(&source, &target).map_err(BackupError::Io)?;
+            let byte_size = std::fs::metadata(&target).map_err(BackupError::Io)?.len();
+            assets.push(BackupAssetEntry {
+                relative_path: relative,
+                byte_size,
+                sha256: sha256_file(&target)?,
+            });
+        }
+        Ok(assets)
+    })()
+    .inspect_err(|_| {
+        let _ = std::fs::remove_dir_all(&staging_dir);
+    })?;
+
     let manifest = BackupManifest {
         format_version: SUPPORTED_FORMAT_VERSION,
         app_version: app_version.clone(),
@@ -89,6 +129,7 @@ pub fn backup_db(
         created_at: created_at.clone(),
         db_size_bytes,
         db_sha256: db_sha256.clone(),
+        assets,
     };
 
     manifest.write_to_dir(&staging_dir).inspect_err(|_| {
@@ -321,7 +362,7 @@ mod tests {
         let backups = temp_backups_dir();
         let result = backup_db(&rt, &backups).unwrap();
         // The manifest must carry the latest immutable migration version.
-        assert_eq!(result.schema_version, 8);
+        assert_eq!(result.schema_version, 9);
     }
 
     #[test]
@@ -331,6 +372,35 @@ mod tests {
         let result = backup_db(&rt, &backups).unwrap();
         assert!(result.db_size_bytes > 0);
         assert_eq!(result.db_sha256.len(), 64, "SHA-256 must be 64 hex chars");
+    }
+
+    #[test]
+    fn backup_packages_referenced_document_assets() {
+        use crate::document::{assets, dto::ImportDocumentAssetInput};
+        let (rt, db) = make_file_runtime();
+        let app_root = db.parent().unwrap().to_path_buf();
+        let png = assets::tiny_png();
+        let asset = rt
+            .execute(move |conn| {
+                conn.execute("INSERT INTO life_nodes VALUES ('00000000-0000-7000-8000-000000000901','life-root','Leaf','','life-leaf','neutral',1,NULL,'now','now',0)", [])?;
+                conn.execute("INSERT INTO reader_documents VALUES ('00000000-0000-7000-8000-000000000902','00000000-0000-7000-8000-000000000901',1,0,'{\"type\":\"doc\",\"content\":[]}','', 'now','now',NULL)", [])?;
+                let asset = assets::import(conn, &app_root, ImportDocumentAssetInput { original_name: "pixel.png".into(), bytes: png })
+                    .map_err(|_| crate::infrastructure::sqlite::DbError::InvalidMigrationList)?;
+                conn.execute("INSERT INTO document_assets VALUES ('00000000-0000-7000-8000-000000000902',?1,1)", [&asset.asset_id])?;
+                Ok(asset)
+            })
+            .unwrap();
+        let backups = temp_backups_dir();
+        let result = backup_db(&rt, &backups).unwrap();
+        let dir = PathBuf::from(result.backup_dir);
+        let manifest = BackupManifest::read_from_dir(&dir).unwrap();
+        assert_eq!(manifest.assets.len(), 1);
+        assert_eq!(manifest.assets[0].byte_size, asset.byte_size);
+        assert!(dir.join(&manifest.assets[0].relative_path).is_file());
+        assert_eq!(
+            sha256_file(&dir.join(&manifest.assets[0].relative_path)).unwrap(),
+            manifest.assets[0].sha256
+        );
     }
 
     #[test]

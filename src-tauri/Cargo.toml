@@ -41,6 +41,10 @@ sha2 = "0.10"
 # local-date projection cannot drift with a transitive update.
 rrule = "=0.14.0"
 chrono = "=0.4.45"
+# Basic Leaf verifies and metadata-strips local image exports by decoding and
+# re-encoding only the four Core formats. Exact-pinned and default formats are
+# disabled to avoid bringing unrelated codecs into the native binary.
+image = { version = "=0.25.5", default-features = false, features = ["png", "jpeg", "webp", "gif"] }
 
 # Directory-metadata durability barrier for the restore swap sequence (Finding F6).
 # windows-sys is already a transitive dependency through tauri v2.11.2; adding as a

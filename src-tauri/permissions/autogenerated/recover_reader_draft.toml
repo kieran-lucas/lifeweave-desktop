@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-recover-reader-draft"
+description = "Enables the recover_reader_draft command without any pre-configured scope."
+commands.allow = ["recover_reader_draft"]
+
+[[permission]]
+identifier = "deny-recover-reader-draft"
+description = "Denies the recover_reader_draft command without any pre-configured scope."
+commands.deny = ["recover_reader_draft"]
