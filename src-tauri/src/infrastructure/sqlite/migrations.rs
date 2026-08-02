@@ -59,6 +59,21 @@ static MIGRATIONS: &[Migration] = &[
         version: 4,
         sql: "CREATE TABLE task_series (id TEXT PRIMARY KEY NOT NULL, title TEXT NOT NULL, description TEXT NOT NULL, category_id TEXT NOT NULL REFERENCES task_categories(id), priority TEXT NOT NULL CHECK(priority IN ('low','medium','high')), start_minute INTEGER NOT NULL, end_minute INTEGER NOT NULL, dtstart_local_date TEXT NOT NULL, timezone_id TEXT NOT NULL, rrule TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, archived_at TEXT); CREATE TABLE task_occurrence_overrides (id TEXT PRIMARY KEY NOT NULL, series_id TEXT NOT NULL REFERENCES task_series(id) ON DELETE CASCADE, original_local_date TEXT NOT NULL, replacement_local_date TEXT, title_override TEXT, description_override TEXT, category_id_override TEXT, priority_override TEXT, start_minute_override INTEGER, end_minute_override INTEGER, cancelled INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, UNIQUE(series_id, original_local_date)); CREATE INDEX task_series_dates ON task_series(dtstart_local_date, archived_at); CREATE INDEX task_overrides_dates ON task_occurrence_overrides(series_id, original_local_date);",
     },
+    Migration {
+        version: 5,
+        sql: "CREATE TABLE completion_states (id TEXT PRIMARY KEY NOT NULL, internal_key TEXT NOT NULL UNIQUE, label TEXT NOT NULL CHECK(length(trim(label)) > 0 AND length(label) <= 80), sort_key INTEGER NOT NULL, hidden_value_bp INTEGER NOT NULL CHECK(hidden_value_bp BETWEEN 0 AND 10000), visual_token TEXT NOT NULL CHECK(length(visual_token) BETWEEN 1 AND 40), archived_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
+            INSERT INTO completion_states VALUES
+              ('completion-none','none','Not done',0,0,'none',NULL,strftime('%s','now'),strftime('%s','now')),
+              ('completion-below','below','Below expectation',1,4000,'below',NULL,strftime('%s','now'),strftime('%s','now')),
+              ('completion-met','met','Met expectation',2,7500,'met',NULL,strftime('%s','now'),strftime('%s','now')),
+              ('completion-excellent','excellent','Very good',3,10000,'excellent',NULL,strftime('%s','now'),strftime('%s','now'));
+            CREATE TABLE task_evaluations (id TEXT PRIMARY KEY NOT NULL, subject_kind TEXT NOT NULL CHECK(subject_kind IN ('one_off','recurring')), task_id TEXT, series_id TEXT, original_local_date TEXT, state_id TEXT NOT NULL REFERENCES completion_states(id), state_label_snapshot TEXT NOT NULL, state_value_bp_snapshot INTEGER NOT NULL CHECK(state_value_bp_snapshot BETWEEN 0 AND 10000), state_visual_snapshot TEXT NOT NULL, evaluated_at TEXT NOT NULL, operation_id TEXT NOT NULL UNIQUE, supersedes_evaluation_id TEXT REFERENCES task_evaluations(id), is_current INTEGER NOT NULL CHECK(is_current IN (0,1)), CHECK((subject_kind='one_off' AND task_id IS NOT NULL AND series_id IS NULL AND original_local_date IS NULL) OR (subject_kind='recurring' AND task_id IS NULL AND series_id IS NOT NULL AND original_local_date IS NOT NULL)));
+            CREATE UNIQUE INDEX task_evaluations_one_off_current ON task_evaluations(task_id) WHERE subject_kind='one_off' AND is_current=1;
+            CREATE UNIQUE INDEX task_evaluations_recurring_current ON task_evaluations(series_id,original_local_date) WHERE subject_kind='recurring' AND is_current=1;
+            CREATE INDEX task_evaluations_subject_history ON task_evaluations(subject_kind,task_id,series_id,original_local_date,evaluated_at);
+            CREATE TABLE evaluation_operations (operation_id TEXT PRIMARY KEY NOT NULL, subject_kind TEXT NOT NULL CHECK(subject_kind IN ('one_off','recurring')), task_id TEXT, series_id TEXT, original_local_date TEXT, previous_evaluation_id TEXT REFERENCES task_evaluations(id), new_evaluation_id TEXT NOT NULL REFERENCES task_evaluations(id), created_at TEXT NOT NULL, undone_at TEXT, CHECK((subject_kind='one_off' AND task_id IS NOT NULL AND series_id IS NULL AND original_local_date IS NULL) OR (subject_kind='recurring' AND task_id IS NULL AND series_id IS NOT NULL AND original_local_date IS NOT NULL)));
+            CREATE INDEX evaluation_operations_subject ON evaluation_operations(subject_kind,task_id,series_id,original_local_date,created_at);",
+    },
 ];
 
 /// Bootstraps the migration tracking table and applies any pending migrations.
@@ -163,7 +178,7 @@ mod tests {
         let mut conn = open_memory_connection().unwrap();
         run_migrations(&mut conn).unwrap();
 
-        assert_eq!(current_schema_version(&conn).unwrap(), 4);
+        assert_eq!(current_schema_version(&conn).unwrap(), 5);
 
         let count: i64 = conn
             .query_row("SELECT COUNT(*) FROM db_metadata", [], |r| r.get(0))
@@ -177,7 +192,7 @@ mod tests {
         let mig_count: i64 = conn
             .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
             .unwrap();
-        assert_eq!(mig_count, 4);
+        assert_eq!(mig_count, 5);
     }
 
     #[test]
@@ -187,11 +202,11 @@ mod tests {
         run_migrations(&mut conn).unwrap();
 
         // Version stays at 2; no duplicate schema_migrations rows
-        assert_eq!(current_schema_version(&conn).unwrap(), 4);
+        assert_eq!(current_schema_version(&conn).unwrap(), 5);
         let mig_count: i64 = conn
             .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
             .unwrap();
-        assert_eq!(mig_count, 4);
+        assert_eq!(mig_count, 5);
     }
 
     // ── Validation ────────────────────────────────────────────────────────────
@@ -249,7 +264,7 @@ mod tests {
         match run_migrations_with(&mut conn, MIGRATIONS) {
             Err(DbError::SchemaTooNew { stored, supported }) => {
                 assert_eq!(stored, 9999);
-                assert_eq!(supported, 4);
+                assert_eq!(supported, 5);
             }
             other => panic!("expected SchemaTooNew, got {other:?}"),
         }
@@ -285,7 +300,7 @@ mod tests {
         {
             let mut conn = open_file_connection(&path).unwrap();
             run_migrations(&mut conn).unwrap();
-            assert_eq!(current_schema_version(&conn).unwrap(), 4);
+            assert_eq!(current_schema_version(&conn).unwrap(), 5);
             // Confirm the schema object created by migration 1 exists
             let count: i64 = conn
                 .query_row("SELECT COUNT(*) FROM db_metadata", [], |r| r.get(0))
@@ -299,7 +314,7 @@ mod tests {
             run_migrations(&mut conn).unwrap();
             assert_eq!(
                 current_schema_version(&conn).unwrap(),
-                4,
+                5,
                 "schema version must survive close/reopen"
             );
             let count: i64 = conn
@@ -312,7 +327,7 @@ mod tests {
                 .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
                 .unwrap();
             assert_eq!(
-                mig_count, 4,
+                mig_count, 5,
                 "no duplicate migration records after reopen + re-run"
             );
         }

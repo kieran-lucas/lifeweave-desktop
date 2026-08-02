@@ -17,6 +17,10 @@ import type { RecurringOccurrenceView } from "./generated/RecurringOccurrenceVie
 import type { UpdateRecurringOccurrenceInput } from "./generated/UpdateRecurringOccurrenceInput";
 import type { TodayItemView } from "./generated/TodayItemView";
 import type { MonthProjection } from "./generated/MonthProjection";
+import type { CompletionStateView } from "./generated/CompletionStateView";
+import type { EvaluateTaskInput } from "./generated/EvaluateTaskInput";
+import type { TaskEvaluationView } from "./generated/TaskEvaluationView";
+import type { UndoTaskEvaluationInput } from "./generated/UndoTaskEvaluationInput";
 
 export function healthCheck(): Promise<HealthCheck> {
   return invoke<HealthCheck>("health_check");
@@ -83,3 +87,6 @@ export const updateRecurringOccurrence = (input: UpdateRecurringOccurrenceInput)
 export const listTodayItems = (localDate: string) => invoke<TodayItemView[]>("list_today_items", { localDate });
 export const getMonthProjection = (year: number, month: number, selectedDate: string, today: string) =>
   invoke<MonthProjection>("get_month_projection", { year, month, selectedDate, today });
+export const listCompletionStates = () => invoke<CompletionStateView[]>("list_completion_states");
+export const evaluateTask = (input: EvaluateTaskInput) => invoke<TaskEvaluationView>("evaluate_task", { input });
+export const undoTaskEvaluation = (input: UndoTaskEvaluationInput) => invoke<TaskEvaluationView|null>("undo_task_evaluation", { input });

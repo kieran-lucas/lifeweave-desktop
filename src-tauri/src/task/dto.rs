@@ -133,6 +133,46 @@ pub struct TodayItemView {
     pub category_color_key: String,
     pub priority: String,
     pub is_override: bool,
+    pub evaluation: Option<TaskEvaluationView>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct CompletionStateView {
+    pub id: String,
+    pub internal_key: String,
+    pub label: String,
+    pub sort_key: i32,
+    pub visual_token: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct TaskEvaluationView {
+    pub state_id: String,
+    pub label: String,
+    pub visual_token: String,
+    pub evaluated_at: String,
+    pub operation_id: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct EvaluateTaskInput {
+    pub subject_kind: String,
+    pub task_id: Option<String>,
+    pub series_id: Option<String>,
+    pub original_local_date: Option<String>,
+    pub state_id: String,
+    pub operation_id: String,
+    pub observed_local_date: String,
+    pub observed_local_minute: i32,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct UndoTaskEvaluationInput {
+    pub operation_id: String,
 }
 
 #[derive(Debug, Clone, Serialize)]

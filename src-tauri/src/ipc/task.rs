@@ -2,7 +2,11 @@ use crate::infrastructure::sqlite::{DbError, runtime::DatabaseRuntime};
 use crate::ipc::error::IpcError;
 use crate::task::{
     calendar,
-    dto::{CreateTaskInput, MonthProjection, TaskCategoryView, TaskView, UpdateTaskInput},
+    dto::{
+        CompletionStateView, CreateTaskInput, EvaluateTaskInput, MonthProjection, TaskCategoryView,
+        TaskEvaluationView, TaskView, UndoTaskEvaluationInput, UpdateTaskInput,
+    },
+    evaluation,
     repository::{self, TaskError},
 };
 use tauri::State;
@@ -133,6 +137,41 @@ pub fn get_month_projection(
                 &today,
             ))
         })
+        .map_err(map_db)?
+        .map_err(map_task)
+}
+
+#[tauri::command]
+#[tracing::instrument(skip(state))]
+pub fn list_completion_states(
+    state: State<'_, DatabaseRuntime>,
+) -> Result<Vec<CompletionStateView>, IpcError> {
+    state
+        .execute(|conn| Ok(evaluation::list_states(conn)))
+        .map_err(map_db)?
+        .map_err(map_task)
+}
+
+#[tauri::command]
+#[tracing::instrument(skip(state, input))]
+pub fn evaluate_task(
+    state: State<'_, DatabaseRuntime>,
+    input: EvaluateTaskInput,
+) -> Result<TaskEvaluationView, IpcError> {
+    state
+        .execute(move |conn| Ok(evaluation::evaluate(conn, input)))
+        .map_err(map_db)?
+        .map_err(map_task)
+}
+
+#[tauri::command]
+#[tracing::instrument(skip(state, input))]
+pub fn undo_task_evaluation(
+    state: State<'_, DatabaseRuntime>,
+    input: UndoTaskEvaluationInput,
+) -> Result<Option<TaskEvaluationView>, IpcError> {
+    state
+        .execute(move |conn| Ok(evaluation::undo(conn, &input.operation_id)))
         .map_err(map_db)?
         .map_err(map_task)
 }

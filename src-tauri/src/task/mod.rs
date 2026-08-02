@@ -2,6 +2,7 @@ pub mod calendar;
 pub mod conflict;
 pub mod domain;
 pub mod dto;
+pub mod evaluation;
 pub mod recurrence;
 pub mod repository;
 pub mod service;

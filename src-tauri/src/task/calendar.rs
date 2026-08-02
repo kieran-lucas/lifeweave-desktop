@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use chrono::{Datelike, Duration, NaiveDate};
 use rusqlite::{Connection, params};
@@ -21,6 +21,7 @@ struct Item {
     end: i32,
     category: String,
     priority: String,
+    evaluated: bool,
 }
 
 #[derive(Clone)]
@@ -70,6 +71,7 @@ pub fn month_projection(
     let mut by_date = load_one_off(conn, &start_text, &end_text)?;
     let series = load_series(conn, &end_text)?;
     let overrides = load_overrides(conn, &start_text, &end_text)?;
+    let evaluated = load_recurring_evaluations(conn, &start_text, &end_text)?;
 
     let mut date = first;
     while date <= end {
@@ -79,7 +81,12 @@ pub fn month_projection(
             let occurrence_override = overrides.get(&key);
             let occurs = recurrence::occurs_on(&master.dtstart, &date_text, &master.rule)?;
             if occurs || occurrence_override.is_some() {
-                if let Some(item) = projected_item(master, occurrence_override, &date_text) {
+                if let Some(item) = projected_item(
+                    master,
+                    occurrence_override,
+                    &date_text,
+                    evaluated.contains(&(master.id.clone(), date_text.clone())),
+                ) {
                     by_date.entry(date_text.clone()).or_default().push(item);
                 }
             }
@@ -98,7 +105,12 @@ pub fn month_projection(
             continue;
         }
         if let Some(master) = series.iter().find(|series| &series.id == series_id) {
-            if let Some(item) = projected_item(master, Some(occurrence_override), replacement) {
+            if let Some(item) = projected_item(
+                master,
+                Some(occurrence_override),
+                replacement,
+                evaluated.contains(&(master.id.clone(), original.clone())),
+            ) {
                 by_date
                     .entry(replacement.to_string())
                     .or_default()
@@ -141,7 +153,7 @@ fn load_one_off(
     start: &str,
     end: &str,
 ) -> Result<HashMap<String, Vec<Item>>, TaskError> {
-    let mut statement = conn.prepare("SELECT local_date,start_minute,end_minute,category_id,priority FROM tasks WHERE local_date BETWEEN ?1 AND ?2")?;
+    let mut statement = conn.prepare("SELECT t.local_date,t.start_minute,t.end_minute,t.category_id,t.priority,EXISTS(SELECT 1 FROM task_evaluations e WHERE e.subject_kind='one_off' AND e.task_id=t.id AND e.is_current=1) FROM tasks t WHERE t.local_date BETWEEN ?1 AND ?2")?;
     let mut result: HashMap<String, Vec<Item>> = HashMap::new();
     for row in statement.query_map(params![start, end], |row| {
         Ok((
@@ -151,6 +163,7 @@ fn load_one_off(
                 end: row.get(2)?,
                 category: row.get(3)?,
                 priority: row.get(4)?,
+                evaluated: row.get::<_, i32>(5)? != 0,
             },
         ))
     })? {
@@ -200,10 +213,22 @@ fn load_overrides(
         .collect::<Result<HashMap<_, _>, _>>()?)
 }
 
+fn load_recurring_evaluations(
+    conn: &Connection,
+    start: &str,
+    end: &str,
+) -> Result<HashSet<(String, String)>, TaskError> {
+    let mut statement = conn.prepare("SELECT e.series_id,e.original_local_date FROM task_evaluations e LEFT JOIN task_occurrence_overrides o ON o.series_id=e.series_id AND o.original_local_date=e.original_local_date WHERE e.subject_kind='recurring' AND e.is_current=1 AND (e.original_local_date BETWEEN ?1 AND ?2 OR o.replacement_local_date BETWEEN ?1 AND ?2)")?;
+    Ok(statement
+        .query_map(params![start, end], |row| Ok((row.get(0)?, row.get(1)?)))?
+        .collect::<Result<HashSet<_>, _>>()?)
+}
+
 fn projected_item(
     master: &Series,
     occurrence_override: Option<&Override>,
     date: &str,
+    evaluated: bool,
 ) -> Option<Item> {
     if occurrence_override.is_some_and(|value| value.cancelled) {
         return None;
@@ -227,6 +252,7 @@ fn projected_item(
         priority: occurrence_override
             .and_then(|value| value.priority.clone())
             .unwrap_or_else(|| master.priority.clone()),
+        evaluated,
     })
 }
 
@@ -269,7 +295,7 @@ fn aggregate_day(
         morning_load_ratio: load_ratio(&items, MORNING),
         afternoon_load_ratio: load_ratio(&items, AFTERNOON),
         evening_load_ratio: load_ratio(&items, EVENING),
-        has_missed: is_past && !items.is_empty(),
+        has_missed: is_past && items.iter().any(|item| !item.evaluated),
     }
 }
 
@@ -316,9 +342,10 @@ mod tests {
         infrastructure::sqlite::{connection::open_memory_connection, migrations::run_migrations},
         task::{
             dto::{
-                CreateRecurringTaskInput, CreateTaskInput, OccurrenceEditScope,
+                CreateRecurringTaskInput, CreateTaskInput, EvaluateTaskInput, OccurrenceEditScope,
                 UpdateRecurringOccurrenceInput,
             },
+            evaluation::{self, ObservedLocalTime},
             repository,
         },
     };
@@ -376,6 +403,52 @@ mod tests {
         assert_eq!(day.scheduled_minutes, 120);
         assert_eq!(day.morning_load_ratio, 60.0 / 480.0);
         assert!(day.has_missed);
+    }
+
+    #[test]
+    fn evaluation_and_undo_drive_calendar_missed_semantics() {
+        let mut connection = database();
+        let task_id = repository::create(
+            &connection,
+            CreateTaskInput {
+                title: "Past".into(),
+                description: "".into(),
+                local_date: "2026-08-01".into(),
+                start_minute: 480,
+                end_minute: 540,
+                category_id: "general".into(),
+                priority: "medium".into(),
+            },
+        )
+        .unwrap()
+        .id;
+        let before = month_projection(&connection, 2026, 8, "2026-08-02", "2026-08-02").unwrap();
+        assert!(before.days[0].has_missed);
+
+        evaluation::evaluate_at(
+            &mut connection,
+            EvaluateTaskInput {
+                subject_kind: "one_off".into(),
+                task_id: Some(task_id),
+                series_id: None,
+                original_local_date: None,
+                state_id: "completion-met".into(),
+                operation_id: "calendar-missed-operation".into(),
+                observed_local_date: "2026-08-02".into(),
+                observed_local_minute: 720,
+            },
+            ObservedLocalTime {
+                date: "2026-08-02".into(),
+                minute: 720,
+            },
+        )
+        .unwrap();
+        let evaluated = month_projection(&connection, 2026, 8, "2026-08-02", "2026-08-02").unwrap();
+        assert!(!evaluated.days[0].has_missed);
+
+        evaluation::undo(&mut connection, "calendar-missed-operation").unwrap();
+        let undone = month_projection(&connection, 2026, 8, "2026-08-02", "2026-08-02").unwrap();
+        assert!(undone.days[0].has_missed);
     }
 
     #[test]
@@ -457,12 +530,14 @@ mod tests {
                 end: 750,
                 category: "a".into(),
                 priority: "low".into(),
+                evaluated: false,
             },
             Item {
                 start: 700,
                 end: 1080,
                 category: "b".into(),
                 priority: "low".into(),
+                evaluated: false,
             },
         ];
         assert_eq!(load_ratio(&items, MORNING), 30.0 / 480.0);
@@ -484,24 +559,28 @@ mod tests {
                 end: 600,
                 category: "d".into(),
                 priority: "low".into(),
+                evaluated: false,
             },
             Item {
                 start: 600,
                 end: 720,
                 category: "b".into(),
                 priority: "high".into(),
+                evaluated: false,
             },
             Item {
                 start: 720,
                 end: 780,
                 category: "c".into(),
                 priority: "medium".into(),
+                evaluated: false,
             },
             Item {
                 start: 780,
                 end: 840,
                 category: "a".into(),
                 priority: "medium".into(),
+                evaluated: false,
             },
         ];
         let day = aggregate_day("2026-08-02".into(), items, &icons, false, false, false);

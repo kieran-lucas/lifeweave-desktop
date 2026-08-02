@@ -446,6 +446,8 @@ pub fn today_items(
     date: &str,
 ) -> Result<Vec<crate::task::dto::TodayItemView>, TaskError> {
     let mut out = Vec::new();
+    let (one_off_evaluations, recurring_evaluations) =
+        crate::task::evaluation::current_for_date(conn, date)?;
     let mut stmt=conn.prepare("SELECT t.id,t.local_date,t.start_minute,t.end_minute,t.title,t.description,t.category_id,c.name,c.icon_key,c.color_key,t.priority FROM tasks t JOIN task_categories c ON c.id=t.category_id WHERE t.local_date=?1")?;
     for row in stmt.query_map(params![date], |r| {
         Ok(crate::task::dto::TodayItemView {
@@ -465,9 +467,12 @@ pub fn today_items(
             category_color_key: r.get(9)?,
             priority: r.get(10)?,
             is_override: false,
+            evaluation: None,
         })
     })? {
-        out.push(row?);
+        let mut item = row?;
+        item.evaluation = one_off_evaluations.get(&item.id).cloned();
+        out.push(item);
     }
     for occurrence in recurring_for_date(conn, date)? {
         let (name, icon, color): (String, String, String) = conn.query_row(
@@ -475,6 +480,12 @@ pub fn today_items(
             params![occurrence.category_id],
             |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
         )?;
+        let evaluation = recurring_evaluations
+            .get(&(
+                occurrence.series_id.clone(),
+                occurrence.original_local_date.clone(),
+            ))
+            .cloned();
         out.push(crate::task::dto::TodayItemView {
             kind: crate::task::dto::TodayItemKind::Recurring,
             id: occurrence.occurrence_id.clone(),
@@ -492,6 +503,7 @@ pub fn today_items(
             category_color_key: color,
             priority: occurrence.priority,
             is_override: occurrence.is_override,
+            evaluation,
         });
     }
     out.sort_by_key(|x| {

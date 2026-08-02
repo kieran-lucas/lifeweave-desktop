@@ -320,8 +320,8 @@ mod tests {
         let (rt, _db) = make_file_runtime();
         let backups = temp_backups_dir();
         let result = backup_db(&rt, &backups).unwrap();
-        // Migration 2 is the latest; schema_version must reflect that.
-        assert_eq!(result.schema_version, 4);
+        // The manifest must carry the latest immutable migration version.
+        assert_eq!(result.schema_version, 5);
     }
 
     #[test]

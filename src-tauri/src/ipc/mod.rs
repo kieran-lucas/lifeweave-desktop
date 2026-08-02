@@ -66,5 +66,9 @@ mod tests {
         crate::task::dto::TodayItemKind::export_all_to(&out).unwrap();
         crate::task::dto::CalendarDayProjection::export_all_to(&out).unwrap();
         crate::task::dto::MonthProjection::export_all_to(&out).unwrap();
+        crate::task::dto::CompletionStateView::export_all_to(&out).unwrap();
+        crate::task::dto::TaskEvaluationView::export_all_to(&out).unwrap();
+        crate::task::dto::EvaluateTaskInput::export_all_to(&out).unwrap();
+        crate::task::dto::UndoTaskEvaluationInput::export_all_to(&out).unwrap();
     }
 }

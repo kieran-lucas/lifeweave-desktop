@@ -741,6 +741,11 @@ mod tests {
             worker::DbWorkerHandle,
         },
     };
+    use crate::task::{
+        dto::{CreateTaskInput, EvaluateTaskInput},
+        evaluation::{self, ObservedLocalTime},
+        repository as task_repository,
+    };
     use std::path::PathBuf;
     use std::sync::{
         Arc, Barrier, Mutex,
@@ -805,11 +810,101 @@ mod tests {
         );
 
         let restore_result = restore_db(&rt, &backup_dir).unwrap();
-        assert_eq!(restore_result.schema_version, 4);
+        assert_eq!(restore_result.schema_version, 5);
 
         let active = rt.execute(|conn| repo::list_active(conn)).unwrap();
         assert_eq!(active.len(), 1);
         assert_eq!(active[0].label, "Original label");
+    }
+
+    #[test]
+    fn completion_evaluation_history_and_operations_survive_backup_restore() {
+        let (rt, _db) = make_file_runtime();
+        let backups = temp_backups_dir();
+        let task_id = rt
+            .execute(|conn| {
+                let task = task_repository::create(
+                    conn,
+                    CreateTaskInput {
+                        title: "Synthetic past task".into(),
+                        description: "".into(),
+                        local_date: "2026-08-01".into(),
+                        start_minute: 480,
+                        end_minute: 540,
+                        category_id: "general".into(),
+                        priority: "medium".into(),
+                    },
+                )
+                .unwrap();
+                evaluation::evaluate_at(
+                    conn,
+                    EvaluateTaskInput {
+                        subject_kind: "one_off".into(),
+                        task_id: Some(task.id.clone()),
+                        series_id: None,
+                        original_local_date: None,
+                        state_id: "completion-met".into(),
+                        operation_id: "backup-evaluation-original".into(),
+                        observed_local_date: "2026-08-02".into(),
+                        observed_local_minute: 720,
+                    },
+                    ObservedLocalTime {
+                        date: "2026-08-02".into(),
+                        minute: 720,
+                    },
+                )
+                .unwrap();
+                Ok(task.id)
+            })
+            .unwrap();
+        let backup_dir = PathBuf::from(backup_db(&rt, &backups).unwrap().backup_dir);
+
+        let task_id_for_mutation = task_id.clone();
+        rt.execute(move |conn| {
+            evaluation::evaluate_at(
+                conn,
+                EvaluateTaskInput {
+                    subject_kind: "one_off".into(),
+                    task_id: Some(task_id_for_mutation),
+                    series_id: None,
+                    original_local_date: None,
+                    state_id: "completion-excellent".into(),
+                    operation_id: "backup-evaluation-later".into(),
+                    observed_local_date: "2026-08-02".into(),
+                    observed_local_minute: 720,
+                },
+                ObservedLocalTime {
+                    date: "2026-08-02".into(),
+                    minute: 720,
+                },
+            )
+            .unwrap();
+            Ok(())
+        })
+        .unwrap();
+
+        restore_db(&rt, &backup_dir).unwrap();
+        let task_id_for_assertion = task_id.clone();
+        let (label, history_count, operation_count) = rt
+            .execute(move |conn| {
+                let label = evaluation::current_for_one_off(conn, &task_id_for_assertion)
+                    .unwrap()
+                    .unwrap()
+                    .label;
+                let history_count: i64 =
+                    conn.query_row("SELECT COUNT(*) FROM task_evaluations", [], |row| {
+                        row.get(0)
+                    })?;
+                let operation_count: i64 =
+                    conn.query_row("SELECT COUNT(*) FROM evaluation_operations", [], |row| {
+                        row.get(0)
+                    })?;
+                Ok((label, history_count, operation_count))
+            })
+            .unwrap();
+        assert_eq!(label, "Met expectation");
+        assert_eq!(history_count, 1);
+        assert_eq!(operation_count, 1);
     }
 
     // F-02: replacing the package source at the validated-source boundary must

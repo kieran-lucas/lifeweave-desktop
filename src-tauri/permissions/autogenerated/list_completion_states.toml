@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-list-completion-states"
+description = "Enables the list_completion_states command without any pre-configured scope."
+commands.allow = ["list_completion_states"]
+
+[[permission]]
+identifier = "deny-list-completion-states"
+description = "Denies the list_completion_states command without any pre-configured scope."
+commands.deny = ["list_completion_states"]

@@ -18,6 +18,7 @@ vi.mock("../ipc/commands", () => ({
   listTodayItems: vi.fn().mockResolvedValue([]),
   listTaskCategories: vi.fn().mockResolvedValue([]),
   getMonthProjection: vi.fn().mockResolvedValue({ month: "2026-08", algorithm_version: 1, days: [] }),
+  listCompletionStates: vi.fn().mockResolvedValue([]), evaluateTask: vi.fn(), undoTaskEvaluation: vi.fn(),
   createTask: vi.fn(), updateTask: vi.fn(), deleteTask: vi.fn(),
 }));
 
