@@ -729,8 +729,9 @@ mod tests {
     use crate::infrastructure::{
         backup::engine::backup_db,
         backup::lifecycle::{
-            self as lc, RestoreMarker, RestoreStage, set_marker_write_fail_at,
-            set_remove_if_exists_always_fail, set_remove_if_exists_fail_at,
+            self as lc, RestoreMarker, RestoreStage, reset_test_failpoints,
+            set_marker_write_fail_at, set_remove_if_exists_always_fail,
+            set_remove_if_exists_fail_at,
         },
         backup::manifest::BackupManifest,
         sqlite::{
@@ -761,6 +762,7 @@ mod tests {
     static COUNTER: AtomicU32 = AtomicU32::new(0);
 
     fn next_id() -> String {
+        reset_test_failpoints();
         let n = COUNTER.fetch_add(1, Ordering::Relaxed);
         format!("{}_{n}", std::process::id())
     }
@@ -815,7 +817,7 @@ mod tests {
         );
 
         let restore_result = restore_db(&rt, &backup_dir).unwrap();
-        assert_eq!(restore_result.schema_version, 7);
+        assert_eq!(restore_result.schema_version, 8);
 
         let active = rt.execute(|conn| repo::list_active(conn)).unwrap();
         assert_eq!(active.len(), 1);
@@ -898,6 +900,71 @@ mod tests {
             .unwrap();
         assert_eq!(restored.selected.title, "Synthetic branch");
         assert!(restored.selected.is_pinned);
+    }
+
+    #[test]
+    fn life_edit_operation_authority_survives_backup_restore() {
+        use crate::life::{
+            domain::ROOT_ID,
+            dto::{CreateLifeNodeOperationInput, LifeOperationContext, UndoLifeOperationInput},
+            edit as life_edit,
+        };
+        let (rt, _db) = make_file_runtime();
+        let backups = temp_backups_dir();
+        let created = rt
+            .execute(|conn| {
+                life_edit::create(
+                    conn,
+                    CreateLifeNodeOperationInput {
+                        context: LifeOperationContext {
+                            operation_id: "backup-life-edit-create".into(),
+                            expected_tree_revision: 0,
+                        },
+                        parent_id: ROOT_ID.into(),
+                        title: "Undoable branch".into(),
+                        short_description: "Synthetic".into(),
+                        icon_key: "life-branch".into(),
+                        theme_variant: "neutral".into(),
+                    },
+                )
+                .map_err(|_| crate::infrastructure::sqlite::DbError::WorkerGone)
+            })
+            .unwrap();
+        let package = PathBuf::from(backup_db(&rt, &backups).unwrap().backup_dir);
+        rt.execute(|conn| {
+            conn.execute(
+                "UPDATE life_nodes SET title='After backup' WHERE title='Undoable branch'",
+                [],
+            )?;
+            Ok(())
+        })
+        .unwrap();
+        restore_db(&rt, &package).unwrap();
+        let token = created.undo_token.unwrap();
+        rt.execute(move |conn| {
+            life_edit::undo(
+                conn,
+                UndoLifeOperationInput {
+                    undo_token: token,
+                    expected_tree_revision: 1,
+                },
+            )
+            .map_err(|_| crate::infrastructure::sqlite::DbError::WorkerGone)
+        })
+        .unwrap();
+        let active = rt
+            .execute(|conn| {
+                Ok(conn.query_row(
+                    "SELECT COUNT(*) FROM life_nodes WHERE archived_at IS NULL",
+                    [],
+                    |r| r.get::<_, i64>(0),
+                )?)
+            })
+            .unwrap();
+        assert_eq!(
+            active, 1,
+            "restored ledger must still undo the synthetic create"
+        );
     }
 
     #[test]

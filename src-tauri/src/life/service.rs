@@ -54,44 +54,91 @@ pub fn get_pinned_life_nodes(
     run!(state, repository::pinned)
 }
 #[tauri::command]
+#[tracing::instrument(skip(state))]
+pub fn get_life_edit_projection(
+    state: State<'_, DatabaseRuntime>,
+) -> Result<LifeEditProjection, IpcError> {
+    run!(state, super::edit::projection)
+}
+#[tauri::command]
 #[tracing::instrument(skip(state, input))]
 pub fn create_life_node(
     state: State<'_, DatabaseRuntime>,
-    input: CreateLifeNodeInput,
+    input: CreateLifeNodeOperationInput,
 ) -> Result<LifeMutationResult, IpcError> {
-    run!(state, |c| repository::create(c, input))
+    run!(state, |c| super::edit::create(c, input))
 }
 #[tauri::command]
 #[tracing::instrument(skip(state, input))]
 pub fn rename_life_node(
     state: State<'_, DatabaseRuntime>,
-    input: RenameLifeNodeInput,
+    input: EditLifeNodeTextInput,
 ) -> Result<LifeMutationResult, IpcError> {
-    run!(state, |c| repository::rename(c, input))
+    run!(state, |c| super::edit::rename(c, input))
 }
 #[tauri::command]
 #[tracing::instrument(skip(state, input))]
 pub fn update_life_node_summary(
     state: State<'_, DatabaseRuntime>,
-    input: UpdateLifeNodeSummaryInput,
+    input: EditLifeNodeMetadataInput,
 ) -> Result<LifeMutationResult, IpcError> {
-    run!(state, |c| repository::update_summary(c, input))
+    run!(state, |c| super::edit::metadata(c, input))
 }
 #[tauri::command]
 #[tracing::instrument(skip(state, input))]
 pub fn archive_life_node(
     state: State<'_, DatabaseRuntime>,
-    input: MutateLifeNodeInput,
+    input: EditLifeNodeStateInput,
 ) -> Result<LifeMutationResult, IpcError> {
-    run!(state, |c| repository::archive(c, input))
+    run!(state, |c| super::edit::archive(c, input))
 }
 #[tauri::command]
 #[tracing::instrument(skip(state, input))]
 pub fn restore_life_node(
     state: State<'_, DatabaseRuntime>,
-    input: MutateLifeNodeInput,
+    input: EditLifeNodeStateInput,
 ) -> Result<LifeMutationResult, IpcError> {
-    run!(state, |c| repository::restore(c, input))
+    run!(state, |c| super::edit::restore(c, input))
+}
+#[tauri::command]
+#[tracing::instrument(skip(state, input))]
+pub fn set_life_node_icon(
+    state: State<'_, DatabaseRuntime>,
+    input: EditLifeNodeAppearanceInput,
+) -> Result<LifeMutationResult, IpcError> {
+    run!(state, |c| super::edit::set_icon(c, input))
+}
+#[tauri::command]
+#[tracing::instrument(skip(state, input))]
+pub fn set_life_node_theme_variant(
+    state: State<'_, DatabaseRuntime>,
+    input: EditLifeNodeAppearanceInput,
+) -> Result<LifeMutationResult, IpcError> {
+    run!(state, |c| super::edit::set_theme(c, input))
+}
+#[tauri::command]
+#[tracing::instrument(skip(state, input))]
+pub fn reorder_life_sibling(
+    state: State<'_, DatabaseRuntime>,
+    input: ReorderLifeSiblingInput,
+) -> Result<LifeMutationResult, IpcError> {
+    run!(state, |c| super::edit::reorder(c, input))
+}
+#[tauri::command]
+#[tracing::instrument(skip(state, input))]
+pub fn reparent_life_node(
+    state: State<'_, DatabaseRuntime>,
+    input: ReparentLifeNodeInput,
+) -> Result<LifeMutationResult, IpcError> {
+    run!(state, |c| super::edit::reparent(c, input))
+}
+#[tauri::command]
+#[tracing::instrument(skip(state, input))]
+pub fn undo_life_operation(
+    state: State<'_, DatabaseRuntime>,
+    input: UndoLifeOperationInput,
+) -> Result<LifeMutationResult, IpcError> {
+    run!(state, |c| super::edit::undo(c, input))
 }
 #[tauri::command]
 #[tracing::instrument(skip(state, input))]

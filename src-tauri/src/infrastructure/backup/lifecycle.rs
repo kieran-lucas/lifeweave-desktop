@@ -705,6 +705,15 @@ pub(super) fn set_preflight_tmp_remove_fail(fail: bool) {
 }
 
 #[cfg(test)]
+pub(super) fn reset_test_failpoints() {
+    MARKER_WRITE_FAIL_AT.with(|c| c.set(-1));
+    RECOVERY_RENAME_FAIL.with(|c| c.set(false));
+    REMOVE_IF_EXISTS_FAIL_AT.with(|c| c.set(-1));
+    REMOVE_IF_EXISTS_ALWAYS_FAIL.with(|c| c.set(false));
+    PREFLIGHT_TMP_REMOVE_FAIL.with(|c| c.set(false));
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::infrastructure::sqlite::connection::open_file_connection;
@@ -718,6 +727,7 @@ mod tests {
     }
 
     fn temp_dir() -> PathBuf {
+        reset_test_failpoints();
         let p = std::env::temp_dir().join(format!("lw_lc_{}_{}", std::process::id(), next_id()));
         std::fs::create_dir_all(&p).unwrap();
         p

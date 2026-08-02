@@ -110,6 +110,33 @@ static MIGRATIONS: &[Migration] = &[
             CREATE TABLE life_navigation_preferences (singleton INTEGER PRIMARY KEY CHECK(singleton=1), last_life_node_id TEXT NOT NULL REFERENCES life_nodes(id), last_life_mode TEXT NOT NULL CHECK(last_life_mode IN ('browse','pinned','reader')), path_version INTEGER NOT NULL DEFAULT 1, viewport_anchor TEXT, updated_at TEXT NOT NULL);
             INSERT INTO life_navigation_preferences VALUES (1,'life-root','browse',1,NULL,strftime('%s','now'));",
     },
+    Migration {
+        version: 8,
+        // Life Edit keeps inverse authority separate from the current adjacency-list
+        // tree. Payloads contain only bounded inverse data needed for undo, including
+        // prior node metadata where relevant, never a database snapshot. They remain
+        // private to SQLite and do not cross IPC or tracing. Old operation identities
+        // remain for idempotency while older inverse payloads are compacted by Rust.
+        sql: "CREATE TABLE life_navigation_preferences_v8 (singleton INTEGER PRIMARY KEY CHECK(singleton=1), last_life_node_id TEXT NOT NULL REFERENCES life_nodes(id), last_life_mode TEXT NOT NULL CHECK(last_life_mode IN ('browse','edit','pinned','reader')), path_version INTEGER NOT NULL DEFAULT 1, viewport_anchor TEXT, updated_at TEXT NOT NULL);
+            INSERT INTO life_navigation_preferences_v8 SELECT * FROM life_navigation_preferences;
+            DROP TABLE life_navigation_preferences;
+            ALTER TABLE life_navigation_preferences_v8 RENAME TO life_navigation_preferences;
+            CREATE TABLE life_operations (
+                operation_id TEXT PRIMARY KEY NOT NULL,
+                operation_kind TEXT NOT NULL CHECK(operation_kind IN (
+                  'create','rename','summary','icon','theme','archive','restore','reorder','reparent'
+                )),
+                target_node_id TEXT NOT NULL REFERENCES life_nodes(id),
+                before_payload TEXT NOT NULL CHECK(length(before_payload) <= 262144),
+                after_payload TEXT NOT NULL CHECK(length(after_payload) <= 8192),
+                tree_revision_before INTEGER NOT NULL CHECK(tree_revision_before >= 0),
+                tree_revision_after INTEGER NOT NULL CHECK(tree_revision_after = tree_revision_before + 1),
+                created_at TEXT NOT NULL,
+                undone_at TEXT
+            );
+            CREATE INDEX life_operations_latest ON life_operations(tree_revision_after DESC, created_at DESC);
+            CREATE INDEX life_operations_target ON life_operations(target_node_id, tree_revision_after DESC);",
+    },
 ];
 
 /// Bootstraps the migration tracking table and applies any pending migrations.
@@ -214,7 +241,7 @@ mod tests {
         let mut conn = open_memory_connection().unwrap();
         run_migrations(&mut conn).unwrap();
 
-        assert_eq!(current_schema_version(&conn).unwrap(), 7);
+        assert_eq!(current_schema_version(&conn).unwrap(), 8);
 
         let count: i64 = conn
             .query_row("SELECT COUNT(*) FROM db_metadata", [], |r| r.get(0))
@@ -228,7 +255,7 @@ mod tests {
         let mig_count: i64 = conn
             .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
             .unwrap();
-        assert_eq!(mig_count, 7);
+        assert_eq!(mig_count, 8);
     }
 
     #[test]
@@ -238,11 +265,42 @@ mod tests {
         run_migrations(&mut conn).unwrap();
 
         // The latest version remains stable; no duplicate migration rows.
-        assert_eq!(current_schema_version(&conn).unwrap(), 7);
+        assert_eq!(current_schema_version(&conn).unwrap(), 8);
         let mig_count: i64 = conn
             .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
             .unwrap();
-        assert_eq!(mig_count, 7);
+        assert_eq!(mig_count, 8);
+    }
+
+    #[test]
+    fn migration_eight_upgrades_released_life_browse_schema() {
+        let mut conn = open_memory_connection().unwrap();
+        run_migrations_with(&mut conn, &MIGRATIONS[..7]).unwrap();
+        assert_eq!(current_schema_version(&conn).unwrap(), 7);
+        conn.execute(
+            "INSERT INTO life_nodes VALUES('00000000-0000-7000-8000-000000000901','life-root','Existing','','life-branch','neutral',0,NULL,'0','0',0)",
+            [],
+        )
+        .unwrap();
+        run_migrations(&mut conn).unwrap();
+        assert_eq!(current_schema_version(&conn).unwrap(), 8);
+        assert_eq!(
+            conn.query_row("SELECT COUNT(*) FROM life_nodes", [], |r| r
+                .get::<_, i64>(0))
+                .unwrap(),
+            2
+        );
+        conn.execute(
+            "UPDATE life_navigation_preferences SET last_life_mode='edit' WHERE singleton=1",
+            [],
+        )
+        .unwrap();
+        assert_eq!(
+            conn.query_row("SELECT COUNT(*) FROM life_operations", [], |r| r
+                .get::<_, i64>(0))
+                .unwrap(),
+            0
+        );
     }
 
     // ── Validation ────────────────────────────────────────────────────────────
@@ -300,7 +358,7 @@ mod tests {
         match run_migrations_with(&mut conn, MIGRATIONS) {
             Err(DbError::SchemaTooNew { stored, supported }) => {
                 assert_eq!(stored, 9999);
-                assert_eq!(supported, 7);
+                assert_eq!(supported, 8);
             }
             other => panic!("expected SchemaTooNew, got {other:?}"),
         }
@@ -336,7 +394,7 @@ mod tests {
         {
             let mut conn = open_file_connection(&path).unwrap();
             run_migrations(&mut conn).unwrap();
-            assert_eq!(current_schema_version(&conn).unwrap(), 7);
+            assert_eq!(current_schema_version(&conn).unwrap(), 8);
             // Confirm the schema object created by migration 1 exists
             let count: i64 = conn
                 .query_row("SELECT COUNT(*) FROM db_metadata", [], |r| r.get(0))
@@ -350,7 +408,7 @@ mod tests {
             run_migrations(&mut conn).unwrap();
             assert_eq!(
                 current_schema_version(&conn).unwrap(),
-                7,
+                8,
                 "schema version must survive close/reopen"
             );
             let count: i64 = conn
@@ -363,7 +421,7 @@ mod tests {
                 .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
                 .unwrap();
             assert_eq!(
-                mig_count, 7,
+                mig_count, 8,
                 "no duplicate migration records after reopen + re-run"
             );
         }

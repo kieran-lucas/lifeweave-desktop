@@ -90,5 +90,16 @@ mod tests {
         SaveLifeNavigationPreferenceInput::export_all_to(&out).unwrap();
         LifeMutationResult::export_all_to(&out).unwrap();
         LifeNavigationPreferenceView::export_all_to(&out).unwrap();
+        LifeOperationContext::export_all_to(&out).unwrap();
+        CreateLifeNodeOperationInput::export_all_to(&out).unwrap();
+        EditLifeNodeTextInput::export_all_to(&out).unwrap();
+        EditLifeNodeMetadataInput::export_all_to(&out).unwrap();
+        EditLifeNodeAppearanceInput::export_all_to(&out).unwrap();
+        EditLifeNodeStateInput::export_all_to(&out).unwrap();
+        ReorderLifeSiblingInput::export_all_to(&out).unwrap();
+        ReparentLifeNodeInput::export_all_to(&out).unwrap();
+        UndoLifeOperationInput::export_all_to(&out).unwrap();
+        LifeEditNodeView::export_all_to(&out).unwrap();
+        LifeEditProjection::export_all_to(&out).unwrap();
     }
 }

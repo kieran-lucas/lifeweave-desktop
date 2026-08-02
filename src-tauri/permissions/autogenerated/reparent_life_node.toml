@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-reparent-life-node"
+description = "Enables the reparent_life_node command without any pre-configured scope."
+commands.allow = ["reparent_life_node"]
+
+[[permission]]
+identifier = "deny-reparent-life-node"
+description = "Denies the reparent_life_node command without any pre-configured scope."
+commands.deny = ["reparent_life_node"]

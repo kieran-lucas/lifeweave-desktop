@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-reorder-life-sibling"
+description = "Enables the reorder_life_sibling command without any pre-configured scope."
+commands.allow = ["reorder_life_sibling"]
+
+[[permission]]
+identifier = "deny-reorder-life-sibling"
+description = "Denies the reorder_life_sibling command without any pre-configured scope."
+commands.deny = ["reorder_life_sibling"]

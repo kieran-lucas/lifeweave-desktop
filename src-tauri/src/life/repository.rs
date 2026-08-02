@@ -235,6 +235,7 @@ pub fn create(
         node: node(conn, &id, false)?,
         tree_revision: rev,
         invalidation: vec!["life-browse".into()],
+        undo_token: None,
     })
 }
 fn update_result(
@@ -266,6 +267,7 @@ fn update_result(
         node: node(conn, id, true)?,
         tree_revision: rev,
         invalidation: vec!["life-browse".into(), "life-pinned".into()],
+        undo_token: None,
     })
 }
 pub fn rename(
@@ -338,6 +340,7 @@ pub fn archive(
         node: node(conn, &input.node_id, true)?,
         tree_revision: rev,
         invalidation: vec!["life-browse".into(), "life-pinned".into()],
+        undo_token: None,
     })
 }
 pub fn restore(
@@ -412,6 +415,7 @@ pub fn set_pin(
         node: node(conn, id, true)?,
         tree_revision: rev,
         invalidation: vec!["life-browse".into(), "life-pinned".into()],
+        undo_token: None,
     })
 }
 pub fn save_preference(
@@ -419,7 +423,7 @@ pub fn save_preference(
     input: SaveLifeNavigationPreferenceInput,
 ) -> Result<LifeNavigationPreferenceView, LifeError> {
     if !domain::valid_id(&input.node_id)
-        || !matches!(input.mode.as_str(), "browse" | "pinned" | "reader")
+        || !matches!(input.mode.as_str(), "browse" | "edit" | "pinned" | "reader")
         || input.path_version != 1
         || input
             .viewport_anchor
@@ -471,7 +475,7 @@ mod tests {
     #[test]
     fn life_migration_seeds_only_protected_root() {
         let mut c = db();
-        assert_eq!(current_schema_version(&c).unwrap(), 7);
+        assert_eq!(current_schema_version(&c).unwrap(), 8);
         assert_eq!(
             c.query_row("SELECT COUNT(*) FROM life_nodes", [], |r| r
                 .get::<_, i64>(0))
