@@ -299,3 +299,15 @@ Task 11/60 is complete. Task 12/60 is the only allowed next action. Prediction, 
 - [x] Evidence: frontend 65/65; Rust 243/243; task 46/46; backup 129/129; Analytics 13/13; governance/security/bindings/ACL, query plan, reopen/backup-restore, release NSIS and isolated two-session native smoke passed. See `docs/audits/task-12-objective-analytics.md`.
 
 Task 12/60 is complete. Task 13/60 is the only allowed next action. The roadmap does not yet name Task 13.
+
+### Task 13 — Life Browse Core + Pinned Navigation
+
+- [x] Immutable migration 7 adds adjacency-list Life nodes, a protected singleton neutral root, tree revision authority, reference-based pins, and restart navigation preferences.
+- [x] Rust commands provide validated node CRUD/archive/restore authority, idempotent pin/unpin, navigation persistence, and exact generated ACL/DTO coverage without exposing Edit UI.
+- [x] Browse returns only one focal node and a maximum eight direct children, with stable paging, one recursive breadcrumb CTE, indexed child counts, and nearest-active-ancestor/root fallback.
+- [x] Life keeps a dedicated session history and persisted last context while preserving App Shell sidebar preference and focus behavior.
+- [x] Pinned is a lazy Life-local mode; active branches navigate, leaves open Reader, and archived/unavailable pins remain diagnosable and removable.
+- [x] Reader is a separate minimal shell with exact Browse/Pinned Back context and no rich-document, Narrative Canvas, or visual-world scope.
+- [x] Exact evidence: frontend 78/78; Rust 255/255; Task 46/46; Life repository 11/11; backup 130/130; security/governance/generated DTO/ACL, query plan, reopen/backup-restore, release NSIS, and isolated native smoke passed. See `docs/audits/task-13-life-browse.md`.
+
+Task 13/60 is complete. Task 14/60 is the only allowed next action. The live roadmap does not yet name Task 14. Life Edit, full-tree UI, Narrative Canvas, Basic Leaf content, and the entire Life System remain outside this completed slice.

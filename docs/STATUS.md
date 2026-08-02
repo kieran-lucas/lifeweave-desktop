@@ -118,3 +118,12 @@ Task 10/60 Week Strip + Calendar Month Projection is the only allowed next actio
 - Evidence: frontend 65/65; Rust 243/243; task 46/46; backup 129/129; Analytics 13/13; governance/security/bindings/ACL, query-plan, file reopen/backup-restore, normal NSIS, and two-session isolated native smoke passed.
 - Report: `docs/audits/task-12-objective-analytics.md`.
 - Task 12/60 is complete. Task 13/60 is the only allowed next action; the roadmap does not name it. M3 and the whole Task System are not declared complete.
+
+## Task 13/60 — Life Browse Core + Pinned Navigation
+
+- Implementation commit: `6861a40ceffb5ec92b68ac7f8865ee65dea1cf20`.
+- Migration 7 adds a protected neutral root, adjacency-list Life node authority, preserved subtree archive/restore semantics, reference-based pins, and restart navigation preferences.
+- Life System now renders one focal node plus at most eight direct children, a recursive breadcrumb, dedicated Back history, lazy Pinned mode, fallback to the nearest active ancestor/root, and a separate leaf Reader shell.
+- Evidence: frontend 78/78; Rust 255/255; Task 46/46; Life repository 11/11; backup 130/130; governance/security/generated bindings/ACL, indexed bounded queries, file reopen/backup-restore, normal NSIS, and sentinel-isolated native smoke passed.
+- Report: `docs/audits/task-13-life-browse.md`.
+- Task 13/60 is complete. Task 14/60 is the only allowed next action; the live roadmap does not name it. Life Edit, full-tree UI, Narrative Canvas, Basic Leaf content, the final visual-world engine, and the entire Life System are not declared complete.
