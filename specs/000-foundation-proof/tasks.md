@@ -286,3 +286,16 @@ Task 10/60 is complete. Task 11/60 is the only allowed next action. The live roa
 - [x] Exact evidence: frontend 54/54; Rust 229/229; Task 33/33; backup 128/128; governance/security/generated bindings/ACL, normal NSIS build, file-backed persistence/backup-restore, and sentinel-isolated native launch passed. See `docs/audits/task-11-completion-evaluation.md`.
 
 Task 11/60 is complete. Task 12/60 is the only allowed next action. Prediction, completion-state Settings, Analytics, M3, and the entire Task System remain outside this completed slice.
+
+### Task 12 — Objective Analytics Core + Category Targets and Streaks
+
+- [x] Migration 6 provides constrained, revisioned weekly category minimum/target goals with prospective Monday-effective history and idempotent operations.
+- [x] Rebuildable Analytics tables carry algorithm/source revision; Task, recurrence, evaluation/undo, and goal mutations bump source revision once transactionally.
+- [x] One bounded Week/Month/Year projection combines one-offs, recurrence, moved/cancelled overrides, and occurrence evaluations without exposing Task content or hidden values.
+- [x] Algorithm v1 reports scheduled time/counts, evaluated/missed counts, category attainment/shortfall/overage, completion snapshot distribution, and completed-week attainment.
+- [x] Only weekly category minimum and target current/longest streaks exist; current incomplete weeks are progress-only and goal history is not retroactively rewritten.
+- [x] Analytics provides accessible fixed tabs, bounded navigation and editorial objective sections; Settings exposes narrow scheduled-time goal controls.
+- [x] No total score, score streak, prediction, AI insight, actual-time claim, reminder, Life System, or Category CRUD was introduced.
+- [x] Evidence: frontend 65/65; Rust 243/243; task 46/46; backup 129/129; Analytics 13/13; governance/security/bindings/ACL, query plan, reopen/backup-restore, release NSIS and isolated two-session native smoke passed. See `docs/audits/task-12-objective-analytics.md`.
+
+Task 12/60 is complete. Task 13/60 is the only allowed next action. The roadmap does not yet name Task 13.

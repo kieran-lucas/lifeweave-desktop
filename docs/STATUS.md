@@ -107,3 +107,14 @@ Task 10/60 Week Strip + Calendar Month Projection is the only allowed next actio
 - Evidence: frontend 54/54; Rust 229/229; Task 33/33; backup 128/128; verify/typecheck/build/check/fmt/clippy/security/generated DTO/ACL/NSIS and sentinel-isolated native launch passed.
 - Report: `docs/audits/task-11-completion-evaluation.md`.
 - Task 11/60 is complete. Task 12/60 is the only allowed next action. Prediction, completion-state Settings, Analytics, M3, and the whole Task System are not declared complete.
+
+## Task 12/60 — Objective Analytics Core + Category Targets and Streaks
+
+- Implementation commit: `5835c5b2800530ed03b2f17407bd20cb4984500a`.
+- Migration 6 adds versioned weekly category minimum/target goals and rebuildable source-revisioned Analytics period/category/distribution/streak rows.
+- Algorithm v1 reports planned scheduled time, task/evaluated/missed counts, category attainment, completion snapshot distribution, and only category minimum/target streaks. There is no total score, score streak, prediction, AI insight, or actual-time claim.
+- Goal changes apply prospectively from Monday. Each Task/recurrence/evaluation/goal mutation bumps Analytics source revision once; stale clock/source aggregates rebuild on the DB worker.
+- Analytics now has accessible Week/Month/Year navigation and objective editorial sections; Settings has narrow scheduled-time goal editing.
+- Evidence: frontend 65/65; Rust 243/243; task 46/46; backup 129/129; Analytics 13/13; governance/security/bindings/ACL, query-plan, file reopen/backup-restore, normal NSIS, and two-session isolated native smoke passed.
+- Report: `docs/audits/task-12-objective-analytics.md`.
+- Task 12/60 is complete. Task 13/60 is the only allowed next action; the roadmap does not name it. M3 and the whole Task System are not declared complete.
