@@ -7,8 +7,8 @@ import {
   recoverNarrativeDraft,
 } from "../../../ipc/commands";
 import type { NarrativeDocumentView } from "../../../ipc/generated/NarrativeDocumentView";
-import { operationId, parseNarrative } from "./schema";
-import type { NarrativeDocument, NarrativeBlock, RichTextNode, UnknownNarrativeBlock } from "./schema";
+import { operationId, parseNarrative, isUnknownBlock } from "./schema";
+import type { ParsedNarrativeDocument, ParsedNarrativeBlock, RichTextNode as RichTextNodeType } from "./schema";
 import * as styles from "./NarrativeCanvas.css";
 import { getDocumentAsset } from "../../../ipc/commands";
 
@@ -20,7 +20,7 @@ export const narrativeKey = (nodeId: string) => ["life", "narrative", nodeId] as
 // Rich-text static renderer (no Tiptap)
 // ---------------------------------------------------------------------------
 
-function RichTextNode({ node, depth = 0 }: { node: RichTextNode; depth?: number }): React.ReactNode {
+function RichTextNode({ node, depth = 0 }: { node: RichTextNodeType; depth?: number }): React.ReactNode {
   if (depth > 32) return null;
   const children = node.content?.map((child, i) => <RichTextNode key={i} node={child} depth={depth + 1} />);
   switch (node.type) {
@@ -47,7 +47,7 @@ function RichTextNode({ node, depth = 0 }: { node: RichTextNode; depth?: number 
   }
 }
 
-function RichTextReader({ content }: { content: { type: string; content?: RichTextNode[] } }) {
+function RichTextReader({ content }: { content: { type: string; content?: RichTextNodeType[] } }) {
   return (
     <div className={styles.richText} aria-label="Rich text content">
       {content.content?.map((node, i) => <RichTextNode key={i} node={node} />)}
@@ -75,7 +75,14 @@ function NarrativeAssetImage({ assetId, alt }: { assetId: string; alt: string })
   return <img className={styles.image} src={source} alt={alt} loading="lazy" decoding="async" />;
 }
 
-function BlockReader({ block }: { block: NarrativeBlock }) {
+function BlockReader({ block }: { block: ParsedNarrativeBlock }) {
+  if (isUnknownBlock(block)) {
+    return (
+      <div className={styles.missing} role="note" aria-label="Unsupported block">
+        This block type ({block.kind}) is not supported in this version.
+      </div>
+    );
+  }
   switch (block.kind) {
     case "rich_text":
       return <RichTextReader content={block.content} />;
@@ -118,15 +125,6 @@ function BlockReader({ block }: { block: NarrativeBlock }) {
           </ol>
         </div>
       );
-    default: {
-      // Reached at runtime for unknown block kinds preserved by Rust; unreachable by TS type
-      const unknown = block as unknown as UnknownNarrativeBlock;
-      return (
-        <div className={styles.missing} role="note" aria-label="Unsupported block">
-          This block type ({unknown.kind}) is not supported in this version.
-        </div>
-      );
-    }
   }
 }
 
@@ -134,7 +132,7 @@ function BlockReader({ block }: { block: NarrativeBlock }) {
 // Static reader view
 // ---------------------------------------------------------------------------
 
-function StaticCanvasView({ doc }: { doc: NarrativeDocument }) {
+function StaticCanvasView({ doc }: { doc: ParsedNarrativeDocument }) {
   const scene = doc.scenes[0];
   return (
     <article aria-labelledby="nc-canvas-title">
@@ -145,13 +143,13 @@ function StaticCanvasView({ doc }: { doc: NarrativeDocument }) {
         <section aria-labelledby="nc-scene-title">
           <h2 id="nc-scene-title" className={styles.sceneTitle}>{scene.title}</h2>
           <div className={styles.blockList}>
-            {scene.blocks.map(block => <BlockReader key={block.id} block={block} />)}
+            {scene.blocks.map(block => <BlockReader key={isUnknownBlock(block) ? block.uiKey : block.id} block={block} />)}
           </div>
         </section>
       )}
       {!scene.title && (
         <div className={styles.blockList}>
-          {scene.blocks.map(block => <BlockReader key={block.id} block={block} />)}
+          {scene.blocks.map(block => <BlockReader key={isUnknownBlock(block) ? block.uiKey : block.id} block={block} />)}
         </div>
       )}
     </article>
@@ -243,7 +241,7 @@ export function NarrativeCanvasReader({ nodeId }: { nodeId: string }) {
     );
   }
 
-  let parsed: NarrativeDocument | null = null;
+  let parsed: ParsedNarrativeDocument | null = null;
   try {
     parsed = parseNarrative(document.canonical_json);
   } catch {

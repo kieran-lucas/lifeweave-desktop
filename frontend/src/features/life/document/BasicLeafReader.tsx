@@ -45,7 +45,20 @@ export function BasicLeafReader({ nodeId }: { nodeId: string }) {
     return <div className={styles.shell}><h2>Reader</h2><div className={styles.missing} role="alert">This document could not be opened. Life navigation is still available.</div></div>;
   }
 
-  if (narrativeQuery.data?.document) {
+  // Conflict: both a Basic Leaf document and a Canvas document exist
+  if (query.data.document && narrativeQuery.data?.document) {
+    return (
+      <div className={styles.shell}>
+        <h2>Reader</h2>
+        <div role="alert" className={styles.missing}>
+          This leaf has both a Basic Leaf document and a Narrative Canvas. This state is not expected and requires manual resolution. Contact support or restore from backup.
+        </div>
+      </div>
+    );
+  }
+
+  // Canvas only (no Basic Leaf document)
+  if (!query.data.document && narrativeQuery.data?.document) {
     return <NarrativeCanvasReader nodeId={nodeId} />;
   }
 

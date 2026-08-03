@@ -119,6 +119,7 @@ describe("NarrativeCanvasReader", () => {
       documentId: DOC_ID,
       title: "Dashboard",
       templateId: "knowledge_dossier",
+      templateVersion: 1,
       scenes: [{
         id: "00000000-0000-7000-8000-000000000202",
         title: "KPIs",
@@ -149,6 +150,7 @@ describe("NarrativeCanvasReader", () => {
       documentId: DOC_ID,
       title: "History",
       templateId: "knowledge_dossier",
+      templateVersion: 1,
       scenes: [{
         id: "00000000-0000-7000-8000-000000000202",
         title: "",
@@ -178,6 +180,7 @@ describe("NarrativeCanvasReader", () => {
       documentId: DOC_ID,
       title: "",
       templateId: "knowledge_dossier",
+      templateVersion: 1,
       scenes: [{
         id: "00000000-0000-7000-8000-000000000202",
         title: "",

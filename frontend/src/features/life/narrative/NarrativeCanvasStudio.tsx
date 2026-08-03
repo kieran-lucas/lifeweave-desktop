@@ -32,12 +32,14 @@ import {
   newNarrativeId,
   operationId,
   parseNarrative,
+  serializeNarrative,
+  isUnknownBlock,
 } from "./schema";
 import type {
   NarrativeBlock,
-  NarrativeDocument,
+  ParsedNarrativeDocument,
+  ParsedNarrativeBlock,
   RichTextContent,
-  UnknownNarrativeBlock,
 } from "./schema";
 import * as styles from "./NarrativeCanvas.css";
 
@@ -46,16 +48,16 @@ import * as styles from "./NarrativeCanvas.css";
 // ---------------------------------------------------------------------------
 
 type HistoryState = {
-  past: NarrativeDocument[];
-  current: NarrativeDocument;
-  future: NarrativeDocument[];
+  past: ParsedNarrativeDocument[];
+  current: ParsedNarrativeDocument;
+  future: ParsedNarrativeDocument[];
 };
 
-function makeHistory(doc: NarrativeDocument): HistoryState {
+function makeHistory(doc: ParsedNarrativeDocument): HistoryState {
   return { past: [], current: doc, future: [] };
 }
 
-function push(h: HistoryState, doc: NarrativeDocument): HistoryState {
+function push(h: HistoryState, doc: ParsedNarrativeDocument): HistoryState {
   const past = [...h.past, h.current].slice(-50);
   return { past, current: doc, future: [] };
 }
@@ -504,7 +506,7 @@ function TimelineBlockEditor({
 // ---------------------------------------------------------------------------
 
 type SortableBlockEditorProps = {
-  block: NarrativeBlock;
+  block: ParsedNarrativeBlock;
   index: number;
   total: number;
   isActive: boolean;
@@ -530,6 +532,8 @@ function SortableBlockEditor({
   onMoveDown,
   onDirty,
 }: SortableBlockEditorProps) {
+  const blockUiKey = isUnknownBlock(block) ? block.uiKey : block.id;
+
   const {
     attributes,
     listeners,
@@ -537,7 +541,7 @@ function SortableBlockEditor({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: block.id });
+  } = useSortable({ id: blockUiKey });
 
   // dnd-kit requires inline style for transforms — unavoidable
   const dndStyle = {
@@ -549,6 +553,13 @@ function SortableBlockEditor({
   const kindLabel = block.kind.replace(/_/g, " ");
 
   const renderBlockContent = () => {
+    if (isUnknownBlock(block)) {
+      return (
+        <div className={styles.missing}>
+          Unknown block type: {block.kind}. This block will be preserved when saved.
+        </div>
+      );
+    }
     switch (block.kind) {
       case "rich_text":
         return isActive ? (
@@ -631,10 +642,6 @@ function SortableBlockEditor({
             onChange={onUpdate}
           />
         );
-      default: {
-        const _b = block as unknown as UnknownNarrativeBlock;
-        return <div className={styles.status}>Block type &quot;{_b.kind}&quot; is not editable in this version.</div>;
-      }
     }
   };
 
@@ -745,7 +752,7 @@ export default function NarrativeCanvasStudio({
 
   const doc = history.current;
   const scene = doc.scenes[0];
-  const blockIds = scene.blocks.map(b => b.id);
+  const blockIds = scene.blocks.map(b => isUnknownBlock(b) ? b.uiKey : b.id);
 
   // ---- Helpers ----
 
@@ -766,7 +773,7 @@ export default function NarrativeCanvasStudio({
         const closingId = activeBlockId;
         setHistory(h => {
           const blocks = h.current.scenes[0].blocks.map(b => {
-            if (b.id === closingId) {
+            if (!isUnknownBlock(b) && b.id === closingId) {
               if (b.kind === "rich_text") return { ...b, content };
               if (b.kind === "callout") return { ...b, content };
             }
@@ -802,12 +809,12 @@ export default function NarrativeCanvasStudio({
    * Materialize the current document including any unsaved Tiptap content.
    * Used for save and draft operations — does NOT push to history.
    */
-  const materializeCurrentDocument = useCallback((): NarrativeDocument => {
+  const materializeCurrentDocument = useCallback((): ParsedNarrativeDocument => {
     const h = history;
     if (activeBlockId !== null && activeContentRef.current !== null) {
       const content = activeContentRef.current;
       const blocks = h.current.scenes[0].blocks.map(b => {
-        if (b.id === activeBlockId) {
+        if (!isUnknownBlock(b) && b.id === activeBlockId) {
           if (b.kind === "rich_text") return { ...b, content };
           if (b.kind === "callout") return { ...b, content };
         }
@@ -824,7 +831,7 @@ export default function NarrativeCanvasStudio({
   // ---- Structural document mutations (push to history) ----
 
   const applyStructural = useCallback(
-    (next: NarrativeDocument) => {
+    (next: ParsedNarrativeDocument) => {
       setHistory(h => push(h, next));
       markDirty();
     },
@@ -870,7 +877,7 @@ export default function NarrativeCanvasStudio({
       }
 
       // If deleting the active block, deactivate first (discard its content)
-      if (block?.id === activeBlockId) {
+      if (block && !isUnknownBlock(block) && block.id === activeBlockId) {
         activeContentRef.current = null;
         setActiveBlockId(null);
       }
@@ -880,7 +887,7 @@ export default function NarrativeCanvasStudio({
       // Focus restoration: prefer block above, else block below
       const focusTarget =
         newBlocks[blockIndex - 1] ?? newBlocks[blockIndex] ?? null;
-      if (focusTarget && (focusTarget.kind === "rich_text" || focusTarget.kind === "callout")) {
+      if (focusTarget && !isUnknownBlock(focusTarget) && (focusTarget.kind === "rich_text" || focusTarget.kind === "callout")) {
         setActiveBlockId(focusTarget.id);
       }
 
@@ -909,8 +916,8 @@ export default function NarrativeCanvasStudio({
     (event: DragEndEvent) => {
       const { active, over } = event;
       if (!over || active.id === over.id) return;
-      const oldIndex = scene.blocks.findIndex(b => b.id === active.id);
-      const newIndex = scene.blocks.findIndex(b => b.id === over.id);
+      const oldIndex = scene.blocks.findIndex(b => (isUnknownBlock(b) ? b.uiKey : b.id) === active.id);
+      const newIndex = scene.blocks.findIndex(b => (isUnknownBlock(b) ? b.uiKey : b.id) === over.id);
       if (oldIndex === -1 || newIndex === -1) return;
       // Materialize and apply via arrayMove
       const materialized = materializeCurrentDocument();
@@ -998,7 +1005,7 @@ export default function NarrativeCanvasStudio({
     setMessage(undefined);
     const materialized = materializeCurrentDocument();
     try {
-      const canonical = JSON.stringify(materialized);
+      const canonical = serializeNarrative(materialized);
       const saved = await saveNarrativeDocument({
         document_id: document.id,
         expected_revision: revision.current,
@@ -1042,11 +1049,11 @@ export default function NarrativeCanvasStudio({
       // changes when history/activeBlockId change, but we can't include it in deps
       // without risking infinite loops. Compute locally instead.
       const h = history;
-      let materialized: NarrativeDocument;
+      let materialized: ParsedNarrativeDocument;
       if (activeBlockId !== null && activeContentRef.current !== null) {
         const content = activeContentRef.current;
         const blocks = h.current.scenes[0].blocks.map(b => {
-          if (b.id === activeBlockId) {
+          if (!isUnknownBlock(b) && b.id === activeBlockId) {
             if (b.kind === "rich_text") return { ...b, content };
             if (b.kind === "callout") return { ...b, content };
           }
@@ -1059,7 +1066,7 @@ export default function NarrativeCanvasStudio({
       } else {
         materialized = h.current;
       }
-      const canonical = JSON.stringify(materialized);
+      const canonical = serializeNarrative(materialized);
       void saveNarrativeDraft({
         document_id: document.id,
         base_revision: revision.current,
@@ -1153,22 +1160,25 @@ export default function NarrativeCanvasStudio({
           strategy={verticalListSortingStrategy}
         >
           <div className={styles.blockList}>
-            {scene.blocks.map((block, i) => (
-              <SortableBlockEditor
-                key={block.id}
-                block={block}
-                index={i}
-                total={scene.blocks.length}
-                isActive={activeBlockId === block.id}
-                activeContentRef={activeContentRef}
-                onActivate={() => activateBlock(block.id)}
-                onUpdate={updated => updateBlock(i, updated)}
-                onDelete={() => deleteBlock(i)}
-                onMoveUp={() => moveBlock(i, i - 1)}
-                onMoveDown={() => moveBlock(i, i + 1)}
-                onDirty={markDirty}
-              />
-            ))}
+            {scene.blocks.map((block, i) => {
+              const blockKey = isUnknownBlock(block) ? block.uiKey : block.id;
+              return (
+                <SortableBlockEditor
+                  key={blockKey}
+                  block={block}
+                  index={i}
+                  total={scene.blocks.length}
+                  isActive={!isUnknownBlock(block) && activeBlockId === block.id}
+                  activeContentRef={activeContentRef}
+                  onActivate={() => { if (!isUnknownBlock(block)) activateBlock(block.id); }}
+                  onUpdate={updated => updateBlock(i, updated)}
+                  onDelete={() => deleteBlock(i)}
+                  onMoveUp={() => moveBlock(i, i - 1)}
+                  onMoveDown={() => moveBlock(i, i + 1)}
+                  onDirty={markDirty}
+                />
+              );
+            })}
           </div>
         </SortableContext>
       </DndContext>
@@ -1219,7 +1229,8 @@ export default function NarrativeCanvasStudio({
 // Utility: determine whether a block has meaningful content
 // ---------------------------------------------------------------------------
 
-function isBlockEmpty(block: NarrativeBlock): boolean {
+function isBlockEmpty(block: ParsedNarrativeBlock): boolean {
+  if (isUnknownBlock(block)) return false;
   switch (block.kind) {
     case "rich_text":
       return isRichTextEmpty(block.content);
@@ -1231,8 +1242,6 @@ function isBlockEmpty(block: NarrativeBlock): boolean {
       return !block.assetId && !block.alt && !block.caption;
     case "timeline":
       return !block.title && block.items.length === 0;
-    default:
-      return false;
   }
 }
 

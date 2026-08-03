@@ -2,22 +2,26 @@
 
 Updated: 2026-08-03 Asia/Saigon
 
-## Task 21/60 — Narrative Canvas Core Schema + Single-Scene Read/Studio Vertical Slice (Accepted after remediation)
+## Task 21/60 — Narrative Canvas Core Schema + Single-Scene Read/Studio Vertical Slice (Accepted after final remediation)
 
-- Candidate `f1438da` failed acceptance on 6 P1 defects (see `docs/audits/task-21-acceptance-remediation.md`).
-- Remediation closed all P1 defects; accepted at current HEAD.
+- Candidate `f1438da` failed acceptance on 6 P1 defects (ADR 0012, `docs/audits/task-21-acceptance-remediation.md`). All closed.
+- Second review identified 3 further P1 defects; closed in ADR 0013 (`docs/audits/task-21-final-remediation.md`).
 - Migration 11: `narrative_documents`, `narrative_document_revisions`, `narrative_document_drafts`, `narrative_save_operations`, `narrative_document_assets`.
-- Migration 12: `template_id`/`template_version` columns, `narrative_documents_active_life_node_uq` unique partial index, `narrative_document_revisions_document_revision_uq`, guard triggers (root, schema_version, template, JSON/text size, revision monotonicity), restore guard triggers.
+- Migration 12: `template_id`/`template_version` columns, `narrative_documents_active_life_node_uq` unique partial index, `narrative_document_revisions_document_revision_uq`, INSERT/UPDATE guard triggers (root, schema_version, template, JSON/text size, revision monotonicity), restore guard triggers.
+- Migration 13: BEFORE UPDATE guard triggers for move (life_node_id immutability) and restore (node active + uniqueness) on both narrative and basic leaf documents.
 - Mutual exclusion enforced by SQL BEFORE INSERT triggers (canvas↔basic leaf, canvas↔child life nodes) + unique partial index.
 - Document identity chain: JSON `documentId` verified to equal DB row `id` and IPC `document_id` on every save.
-- Unknown block kinds preserved in canonical_json; excluded from plain_text/assets; bounded at 64 KiB.
+- Unknown block kinds preserved losslessly: `UnknownNarrativeBlock.canonical` holds entire raw object; `serializeNarrative` re-emits verbatim.
+- `parseNarrative` strict: throws on wrong templateVersion, scene count, layoutPreset, atmosphere, motionPreset, non-string field values.
+- `serializeNarrative` is the single exit point for canonical JSON; known blocks emit V1 fields only.
+- `BasicLeafReader` detects dual-content conflict (both Basic Leaf + Canvas active) and shows blocking alert.
 - `create()` inherits Life node title for seed document; idempotent for existing active canvas.
 - Search integration: narrative documents indexed as `entity_kind='reader_document'`. Navigation via `SearchNavigationTarget::LifeReader`.
 - 6 IPC commands: `get_narrative_document`, `create_narrative_document`, `save_narrative_document`, `save_narrative_draft`, `discard_narrative_draft`, `recover_narrative_draft`.
-- `NarrativeCanvasReader` (semantic `article`/`h1`/`section`/`h2` structure) + `NarrativeCanvasStudio` (lazy chunk, one active Tiptap island, dnd-kit sortable).
-- All 5 block kinds: rich_text, metric, image, callout, timeline. Unknown blocks: placeholder in Reader.
-- 348 Rust tests pass; 336 frontend tests pass (15 new: NarrativeCanvasStudio.test.tsx).
-- ADR 0011 accepted; ADR 0012 accepted; specs/011-narrative-canvas-core/ created.
+- `NarrativeCanvasReader` (semantic `article`/`h1`/`section`/`h2`; `isUnknownBlock` guard for unknown-kind placeholder) + `NarrativeCanvasStudio` (lazy chunk, one active Tiptap island, dnd-kit sortable, `serializeNarrative` in save/draft paths).
+- All 5 block kinds: rich_text, metric, image, callout, timeline. Unknown blocks: preserved on save, placeholder in Reader.
+- 348 Rust tests pass; 350 frontend tests pass (13 new: schema.test.ts).
+- ADR 0011 accepted; ADR 0012 accepted; ADR 0013 accepted; specs/011-narrative-canvas-core/ created.
 
 ## Task 20/60 — Narrative Canvas Canonical Schema A/B Prototype + Decision (complete reaudit)
 

@@ -96,12 +96,16 @@ Production Narrative Canvas activation requires a separate approved task.
 
 ## Slice 011 — Narrative Canvas Core
 
-Task 21 activates the first production Narrative Canvas vertical slice (ADR 0010 Strategy A). Accepted after acceptance remediation (ADR 0012).
+Task 21 activates the first production Narrative Canvas vertical slice (ADR 0010 Strategy A). Accepted after two remediation rounds (ADR 0012, ADR 0013).
 
 - Migration 11: narrative tables, mutual exclusion triggers, search dirty triggers
-- Migration 12: `template_id`/`template_version` columns, unique partial index (one-canvas-per-leaf), revision uniqueness, guard triggers, restore guard triggers
-- Schema validation: document identity chain (JSON `documentId` == DB `id` == IPC input), unknown block preservation, all five block kinds (rich_text, metric, image, callout, timeline)
+- Migration 12: `template_id`/`template_version` columns, unique partial index (one-canvas-per-leaf), revision uniqueness, INSERT/UPDATE guard triggers, restore guard triggers
+- Migration 13: BEFORE UPDATE move guard (life_node_id immutability) and restore guards (node active + uniqueness) for both narrative and basic leaf documents
+- Schema validation: document identity chain (JSON `documentId` == DB `id` == IPC input), unknown block lossless preservation (`canonical` field), strict parse (rejects wrong preset values/scene count/templateVersion)
+- `serializeNarrative`: single exit point for canonical JSON; known blocks emit V1 fields only; unknown blocks re-emit `canonical` verbatim
+- `BasicLeafReader`: dual-content conflict detection with blocking alert
+- All five block kinds (rich_text, metric, image, callout, timeline); unknown blocks: preserved on save, placeholder in Reader
 - 6 IPC commands; `NarrativeCanvasReader` (semantic `article`/`h1`/`section`/`h2`) + `NarrativeCanvasStudio` (lazy Tiptap island chunk)
 - Search integration reuses `entity_kind='reader_document'` (immutable Migration 10 FTS constraint)
 - Revision retention: 50 revisions (same as Basic Leaf)
-- Decisions in ADR 0011, ADR 0012.
+- Decisions in ADR 0011, ADR 0012, ADR 0013.

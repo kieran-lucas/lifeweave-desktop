@@ -465,6 +465,74 @@ static MIGRATIONS: &[Migration] = &[
                 BEGIN SELECT RAISE(ABORT,'cannot restore Basic Leaf: this leaf already has a Narrative Canvas'); END;
         ",
     },
+    Migration {
+        version: 13,
+        sql: "
+            -- Guard: narrative canvas cannot be moved to a different life node
+            CREATE TRIGGER narrative_life_node_move_guard
+                BEFORE UPDATE OF life_node_id ON narrative_documents
+                FOR EACH ROW WHEN NEW.life_node_id != OLD.life_node_id AND OLD.archived_at IS NULL
+            BEGIN
+                SELECT RAISE(ABORT, 'narrative: life_node_id is immutable on active canvases');
+            END;
+
+            -- Guard: basic leaf document cannot be moved to a different life node
+            CREATE TRIGGER reader_life_node_move_guard
+                BEFORE UPDATE OF life_node_id ON reader_documents
+                FOR EACH ROW WHEN NEW.life_node_id != OLD.life_node_id AND OLD.archived_at IS NULL
+            BEGIN
+                SELECT RAISE(ABORT, 'reader_document: life_node_id is immutable on active documents');
+            END;
+
+            -- Guard: restoring a narrative canvas requires the life node to be active
+            CREATE TRIGGER narrative_restore_node_active_guard
+                BEFORE UPDATE OF archived_at ON narrative_documents
+                FOR EACH ROW WHEN OLD.archived_at IS NOT NULL AND NEW.archived_at IS NULL
+            BEGIN
+                SELECT RAISE(ABORT, 'narrative: cannot restore canvas whose life node is archived')
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM life_nodes
+                    WHERE id = NEW.life_node_id AND archived_at IS NULL
+                );
+            END;
+
+            -- Guard: restoring a narrative canvas fails when another active canvas already exists for the node
+            CREATE TRIGGER narrative_restore_uniqueness_guard
+                BEFORE UPDATE OF archived_at ON narrative_documents
+                FOR EACH ROW WHEN OLD.archived_at IS NOT NULL AND NEW.archived_at IS NULL
+            BEGIN
+                SELECT RAISE(ABORT, 'narrative: a canvas already exists for this life node')
+                WHERE EXISTS (
+                    SELECT 1 FROM narrative_documents
+                    WHERE life_node_id = NEW.life_node_id AND archived_at IS NULL AND id != NEW.id
+                );
+            END;
+
+            -- Guard: restoring a basic leaf document requires the life node to be active
+            CREATE TRIGGER reader_restore_node_active_guard
+                BEFORE UPDATE OF archived_at ON reader_documents
+                FOR EACH ROW WHEN OLD.archived_at IS NOT NULL AND NEW.archived_at IS NULL
+            BEGIN
+                SELECT RAISE(ABORT, 'reader_document: cannot restore document whose life node is archived')
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM life_nodes
+                    WHERE id = NEW.life_node_id AND archived_at IS NULL
+                );
+            END;
+
+            -- Guard: restoring a basic leaf document fails when another active document already exists
+            CREATE TRIGGER reader_restore_uniqueness_guard
+                BEFORE UPDATE OF archived_at ON reader_documents
+                FOR EACH ROW WHEN OLD.archived_at IS NOT NULL AND NEW.archived_at IS NULL
+            BEGIN
+                SELECT RAISE(ABORT, 'reader_document: a document already exists for this life node')
+                WHERE EXISTS (
+                    SELECT 1 FROM reader_documents
+                    WHERE life_node_id = NEW.life_node_id AND archived_at IS NULL AND id != NEW.id
+                );
+            END;
+        ",
+    },
 ];
 
 /// Bootstraps the migration tracking table and applies any pending migrations.
@@ -569,7 +637,7 @@ mod tests {
         let mut conn = open_memory_connection().unwrap();
         run_migrations(&mut conn).unwrap();
 
-        assert_eq!(current_schema_version(&conn).unwrap(), 12);
+        assert_eq!(current_schema_version(&conn).unwrap(), 13);
 
         let count: i64 = conn
             .query_row("SELECT COUNT(*) FROM db_metadata", [], |r| r.get(0))
@@ -583,7 +651,7 @@ mod tests {
         let mig_count: i64 = conn
             .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
             .unwrap();
-        assert_eq!(mig_count, 12);
+        assert_eq!(mig_count, 13);
     }
 
     #[test]
@@ -593,11 +661,11 @@ mod tests {
         run_migrations(&mut conn).unwrap();
 
         // The latest version remains stable; no duplicate migration rows.
-        assert_eq!(current_schema_version(&conn).unwrap(), 12);
+        assert_eq!(current_schema_version(&conn).unwrap(), 13);
         let mig_count: i64 = conn
             .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
             .unwrap();
-        assert_eq!(mig_count, 12);
+        assert_eq!(mig_count, 13);
     }
 
     #[test]
@@ -686,7 +754,7 @@ mod tests {
         match run_migrations_with(&mut conn, MIGRATIONS) {
             Err(DbError::SchemaTooNew { stored, supported }) => {
                 assert_eq!(stored, 9999);
-                assert_eq!(supported, 12);
+                assert_eq!(supported, 13);
             }
             other => panic!("expected SchemaTooNew, got {other:?}"),
         }
@@ -722,7 +790,7 @@ mod tests {
         {
             let mut conn = open_file_connection(&path).unwrap();
             run_migrations(&mut conn).unwrap();
-            assert_eq!(current_schema_version(&conn).unwrap(), 12);
+            assert_eq!(current_schema_version(&conn).unwrap(), 13);
             // Confirm the schema object created by migration 1 exists
             let count: i64 = conn
                 .query_row("SELECT COUNT(*) FROM db_metadata", [], |r| r.get(0))
@@ -736,7 +804,7 @@ mod tests {
             run_migrations(&mut conn).unwrap();
             assert_eq!(
                 current_schema_version(&conn).unwrap(),
-                12,
+                13,
                 "schema version must survive close/reopen"
             );
             let count: i64 = conn
@@ -749,7 +817,7 @@ mod tests {
                 .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
                 .unwrap();
             assert_eq!(
-                mig_count, 12,
+                mig_count, 13,
                 "no duplicate migration records after reopen + re-run"
             );
         }
