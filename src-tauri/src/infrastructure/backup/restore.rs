@@ -125,7 +125,7 @@ fn validate_candidate(
     }
     if actual_schema >= 9 {
         let mut statement = conn
-            .prepare("SELECT DISTINCT a.relative_original_path FROM assets a JOIN document_assets da ON da.asset_id=a.id WHERE a.status='usable' ORDER BY a.relative_original_path")
+            .prepare("SELECT DISTINCT a.relative_original_path FROM assets a WHERE a.status='usable' AND (EXISTS(SELECT 1 FROM document_assets da WHERE da.asset_id=a.id) OR EXISTS(SELECT 1 FROM narrative_document_assets nda WHERE nda.asset_id=a.id)) ORDER BY a.relative_original_path")
             .map_err(|_| BackupError::PostSwapValidationFailed("asset manifest validation failed".into()))?;
         let required = statement
             .query_map([], |row| row.get::<_, String>(0))

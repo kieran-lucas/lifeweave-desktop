@@ -93,7 +93,7 @@ pub fn backup_db(
         let mut assets = Vec::new();
         let conn = open_file_connection(&staging_db_path).map_err(BackupError::Db)?;
         let mut statement = conn
-            .prepare("SELECT DISTINCT a.relative_original_path FROM assets a JOIN document_assets da ON da.asset_id=a.id WHERE a.status='usable' ORDER BY a.relative_original_path")
+            .prepare("SELECT DISTINCT a.relative_original_path FROM assets a WHERE a.status='usable' AND (EXISTS(SELECT 1 FROM document_assets da WHERE da.asset_id=a.id) OR EXISTS(SELECT 1 FROM narrative_document_assets nda WHERE nda.asset_id=a.id)) ORDER BY a.relative_original_path")
             .map_err(|e| BackupError::Db(e.into()))?;
         let paths = statement
             .query_map([], |row| row.get::<_, String>(0))
@@ -481,6 +481,60 @@ mod tests {
             sha256_file(&dir.join(&manifest.assets[0].relative_path)).unwrap(),
             manifest.assets[0].sha256
         );
+    }
+
+    #[test]
+    fn backup_packages_referenced_narrative_assets() {
+        use crate::{
+            document::{assets, dto::ImportDocumentAssetInput},
+            life,
+            narrative::{dto::CreateNarrativeDocumentInput, repository as narrative},
+        };
+        let (rt, db) = make_file_runtime();
+        let app_root = db.parent().unwrap().to_path_buf();
+        let png = assets::tiny_png();
+        let asset = rt
+            .execute(move |conn| {
+                let node = life::repository::create(
+                    conn,
+                    life::dto::CreateLifeNodeInput {
+                        parent_id: "life-root".into(),
+                        title: "Canvas leaf".into(),
+                        short_description: "".into(),
+                        icon_key: "life-leaf".into(),
+                        branch_theme_id: "neutral".into(),
+                    },
+                )
+                .map_err(|_| crate::infrastructure::sqlite::DbError::InvalidMigrationList)?
+                .node;
+                let canvas = narrative::create(
+                    conn,
+                    CreateNarrativeDocumentInput {
+                        life_node_id: node.id,
+                        operation_id: "backup-narrative-create".into(),
+                    },
+                )
+                .map_err(|_| crate::infrastructure::sqlite::DbError::InvalidMigrationList)?;
+                let asset = assets::import(
+                    conn,
+                    &app_root,
+                    ImportDocumentAssetInput {
+                        original_name: "pixel.png".into(),
+                        bytes: png,
+                    },
+                )
+                .map_err(|_| crate::infrastructure::sqlite::DbError::InvalidMigrationList)?;
+                conn.execute(
+                    "INSERT INTO narrative_document_assets VALUES(?1,?2,1)",
+                    [&canvas.id, &asset.asset_id],
+                )?;
+                Ok(asset)
+            })
+            .unwrap();
+        let result = backup_db(&rt, &temp_backups_dir()).unwrap();
+        let manifest = BackupManifest::read_from_dir(&PathBuf::from(result.backup_dir)).unwrap();
+        assert_eq!(manifest.assets.len(), 1);
+        assert_eq!(manifest.assets[0].byte_size, asset.byte_size);
     }
 
     #[test]

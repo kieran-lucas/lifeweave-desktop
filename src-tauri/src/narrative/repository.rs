@@ -449,7 +449,7 @@ pub fn import_from_markdown(
 }
 
 pub fn preview_markdown(
-    _conn: &Connection,
+    conn: &Connection,
     input: PreviewNarrativeMarkdownInput,
 ) -> Result<NarrativeMarkdownPreview, NarrativeError> {
     let canonical = crate::document::markdown::import(&input.markdown).map_err(|e| match e {
@@ -479,8 +479,28 @@ pub fn preview_markdown(
             .to_owned(),
     ];
     if referenced_asset_count > 0 {
-        warnings
-            .push("This document references local assets that will not be included.".to_owned());
+        let unavailable = validated
+            .assets
+            .keys()
+            .filter(|id| {
+                conn.query_row(
+                    "SELECT EXISTS(SELECT 1 FROM assets WHERE id=?1 AND status='usable')",
+                    params![id],
+                    |row| row.get::<_, i64>(0),
+                )
+                .unwrap_or(0)
+                    == 0
+            })
+            .count();
+        if unavailable > 0 {
+            warnings.push(format!(
+                "{unavailable} referenced local asset(s) are unavailable. Add them before confirming import."
+            ));
+        } else {
+            warnings.push(
+                "Referenced local assets are available now; Confirm checks again.".to_owned(),
+            );
+        }
     }
     Ok(NarrativeMarkdownPreview {
         proposed_title,
@@ -614,6 +634,133 @@ mod tests {
         let recovered =
             recover_draft(&mut c, NarrativeDocumentIdInput { document_id: a.id }).unwrap();
         assert_eq!(recovered.revision, 2);
+    }
+
+    fn markdown_with_assets(ids: &[&str]) -> String {
+        ids.iter()
+            .map(|id| format!("![Local image](assets/{id})"))
+            .collect::<Vec<_>>()
+            .join("\n\n")
+    }
+
+    #[test]
+    fn preview_markdown_reports_available_and_missing_assets_without_writing() {
+        let mut c = db();
+        let root = std::env::temp_dir().join(format!("lw-preview-{}", domain::new_id()));
+        std::fs::create_dir_all(&root).unwrap();
+        let available = crate::document::assets::import(
+            &mut c,
+            &root,
+            crate::document::dto::ImportDocumentAssetInput {
+                original_name: "pixel.png".into(),
+                bytes: crate::document::assets::tiny_png(),
+            },
+        )
+        .unwrap();
+        let before: i64 = c
+            .query_row("SELECT count(*) FROM assets", [], |row| row.get(0))
+            .unwrap();
+        let available_preview = preview_markdown(
+            &c,
+            PreviewNarrativeMarkdownInput {
+                original_name: "available.md".into(),
+                markdown: markdown_with_assets(&[&available.asset_id]),
+            },
+        )
+        .unwrap();
+        assert!(
+            available_preview
+                .warnings
+                .iter()
+                .any(|w| w.contains("available now"))
+        );
+        let missing = domain::new_id();
+        let missing_preview = preview_markdown(
+            &c,
+            PreviewNarrativeMarkdownInput {
+                original_name: "missing.md".into(),
+                markdown: markdown_with_assets(&[&missing]),
+            },
+        )
+        .unwrap();
+        assert!(
+            missing_preview
+                .warnings
+                .iter()
+                .any(|w| w.contains("1 referenced"))
+        );
+        let another_missing = domain::new_id();
+        let multiple = preview_markdown(
+            &c,
+            PreviewNarrativeMarkdownInput {
+                original_name: "multiple.md".into(),
+                markdown: markdown_with_assets(&[&missing, &another_missing]),
+            },
+        )
+        .unwrap();
+        assert!(multiple.warnings.iter().any(|w| w.contains("2 referenced")));
+        let after: i64 = c
+            .query_row("SELECT count(*) FROM assets", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(before, after, "preview must remain read-only");
+        let _ = std::fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn markdown_import_rechecks_asset_after_preview() {
+        let mut c = db();
+        let root = std::env::temp_dir().join(format!("lw-preview-race-{}", domain::new_id()));
+        std::fs::create_dir_all(&root).unwrap();
+        let asset = crate::document::assets::import(
+            &mut c,
+            &root,
+            crate::document::dto::ImportDocumentAssetInput {
+                original_name: "pixel.png".into(),
+                bytes: crate::document::assets::tiny_png(),
+            },
+        )
+        .unwrap();
+        let markdown = markdown_with_assets(&[&asset.asset_id]);
+        assert!(
+            preview_markdown(
+                &c,
+                PreviewNarrativeMarkdownInput {
+                    original_name: "race.md".into(),
+                    markdown: markdown.clone()
+                }
+            )
+            .unwrap()
+            .warnings
+            .iter()
+            .any(|w| w.contains("available now"))
+        );
+        c.execute(
+            "UPDATE assets SET status='missing' WHERE id=?1",
+            params![asset.asset_id],
+        )
+        .unwrap();
+        let node = leaf_node(&mut c);
+        assert!(
+            import_from_markdown(
+                &mut c,
+                ImportNarrativeMarkdownInput {
+                    life_node_id: node.clone(),
+                    original_name: "race.md".into(),
+                    markdown,
+                    operation_id: "preview-race".into()
+                }
+            )
+            .is_err()
+        );
+        let count: i64 = c
+            .query_row(
+                "SELECT count(*) FROM narrative_documents WHERE life_node_id=?1",
+                params![node],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(count, 0, "Confirm must roll back after an asset disappears");
+        let _ = std::fs::remove_dir_all(root);
     }
 
     #[test]
@@ -1014,6 +1161,44 @@ mod tests {
     }
 
     #[test]
+    fn narrative_canvas_scale_and_save_evidence() {
+        let mut conn = open_memory_connection().unwrap();
+        run_migrations(&mut conn).unwrap();
+        let node = leaf_node(&mut conn);
+        let doc = create(
+            &mut conn,
+            CreateNarrativeDocumentInput {
+                life_node_id: node,
+                operation_id: "scale-create".into(),
+            },
+        )
+        .unwrap();
+
+        for block_count in [5usize, 50, 128] {
+            let canonical_json = make_test_canvas_json(&doc.id, block_count);
+            let validated = schema::validate(&canonical_json, Some(&doc.id)).unwrap();
+            assert!(
+                !validated.plain_text.is_empty(),
+                "{block_count}-block fixture must extract text"
+            );
+        }
+
+        let saved = save(
+            &mut conn,
+            SaveNarrativeDocumentInput {
+                document_id: doc.id.clone(),
+                expected_revision: 0,
+                schema_version: 1,
+                canonical_json: make_test_canvas_json(&doc.id, 5),
+                operation_id: "scale-save".into(),
+            },
+        )
+        .unwrap();
+        assert_eq!(saved.revision, 1);
+    }
+
+    #[test]
+    #[ignore = "run through scripts/run_narrative_performance_evidence.ps1 in isolated release mode"]
     fn narrative_canvas_performance_evidence() {
         use std::time::{Duration, Instant};
 

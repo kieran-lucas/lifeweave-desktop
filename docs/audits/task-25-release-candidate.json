@@ -1,0 +1,33 @@
+{
+  "task": 25,
+  "starting_head": "7950273e90be160754170a9ded999a6dc7e6b9c1",
+  "schema_version": 14,
+  "frontend_tests": 429,
+  "ordinary_rust_tests": { "passed": 394, "ignored_release_performance": 1 },
+  "narrative_release_performance": {
+    "target_p95_ms": 50,
+    "five_blocks": { "p50": "28us", "p95": "46.5us", "max": "118.6us", "samples": 100 },
+    "fifty_blocks": { "p50": "314.6us", "p95": "511.6us", "max": "704.8us", "samples": 100 },
+    "one_twenty_eight_blocks": { "p50": "805.9us", "p95": "1.1564ms", "max": "1.3351ms", "samples": 100 },
+    "save_five_blocks": { "p50": "130.3us", "p95": "416.3us", "samples": 20 }
+  },
+  "bundle_bytes": {
+    "main": 498786,
+    "basic_leaf_editor": 52351,
+    "markdown": 116541,
+    "narrative_studio": 19360,
+    "tiptap_vendor": 390830,
+    "total": 1093663
+  },
+  "nsis": {
+    "path": "src-tauri/target/release/bundle/nsis/Lifeweave_0.0.0_x64-setup.exe",
+    "bytes": 4617945,
+    "sha256": "4e88fea24ef20c545a8026e9b21863edf84c61a9205bc7e5163cfd8d358b7ba3"
+  },
+  "rc_dogfood": { "sessions": 2, "schema": 14, "cleanup": "validated" },
+  "webdriver": {
+    "classification": "repository-script-defect",
+    "detail": "Phase 1 expects obsolete Foundation Records heading",
+    "artifacts": "target/e2e-artifacts/c0a3e7d0f70348feb7a8ab5acfc454c2"
+  }
+}

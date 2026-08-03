@@ -69,6 +69,10 @@ Task 17 evaluates Score, Prediction, Narrative Canvas, Visual Worlds, Global Sea
 
 Portfolio recommendation accepted: **Global Search activated as Task 18.** All other candidates remain held or deferred per `docs/audits/task-17-expansion-decision.md`.
 
+## Slice 015 — Core Evidence + Release Readiness
+
+Task 25 closes evidence debt after Narrative Multi-Scene: deterministic ordinary Canvas scale coverage, isolated release performance evidence, Canvas asset backup packaging, preview-time missing asset diagnostics, keyboard-complete scene tabs, and current local Windows release evidence. It does not activate a new product slice.
+
 ## Slice 008 — Global Search
 
 Task 18 implements FTS5 global search with Vietnamese normalization, dirty-scope rebuild queue, `search_global` IPC command, and lazy React search dialog.

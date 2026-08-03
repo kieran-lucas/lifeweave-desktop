@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import axe from "axe-core";
 import NarrativeCanvasStudio from "./NarrativeCanvasStudio";
 
 const DOC_ID = "019700000000-0000-7000-8000-000000000201";
@@ -493,6 +494,51 @@ describe("NarrativeCanvasStudio multi-scene", () => {
     fireEvent.click(screen.getByRole("tab", { name: "Scene Two" }));
     expect(screen.getByText("metric")).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Scene Two" })).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("uses roving tabIndex and valid tabpanel labelling", () => {
+    mountWith(twoSceneJson);
+    const first = screen.getByRole("tab", { name: "Scene One" });
+    const second = screen.getByRole("tab", { name: "Scene Two" });
+    expect(first).toHaveAttribute("tabindex", "0");
+    expect(second).toHaveAttribute("tabindex", "-1");
+    expect(screen.getByRole("tabpanel")).toHaveAttribute("aria-labelledby", first.id);
+  });
+
+  it("ArrowLeft and ArrowRight wrap, activate, and focus scene tabs", async () => {
+    mountWith(twoSceneJson);
+    const first = screen.getByRole("tab", { name: "Scene One" });
+    fireEvent.keyDown(first, { key: "ArrowLeft" });
+    await waitFor(() => expect(screen.getByRole("tab", { name: "Scene Two" })).toHaveAttribute("aria-selected", "true"));
+    expect(document.activeElement).toBe(screen.getByRole("tab", { name: "Scene Two" }));
+    fireEvent.keyDown(screen.getByRole("tab", { name: "Scene Two" }), { key: "ArrowRight" });
+    await waitFor(() => expect(first).toHaveAttribute("aria-selected", "true"));
+  });
+
+  it("Home and End activate first and last scene tabs", async () => {
+    mountWith(twoSceneJson);
+    fireEvent.keyDown(screen.getByRole("tab", { name: "Scene One" }), { key: "End" });
+    await waitFor(() => expect(screen.getByRole("tab", { name: "Scene Two" })).toHaveAttribute("aria-selected", "true"));
+    fireEvent.keyDown(screen.getByRole("tab", { name: "Scene Two" }), { key: "Home" });
+    await waitFor(() => expect(screen.getByRole("tab", { name: "Scene One" })).toHaveAttribute("aria-selected", "true"));
+  });
+
+  it("preserves live Tiptap content when keyboard-switching scenes", async () => {
+    const liveContent: unknown = { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "Keyboard scene content" }] }] };
+    tiptapMock.getJSON.mockReturnValue(liveContent);
+    mountWith(twoSceneJson);
+    fireEvent.click(screen.getByLabelText("Click to edit rich text block"));
+    act(() => tiptapMock.onUpdate?.({ editor: { getJSON: () => liveContent } }));
+    fireEvent.keyDown(screen.getByRole("tab", { name: "Scene One" }), { key: "ArrowRight" });
+    await waitFor(() => expect(screen.getByRole("tab", { name: "Scene Two" })).toHaveAttribute("aria-selected", "true"));
+    fireEvent.click(screen.getByRole("button", { name: "Publish" }));
+    await waitFor(() => expect(JSON.parse(api.save.mock.calls[0]![0].canonical_json as string).scenes[0].blocks[0].content.content[0].content[0].text).toBe("Keyboard scene content"));
+  });
+
+  it("passes axe for the multi-scene Studio fixture", async () => {
+    const { container } = render(<NarrativeCanvasStudio document={{ ...baseDoc, canonical_json: twoSceneJson }} initialJson={null} onCommitted={() => {}} onCancel={() => {}} />);
+    const results = await axe.run(container);
+    expect(results.violations).toEqual([]);
   });
 
   it("Add scene button adds a new tab", () => {

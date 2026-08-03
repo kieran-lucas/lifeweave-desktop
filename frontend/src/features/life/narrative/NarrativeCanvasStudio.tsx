@@ -780,6 +780,7 @@ export default function NarrativeCanvasStudio({
   const activeSceneIdx = Math.max(0, doc.scenes.findIndex(s => s.id === activeSceneId));
   const scene = doc.scenes[activeSceneIdx]!;
   const blockIds = scene.blocks.map(b => isUnknownBlock(b) ? b.uiKey : b.id);
+  const sceneTabRefs = useRef(new Map<string, HTMLButtonElement>());
 
   // ---- Helpers ----
 
@@ -1061,6 +1062,23 @@ export default function NarrativeCanvasStudio({
     });
   }, [activeSceneIdx, materializeCurrentDocument, applyStructural]);
 
+  const activateSceneTab = useCallback((sceneId: string) => {
+    deactivateIsland(null);
+    setActiveSceneId(sceneId);
+    requestAnimationFrame(() => sceneTabRefs.current.get(sceneId)?.focus());
+  }, [deactivateIsland]);
+
+  const handleSceneTabKeyDown = useCallback((event: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
+    let nextIndex: number | null = null;
+    if (event.key === "ArrowLeft") nextIndex = (index + doc.scenes.length - 1) % doc.scenes.length;
+    if (event.key === "ArrowRight") nextIndex = (index + 1) % doc.scenes.length;
+    if (event.key === "Home") nextIndex = 0;
+    if (event.key === "End") nextIndex = doc.scenes.length - 1;
+    if (nextIndex === null) return;
+    event.preventDefault();
+    activateSceneTab(doc.scenes[nextIndex]!.id);
+  }, [activateSceneTab, doc.scenes]);
+
   const handleMoveScene = useCallback((direction: "left" | "right") => {
     const to = direction === "left" ? activeSceneIdx - 1 : activeSceneIdx + 1;
     if (to < 0 || to >= doc.scenes.length) return;
@@ -1340,21 +1358,26 @@ export default function NarrativeCanvasStudio({
         }}
       />
 
-      <div className={styles.sceneTabBar} role="tablist" aria-label="Canvas scenes">
-        {doc.scenes.map((s, i) => (
+      <div className={styles.sceneTabBar}>
+        <div className={styles.sceneTabList} role="tablist" aria-label="Canvas scenes">
+          {doc.scenes.map((s, i) => (
           <button
             key={s.id}
             role="tab"
             aria-selected={s.id === activeSceneId}
             aria-controls="nc-studio-tabpanel"
             id={`nc-tab-${s.id}`}
+            tabIndex={s.id === activeSceneId ? 0 : -1}
+            ref={element => { if (element) sceneTabRefs.current.set(s.id, element); else sceneTabRefs.current.delete(s.id); }}
             className={s.id === activeSceneId ? styles.sceneTabActive : styles.sceneTab}
             type="button"
-            onClick={() => { deactivateIsland(null); setActiveSceneId(s.id); }}
+            onClick={() => activateSceneTab(s.id)}
+            onKeyDown={event => handleSceneTabKeyDown(event, i)}
           >
             {s.title || `Scene ${i + 1}`}
           </button>
-        ))}
+          ))}
+        </div>
         {doc.scenes.length < 20 && (
           <button
             className={styles.sceneTabAdd}
