@@ -1,0 +1,419 @@
+{
+  "seed": 20260803,
+  "n_samples_per_profile": 1000000,
+  "n_profiles": 5,
+  "criteria": [
+    "user_value",
+    "mission_alignment",
+    "identity_fit",
+    "engineering_simplicity",
+    "schema_stability",
+    "integration_coherence",
+    "maintenance_inv",
+    "reversibility",
+    "narrative_compat",
+    "impl_risk_inv",
+    "data_risk_inv",
+    "dep_risk_inv"
+  ],
+  "candidates": {
+    "multi_scene": {
+      "base_scores": [
+        8,
+        7,
+        9,
+        7,
+        7,
+        7,
+        7,
+        9,
+        10,
+        7,
+        9,
+        8
+      ],
+      "sigma": 0.6
+    },
+    "task_life_rel": {
+      "base_scores": [
+        7,
+        5,
+        7,
+        8,
+        8,
+        7,
+        7,
+        9,
+        10,
+        7,
+        9,
+        7
+      ],
+      "sigma": 0.7
+    },
+    "generic_outline": {
+      "base_scores": [
+        5,
+        5,
+        4,
+        9,
+        8,
+        8,
+        8,
+        9,
+        10,
+        9,
+        6,
+        8
+      ],
+      "sigma": 0.55
+    },
+    "no_expansion": {
+      "base_scores": [
+        4,
+        6,
+        1,
+        9,
+        8,
+        9,
+        9,
+        7,
+        10,
+        8,
+        10,
+        8
+      ],
+      "sigma": 0.4
+    },
+    "lossless_package": {
+      "base_scores": [
+        5,
+        3,
+        6,
+        8,
+        8,
+        7,
+        7,
+        8,
+        9,
+        9,
+        8,
+        7
+      ],
+      "sigma": 0.7
+    },
+    "tags": {
+      "base_scores": [
+        6,
+        6,
+        5,
+        7,
+        8,
+        6,
+        6,
+        8,
+        10,
+        6,
+        6,
+        7
+      ],
+      "sigma": 0.75
+    }
+  },
+  "profiles": {
+    "base": [
+      16,
+      10,
+      10,
+      12,
+      9,
+      9,
+      8,
+      7,
+      6,
+      5,
+      5,
+      3
+    ],
+    "utility_first": [
+      25,
+      20,
+      8,
+      10,
+      7,
+      7,
+      6,
+      5,
+      4,
+      4,
+      2,
+      2
+    ],
+    "visual_identity_first": [
+      12,
+      7,
+      25,
+      10,
+      8,
+      7,
+      7,
+      7,
+      5,
+      4,
+      5,
+      3
+    ],
+    "safety_maintenance_first": [
+      10,
+      7,
+      5,
+      25,
+      8,
+      8,
+      18,
+      7,
+      4,
+      4,
+      2,
+      2
+    ],
+    "recovery_readiness_first": [
+      10,
+      7,
+      6,
+      15,
+      8,
+      10,
+      8,
+      7,
+      5,
+      10,
+      10,
+      4
+    ]
+  },
+  "profile_results": {
+    "base": {
+      "win_probability": {
+        "multi_scene": 0.881695,
+        "task_life_rel": 0.104885,
+        "generic_outline": 0.009648,
+        "no_expansion": 0.003382,
+        "lossless_package": 0.00035,
+        "tags": 4e-05
+      },
+      "mean_weighted_score": {
+        "multi_scene": 7.792619333105684,
+        "task_life_rel": 7.410333691244772,
+        "generic_outline": 7.0653116707311945,
+        "no_expansion": 6.882198261102488,
+        "lossless_package": 6.727355769133849,
+        "tags": 6.591483866321698
+      },
+      "p_above_threshold": {
+        "multi_scene": 0.999871,
+        "task_life_rel": 0.947091,
+        "generic_outline": 0.603693,
+        "no_expansion": 0.354173,
+        "lossless_package": 0.16939,
+        "tags": 0.062652
+      },
+      "mean_rank": {
+        "multi_scene": 1.133024,
+        "task_life_rel": 2.127113,
+        "generic_outline": 3.297037,
+        "no_expansion": 4.206381,
+        "lossless_package": 4.875141,
+        "tags": 5.361304
+      }
+    },
+    "utility_first": {
+      "win_probability": {
+        "multi_scene": 0.964732,
+        "task_life_rel": 0.034084,
+        "generic_outline": 0.000657,
+        "no_expansion": 0.000113,
+        "lossless_package": 4e-06,
+        "tags": 0.00041
+      },
+      "mean_weighted_score": {
+        "multi_scene": 7.6791733390797,
+        "task_life_rel": 7.016828353779108,
+        "generic_outline": 6.549700229228715,
+        "no_expansion": 6.330271562931303,
+        "lossless_package": 6.018097617456883,
+        "tags": 6.4283662934625
+      },
+      "p_above_threshold": {
+        "multi_scene": 0.997084,
+        "task_life_rel": 0.527608,
+        "generic_outline": 0.053211,
+        "no_expansion": 0.009327,
+        "lossless_package": 0.000989,
+        "tags": 0.029017
+      },
+      "mean_rank": {
+        "multi_scene": 1.036062,
+        "task_life_rel": 2.180366,
+        "generic_outline": 3.561686,
+        "no_expansion": 4.537328,
+        "lossless_package": 5.558485,
+        "tags": 4.126073
+      }
+    },
+    "visual_identity_first": {
+      "win_probability": {
+        "multi_scene": 0.964408,
+        "task_life_rel": 0.035454,
+        "generic_outline": 3.7e-05,
+        "no_expansion": 0.0,
+        "lossless_package": 9.9e-05,
+        "tags": 2e-06
+      },
+      "mean_weighted_score": {
+        "multi_scene": 8.024135305447917,
+        "task_life_rel": 7.412853288871716,
+        "generic_outline": 6.627180315419964,
+        "no_expansion": 5.9838305279103805,
+        "lossless_package": 6.707208186487573,
+        "tags": 6.365503722960134
+      },
+      "p_above_threshold": {
+        "multi_scene": 0.999995,
+        "task_life_rel": 0.935757,
+        "generic_outline": 0.093384,
+        "no_expansion": 0.001388,
+        "lossless_package": 0.159607,
+        "tags": 0.013925
+      },
+      "mean_rank": {
+        "multi_scene": 1.03572,
+        "task_life_rel": 2.005165,
+        "generic_outline": 3.816373,
+        "no_expansion": 5.786825,
+        "lossless_package": 3.606238,
+        "tags": 4.749679
+      }
+    },
+    "safety_maintenance_first": {
+      "win_probability": {
+        "multi_scene": 0.180628,
+        "task_life_rel": 0.138601,
+        "generic_outline": 0.350899,
+        "no_expansion": 0.32475,
+        "lossless_package": 0.004982,
+        "tags": 0.00014
+      },
+      "mean_weighted_score": {
+        "multi_scene": 7.508579067628369,
+        "task_life_rel": 7.477248814171605,
+        "generic_outline": 7.678634272713892,
+        "no_expansion": 7.65987412853093,
+        "lossless_package": 7.047967100521241,
+        "tags": 6.667920759121183
+      },
+      "p_above_threshold": {
+        "multi_scene": 0.981557,
+        "task_life_rel": 0.955407,
+        "generic_outline": 0.994848,
+        "no_expansion": 0.99027,
+        "lossless_package": 0.563253,
+        "tags": 0.133609
+      },
+      "mean_rank": {
+        "multi_scene": 2.928779,
+        "task_life_rel": 3.092392,
+        "generic_outline": 2.114545,
+        "no_expansion": 2.224225,
+        "lossless_package": 4.854745,
+        "tags": 5.785314
+      }
+    },
+    "recovery_readiness_first": {
+      "win_probability": {
+        "multi_scene": 0.518331,
+        "task_life_rel": 0.171315,
+        "generic_outline": 0.079887,
+        "no_expansion": 0.223457,
+        "lossless_package": 0.007002,
+        "tags": 8e-06
+      },
+      "mean_weighted_score": {
+        "multi_scene": 7.735300988848409,
+        "task_life_rel": 7.561659355060042,
+        "generic_outline": 7.456350510011122,
+        "no_expansion": 7.575576069341689,
+        "lossless_package": 7.156055450816452,
+        "tags": 6.614661217390129
+      },
+      "p_above_threshold": {
+        "multi_scene": 0.999681,
+        "task_life_rel": 0.98855,
+        "generic_outline": 0.967544,
+        "no_expansion": 0.980512,
+        "lossless_package": 0.718601,
+        "tags": 0.068527
+      },
+      "mean_rank": {
+        "multi_scene": 1.856285,
+        "task_life_rel": 2.721562,
+        "generic_outline": 3.263209,
+        "no_expansion": 2.572395,
+        "lossless_package": 4.659822,
+        "tags": 5.926727
+      }
+    }
+  },
+  "aggregate": {
+    "win_probability": {
+      "multi_scene": 0.7019588000000001,
+      "task_life_rel": 0.0968678,
+      "generic_outline": 0.0882256,
+      "no_expansion": 0.1103404,
+      "lossless_package": 0.0024874,
+      "tags": 0.00011999999999999999
+    },
+    "mean_weighted_score": {
+      "multi_scene": 7.747961606822015,
+      "task_life_rel": 7.375784700625448,
+      "generic_outline": 7.075435399620977,
+      "no_expansion": 6.886350109963358,
+      "lossless_package": 6.731336824883199,
+      "tags": 6.533587171851129
+    },
+    "p_above_threshold": {
+      "multi_scene": 0.9956376,
+      "task_life_rel": 0.8708826000000001,
+      "generic_outline": 0.5425359999999999,
+      "no_expansion": 0.467134,
+      "lossless_package": 0.32236800000000004,
+      "tags": 0.061546000000000003
+    },
+    "mean_rank": {
+      "multi_scene": 1.597974,
+      "task_life_rel": 2.4253196,
+      "generic_outline": 3.2105699999999997,
+      "no_expansion": 3.8654308,
+      "lossless_package": 4.7108862,
+      "tags": 5.189819399999999
+    },
+    "ranked_candidates": [
+      "multi_scene",
+      "task_life_rel",
+      "generic_outline",
+      "no_expansion",
+      "lossless_package",
+      "tags"
+    ]
+  },
+  "decision": {
+    "activate_next": "multi_scene",
+    "winner": "multi_scene",
+    "runner_up": "task_life_rel",
+    "winner_score": 7.747961606822015,
+    "runner_up_score": 7.375784700625448,
+    "lead_over_runner_up": 0.3721769061965672,
+    "threshold": 7.0,
+    "lead_required": 0.35
+  }
+}

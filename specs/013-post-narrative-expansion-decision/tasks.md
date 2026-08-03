@@ -1,0 +1,23 @@
+# Slice 013 Tasks
+
+- [x] Verify Task 22 baseline and worktree state.
+- [x] Read all authority documents (STATUS, ROADMAP, ADR 0006/0010/0016, task-17/task-22 audits).
+- [x] Inspect live codebase: schema version, narrative module, narrative schema validator.
+- [x] Evaluate all 13 candidates against hard filters.
+- [x] Design 12-criterion weighted model with disclosed priors.
+- [x] Compute base profile scores for all passing candidates.
+- [x] Design five sensitivity profiles.
+- [x] Write `analysis.py`; run simulation (seed 20260803, 5,000,000 samples).
+- [x] Verify `python analysis.py --check` passes.
+- [x] Write `specs/013-post-narrative-expansion-decision/README.md`.
+- [x] Write `specs/013-post-narrative-expansion-decision/spec.md`.
+- [x] Write `specs/013-post-narrative-expansion-decision/plan.md`.
+- [x] Write `specs/013-post-narrative-expansion-decision/tasks.md`.
+- [x] Write `specs/013-post-narrative-expansion-decision/acceptance.md`.
+- [x] Write `specs/013-post-narrative-expansion-decision/risk-register.md`.
+- [x] Write `docs/adr/0017-post-narrative-expansion-portfolio.md`.
+- [x] Write `docs/audits/task-23-post-narrative-expansion.md`.
+- [x] Update `docs/STATUS.md`.
+- [x] Update `docs/ROADMAP.md`.
+- [x] Run full gate sequence; confirm zero production-code changes.
+- [x] Commit and push.

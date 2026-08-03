@@ -2,6 +2,15 @@
 
 Updated: 2026-08-03 Asia/Saigon
 
+## Task 23/60 — Post-Narrative Expansion Decision (complete)
+
+- Evaluated 13 expansion candidates against 12 criteria (100-point model) and a five-profile × 5,000,000-sample Dirichlet sensitivity simulation (seed 20260803).
+- Hard-filter results: PASS (6): Multi-Scene, Task/Life Relationships, Generic Outline, Tags, Lossless Package, No Expansion. HOLD_FOR_PRODUCT_OWNER (2): Template System, Visual Worlds. FAIL (5): Backlinks, Score, Prediction, Noteboard, Graph.
+- Aggregate mean scores: Multi-Scene 7.748, Task/Life 7.376, Generic Outline 7.075, No Expansion 6.886, Lossless Package 6.731, Tags 6.534.
+- Multi-Scene Canvas Composition is `ACTIVATE_NEXT`: score 7.748 ≥ 7.0 threshold, lead 0.372 ≥ 0.35 required, win probability 70.2 %. Wins in base, utility, and visual-identity profiles.
+- Task 24 remains prohibited until Product Owner approval. No product behavior, migration, IPC, or dependency added.
+- ADR 0017 accepted. Simulation in `specs/013-post-narrative-expansion-decision/analysis.py`. Audit in `docs/audits/task-23-post-narrative-expansion.md`.
+
 ## Task 22/60 — Narrative Canvas Markdown Interoperability (complete, remediated)
 
 - Fixed `asset:` → `assets/` in `narrative::markdown::export` image rendering.

@@ -106,6 +106,12 @@ Task 22 adds Markdown export from a committed Canvas and Markdown import as a ne
 - File name sanitization: 120 scalar value limit, Windows reserved name rejection
 - No new migration (schema stays at version 14). No new dependencies.
 
+## Slice 013 — Post-Narrative Expansion Decision
+
+Task 23 re-evaluates all expansion candidates against the Task 22 baseline using a 12-criterion weighted model and a five-profile, five-million-sample sensitivity simulation.
+
+Portfolio recommendation: **Multi-Scene Canvas Composition activated as Task 24** (aggregate score 7.748, lead 0.372, win probability 70.2 %). Template System and Visual Worlds held for Product Owner direction. Task/Life Relationships, Generic Outline, Lossless Package, and Tags deferred. Backlinks, Score, Prediction, Noteboard, and Graph fail hard filters and remain deferred.
+
 ## Slice 011 — Narrative Canvas Core
 
 Task 21 activates the first production Narrative Canvas vertical slice (ADR 0010 Strategy A). Accepted after two remediation rounds (ADR 0012, ADR 0013).
