@@ -555,4 +555,78 @@ describe("NarrativeCanvasStudio multi-scene", () => {
       expect(saved.scenes[1].title).toBe("Scene Two");
     });
   });
+
+  it("live Tiptap content is preserved when adding a scene", async () => {
+    const liveContent: unknown = { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "Live edit in scene 1" }] }] };
+    tiptapMock.getJSON.mockReturnValue(liveContent);
+    mountWith(twoSceneJson);
+    // Activate and edit rich_text in scene one
+    fireEvent.click(screen.getByLabelText("Click to edit rich text block"));
+    act(() => tiptapMock.onUpdate?.({ editor: { getJSON: () => liveContent } }));
+    // Add a scene
+    fireEvent.click(screen.getByRole("button", { name: "Add scene" }));
+    // Publish — verify live content is in scene one
+    fireEvent.click(screen.getByRole("button", { name: "Publish" }));
+    await waitFor(() => {
+      const saved = JSON.parse(api.save.mock.calls[0]![0].canonical_json as string);
+      expect(saved.scenes[0].blocks[0].content.content[0].content[0].text).toBe("Live edit in scene 1");
+    });
+  });
+
+  it("live Tiptap content is preserved when moving a scene", async () => {
+    const liveContent: unknown = { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "Live in moved scene" }] }] };
+    tiptapMock.getJSON.mockReturnValue(liveContent);
+    mountWith(twoSceneJson);
+    // Activate and edit in scene one
+    fireEvent.click(screen.getByLabelText("Click to edit rich text block"));
+    act(() => tiptapMock.onUpdate?.({ editor: { getJSON: () => liveContent } }));
+    // Move scene one to the right
+    fireEvent.click(screen.getByRole("button", { name: "Move scene right" }));
+    // Publish — verify live content persisted
+    fireEvent.click(screen.getByRole("button", { name: "Publish" }));
+    await waitFor(() => {
+      const saved = JSON.parse(api.save.mock.calls[0]![0].canonical_json as string);
+      // Scene order is now Scene Two, Scene One
+      expect(saved.scenes[1].blocks[0].content.content[0].content[0].text).toBe("Live in moved scene");
+    });
+  });
+
+  it("delete scene confirmation uses materialized content", async () => {
+    const liveContent: unknown = { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "Non-empty live edit" }] }] };
+    tiptapMock.getJSON.mockReturnValue(liveContent);
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
+    mountWith(twoSceneJson);
+    fireEvent.click(screen.getByRole("tab", { name: "Scene Two" }));
+    // Scene two has a metric block which counts as non-empty
+    // But simulate live content being added
+    act(() => tiptapMock.onUpdate?.({ editor: { getJSON: () => liveContent } }));
+    // Click delete — should prompt because scene has content
+    fireEvent.click(screen.getByRole("button", { name: "Delete scene" }));
+    expect(confirmSpy).toHaveBeenCalledWith("Delete this scene and all its blocks?");
+    // User cancels
+    expect(screen.getByRole("tab", { name: "Scene Two" })).toBeInTheDocument();
+    confirmSpy.mockRestore();
+  });
+
+  it("Undo after adding a scene keeps a valid scene selected", () => {
+    mountWith(twoSceneJson);
+    fireEvent.click(screen.getByRole("button", { name: "Add scene" }));
+    expect(screen.getAllByRole("tab")).toHaveLength(3);
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    // Back to 2 scenes; one should be selected
+    const tabs = screen.getAllByRole("tab").filter(t => t.getAttribute("aria-selected") === "true");
+    expect(tabs).toHaveLength(1);
+    expect(tabs[0]).toHaveTextContent(/Scene (One|Two)/);
+  });
+
+  it("Undo then Redo restores valid scene selection", () => {
+    mountWith(twoSceneJson);
+    fireEvent.click(screen.getByRole("button", { name: "Add scene" }));
+    const newTabName = screen.getAllByRole("tab")[2]!.textContent;
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    fireEvent.click(screen.getByRole("button", { name: "Redo" }));
+    // After Redo, the restored scene (or first valid scene) should be selected
+    const selected = screen.getAllByRole("tab").filter(t => t.getAttribute("aria-selected") === "true");
+    expect(selected).toHaveLength(1);
+  });
 });

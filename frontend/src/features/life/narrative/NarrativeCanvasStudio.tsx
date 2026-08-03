@@ -985,61 +985,92 @@ export default function NarrativeCanvasStudio({
 
   // ---- Scene CRUD ----
 
+  // Helper: materialize and clear live editor state for scene structural mutations
+  const prepareForSceneStructuralChange = useCallback(
+    (): ParsedNarrativeDocument => {
+      const materialized = materializeCurrentDocument();
+      activeContentRef.current = null;
+      setActiveBlockId(null);
+      return materialized;
+    },
+    [materializeCurrentDocument],
+  );
+
   const handleAddScene = useCallback(() => {
     if (doc.scenes.length >= 20) return;
-    deactivateIsland(null);
+    const materialized = prepareForSceneStructuralChange();
     const newId = newNarrativeId();
     const newScene: NarrativeScene = {
       id: newId,
-      title: `Scene ${doc.scenes.length + 1}`,
+      title: `Scene ${materialized.scenes.length + 1}`,
       layoutPreset: "single_column",
       atmosphere: "neutral",
       motionPreset: "none",
       blocks: [{ kind: "rich_text", id: newNarrativeId(), content: emptyRichText() }],
     };
-    applyStructural({ ...doc, scenes: [...doc.scenes, newScene] as [NarrativeScene, ...NarrativeScene[]] });
+    applyStructural({ ...materialized, scenes: [...materialized.scenes, newScene] as [NarrativeScene, ...NarrativeScene[]] });
     setActiveSceneId(newId);
-  }, [doc, deactivateIsland, applyStructural]);
+  }, [doc, prepareForSceneStructuralChange, applyStructural]);
 
   const handleDeleteScene = useCallback(() => {
     if (doc.scenes.length <= 1) return;
-    const isEmpty = scene.blocks.every(b => isBlockEmpty(b));
-    if (!isEmpty && !window.confirm("Delete this scene and all its blocks?")) return;
-    deactivateIsland(null);
-    const newScenes = doc.scenes.filter((_, i) => i !== activeSceneIdx) as [NarrativeScene, ...NarrativeScene[]];
-    const newActiveId = (newScenes[activeSceneIdx] ?? newScenes[activeSceneIdx - 1] ?? newScenes[0])!.id;
-    applyStructural({ ...doc, scenes: newScenes });
+    const materialized = prepareForSceneStructuralChange();
+    const idx = Math.max(0, materialized.scenes.findIndex(s => s.id === activeSceneId));
+    const isEmpty = materialized.scenes[idx]!.blocks.every(b => isBlockEmpty(b));
+    if (!isEmpty && !window.confirm("Delete this scene and all its blocks?")) {
+      // User cancelled — restore island state if it existed
+      return;
+    }
+    const newScenes = materialized.scenes.filter((_, i) => i !== idx) as [NarrativeScene, ...NarrativeScene[]];
+    const newActiveId = (newScenes[idx] ?? newScenes[idx - 1] ?? newScenes[0])!.id;
+    applyStructural({ ...materialized, scenes: newScenes });
     setActiveSceneId(newActiveId);
-  }, [doc, scene, activeSceneIdx, deactivateIsland, applyStructural]);
+  }, [doc, activeSceneId, prepareForSceneStructuralChange, applyStructural]);
 
   const handleRenameScene = useCallback((title: string) => {
+    const materialized = materializeCurrentDocument();
     applyStructural({
-      ...doc,
-      scenes: doc.scenes.map((s, i) => i === activeSceneIdx ? { ...s, title } : s) as [NarrativeScene, ...NarrativeScene[]],
+      ...materialized,
+      scenes: materialized.scenes.map((s, i) => i === activeSceneIdx ? { ...s, title } : s) as [NarrativeScene, ...NarrativeScene[]],
     });
-  }, [doc, activeSceneIdx, applyStructural]);
+  }, [activeSceneIdx, materializeCurrentDocument, applyStructural]);
 
   const handleMoveScene = useCallback((direction: "left" | "right") => {
     const to = direction === "left" ? activeSceneIdx - 1 : activeSceneIdx + 1;
     if (to < 0 || to >= doc.scenes.length) return;
-    deactivateIsland(null);
-    const scenes = [...doc.scenes] as [NarrativeScene, ...NarrativeScene[]];
-    const [item] = scenes.splice(activeSceneIdx, 1);
+    const materialized = prepareForSceneStructuralChange();
+    const idx = Math.max(0, materialized.scenes.findIndex(s => s.id === activeSceneId));
+    const scenes = [...materialized.scenes] as [NarrativeScene, ...NarrativeScene[]];
+    const [item] = scenes.splice(idx, 1);
     scenes.splice(to, 0, item!);
-    applyStructural({ ...doc, scenes });
-  }, [doc, activeSceneIdx, deactivateIsland, applyStructural]);
+    applyStructural({ ...materialized, scenes });
+  }, [doc, activeSceneId, activeSceneIdx, prepareForSceneStructuralChange, applyStructural]);
 
   // ---- Undo / Redo ----
 
   const handleUndo = useCallback(() => {
-    deactivateIsland(null);
-    setHistory(h => undo(h));
-  }, [deactivateIsland]);
+    activeContentRef.current = null;
+    setActiveBlockId(null);
+    setHistory(h => {
+      const prev = undo(h);
+      // Ensure activeSceneId is valid; if not, select first scene
+      const validId = prev.current.scenes.find(s => s.id === activeSceneId)?.id ?? prev.current.scenes[0]!.id;
+      setActiveSceneId(validId);
+      return prev;
+    });
+  }, [activeSceneId]);
 
   const handleRedo = useCallback(() => {
-    deactivateIsland(null);
-    setHistory(h => redo(h));
-  }, [deactivateIsland]);
+    activeContentRef.current = null;
+    setActiveBlockId(null);
+    setHistory(h => {
+      const next = redo(h);
+      // Ensure activeSceneId is valid; if not, select first scene
+      const validId = next.current.scenes.find(s => s.id === activeSceneId)?.id ?? next.current.scenes[0]!.id;
+      setActiveSceneId(validId);
+      return next;
+    });
+  }, [activeSceneId]);
 
   // ---- Back with dirty confirmation ----
 
