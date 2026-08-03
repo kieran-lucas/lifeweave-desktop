@@ -44,3 +44,7 @@ pnpm verify                            ✓ all governance gates pass
 ## Acceptance Criteria Status
 
 All 6 P1 blocking defects are closed. The remediation passes the full local gate sequence.
+
+---
+
+*Superseded by `docs/audits/task-21-final-remediation.md` (second remediation) and `docs/audits/task-21-closure.md` (final closure). This document records the P1 defects from the first remediation only.*

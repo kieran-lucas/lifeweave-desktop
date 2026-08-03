@@ -137,3 +137,55 @@ describe("toNarrativeCanonicalValue", () => {
     expect(Array.isArray(val.scenes)).toBe(true);
   });
 });
+
+describe("parseNarrative + serializeNarrative performance", () => {
+  function makeDoc(blockCount: number): string {
+    const blocks = Array.from({ length: blockCount }, (_, i) => ({
+      kind: "rich_text",
+      id: `019700000000-0000-7000-8000-${String(i).padStart(12, "0")}`,
+      content: { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: `Block ${i} content text here` }] }] },
+    }));
+    return JSON.stringify({
+      schemaVersion: 1,
+      documentId: "019700000000-0000-7fff-8000-000000000001",
+      title: "Perf test",
+      templateId: "knowledge_dossier",
+      templateVersion: 1,
+      scenes: [{
+        id: "019700000000-0000-7fff-8000-000000000002",
+        title: "",
+        layoutPreset: "single_column",
+        atmosphere: "neutral",
+        motionPreset: "none",
+        blocks,
+      }],
+    });
+  }
+
+  function measure(fn: () => void, iterations = 100): { p50: number; p95: number; max: number } {
+    const times: number[] = [];
+    for (let i = 0; i < iterations; i++) {
+      const start = performance.now();
+      fn();
+      times.push(performance.now() - start);
+    }
+    times.sort((a, b) => a - b);
+    return {
+      p50: times[Math.floor(iterations * 0.50)]!,
+      p95: times[Math.floor(iterations * 0.95)]!,
+      max: times[times.length - 1]!,
+    };
+  }
+
+  for (const blockCount of [5, 50, 128] as const) {
+    it(`parse + serialize ${blockCount} blocks: p95 ≤ 50ms`, () => {
+      const json = makeDoc(blockCount);
+      const stats = measure(() => {
+        const doc = parseNarrative(json);
+        serializeNarrative(doc);
+      });
+      console.log(`parse+serialize ${blockCount} blocks: p50=${stats.p50.toFixed(2)}ms p95=${stats.p95.toFixed(2)}ms max=${stats.max.toFixed(2)}ms`);
+      expect(stats.p95).toBeLessThan(50); // 50ms p95 target
+    });
+  }
+});

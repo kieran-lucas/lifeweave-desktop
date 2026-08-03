@@ -3,6 +3,148 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BasicLeafReader } from "./BasicLeafReader";
 
+// ── Content-conflict scenario tests ─────────────────────────────────────────
+
+const NODE_ID = "00000000-0000-7000-8000-000000000100";
+const LEAF_DOC_ID = "00000000-0000-7000-8000-000000000101";
+const CANVAS_ID = "00000000-0000-7000-8000-000000000102";
+
+const conflictLeafDoc = {
+  id: LEAF_DOC_ID,
+  life_node_id: NODE_ID,
+  schema_version: 1,
+  revision: 1,
+  canonical_json: JSON.stringify({ type: "doc", content: [] }),
+  plain_text: "",
+  updated_at: "2026-08-03T00:00:00Z",
+};
+
+const conflictCanvasDoc = {
+  id: CANVAS_ID,
+  life_node_id: NODE_ID,
+  schema_version: 1,
+  revision: 1,
+  canonical_json: JSON.stringify({
+    schemaVersion: 1,
+    documentId: CANVAS_ID,
+    title: "Canvas",
+    templateId: "knowledge_dossier",
+    templateVersion: 1,
+    scenes: [{
+      id: "00000000-0000-7000-8000-000000000103",
+      title: "",
+      layoutPreset: "single_column",
+      atmosphere: "neutral",
+      motionPreset: "none",
+      blocks: [],
+    }],
+  }),
+  plain_text: "",
+  updated_at: "2026-08-03T00:00:00Z",
+  template_id: "knowledge_dossier",
+  template_version: 1,
+};
+
+const conflictLeafProjection = (docVal: typeof conflictLeafDoc | null = conflictLeafDoc) => ({
+  life_node_id: NODE_ID,
+  document: docVal,
+  draft_state: "none",
+  draft_json: null,
+  draft_base_revision: null,
+});
+
+const conflictCanvasProjection = (docVal: typeof conflictCanvasDoc | null = conflictCanvasDoc) => ({
+  life_node_id: NODE_ID,
+  document: docVal,
+  draft_state: "none",
+  draft_json: null,
+  draft_base_revision: null,
+});
+
+const conflictApi = vi.hoisted(() => ({
+  getLeaf: vi.fn(),
+  getCanvas: vi.fn(),
+  createLeaf: vi.fn(),
+}));
+
+// NarrativeCanvasReader mock — placed before other vi.mock calls so hoisting resolves
+vi.mock("../narrative/NarrativeCanvasReader", () => ({
+  NarrativeCanvasReader: () => <div data-testid="canvas-reader">Canvas Reader</div>,
+  narrativeKey: (nodeId: string) => ["life", "narrative", nodeId],
+}));
+
+const makeConflictClient = () =>
+  new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+
+const mountConflict = () =>
+  render(
+    <QueryClientProvider client={makeConflictClient()}>
+      <BasicLeafReader nodeId={NODE_ID} />
+    </QueryClientProvider>
+  );
+
+describe("BasicLeafReader content routing", () => {
+  beforeEach(() => {
+    // Wire the existing api mock (declared above for the first describe block)
+    // for the conflict scenarios, we need getReaderDocument and getNarrativeDocument
+    // to return the conflict fixtures. We re-use the existing api mock but provide
+    // unique return values per test.
+    conflictApi.getLeaf.mockResolvedValue(conflictLeafProjection(null));
+    conflictApi.getCanvas.mockResolvedValue(conflictCanvasProjection(null));
+    conflictApi.createLeaf.mockResolvedValue(conflictLeafDoc);
+    // Also configure the existing api mock so the commands module mock is consistent:
+    api.get.mockResolvedValue(conflictLeafProjection(null));
+    api.getNarrative.mockResolvedValue(conflictCanvasProjection(null));
+    api.create.mockResolvedValue(conflictLeafDoc);
+  });
+
+  it("neither document — shows both creation options", async () => {
+    mountConflict();
+    expect(await screen.findByRole("button", { name: "Create Basic Leaf document" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Create Narrative Canvas" })).toBeInTheDocument();
+  });
+
+  it("basic leaf only — renders the document (no canvas reader)", async () => {
+    api.get.mockResolvedValue(conflictLeafProjection(conflictLeafDoc));
+    api.getNarrative.mockResolvedValue(conflictCanvasProjection(null));
+    mountConflict();
+    expect(await screen.findByRole("heading", { name: "Reader" })).toBeInTheDocument();
+    expect(screen.queryByTestId("canvas-reader")).not.toBeInTheDocument();
+  });
+
+  it("canvas only — renders the canvas reader", async () => {
+    api.get.mockResolvedValue(conflictLeafProjection(null));
+    api.getNarrative.mockResolvedValue(conflictCanvasProjection(conflictCanvasDoc));
+    mountConflict();
+    expect(await screen.findByTestId("canvas-reader")).toBeInTheDocument();
+  });
+
+  it("both documents — shows conflict alert, no reader mounted, no creation controls", async () => {
+    api.get.mockResolvedValue(conflictLeafProjection(conflictLeafDoc));
+    api.getNarrative.mockResolvedValue(conflictCanvasProjection(conflictCanvasDoc));
+    mountConflict();
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(/both a Basic Leaf document and a Narrative Canvas/i);
+    expect(screen.queryByTestId("canvas-reader")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Create Basic Leaf document" })).not.toBeInTheDocument();
+  });
+
+  it("basic leaf query error — shows error state", async () => {
+    api.get.mockRejectedValue(new Error("network error"));
+    mountConflict();
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+  });
+
+  it("canvas query error — still shows basic leaf content without crashing", async () => {
+    api.get.mockResolvedValue(conflictLeafProjection(conflictLeafDoc));
+    api.getNarrative.mockRejectedValue(new Error("canvas network error"));
+    mountConflict();
+    // Basic leaf content renders: Reader heading is visible, no canvas reader
+    expect(await screen.findByRole("heading", { name: "Reader" })).toBeInTheDocument();
+    expect(screen.queryByTestId("canvas-reader")).not.toBeInTheDocument();
+  });
+});
+
 const noNarrative = { life_node_id: "00000000-0000-7000-8000-000000000112", document: null, draft_state: "none", draft_json: null, draft_base_revision: null };
 const api=vi.hoisted(()=>({get:vi.fn(),create:vi.fn(),discard:vi.fn(),recover:vi.fn(),importMd:vi.fn(),exportMd:vi.fn(),asset:vi.fn(),getNarrative:vi.fn(),createNarrative:vi.fn()}));
 vi.mock("../../../ipc/commands",()=>({getReaderDocument:api.get,createReaderDocument:api.create,discardReaderDraft:api.discard,recoverReaderDraft:api.recover,importReaderMarkdown:api.importMd,exportReaderMarkdown:api.exportMd,getDocumentAsset:api.asset,getNarrativeDocument:api.getNarrative,createNarrativeDocument:api.createNarrative}));

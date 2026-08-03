@@ -988,7 +988,7 @@ mod tests {
         );
 
         let restore_result = restore_db(&rt, &backup_dir).unwrap();
-        assert_eq!(restore_result.schema_version, 13);
+        assert_eq!(restore_result.schema_version, 14);
 
         let active = rt.execute(|conn| repo::list_active(conn)).unwrap();
         assert_eq!(active.len(), 1);

@@ -8,52 +8,15 @@ import {
 } from "../../../ipc/commands";
 import type { NarrativeDocumentView } from "../../../ipc/generated/NarrativeDocumentView";
 import { operationId, parseNarrative, isUnknownBlock } from "./schema";
-import type { ParsedNarrativeDocument, ParsedNarrativeBlock, RichTextNode as RichTextNodeType } from "./schema";
+import type { ParsedNarrativeDocument, ParsedNarrativeBlock } from "./schema";
+import { parseDocument } from "../document/schema";
+import { StaticDocument } from "../document/StaticDocument";
 import * as styles from "./NarrativeCanvas.css";
 import { getDocumentAsset } from "../../../ipc/commands";
 
 const NarrativeCanvasStudio = lazy(() => import("./NarrativeCanvasStudio"));
 
 export const narrativeKey = (nodeId: string) => ["life", "narrative", nodeId] as const;
-
-// ---------------------------------------------------------------------------
-// Rich-text static renderer (no Tiptap)
-// ---------------------------------------------------------------------------
-
-function RichTextNode({ node, depth = 0 }: { node: RichTextNodeType; depth?: number }): React.ReactNode {
-  if (depth > 32) return null;
-  const children = node.content?.map((child, i) => <RichTextNode key={i} node={child} depth={depth + 1} />);
-  switch (node.type) {
-    case "text": {
-      let el: React.ReactNode = node.text ?? "";
-      for (const mark of [...(node.marks ?? [])].reverse()) {
-        if (mark.type === "bold") el = <strong>{el}</strong>;
-        else if (mark.type === "italic") el = <em>{el}</em>;
-      }
-      return el;
-    }
-    case "paragraph": return <p>{children}</p>;
-    case "heading": {
-      const level = Number(node.attrs?.["level"] ?? 2);
-      return level === 1 ? <h1>{children}</h1> : level === 3 ? <h3>{children}</h3> : <h2>{children}</h2>;
-    }
-    case "bulletList": return <ul>{children}</ul>;
-    case "orderedList": return <ol>{children}</ol>;
-    case "listItem": return <li>{children}</li>;
-    case "blockquote": return <blockquote>{children}</blockquote>;
-    case "codeBlock": return <pre><code>{node.content?.map(c => c.text ?? "").join("")}</code></pre>;
-    case "hardBreak": return <br />;
-    default: return <span>{children}</span>;
-  }
-}
-
-function RichTextReader({ content }: { content: { type: string; content?: RichTextNodeType[] } }) {
-  return (
-    <div className={styles.richText} aria-label="Rich text content">
-      {content.content?.map((node, i) => <RichTextNode key={i} node={node} />)}
-    </div>
-  );
-}
 
 function NarrativeAssetImage({ assetId, alt }: { assetId: string; alt: string }) {
   const [source, setSource] = useState<string>();
@@ -84,8 +47,19 @@ function BlockReader({ block }: { block: ParsedNarrativeBlock }) {
     );
   }
   switch (block.kind) {
-    case "rich_text":
-      return <RichTextReader content={block.content} />;
+    case "rich_text": {
+      let parsed;
+      try {
+        parsed = parseDocument(JSON.stringify(block.content));
+      } catch {
+        return (
+          <div className={styles.missing} role="note" aria-label="Unsupported text island">
+            This text block contains unsupported content.
+          </div>
+        );
+      }
+      return <StaticDocument document={parsed} />;
+    }
     case "metric":
       return (
         <div className={styles.metricBlock}>
@@ -104,13 +78,25 @@ function BlockReader({ block }: { block: ParsedNarrativeBlock }) {
           {block.caption && <figcaption className={styles.imageCaption}>{block.caption}</figcaption>}
         </figure>
       );
-    case "callout":
+    case "callout": {
+      let parsedContent;
+      try {
+        parsedContent = parseDocument(JSON.stringify(block.content));
+      } catch {
+        return (
+          <aside className={styles.calloutBlock} aria-label={`${block.variant} callout`}>
+            <div className={styles.calloutVariant}>{block.variant}</div>
+            <div className={styles.missing} role="note">This callout contains unsupported content.</div>
+          </aside>
+        );
+      }
       return (
         <aside className={styles.calloutBlock} aria-label={`${block.variant} callout`}>
           <div className={styles.calloutVariant}>{block.variant}</div>
-          <RichTextReader content={block.content} />
+          <StaticDocument document={parsedContent} />
         </aside>
       );
+    }
     case "timeline":
       return (
         <div className={styles.timelineBlock}>

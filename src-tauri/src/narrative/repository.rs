@@ -563,6 +563,367 @@ mod tests {
         );
     }
 
+    /// Build a minimal valid narrative JSON with `n` rich_text blocks.
+    fn make_test_canvas_json(document_id: &str, n: usize) -> String {
+        let mut blocks: Vec<serde_json::Value> = Vec::with_capacity(n);
+        for _ in 0..n {
+            let block_id = domain::new_id();
+            blocks.push(serde_json::json!({
+                "kind": "rich_text",
+                "id": block_id,
+                "content": {
+                    "type": "doc",
+                    "content": [{
+                        "type": "paragraph",
+                        "content": [{"type": "text", "text": "Hello world"}]
+                    }]
+                }
+            }));
+        }
+        let scene_id = domain::new_id();
+        serde_json::json!({
+            "schemaVersion": 1,
+            "documentId": document_id,
+            "title": "Test Canvas",
+            "templateId": "knowledge_dossier",
+            "templateVersion": 1,
+            "scenes": [{
+                "id": scene_id,
+                "title": "Overview",
+                "layoutPreset": "single_column",
+                "atmosphere": "neutral",
+                "motionPreset": "none",
+                "blocks": blocks
+            }]
+        })
+        .to_string()
+    }
+
+    #[test]
+    fn narrative_canvas_backup_relaunch_evidence() {
+        use crate::infrastructure::sqlite::{
+            connection::open_file_connection, migrations::run_migrations,
+        };
+        use crate::search::repository::refresh_dirty_and_query;
+        use crate::search::dto::SearchGlobalInput;
+
+        let path = std::env::temp_dir().join(format!("lw_nc_backup_{}.db", domain::new_id()));
+        let backups_dir = std::env::temp_dir().join(format!("lw_nc_bkp_{}", domain::new_id()));
+        std::fs::create_dir_all(&backups_dir).unwrap();
+
+        let doc_id;
+        let node_id;
+        let rev1_json;
+
+        // ── Session 1: create canvas with mixed blocks + save rev 1 + draft ─────
+        {
+            let mut c = open_file_connection(&path).unwrap();
+            run_migrations(&mut c).unwrap();
+            node_id = leaf_node(&mut c);
+            let doc = create(
+                &mut c,
+                CreateNarrativeDocumentInput {
+                    life_node_id: node_id.clone(),
+                    operation_id: "bk-create-1".into(),
+                },
+            )
+            .unwrap();
+            doc_id = doc.id.clone();
+
+            // Build canvas JSON with multiple block types
+            let base: serde_json::Value = serde_json::from_str(&doc.canonical_json).unwrap();
+            let unknown_block = serde_json::json!({
+                "kind": "future_v2",
+                "id": "ffffffff-ffff-7fff-8fff-000000000001",
+                "extraField": "extraValue",
+                "nested": {"a": 1}
+            });
+            let metric_block = serde_json::json!({
+                "kind": "metric",
+                "id": domain::new_id(),
+                "label": "Revenue",
+                "value": "42000",
+                "unit": "USD",
+                "description": "Annual revenue"
+            });
+            let callout_block = serde_json::json!({
+                "kind": "callout",
+                "id": domain::new_id(),
+                "variant": "note",
+                "content": {
+                    "type": "doc",
+                    "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Note text"}]}]
+                }
+            });
+
+            // Grab the existing blocks from seed and append our new blocks
+            let mut full = base.clone();
+            full["scenes"][0]["blocks"] = {
+                let mut v = full["scenes"][0]["blocks"].as_array().cloned().unwrap_or_default();
+                v.push(metric_block);
+                v.push(callout_block);
+                v.push(unknown_block);
+                serde_json::Value::Array(v)
+            };
+            rev1_json = full.to_string();
+
+            // Save revision 1
+            let saved = save(
+                &mut c,
+                SaveNarrativeDocumentInput {
+                    document_id: doc_id.clone(),
+                    expected_revision: 0,
+                    schema_version: 1,
+                    canonical_json: rev1_json.clone(),
+                    operation_id: "bk-save-1".into(),
+                },
+            )
+            .unwrap();
+            assert_eq!(saved.revision, 1, "revision 1 must be saved");
+
+            // Save a draft (still at rev 1)
+            let proj = save_draft(
+                &mut c,
+                SaveNarrativeDraftInput {
+                    document_id: doc_id.clone(),
+                    base_revision: 1,
+                    canonical_json: rev1_json.clone(),
+                },
+            )
+            .unwrap();
+            assert_eq!(proj.draft_state, "available", "draft must be available");
+        }
+
+        // ── Session 2: reopen, verify rev 1 and draft survive ────────────────
+        {
+            let mut c = open_file_connection(&path).unwrap();
+            run_migrations(&mut c).unwrap();
+
+            let doc = by_id(&c, &doc_id).unwrap();
+            assert_eq!(doc.revision, 1, "revision 1 must survive reopen");
+
+            // Unknown block must be preserved in canonical_json
+            assert!(
+                doc.canonical_json.contains("extraField"),
+                "unknown block extraField must survive reopen"
+            );
+            assert!(
+                doc.canonical_json.contains("future_v2"),
+                "unknown block kind must survive reopen"
+            );
+
+            let draft: Option<(i32, String)> = c
+                .query_row(
+                    "SELECT base_revision,draft_json FROM narrative_document_drafts WHERE document_id=?1",
+                    rusqlite::params![doc_id],
+                    |r| Ok((r.get(0)?, r.get(1)?)),
+                )
+                .optional()
+                .unwrap();
+            assert!(draft.is_some(), "draft must survive reopen");
+            let (base_rev, _draft_json) = draft.unwrap();
+            assert_eq!(base_rev, 1, "draft base_revision must be 1 after reopen");
+
+            // ── Backup ────────────────────────────────────────────────────────
+            use crate::infrastructure::{
+                backup::engine::backup_db,
+                sqlite::{runtime::DatabaseRuntime, worker::DbWorkerHandle},
+            };
+            let worker = DbWorkerHandle::spawn(c);
+            let rt = DatabaseRuntime::new(path.clone(), worker);
+            let backup_result = backup_db(&rt, &backups_dir).unwrap();
+            assert_eq!(
+                backup_result.schema_version, 14,
+                "backup must record schema version 14"
+            );
+
+            // ── Mutate: save revision 2 ───────────────────────────────────────
+            let doc_id_clone = doc_id.clone();
+            rt.execute(move |conn| {
+                let doc_id = doc_id_clone;
+                let metric_block2 = serde_json::json!({
+                    "kind": "metric",
+                    "id": domain::new_id(),
+                    "label": "Cost",
+                    "value": "10000",
+                    "unit": "USD",
+                    "description": ""
+                });
+                let current: String = conn
+                    .query_row(
+                        "SELECT canonical_json FROM narrative_documents WHERE id=?1",
+                        rusqlite::params![doc_id],
+                        |r| r.get(0),
+                    )
+                    .unwrap();
+                let mut val: serde_json::Value = serde_json::from_str(&current).unwrap();
+                let blocks = val["scenes"][0]["blocks"].as_array_mut().unwrap();
+                blocks.push(metric_block2);
+                let rev2_json = val.to_string();
+                conn.execute(
+                    "INSERT INTO narrative_document_revisions VALUES(?1,?2,?3,?4,?5,'manual',?6)",
+                    rusqlite::params![domain::new_id(), doc_id, 1, current, "", domain::now()],
+                )
+                .unwrap();
+                conn.execute(
+                    "UPDATE narrative_documents SET canonical_json=?1,revision=2,updated_at=?2 WHERE id=?3",
+                    rusqlite::params![rev2_json, domain::now(), doc_id],
+                )
+                .unwrap();
+                Ok(())
+            })
+            .unwrap();
+
+            // ── Restore from backup ───────────────────────────────────────────
+            use crate::infrastructure::backup::restore::restore_db;
+            let backup_dir = std::path::PathBuf::from(&backup_result.backup_dir);
+            let restore_result = restore_db(&rt, &backup_dir).unwrap();
+            assert_eq!(restore_result.schema_version, 14, "restore must report schema 14");
+        }
+
+        // ── Session 3: verify restored state ─────────────────────────────────
+        {
+            let mut c = open_file_connection(&path).unwrap();
+            run_migrations(&mut c).unwrap();
+
+            let doc = by_id(&c, &doc_id).unwrap();
+            // After restore, we should be back to revision 1
+            assert_eq!(doc.revision, 1, "revision must be 1 after restore");
+
+            // Unknown block preserved in restored JSON
+            assert!(
+                doc.canonical_json.contains("extraField"),
+                "unknown block extraField must survive backup/restore"
+            );
+            assert!(
+                doc.canonical_json.contains("nested"),
+                "unknown block nested field must survive backup/restore"
+            );
+
+            // Semantic equality: rev1_json content matches restored canonical_json
+            let restored_val: serde_json::Value =
+                serde_json::from_str(&doc.canonical_json).unwrap();
+            let rev1_val: serde_json::Value = serde_json::from_str(&rev1_json).unwrap();
+            assert_eq!(
+                restored_val["documentId"], rev1_val["documentId"],
+                "documentId must match original"
+            );
+            assert_eq!(
+                restored_val["title"], rev1_val["title"],
+                "title must match original"
+            );
+
+            // ── Rebuild search index and verify canvas is found ───────────────
+            // After restore the search_dirty_scopes may be empty (restored from backup
+            // where they were cleared). Force a full rebuild before querying.
+            c.execute_batch(
+                "INSERT INTO search_dirty_scopes(scope,queued_at) \
+                 VALUES('all',strftime('%Y-%m-%dT%H:%M:%SZ','now')) \
+                 ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at",
+            )
+            .unwrap();
+            // The canvas was created with the node title ("Leaf") and also contains
+            // "Revenue" from the metric block in rev1_json.
+            let proj = refresh_dirty_and_query(
+                &c,
+                SearchGlobalInput {
+                    query: "Revenue".to_string(),
+                    observed_local_date: "2026-08-03".to_string(),
+                },
+            )
+            .unwrap();
+            let has_canvas = proj.groups.iter().any(|g| {
+                g.results.iter().any(|r| r.entity_id == doc_id)
+            });
+            assert!(has_canvas, "canvas must be findable by search after restore");
+        }
+
+        // ── Cleanup ───────────────────────────────────────────────────────────
+        let _ = std::fs::remove_file(&path);
+        let _ = std::fs::remove_file(format!("{}-wal", path.display()));
+        let _ = std::fs::remove_file(format!("{}-shm", path.display()));
+        let _ = std::fs::remove_dir_all(&backups_dir);
+    }
+
+    #[test]
+    fn narrative_canvas_performance_evidence() {
+        use std::time::{Duration, Instant};
+
+        let mut conn = open_memory_connection().unwrap();
+        run_migrations(&mut conn).unwrap();
+        let node = leaf_node(&mut conn);
+
+        // Create a document to get a valid document_id
+        let doc = create(
+            &mut conn,
+            CreateNarrativeDocumentInput {
+                life_node_id: node,
+                operation_id: "perf-create".into(),
+            },
+        )
+        .unwrap();
+        let doc_id = doc.id.clone();
+
+        let fixtures = [5usize, 50, 128];
+
+        for block_count in fixtures {
+            let canon_json = make_test_canvas_json(&doc_id, block_count);
+
+            // Time: Rust validation + text extraction
+            let mut durations = Vec::with_capacity(100);
+            for _ in 0..100 {
+                let start = Instant::now();
+                let _ = schema::validate(&canon_json, None);
+                durations.push(start.elapsed());
+            }
+            durations.sort();
+            let p50 = durations[50];
+            let p95 = durations[95];
+            let max_dur = *durations.last().unwrap();
+            println!(
+                "validate {block_count} blocks: p50={p50:?} p95={p95:?} max={max_dur:?}"
+            );
+
+            // Assert target: p95 <= 50ms
+            assert!(
+                p95 <= Duration::from_millis(50),
+                "validate p95={p95:?} exceeds 50ms for {block_count} blocks"
+            );
+        }
+
+        // Time: save transaction for 5 blocks (representative single-block op)
+        let small_json = make_test_canvas_json(&doc_id, 5);
+        let mut save_durations = Vec::with_capacity(20);
+        for i in 0..20usize {
+            let start = Instant::now();
+            // Each save requires incrementing the expected revision
+            let current_rev: i32 = conn
+                .query_row(
+                    "SELECT revision FROM narrative_documents WHERE id=?1",
+                    rusqlite::params![doc_id],
+                    |r| r.get(0),
+                )
+                .unwrap();
+            let _ = save(
+                &mut conn,
+                SaveNarrativeDocumentInput {
+                    document_id: doc_id.clone(),
+                    expected_revision: current_rev,
+                    schema_version: 1,
+                    canonical_json: small_json.clone(),
+                    operation_id: format!("perf-save-{i}"),
+                },
+            );
+            save_durations.push(start.elapsed());
+        }
+        save_durations.sort();
+        let save_p50 = save_durations[10];
+        let save_p95 = save_durations[19];
+        println!(
+            "save 5 blocks: p50={save_p50:?} p95={save_p95:?}"
+        );
+    }
+
     #[test]
     fn revision_retention() {
         let path = std::env::temp_dir().join(format!("lw_nc_{}.db", domain::new_id()));

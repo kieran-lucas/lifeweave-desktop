@@ -1160,6 +1160,331 @@ mod tests {
         assert_eq!(tasks.total_count, 10, "total_count reflects all matches");
     }
 
+    // ── Canvas search indexing ────────────────────────────────────────────────
+
+    /// Helper: insert an active leaf life node under life-root and return its id.
+    fn insert_leaf(conn: &Connection, node_id: &str, title: &str) {
+        conn.execute(
+            "INSERT INTO life_nodes VALUES(?1,'life-root',?2,'','life-leaf','neutral',99,NULL,'now','now',0)",
+            rusqlite::params![node_id, title],
+        )
+        .unwrap();
+    }
+
+    /// Helper: insert an active narrative canvas with given plain_text.
+    fn insert_canvas(conn: &Connection, doc_id: &str, node_id: &str, plain_text: &str) {
+        conn.execute(
+            "INSERT INTO narrative_documents \
+             (id,life_node_id,schema_version,revision,canonical_json,plain_text,\
+              created_at,updated_at,archived_at,template_id,template_version) \
+             VALUES (?1,?2,1,0,'{}',?3,'now','now',NULL,'knowledge_dossier',1)",
+            rusqlite::params![doc_id, node_id, plain_text],
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn canvas_title_appears_in_search_results() {
+        let conn = setup();
+        insert_leaf(&conn, "node-ct", "Canvas Title Node");
+        insert_canvas(&conn, "doc-ct", "node-ct", "Canvas Title Node Overview");
+        let proj = refresh_dirty_and_query(
+            &conn,
+            SearchGlobalInput {
+                query: "Overview".to_string(),
+                observed_local_date: "2026-08-03".to_string(),
+            },
+        )
+        .unwrap();
+        let docs = proj
+            .groups
+            .iter()
+            .find(|g| g.kind == SearchResultGroupKind::Documents)
+            .expect("documents group must be present");
+        assert!(!docs.results.is_empty(), "canvas must appear in search results");
+        assert_eq!(docs.results[0].entity_id, "doc-ct");
+    }
+
+    #[test]
+    fn canvas_scene_title_in_search_context() {
+        let conn = setup();
+        insert_leaf(&conn, "node-st", "Scene Test Node");
+        // plain_text includes the scene title text
+        insert_canvas(&conn, "doc-st", "node-st", "Scene Test Node Overview introduction");
+        let proj = refresh_dirty_and_query(
+            &conn,
+            SearchGlobalInput {
+                query: "introduction".to_string(),
+                observed_local_date: "2026-08-03".to_string(),
+            },
+        )
+        .unwrap();
+        let docs = proj
+            .groups
+            .iter()
+            .find(|g| g.kind == SearchResultGroupKind::Documents);
+        assert!(docs.is_some() && !docs.unwrap().results.is_empty());
+    }
+
+    #[test]
+    fn canvas_rich_text_body_indexed() {
+        let conn = setup();
+        insert_leaf(&conn, "node-rt", "Rich Text Node");
+        insert_canvas(
+            &conn,
+            "doc-rt",
+            "node-rt",
+            "Rich Text Node uniquerichtexttoken123",
+        );
+        let proj = refresh_dirty_and_query(
+            &conn,
+            SearchGlobalInput {
+                query: "uniquerichtexttoken123".to_string(),
+                observed_local_date: "2026-08-03".to_string(),
+            },
+        )
+        .unwrap();
+        let docs = proj
+            .groups
+            .iter()
+            .find(|g| g.kind == SearchResultGroupKind::Documents)
+            .expect("documents group must be present");
+        assert!(!docs.results.is_empty(), "rich_text body must be indexed");
+    }
+
+    #[test]
+    fn canvas_metric_label_value_indexed() {
+        let conn = setup();
+        insert_leaf(&conn, "node-ml", "Metric Label Node");
+        insert_canvas(
+            &conn,
+            "doc-ml",
+            "node-ml",
+            "Metric Label Node Revenue 42000 USD Total",
+        );
+        let proj = refresh_dirty_and_query(
+            &conn,
+            SearchGlobalInput {
+                query: "Revenue".to_string(),
+                observed_local_date: "2026-08-03".to_string(),
+            },
+        )
+        .unwrap();
+        let docs = proj
+            .groups
+            .iter()
+            .find(|g| g.kind == SearchResultGroupKind::Documents)
+            .expect("documents group");
+        assert!(!docs.results.is_empty(), "metric label must be indexed");
+    }
+
+    #[test]
+    fn canvas_image_alt_and_caption_indexed() {
+        let conn = setup();
+        insert_leaf(&conn, "node-img", "Image Node");
+        insert_canvas(
+            &conn,
+            "doc-img",
+            "node-img",
+            "Image Node Photo of mountain lake",
+        );
+        let proj = refresh_dirty_and_query(
+            &conn,
+            SearchGlobalInput {
+                query: "mountain".to_string(),
+                observed_local_date: "2026-08-03".to_string(),
+            },
+        )
+        .unwrap();
+        let docs = proj
+            .groups
+            .iter()
+            .find(|g| g.kind == SearchResultGroupKind::Documents)
+            .expect("documents group");
+        assert!(!docs.results.is_empty(), "image alt must be indexed");
+    }
+
+    #[test]
+    fn canvas_callout_content_indexed() {
+        let conn = setup();
+        insert_leaf(&conn, "node-co", "Callout Node");
+        insert_canvas(
+            &conn,
+            "doc-co",
+            "node-co",
+            "Callout Node Importantnotetoken callout body",
+        );
+        let proj = refresh_dirty_and_query(
+            &conn,
+            SearchGlobalInput {
+                query: "Importantnotetoken".to_string(),
+                observed_local_date: "2026-08-03".to_string(),
+            },
+        )
+        .unwrap();
+        let docs = proj
+            .groups
+            .iter()
+            .find(|g| g.kind == SearchResultGroupKind::Documents)
+            .expect("documents group");
+        assert!(!docs.results.is_empty(), "callout content must be indexed");
+    }
+
+    #[test]
+    fn canvas_timeline_title_and_item_labels_indexed() {
+        let conn = setup();
+        insert_leaf(&conn, "node-tl", "Timeline Node");
+        insert_canvas(
+            &conn,
+            "doc-tl",
+            "node-tl",
+            "Timeline Node Project History Kickoff Planning Launch",
+        );
+        let proj = refresh_dirty_and_query(
+            &conn,
+            SearchGlobalInput {
+                query: "Kickoff".to_string(),
+                observed_local_date: "2026-08-03".to_string(),
+            },
+        )
+        .unwrap();
+        let docs = proj
+            .groups
+            .iter()
+            .find(|g| g.kind == SearchResultGroupKind::Documents)
+            .expect("documents group");
+        assert!(!docs.results.is_empty(), "timeline labels must be indexed");
+    }
+
+    #[test]
+    fn canvas_vietnamese_normalized_query_matches() {
+        let conn = setup();
+        insert_leaf(&conn, "node-vn", "Kế hoạch");
+        // plain_text from the canvas includes the Vietnamese title
+        insert_canvas(&conn, "doc-vn", "node-vn", "Kế hoạch Lập kế hoạch hàng ngày");
+        let proj = refresh_dirty_and_query(
+            &conn,
+            SearchGlobalInput {
+                query: "ke hoach".to_string(),
+                observed_local_date: "2026-08-03".to_string(),
+            },
+        )
+        .unwrap();
+        let docs = proj
+            .groups
+            .iter()
+            .find(|g| g.kind == SearchResultGroupKind::Documents)
+            .expect("documents group");
+        assert!(
+            !docs.results.is_empty(),
+            "Vietnamese-normalized query must match Vietnamese canvas title"
+        );
+    }
+
+    #[test]
+    fn canvas_archived_excluded_from_search() {
+        let conn = setup();
+        insert_leaf(&conn, "node-arc", "Archived Canvas Node");
+        // Insert an archived canvas.
+        conn.execute(
+            "INSERT INTO narrative_documents \
+             (id,life_node_id,schema_version,revision,canonical_json,plain_text,\
+              created_at,updated_at,archived_at,template_id,template_version) \
+             VALUES ('doc-arc','node-arc',1,0,'{}','Archived Canvas Node uniquearchived9x',\
+              'now','now','2026-01-01','knowledge_dossier',1)",
+            [],
+        )
+        .unwrap();
+        let proj = refresh_dirty_and_query(
+            &conn,
+            SearchGlobalInput {
+                query: "uniquearchived9x".to_string(),
+                observed_local_date: "2026-08-03".to_string(),
+            },
+        )
+        .unwrap();
+        let docs = proj
+            .groups
+            .iter()
+            .find(|g| g.kind == SearchResultGroupKind::Documents);
+        assert!(
+            docs.is_none() || docs.unwrap().results.is_empty(),
+            "archived canvas must not appear in search results"
+        );
+    }
+
+    #[test]
+    fn canvas_unknown_block_raw_fields_excluded_from_search() {
+        let conn = setup();
+        insert_leaf(&conn, "node-unk", "Unknown Block Node");
+        // plain_text does NOT include unknown block fields (schema contract).
+        insert_canvas(&conn, "doc-unk", "node-unk", "Unknown Block Node");
+        let proj = refresh_dirty_and_query(
+            &conn,
+            SearchGlobalInput {
+                query: "extraField9z".to_string(),
+                observed_local_date: "2026-08-03".to_string(),
+            },
+        )
+        .unwrap();
+        let docs = proj
+            .groups
+            .iter()
+            .find(|g| g.kind == SearchResultGroupKind::Documents);
+        assert!(
+            docs.is_none() || docs.unwrap().results.is_empty(),
+            "unknown block raw fields must not appear in search results"
+        );
+    }
+
+    #[test]
+    fn canvas_and_basic_leaf_coexist_correctly_in_search() {
+        // When a Basic Leaf exists on its own node and a Canvas on another node,
+        // both should be independently searchable.
+        let conn = setup();
+        insert_leaf(&conn, "node-bl1", "Basic Leaf Node One");
+        insert_leaf(&conn, "node-cv1", "Canvas Result Node");
+        // Insert reader document (basic leaf)
+        conn.execute(
+            "INSERT INTO reader_documents VALUES('rd-bl1','node-bl1',1,0,'{}',\
+             'Basic Leaf unique content token','now','now',NULL)",
+            [],
+        )
+        .unwrap();
+        // Insert canvas on separate node
+        insert_canvas(&conn, "doc-cv1", "node-cv1", "Canvas Result Node canvas body token");
+        // Search for basic leaf token
+        let proj1 = refresh_dirty_and_query(
+            &conn,
+            SearchGlobalInput {
+                query: "unique content token".to_string(),
+                observed_local_date: "2026-08-03".to_string(),
+            },
+        )
+        .unwrap();
+        let docs1 = proj1
+            .groups
+            .iter()
+            .find(|g| g.kind == SearchResultGroupKind::Documents)
+            .expect("documents group for basic leaf search");
+        assert!(!docs1.results.is_empty(), "basic leaf must be searchable");
+        // Search for canvas token
+        let proj2 = refresh_dirty_and_query(
+            &conn,
+            SearchGlobalInput {
+                query: "canvas body token".to_string(),
+                observed_local_date: "2026-08-03".to_string(),
+            },
+        )
+        .unwrap();
+        let docs2 = proj2
+            .groups
+            .iter()
+            .find(|g| g.kind == SearchResultGroupKind::Documents)
+            .expect("documents group for canvas search");
+        assert!(!docs2.results.is_empty(), "canvas must be searchable");
+    }
+
     // ── File-backed smoke: schema, Vietnamese, nav targets, dirty, relaunch ──────
 
     #[test]
@@ -1187,7 +1512,7 @@ mod tests {
                     r.get(0)
                 })
                 .unwrap();
-            assert_eq!(ver, 13, "schema must be at version 13");
+            assert_eq!(ver, 14, "schema must be at version 14");
 
             // Insert one task with Vietnamese title.
             conn.execute(

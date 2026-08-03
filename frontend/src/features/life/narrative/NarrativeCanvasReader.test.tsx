@@ -200,4 +200,57 @@ describe("NarrativeCanvasReader", () => {
     expect(await screen.findByText("warning")).toBeInTheDocument();
     expect(screen.getByText("Be careful")).toBeInTheDocument();
   });
+
+  it("rich_text block renders its text content through StaticDocument", async () => {
+    const withRichText = JSON.stringify({
+      schemaVersion: 1,
+      documentId: DOC_ID,
+      title: "Doc",
+      templateId: "knowledge_dossier",
+      templateVersion: 1,
+      scenes: [{
+        id: "00000000-0000-7000-8000-000000000202",
+        title: "",
+        layoutPreset: "single_column",
+        atmosphere: "neutral",
+        motionPreset: "none",
+        blocks: [{
+          kind: "rich_text",
+          id: "00000000-0000-7000-8000-000000000210",
+          content: {
+            type: "doc",
+            content: [{ type: "paragraph", content: [{ type: "text", text: "Hello StaticDocument" }] }],
+          },
+        }],
+      }],
+    });
+    api.get.mockResolvedValue(projection({ document: seedDoc(withRichText) }));
+    mount();
+    expect(await screen.findByText("Hello StaticDocument")).toBeInTheDocument();
+  });
+
+  it("corrupt rich_text island shows placeholder without crashing", async () => {
+    const withCorrupt = JSON.stringify({
+      schemaVersion: 1,
+      documentId: DOC_ID,
+      title: "Doc",
+      templateId: "knowledge_dossier",
+      templateVersion: 1,
+      scenes: [{
+        id: "00000000-0000-7000-8000-000000000202",
+        title: "",
+        layoutPreset: "single_column",
+        atmosphere: "neutral",
+        motionPreset: "none",
+        blocks: [{
+          kind: "rich_text",
+          id: "00000000-0000-7000-8000-000000000211",
+          content: { type: "not-a-doc", content: [] },
+        }],
+      }],
+    });
+    api.get.mockResolvedValue(projection({ document: seedDoc(withCorrupt) }));
+    mount();
+    expect(await screen.findByText(/unsupported content/i)).toBeInTheDocument();
+  });
 });
