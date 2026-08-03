@@ -116,6 +116,10 @@ Portfolio recommendation (accepted, ADR 0018): **Narrative Multi-Scene Compositi
 
 **HOLD_FOR_PRODUCT_OWNER:** Template System, Visual Worlds. **CONDITIONAL (DEFER):** Lossless Package, Tags, Task/Life Relationships, Generic Outline. **FAIL:** Backlinks, Noteboard, Graph, Score, Prediction.
 
+## Slice 014 — Narrative Multi-Scene Composition
+
+Task 24 relaxes the single-scene constraint (1–20 scenes), adds a Studio scene panel (tab UI, add/delete/rename/reorder), and updates the Reader to render all scenes. No migration required; schema stays at version 14. ADR 0019 accepted.
+
 ## Slice 011 — Narrative Canvas Core
 
 Task 21 activates the first production Narrative Canvas vertical slice (ADR 0010 Strategy A). Accepted after two remediation rounds (ADR 0012, ADR 0013).

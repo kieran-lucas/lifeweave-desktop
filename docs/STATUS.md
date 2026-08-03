@@ -2,6 +2,21 @@
 
 Updated: 2026-08-03 Asia/Saigon
 
+## Task 24/60 — Narrative Multi-Scene Composition (complete)
+
+- `parseNarrative` relaxed from `scenes.length !== 1` to `scenes.length === 0 || scenes.length > 20`.
+- Rust `schema.rs` validator relaxed from `scenes.len() > 1` to `scenes.len() > 20`.
+- `NarrativeCanvasReader` `StaticCanvasView` iterates `doc.scenes`; each scene is a `<section aria-labelledby>` landmark; untitled scenes get a visually-hidden h2 ("Scene N").
+- `NarrativeCanvasStudio` adds `activeSceneId` state, `activeSceneIdx` derivation; all 8 `scenes[0]` sites updated to use active scene index; `deactivateIsland` and `materializeCurrentDocument` capture `activeSceneId` before `setHistory` functional update.
+- Scene tab bar (role="tablist"): one tab per scene, Add (+) button (disabled at 20), scene rename input, move left/right buttons, delete button (disabled when only 1 scene).
+- Four new callbacks: `handleAddScene`, `handleDeleteScene`, `handleRenameScene`, `handleMoveScene`.
+- `serializeNarrative`, `toNarrativeCanonicalValue`, and Markdown export already iterated all scenes — no change needed.
+- No migration (schema stays at version 14). No new IPC commands. No new dependencies.
+- New CSS styles: `sceneTabBar`, `sceneTab`, `sceneTabActive`, `sceneTabAdd`, `sceneControls`, `sceneRenameInput`, `srOnly`.
+- 391 Rust tests pass (4 new: `rejects_zero_scenes`, `accepts_two_scenes`, `accepts_twenty_scenes`, `rejects_twenty_one_scenes`).
+- 416 frontend tests pass (new: 5 schema, 2 Reader, 11 Studio multi-scene).
+- ADR 0019 accepted. Audit: `docs/audits/task-24-narrative-multi-scene.md`.
+
 ## Task 23/60 — Post-Narrative Expansion Decision (complete, reaudit)
 
 - Initial commit `0dce8e9` was FAIL (substituted criteria, incomplete hard-filter matrix, hardcoded acceptance winner, missing simulation outputs). Remediation in `docs/audits/task-23-acceptance-remediation.md`.

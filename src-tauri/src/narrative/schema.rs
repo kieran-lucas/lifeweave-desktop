@@ -110,9 +110,9 @@ pub fn validate(
         .ok_or(NarrativeError::Validation(
             "Narrative scenes array is missing.",
         ))?;
-    if scenes.is_empty() || scenes.len() > 1 {
+    if scenes.is_empty() || scenes.len() > 20 {
         return Err(NarrativeError::Validation(
-            "Narrative document must have exactly one scene.",
+            "Narrative document must have 1 to 20 scenes.",
         ));
     }
 
@@ -555,7 +555,20 @@ mod tests {
     }
 
     #[test]
-    fn rejects_zero_and_two_scenes() {
+    fn rejects_zero_scenes() {
+        let base = serde_json::json!({
+            "schemaVersion": 1,
+            "documentId": "00000000-0000-7000-8000-000000000002",
+            "title": "Test",
+            "templateId": "knowledge_dossier",
+            "templateVersion": 1,
+            "scenes": []
+        });
+        assert!(validate(&base.to_string(), None).is_err());
+    }
+
+    #[test]
+    fn accepts_two_scenes() {
         let block_id = new_id();
         let base = serde_json::json!({
             "schemaVersion": 1,
@@ -563,17 +576,72 @@ mod tests {
             "title": "Test",
             "templateId": "knowledge_dossier",
             "templateVersion": 1,
+            "scenes": [
+                scene(serde_json::json!([rich_text_block(&block_id)])),
+                {
+                    "id": "00000000-0000-7000-8000-000000000099",
+                    "title": "Scene 2",
+                    "layoutPreset": "single_column",
+                    "atmosphere": "neutral",
+                    "motionPreset": "none",
+                    "blocks": [rich_text_block(&new_id())]
+                }
+            ]
         });
-        let mut zero = base.clone();
-        zero["scenes"] = serde_json::json!([]);
-        assert!(validate(&zero.to_string(), None).is_err());
+        assert!(validate(&base.to_string(), None).is_ok());
+    }
 
-        let mut two = base.clone();
-        two["scenes"] = serde_json::json!([
-            scene(serde_json::json!([rich_text_block(&block_id)])),
-            scene(serde_json::json!([rich_text_block(&new_id())]))
-        ]);
-        assert!(validate(&two.to_string(), None).is_err());
+    #[test]
+    fn accepts_twenty_scenes() {
+        let scenes: Vec<serde_json::Value> = (0..20)
+            .map(|i| {
+                serde_json::json!({
+                    "id": format!("00000000-0000-7000-8000-{:012}", i + 10),
+                    "title": format!("Scene {}", i + 1),
+                    "layoutPreset": "single_column",
+                    "atmosphere": "neutral",
+                    "motionPreset": "none",
+                    "blocks": [rich_text_block(&new_id())]
+                })
+            })
+            .collect();
+        let doc = serde_json::json!({
+            "schemaVersion": 1,
+            "documentId": "00000000-0000-7000-8000-000000000002",
+            "title": "Test",
+            "templateId": "knowledge_dossier",
+            "templateVersion": 1,
+            "scenes": scenes
+        });
+        assert!(validate(&doc.to_string(), None).is_ok());
+    }
+
+    #[test]
+    fn rejects_twenty_one_scenes() {
+        let scenes: Vec<serde_json::Value> = (0..21)
+            .map(|i| {
+                serde_json::json!({
+                    "id": format!("00000000-0000-7000-8000-{:012}", i + 10),
+                    "title": format!("Scene {}", i + 1),
+                    "layoutPreset": "single_column",
+                    "atmosphere": "neutral",
+                    "motionPreset": "none",
+                    "blocks": [rich_text_block(&new_id())]
+                })
+            })
+            .collect();
+        let doc = serde_json::json!({
+            "schemaVersion": 1,
+            "documentId": "00000000-0000-7000-8000-000000000002",
+            "title": "Test",
+            "templateId": "knowledge_dossier",
+            "templateVersion": 1,
+            "scenes": scenes
+        });
+        match validate(&doc.to_string(), None) {
+            Err(NarrativeError::Validation(msg)) => assert!(msg.contains("1 to 20")),
+            other => panic!("expected Validation error, got {:?}", other.is_ok()),
+        }
     }
 
     #[test]

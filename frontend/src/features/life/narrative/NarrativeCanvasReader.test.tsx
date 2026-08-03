@@ -229,6 +229,65 @@ describe("NarrativeCanvasReader", () => {
     expect(await screen.findByText("Hello StaticDocument")).toBeInTheDocument();
   });
 
+  it("renders all scenes in a multi-scene document", async () => {
+    const twoSceneJson = JSON.stringify({
+      schemaVersion: 1,
+      documentId: DOC_ID,
+      title: "Multi Scene",
+      templateId: "knowledge_dossier",
+      templateVersion: 1,
+      scenes: [
+        {
+          id: "00000000-0000-7000-8000-000000000202",
+          title: "Act One",
+          layoutPreset: "single_column",
+          atmosphere: "neutral",
+          motionPreset: "none",
+          blocks: [],
+        },
+        {
+          id: "00000000-0000-7000-8000-000000000203",
+          title: "Act Two",
+          layoutPreset: "single_column",
+          atmosphere: "neutral",
+          motionPreset: "none",
+          blocks: [],
+        },
+      ],
+    });
+    api.get.mockResolvedValue(projection({ document: seedDoc(twoSceneJson) }));
+    mount();
+    expect(await screen.findByRole("heading", { name: "Act One", level: 2 })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Act Two", level: 2 })).toBeInTheDocument();
+    const sections = screen.getAllByRole("region");
+    expect(sections.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("renders visually hidden h2 for untitled scenes", async () => {
+    const untitledSceneJson = JSON.stringify({
+      schemaVersion: 1,
+      documentId: DOC_ID,
+      title: "Canvas",
+      templateId: "knowledge_dossier",
+      templateVersion: 1,
+      scenes: [
+        {
+          id: "00000000-0000-7000-8000-000000000202",
+          title: "",
+          layoutPreset: "single_column",
+          atmosphere: "neutral",
+          motionPreset: "none",
+          blocks: [],
+        },
+      ],
+    });
+    api.get.mockResolvedValue(projection({ document: seedDoc(untitledSceneJson) }));
+    mount();
+    await screen.findByRole("heading", { name: "Canvas", level: 1 });
+    // Untitled scene still gets a h2 (screen-reader only)
+    expect(screen.getByRole("heading", { name: "Scene 1", level: 2 })).toBeInTheDocument();
+  });
+
   it("corrupt rich_text island shows placeholder without crashing", async () => {
     const withCorrupt = JSON.stringify({
       schemaVersion: 1,

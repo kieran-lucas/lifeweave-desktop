@@ -37,6 +37,7 @@ import {
 } from "./schema";
 import type {
   NarrativeBlock,
+  NarrativeScene,
   ParsedNarrativeDocument,
   ParsedNarrativeBlock,
   RichTextContent,
@@ -736,6 +737,18 @@ export default function NarrativeCanvasStudio({
   // Live editor content (not in state — avoids re-renders per keystroke)
   const activeContentRef = useRef<RichTextContent | null>(null);
 
+  // ---- Active scene ----
+  const [activeSceneId, setActiveSceneId] = useState<string>(
+    () => {
+      try {
+        const initial = parseNarrative(initialJson ?? document.canonical_json);
+        return initial.scenes[0].id;
+      } catch {
+        return parseNarrative(document.canonical_json).scenes[0].id;
+      }
+    },
+  );
+
   // ---- UI state ----
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -751,7 +764,8 @@ export default function NarrativeCanvasStudio({
   );
 
   const doc = history.current;
-  const scene = doc.scenes[0];
+  const activeSceneIdx = Math.max(0, doc.scenes.findIndex(s => s.id === activeSceneId));
+  const scene = doc.scenes[activeSceneIdx]!;
   const blockIds = scene.blocks.map(b => isUnknownBlock(b) ? b.uiKey : b.id);
 
   // ---- Helpers ----
@@ -770,10 +784,12 @@ export default function NarrativeCanvasStudio({
     (nextActiveId: string | null = null) => {
       if (activeBlockId !== null && activeContentRef.current !== null) {
         const content = activeContentRef.current;
-        const closingId = activeBlockId;
+        const closingBlockId = activeBlockId;
+        const closingSceneId = activeSceneId;
         setHistory(h => {
-          const blocks = h.current.scenes[0].blocks.map(b => {
-            if (!isUnknownBlock(b) && b.id === closingId) {
+          const idx = Math.max(0, h.current.scenes.findIndex(s => s.id === closingSceneId));
+          const blocks = h.current.scenes[idx]!.blocks.map(b => {
+            if (!isUnknownBlock(b) && b.id === closingBlockId) {
               if (b.kind === "rich_text") return { ...b, content };
               if (b.kind === "callout") return { ...b, content };
             }
@@ -783,7 +799,7 @@ export default function NarrativeCanvasStudio({
             ...h,
             current: {
               ...h.current,
-              scenes: [{ ...h.current.scenes[0], blocks }],
+              scenes: h.current.scenes.map((s, i) => i === idx ? { ...s, blocks } : s) as [NarrativeScene, ...NarrativeScene[]],
             },
           };
         });
@@ -791,7 +807,7 @@ export default function NarrativeCanvasStudio({
       }
       setActiveBlockId(nextActiveId);
     },
-    [activeBlockId],
+    [activeBlockId, activeSceneId],
   );
 
   /**
@@ -813,7 +829,8 @@ export default function NarrativeCanvasStudio({
     const h = history;
     if (activeBlockId !== null && activeContentRef.current !== null) {
       const content = activeContentRef.current;
-      const blocks = h.current.scenes[0].blocks.map(b => {
+      const idx = Math.max(0, h.current.scenes.findIndex(s => s.id === activeSceneId));
+      const blocks = h.current.scenes[idx]!.blocks.map(b => {
         if (!isUnknownBlock(b) && b.id === activeBlockId) {
           if (b.kind === "rich_text") return { ...b, content };
           if (b.kind === "callout") return { ...b, content };
@@ -822,11 +839,11 @@ export default function NarrativeCanvasStudio({
       });
       return {
         ...h.current,
-        scenes: [{ ...h.current.scenes[0], blocks }],
+        scenes: h.current.scenes.map((s, i) => i === idx ? { ...s, blocks } : s) as [NarrativeScene, ...NarrativeScene[]],
       };
     }
     return h.current;
-  }, [history, activeBlockId]);
+  }, [history, activeBlockId, activeSceneId]);
 
   // ---- Structural document mutations (push to history) ----
 
@@ -843,14 +860,15 @@ export default function NarrativeCanvasStudio({
       // For rich_text/callout: these structural-field changes (e.g. variant) go through history
       // Tiptap content changes do NOT come through here — they go via activeContentRef
       const materialized = materializeCurrentDocument();
-      const mScene = materialized.scenes[0];
+      const idx = Math.max(0, materialized.scenes.findIndex(s => s.id === activeSceneId));
+      const mScene = materialized.scenes[idx]!;
       const newBlocks = mScene.blocks.map((b, i) => (i === blockIndex ? block : b));
       applyStructural({
         ...materialized,
-        scenes: [{ ...mScene, blocks: newBlocks }],
+        scenes: materialized.scenes.map((s, i) => i === idx ? { ...s, blocks: newBlocks } : s) as [NarrativeScene, ...NarrativeScene[]],
       });
     },
-    [materializeCurrentDocument, applyStructural],
+    [materializeCurrentDocument, applyStructural, activeSceneId],
   );
 
   const deleteBlock = useCallback(
@@ -893,23 +911,24 @@ export default function NarrativeCanvasStudio({
 
       applyStructural({
         ...doc,
-        scenes: [{ ...scene, blocks: newBlocks }],
+        scenes: doc.scenes.map((s, i) => i === activeSceneIdx ? { ...s, blocks: newBlocks } : s) as [NarrativeScene, ...NarrativeScene[]],
       });
     },
-    [scene, doc, activeBlockId, applyStructural],
+    [scene, doc, activeSceneIdx, activeBlockId, applyStructural],
   );
 
   const moveBlock = useCallback(
     (from: number, to: number) => {
       // Materialize so live Tiptap content is not lost during reorder
       const materialized = materializeCurrentDocument();
-      const mScene = materialized.scenes[0];
+      const idx = Math.max(0, materialized.scenes.findIndex(s => s.id === activeSceneId));
+      const mScene = materialized.scenes[idx]!;
       const blocks = [...mScene.blocks];
       const [item] = blocks.splice(from, 1);
       blocks.splice(to, 0, item!);
-      applyStructural({ ...materialized, scenes: [{ ...mScene, blocks }] });
+      applyStructural({ ...materialized, scenes: materialized.scenes.map((s, i) => i === idx ? { ...s, blocks } : s) as [NarrativeScene, ...NarrativeScene[]] });
     },
-    [materializeCurrentDocument, applyStructural],
+    [materializeCurrentDocument, applyStructural, activeSceneId],
   );
 
   const handleBlockDragEnd = useCallback(
@@ -921,11 +940,12 @@ export default function NarrativeCanvasStudio({
       if (oldIndex === -1 || newIndex === -1) return;
       // Materialize and apply via arrayMove
       const materialized = materializeCurrentDocument();
-      const mScene = materialized.scenes[0];
+      const idx = Math.max(0, materialized.scenes.findIndex(s => s.id === activeSceneId));
+      const mScene = materialized.scenes[idx]!;
       const newBlocks = arrayMove(mScene.blocks, oldIndex, newIndex);
-      applyStructural({ ...materialized, scenes: [{ ...mScene, blocks: newBlocks }] });
+      applyStructural({ ...materialized, scenes: materialized.scenes.map((s, i) => i === idx ? { ...s, blocks: newBlocks } : s) as [NarrativeScene, ...NarrativeScene[]] });
     },
-    [scene.blocks, materializeCurrentDocument, applyStructural],
+    [scene.blocks, materializeCurrentDocument, applyStructural, activeSceneId],
   );
 
   const addBlock = useCallback(
@@ -950,18 +970,64 @@ export default function NarrativeCanvasStudio({
           break;
       }
       const materialized = materializeCurrentDocument();
-      const mScene = materialized.scenes[0];
+      const idx = Math.max(0, materialized.scenes.findIndex(s => s.id === activeSceneId));
       applyStructural({
         ...materialized,
-        scenes: [{ ...mScene, blocks: [...mScene.blocks, block] }],
+        scenes: materialized.scenes.map((s, i) => i === idx ? { ...s, blocks: [...s.blocks, block] } : s) as [NarrativeScene, ...NarrativeScene[]],
       });
       // Auto-activate Tiptap island for rich text and callout blocks
       if (kind === "rich_text" || kind === "callout") {
         setActiveBlockId(id);
       }
     },
-    [materializeCurrentDocument, applyStructural],
+    [materializeCurrentDocument, applyStructural, activeSceneId],
   );
+
+  // ---- Scene CRUD ----
+
+  const handleAddScene = useCallback(() => {
+    if (doc.scenes.length >= 20) return;
+    deactivateIsland(null);
+    const newId = newNarrativeId();
+    const newScene: NarrativeScene = {
+      id: newId,
+      title: `Scene ${doc.scenes.length + 1}`,
+      layoutPreset: "single_column",
+      atmosphere: "neutral",
+      motionPreset: "none",
+      blocks: [{ kind: "rich_text", id: newNarrativeId(), content: emptyRichText() }],
+    };
+    applyStructural({ ...doc, scenes: [...doc.scenes, newScene] as [NarrativeScene, ...NarrativeScene[]] });
+    setActiveSceneId(newId);
+  }, [doc, deactivateIsland, applyStructural]);
+
+  const handleDeleteScene = useCallback(() => {
+    if (doc.scenes.length <= 1) return;
+    const isEmpty = scene.blocks.every(b => isBlockEmpty(b));
+    if (!isEmpty && !window.confirm("Delete this scene and all its blocks?")) return;
+    deactivateIsland(null);
+    const newScenes = doc.scenes.filter((_, i) => i !== activeSceneIdx) as [NarrativeScene, ...NarrativeScene[]];
+    const newActiveId = (newScenes[activeSceneIdx] ?? newScenes[activeSceneIdx - 1] ?? newScenes[0])!.id;
+    applyStructural({ ...doc, scenes: newScenes });
+    setActiveSceneId(newActiveId);
+  }, [doc, scene, activeSceneIdx, deactivateIsland, applyStructural]);
+
+  const handleRenameScene = useCallback((title: string) => {
+    applyStructural({
+      ...doc,
+      scenes: doc.scenes.map((s, i) => i === activeSceneIdx ? { ...s, title } : s) as [NarrativeScene, ...NarrativeScene[]],
+    });
+  }, [doc, activeSceneIdx, applyStructural]);
+
+  const handleMoveScene = useCallback((direction: "left" | "right") => {
+    const to = direction === "left" ? activeSceneIdx - 1 : activeSceneIdx + 1;
+    if (to < 0 || to >= doc.scenes.length) return;
+    deactivateIsland(null);
+    const scenes = [...doc.scenes] as [NarrativeScene, ...NarrativeScene[]];
+    const [item] = scenes.splice(activeSceneIdx, 1);
+    scenes.splice(to, 0, item!);
+    applyStructural({ ...doc, scenes });
+  }, [doc, activeSceneIdx, deactivateIsland, applyStructural]);
 
   // ---- Undo / Redo ----
 
@@ -1052,7 +1118,8 @@ export default function NarrativeCanvasStudio({
       let materialized: ParsedNarrativeDocument;
       if (activeBlockId !== null && activeContentRef.current !== null) {
         const content = activeContentRef.current;
-        const blocks = h.current.scenes[0].blocks.map(b => {
+        const sidx = Math.max(0, h.current.scenes.findIndex(s => s.id === activeSceneId));
+        const blocks = h.current.scenes[sidx]!.blocks.map(b => {
           if (!isUnknownBlock(b) && b.id === activeBlockId) {
             if (b.kind === "rich_text") return { ...b, content };
             if (b.kind === "callout") return { ...b, content };
@@ -1061,7 +1128,7 @@ export default function NarrativeCanvasStudio({
         });
         materialized = {
           ...h.current,
-          scenes: [{ ...h.current.scenes[0], blocks }],
+          scenes: h.current.scenes.map((s, i) => i === sidx ? { ...s, blocks } : s) as [NarrativeScene, ...NarrativeScene[]],
         };
       } else {
         materialized = h.current;
@@ -1081,7 +1148,7 @@ export default function NarrativeCanvasStudio({
         });
     }, 1000);
     return () => window.clearTimeout(timer);
-  }, [dirty, history, activeBlockId, document.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [dirty, history, activeBlockId, activeSceneId, document.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---- Render ----
 
@@ -1150,6 +1217,70 @@ export default function NarrativeCanvasStudio({
         }}
       />
 
+      <div className={styles.sceneTabBar} role="tablist" aria-label="Canvas scenes">
+        {doc.scenes.map((s, i) => (
+          <button
+            key={s.id}
+            role="tab"
+            aria-selected={s.id === activeSceneId}
+            aria-controls="nc-studio-tabpanel"
+            id={`nc-tab-${s.id}`}
+            className={s.id === activeSceneId ? styles.sceneTabActive : styles.sceneTab}
+            type="button"
+            onClick={() => { deactivateIsland(null); setActiveSceneId(s.id); }}
+          >
+            {s.title || `Scene ${i + 1}`}
+          </button>
+        ))}
+        {doc.scenes.length < 20 && (
+          <button
+            className={styles.sceneTabAdd}
+            type="button"
+            onClick={handleAddScene}
+            aria-label="Add scene"
+          >
+            +
+          </button>
+        )}
+      </div>
+
+      <div className={styles.sceneControls}>
+        <input
+          className={styles.sceneRenameInput}
+          value={scene.title}
+          aria-label="Scene title"
+          onChange={e => handleRenameScene(e.currentTarget.value)}
+        />
+        <button
+          className={styles.button}
+          type="button"
+          onClick={() => handleMoveScene("left")}
+          disabled={activeSceneIdx === 0}
+          aria-label="Move scene left"
+        >
+          ←
+        </button>
+        <button
+          className={styles.button}
+          type="button"
+          onClick={() => handleMoveScene("right")}
+          disabled={activeSceneIdx === doc.scenes.length - 1}
+          aria-label="Move scene right"
+        >
+          →
+        </button>
+        <button
+          className={styles.button}
+          type="button"
+          onClick={handleDeleteScene}
+          disabled={doc.scenes.length <= 1}
+          aria-label="Delete scene"
+        >
+          Delete scene
+        </button>
+      </div>
+
+      <div role="tabpanel" id="nc-studio-tabpanel" aria-labelledby={`nc-tab-${activeSceneId}`}>
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -1220,6 +1351,7 @@ export default function NarrativeCanvasStudio({
         >
           Timeline
         </button>
+      </div>
       </div>
     </div>
   );

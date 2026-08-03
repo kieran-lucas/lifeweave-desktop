@@ -159,7 +159,7 @@ export function parseNarrative(json: string): ParsedNarrativeDocument {
   assertString(doc["documentId"], "documentId");
   assertString(doc["title"], "title");
   const scenes = assertArray(doc["scenes"], "scenes");
-  if (scenes.length !== 1) throw new Error("Narrative must have exactly one scene");
+  if (scenes.length === 0 || scenes.length > 20) throw new Error("Narrative must have 1 to 20 scenes");
   const parsedScenes = scenes.map((s, si) => {
     if (!s || typeof s !== "object" || Array.isArray(s)) throw new Error(`Scene ${si} must be an object`);
     const scene = s as Record<string, unknown>;

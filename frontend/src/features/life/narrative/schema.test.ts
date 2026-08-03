@@ -57,10 +57,32 @@ describe("parseNarrative", () => {
     expect(() => parseNarrative(JSON.stringify({ ...JSON.parse(KNOWN_DOC), templateVersion: 2 }))).toThrow("templateVersion");
   });
 
-  it("throws on more than one scene", () => {
+  it("throws on zero scenes", () => {
     const d = JSON.parse(KNOWN_DOC);
-    d.scenes.push({ ...d.scenes[0], id: "other" });
-    expect(() => parseNarrative(JSON.stringify(d))).toThrow("exactly one scene");
+    d.scenes = [];
+    expect(() => parseNarrative(JSON.stringify(d))).toThrow("1 to 20 scenes");
+  });
+
+  it("throws on 21 scenes", () => {
+    const d = JSON.parse(KNOWN_DOC);
+    const base = d.scenes[0];
+    d.scenes = Array.from({ length: 21 }, (_, i) => ({ ...base, id: `scene-id-${i}` }));
+    expect(() => parseNarrative(JSON.stringify(d))).toThrow("1 to 20 scenes");
+  });
+
+  it("accepts two scenes", () => {
+    const d = JSON.parse(KNOWN_DOC);
+    d.scenes.push({ ...d.scenes[0], id: "second-scene-id" });
+    const doc = parseNarrative(JSON.stringify(d));
+    expect(doc.scenes).toHaveLength(2);
+  });
+
+  it("accepts twenty scenes", () => {
+    const d = JSON.parse(KNOWN_DOC);
+    const base = d.scenes[0];
+    d.scenes = Array.from({ length: 20 }, (_, i) => ({ ...base, id: `scene-id-${i}` }));
+    const doc = parseNarrative(JSON.stringify(d));
+    expect(doc.scenes).toHaveLength(20);
   });
 
   it("throws on wrong layoutPreset", () => {
@@ -105,6 +127,15 @@ describe("serializeNarrative round-trip", () => {
     const doc = parseNarrative(KNOWN_DOC);
     const re = parseNarrative(serializeNarrative(doc));
     expect(re.documentId).toBe(doc.documentId);
+  });
+
+  it("round-trips two-scene document preserving both scenes", () => {
+    const d = JSON.parse(KNOWN_DOC);
+    d.scenes.push({ ...d.scenes[0], id: "second-scene-id", title: "Second Scene" });
+    const doc = parseNarrative(JSON.stringify(d));
+    const re = parseNarrative(serializeNarrative(doc));
+    expect(re.scenes).toHaveLength(2);
+    expect(re.scenes[1]!.title).toBe("Second Scene");
   });
 
   it("round-trips unknown block with all fields preserved", () => {

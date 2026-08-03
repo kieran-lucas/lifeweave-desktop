@@ -50,3 +50,11 @@ export const staticPreview = style({ width: "100%", textAlign: "left", border: "
 export const importButton = style([button, { marginBottom: 8 }]);
 export const previewImage = style([image, { maxHeight: 200, marginTop: 8 }]);
 export const timelineItemEditor = style({ border: "1px solid var(--border-subtle)", borderRadius: 8, padding: 10, display: "flex", flexDirection: "column", gap: 6, background: "var(--app-background)" });
+
+export const sceneTabBar = style({ display: "flex", gap: 4, padding: "8px 0 0", overflowX: "auto", borderBottom: "1px solid var(--border-subtle)", marginBottom: 8 });
+export const sceneTab = style({ padding: "6px 14px", borderRadius: "6px 6px 0 0", cursor: "pointer", background: "none", border: "1px solid transparent", borderBottom: "none", color: "var(--text-muted)", fontWeight: 500, selectors: { "&:focus-visible": { outline: "3px solid var(--focus-ring)", outlineOffset: 2 } } });
+export const sceneTabActive = style([sceneTab, { background: "var(--surface)", border: "1px solid var(--border-subtle)", borderBottom: "1px solid var(--surface)", color: "var(--text-primary)", fontWeight: 700, marginBottom: -1 }]);
+export const sceneTabAdd = style({ padding: "6px 10px", background: "none", border: "1px dashed var(--border-subtle)", borderRadius: 6, cursor: "pointer", color: "var(--text-muted)", alignSelf: "center", marginBottom: 4, selectors: { "&:focus-visible": { outline: "3px solid var(--focus-ring)", outlineOffset: 2 } } });
+export const sceneControls = style({ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", marginBottom: 12 });
+export const sceneRenameInput = style({ flexGrow: 1, background: "none", border: "none", borderBottom: "1px solid var(--border-subtle)", padding: "4px 0", fontSize: "0.95rem", color: "var(--text-primary)", selectors: { "&:focus": { outline: "none", borderBottomColor: "var(--focus-ring)" } } });
+export const srOnly = style({ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" });

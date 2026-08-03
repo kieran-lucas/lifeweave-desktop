@@ -436,3 +436,123 @@ describe("NarrativeCanvasStudio architecture", () => {
     expect(dragHandle).toBeInTheDocument();
   });
 });
+
+const SCENE_ID_2 = "019700000000-0000-7000-8000-000000000210";
+const BLOCK_ID_S2 = "019700000000-0000-7000-8000-000000000211";
+
+const twoSceneJson = JSON.stringify({
+  schemaVersion: 1,
+  documentId: DOC_ID,
+  title: "Multi Scene Canvas",
+  templateId: "knowledge_dossier",
+  templateVersion: 1,
+  scenes: [
+    {
+      id: SCENE_ID,
+      title: "Scene One",
+      layoutPreset: "single_column",
+      atmosphere: "neutral",
+      motionPreset: "none",
+      blocks: [{ kind: "rich_text", id: BLOCK_ID, content: { type: "doc", content: [] } }],
+    },
+    {
+      id: SCENE_ID_2,
+      title: "Scene Two",
+      layoutPreset: "single_column",
+      atmosphere: "neutral",
+      motionPreset: "none",
+      blocks: [{ kind: "metric", id: BLOCK_ID_S2, label: "Score", value: "99", unit: "%", description: "" }],
+    },
+  ],
+});
+
+describe("NarrativeCanvasStudio multi-scene", () => {
+  beforeEach(() => {
+    api.save.mockResolvedValue({ ...baseDoc, revision: 1 });
+    api.saveDraft.mockResolvedValue(undefined);
+    api.discard.mockResolvedValue(undefined);
+    tiptapMock.onUpdate = undefined;
+    tiptapMock.getJSON.mockReturnValue({ type: "doc", content: [] });
+  });
+
+  it("renders scene tabs for each scene", () => {
+    mountWith(twoSceneJson);
+    expect(screen.getByRole("tab", { name: "Scene One" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Scene Two" })).toBeInTheDocument();
+  });
+
+  it("first scene tab is selected initially", () => {
+    mountWith(twoSceneJson);
+    const tabOne = screen.getByRole("tab", { name: "Scene One" });
+    expect(tabOne).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("clicking second tab switches active scene", () => {
+    mountWith(twoSceneJson);
+    expect(screen.getByText("rich text")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("tab", { name: "Scene Two" }));
+    expect(screen.getByText("metric")).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Scene Two" })).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("Add scene button adds a new tab", () => {
+    mountWith(twoSceneJson);
+    const addBtn = screen.getByRole("button", { name: "Add scene" });
+    fireEvent.click(addBtn);
+    expect(screen.getAllByRole("tab").length).toBe(3);
+  });
+
+  it("Delete scene button is disabled when only one scene remains", () => {
+    mount(); // single scene
+    expect(screen.getByRole("button", { name: "Delete scene" })).toBeDisabled();
+  });
+
+  it("Delete scene removes the active scene", () => {
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+    mountWith(twoSceneJson);
+    fireEvent.click(screen.getByRole("tab", { name: "Scene Two" }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete scene" }));
+    expect(screen.queryByRole("tab", { name: "Scene Two" })).not.toBeInTheDocument();
+    confirmSpy.mockRestore();
+  });
+
+  it("Rename scene updates the tab label", () => {
+    mountWith(twoSceneJson);
+    const sceneInput = screen.getByLabelText("Scene title") as HTMLInputElement;
+    fireEvent.change(sceneInput, { target: { value: "Renamed Scene" } });
+    expect(screen.getByRole("tab", { name: "Renamed Scene" })).toBeInTheDocument();
+  });
+
+  it("Move scene left button is disabled on first scene", () => {
+    mountWith(twoSceneJson);
+    expect(screen.getByRole("button", { name: "Move scene left" })).toBeDisabled();
+  });
+
+  it("Move scene right swaps scene order", () => {
+    mountWith(twoSceneJson);
+    fireEvent.click(screen.getByRole("button", { name: "Move scene right" }));
+    const tabs = screen.getAllByRole("tab").filter(t => t.getAttribute("aria-selected") !== null);
+    expect(tabs[0]).toHaveTextContent("Scene Two");
+    expect(tabs[1]).toHaveTextContent("Scene One");
+  });
+
+  it("blocks added while scene two is active appear only in scene two", () => {
+    mountWith(twoSceneJson);
+    fireEvent.click(screen.getByRole("tab", { name: "Scene Two" }));
+    fireEvent.click(screen.getByRole("button", { name: "Timeline" }));
+    // Switch back to scene one — timeline should not be there
+    fireEvent.click(screen.getByRole("tab", { name: "Scene One" }));
+    expect(screen.queryByText("timeline")).not.toBeInTheDocument();
+  });
+
+  it("Publish serializes all scenes", async () => {
+    mountWith(twoSceneJson);
+    fireEvent.click(screen.getByRole("button", { name: "Publish" }));
+    await waitFor(() => {
+      const saved = JSON.parse(api.save.mock.calls[0]![0].canonical_json as string);
+      expect(saved.scenes).toHaveLength(2);
+      expect(saved.scenes[0].title).toBe("Scene One");
+      expect(saved.scenes[1].title).toBe("Scene Two");
+    });
+  });
+});

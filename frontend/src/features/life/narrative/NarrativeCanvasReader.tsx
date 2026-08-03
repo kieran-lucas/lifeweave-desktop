@@ -120,25 +120,26 @@ function BlockReader({ block }: { block: ParsedNarrativeBlock }) {
 // ---------------------------------------------------------------------------
 
 function StaticCanvasView({ doc }: { doc: ParsedNarrativeDocument }) {
-  const scene = doc.scenes[0];
   return (
     <article aria-labelledby="nc-canvas-title">
       <header>
         <h1 id="nc-canvas-title" className={styles.title}>{doc.title || "Untitled Canvas"}</h1>
       </header>
-      {scene.title && (
-        <section aria-labelledby="nc-scene-title">
-          <h2 id="nc-scene-title" className={styles.sceneTitle}>{scene.title}</h2>
+      {doc.scenes.map((scene, i) => (
+        <section key={scene.id} aria-labelledby={`nc-scene-title-${scene.id}`}>
+          <h2
+            id={`nc-scene-title-${scene.id}`}
+            className={scene.title ? styles.sceneTitle : styles.srOnly}
+          >
+            {scene.title || `Scene ${i + 1}`}
+          </h2>
           <div className={styles.blockList}>
-            {scene.blocks.map(block => <BlockReader key={isUnknownBlock(block) ? block.uiKey : block.id} block={block} />)}
+            {scene.blocks.map(block => (
+              <BlockReader key={isUnknownBlock(block) ? block.uiKey : block.id} block={block} />
+            ))}
           </div>
         </section>
-      )}
-      {!scene.title && (
-        <div className={styles.blockList}>
-          {scene.blocks.map(block => <BlockReader key={isUnknownBlock(block) ? block.uiKey : block.id} block={block} />)}
-        </div>
-      )}
+      ))}
     </article>
   );
 }
