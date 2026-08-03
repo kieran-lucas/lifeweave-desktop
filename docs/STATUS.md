@@ -2,6 +2,18 @@
 
 Updated: 2026-08-03 Asia/Saigon
 
+## Task 20/60 — Narrative Canvas Canonical Schema A/B Prototype + Decision
+
+- PASS at `(this commit; see git log -1)`; evidence: `docs/audits/task-20-narrative-schema-prototype.md`.
+- Prototype-only: no production code, migration, IPC, dependency, or route change.
+- Strategy A (domain envelope + rich-text islands) selected over Strategy B (full ProseMirror document).
+- Strategy A score: 93.6 / 100 (12 criteria, 100 points). Strategy B: 56.7 / 100. Gap: 36.9 points.
+- Two hard vetoes applied against Strategy B: static rendering requires PM schema (violates ADR 0005 Reader invariant); PM migration silently drops unknown attrs (data loss without error — proven by test #39).
+- 100k deterministic operations (seed 20260803) per strategy from FIXTURE_K (20 scenes / 100 blocks): both complete with 0 errors.
+- 60 new prototype tests; 253 total frontend tests pass (was 193).
+- Production bundle unchanged (489.06 kB main; no prototype strings in dist).
+- ADR 0009 accepted; specs/010-narrative-schema-prototype/ created.
+
 ## Task 19/60 — Basic Leaf Heading Outline Core + Reader Navigation
 
 - PASS at `(this commit; see git log -1)`; evidence: `docs/audits/task-19-basic-leaf-outline.md`.

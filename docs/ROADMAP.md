@@ -84,3 +84,9 @@ Task 18 implements FTS5 global search with Vietnamese normalization, dirty-scope
 
 Task 19 activates Outline only as a bounded Basic Leaf Reader heading navigator.
 It does not activate generic Outline, Life tree duplication, Studio, Noteboard or Graph.
+
+## Slice 010 — Narrative Canvas Schema Prototype
+
+Task 20 determines the canonical JSON structure for Narrative Canvas through isolated prototype comparison.
+Strategy A (domain envelope + rich-text islands) selected. No product feature activated.
+Production Narrative Canvas activation requires a separate approved task.
