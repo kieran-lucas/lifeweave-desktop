@@ -2,6 +2,20 @@
 
 Updated: 2026-08-03 Asia/Saigon
 
+## Task 22/60 — Narrative Canvas Markdown Interoperability (complete)
+
+- Fixed `asset:` → `assets/` in `narrative::markdown::export` image rendering.
+- Added `sanitize_file_name` / `sanitize_file_stem` (single Rust authority; 120 scalar value limit; Windows reserved name rejection).
+- Added `import_as_canvas` to `narrative::markdown`; delegates all Markdown parsing to `document::markdown::import` (Basic Leaf authority).
+- Added `import_from_markdown` and `export_to_markdown` to `narrative/repository.rs`.
+- 3 new IPC commands: `preview_narrative_markdown` (stateless), `import_narrative_markdown` (idempotent via operation_id), `export_narrative_markdown`.
+- 4 new DTOs: `PreviewNarrativeMarkdownInput`, `NarrativeMarkdownPreview`, `ImportNarrativeMarkdownInput`, `NarrativeMarkdownExport`.
+- `NarrativeMarkdownExportButton` in `NarrativeCanvasReader` toolbar.
+- `NarrativeMarkdownImportDialog` in `BasicLeafReader` empty-leaf state (visible only when no Basic Leaf, no Canvas, both queries settled without error).
+- No new migration (schema stays at version 14). No new dependencies.
+- 381 Rust tests pass (12 new in `narrative::markdown`). 390 frontend tests pass (12 new in `NarrativeMarkdownImportDialog.test.tsx`).
+- ADR 0015 accepted.
+
 ## Task 21/60 — Narrative Canvas Core Schema + Single-Scene Read/Studio Vertical Slice (Accepted)
 
 **Checkpoint sequence:** f1438da (fail) → 7314b26 (fail) → dc807ad (fail) → `<current HEAD>` (accepted)

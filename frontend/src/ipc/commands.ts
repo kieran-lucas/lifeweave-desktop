@@ -62,6 +62,10 @@ import type { CreateNarrativeDocumentInput } from "./generated/CreateNarrativeDo
 import type { SaveNarrativeDocumentInput } from "./generated/SaveNarrativeDocumentInput";
 import type { SaveNarrativeDraftInput } from "./generated/SaveNarrativeDraftInput";
 import type { NarrativeDocumentIdInput } from "./generated/NarrativeDocumentIdInput";
+import type { PreviewNarrativeMarkdownInput } from "./generated/PreviewNarrativeMarkdownInput";
+import type { NarrativeMarkdownPreview } from "./generated/NarrativeMarkdownPreview";
+import type { ImportNarrativeMarkdownInput } from "./generated/ImportNarrativeMarkdownInput";
+import type { NarrativeMarkdownExport } from "./generated/NarrativeMarkdownExport";
 
 export function healthCheck(): Promise<HealthCheck> {
   return invoke<HealthCheck>("health_check");
@@ -166,3 +170,6 @@ export const saveNarrativeDocument = (input: SaveNarrativeDocumentInput) => invo
 export const saveNarrativeDraft = (input: SaveNarrativeDraftInput) => invoke<NarrativeDocumentProjection>("save_narrative_draft", { input });
 export const discardNarrativeDraft = (input: NarrativeDocumentIdInput) => invoke<NarrativeDocumentProjection>("discard_narrative_draft", { input });
 export const recoverNarrativeDraft = (input: NarrativeDocumentIdInput) => invoke<NarrativeDocumentView>("recover_narrative_draft", { input });
+export const previewNarrativeMarkdown = (input: PreviewNarrativeMarkdownInput) => invoke<NarrativeMarkdownPreview>("preview_narrative_markdown", { input });
+export const importNarrativeMarkdown = (input: ImportNarrativeMarkdownInput) => invoke<NarrativeDocumentView>("import_narrative_markdown", { input });
+export const exportNarrativeMarkdown = (input: NarrativeDocumentIdInput) => invoke<NarrativeMarkdownExport>("export_narrative_markdown", { input });

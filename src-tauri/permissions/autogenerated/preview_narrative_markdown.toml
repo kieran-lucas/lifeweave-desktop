@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-preview-narrative-markdown"
+description = "Enables the preview_narrative_markdown command without any pre-configured scope."
+commands.allow = ["preview_narrative_markdown"]
+
+[[permission]]
+identifier = "deny-preview-narrative-markdown"
+description = "Denies the preview_narrative_markdown command without any pre-configured scope."
+commands.deny = ["preview_narrative_markdown"]

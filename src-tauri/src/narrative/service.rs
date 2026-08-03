@@ -1,5 +1,6 @@
-use super::{domain::NarrativeError, dto::*, repository};
+use super::{domain::NarrativeError, dto::*, markdown, repository};
 use crate::{
+    document::domain::MAX_MARKDOWN_BYTES,
     infrastructure::sqlite::{DbError, runtime::DatabaseRuntime},
     ipc::error::IpcError,
 };
@@ -92,4 +93,111 @@ pub fn recover_narrative_draft(
     input: NarrativeDocumentIdInput,
 ) -> Result<NarrativeDocumentView, IpcError> {
     run!(state, |c| repository::recover_draft(c, input))
+}
+
+#[tauri::command]
+#[tracing::instrument(skip(input))]
+pub fn preview_narrative_markdown(
+    input: PreviewNarrativeMarkdownInput,
+) -> Result<NarrativeMarkdownPreview, IpcError> {
+    if input.markdown.len() > MAX_MARKDOWN_BYTES {
+        return Err(IpcError::Validation {
+            message: "Markdown is too large.".into(),
+        });
+    }
+    let proposed_title = input
+        .markdown
+        .lines()
+        .find_map(|line| {
+            line.strip_prefix("# ")
+                .map(str::trim)
+                .filter(|t| !t.is_empty())
+                .map(str::to_owned)
+        })
+        .unwrap_or_else(|| markdown::sanitize_file_stem(&input.original_name));
+    let top_level_node_count: i32 = {
+        let mut count = 0i32;
+        let mut in_code = false;
+        let mut prev_blank = true;
+        for line in input.markdown.lines() {
+            if line.starts_with("```") {
+                in_code = !in_code;
+                if prev_blank {
+                    count += 1;
+                    prev_blank = false;
+                }
+                continue;
+            }
+            if in_code {
+                continue;
+            }
+            let blank = line.trim().is_empty();
+            if !blank && prev_blank {
+                count += 1;
+            }
+            prev_blank = blank;
+        }
+        count
+    };
+    let referenced_asset_count = input
+        .markdown
+        .lines()
+        .filter(|l| l.contains("](assets/"))
+        .count() as i32;
+    let plain_text_excerpt: String = {
+        let mut raw = String::new();
+        for line in input.markdown.lines() {
+            if line.starts_with('#') || line.starts_with("```") || line.trim().is_empty() {
+                continue;
+            }
+            let stripped = line
+                .trim_start_matches(|c: char| {
+                    c == '>' || c == '-' || c == '*' || c.is_ascii_digit() || c == '.' || c == ' '
+                })
+                .trim();
+            if !stripped.is_empty() {
+                if !raw.is_empty() {
+                    raw.push(' ');
+                }
+                raw.push_str(stripped);
+            }
+            if raw.len() > 300 {
+                break;
+            }
+        }
+        raw.chars().take(240).collect()
+    };
+    let mut warnings = vec![
+        "Import creates one rich_text block. Block types, layout, and metadata are not preserved."
+            .to_owned(),
+    ];
+    if referenced_asset_count > 0 {
+        warnings
+            .push("This document references local assets that will not be included.".to_owned());
+    }
+    Ok(NarrativeMarkdownPreview {
+        proposed_title,
+        plain_text_excerpt,
+        top_level_node_count,
+        referenced_asset_count,
+        warnings,
+    })
+}
+
+#[tauri::command]
+#[tracing::instrument(skip(state, input))]
+pub fn import_narrative_markdown(
+    state: State<'_, DatabaseRuntime>,
+    input: ImportNarrativeMarkdownInput,
+) -> Result<NarrativeDocumentView, IpcError> {
+    run!(state, |c| repository::import_from_markdown(c, input))
+}
+
+#[tauri::command]
+#[tracing::instrument(skip(state, input))]
+pub fn export_narrative_markdown(
+    state: State<'_, DatabaseRuntime>,
+    input: NarrativeDocumentIdInput,
+) -> Result<NarrativeMarkdownExport, IpcError> {
+    run!(state, |c| repository::export_to_markdown(c, input))
 }

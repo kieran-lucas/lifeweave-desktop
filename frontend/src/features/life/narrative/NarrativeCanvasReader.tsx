@@ -6,6 +6,7 @@ import {
   getNarrativeDocument,
   recoverNarrativeDraft,
 } from "../../../ipc/commands";
+import { NarrativeMarkdownExportButton } from "./NarrativeMarkdownExportButton";
 import type { NarrativeDocumentView } from "../../../ipc/generated/NarrativeDocumentView";
 import { operationId, parseNarrative, isUnknownBlock } from "./schema";
 import type { ParsedNarrativeDocument, ParsedNarrativeBlock } from "./schema";
@@ -275,6 +276,7 @@ export function NarrativeCanvasReader({ nodeId }: { nodeId: string }) {
       )}
       <div className={styles.actions}>
         <button className={styles.primary} onClick={() => setEditing(true)}>Edit canvas</button>
+        <NarrativeMarkdownExportButton documentId={document.id} />
       </div>
       {notice && <p role="status" aria-live="polite">{notice}</p>}
       <StaticCanvasView doc={parsed} />

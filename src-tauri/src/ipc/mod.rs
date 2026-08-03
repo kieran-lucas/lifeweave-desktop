@@ -133,5 +133,9 @@ mod tests {
         SaveNarrativeDocumentInput::export_all_to(&out).unwrap();
         SaveNarrativeDraftInput::export_all_to(&out).unwrap();
         NarrativeDocumentIdInput::export_all_to(&out).unwrap();
+        PreviewNarrativeMarkdownInput::export_all_to(&out).unwrap();
+        NarrativeMarkdownPreview::export_all_to(&out).unwrap();
+        ImportNarrativeMarkdownInput::export_all_to(&out).unwrap();
+        NarrativeMarkdownExport::export_all_to(&out).unwrap();
     }
 }

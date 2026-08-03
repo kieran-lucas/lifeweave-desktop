@@ -1201,7 +1201,10 @@ mod tests {
             .iter()
             .find(|g| g.kind == SearchResultGroupKind::Documents)
             .expect("documents group must be present");
-        assert!(!docs.results.is_empty(), "canvas must appear in search results");
+        assert!(
+            !docs.results.is_empty(),
+            "canvas must appear in search results"
+        );
         assert_eq!(docs.results[0].entity_id, "doc-ct");
     }
 
@@ -1210,7 +1213,12 @@ mod tests {
         let conn = setup();
         insert_leaf(&conn, "node-st", "Scene Test Node");
         // plain_text includes the scene title text
-        insert_canvas(&conn, "doc-st", "node-st", "Scene Test Node Overview introduction");
+        insert_canvas(
+            &conn,
+            "doc-st",
+            "node-st",
+            "Scene Test Node Overview introduction",
+        );
         let proj = refresh_dirty_and_query(
             &conn,
             SearchGlobalInput {
@@ -1361,7 +1369,12 @@ mod tests {
         let conn = setup();
         insert_leaf(&conn, "node-vn", "Kế hoạch");
         // plain_text from the canvas includes the Vietnamese title
-        insert_canvas(&conn, "doc-vn", "node-vn", "Kế hoạch Lập kế hoạch hàng ngày");
+        insert_canvas(
+            &conn,
+            "doc-vn",
+            "node-vn",
+            "Kế hoạch Lập kế hoạch hàng ngày",
+        );
         let proj = refresh_dirty_and_query(
             &conn,
             SearchGlobalInput {
@@ -1452,7 +1465,12 @@ mod tests {
         )
         .unwrap();
         // Insert canvas on separate node
-        insert_canvas(&conn, "doc-cv1", "node-cv1", "Canvas Result Node canvas body token");
+        insert_canvas(
+            &conn,
+            "doc-cv1",
+            "node-cv1",
+            "Canvas Result Node canvas body token",
+        );
         // Search for basic leaf token
         let proj1 = refresh_dirty_and_query(
             &conn,

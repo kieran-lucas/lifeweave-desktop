@@ -44,7 +44,8 @@ use life::service::{
     set_life_node_theme_variant, undo_life_operation, unpin_life_node, update_life_node_summary,
 };
 use narrative::service::{
-    create_narrative_document, discard_narrative_draft, get_narrative_document,
+    create_narrative_document, discard_narrative_draft, export_narrative_markdown,
+    get_narrative_document, import_narrative_markdown, preview_narrative_markdown,
     recover_narrative_draft, save_narrative_document, save_narrative_draft,
 };
 
@@ -190,6 +191,9 @@ pub fn run() {
             save_narrative_draft,
             discard_narrative_draft,
             recover_narrative_draft,
+            export_narrative_markdown,
+            import_narrative_markdown,
+            preview_narrative_markdown,
             search_global,
         ])
         .run(tauri::generate_context!())

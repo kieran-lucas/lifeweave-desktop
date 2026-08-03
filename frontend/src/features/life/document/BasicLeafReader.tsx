@@ -2,7 +2,9 @@ import { lazy, Suspense, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useReducedMotion } from "motion/react";
 import type { ReaderDocumentView } from "../../../ipc/generated/ReaderDocumentView";
-import { createNarrativeDocument, createReaderDocument, discardReaderDraft, exportReaderMarkdown, getNarrativeDocument, getReaderDocument, importReaderMarkdown, recoverReaderDraft } from "../../../ipc/commands";
+import type { NarrativeDocumentView } from "../../../ipc/generated/NarrativeDocumentView";
+import { createNarrativeDocument, createReaderDocument, discardReaderDraft, exportReaderMarkdown, getNarrativeDocument, getReaderDocument, importReaderMarkdown, previewNarrativeMarkdown, recoverReaderDraft } from "../../../ipc/commands";
+import { NarrativeMarkdownImportDialog } from "../narrative/NarrativeMarkdownImportDialog";
 import { operationId, parseDocument } from "./schema";
 import { buildDocumentOutline } from "./outline";
 import { DocumentOutline } from "./DocumentOutline";
@@ -26,11 +28,18 @@ function NarrativeCanvasChooser({ nodeId }: { nodeId: string }) {
   </>;
 }
 
+type MarkdownImportPending = {
+  originalName: string;
+  markdown: string;
+  preview: import("../../../ipc/generated/NarrativeMarkdownPreview").NarrativeMarkdownPreview;
+};
+
 export function BasicLeafReader({ nodeId }: { nodeId: string }) {
   const reducedMotion = useReducedMotion() ?? false;
   const client = useQueryClient();
   const [editing, setEditing] = useState(false);
   const [notice, setNotice] = useState<string>();
+  const [markdownImport, setMarkdownImport] = useState<MarkdownImportPending | null>(null);
   const query = useQuery({ queryKey: documentKey(nodeId), queryFn: () => getReaderDocument({ life_node_id: nodeId }) });
   const narrativeQuery = useQuery({ queryKey: narrativeKey(nodeId), queryFn: () => getNarrativeDocument({ life_node_id: nodeId }) });
   const create = useMutation({
@@ -62,6 +71,32 @@ export function BasicLeafReader({ nodeId }: { nodeId: string }) {
     return <NarrativeCanvasReader nodeId={nodeId} />;
   }
 
+  const canShowMarkdownImport =
+    !query.isError &&
+    !narrativeQuery.isError &&
+    query.isFetched &&
+    narrativeQuery.isFetched &&
+    !query.data.document &&
+    !narrativeQuery.data?.document;
+
+  const handleMarkdownImportFile = async (file?: File) => {
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const preview = await previewNarrativeMarkdown({ original_name: file.name, markdown: text });
+      setMarkdownImport({ originalName: file.name, markdown: text, preview });
+    } catch {
+      setNotice("Could not read the Markdown file.");
+    }
+  };
+
+  const handleMarkdownImportConfirmed = (doc: NarrativeDocumentView) => {
+    setMarkdownImport(null);
+    void client.invalidateQueries({ queryKey: narrativeKey(nodeId) });
+    void client.invalidateQueries({ queryKey: documentKey(nodeId) });
+    setNotice(`Markdown imported as Narrative Canvas "${doc.life_node_id}".`);
+  };
+
   const projection = query.data;
   const document = projection.document;
   if (!document) {
@@ -72,8 +107,29 @@ export function BasicLeafReader({ nodeId }: { nodeId: string }) {
         <div className={styles.actions}>
           <button className={styles.primary} disabled={create.isPending} onClick={() => create.mutate()}>Create Basic Leaf document</button>
           {!narrativeQuery.isError && <NarrativeCanvasChooser nodeId={nodeId} />}
+          {canShowMarkdownImport && (
+            <label className={styles.fileLabel}>Import Markdown as Canvas
+              <input
+                className={styles.hiddenFile}
+                type="file"
+                accept="text/markdown,.md"
+                onChange={event => void handleMarkdownImportFile(event.currentTarget.files?.[0])}
+              />
+            </label>
+          )}
         </div>
         {create.isError && <p role="alert">The document could not be created.</p>}
+        {notice && <p role="status" aria-live="polite">{notice}</p>}
+        {markdownImport && (
+          <NarrativeMarkdownImportDialog
+            nodeId={nodeId}
+            originalName={markdownImport.originalName}
+            markdown={markdownImport.markdown}
+            preview={markdownImport.preview}
+            onConfirmed={handleMarkdownImportConfirmed}
+            onCancel={() => setMarkdownImport(null)}
+          />
+        )}
       </div>
     );
   }

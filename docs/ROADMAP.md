@@ -94,6 +94,18 @@ Strategy A (domain envelope + rich-text islands) selected: score 82.8 vs B 67.9 
 Decision in ADR 0010. No product feature activated.
 Production Narrative Canvas activation requires a separate approved task.
 
+## Slice 012 — Narrative Canvas Markdown Interoperability
+
+Task 22 adds Markdown export from a committed Canvas and Markdown import as a new Canvas on an empty leaf.
+
+- `export_narrative_markdown`: returns sanitized file name, Markdown, and lossiness warning
+- `preview_narrative_markdown`: stateless preview (proposed title, excerpt, section count, asset count, warnings)
+- `import_narrative_markdown`: creates one-scene one-rich_text-block Canvas from Markdown; idempotent via operation_id
+- Shared authority: `document::markdown::import` handles all Markdown parsing; no third implementation
+- Asset syntax corrected: `assets/{uuid}` (was `asset:{uuid}`)
+- File name sanitization: 120 scalar value limit, Windows reserved name rejection
+- No new migration (schema stays at version 14). No new dependencies.
+
 ## Slice 011 — Narrative Canvas Core
 
 Task 21 activates the first production Narrative Canvas vertical slice (ADR 0010 Strategy A). Accepted after two remediation rounds (ADR 0012, ADR 0013).

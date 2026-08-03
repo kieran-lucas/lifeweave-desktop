@@ -1240,7 +1240,10 @@ mod tests {
                 |r| r.get(0),
             )
             .unwrap();
-        assert_eq!(before, after, "row count must be identical after archive+restore cycle");
+        assert_eq!(
+            before, after,
+            "row count must be identical after archive+restore cycle"
+        );
     }
 
     #[test]

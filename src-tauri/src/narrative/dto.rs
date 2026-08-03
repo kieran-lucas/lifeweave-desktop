@@ -60,3 +60,37 @@ pub struct SaveNarrativeDraftInput {
 pub struct NarrativeDocumentIdInput {
     pub document_id: String,
 }
+
+#[derive(Debug, Clone, Deserialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct PreviewNarrativeMarkdownInput {
+    pub original_name: String,
+    pub markdown: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct NarrativeMarkdownPreview {
+    pub proposed_title: String,
+    pub plain_text_excerpt: String,
+    pub top_level_node_count: i32,
+    pub referenced_asset_count: i32,
+    pub warnings: Vec<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct ImportNarrativeMarkdownInput {
+    pub life_node_id: String,
+    pub original_name: String,
+    pub markdown: String,
+    pub operation_id: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct NarrativeMarkdownExport {
+    pub file_name: String,
+    pub markdown: String,
+    pub warning: String,
+}

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-export-narrative-markdown"
+description = "Enables the export_narrative_markdown command without any pre-configured scope."
+commands.allow = ["export_narrative_markdown"]
+
+[[permission]]
+identifier = "deny-export-narrative-markdown"
+description = "Denies the export_narrative_markdown command without any pre-configured scope."
+commands.deny = ["export_narrative_markdown"]

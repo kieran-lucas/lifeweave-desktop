@@ -58,6 +58,9 @@ fn main() {
             "save_narrative_draft",
             "discard_narrative_draft",
             "recover_narrative_draft",
+            "export_narrative_markdown",
+            "import_narrative_markdown",
+            "preview_narrative_markdown",
             "search_global",
         ]),
     ))

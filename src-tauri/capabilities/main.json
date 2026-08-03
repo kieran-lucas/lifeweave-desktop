@@ -66,6 +66,9 @@
     "allow-save-narrative-draft",
     "allow-discard-narrative-draft",
     "allow-recover-narrative-draft",
+    "allow-export-narrative-markdown",
+    "allow-import-narrative-markdown",
+    "allow-preview-narrative-markdown",
     "allow-search-global"
   ]
 }

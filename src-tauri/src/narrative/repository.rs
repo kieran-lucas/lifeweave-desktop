@@ -1,7 +1,7 @@
 use super::{
     domain::{self, NarrativeError, REVISION_RETENTION, SCHEMA_VERSION},
     dto::*,
-    schema,
+    markdown, schema,
 };
 use rusqlite::{Connection, OptionalExtension, Transaction, params};
 use std::collections::BTreeMap;
@@ -354,6 +354,113 @@ pub fn recover_draft(
     )
 }
 
+pub fn import_from_markdown(
+    conn: &mut Connection,
+    input: ImportNarrativeMarkdownInput,
+) -> Result<NarrativeDocumentView, NarrativeError> {
+    if !domain::valid_operation(&input.operation_id) {
+        return Err(NarrativeError::Validation("Operation identity is invalid."));
+    }
+    if let Some(id) = conn
+        .query_row(
+            "SELECT document_id FROM narrative_save_operations WHERE operation_id=?1",
+            params![input.operation_id],
+            |r| r.get::<_, String>(0),
+        )
+        .optional()?
+    {
+        let existing = by_id(conn, &id)?;
+        if existing.life_node_id != input.life_node_id {
+            return Err(NarrativeError::Validation(
+                "Operation identity belongs to another document.",
+            ));
+        }
+        return Ok(existing);
+    }
+    leaf(conn, &input.life_node_id)?;
+    let has_doc: i64 = conn.query_row(
+        "SELECT EXISTS(SELECT 1 FROM reader_documents WHERE life_node_id=?1 AND archived_at IS NULL)",
+        params![input.life_node_id],
+        |r| r.get(0),
+    )?;
+    if has_doc > 0 {
+        return Err(NarrativeError::Validation(
+            "This leaf already has a Basic Leaf document.",
+        ));
+    }
+    if conn
+        .query_row(
+            "SELECT id FROM narrative_documents WHERE life_node_id=?1 AND archived_at IS NULL",
+            params![input.life_node_id],
+            |r| r.get::<_, String>(0),
+        )
+        .optional()?
+        .is_some()
+    {
+        return Err(NarrativeError::Validation(
+            "A Narrative Canvas already exists for this node.",
+        ));
+    }
+    let node_title: String = conn.query_row(
+        "SELECT title FROM life_nodes WHERE id=?1 AND archived_at IS NULL",
+        params![input.life_node_id],
+        |r| r.get(0),
+    )?;
+    let id = domain::new_id();
+    let scene_id = domain::new_id();
+    let block_id = domain::new_id();
+    let canonical = markdown::import_as_canvas(
+        &id,
+        &scene_id,
+        &block_id,
+        &input.original_name,
+        &node_title,
+        &input.markdown,
+    )?;
+    let valid = schema::validate(&canonical, Some(&id))?;
+    let now = domain::now();
+    let tx = conn.transaction()?;
+    tx.execute(
+        "INSERT INTO narrative_documents \
+         (id,life_node_id,schema_version,revision,canonical_json,plain_text,\
+          created_at,updated_at,archived_at,template_id,template_version) \
+         VALUES (?1,?2,1,0,?3,?4,?5,?5,NULL,'knowledge_dossier',1)",
+        params![
+            id,
+            input.life_node_id,
+            valid.canonical_json,
+            valid.plain_text,
+            now
+        ],
+    )?;
+    tx.execute(
+        "INSERT INTO narrative_save_operations VALUES(?1,?2,0,?3)",
+        params![input.operation_id, id, now],
+    )?;
+    tx.commit()?;
+    by_id(conn, &id)
+}
+
+pub fn export_to_markdown(
+    conn: &Connection,
+    input: NarrativeDocumentIdInput,
+) -> Result<NarrativeMarkdownExport, NarrativeError> {
+    let doc = by_id(conn, &input.document_id)?;
+    let md = markdown::export(&doc.canonical_json)?;
+    let node_title: String = conn
+        .query_row(
+            "SELECT title FROM life_nodes WHERE id=?1",
+            params![doc.life_node_id],
+            |r| r.get(0),
+        )
+        .unwrap_or_else(|_| "export".into());
+    Ok(NarrativeMarkdownExport {
+        file_name: markdown::sanitize_file_name(&node_title),
+        markdown: md,
+        warning: "Import creates one rich_text block. Block types, layout, and metadata are not preserved.".to_owned(),
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -604,8 +711,8 @@ mod tests {
         use crate::infrastructure::sqlite::{
             connection::open_file_connection, migrations::run_migrations,
         };
-        use crate::search::repository::refresh_dirty_and_query;
         use crate::search::dto::SearchGlobalInput;
+        use crate::search::repository::refresh_dirty_and_query;
 
         let path = std::env::temp_dir().join(format!("lw_nc_backup_{}.db", domain::new_id()));
         let backups_dir = std::env::temp_dir().join(format!("lw_nc_bkp_{}", domain::new_id()));
@@ -659,7 +766,10 @@ mod tests {
             // Grab the existing blocks from seed and append our new blocks
             let mut full = base.clone();
             full["scenes"][0]["blocks"] = {
-                let mut v = full["scenes"][0]["blocks"].as_array().cloned().unwrap_or_default();
+                let mut v = full["scenes"][0]["blocks"]
+                    .as_array()
+                    .cloned()
+                    .unwrap_or_default();
                 v.push(metric_block);
                 v.push(callout_block);
                 v.push(unknown_block);
@@ -778,7 +888,10 @@ mod tests {
             use crate::infrastructure::backup::restore::restore_db;
             let backup_dir = std::path::PathBuf::from(&backup_result.backup_dir);
             let restore_result = restore_db(&rt, &backup_dir).unwrap();
-            assert_eq!(restore_result.schema_version, 14, "restore must report schema 14");
+            assert_eq!(
+                restore_result.schema_version, 14,
+                "restore must report schema 14"
+            );
         }
 
         // ── Session 3: verify restored state ─────────────────────────────────
@@ -832,10 +945,14 @@ mod tests {
                 },
             )
             .unwrap();
-            let has_canvas = proj.groups.iter().any(|g| {
-                g.results.iter().any(|r| r.entity_id == doc_id)
-            });
-            assert!(has_canvas, "canvas must be findable by search after restore");
+            let has_canvas = proj
+                .groups
+                .iter()
+                .any(|g| g.results.iter().any(|r| r.entity_id == doc_id));
+            assert!(
+                has_canvas,
+                "canvas must be findable by search after restore"
+            );
         }
 
         // ── Cleanup ───────────────────────────────────────────────────────────
@@ -880,9 +997,7 @@ mod tests {
             let p50 = durations[50];
             let p95 = durations[95];
             let max_dur = *durations.last().unwrap();
-            println!(
-                "validate {block_count} blocks: p50={p50:?} p95={p95:?} max={max_dur:?}"
-            );
+            println!("validate {block_count} blocks: p50={p50:?} p95={p95:?} max={max_dur:?}");
 
             // Assert target: p95 <= 50ms
             assert!(
@@ -919,9 +1034,7 @@ mod tests {
         save_durations.sort();
         let save_p50 = save_durations[10];
         let save_p95 = save_durations[19];
-        println!(
-            "save 5 blocks: p50={save_p50:?} p95={save_p95:?}"
-        );
+        println!("save 5 blocks: p50={save_p50:?} p95={save_p95:?}");
     }
 
     #[test]
