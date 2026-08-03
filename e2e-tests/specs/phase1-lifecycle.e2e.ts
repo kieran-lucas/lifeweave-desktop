@@ -1,21 +1,32 @@
 import { $, browser, expect } from "@wdio/globals";
 
-describe("Phase 1 — native lifecycle", () => {
-  it("creates, edits, archives and restores a record", async () => {
+const task = (title: string) => $(`//div[@role="listitem"][.//strong[normalize-space()="${title}"]]`);
+
+describe("Phase 1 — current task lifecycle", () => {
+  it("creates and edits a one-off task in Today", async () => {
     await browser.url("http://tauri.localhost");
-    await expect($("h1=Foundation Records")).toBeDisplayed();
-    await expect($("text=No records yet. Add one above.")).toBeDisplayed();
-    await $("input[aria-label='New record label']").setValue("E2E Alpha");
-    await $("button=Add").click();
-    await expect($("text=E2E Alpha")).toBeDisplayed();
-    await $("button[aria-label='Edit E2E Alpha']").click();
-    const edit = $("input[aria-label='Edit record label']");
-    await edit.clearValue(); await edit.setValue("E2E Beta"); await $("button=Save").click();
-    await expect($("text=E2E Beta")).toBeDisplayed();
-    await $("button[aria-label='Archive E2E Beta']").click();
-    await expect($("ul[aria-label='Archived foundation records']")).toBeDisplayed();
-    await $("button[aria-label='Restore E2E Beta']").click();
-    await expect($("ul[aria-label='Active foundation records']")).toBeDisplayed();
-    await expect($("text=E2E Beta")).toBeDisplayed();
+    await expect($("h1=Today")).toBeDisplayed();
+
+    await $("button[aria-label='Create task']").click();
+    await expect($("h2=Create task")).toBeDisplayed();
+    await $("input").setValue("E2E Alpha");
+    await $("select[aria-label='Start hour']").selectByVisibleText("09");
+    await $("select[aria-label='Start minute']").selectByVisibleText("00");
+    await $("select[aria-label='End hour']").selectByVisibleText("10");
+    await $("select[aria-label='End minute']").selectByVisibleText("00");
+    await $("button=Save").click();
+
+    const alpha = task("E2E Alpha");
+    await expect(alpha).toBeDisplayed();
+    await alpha.doubleClick();
+    await expect($("h2=Edit task")).toBeDisplayed();
+    const title = $("input");
+    await title.clearValue();
+    await title.setValue("E2E Beta");
+    await $("button=Save").click();
+
+    await expect(task("E2E Beta")).toBeDisplayed();
+    await expect(task("E2E Alpha")).not.toExist();
+    await expect($("[role='alert']")).not.toExist();
   });
 });

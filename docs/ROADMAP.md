@@ -73,6 +73,10 @@ Portfolio recommendation accepted: **Global Search activated as Task 18.** All o
 
 Task 25 closes evidence debt after Narrative Multi-Scene: deterministic ordinary Canvas scale coverage, isolated release performance evidence, Canvas asset backup packaging, preview-time missing asset diagnostics, keyboard-complete scene tabs, and current local Windows release evidence. It does not activate a new product slice.
 
+## Slice 016 — Native E2E Contract Refresh
+
+Task 26 replaces the removed Foundation Records native scenario with current one-off Task create/edit, UI backup/restore, and fresh-process restored-state persistence. It is release-evidence maintenance only: no product feature, migration, dependency, or IPC change.
+
 ## Slice 008 — Global Search
 
 Task 18 implements FTS5 global search with Vietnamese normalization, dirty-scope rebuild queue, `search_global` IPC command, and lazy React search dialog.

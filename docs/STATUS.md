@@ -2,6 +2,14 @@
 
 Updated: 2026-08-03 Asia/Saigon
 
+## Task 26/60 — Native E2E Contract Refresh (complete)
+
+- Starting checkpoint: `4cf6ca3f7e0492b12d7497705518f5391c76a6b1` (accepted Task 25); final checkpoint is the single Task 26 commit.
+- Replaced all obsolete Foundation Records native E2E selectors with the current one-off Task workflow: create `E2E Alpha`, rename to `E2E Beta`, UI backup, mutate to `E2E Gamma`, UI restore by opaque backup ID, then fresh native relaunch persistence.
+- `pnpm e2e:windows` passed all three phases using WebView2 Runtime and Microsoft-signed matching Edge WebDriver `150.0.4078.105`; the successful isolated profile was cleaned and failures retain artifacts.
+- The runner builds the debug `e2e-test` binary through Tauri so native tests receive packaged frontend assets. Schema remains 14; no product behavior, migration, dependency, IPC, workflow, or feature expansion changed.
+- Current ordinary evidence: 429 frontend tests and 398 Rust tests passed (one isolated performance test ignored); governance, typecheck, build, cargo check, format, and Clippy passed.
+
 ## Task 25/60 — Core Evidence + Release Readiness Hardening (accepted after restore compatibility remediation)
 
 - Starting checkpoint: `7950273e90be160754170a9ded999a6dc7e6b9c1` (accepted Task 24).

@@ -47,9 +47,7 @@ try {
   $env:MSEDGEDRIVER_TELEMETRY_OPTOUT = '1'
   $env:LIFEWEAVE_E2E_APP_DATA_DIR = $run
   $env:LIFEWEAVE_E2E_ROOT = (Resolve-Path $dataRoot).Path
-  pnpm --dir frontend build
-  if ($LASTEXITCODE -ne 0) { throw 'frontend build failed' }
-  cargo build --manifest-path src-tauri/Cargo.toml --features e2e-test
+  pnpm tauri build --debug --features e2e-test
   if ($LASTEXITCODE -ne 0) { throw 'E2E binary build failed' }
   $env:LIFEWEAVE_E2E_BINARY = (Resolve-Path 'src-tauri\target\debug\lifeweave-desktop.exe').Path
   foreach ($phase in @('phase1-lifecycle.e2e.ts','phase2-backup-restore.e2e.ts','phase3-restart.e2e.ts')) {
