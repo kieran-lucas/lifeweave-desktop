@@ -1,125 +1,394 @@
 {
-  "seed": 20260803,
-  "n_samples_per_profile": 1000000,
-  "n_profiles": 5,
+  "meta": {
+    "seed": 20260803,
+    "n_samples_per_profile": 1000000,
+    "n_profiles": 5,
+    "n_candidates": 13,
+    "n_eligible": 2,
+    "description": "This is sensitivity analysis over disclosed expert assumptions, not empirical user evidence."
+  },
   "criteria": [
-    "user_value",
-    "mission_alignment",
-    "identity_fit",
-    "engineering_simplicity",
-    "schema_stability",
-    "integration_coherence",
-    "maintenance_inv",
-    "reversibility",
-    "narrative_compat",
-    "impl_risk_inv",
-    "data_risk_inv",
-    "dep_risk_inv"
+    "immediate_user_value",
+    "workflow_frequency",
+    "differentiation",
+    "data_safety_reversibility",
+    "accessibility_feasibility",
+    "implementation_boundedness",
+    "maintenance_cost",
+    "performance_feasibility",
+    "local_first_privacy",
+    "interoperability_backup",
+    "prerequisite_readiness",
+    "evidence_testability"
+  ],
+  "approved_base_weights": [
+    16,
+    10,
+    10,
+    12,
+    9,
+    9,
+    8,
+    7,
+    6,
+    5,
+    5,
+    3
   ],
   "candidates": {
     "multi_scene": {
+      "title": "Narrative Multi-Scene Composition",
+      "hard_filter_outcome": "PASS",
       "base_scores": [
         8,
         7,
         9,
         7,
+        8,
+        8,
         7,
-        7,
-        7,
-        9,
+        8,
         10,
-        7,
-        9,
+        8,
+        10,
         8
       ],
-      "sigma": 0.6
+      "sigma": 0.65,
+      "base_weighted_score": {
+        "base": 8.02,
+        "utility_first": 7.87,
+        "visual_identity_first": 8.22,
+        "safety_maintenance_first": 7.76,
+        "recovery_readiness_first": 7.97
+      }
     },
-    "task_life_rel": {
+    "hardening_slice": {
+      "title": "No Expansion / Core Evidence + Release Readiness Hardening",
+      "hard_filter_outcome": "PASS",
       "base_scores": [
-        7,
-        5,
-        7,
-        8,
-        8,
-        7,
-        7,
-        9,
-        10,
-        7,
-        9,
-        7
-      ],
-      "sigma": 0.7
-    },
-    "generic_outline": {
-      "base_scores": [
-        5,
-        5,
-        4,
-        9,
-        8,
-        8,
-        8,
-        9,
-        10,
-        9,
         6,
-        8
-      ],
-      "sigma": 0.55
-    },
-    "no_expansion": {
-      "base_scores": [
-        4,
-        6,
-        1,
-        9,
-        8,
-        9,
-        9,
-        7,
-        10,
-        8,
-        10,
-        8
-      ],
-      "sigma": 0.4
-    },
-    "lossless_package": {
-      "base_scores": [
         5,
         3,
-        6,
-        8,
-        8,
-        7,
-        7,
-        8,
+        9,
+        9,
         9,
         9,
         8,
-        7
+        10,
+        9,
+        10,
+        9
       ],
-      "sigma": 0.7
+      "sigma": 0.55,
+      "base_weighted_score": {
+        "base": 7.56,
+        "utility_first": 7.09,
+        "visual_identity_first": 6.6,
+        "safety_maintenance_first": 8.1,
+        "recovery_readiness_first": 8.21
+      }
     },
-    "tags": {
+    "template_system": {
+      "title": "Narrative Template System",
+      "hard_filter_outcome": "CONDITIONAL",
+      "base_scores": [
+        5,
+        4,
+        8,
+        6,
+        7,
+        5,
+        5,
+        8,
+        10,
+        6,
+        3,
+        5
+      ],
+      "sigma": 0.9,
+      "base_weighted_score": {
+        "base": 5.96,
+        "utility_first": 5.57,
+        "visual_identity_first": 6.35,
+        "safety_maintenance_first": 6.14,
+        "recovery_readiness_first": 5.95
+      }
+    },
+    "visual_worlds": {
+      "title": "Visual Worlds",
+      "hard_filter_outcome": "CONDITIONAL",
       "base_scores": [
         6,
-        6,
+        4,
+        10,
         5,
+        4,
+        4,
+        4,
+        5,
+        10,
+        7,
+        3,
+        4
+      ],
+      "sigma": 1.0,
+      "base_weighted_score": {
+        "base": 5.57,
+        "utility_first": 5.36,
+        "visual_identity_first": 6.55,
+        "safety_maintenance_first": 5.13,
+        "recovery_readiness_first": 5.28
+      }
+    },
+    "lossless_package": {
+      "title": "Lossless Canvas Package",
+      "hard_filter_outcome": "CONDITIONAL",
+      "base_scores": [
+        5,
+        4,
+        6,
+        8,
+        8,
+        7,
         7,
         8,
+        10,
+        10,
+        7,
+        8
+      ],
+      "sigma": 0.7,
+      "base_weighted_score": {
+        "base": 6.92,
+        "utility_first": 6.26,
+        "visual_identity_first": 6.64,
+        "safety_maintenance_first": 7.26,
+        "recovery_readiness_first": 7.43
+      }
+    },
+    "tags": {
+      "title": "Tags",
+      "hard_filter_outcome": "CONDITIONAL",
+      "base_scores": [
+        5,
+        5,
+        5,
         6,
+        8,
+        5,
+        5,
+        8,
+        10,
+        5,
+        4,
+        5
+      ],
+      "sigma": 0.85,
+      "base_weighted_score": {
+        "base": 5.85,
+        "utility_first": 5.6,
+        "visual_identity_first": 5.69,
+        "safety_maintenance_first": 6.19,
+        "recovery_readiness_first": 5.96
+      }
+    },
+    "task_life_rel": {
+      "title": "Task/Life Relationships",
+      "hard_filter_outcome": "CONDITIONAL",
+      "base_scores": [
+        7,
+        7,
+        6,
+        6,
+        8,
+        5,
         6,
         8,
         10,
         6,
-        6,
+        4,
         7
       ],
-      "sigma": 0.75
+      "sigma": 0.8,
+      "base_weighted_score": {
+        "base": 6.66,
+        "utility_first": 6.64,
+        "visual_identity_first": 6.61,
+        "safety_maintenance_first": 6.76,
+        "recovery_readiness_first": 6.57
+      }
+    },
+    "generic_outline": {
+      "title": "Generic Outline",
+      "hard_filter_outcome": "CONDITIONAL",
+      "base_scores": [
+        5,
+        5,
+        4,
+        9,
+        9,
+        7,
+        8,
+        9,
+        10,
+        8,
+        5,
+        9
+      ],
+      "sigma": 0.65,
+      "base_weighted_score": {
+        "base": 7.01,
+        "utility_first": 6.48,
+        "visual_identity_first": 6.32,
+        "safety_maintenance_first": 7.75,
+        "recovery_readiness_first": 7.54
+      }
+    },
+    "backlinks": {
+      "title": "Backlinks",
+      "hard_filter_outcome": "FAIL",
+      "base_scores": [
+        4,
+        3,
+        7,
+        5,
+        5,
+        4,
+        4,
+        6,
+        10,
+        4,
+        1,
+        4
+      ],
+      "sigma": 0.85,
+      "base_weighted_score": {
+        "base": 4.76,
+        "utility_first": 4.46,
+        "visual_identity_first": 5.23,
+        "safety_maintenance_first": 4.86,
+        "recovery_readiness_first": 4.63
+      }
+    },
+    "noteboard": {
+      "title": "Noteboard",
+      "hard_filter_outcome": "FAIL",
+      "base_scores": [
+        2,
+        2,
+        5,
+        5,
+        5,
+        4,
+        3,
+        5,
+        10,
+        4,
+        3,
+        4
+      ],
+      "sigma": 0.7,
+      "base_weighted_score": {
+        "base": 4.09,
+        "utility_first": 3.56,
+        "visual_identity_first": 4.19,
+        "safety_maintenance_first": 4.27,
+        "recovery_readiness_first": 4.26
+      }
+    },
+    "graph": {
+      "title": "Graph",
+      "hard_filter_outcome": "FAIL",
+      "base_scores": [
+        3,
+        2,
+        7,
+        3,
+        2,
+        2,
+        2,
+        2,
+        10,
+        3,
+        1,
+        3
+      ],
+      "sigma": 0.7,
+      "base_weighted_score": {
+        "base": 3.29,
+        "utility_first": 3.03,
+        "visual_identity_first": 4.09,
+        "safety_maintenance_first": 2.89,
+        "recovery_readiness_first": 2.99
+      }
+    },
+    "score": {
+      "title": "Score",
+      "hard_filter_outcome": "FAIL",
+      "base_scores": [
+        4,
+        4,
+        5,
+        6,
+        7,
+        4,
+        5,
+        8,
+        10,
+        5,
+        2,
+        2
+      ],
+      "sigma": 0.8,
+      "base_weighted_score": {
+        "base": 5.22,
+        "utility_first": 4.88,
+        "visual_identity_first": 5.2,
+        "safety_maintenance_first": 5.74,
+        "recovery_readiness_first": 5.36
+      }
+    },
+    "prediction": {
+      "title": "Prediction",
+      "hard_filter_outcome": "FAIL",
+      "base_scores": [
+        3,
+        3,
+        6,
+        5,
+        7,
+        3,
+        3,
+        5,
+        10,
+        4,
+        1,
+        1
+      ],
+      "sigma": 0.9,
+      "base_weighted_score": {
+        "base": 4.35,
+        "utility_first": 3.97,
+        "visual_identity_first": 4.68,
+        "safety_maintenance_first": 4.64,
+        "recovery_readiness_first": 4.42
+      }
     }
   },
+  "eligible_candidates": [
+    "multi_scene",
+    "hardening_slice"
+  ],
+  "comparison_candidates": [
+    "multi_scene",
+    "template_system",
+    "visual_worlds",
+    "lossless_package",
+    "tags",
+    "task_life_rel",
+    "generic_outline",
+    "hardening_slice"
+  ],
   "profiles": {
     "base": [
       16,
@@ -136,284 +405,542 @@
       3
     ],
     "utility_first": [
-      25,
-      20,
-      8,
-      10,
+      26,
+      18,
       7,
+      9,
+      6,
+      15,
+      5,
+      5,
+      4,
+      2,
+      2,
+      1
+    ],
+    "visual_identity_first": [
+      20,
+      7,
+      26,
+      9,
+      6,
       7,
       6,
       5,
+      6,
       4,
-      4,
-      2,
-      2
-    ],
-    "visual_identity_first": [
-      12,
-      7,
-      25,
-      10,
-      8,
-      7,
-      7,
-      7,
-      5,
-      4,
-      5,
-      3
+      3,
+      1
     ],
     "safety_maintenance_first": [
       10,
-      7,
+      6,
       5,
-      25,
-      8,
-      8,
-      18,
+      20,
+      15,
       7,
+      15,
+      12,
       4,
-      4,
+      3,
       2,
-      2
+      1
     ],
     "recovery_readiness_first": [
       10,
-      7,
       6,
-      15,
+      5,
+      18,
+      13,
       8,
-      10,
       8,
       7,
       5,
       10,
-      10,
-      4
+      7,
+      3
     ]
   },
-  "profile_results": {
+  "per_profile_base_scores": {
     "base": {
-      "win_probability": {
-        "multi_scene": 0.881695,
-        "task_life_rel": 0.104885,
-        "generic_outline": 0.009648,
-        "no_expansion": 0.003382,
-        "lossless_package": 0.00035,
-        "tags": 4e-05
+      "multi_scene": 8.02,
+      "hardening_slice": 7.56,
+      "template_system": 5.96,
+      "visual_worlds": 5.57,
+      "lossless_package": 6.92,
+      "tags": 5.85,
+      "task_life_rel": 6.66,
+      "generic_outline": 7.01,
+      "backlinks": 4.76,
+      "noteboard": 4.09,
+      "graph": 3.29,
+      "score": 5.22,
+      "prediction": 4.35
+    },
+    "utility_first": {
+      "multi_scene": 7.87,
+      "hardening_slice": 7.09,
+      "template_system": 5.57,
+      "visual_worlds": 5.36,
+      "lossless_package": 6.26,
+      "tags": 5.6,
+      "task_life_rel": 6.64,
+      "generic_outline": 6.48,
+      "backlinks": 4.46,
+      "noteboard": 3.56,
+      "graph": 3.03,
+      "score": 4.88,
+      "prediction": 3.97
+    },
+    "visual_identity_first": {
+      "multi_scene": 8.22,
+      "hardening_slice": 6.6,
+      "template_system": 6.35,
+      "visual_worlds": 6.55,
+      "lossless_package": 6.64,
+      "tags": 5.69,
+      "task_life_rel": 6.61,
+      "generic_outline": 6.32,
+      "backlinks": 5.23,
+      "noteboard": 4.19,
+      "graph": 4.09,
+      "score": 5.2,
+      "prediction": 4.68
+    },
+    "safety_maintenance_first": {
+      "multi_scene": 7.76,
+      "hardening_slice": 8.1,
+      "template_system": 6.14,
+      "visual_worlds": 5.13,
+      "lossless_package": 7.26,
+      "tags": 6.19,
+      "task_life_rel": 6.76,
+      "generic_outline": 7.75,
+      "backlinks": 4.86,
+      "noteboard": 4.27,
+      "graph": 2.89,
+      "score": 5.74,
+      "prediction": 4.64
+    },
+    "recovery_readiness_first": {
+      "multi_scene": 7.97,
+      "hardening_slice": 8.21,
+      "template_system": 5.95,
+      "visual_worlds": 5.28,
+      "lossless_package": 7.43,
+      "tags": 5.96,
+      "task_life_rel": 6.57,
+      "generic_outline": 7.54,
+      "backlinks": 4.63,
+      "noteboard": 4.26,
+      "graph": 2.99,
+      "score": 5.36,
+      "prediction": 4.42
+    }
+  },
+  "profile_simulation_results": {
+    "base": {
+      "mean_score_all": {
+        "multi_scene": 7.989503194359883,
+        "hardening_slice": 7.532502567060748,
+        "template_system": 5.937979047207976,
+        "visual_worlds": 5.506187890049763,
+        "lossless_package": 6.888823518489096,
+        "tags": 5.829394510126592,
+        "task_life_rel": 6.641203596224107,
+        "generic_outline": 6.989412066807451,
+        "backlinks": 4.742241469821645,
+        "noteboard": 4.073289337659029,
+        "graph": 3.2748925602561405,
+        "score": 5.201490164928255,
+        "prediction": 4.334181132437289
       },
-      "mean_weighted_score": {
-        "multi_scene": 7.792619333105684,
-        "task_life_rel": 7.410333691244772,
-        "generic_outline": 7.0653116707311945,
-        "no_expansion": 6.882198261102488,
-        "lossless_package": 6.727355769133849,
-        "tags": 6.591483866321698
+      "mean_score_eligible": {
+        "multi_scene": 7.989503194359883,
+        "hardening_slice": 7.532502567060748
       },
-      "p_above_threshold": {
-        "multi_scene": 0.999871,
-        "task_life_rel": 0.947091,
-        "generic_outline": 0.603693,
-        "no_expansion": 0.354173,
-        "lossless_package": 0.16939,
-        "tags": 0.062652
+      "top1_eligible": {
+        "multi_scene": 0.903202,
+        "hardening_slice": 0.096798
       },
-      "mean_rank": {
-        "multi_scene": 1.133024,
-        "task_life_rel": 2.127113,
-        "generic_outline": 3.297037,
-        "no_expansion": 4.206381,
-        "lossless_package": 4.875141,
-        "tags": 5.361304
+      "top3_eligible": {
+        "multi_scene": 1.0,
+        "hardening_slice": 1.0
+      },
+      "pairwise_vs_base_winner": {
+        "multi_scene": 0.0,
+        "hardening_slice": 0.096798
+      },
+      "mean_rank_eligible": {
+        "multi_scene": 1.096798,
+        "hardening_slice": 1.903202
       }
     },
     "utility_first": {
-      "win_probability": {
-        "multi_scene": 0.964732,
-        "task_life_rel": 0.034084,
-        "generic_outline": 0.000657,
-        "no_expansion": 0.000113,
-        "lossless_package": 4e-06,
-        "tags": 0.00041
+      "mean_score_all": {
+        "multi_scene": 7.853309979688598,
+        "hardening_slice": 7.074173602521205,
+        "template_system": 5.555567234546388,
+        "visual_worlds": 5.316223008044575,
+        "lossless_package": 6.243608862022558,
+        "tags": 5.586673951123344,
+        "task_life_rel": 6.626826546464081,
+        "generic_outline": 6.4659904980712755,
+        "backlinks": 4.447690147797931,
+        "noteboard": 3.548915411747678,
+        "graph": 3.019767643607066,
+        "score": 4.867833975197269,
+        "prediction": 3.958042453284921
       },
-      "mean_weighted_score": {
-        "multi_scene": 7.6791733390797,
-        "task_life_rel": 7.016828353779108,
-        "generic_outline": 6.549700229228715,
-        "no_expansion": 6.330271562931303,
-        "lossless_package": 6.018097617456883,
-        "tags": 6.4283662934625
+      "mean_score_eligible": {
+        "multi_scene": 7.853309979688598,
+        "hardening_slice": 7.074173602521205
       },
-      "p_above_threshold": {
-        "multi_scene": 0.997084,
-        "task_life_rel": 0.527608,
-        "generic_outline": 0.053211,
-        "no_expansion": 0.009327,
-        "lossless_package": 0.000989,
-        "tags": 0.029017
+      "top1_eligible": {
+        "multi_scene": 0.978077,
+        "hardening_slice": 0.021923
       },
-      "mean_rank": {
-        "multi_scene": 1.036062,
-        "task_life_rel": 2.180366,
-        "generic_outline": 3.561686,
-        "no_expansion": 4.537328,
-        "lossless_package": 5.558485,
-        "tags": 4.126073
+      "top3_eligible": {
+        "multi_scene": 1.0,
+        "hardening_slice": 1.0
+      },
+      "pairwise_vs_base_winner": {
+        "multi_scene": 0.0,
+        "hardening_slice": 0.021923
+      },
+      "mean_rank_eligible": {
+        "multi_scene": 1.021923,
+        "hardening_slice": 1.978077
       }
     },
     "visual_identity_first": {
-      "win_probability": {
-        "multi_scene": 0.964408,
-        "task_life_rel": 0.035454,
-        "generic_outline": 3.7e-05,
-        "no_expansion": 0.0,
-        "lossless_package": 9.9e-05,
-        "tags": 2e-06
+      "mean_score_all": {
+        "multi_scene": 8.1921722314669,
+        "hardening_slice": 6.577103730444062,
+        "template_system": 6.326516380811081,
+        "visual_worlds": 6.422523004773655,
+        "lossless_package": 6.612135736305552,
+        "tags": 5.668680360448617,
+        "task_life_rel": 6.590337938198126,
+        "generic_outline": 6.300709975863858,
+        "backlinks": 5.211041842268221,
+        "noteboard": 4.173022902073971,
+        "graph": 4.073781141931213,
+        "score": 5.1810410617431275,
+        "prediction": 4.661028629331803
       },
-      "mean_weighted_score": {
-        "multi_scene": 8.024135305447917,
-        "task_life_rel": 7.412853288871716,
-        "generic_outline": 6.627180315419964,
-        "no_expansion": 5.9838305279103805,
-        "lossless_package": 6.707208186487573,
-        "tags": 6.365503722960134
+      "mean_score_eligible": {
+        "multi_scene": 8.1921722314669,
+        "hardening_slice": 6.577103730444062
       },
-      "p_above_threshold": {
-        "multi_scene": 0.999995,
-        "task_life_rel": 0.935757,
-        "generic_outline": 0.093384,
-        "no_expansion": 0.001388,
-        "lossless_package": 0.159607,
-        "tags": 0.013925
+      "top1_eligible": {
+        "multi_scene": 0.99997,
+        "hardening_slice": 3e-05
       },
-      "mean_rank": {
-        "multi_scene": 1.03572,
-        "task_life_rel": 2.005165,
-        "generic_outline": 3.816373,
-        "no_expansion": 5.786825,
-        "lossless_package": 3.606238,
-        "tags": 4.749679
+      "top3_eligible": {
+        "multi_scene": 1.0,
+        "hardening_slice": 1.0
+      },
+      "pairwise_vs_base_winner": {
+        "multi_scene": 0.0,
+        "hardening_slice": 3e-05
+      },
+      "mean_rank_eligible": {
+        "multi_scene": 1.00003,
+        "hardening_slice": 1.99997
       }
     },
     "safety_maintenance_first": {
-      "win_probability": {
-        "multi_scene": 0.180628,
-        "task_life_rel": 0.138601,
-        "generic_outline": 0.350899,
-        "no_expansion": 0.32475,
-        "lossless_package": 0.004982,
-        "tags": 0.00014
+      "mean_score_all": {
+        "multi_scene": 7.74362979966966,
+        "hardening_slice": 8.082217023228297,
+        "template_system": 6.125288725367029,
+        "visual_worlds": 5.0945620209445,
+        "lossless_package": 7.240528686667594,
+        "tags": 6.17581441996357,
+        "task_life_rel": 6.746781951562929,
+        "generic_outline": 7.731978587290202,
+        "backlinks": 4.84712305492888,
+        "noteboard": 4.259121283938046,
+        "graph": 2.8797201884369,
+        "score": 5.727346471927642,
+        "prediction": 4.627830539949378
       },
-      "mean_weighted_score": {
-        "multi_scene": 7.508579067628369,
-        "task_life_rel": 7.477248814171605,
-        "generic_outline": 7.678634272713892,
-        "no_expansion": 7.65987412853093,
-        "lossless_package": 7.047967100521241,
-        "tags": 6.667920759121183
+      "mean_score_eligible": {
+        "multi_scene": 7.74362979966966,
+        "hardening_slice": 8.082217023228297
       },
-      "p_above_threshold": {
-        "multi_scene": 0.981557,
-        "task_life_rel": 0.955407,
-        "generic_outline": 0.994848,
-        "no_expansion": 0.99027,
-        "lossless_package": 0.563253,
-        "tags": 0.133609
+      "top1_eligible": {
+        "multi_scene": 0.174982,
+        "hardening_slice": 0.825018
       },
-      "mean_rank": {
-        "multi_scene": 2.928779,
-        "task_life_rel": 3.092392,
-        "generic_outline": 2.114545,
-        "no_expansion": 2.224225,
-        "lossless_package": 4.854745,
-        "tags": 5.785314
+      "top3_eligible": {
+        "multi_scene": 1.0,
+        "hardening_slice": 1.0
+      },
+      "pairwise_vs_base_winner": {
+        "multi_scene": 0.0,
+        "hardening_slice": 0.825018
+      },
+      "mean_rank_eligible": {
+        "multi_scene": 1.825018,
+        "hardening_slice": 1.174982
       }
     },
     "recovery_readiness_first": {
-      "win_probability": {
-        "multi_scene": 0.518331,
-        "task_life_rel": 0.171315,
-        "generic_outline": 0.079887,
-        "no_expansion": 0.223457,
-        "lossless_package": 0.007002,
-        "tags": 8e-06
+      "mean_score_all": {
+        "multi_scene": 7.938104241712973,
+        "hardening_slice": 8.179575093774778,
+        "template_system": 5.931184435747571,
+        "visual_worlds": 5.2402039788227315,
+        "lossless_package": 7.387735201933999,
+        "tags": 5.94225174885807,
+        "task_life_rel": 6.55389529353753,
+        "generic_outline": 7.519671291864848,
+        "backlinks": 4.616636562559251,
+        "noteboard": 4.246140855060919,
+        "graph": 2.9782498006664575,
+        "score": 5.344022605839268,
+        "prediction": 4.408350321992391
       },
-      "mean_weighted_score": {
-        "multi_scene": 7.735300988848409,
-        "task_life_rel": 7.561659355060042,
-        "generic_outline": 7.456350510011122,
-        "no_expansion": 7.575576069341689,
-        "lossless_package": 7.156055450816452,
-        "tags": 6.614661217390129
+      "mean_score_eligible": {
+        "multi_scene": 7.938104241712973,
+        "hardening_slice": 8.179575093774778
       },
-      "p_above_threshold": {
-        "multi_scene": 0.999681,
-        "task_life_rel": 0.98855,
-        "generic_outline": 0.967544,
-        "no_expansion": 0.980512,
-        "lossless_package": 0.718601,
-        "tags": 0.068527
+      "top1_eligible": {
+        "multi_scene": 0.233649,
+        "hardening_slice": 0.766351
       },
-      "mean_rank": {
-        "multi_scene": 1.856285,
-        "task_life_rel": 2.721562,
-        "generic_outline": 3.263209,
-        "no_expansion": 2.572395,
-        "lossless_package": 4.659822,
-        "tags": 5.926727
+      "top3_eligible": {
+        "multi_scene": 1.0,
+        "hardening_slice": 1.0
+      },
+      "pairwise_vs_base_winner": {
+        "multi_scene": 0.0,
+        "hardening_slice": 0.766351
+      },
+      "mean_rank_eligible": {
+        "multi_scene": 1.766351,
+        "hardening_slice": 1.233649
       }
     }
   },
-  "aggregate": {
-    "win_probability": {
-      "multi_scene": 0.7019588000000001,
-      "task_life_rel": 0.0968678,
-      "generic_outline": 0.0882256,
-      "no_expansion": 0.1103404,
-      "lossless_package": 0.0024874,
-      "tags": 0.00011999999999999999
+  "aggregate_eligible": {
+    "top1_probability": {
+      "multi_scene": 0.6579760000000001,
+      "hardening_slice": 0.342024
+    },
+    "top3_probability": {
+      "multi_scene": 1.0,
+      "hardening_slice": 1.0
     },
     "mean_weighted_score": {
-      "multi_scene": 7.747961606822015,
-      "task_life_rel": 7.375784700625448,
-      "generic_outline": 7.075435399620977,
-      "no_expansion": 6.886350109963358,
-      "lossless_package": 6.731336824883199,
-      "tags": 6.533587171851129
-    },
-    "p_above_threshold": {
-      "multi_scene": 0.9956376,
-      "task_life_rel": 0.8708826000000001,
-      "generic_outline": 0.5425359999999999,
-      "no_expansion": 0.467134,
-      "lossless_package": 0.32236800000000004,
-      "tags": 0.061546000000000003
+      "multi_scene": 7.9433438893796025,
+      "hardening_slice": 7.489114403405818
     },
     "mean_rank": {
-      "multi_scene": 1.597974,
-      "task_life_rel": 2.4253196,
-      "generic_outline": 3.2105699999999997,
-      "no_expansion": 3.8654308,
-      "lossless_package": 4.7108862,
-      "tags": 5.189819399999999
+      "multi_scene": 1.3420239999999999,
+      "hardening_slice": 1.657976
     },
-    "ranked_candidates": [
+    "pairwise_vs_base_winner": {
+      "multi_scene": 0.0,
+      "hardening_slice": 0.342024
+    },
+    "ranked": [
       "multi_scene",
-      "task_life_rel",
-      "generic_outline",
-      "no_expansion",
-      "lossless_package",
-      "tags"
+      "hardening_slice"
     ]
+  },
+  "base_profile_eligible": {
+    "scores": {
+      "multi_scene": 8.02,
+      "hardening_slice": 7.56
+    },
+    "ranked": [
+      "multi_scene",
+      "hardening_slice"
+    ],
+    "winner": "multi_scene",
+    "runner_up": "hardening_slice",
+    "winner_score": 8.02,
+    "runner_up_score": 7.56,
+    "lead": 0.45999999999999996
+  },
+  "unadjusted_diagnostic": {
+    "note": "Diagnostic only \u2014 includes CONDITIONAL candidates as if eligible. Not used for activation decision.",
+    "base_ranked": [
+      "multi_scene",
+      "hardening_slice",
+      "generic_outline",
+      "lossless_package",
+      "task_life_rel",
+      "template_system",
+      "tags",
+      "visual_worlds"
+    ],
+    "base_winner": "multi_scene",
+    "base_runner_up": "hardening_slice",
+    "base_scores": {
+      "multi_scene": 8.02,
+      "template_system": 5.96,
+      "visual_worlds": 5.57,
+      "lossless_package": 6.92,
+      "tags": 5.85,
+      "task_life_rel": 6.66,
+      "generic_outline": 7.01,
+      "hardening_slice": 7.56
+    }
+  },
+  "convergence": {
+    "checkpoints": [
+      100000,
+      500000,
+      1000000
+    ],
+    "per_profile": {
+      "base": {
+        "100000": {
+          "top1_eligible": {
+            "multi_scene": 0.90319,
+            "hardening_slice": 0.09681
+          }
+        },
+        "500000": {
+          "top1_eligible": {
+            "multi_scene": 0.903284,
+            "hardening_slice": 0.096716
+          }
+        },
+        "1000000": {
+          "top1_eligible": {
+            "multi_scene": 0.903202,
+            "hardening_slice": 0.096798
+          }
+        }
+      },
+      "utility_first": {
+        "100000": {
+          "top1_eligible": {
+            "multi_scene": 0.97773,
+            "hardening_slice": 0.02227
+          }
+        },
+        "500000": {
+          "top1_eligible": {
+            "multi_scene": 0.978026,
+            "hardening_slice": 0.021974
+          }
+        },
+        "1000000": {
+          "top1_eligible": {
+            "multi_scene": 0.978077,
+            "hardening_slice": 0.021923
+          }
+        }
+      },
+      "visual_identity_first": {
+        "100000": {
+          "top1_eligible": {
+            "multi_scene": 0.99996,
+            "hardening_slice": 4e-05
+          }
+        },
+        "500000": {
+          "top1_eligible": {
+            "multi_scene": 0.999966,
+            "hardening_slice": 3.4e-05
+          }
+        },
+        "1000000": {
+          "top1_eligible": {
+            "multi_scene": 0.99997,
+            "hardening_slice": 3e-05
+          }
+        }
+      },
+      "safety_maintenance_first": {
+        "100000": {
+          "top1_eligible": {
+            "multi_scene": 0.17451,
+            "hardening_slice": 0.82549
+          }
+        },
+        "500000": {
+          "top1_eligible": {
+            "multi_scene": 0.1751,
+            "hardening_slice": 0.8249
+          }
+        },
+        "1000000": {
+          "top1_eligible": {
+            "multi_scene": 0.174982,
+            "hardening_slice": 0.825018
+          }
+        }
+      },
+      "recovery_readiness_first": {
+        "100000": {
+          "top1_eligible": {
+            "multi_scene": 0.23456,
+            "hardening_slice": 0.76544
+          }
+        },
+        "500000": {
+          "top1_eligible": {
+            "multi_scene": 0.23325,
+            "hardening_slice": 0.76675
+          }
+        },
+        "1000000": {
+          "top1_eligible": {
+            "multi_scene": 0.233649,
+            "hardening_slice": 0.766351
+          }
+        }
+      }
+    },
+    "max_drift_per_eligible_candidate": {
+      "multi_scene": 0.0013099999999999778,
+      "hardening_slice": 0.0013100000000000334
+    },
+    "within_tolerance": true
+  },
+  "activation_checks": {
+    "base_score_above_threshold": {
+      "value": 8.02,
+      "threshold": 7.0,
+      "pass": true
+    },
+    "base_lead_above_threshold": {
+      "value": 0.45999999999999996,
+      "threshold": 0.35,
+      "pass": true
+    },
+    "aggregate_top1_above_threshold": {
+      "value": 0.6579760000000001,
+      "threshold": 0.55,
+      "pass": true
+    },
+    "eligible_candidates_exist": {
+      "value": 2,
+      "threshold": 1,
+      "pass": true
+    }
   },
   "decision": {
     "activate_next": "multi_scene",
-    "winner": "multi_scene",
-    "runner_up": "task_life_rel",
-    "winner_score": 7.747961606822015,
-    "runner_up_score": 7.375784700625448,
-    "lead_over_runner_up": 0.3721769061965672,
-    "threshold": 7.0,
-    "lead_required": 0.35
+    "base_winner": "multi_scene",
+    "base_runner_up": "hardening_slice",
+    "base_winner_score": 8.02,
+    "base_runner_up_score": 7.56,
+    "base_lead": 0.45999999999999996,
+    "aggregate_top1": 0.6579760000000001,
+    "aggregate_mean_winner": 7.9433438893796025,
+    "no_activation_reason": null,
+    "thresholds": {
+      "base_score": 7.0,
+      "base_lead": 0.35,
+      "aggregate_top1": 0.55
+    }
   }
 }

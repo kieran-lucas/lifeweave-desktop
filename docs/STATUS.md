@@ -2,14 +2,18 @@
 
 Updated: 2026-08-03 Asia/Saigon
 
-## Task 23/60 — Post-Narrative Expansion Decision (complete)
+## Task 23/60 — Post-Narrative Expansion Decision (complete, reaudit)
 
-- Evaluated 13 expansion candidates against 12 criteria (100-point model) and a five-profile × 5,000,000-sample Dirichlet sensitivity simulation (seed 20260803).
-- Hard-filter results: PASS (6): Multi-Scene, Task/Life Relationships, Generic Outline, Tags, Lossless Package, No Expansion. HOLD_FOR_PRODUCT_OWNER (2): Template System, Visual Worlds. FAIL (5): Backlinks, Score, Prediction, Noteboard, Graph.
-- Aggregate mean scores: Multi-Scene 7.748, Task/Life 7.376, Generic Outline 7.075, No Expansion 6.886, Lossless Package 6.731, Tags 6.534.
-- Multi-Scene Canvas Composition is `ACTIVATE_NEXT`: score 7.748 ≥ 7.0 threshold, lead 0.372 ≥ 0.35 required, win probability 70.2 %. Wins in base, utility, and visual-identity profiles.
+- Initial commit `0dce8e9` was FAIL (substituted criteria, incomplete hard-filter matrix, hardcoded acceptance winner, missing simulation outputs). Remediation in `docs/audits/task-23-acceptance-remediation.md`.
+- Rerun under exact approved 12-criterion 100-point model (weights: user value 16, workflow freq 10, differentiation 10, data safety 12, accessibility 9, implementation boundedness 9, maintenance cost 8, performance 7, local-first/privacy 6, interoperability/backup 5, prerequisite readiness 5, evidence/testability 3).
+- Full 13×14 hard-filter matrix (PASS/CONDITIONAL/FAIL). Eligible (PASS 14/14): Multi-Scene Composition, No Expansion / Hardening Slice. CONDITIONAL (6): Template System, Visual Worlds, Lossless Package, Tags, Task/Life Relationships, Generic Outline. FAIL (5): Backlinks, Noteboard, Graph, Score, Prediction.
+- Eligible base scores: Multi-Scene 8.02, Hardening Slice 7.56 (lead 0.46).
+- Five-million-sample simulation (seed 20260803, 5 profiles): Multi-Scene agg. top-1 65.8 % (≥ 55 % threshold), top-3 100 %, mean rank 1.34. Hardening: top-1 34.2 %, mean rank 1.66. Convergence drift 0.13 %.
+- Multi-Scene wins base, utility, visual profiles. Hardening wins safety/maintenance and recovery/readiness profiles.
+- All activation thresholds met: base score 8.02 ≥ 7.0, base lead 0.46 ≥ 0.35, agg. top-1 65.8 % ≥ 55 %.
+- `ACTIVATE_NEXT` = Narrative Multi-Scene Composition (affirmed from approved model).
 - Task 24 remains prohibited until Product Owner approval. No product behavior, migration, IPC, or dependency added.
-- ADR 0017 accepted. Simulation in `specs/013-post-narrative-expansion-decision/analysis.py`. Audit in `docs/audits/task-23-post-narrative-expansion.md`.
+- ADR 0017 (preliminary, superseded) and ADR 0018 (accepted). Audit: `docs/audits/task-23-post-narrative-expansion.md`.
 
 ## Task 22/60 — Narrative Canvas Markdown Interoperability (complete, remediated)
 

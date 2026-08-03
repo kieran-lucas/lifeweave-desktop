@@ -108,9 +108,13 @@ Task 22 adds Markdown export from a committed Canvas and Markdown import as a ne
 
 ## Slice 013 — Post-Narrative Expansion Decision
 
-Task 23 re-evaluates all expansion candidates against the Task 22 baseline using a 12-criterion weighted model and a five-profile, five-million-sample sensitivity simulation.
+Task 23 evaluates all 13 expansion candidates under the exact approved 12-criterion 100-point model with a 13×14 hard-filter matrix and a five-profile, five-million-sample sensitivity simulation (seed 20260803). Initial commit `0dce8e9` was FAIL (substituted criteria); remediation commit is the accepted checkpoint.
 
-Portfolio recommendation: **Multi-Scene Canvas Composition activated as Task 24** (aggregate score 7.748, lead 0.372, win probability 70.2 %). Template System and Visual Worlds held for Product Owner direction. Task/Life Relationships, Generic Outline, Lossless Package, and Tags deferred. Backlinks, Score, Prediction, Noteboard, and Graph fail hard filters and remain deferred.
+**Eligible candidates (PASS 14/14):** Narrative Multi-Scene Composition (base 8.02) and No Expansion / Hardening Slice (base 7.56).
+
+Portfolio recommendation (accepted, ADR 0018): **Narrative Multi-Scene Composition `ACTIVATE_NEXT`** — base score 8.02, base lead 0.46, aggregate top-1 65.8 %. Wins in base, utility, and visual-identity profiles; hardening wins safety and recovery profiles.
+
+**HOLD_FOR_PRODUCT_OWNER:** Template System, Visual Worlds. **CONDITIONAL (DEFER):** Lossless Package, Tags, Task/Life Relationships, Generic Outline. **FAIL:** Backlinks, Noteboard, Graph, Score, Prediction.
 
 ## Slice 011 — Narrative Canvas Core
 

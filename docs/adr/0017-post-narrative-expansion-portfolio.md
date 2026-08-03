@@ -1,6 +1,7 @@
-# ADR 0017 — Post-Narrative Expansion Portfolio Decision
+# ADR 0017 — Post-Narrative Expansion Portfolio Decision (Preliminary)
 
-**Status:** Accepted
+**Status:** Superseded by ADR 0018 as acceptance authority.
+**Note:** This is the preliminary record from commit `0dce8e9`. It used substituted criteria and an incomplete hard-filter matrix. Preserved for historical reference only. ADR 0018 is the accepted decision.
 
 **Date:** 2026-08-03
 
