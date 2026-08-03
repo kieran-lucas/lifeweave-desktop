@@ -100,7 +100,12 @@ DocumentOutline code adds ~2 kB to the main bundle (acceptable — always needed
 
 ## NSIS Build
 
-`pnpm tauri build` initiated; Rust release compile in progress at commit time. Frontend production build confirmed clean (`pnpm build` passed, 1.61s). Previous task NSIS artifact at `src-tauri/target/release/bundle/nsis/Lifeweave_0.0.0_x64-setup.exe` (4.32 MB, from Task 18) remains valid — no Rust code changed in Task 19.
+`pnpm tauri build` completed successfully (after commit, confirmed retroactively).
+
+- Artifact: `src-tauri/target/release/bundle/nsis/Lifeweave_0.0.0_x64-setup.exe`
+- Size: 4.32 MB
+- Rust compile (release, incremental): 3m 36s (faster than Task 18's 9m 20s — only frontend changed)
+- Frontend build: 1.61s
 
 ## Native Liveness / Relaunch Smoke
 
