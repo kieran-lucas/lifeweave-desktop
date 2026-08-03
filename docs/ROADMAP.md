@@ -79,3 +79,8 @@ Task 18 implements FTS5 global search with Vietnamese normalization, dirty-scope
 - Vietnamese diacritic normalization: NFKD + combining mark removal + đ/Đ→d
 - APG combobox dialog; Ctrl+K shortcut; sidebar search button
 - Navigation integration with TodayScreen and LifeScreen
+
+## Slice 009 — Basic Leaf Heading Outline
+
+Task 19 activates Outline only as a bounded Basic Leaf Reader heading navigator.
+It does not activate generic Outline, Life tree duplication, Studio, Noteboard or Graph.

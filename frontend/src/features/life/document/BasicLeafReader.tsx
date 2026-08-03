@@ -1,8 +1,11 @@
 import { lazy, Suspense, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useReducedMotion } from "motion/react";
 import type { ReaderDocumentView } from "../../../ipc/generated/ReaderDocumentView";
 import { createReaderDocument, discardReaderDraft, exportReaderMarkdown, getReaderDocument, importReaderMarkdown, recoverReaderDraft } from "../../../ipc/commands";
 import { operationId, parseDocument } from "./schema";
+import { buildDocumentOutline } from "./outline";
+import { DocumentOutline } from "./DocumentOutline";
 import { StaticDocument } from "./StaticDocument";
 import * as styles from "./BasicLeafDocument.css";
 
@@ -10,6 +13,7 @@ const BasicLeafEditor = lazy(() => import("./BasicLeafEditor"));
 export const documentKey = (nodeId: string) => ["life", "document", nodeId] as const;
 
 export function BasicLeafReader({ nodeId }: { nodeId: string }) {
+  const reducedMotion = useReducedMotion() ?? false;
   const client = useQueryClient(); const [editing, setEditing] = useState(false); const [notice, setNotice] = useState<string>();
   const query = useQuery({ queryKey: documentKey(nodeId), queryFn: () => getReaderDocument({ life_node_id: nodeId }) });
   const create = useMutation({ mutationFn: () => createReaderDocument({ life_node_id: nodeId, operation_id: operationId("document-create") }), onSuccess: () => void client.invalidateQueries({ queryKey: documentKey(nodeId) }) });
@@ -27,6 +31,7 @@ export function BasicLeafReader({ nodeId }: { nodeId: string }) {
   return <div className={styles.shell}><h2>Reader</h2>
     {projection.draft_state !== "none" && <section className={styles.recovery} aria-labelledby="recovery-title"><h2 id="recovery-title">Recoverable draft</h2><p>{projection.draft_state === "conflict" ? "This draft is based on an older revision. The current document remains safe." : "An interrupted editing draft is available."}</p><div className={styles.actions}><button className={styles.primary} onClick={() => void recover()}>Recover draft</button><button className={styles.button} onClick={() => void discard()}>Discard draft</button></div></section>}
     <div className={styles.actions}><button className={styles.primary} onClick={() => setEditing(true)}>Edit document</button><label className={styles.fileLabel}>Import Markdown<input className={styles.hiddenFile} type="file" accept="text/markdown,.md" onChange={event => void importMarkdown(event.currentTarget.files?.[0])}/></label><button className={styles.button} onClick={() => void exportMarkdown()}>Export Markdown</button></div>
-    {notice && <p role="status" aria-live="polite">{notice}</p>}<StaticDocument document={parsed}/>
+    {notice && <p role="status" aria-live="polite">{notice}</p>}
+    {(() => { const outline = buildDocumentOutline(parsed); const showOutline = outline.entries.length >= 2; return <div className={styles.outlineContainer}>{showOutline ? <div className={styles.outlineGrid}><div className={styles.outlineColumn}><DocumentOutline outline={outline} reducedMotion={reducedMotion} /></div><StaticDocument document={parsed} /></div> : <StaticDocument document={parsed} />}</div>; })()}
   </div>;
 }

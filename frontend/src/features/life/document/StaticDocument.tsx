@@ -2,6 +2,7 @@ import { Fragment, useEffect, useState } from "react";
 import { getDocumentAsset } from "../../../ipc/commands";
 import type { BasicLeafMark, BasicLeafNode } from "./schema";
 import { safeLink } from "./schema";
+import { headingIdForSourceIndex } from "./outline";
 import * as styles from "./BasicLeafDocument.css";
 
 function AssetImage({ assetId, alt }: { assetId: string; alt: string }) {
@@ -53,6 +54,22 @@ function render(node: BasicLeafNode, key: number | string): React.ReactNode {
   }
 }
 
+function renderTopLevel(node: BasicLeafNode, index: number): React.ReactNode {
+  if (node.type === "heading") {
+    const level = Number(node.attrs?.level ?? 2);
+    const id = headingIdForSourceIndex(index);
+    const children = node.content?.map((child, i) => render(child, i));
+    return level === 1
+      ? <h1 key={index} id={id} tabIndex={-1}>{children}</h1>
+      : level === 3
+      ? <h3 key={index} id={id} tabIndex={-1}>{children}</h3>
+      : <h2 key={index} id={id} tabIndex={-1}>{children}</h2>;
+  }
+  return render(node, index);
+}
+
 export function StaticDocument({ document }: { document: BasicLeafNode }) {
-  return <article className={styles.article} aria-label="Leaf document">{document.content?.map((node, index) => render(node, index))}</article>;
+  return <article className={styles.article} aria-label="Leaf document">
+    {document.content?.map((node, index) => renderTopLevel(node, index))}
+  </article>;
 }

@@ -14,9 +14,31 @@ export const hiddenFile = style({ position: "absolute", width: 1, height: 1, ove
 export const image = style({ display: "block", maxWidth: "100%", height: "auto", borderRadius: 8, margin: "14px 0" });
 export const missing = style({ border: "1px dashed var(--border-subtle)", borderRadius: 8, padding: 14, color: "var(--text-muted)" });
 export const table = style({ borderCollapse: "collapse", width: "100%", margin: "16px 0" });
-globalStyle(`${article} h1, ${article} h2, ${article} h3`, { lineHeight: 1.2, marginTop: "1.6em" });
+globalStyle(`${article} h1, ${article} h2, ${article} h3`, { lineHeight: 1.2, marginTop: "1.6em", scrollMarginTop: "1.5rem" });
 globalStyle(`${article} blockquote`, { borderLeft: "3px solid var(--focus-ring)", marginLeft: 0, paddingLeft: 18, color: "var(--text-muted)" });
 globalStyle(`${article} pre`, { overflowX: "auto", padding: 14, borderRadius: 8, background: "var(--sidebar-surface)" });
 globalStyle(`${article} th, ${article} td`, { border: "1px solid var(--border-subtle)", padding: 8, textAlign: "left" });
 globalStyle(`${editor} .tiptap`, { minHeight: 280, outline: "none" });
 globalStyle(`${editor} .tiptap img`, { maxWidth: "100%", height: "auto" });
+
+export const outlineContainer = style({ containerType: "inline-size" });
+
+export const outlineGrid = style({
+  display: "grid",
+  gap: "1.5rem",
+  "@container": {
+    "(min-width: 520px)": {
+      gridTemplateColumns: "210px minmax(0, 1fr)",
+      alignItems: "start",
+    },
+  },
+});
+
+export const outlineColumn = style({
+  "@container": {
+    "(min-width: 520px)": {
+      position: "sticky",
+      top: "1.5rem",
+    },
+  },
+});

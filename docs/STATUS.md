@@ -2,6 +2,17 @@
 
 Updated: 2026-08-03 Asia/Saigon
 
+## Task 19/60 — Basic Leaf Heading Outline Core + Reader Navigation
+
+- PASS at `(this commit; see git log -1)`; evidence: `docs/audits/task-19-basic-leaf-outline.md`.
+- Ephemeral heading projection derived from committed canonical JSON; never persisted.
+- `outline.ts`: `buildDocumentOutline`, `extractHeadingText`, `headingIdForSourceIndex`; 256-entry cap; O(n) algorithm.
+- `DocumentOutline.tsx`: `<nav>/<ol>/<li>/<button>`; disclosure toggle for narrow; sticky wide layout via CSS container queries; `scrollIntoView` + `focus` activation; `aria-current`; `useReducedMotion` from existing `motion` package.
+- `StaticDocument.tsx`: top-level headings given positional `id` and `tabIndex=-1`; `scrollMarginTop: 1.5rem`.
+- `BasicLeafReader.tsx`: outline shown when ≥ 2 headings; hidden in editor mode.
+- 193 frontend tests pass (was 136; 57 new: 24 outline unit + 33 component/integration including axe accessibility check).
+- ADR 0008 accepted; specs/009-basic-leaf-outline/ created.
+
 ## Task 18/60 — Global Search Core + Vietnamese-Normalized Unified Retrieval
 
 - PASS at `(this commit; see git log -1)`; evidence: `docs/audits/task-18-global-search.md`.
