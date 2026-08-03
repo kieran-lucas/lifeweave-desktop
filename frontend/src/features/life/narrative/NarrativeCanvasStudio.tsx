@@ -76,6 +76,19 @@ function redo(h: HistoryState): HistoryState {
   return { past: [...h.past, h.current], current: current!, future };
 }
 
+function undoWithMaterializedCurrent(h: HistoryState, materializedCurrent: ParsedNarrativeDocument): HistoryState {
+  if (h.past.length === 0) return h;
+  const past = [...h.past];
+  const current = past.pop()!;
+  return { past, current, future: [materializedCurrent, ...h.future] };
+}
+
+function redoWithMaterializedCurrent(h: HistoryState, materializedCurrent: ParsedNarrativeDocument): HistoryState {
+  if (h.future.length === 0) return h;
+  const [current, ...future] = h.future;
+  return { past: [...h.past, materializedCurrent], current: current!, future };
+}
+
 // ---------------------------------------------------------------------------
 // Tiptap configuration (shared, stable reference)
 // ---------------------------------------------------------------------------
@@ -1065,8 +1078,8 @@ export default function NarrativeCanvasStudio({
     // Materialize live content BEFORE history traversal
     const currentWithLive = materializeCurrentDocument();
     setHistory(h => {
-      // Perform undo on historical state (not the live-materialized one)
-      const prev = undo(h);
+      // Perform undo, preserving materialized current (with live content) in future edge
+      const prev = undoWithMaterializedCurrent(h, currentWithLive);
       // Check if active block still exists in previous state
       const prevHasActiveBlock = prev.current.scenes.some(s =>
         s.blocks.some(b => !isUnknownBlock(b) && b.id === activeBlockId)
@@ -1110,8 +1123,8 @@ export default function NarrativeCanvasStudio({
     // Materialize live content BEFORE history traversal
     const currentWithLive = materializeCurrentDocument();
     setHistory(h => {
-      // Perform redo on historical state (not the live-materialized one)
-      const next = redo(h);
+      // Perform redo, preserving materialized current (with live content) in past edge
+      const next = redoWithMaterializedCurrent(h, currentWithLive);
       // Check if active block still exists in next state
       const nextHasActiveBlock = next.current.scenes.some(s =>
         s.blocks.some(b => !isUnknownBlock(b) && b.id === activeBlockId)

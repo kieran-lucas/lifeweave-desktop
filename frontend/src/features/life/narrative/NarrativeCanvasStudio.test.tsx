@@ -591,64 +591,83 @@ describe("NarrativeCanvasStudio multi-scene", () => {
     });
   });
 
-  it("cancelled delete preserves live editor state when scene starts empty", async () => {
-    // Create a scene with initially empty rich_text block (no metric block)
-    const emptySceneJson = JSON.stringify({
+  it("cancelled delete preserves live editor state with live text", async () => {
+    // Two scenes: first empty, second with initially empty rich_text block
+    const twoScenesJson = JSON.stringify({
       schemaVersion: 1,
       documentId: DOC_ID,
       title: "Test Canvas",
       templateId: "knowledge_dossier",
       templateVersion: 1,
-      scenes: [{
-        id: SCENE_ID,
-        title: "Empty Scene",
-        layoutPreset: "single_column",
-        atmosphere: "neutral",
-        motionPreset: "none",
-        blocks: [
-          { kind: "rich_text", id: BLOCK_ID, content: { type: "doc", content: [] } },
-        ],
-      }],
+      scenes: [
+        {
+          id: SCENE_ID,
+          title: "Scene One",
+          layoutPreset: "single_column",
+          atmosphere: "neutral",
+          motionPreset: "none",
+          blocks: [{ kind: "rich_text", id: BLOCK_ID, content: { type: "doc", content: [] } }],
+        },
+        {
+          id: "scene-2",
+          title: "Scene Two",
+          layoutPreset: "single_column",
+          atmosphere: "neutral",
+          motionPreset: "none",
+          blocks: [{ kind: "rich_text", id: "block-2", content: { type: "doc", content: [] } }],
+        },
+      ],
     });
 
-    const liveContent: unknown = { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "Live edit before cancel" }] }] };
+    const liveContent: unknown = { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "Live text — user will cancel delete" }] }] };
     tiptapMock.getJSON.mockReturnValue(liveContent);
     const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
 
-    mountWith(emptySceneJson);
-    // Activate and edit the rich_text block
+    mountWith(twoScenesJson);
+    // Go to second scene
+    fireEvent.click(screen.getByRole("tab", { name: "Scene Two" }));
+    // Activate and type in the rich_text block
     fireEvent.click(screen.getByLabelText("Click to edit rich text block"));
     act(() => tiptapMock.onUpdate?.({ editor: { getJSON: () => liveContent } }));
-    // Scene is empty (only has the initially empty block) — should NOT prompt
-    fireEvent.click(screen.getByRole("button", { name: "Delete scene" }));
-    // Empty scene — no confirmation shown, deletion should proceed
-    expect(confirmSpy).not.toHaveBeenCalled();
-    confirmSpy.mockRestore();
-  });
-
-  it("cancelled delete preserves live editor state when scene has existing content", async () => {
-    const liveContent: unknown = { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "Live edit — user will cancel" }] }] };
-    tiptapMock.getJSON.mockReturnValue(liveContent);
-    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
-
-    mountWith(twoSceneJson);
-    // Scene Two has a metric block (non-empty)
-    fireEvent.click(screen.getByRole("tab", { name: "Scene Two" }));
-    // Simulate typing in an editor on top of the existing content
-    act(() => tiptapMock.onUpdate?.({ editor: { getJSON: () => liveContent } }));
-    // Click delete — should prompt because scene is non-empty
+    // Click delete — should prompt (even though block is initially empty)
     fireEvent.click(screen.getByRole("button", { name: "Delete scene" }));
     expect(confirmSpy).toHaveBeenCalledWith("Delete this scene and all its blocks?");
-    // User cancels — editor must still be active
-    expect(screen.getByRole("tab", { name: "Scene Two" })).toBeInTheDocument();
-    // Verify editor is still active (not cleared by cancelled delete)
+    // User cancels
+    // Publish and verify live text is retained
     fireEvent.click(screen.getByRole("button", { name: "Publish" }));
     await waitFor(() => {
       const saved = JSON.parse(api.save.mock.calls[0]![0].canonical_json as string);
-      // Metric block should still be there
-      expect(saved.scenes[1].blocks[0].kind).toBe("metric");
+      expect(saved.scenes).toHaveLength(2);
+      expect(saved.scenes[1].blocks[0].content.content[0].content[0].text).toBe("Live text — user will cancel delete");
     });
     confirmSpy.mockRestore();
+  });
+
+  it("Undo then Redo preserves live Tiptap content in removed then restored scene", async () => {
+    const liveContent: unknown = { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "Typed in new scene before undo" }] }] };
+    tiptapMock.getJSON.mockReturnValue(liveContent);
+    mountWith(twoSceneJson);
+    // Add a scene
+    fireEvent.click(screen.getByRole("button", { name: "Add scene" }));
+    // Activate the new scene's block and type
+    const newSceneTab = screen.getAllByRole("tab")[2]!;
+    fireEvent.click(newSceneTab);
+    fireEvent.click(screen.getByLabelText("Click to edit rich text block"));
+    act(() => tiptapMock.onUpdate?.({ editor: { getJSON: () => liveContent } }));
+    // Undo the add — scene disappears, live content is preserved in future edge
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(screen.getAllByRole("tab")).toHaveLength(2);
+    // Redo — scene returns with live content
+    fireEvent.click(screen.getByRole("button", { name: "Redo" }));
+    expect(screen.getAllByRole("tab")).toHaveLength(3);
+    // Publish and verify the live text survived the round-trip
+    fireEvent.click(screen.getByRole("button", { name: "Publish" }));
+    await waitFor(() => {
+      const saved = JSON.parse(api.save.mock.calls[0]![0].canonical_json as string);
+      expect(saved.scenes).toHaveLength(3);
+      // Third scene (the restored one) should have the live text
+      expect(saved.scenes[2].blocks[0].content.content[0].content[0].text).toBe("Typed in new scene before undo");
+    });
   });
 
   it("Undo after adding a scene keeps a valid scene selected", () => {
