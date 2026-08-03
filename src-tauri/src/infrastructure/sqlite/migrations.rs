@@ -636,6 +636,19 @@ static MIGRATIONS: &[Migration] = &[
             END;
         ",
     },
+    Migration {
+        version: 15,
+        sql: "
+            DROP TRIGGER IF EXISTS narrative_template_id_insert_guard;
+            DROP TRIGGER IF EXISTS narrative_template_id_update_guard;
+            CREATE TRIGGER narrative_template_id_insert_guard BEFORE INSERT ON narrative_documents
+                WHEN NEW.template_id NOT IN ('knowledge_dossier','project_blueprint','learning_journey')
+                BEGIN SELECT RAISE(ABORT,'unsupported narrative template_id'); END;
+            CREATE TRIGGER narrative_template_id_update_guard BEFORE UPDATE OF template_id ON narrative_documents
+                WHEN NEW.template_id != OLD.template_id
+                BEGIN SELECT RAISE(ABORT,'narrative template_id is immutable'); END;
+        ",
+    },
 ];
 
 /// Bootstraps the migration tracking table and applies any pending migrations.
@@ -749,7 +762,7 @@ mod tests {
         let mut conn = open_memory_connection().unwrap();
         run_migrations(&mut conn).unwrap();
 
-        assert_eq!(current_schema_version(&conn).unwrap(), 14);
+        assert_eq!(current_schema_version(&conn).unwrap(), 15);
 
         let count: i64 = conn
             .query_row("SELECT COUNT(*) FROM db_metadata", [], |r| r.get(0))
@@ -763,7 +776,7 @@ mod tests {
         let mig_count: i64 = conn
             .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
             .unwrap();
-        assert_eq!(mig_count, 14);
+        assert_eq!(mig_count, 15);
     }
 
     #[test]
@@ -773,11 +786,11 @@ mod tests {
         run_migrations(&mut conn).unwrap();
 
         // The latest version remains stable; no duplicate migration rows.
-        assert_eq!(current_schema_version(&conn).unwrap(), 14);
+        assert_eq!(current_schema_version(&conn).unwrap(), 15);
         let mig_count: i64 = conn
             .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
             .unwrap();
-        assert_eq!(mig_count, 14);
+        assert_eq!(mig_count, 15);
     }
 
     #[test]
@@ -866,7 +879,7 @@ mod tests {
         match run_migrations_with(&mut conn, MIGRATIONS) {
             Err(DbError::SchemaTooNew { stored, supported }) => {
                 assert_eq!(stored, 9999);
-                assert_eq!(supported, 14);
+                assert_eq!(supported, 15);
             }
             other => panic!("expected SchemaTooNew, got {other:?}"),
         }
@@ -895,6 +908,41 @@ mod tests {
     // ── Persistence ───────────────────────────────────────────────────────────
 
     #[test]
+    fn migration_15_preserves_existing_canvas_and_expands_template_guard() {
+        let mut conn = open_memory_connection().unwrap();
+        run_migrations_with(&mut conn, &MIGRATIONS[..14]).unwrap();
+        conn.execute("INSERT INTO life_nodes VALUES('template-leaf','life-root','Template leaf','','life-leaf','neutral',1,NULL,'now','now',0)", []).unwrap();
+        let canonical = r#"{"templateId":"knowledge_dossier","templateVersion":1}"#;
+        conn.execute("INSERT INTO narrative_documents (id,life_node_id,schema_version,revision,canonical_json,plain_text,created_at,updated_at,archived_at,template_id,template_version) VALUES ('template-existing','template-leaf',1,0,?1,'','now','now',NULL,'knowledge_dossier',1)", [canonical]).unwrap();
+        run_migrations(&mut conn).unwrap();
+        assert_eq!(current_schema_version(&conn).unwrap(), 15);
+        let preserved: String = conn
+            .query_row(
+                "SELECT canonical_json FROM narrative_documents WHERE id='template-existing'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(preserved, canonical);
+        for (id, node) in [
+            ("project_blueprint", "template-project"),
+            ("learning_journey", "template-learning"),
+        ] {
+            conn.execute("INSERT INTO life_nodes VALUES(?1,'life-root',?1,'','life-leaf','neutral',2,NULL,'now','now',0)", [node]).unwrap();
+            conn.execute("INSERT INTO narrative_documents (id,life_node_id,schema_version,revision,canonical_json,plain_text,created_at,updated_at,archived_at,template_id,template_version) VALUES (?1,?2,1,0,'{}','','now','now',NULL,?3,1)", rusqlite::params![format!("template-{id}"), node, id]).unwrap();
+        }
+        assert!(conn.execute("INSERT INTO narrative_documents (id,life_node_id,schema_version,revision,canonical_json,plain_text,created_at,updated_at,archived_at,template_id,template_version) VALUES ('template-unknown','life-root',1,0,'{}','','now','now',NULL,'unknown',1)", []).is_err());
+        assert!(conn.execute("UPDATE narrative_documents SET template_id='project_blueprint' WHERE id='template-existing'", []).is_err());
+        assert!(
+            conn.execute(
+                "UPDATE narrative_documents SET template_version=2 WHERE id='template-existing'",
+                []
+            )
+            .is_err()
+        );
+    }
+
+    #[test]
     fn reopen_preserves_schema_version_and_schema_objects() {
         let path = temp_db_path("reopen");
 
@@ -902,7 +950,7 @@ mod tests {
         {
             let mut conn = open_file_connection(&path).unwrap();
             run_migrations(&mut conn).unwrap();
-            assert_eq!(current_schema_version(&conn).unwrap(), 14);
+            assert_eq!(current_schema_version(&conn).unwrap(), 15);
             // Confirm the schema object created by migration 1 exists
             let count: i64 = conn
                 .query_row("SELECT COUNT(*) FROM db_metadata", [], |r| r.get(0))
@@ -916,7 +964,7 @@ mod tests {
             run_migrations(&mut conn).unwrap();
             assert_eq!(
                 current_schema_version(&conn).unwrap(),
-                14,
+                15,
                 "schema version must survive close/reopen"
             );
             let count: i64 = conn
@@ -929,7 +977,7 @@ mod tests {
                 .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
                 .unwrap();
             assert_eq!(
-                mig_count, 14,
+                mig_count, 15,
                 "no duplicate migration records after reopen + re-run"
             );
         }

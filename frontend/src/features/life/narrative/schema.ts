@@ -10,6 +10,7 @@ export type RichTextContent = {
   type: "doc";
   content: RichTextNode[];
 };
+export type NarrativeTemplateId = "knowledge_dossier" | "project_blueprint" | "learning_journey";
 
 // Known block kinds — closed union for component dispatch
 export type NarrativeBlock =
@@ -49,7 +50,7 @@ export type ParsedNarrativeDocument = {
   schemaVersion: 1;
   documentId: string;
   title: string;
-  templateId: "knowledge_dossier";
+  templateId: NarrativeTemplateId;
   templateVersion: 1;
   scenes: [NarrativeScene, ...NarrativeScene[]];
 };
@@ -154,7 +155,7 @@ export function parseNarrative(json: string): ParsedNarrativeDocument {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw new Error("Narrative must be an object");
   const doc = raw as Record<string, unknown>;
   if (doc["schemaVersion"] !== 1) throw new Error("Unsupported schemaVersion");
-  if (doc["templateId"] !== "knowledge_dossier") throw new Error("Unsupported templateId");
+  const templateId = assertStringExact(doc["templateId"], "templateId", ["knowledge_dossier", "project_blueprint", "learning_journey"] as const);
   if (doc["templateVersion"] !== 1) throw new Error("Unsupported templateVersion");
   assertString(doc["documentId"], "documentId");
   assertString(doc["title"], "title");
@@ -180,7 +181,7 @@ export function parseNarrative(json: string): ParsedNarrativeDocument {
     schemaVersion: 1,
     documentId: assertString(doc["documentId"], "documentId"),
     title: assertString(doc["title"], "title"),
-    templateId: "knowledge_dossier",
+    templateId,
     templateVersion: 1,
     scenes: parsedScenes as [NarrativeScene, ...NarrativeScene[]],
   };

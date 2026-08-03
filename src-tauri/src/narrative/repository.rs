@@ -2,6 +2,7 @@ use super::{
     domain::{self, NarrativeError, REVISION_RETENTION, SCHEMA_VERSION},
     dto::*,
     markdown, schema,
+    templates::NarrativeTemplateId,
 };
 use rusqlite::{Connection, OptionalExtension, Transaction, params};
 use std::collections::BTreeMap;
@@ -100,6 +101,9 @@ pub fn create(
     if !domain::valid_operation(&input.operation_id) {
         return Err(NarrativeError::Validation("Operation identity is invalid."));
     }
+    let template = NarrativeTemplateId::parse(&input.template_id).ok_or(
+        NarrativeError::Validation("Choose a supported Canvas template."),
+    )?;
     if let Some(id) = conn
         .query_row(
             "SELECT document_id FROM narrative_save_operations WHERE operation_id=?1",
@@ -114,6 +118,11 @@ pub fn create(
                 "Operation identity belongs to another document.",
             ));
         }
+        if existing.template_id != template.as_str() {
+            return Err(NarrativeError::Validation(
+                "Operation identity belongs to another template.",
+            ));
+        }
         return Ok(existing);
     }
     leaf(conn, &input.life_node_id)?;
@@ -126,7 +135,13 @@ pub fn create(
         )
         .optional()?
     {
-        return by_id(conn, &existing_id);
+        let existing = by_id(conn, &existing_id)?;
+        if existing.template_id != template.as_str() {
+            return Err(NarrativeError::Validation(
+                "This leaf already has a Canvas with a different template.",
+            ));
+        }
+        return Ok(existing);
     }
     let node_title: String = conn.query_row(
         "SELECT title FROM life_nodes WHERE id=?1 AND archived_at IS NULL",
@@ -134,9 +149,7 @@ pub fn create(
         |r| r.get(0),
     )?;
     let id = domain::new_id();
-    let scene_id = domain::new_id();
-    let block_id = domain::new_id();
-    let canonical = domain::seed_document(&id, &node_title, &scene_id, &block_id);
+    let canonical = super::templates::seed_document(template, &id, &node_title);
     let valid = schema::validate(&canonical, Some(&id))?;
     let now = domain::now();
     let tx = conn.transaction()?;
@@ -144,13 +157,14 @@ pub fn create(
         "INSERT INTO narrative_documents \
          (id,life_node_id,schema_version,revision,canonical_json,plain_text,\
           created_at,updated_at,archived_at,template_id,template_version) \
-         VALUES (?1,?2,1,0,?3,?4,?5,?5,NULL,'knowledge_dossier',1)",
+         VALUES (?1,?2,1,0,?3,?4,?5,?5,NULL,?6,1)",
         params![
             id,
             input.life_node_id,
             valid.canonical_json,
             valid.plain_text,
-            now
+            now,
+            template.as_str()
         ],
     )?;
     tx.execute(
@@ -210,9 +224,9 @@ fn save_tx(
     }
     let current = tx
         .query_row(
-            "SELECT revision,canonical_json,plain_text FROM narrative_documents WHERE id=?1 AND archived_at IS NULL",
+            "SELECT revision,canonical_json,plain_text,template_id,template_version FROM narrative_documents WHERE id=?1 AND archived_at IS NULL",
             params![input.document_id],
-            |r| Ok((r.get::<_, i32>(0)?, r.get::<_, String>(1)?, r.get::<_, String>(2)?)),
+            |r| Ok((r.get::<_, i32>(0)?, r.get::<_, String>(1)?, r.get::<_, String>(2)?, r.get::<_, String>(3)?, r.get::<_, i32>(4)?)),
         )
         .optional()?
         .ok_or(NarrativeError::NotFound)?;
@@ -220,6 +234,18 @@ fn save_tx(
         return Err(NarrativeError::Stale);
     }
     let valid = schema::validate(&input.canonical_json, Some(&input.document_id))?;
+    let raw: serde_json::Value = serde_json::from_str(&valid.canonical_json)
+        .map_err(|_| NarrativeError::Validation("Narrative JSON is invalid."))?;
+    if raw.get("templateId").and_then(serde_json::Value::as_str) != Some(current.3.as_str())
+        || raw
+            .get("templateVersion")
+            .and_then(serde_json::Value::as_i64)
+            != Some(current.4 as i64)
+    {
+        return Err(NarrativeError::Validation(
+            "Narrative template identity is immutable.",
+        ));
+    }
     ensure_assets(tx, &valid.assets)?;
     let next = current.0 + 1;
     let now = domain::now();
@@ -282,7 +308,19 @@ pub fn save_draft(
     input: SaveNarrativeDraftInput,
 ) -> Result<NarrativeDocumentProjection, NarrativeError> {
     let doc = by_id(conn, &input.document_id)?;
-    schema::validate(&input.canonical_json, Some(&input.document_id))?;
+    let valid = schema::validate(&input.canonical_json, Some(&input.document_id))?;
+    let raw: serde_json::Value = serde_json::from_str(&valid.canonical_json)
+        .map_err(|_| NarrativeError::Validation("Narrative JSON is invalid."))?;
+    if raw.get("templateId").and_then(serde_json::Value::as_str) != Some(doc.template_id.as_str())
+        || raw
+            .get("templateVersion")
+            .and_then(serde_json::Value::as_i64)
+            != Some(doc.template_version as i64)
+    {
+        return Err(NarrativeError::Validation(
+            "Narrative template identity is immutable.",
+        ));
+    }
     let state = if input.base_revision == doc.revision {
         "available"
     } else {
@@ -574,6 +612,7 @@ mod tests {
             CreateNarrativeDocumentInput {
                 life_node_id: node.clone(),
                 operation_id: "create-nc-1".into(),
+                template_id: "knowledge_dossier".into(),
             },
         )
         .unwrap();
@@ -585,6 +624,7 @@ mod tests {
                 CreateNarrativeDocumentInput {
                     life_node_id: node.clone(),
                     operation_id: "create-nc-1".into(),
+                    template_id: "knowledge_dossier".into(),
                 }
             )
             .unwrap()
@@ -634,6 +674,99 @@ mod tests {
         let recovered =
             recover_draft(&mut c, NarrativeDocumentIdInput { document_id: a.id }).unwrap();
         assert_eq!(recovered.revision, 2);
+    }
+
+    #[test]
+    fn creation_is_template_aware_and_identity_mismatches_write_nothing() {
+        let mut c = db();
+        let node = leaf_node(&mut c);
+        let canvas = create(
+            &mut c,
+            CreateNarrativeDocumentInput {
+                life_node_id: node.clone(),
+                operation_id: "template-create".into(),
+                template_id: "project_blueprint".into(),
+            },
+        )
+        .unwrap();
+        let canonical: serde_json::Value = serde_json::from_str(&canvas.canonical_json).unwrap();
+        assert_eq!(canvas.template_id, "project_blueprint");
+        assert_eq!(canonical["templateId"], "project_blueprint");
+        assert_eq!(canonical["templateVersion"], 1);
+        assert_eq!(canonical["scenes"].as_array().unwrap().len(), 4);
+        assert!(matches!(
+            create(
+                &mut c,
+                CreateNarrativeDocumentInput {
+                    life_node_id: node.clone(),
+                    operation_id: "template-create".into(),
+                    template_id: "learning_journey".into(),
+                },
+            ),
+            Err(NarrativeError::Validation(_))
+        ));
+        assert!(matches!(
+            create(
+                &mut c,
+                CreateNarrativeDocumentInput {
+                    life_node_id: node,
+                    operation_id: "new-template-create".into(),
+                    template_id: "learning_journey".into(),
+                },
+            ),
+            Err(NarrativeError::Validation(_))
+        ));
+
+        let mut mismatched = canonical;
+        mismatched["templateId"] = serde_json::Value::String("learning_journey".into());
+        let before: i64 = c
+            .query_row(
+                "SELECT COUNT(*) FROM narrative_document_revisions WHERE document_id=?1",
+                [&canvas.id],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert!(matches!(
+            save(
+                &mut c,
+                SaveNarrativeDocumentInput {
+                    document_id: canvas.id.clone(),
+                    expected_revision: 0,
+                    schema_version: 1,
+                    canonical_json: mismatched.to_string(),
+                    operation_id: "template-mismatch-save".into(),
+                },
+            ),
+            Err(NarrativeError::Validation(_))
+        ));
+        assert!(matches!(
+            save_draft(
+                &mut c,
+                SaveNarrativeDraftInput {
+                    document_id: canvas.id.clone(),
+                    base_revision: 0,
+                    canonical_json: mismatched.to_string(),
+                },
+            ),
+            Err(NarrativeError::Validation(_))
+        ));
+        let after: i64 = c
+            .query_row(
+                "SELECT COUNT(*) FROM narrative_document_revisions WHERE document_id=?1",
+                [&canvas.id],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(before, after);
+        assert_eq!(
+            c.query_row(
+                "SELECT COUNT(*) FROM narrative_document_drafts WHERE document_id=?1",
+                [&canvas.id],
+                |row| row.get::<_, i64>(0)
+            )
+            .unwrap(),
+            0
+        );
     }
 
     fn markdown_with_assets(ids: &[&str]) -> String {
@@ -783,6 +916,7 @@ mod tests {
                 CreateNarrativeDocumentInput {
                     life_node_id: node,
                     operation_id: "create-nc".into(),
+                    template_id: "knowledge_dossier".into(),
                 }
             )
             .is_err()
@@ -798,6 +932,7 @@ mod tests {
             CreateNarrativeDocumentInput {
                 life_node_id: node.clone(),
                 operation_id: "create-nc".into(),
+                template_id: "knowledge_dossier".into(),
             },
         )
         .unwrap();
@@ -835,6 +970,7 @@ mod tests {
                 CreateNarrativeDocumentInput {
                     life_node_id: branch,
                     operation_id: "bad".into(),
+                    template_id: "knowledge_dossier".into(),
                 }
             )
             .is_err()
@@ -850,6 +986,7 @@ mod tests {
             CreateNarrativeDocumentInput {
                 life_node_id: node.clone(),
                 operation_id: "create-nc-protected".into(),
+                template_id: "knowledge_dossier".into(),
             },
         )
         .unwrap();
@@ -930,6 +1067,7 @@ mod tests {
                 CreateNarrativeDocumentInput {
                     life_node_id: node_id.clone(),
                     operation_id: "bk-create-1".into(),
+                    template_id: "knowledge_dossier".into(),
                 },
             )
             .unwrap();
@@ -1041,8 +1179,8 @@ mod tests {
             let rt = DatabaseRuntime::new(path.clone(), worker);
             let backup_result = backup_db(&rt, &backups_dir).unwrap();
             assert_eq!(
-                backup_result.schema_version, 14,
-                "backup must record schema version 14"
+                backup_result.schema_version, 15,
+                "backup must record schema version 15"
             );
 
             // ── Mutate: save revision 2 ───────────────────────────────────────
@@ -1087,8 +1225,8 @@ mod tests {
             let backup_dir = std::path::PathBuf::from(&backup_result.backup_dir);
             let restore_result = restore_db(&rt, &backup_dir).unwrap();
             assert_eq!(
-                restore_result.schema_version, 14,
-                "restore must report schema 14"
+                restore_result.schema_version, 15,
+                "restore must report schema 15"
             );
         }
 
@@ -1170,6 +1308,7 @@ mod tests {
             CreateNarrativeDocumentInput {
                 life_node_id: node,
                 operation_id: "scale-create".into(),
+                template_id: "knowledge_dossier".into(),
             },
         )
         .unwrap();
@@ -1212,6 +1351,7 @@ mod tests {
             CreateNarrativeDocumentInput {
                 life_node_id: node,
                 operation_id: "perf-create".into(),
+                template_id: "knowledge_dossier".into(),
             },
         )
         .unwrap();
@@ -1286,6 +1426,7 @@ mod tests {
                 CreateNarrativeDocumentInput {
                     life_node_id: node,
                     operation_id: "c".into(),
+                    template_id: "knowledge_dossier".into(),
                 },
             )
             .unwrap();

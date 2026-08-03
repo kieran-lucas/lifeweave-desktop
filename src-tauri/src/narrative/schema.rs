@@ -92,9 +92,9 @@ pub fn validate(
             .ok_or(NarrativeError::Validation(
                 "Narrative templateId is missing.",
             ))?;
-    if template_id != "knowledge_dossier" {
+    if super::templates::NarrativeTemplateId::parse(template_id).is_none() {
         return Err(NarrativeError::Validation(
-            "Narrative templateId must be knowledge_dossier.",
+            "Narrative templateId is unsupported.",
         ));
     }
 

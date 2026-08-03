@@ -42,3 +42,5 @@ export const outlineColumn = style({
     },
   },
 });
+export const templateChooser = style({ border: "1px solid var(--border-subtle)", borderRadius: 10, padding: 14, maxWidth: 620 });
+export const templateOption = style({ display: "grid", gap: 4, padding: 10, borderBottom: "1px solid var(--border-subtle)" });

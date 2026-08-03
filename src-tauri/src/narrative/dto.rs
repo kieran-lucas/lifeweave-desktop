@@ -35,6 +35,7 @@ pub struct NarrativeNodeInput {
 pub struct CreateNarrativeDocumentInput {
     pub life_node_id: String,
     pub operation_id: String,
+    pub template_id: String,
 }
 
 #[derive(Debug, Clone, Deserialize)]

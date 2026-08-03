@@ -11,22 +11,11 @@ import { DocumentOutline } from "./DocumentOutline";
 import { StaticDocument } from "./StaticDocument";
 import * as styles from "./BasicLeafDocument.css";
 import { NarrativeCanvasReader, narrativeKey } from "../narrative/NarrativeCanvasReader";
+import { NarrativeTemplateChooser } from "../narrative/NarrativeTemplateChooser";
 
 const BasicLeafEditor = lazy(() => import("./BasicLeafEditor"));
 export const documentKey = (nodeId: string) => ["life", "document", nodeId] as const;
 
-function NarrativeCanvasChooser({ nodeId }: { nodeId: string }) {
-  const client = useQueryClient();
-  const create = useMutation({
-    mutationFn: () =>
-      createNarrativeDocument({ life_node_id: nodeId, operation_id: operationId("narrative-create") }),
-    onSuccess: () => void client.invalidateQueries({ queryKey: narrativeKey(nodeId) }),
-  });
-  return <>
-    <button className={styles.primary} disabled={create.isPending} onClick={() => create.mutate()}>Create Narrative Canvas</button>
-    {create.isError && <p role="alert">The Narrative Canvas could not be created.</p>}
-  </>;
-}
 
 type MarkdownImportPending = {
   originalName: string;
@@ -107,7 +96,7 @@ export function BasicLeafReader({ nodeId }: { nodeId: string }) {
         <p>This leaf has no document yet.</p>
         <div className={styles.actions}>
           <button className={styles.primary} disabled={create.isPending} onClick={() => create.mutate()}>Create Basic Leaf document</button>
-          {!narrativeQuery.isError && <NarrativeCanvasChooser nodeId={nodeId} />}
+          {!narrativeQuery.isError && <NarrativeTemplateChooser nodeId={nodeId} />}
           {canShowMarkdownImport && (
             <label className={styles.fileLabel}>Import Markdown as Canvas
               <input

@@ -1,5 +1,10 @@
 # Roadmap
 
+## Slice 017 - Narrative Template System
+- three static seed-only Narrative Canvas templates;
+- immutable persisted creation provenance;
+- explicit accessible empty-leaf chooser.
+
 ## Phase 0 — Source and governance
 - preserve exact source;
 - establish Constitution, registry, ADR, GitHub templates;

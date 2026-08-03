@@ -426,7 +426,7 @@ mod tests {
         let backups = temp_backups_dir();
         let result = backup_db(&rt, &backups).unwrap();
         // The manifest must carry the latest immutable migration version.
-        assert_eq!(result.schema_version, 14);
+        assert_eq!(result.schema_version, 15);
     }
 
     #[test]
@@ -512,6 +512,7 @@ mod tests {
                     CreateNarrativeDocumentInput {
                         life_node_id: node.id,
                         operation_id: "backup-narrative-create".into(),
+                        template_id: "knowledge_dossier".into(),
                     },
                 )
                 .map_err(|_| crate::infrastructure::sqlite::DbError::InvalidMigrationList)?;

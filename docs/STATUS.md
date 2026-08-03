@@ -1,5 +1,11 @@
 # Project Status
 
+## Task 27/60 - Narrative Template System (implementation)
+
+- Starting checkpoint: 4e2c4ee347212b9a26949f7c9df2d2ae77dab59a (accepted Task 26).
+- Schema 15 is an append-only trigger-only expansion from one persisted template ID to three immutable built-in IDs. Templates seed initial Canvas scenes only.
+- The empty Life-leaf surface now offers an explicit native-radio template chooser; no custom templates, conversion, or Visual Worlds behavior was added.
+
 Updated: 2026-08-03 Asia/Saigon
 
 ## Task 26/60 — Native E2E Contract Refresh (complete)

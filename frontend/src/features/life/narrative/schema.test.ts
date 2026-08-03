@@ -53,6 +53,14 @@ describe("parseNarrative", () => {
     expect(() => parseNarrative(JSON.stringify({ ...JSON.parse(KNOWN_DOC), templateId: "other" }))).toThrow("templateId");
   });
 
+  it.each(["knowledge_dossier", "project_blueprint", "learning_journey"] as const)(
+    "accepts and round-trips supported template %s",
+    (templateId) => {
+      const parsed = parseNarrative(JSON.stringify({ ...JSON.parse(KNOWN_DOC), templateId }));
+      expect(parseNarrative(serializeNarrative(parsed)).templateId).toBe(templateId);
+    },
+  );
+
   it("throws on wrong templateVersion", () => {
     expect(() => parseNarrative(JSON.stringify({ ...JSON.parse(KNOWN_DOC), templateVersion: 2 }))).toThrow("templateVersion");
   });

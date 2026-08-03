@@ -163,6 +163,7 @@ export function NarrativeCanvasReader({ nodeId }: { nodeId: string }) {
       createNarrativeDocument({
         life_node_id: nodeId,
         operation_id: operationId("narrative-create"),
+        template_id: "knowledge_dossier",
       }),
     onSuccess: () => void client.invalidateQueries({ queryKey: narrativeKey(nodeId) }),
   });

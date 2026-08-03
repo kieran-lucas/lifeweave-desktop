@@ -475,7 +475,7 @@ mod tests {
     #[test]
     fn life_migration_seeds_only_protected_root() {
         let mut c = db();
-        assert_eq!(current_schema_version(&c).unwrap(), 14);
+        assert_eq!(current_schema_version(&c).unwrap(), 15);
         assert_eq!(
             c.query_row("SELECT COUNT(*) FROM life_nodes", [], |r| r
                 .get::<_, i64>(0))
