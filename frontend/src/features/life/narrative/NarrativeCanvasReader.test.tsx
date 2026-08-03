@@ -14,6 +14,8 @@ const seedDoc = (canonical_json: string, extra = {}) => ({
   canonical_json,
   plain_text: "Test",
   updated_at: "2026-08-03T00:00:00Z",
+  template_id: "knowledge_dossier",
+  template_version: 1,
   ...extra,
 });
 
@@ -22,6 +24,7 @@ const emptyCanvasJson = JSON.stringify({
   documentId: DOC_ID,
   title: "My Canvas",
   templateId: "knowledge_dossier",
+  templateVersion: 1,
   scenes: [{
     id: "00000000-0000-7000-8000-000000000202",
     title: "Scene One",
@@ -83,8 +86,8 @@ describe("NarrativeCanvasReader", () => {
 
   it("renders canvas title and scene title statically", async () => {
     mount();
-    expect(await screen.findByText("My Canvas")).toBeInTheDocument();
-    expect(screen.getByText("Scene One")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "My Canvas", level: 1 })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Scene One", level: 2 })).toBeInTheDocument();
   });
 
   it("lazy-loads studio only after Edit canvas click", async () => {

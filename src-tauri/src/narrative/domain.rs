@@ -41,19 +41,29 @@ pub fn new_id() -> String {
     uuid::Uuid::now_v7().to_string()
 }
 
-pub fn seed_document(document_id: &str) -> String {
+pub fn seed_document(
+    document_id: &str,
+    node_title: &str,
+    scene_id: &str,
+    block_id: &str,
+) -> String {
     serde_json::json!({
         "schemaVersion": 1,
         "documentId": document_id,
-        "title": "",
+        "title": node_title,
         "templateId": "knowledge_dossier",
+        "templateVersion": 1,
         "scenes": [{
-            "id": new_id(),
-            "title": "",
+            "id": scene_id,
+            "title": "Overview",
             "layoutPreset": "single_column",
             "atmosphere": "neutral",
             "motionPreset": "none",
-            "blocks": []
+            "blocks": [{
+                "kind": "rich_text",
+                "id": block_id,
+                "content": {"type": "doc", "content": [{"type": "paragraph"}]}
+            }]
         }]
     })
     .to_string()

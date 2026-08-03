@@ -10,6 +10,8 @@ pub struct NarrativeDocumentView {
     pub canonical_json: String,
     pub plain_text: String,
     pub updated_at: String,
+    pub template_id: String,
+    pub template_version: i32,
 }
 
 #[derive(Debug, Clone, Serialize)]

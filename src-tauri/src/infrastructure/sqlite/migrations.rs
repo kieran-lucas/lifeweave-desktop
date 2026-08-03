@@ -379,6 +379,92 @@ static MIGRATIONS: &[Migration] = &[
                 ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at; END;
         ",
     },
+    Migration {
+        version: 12,
+        sql: "
+            -- Add template columns to narrative_documents (DEFAULT handles existing rows)
+            ALTER TABLE narrative_documents ADD COLUMN template_id TEXT NOT NULL DEFAULT 'knowledge_dossier';
+            ALTER TABLE narrative_documents ADD COLUMN template_version INTEGER NOT NULL DEFAULT 1;
+
+            -- One-canvas-per-leaf: unique partial index on active canvases
+            CREATE UNIQUE INDEX narrative_documents_active_life_node_uq
+                ON narrative_documents(life_node_id) WHERE archived_at IS NULL;
+
+            -- Revision uniqueness within a document
+            CREATE UNIQUE INDEX narrative_document_revisions_document_revision_uq
+                ON narrative_document_revisions(document_id, revision);
+
+            -- Lookup indexes
+            CREATE INDEX narrative_documents_life_node_idx ON narrative_documents(life_node_id);
+            CREATE INDEX narrative_document_revisions_document_idx
+                ON narrative_document_revisions(document_id, revision DESC);
+
+            -- Guard: life-root cannot own a canvas
+            CREATE TRIGGER narrative_root_guard BEFORE INSERT ON narrative_documents
+                WHEN NEW.life_node_id = 'life-root'
+                BEGIN SELECT RAISE(ABORT,'narrative canvas cannot be attached to the life root'); END;
+
+            -- Guard: life_node_id must be an active node
+            CREATE TRIGGER narrative_node_active_guard BEFORE INSERT ON narrative_documents
+                WHEN NEW.archived_at IS NULL AND NOT EXISTS(
+                    SELECT 1 FROM life_nodes WHERE id=NEW.life_node_id AND archived_at IS NULL)
+                BEGIN SELECT RAISE(ABORT,'narrative canvas requires an active life node'); END;
+
+            -- Guard: schema_version must be 1
+            CREATE TRIGGER narrative_schema_version_guard BEFORE INSERT ON narrative_documents
+                WHEN NEW.schema_version != 1
+                BEGIN SELECT RAISE(ABORT,'unsupported narrative schema_version'); END;
+
+            -- Guard: revision must advance on UPDATE
+            CREATE TRIGGER narrative_revision_guard BEFORE UPDATE OF revision ON narrative_documents
+                WHEN NEW.revision <= OLD.revision
+                BEGIN SELECT RAISE(ABORT,'narrative document revision must advance monotonically'); END;
+
+            -- Guard: template_id must be knowledge_dossier
+            CREATE TRIGGER narrative_template_id_insert_guard BEFORE INSERT ON narrative_documents
+                WHEN NEW.template_id != 'knowledge_dossier'
+                BEGIN SELECT RAISE(ABORT,'unsupported narrative template_id'); END;
+            CREATE TRIGGER narrative_template_id_update_guard BEFORE UPDATE OF template_id ON narrative_documents
+                WHEN NEW.template_id != 'knowledge_dossier'
+                BEGIN SELECT RAISE(ABORT,'unsupported narrative template_id'); END;
+
+            -- Guard: template_version must be 1
+            CREATE TRIGGER narrative_template_version_insert_guard BEFORE INSERT ON narrative_documents
+                WHEN NEW.template_version != 1
+                BEGIN SELECT RAISE(ABORT,'unsupported narrative template_version'); END;
+            CREATE TRIGGER narrative_template_version_update_guard BEFORE UPDATE OF template_version ON narrative_documents
+                WHEN NEW.template_version != 1
+                BEGIN SELECT RAISE(ABORT,'unsupported narrative template_version'); END;
+
+            -- Guard: JSON payload size <= 2 MiB
+            CREATE TRIGGER narrative_json_size_insert_guard BEFORE INSERT ON narrative_documents
+                WHEN length(NEW.canonical_json) > 2097152
+                BEGIN SELECT RAISE(ABORT,'narrative document JSON exceeds size limit'); END;
+            CREATE TRIGGER narrative_json_size_update_guard BEFORE UPDATE OF canonical_json ON narrative_documents
+                WHEN length(NEW.canonical_json) > 2097152
+                BEGIN SELECT RAISE(ABORT,'narrative document JSON exceeds size limit'); END;
+
+            -- Guard: plain_text size <= 512 KiB
+            CREATE TRIGGER narrative_text_size_insert_guard BEFORE INSERT ON narrative_documents
+                WHEN length(NEW.plain_text) > 524288
+                BEGIN SELECT RAISE(ABORT,'narrative document plain_text exceeds size limit'); END;
+            CREATE TRIGGER narrative_text_size_update_guard BEFORE UPDATE OF plain_text ON narrative_documents
+                WHEN length(NEW.plain_text) > 524288
+                BEGIN SELECT RAISE(ABORT,'narrative document plain_text exceeds size limit'); END;
+
+            -- Restore guard: canvas cannot be restored if a Basic Leaf is active on the same node
+            CREATE TRIGGER narrative_restore_guard BEFORE UPDATE OF archived_at ON narrative_documents
+                WHEN OLD.archived_at IS NOT NULL AND NEW.archived_at IS NULL AND EXISTS(
+                    SELECT 1 FROM reader_documents WHERE life_node_id=NEW.life_node_id AND archived_at IS NULL)
+                BEGIN SELECT RAISE(ABORT,'cannot restore canvas: this leaf already has a Basic Leaf document'); END;
+
+            -- Restore guard: Basic Leaf cannot be restored if a Canvas is active on the same node
+            CREATE TRIGGER basic_leaf_restore_guard BEFORE UPDATE OF archived_at ON reader_documents
+                WHEN OLD.archived_at IS NOT NULL AND NEW.archived_at IS NULL AND EXISTS(
+                    SELECT 1 FROM narrative_documents WHERE life_node_id=NEW.life_node_id AND archived_at IS NULL)
+                BEGIN SELECT RAISE(ABORT,'cannot restore Basic Leaf: this leaf already has a Narrative Canvas'); END;
+        ",
+    },
 ];
 
 /// Bootstraps the migration tracking table and applies any pending migrations.
@@ -483,7 +569,7 @@ mod tests {
         let mut conn = open_memory_connection().unwrap();
         run_migrations(&mut conn).unwrap();
 
-        assert_eq!(current_schema_version(&conn).unwrap(), 11);
+        assert_eq!(current_schema_version(&conn).unwrap(), 12);
 
         let count: i64 = conn
             .query_row("SELECT COUNT(*) FROM db_metadata", [], |r| r.get(0))
@@ -497,7 +583,7 @@ mod tests {
         let mig_count: i64 = conn
             .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
             .unwrap();
-        assert_eq!(mig_count, 11);
+        assert_eq!(mig_count, 12);
     }
 
     #[test]
@@ -507,11 +593,11 @@ mod tests {
         run_migrations(&mut conn).unwrap();
 
         // The latest version remains stable; no duplicate migration rows.
-        assert_eq!(current_schema_version(&conn).unwrap(), 11);
+        assert_eq!(current_schema_version(&conn).unwrap(), 12);
         let mig_count: i64 = conn
             .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
             .unwrap();
-        assert_eq!(mig_count, 11);
+        assert_eq!(mig_count, 12);
     }
 
     #[test]
@@ -600,7 +686,7 @@ mod tests {
         match run_migrations_with(&mut conn, MIGRATIONS) {
             Err(DbError::SchemaTooNew { stored, supported }) => {
                 assert_eq!(stored, 9999);
-                assert_eq!(supported, 11);
+                assert_eq!(supported, 12);
             }
             other => panic!("expected SchemaTooNew, got {other:?}"),
         }
@@ -636,7 +722,7 @@ mod tests {
         {
             let mut conn = open_file_connection(&path).unwrap();
             run_migrations(&mut conn).unwrap();
-            assert_eq!(current_schema_version(&conn).unwrap(), 11);
+            assert_eq!(current_schema_version(&conn).unwrap(), 12);
             // Confirm the schema object created by migration 1 exists
             let count: i64 = conn
                 .query_row("SELECT COUNT(*) FROM db_metadata", [], |r| r.get(0))
@@ -650,7 +736,7 @@ mod tests {
             run_migrations(&mut conn).unwrap();
             assert_eq!(
                 current_schema_version(&conn).unwrap(),
-                11,
+                12,
                 "schema version must survive close/reopen"
             );
             let count: i64 = conn
@@ -663,7 +749,7 @@ mod tests {
                 .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
                 .unwrap();
             assert_eq!(
-                mig_count, 11,
+                mig_count, 12,
                 "no duplicate migration records after reopen + re-run"
             );
         }

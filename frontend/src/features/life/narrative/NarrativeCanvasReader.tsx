@@ -8,7 +8,7 @@ import {
 } from "../../../ipc/commands";
 import type { NarrativeDocumentView } from "../../../ipc/generated/NarrativeDocumentView";
 import { operationId, parseNarrative } from "./schema";
-import type { NarrativeDocument, NarrativeBlock, RichTextNode } from "./schema";
+import type { NarrativeDocument, NarrativeBlock, RichTextNode, UnknownNarrativeBlock } from "./schema";
 import * as styles from "./NarrativeCanvas.css";
 import { getDocumentAsset } from "../../../ipc/commands";
 
@@ -118,6 +118,15 @@ function BlockReader({ block }: { block: NarrativeBlock }) {
           </ol>
         </div>
       );
+    default: {
+      // Reached at runtime for unknown block kinds preserved by Rust; unreachable by TS type
+      const unknown = block as unknown as UnknownNarrativeBlock;
+      return (
+        <div className={styles.missing} role="note" aria-label="Unsupported block">
+          This block type ({unknown.kind}) is not supported in this version.
+        </div>
+      );
+    }
   }
 }
 
@@ -128,12 +137,23 @@ function BlockReader({ block }: { block: NarrativeBlock }) {
 function StaticCanvasView({ doc }: { doc: NarrativeDocument }) {
   const scene = doc.scenes[0];
   return (
-    <article aria-label="Narrative Canvas">
-      {doc.title && <h2 className={styles.title}>{doc.title}</h2>}
-      {scene.title && <div className={styles.sceneTitle}>{scene.title}</div>}
-      <div className={styles.blockList}>
-        {scene.blocks.map(block => <BlockReader key={block.id} block={block} />)}
-      </div>
+    <article aria-labelledby="nc-canvas-title">
+      <header>
+        <h1 id="nc-canvas-title" className={styles.title}>{doc.title || "Untitled Canvas"}</h1>
+      </header>
+      {scene.title && (
+        <section aria-labelledby="nc-scene-title">
+          <h2 id="nc-scene-title" className={styles.sceneTitle}>{scene.title}</h2>
+          <div className={styles.blockList}>
+            {scene.blocks.map(block => <BlockReader key={block.id} block={block} />)}
+          </div>
+        </section>
+      )}
+      {!scene.title && (
+        <div className={styles.blockList}>
+          {scene.blocks.map(block => <BlockReader key={block.id} block={block} />)}
+        </div>
+      )}
     </article>
   );
 }

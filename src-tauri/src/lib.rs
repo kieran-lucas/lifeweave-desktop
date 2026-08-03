@@ -31,10 +31,6 @@ use ipc::foundation_record::{
     list_foundation_records, restore_foundation_record, update_foundation_record,
 };
 use ipc::search::search_global;
-use narrative::service::{
-    create_narrative_document, discard_narrative_draft, get_narrative_document,
-    recover_narrative_draft, save_narrative_document, save_narrative_draft,
-};
 use ipc::task::{
     create_recurring_task, create_task, delete_task, evaluate_task, get_analytics_projection,
     get_month_projection, list_completion_states, list_recurring_occurrences, list_task_categories,
@@ -46,6 +42,10 @@ use life::service::{
     get_pinned_life_nodes, pin_life_node, rename_life_node, reorder_life_sibling,
     reparent_life_node, restore_life_node, save_life_navigation_preference, set_life_node_icon,
     set_life_node_theme_variant, undo_life_operation, unpin_life_node, update_life_node_summary,
+};
+use narrative::service::{
+    create_narrative_document, discard_narrative_draft, get_narrative_document,
+    recover_narrative_draft, save_narrative_document, save_narrative_draft,
 };
 
 /// Initialize the local tracing subscriber.

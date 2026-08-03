@@ -2,17 +2,22 @@
 
 Updated: 2026-08-03 Asia/Saigon
 
-## Task 21/60 — Narrative Canvas Core Schema + Single-Scene Read/Studio Vertical Slice
+## Task 21/60 — Narrative Canvas Core Schema + Single-Scene Read/Studio Vertical Slice (Accepted after remediation)
 
-- PASS at `(this commit; see git log -1)`; evidence: `docs/audits/task-21-narrative-canvas-core.md`.
+- Candidate `f1438da` failed acceptance on 6 P1 defects (see `docs/audits/task-21-acceptance-remediation.md`).
+- Remediation closed all P1 defects; accepted at current HEAD.
 - Migration 11: `narrative_documents`, `narrative_document_revisions`, `narrative_document_drafts`, `narrative_save_operations`, `narrative_document_assets`.
-- Mutual exclusion enforced by SQL BEFORE INSERT triggers (canvas↔basic leaf, canvas↔child life nodes).
-- Search integration: narrative documents indexed as `entity_kind='reader_document'` (reuses Migration 10 CHECK constraint; immutable FTS virtual table). Navigation via `SearchNavigationTarget::LifeReader`.
+- Migration 12: `template_id`/`template_version` columns, `narrative_documents_active_life_node_uq` unique partial index, `narrative_document_revisions_document_revision_uq`, guard triggers (root, schema_version, template, JSON/text size, revision monotonicity), restore guard triggers.
+- Mutual exclusion enforced by SQL BEFORE INSERT triggers (canvas↔basic leaf, canvas↔child life nodes) + unique partial index.
+- Document identity chain: JSON `documentId` verified to equal DB row `id` and IPC `document_id` on every save.
+- Unknown block kinds preserved in canonical_json; excluded from plain_text/assets; bounded at 64 KiB.
+- `create()` inherits Life node title for seed document; idempotent for existing active canvas.
+- Search integration: narrative documents indexed as `entity_kind='reader_document'`. Navigation via `SearchNavigationTarget::LifeReader`.
 - 6 IPC commands: `get_narrative_document`, `create_narrative_document`, `save_narrative_document`, `save_narrative_draft`, `discard_narrative_draft`, `recover_narrative_draft`.
-- `NarrativeCanvasReader` (static, no Tiptap) + `NarrativeCanvasStudio` (lazy chunk, separate build artifact).
-- All 5 block kinds: rich_text, metric, image, callout, timeline.
-- 340 Rust tests pass (17 new: 5 schema + 5 markdown + 7 repository); 322 frontend tests pass (8 new: NarrativeCanvasReader; +7 updated BasicLeafReader).
-- ADR 0011 accepted; specs/011-narrative-canvas-core/ created.
+- `NarrativeCanvasReader` (semantic `article`/`h1`/`section`/`h2` structure) + `NarrativeCanvasStudio` (lazy chunk, one active Tiptap island, dnd-kit sortable).
+- All 5 block kinds: rich_text, metric, image, callout, timeline. Unknown blocks: placeholder in Reader.
+- 348 Rust tests pass; 336 frontend tests pass (15 new: NarrativeCanvasStudio.test.tsx).
+- ADR 0011 accepted; ADR 0012 accepted; specs/011-narrative-canvas-core/ created.
 
 ## Task 20/60 — Narrative Canvas Canonical Schema A/B Prototype + Decision (complete reaudit)
 

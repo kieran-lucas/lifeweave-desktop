@@ -45,3 +45,8 @@ globalStyle(`${editorWrap} .tiptap`, { minHeight: 100, outline: "none" });
 
 export const addBlockBar = style({ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 });
 export const addBlockButton = style([button, { fontSize: "0.85rem", padding: "6px 12px" }]);
+export const dragHandle = style([button, { cursor: "grab", fontSize: "1rem", padding: "4px 8px", selectors: { "&:active": { cursor: "grabbing" } } }]);
+export const staticPreview = style({ width: "100%", textAlign: "left", border: "1px dashed var(--border-subtle)", borderRadius: 8, padding: "10px 14px", minHeight: 48, background: "var(--app-background)", color: "var(--text-muted)", cursor: "text", fontSize: "0.9rem" });
+export const importButton = style([button, { marginBottom: 8 }]);
+export const previewImage = style([image, { maxHeight: 200, marginTop: 8 }]);
+export const timelineItemEditor = style({ border: "1px solid var(--border-subtle)", borderRadius: 8, padding: 10, display: "flex", flexDirection: "column", gap: 6, background: "var(--app-background)" });

@@ -96,11 +96,12 @@ Production Narrative Canvas activation requires a separate approved task.
 
 ## Slice 011 — Narrative Canvas Core
 
-Task 21 activates the first production Narrative Canvas vertical slice (ADR 0010 Strategy A).
+Task 21 activates the first production Narrative Canvas vertical slice (ADR 0010 Strategy A). Accepted after acceptance remediation (ADR 0012).
 
-- Migration 11: narrative tables, mutual exclusion triggers (canvas↔basic leaf, canvas↔child nodes), search dirty triggers
-- Schema validation enforces exactly one scene; all five block kinds (rich_text, metric, image, callout, timeline)
-- 6 IPC commands; `NarrativeCanvasReader` (static) + `NarrativeCanvasStudio` (lazy Tiptap chunk)
+- Migration 11: narrative tables, mutual exclusion triggers, search dirty triggers
+- Migration 12: `template_id`/`template_version` columns, unique partial index (one-canvas-per-leaf), revision uniqueness, guard triggers, restore guard triggers
+- Schema validation: document identity chain (JSON `documentId` == DB `id` == IPC input), unknown block preservation, all five block kinds (rich_text, metric, image, callout, timeline)
+- 6 IPC commands; `NarrativeCanvasReader` (semantic `article`/`h1`/`section`/`h2`) + `NarrativeCanvasStudio` (lazy Tiptap island chunk)
 - Search integration reuses `entity_kind='reader_document'` (immutable Migration 10 FTS constraint)
 - Revision retention: 50 revisions (same as Basic Leaf)
-- Decision in ADR 0011.
+- Decisions in ADR 0011, ADR 0012.

@@ -15,12 +15,15 @@ fn row(r: &rusqlite::Row<'_>) -> rusqlite::Result<NarrativeDocumentView> {
         canonical_json: r.get(4)?,
         plain_text: r.get(5)?,
         updated_at: r.get(6)?,
+        template_id: r.get(7)?,
+        template_version: r.get(8)?,
     })
 }
 
 fn by_id(conn: &Connection, id: &str) -> Result<NarrativeDocumentView, NarrativeError> {
     conn.query_row(
-        "SELECT id,life_node_id,schema_version,revision,canonical_json,plain_text,updated_at \
+        "SELECT id,life_node_id,schema_version,revision,canonical_json,plain_text,updated_at,\
+         template_id,template_version \
          FROM narrative_documents WHERE id=?1 AND archived_at IS NULL",
         params![id],
         row,
@@ -58,15 +61,17 @@ pub fn get(
     if !crate::life::domain::valid_id(&input.life_node_id) {
         return Err(NarrativeError::NotFound);
     }
-    let document = conn.query_row(
-        "SELECT d.id,d.life_node_id,d.schema_version,d.revision,d.canonical_json,d.plain_text,d.updated_at \
+    let document = conn
+        .query_row(
+            "SELECT d.id,d.life_node_id,d.schema_version,d.revision,d.canonical_json,d.plain_text,\
+         d.updated_at,d.template_id,d.template_version \
          FROM narrative_documents d \
          JOIN life_nodes n ON n.id=d.life_node_id \
          WHERE d.life_node_id=?1 AND d.archived_at IS NULL AND n.archived_at IS NULL",
-        params![input.life_node_id],
-        row,
-    )
-    .optional()?;
+            params![input.life_node_id],
+            row,
+        )
+        .optional()?;
     let (draft_state, draft_json, draft_base_revision) = if let Some(doc) = &document {
         conn.query_row(
             "SELECT CASE WHEN base_revision=?2 THEN 'available' ELSE 'conflict' END,draft_json,base_revision \
@@ -112,14 +117,41 @@ pub fn create(
         return Ok(existing);
     }
     leaf(conn, &input.life_node_id)?;
+    // Return existing active canvas rather than creating a duplicate.
+    if let Some(existing_id) = conn
+        .query_row(
+            "SELECT id FROM narrative_documents WHERE life_node_id=?1 AND archived_at IS NULL",
+            params![input.life_node_id],
+            |r| r.get::<_, String>(0),
+        )
+        .optional()?
+    {
+        return by_id(conn, &existing_id);
+    }
+    let node_title: String = conn.query_row(
+        "SELECT title FROM life_nodes WHERE id=?1 AND archived_at IS NULL",
+        params![input.life_node_id],
+        |r| r.get(0),
+    )?;
     let id = domain::new_id();
-    let canonical = domain::seed_document(&id);
-    let valid = schema::validate(&canonical)?;
+    let scene_id = domain::new_id();
+    let block_id = domain::new_id();
+    let canonical = domain::seed_document(&id, &node_title, &scene_id, &block_id);
+    let valid = schema::validate(&canonical, Some(&id))?;
     let now = domain::now();
     let tx = conn.transaction()?;
     tx.execute(
-        "INSERT INTO narrative_documents VALUES(?1,?2,1,0,?3,?4,?5,?5,NULL)",
-        params![id, input.life_node_id, valid.canonical_json, valid.plain_text, now],
+        "INSERT INTO narrative_documents \
+         (id,life_node_id,schema_version,revision,canonical_json,plain_text,\
+          created_at,updated_at,archived_at,template_id,template_version) \
+         VALUES (?1,?2,1,0,?3,?4,?5,?5,NULL,'knowledge_dossier',1)",
+        params![
+            id,
+            input.life_node_id,
+            valid.canonical_json,
+            valid.plain_text,
+            now
+        ],
     )?;
     tx.execute(
         "INSERT INTO narrative_save_operations VALUES(?1,?2,0,?3)",
@@ -129,7 +161,10 @@ pub fn create(
     by_id(conn, &id)
 }
 
-fn ensure_assets(tx: &Transaction<'_>, assets: &BTreeMap<String, i32>) -> Result<(), NarrativeError> {
+fn ensure_assets(
+    tx: &Transaction<'_>,
+    assets: &BTreeMap<String, i32>,
+) -> Result<(), NarrativeError> {
     for id in assets.keys() {
         let usable: i64 = tx.query_row(
             "SELECT EXISTS(SELECT 1 FROM assets WHERE id=?1 AND status='usable')",
@@ -154,7 +189,9 @@ fn save_tx(
         || !domain::valid_id(&input.document_id)
         || !domain::valid_operation(&input.operation_id)
     {
-        return Err(NarrativeError::Validation("Document save input is invalid."));
+        return Err(NarrativeError::Validation(
+            "Document save input is invalid.",
+        ));
     }
     if let Some((document_id, rev)) = tx
         .query_row(
@@ -182,7 +219,7 @@ fn save_tx(
     if current.0 != input.expected_revision {
         return Err(NarrativeError::Stale);
     }
-    let valid = schema::validate(&input.canonical_json)?;
+    let valid = schema::validate(&input.canonical_json, Some(&input.document_id))?;
     ensure_assets(tx, &valid.assets)?;
     let next = current.0 + 1;
     let now = domain::now();
@@ -245,16 +282,31 @@ pub fn save_draft(
     input: SaveNarrativeDraftInput,
 ) -> Result<NarrativeDocumentProjection, NarrativeError> {
     let doc = by_id(conn, &input.document_id)?;
-    schema::validate(&input.canonical_json)?;
-    let state = if input.base_revision == doc.revision { "available" } else { "conflict" };
+    schema::validate(&input.canonical_json, Some(&input.document_id))?;
+    let state = if input.base_revision == doc.revision {
+        "available"
+    } else {
+        "conflict"
+    };
     conn.execute(
         "INSERT INTO narrative_document_drafts VALUES(?1,?2,?3,?4,?5) \
          ON CONFLICT(document_id) DO UPDATE SET \
          base_revision=excluded.base_revision,draft_json=excluded.draft_json,\
          updated_at=excluded.updated_at,recovery_state=excluded.recovery_state",
-        params![input.document_id, input.base_revision, input.canonical_json, domain::now(), state],
+        params![
+            input.document_id,
+            input.base_revision,
+            input.canonical_json,
+            domain::now(),
+            state
+        ],
     )?;
-    get(conn, NarrativeNodeInput { life_node_id: doc.life_node_id })
+    get(
+        conn,
+        NarrativeNodeInput {
+            life_node_id: doc.life_node_id,
+        },
+    )
 }
 
 pub fn discard_draft(
@@ -266,7 +318,12 @@ pub fn discard_draft(
         "DELETE FROM narrative_document_drafts WHERE document_id=?1",
         params![input.document_id],
     )?;
-    get(conn, NarrativeNodeInput { life_node_id: doc.life_node_id })
+    get(
+        conn,
+        NarrativeNodeInput {
+            life_node_id: doc.life_node_id,
+        },
+    )
 }
 
 pub fn recover_draft(
@@ -357,8 +414,7 @@ mod tests {
             a.id
         );
         // Build a valid save JSON with the same documentId
-        let canonical: serde_json::Value =
-            serde_json::from_str(&a.canonical_json).unwrap();
+        let canonical: serde_json::Value = serde_json::from_str(&a.canonical_json).unwrap();
         let json = canonical.to_string();
         let saved = save(
             &mut c,
@@ -397,8 +453,8 @@ mod tests {
         )
         .unwrap();
         assert_eq!(p.draft_state, "available");
-        let recovered = recover_draft(&mut c, NarrativeDocumentIdInput { document_id: a.id })
-            .unwrap();
+        let recovered =
+            recover_draft(&mut c, NarrativeDocumentIdInput { document_id: a.id }).unwrap();
         assert_eq!(recovered.revision, 2);
     }
 
@@ -416,14 +472,16 @@ mod tests {
         )
         .unwrap();
         // Canvas creation on same node must fail
-        assert!(create(
-            &mut c,
-            CreateNarrativeDocumentInput {
-                life_node_id: node,
-                operation_id: "create-nc".into(),
-            }
-        )
-        .is_err());
+        assert!(
+            create(
+                &mut c,
+                CreateNarrativeDocumentInput {
+                    life_node_id: node,
+                    operation_id: "create-nc".into(),
+                }
+            )
+            .is_err()
+        );
     }
 
     #[test]
@@ -439,14 +497,16 @@ mod tests {
         )
         .unwrap();
         // Basic leaf on same node must fail
-        assert!(crate::document::repository::create(
-            &mut c,
-            crate::document::dto::CreateReaderDocumentInput {
-                life_node_id: node,
-                operation_id: "create-rd".into(),
-            }
-        )
-        .is_err());
+        assert!(
+            crate::document::repository::create(
+                &mut c,
+                crate::document::dto::CreateReaderDocumentInput {
+                    life_node_id: node,
+                    operation_id: "create-rd".into(),
+                }
+            )
+            .is_err()
+        );
     }
 
     #[test]
@@ -464,14 +524,16 @@ mod tests {
             },
         )
         .unwrap();
-        assert!(create(
-            &mut c,
-            CreateNarrativeDocumentInput {
-                life_node_id: branch,
-                operation_id: "bad".into(),
-            }
-        )
-        .is_err());
+        assert!(
+            create(
+                &mut c,
+                CreateNarrativeDocumentInput {
+                    life_node_id: branch,
+                    operation_id: "bad".into(),
+                }
+            )
+            .is_err()
+        );
     }
 
     #[test]
@@ -486,17 +548,19 @@ mod tests {
             },
         )
         .unwrap();
-        assert!(life::repository::create(
-            &mut c,
-            life::dto::CreateLifeNodeInput {
-                parent_id: node,
-                title: "Blocked".into(),
-                short_description: String::new(),
-                icon_key: "life-leaf".into(),
-                branch_theme_id: "neutral".into(),
-            }
-        )
-        .is_err());
+        assert!(
+            life::repository::create(
+                &mut c,
+                life::dto::CreateLifeNodeInput {
+                    parent_id: node,
+                    title: "Blocked".into(),
+                    short_description: String::new(),
+                    icon_key: "life-leaf".into(),
+                    branch_theme_id: "neutral".into(),
+                }
+            )
+            .is_err()
+        );
     }
 
     #[test]

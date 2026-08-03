@@ -2,18 +2,28 @@ use super::{domain::NarrativeError, schema};
 use serde_json::Value;
 
 pub fn export(canonical: &str) -> Result<String, NarrativeError> {
-    schema::validate(canonical)?;
+    schema::validate(canonical, None)?;
     let v: Value = serde_json::from_str(canonical)
         .map_err(|_| NarrativeError::Validation("Narrative JSON is invalid."))?;
     let mut out = String::new();
     let title = v.get("title").and_then(Value::as_str).unwrap_or("");
     out.push_str(&format!("# {title}\n\n"));
-    for scene in v.get("scenes").and_then(Value::as_array).into_iter().flatten() {
+    for scene in v
+        .get("scenes")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+    {
         let scene_title = scene.get("title").and_then(Value::as_str).unwrap_or("");
         if !scene_title.is_empty() {
             out.push_str(&format!("## {scene_title}\n\n"));
         }
-        for block in scene.get("blocks").and_then(Value::as_array).into_iter().flatten() {
+        for block in scene
+            .get("blocks")
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+        {
             render_block(block, &mut out);
         }
     }
@@ -32,19 +42,28 @@ fn render_block(block: &Value, out: &mut String) {
             let label = block.get("label").and_then(Value::as_str).unwrap_or("");
             let value = block.get("value").and_then(Value::as_str).unwrap_or("");
             let unit = block.get("unit").and_then(Value::as_str).unwrap_or("");
-            let desc = block.get("description").and_then(Value::as_str).unwrap_or("");
+            let desc = block
+                .get("description")
+                .and_then(Value::as_str)
+                .unwrap_or("");
             out.push_str(&format!("**{label}:** {value} {unit}\n\n"));
             if !desc.is_empty() {
                 out.push_str(&format!("{desc}\n\n"));
             }
         }
         "image" => {
-            let asset_id = block.get("assetId").and_then(Value::as_str).unwrap_or("missing");
+            let asset_id = block
+                .get("assetId")
+                .and_then(Value::as_str)
+                .unwrap_or("missing");
             let alt = block.get("alt").and_then(Value::as_str).unwrap_or("");
             out.push_str(&format!("![{alt}](asset:{asset_id})\n\n"));
         }
         "callout" => {
-            let variant = block.get("variant").and_then(Value::as_str).unwrap_or("note");
+            let variant = block
+                .get("variant")
+                .and_then(Value::as_str)
+                .unwrap_or("note");
             out.push_str(&format!("> **[{variant}]**\n"));
             if let Some(content) = block.get("content") {
                 let mut inner = String::new();
@@ -66,7 +85,10 @@ fn render_block(block: &Value, out: &mut String) {
                 .enumerate()
             {
                 let label = item.get("label").and_then(Value::as_str).unwrap_or("");
-                let desc = item.get("description").and_then(Value::as_str).unwrap_or("");
+                let desc = item
+                    .get("description")
+                    .and_then(Value::as_str)
+                    .unwrap_or("");
                 out.push_str(&format!("{}. {label}: {desc}\n", i + 1));
             }
             out.push('\n');
@@ -78,7 +100,11 @@ fn render_block(block: &Value, out: &mut String) {
 fn inline_text(node: &Value) -> String {
     if let Some(obj) = node.as_object() {
         if obj.get("type").and_then(Value::as_str) == Some("text") {
-            let text = obj.get("text").and_then(Value::as_str).unwrap_or("").to_owned();
+            let text = obj
+                .get("text")
+                .and_then(Value::as_str)
+                .unwrap_or("")
+                .to_owned();
             if let Some(marks) = obj.get("marks").and_then(Value::as_array) {
                 let mut s = text;
                 for m in marks.iter().rev() {
@@ -93,7 +119,11 @@ fn inline_text(node: &Value) -> String {
             return text;
         }
         if let Some(children) = obj.get("content").and_then(Value::as_array) {
-            return children.iter().map(inline_text).collect::<Vec<_>>().join("");
+            return children
+                .iter()
+                .map(inline_text)
+                .collect::<Vec<_>>()
+                .join("");
         }
     }
     String::new()
@@ -115,12 +145,21 @@ fn render_rich_text(content: &Value, out: &mut String) {
                     .and_then(|a| a.get("level"))
                     .and_then(Value::as_u64)
                     .unwrap_or(2);
-                out.push_str(&format!("{} {}\n\n", "#".repeat(level as usize), inline_text(node)));
+                out.push_str(&format!(
+                    "{} {}\n\n",
+                    "#".repeat(level as usize),
+                    inline_text(node)
+                ));
             }
             "blockquote" => out.push_str(&format!("> {}\n\n", inline_text(node))),
             "codeBlock" => out.push_str(&format!("```\n{}\n```\n\n", inline_text(node))),
             "bulletList" => {
-                for item in node.get("content").and_then(Value::as_array).into_iter().flatten() {
+                for item in node
+                    .get("content")
+                    .and_then(Value::as_array)
+                    .into_iter()
+                    .flatten()
+                {
                     out.push_str(&format!("- {}\n", inline_text(item)));
                 }
                 out.push('\n');
@@ -153,6 +192,7 @@ mod tests {
             "documentId": "00000000-0000-7000-8000-000000000010",
             "title": "My Canvas",
             "templateId": "knowledge_dossier",
+            "templateVersion": 1,
             "scenes": [{
                 "id": "00000000-0000-7000-8000-000000000011",
                 "title": "Scene One",
@@ -165,9 +205,20 @@ mod tests {
         .to_string()
     }
 
+    fn seed_block() -> serde_json::Value {
+        serde_json::json!({
+            "kind": "rich_text",
+            "id": new_id(),
+            "content": {
+                "type": "doc",
+                "content": [{"type": "paragraph", "content": [{"type": "text", "text": " "}]}]
+            }
+        })
+    }
+
     #[test]
     fn exports_document_title_and_scene_title() {
-        let md = export(&make_doc(serde_json::json!([]))).unwrap();
+        let md = export(&make_doc(serde_json::json!([seed_block()]))).unwrap();
         assert!(md.contains("# My Canvas"));
         assert!(md.contains("## Scene One"));
     }
@@ -208,7 +259,7 @@ mod tests {
 
     #[test]
     fn no_mdx_imports_or_absolute_paths() {
-        let md = export(&make_doc(serde_json::json!([]))).unwrap();
+        let md = export(&make_doc(serde_json::json!([seed_block()]))).unwrap();
         assert!(!md.contains("import "));
         assert!(!md.contains("C:\\"));
     }
