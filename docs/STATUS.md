@@ -2,17 +2,21 @@
 
 Updated: 2026-08-03 Asia/Saigon
 
-## Task 20/60 — Narrative Canvas Canonical Schema A/B Prototype + Decision
+## Task 20/60 — Narrative Canvas Canonical Schema A/B Prototype + Decision (complete reaudit)
 
-- PASS at `(this commit; see git log -1)`; evidence: `docs/audits/task-20-narrative-schema-prototype.md`.
+- PASS at `(this commit; see git log -1)`; evidence: `docs/audits/task-20-complete-reaudit.md`.
 - Prototype-only: no production code, migration, IPC, dependency, or route change.
+- Complete re-implementation resolving 12 acceptance gaps in original Task 20 commit (`8058db63`).
+- Correct vocabulary: `rich_text`/`metric`/`image`/`callout`/`timeline` blocks; all 4 layouts/3 atmospheres/3 motions.
+- All 18 adapter operations implemented for both strategies; HistoryState<TDoc> undo/redo for both.
 - Strategy A (domain envelope + rich-text islands) selected over Strategy B (full ProseMirror document).
-- Strategy A score: 93.6 / 100 (12 criteria, 100 points). Strategy B: 56.7 / 100. Gap: 36.9 points.
-- Two hard vetoes applied against Strategy B: static rendering requires PM schema (violates ADR 0005 Reader invariant); PM migration silently drops unknown attrs (data loss without error — proven by test #39).
-- 100k deterministic operations (seed 20260803) per strategy from FIXTURE_K (20 scenes / 100 blocks): both complete with 0 errors.
-- 60 new prototype tests; 253 total frontend tests pass (was 193).
-- Production bundle unchanged (489.06 kB main; no prototype strings in dist).
-- ADR 0009 accepted; specs/010-narrative-schema-prototype/ created.
+- Strategy A score: 82.8 / 100. Strategy B: 67.9 / 100. Gap: 14.9 points (threshold: 10 points).
+- No hard vetoes: fair B codec resolves ADR 0009 migration veto; fair B static reader resolves rendering veto.
+- Decision rests on total weighted score, not hard vetoes.
+- 100,000 applied operations (seed 20260803) per strategy: 0 errors each; identical final-state hash (8cc892e).
+- 314 frontend tests pass (19 test files): 90 prototype + 3 simulation + 28 benchmark + 193 pre-existing.
+- Production bundle unchanged (489.06 kB main; no prototype code in dist).
+- ADR 0009 superseded by ADR 0010; specs/010-narrative-schema-prototype/ updated.
 
 ## Task 19/60 — Basic Leaf Heading Outline Core + Reader Navigation
 

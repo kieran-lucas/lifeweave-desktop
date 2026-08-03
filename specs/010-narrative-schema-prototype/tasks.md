@@ -1,41 +1,59 @@
-# Spec 010 — Task Evidence
+# Spec 010 — Task Evidence (complete reaudit)
 
 ## Acceptance summary
 
-Task 20/60 is complete. See `docs/audits/task-20-narrative-schema-prototype.md` for full evidence.
+Task 20/60 is complete. See `docs/audits/task-20-complete-reaudit.md` for full evidence.
 
 ## Test evidence
 
-- 60 new prototype tests in `prototype.test.ts`; all pass
+- 90 prototype tests in `prototype.test.ts`: all pass
+- 3 simulation tests in `simulation.test.ts`: all pass
+- 28 benchmark tests in `benchmark.test.ts`: all pass
 - 193 pre-existing frontend tests: all pass
-- Total frontend: 253 tests, 0 failing, 17 test files
+- Total frontend: 314 tests, 0 failing, 19 test files
 
-## Simulation results (seed 20260803, 100,000 ops each)
+## Simulation results (seed 20260803, 100,000 applied ops each)
 
-| Strategy | Ops applied | Errors | Final scenes | Final blocks |
+| Strategy | Ops applied | Attempted | Skipped | Undos | Redos | Batches | Final hash |
+|---|---|---|---|---|---|---|---|
+| A | 100,000 | 133,175 | 33,175 | 6,615 | 502 | 2,787 | 8cc892e |
+| B | 100,000 | 133,175 | 33,175 | 6,615 | 502 | 2,787 | 8cc892e |
+
+Both strategies produce identical final-state hash, confirming semantic equivalence.
+
+## Benchmark results (key figures)
+
+### FIXTURE_S (8 scenes × 5 blocks)
+
+| Operation | A p50 | B p50 |
+|---|---|---|
+| parse | 0.068ms | 0.159ms |
+| serialize | 0.034ms | 0.080ms |
+| projectToStatic | 0.008ms | 0.035ms |
+| extractPlainText | 0.017ms | 0.032ms |
+
+### FIXTURE_MEDIUM (100 scenes × 5 blocks)
+
+| Operation | A p50 | A p95 | B p50 | B p95 |
 |---|---|---|---|---|
-| A | 94,670 | 0 | 5 | 30 |
-| B | 94,670 | 0 | 5 | 30 |
-
-Both strategies produce identical final state — confirming semantic equivalence of the 100k deterministic operation sequence.
-
-## Benchmark results (FIXTURE_K, n=1000)
-
-| Operation | A p50 | A p95 | A max | B p50 | B p95 | B max |
-|---|---|---|---|---|---|---|
-| parse | 0.12ms | 0.16ms | 1.7ms | 0.23ms | 0.41ms | 1.0ms |
-| serialize | 0.04ms | 0.04ms | 0.5ms | 0.08ms | 0.18ms | 13.6ms |
-| reorder | <0.01ms | <0.01ms | 0.02ms | <0.01ms | <0.01ms | 0.03ms |
-| editBlock | <0.01ms | <0.01ms | 0.02ms | <0.01ms | <0.01ms | 0.03ms |
-| extractText | <0.01ms | 0.01ms | 0.6ms | <0.01ms | 0.03ms | 1.0ms |
-
-Notes: All Strategy A times are below 2ms. Strategy B parse and serialize are 2–340× slower than A on these metrics but still acceptably fast in isolation. The performance gap is not the primary decision criterion; correctness and migration safety are.
+| parse | 0.525ms | 0.834ms | 1.051ms | 1.953ms |
+| projectToStatic | 0.074ms | — | 0.189ms | — |
+| extractPlainText | 0.172ms | — | 0.193ms | — |
 
 ## Decision matrix
 
 | Strategy | Score / 100 |
 |---|---|
-| A (domain envelope) | 93.6 |
-| B (full PM document) | 56.7 |
+| A (domain envelope) | 82.8 |
+| B (full PM document) | 67.9 |
 
-Gap: 36.9 points. Strategy A is selected.
+Gap: 14.9 points (threshold: 10 points). Strategy A selected.
+
+## Hard veto re-evaluation
+
+ADR 0009 applied two hard vetoes against Strategy B. Both resolved by fair implementation:
+
+- **Static rendering veto:** Resolved by `strategy-b/static-reader.ts` which walks raw JSON without PM import. Test confirms match with `projectToStatic`.
+- **Migration veto:** Resolved by `strategy-b/codec.ts` fair pre-validation + migration before `nodeFromJSON`. Test confirms `narrativeType` preserved across v1→v2 migration.
+
+Decision is based on total weighted score (82.8 vs 67.9), not hard vetoes.

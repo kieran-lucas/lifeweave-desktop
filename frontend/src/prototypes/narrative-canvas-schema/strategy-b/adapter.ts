@@ -1,123 +1,236 @@
 // Strategy B adapter: full ProseMirror document.
 // The document is one large PM doc where scenes are custom nodes and blocks are
-// narrative_block nodes. Operations use PM's immutable Node/Fragment API.
-// Requires loading PM Schema for both static reading AND mutation — this is the
-// key architectural constraint that makes Strategy B lose the static-render criterion.
+// semantic block nodes (rich_text_block, metric_block, image_block, callout_block, timeline_block).
+// Fair pre-validation via codec before nodeFromJSON.
 
-import { Fragment, Schema } from "@tiptap/pm/model";
+import { Fragment } from "@tiptap/pm/model";
 import type { Node as PMNode } from "@tiptap/pm/model";
 import type {
   BasicLeafContent,
-  NarrativeBlock,
-  NarrativeScene,
+  BatchOperation,
+  HistoryState,
+  NarrativeSemanticBlock,
+  NarrativeSemanticDocument,
+  NarrativeSemanticScene,
   PMLeafNode,
   PrototypeAdapter,
+  SceneAtmosphere,
+  SceneLayoutPreset,
+  SceneMotionPreset,
+  StaticProjection,
 } from "../shared/types";
+import { makeHistory, pushHistory, undoHistory, redoHistory } from "../shared/types";
+import { semanticDocumentToPlainText, semanticDocumentToStaticProjection } from "../shared/semantic";
+import { validateRawJson, migrateJson } from "./codec";
+import { narrativeSchemaV1, narrativeSchemaV2 } from "./schema";
 
-// ProseMirror schema for Strategy B: one doc wraps scene nodes.
-// All attrs must have defaults so PM can generate empty instances for required positions.
-export const narrativeSchema = new Schema({
-  nodes: {
-    doc: { content: "scene+" },
-    scene: {
-      attrs: { id: { default: "" }, title: { default: "" }, sceneType: { default: "linear" }, tags: { default: [] } },
-      content: "narrative_block+",
-    },
-    narrative_block: {
-      attrs: { id: { default: "" }, blockType: { default: "rich-text" } },
-      content: "block+",
-    },
-    // Basic Leaf-compatible block content (must be declared for schema validation)
-    paragraph: { content: "inline*", group: "block" },
-    heading: { attrs: { level: { default: 2 } }, content: "inline*", group: "block" },
-    blockquote: { content: "block+", group: "block" },
-    code_block: { content: "text*", marks: "", group: "block" },
-    ordered_list: { content: "list_item+", group: "block" },
-    bullet_list: { content: "list_item+", group: "block" },
-    list_item: { content: "paragraph block*" },
-    callout: { attrs: { variant: { default: "note" } }, content: "block+", group: "block" },
-    text: { group: "inline" },
-    hard_break: { inline: true, group: "inline", selectable: false },
-  },
-  marks: {
-    bold: {},
-    italic: {},
-    code: {},
-    link: { attrs: { href: {}, title: { default: null } } },
-  },
-});
+export type DocB = PMNode;
 
-// Convert BasicLeafContent to PM block Fragment (strips the "doc" wrapper)
+// ---------------------------------------------------------------------------
+// Conversion helpers: semantic → PM nodes
+// ---------------------------------------------------------------------------
+
 function basicLeafToFragment(content: BasicLeafContent): Fragment {
-  const nodes = content.content.map(node => narrativeSchema.nodeFromJSON(node as object));
+  const nodes = content.content.map(node => narrativeSchemaV1.nodeFromJSON(node as object));
   return Fragment.from(nodes);
 }
 
-// Convert a NarrativeBlock to a PM narrative_block node
-function blockToNode(block: NarrativeBlock): PMNode {
-  const content = basicLeafToFragment(block.content);
-  return narrativeSchema.node("narrative_block", { id: block.id, blockType: block.blockType }, content);
+function semanticBlockToNode(block: NarrativeSemanticBlock): PMNode {
+  switch (block.kind) {
+    case "rich_text":
+      return narrativeSchemaV1.node(
+        "rich_text_block",
+        { id: block.id },
+        basicLeafToFragment(block.content),
+      );
+    case "metric":
+      return narrativeSchemaV1.node("metric_block", {
+        id: block.id,
+        label: block.label,
+        value: block.value,
+        unit: block.unit,
+        description: block.description,
+      });
+    case "image":
+      return narrativeSchemaV1.node("image_block", {
+        id: block.id,
+        assetId: block.assetId,
+        alt: block.alt,
+        caption: block.caption,
+      });
+    case "callout":
+      return narrativeSchemaV1.node(
+        "callout_block",
+        { id: block.id, variant: block.variant },
+        basicLeafToFragment(block.content),
+      );
+    case "timeline":
+      return narrativeSchemaV1.node("timeline_block", {
+        id: block.id,
+        title: block.title,
+        itemsJson: JSON.stringify(block.items),
+      });
+  }
 }
 
-// Convert a NarrativeScene to a PM scene node
-function sceneToNode(scene: NarrativeScene): PMNode {
-  const blocks = Fragment.from(scene.blocks.map(blockToNode));
-  return narrativeSchema.node("scene", {
-    id: scene.id, title: scene.title, sceneType: scene.sceneType, tags: scene.tags,
-  }, blocks);
+function semanticSceneToNode(scene: NarrativeSemanticScene): PMNode {
+  const blocks = Fragment.from(scene.blocks.map(semanticBlockToNode));
+  return narrativeSchemaV1.node(
+    "scene",
+    {
+      id: scene.id,
+      title: scene.title,
+      layoutPreset: scene.layoutPreset,
+      atmosphere: scene.atmosphere,
+      motionPreset: scene.motionPreset,
+    },
+    blocks,
+  );
 }
 
-// Build a PM doc from a scene array
-function scenesToDoc(scenes: NarrativeScene[]): PMNode {
-  return narrativeSchema.node("doc", undefined, Fragment.from(scenes.map(sceneToNode)));
-}
+// ---------------------------------------------------------------------------
+// Conversion helpers: PM nodes → semantic
+// ---------------------------------------------------------------------------
 
-// Convert PM narrative_block children to BasicLeafContent
-function blockNodeToContent(blockNode: PMNode): BasicLeafContent {
+function blockNodeContentToBasicLeaf(blockNode: PMNode): BasicLeafContent {
   const contentNodes: PMLeafNode[] = [];
-  blockNode.forEach(child => { contentNodes.push(child.toJSON() as PMLeafNode); });
+  blockNode.forEach(child => {
+    contentNodes.push(child.toJSON() as PMLeafNode);
+  });
   return { type: "doc", content: contentNodes };
 }
 
-// Extract a NarrativeBlock from a PM narrative_block node
-function nodeToBlock(node: PMNode): NarrativeBlock {
-  return {
-    id: node.attrs["id"] as string,
-    blockType: node.attrs["blockType"] as NarrativeBlock["blockType"],
-    content: blockNodeToContent(node),
-  };
+function nodeToSemanticBlock(node: PMNode): NarrativeSemanticBlock {
+  const id = node.attrs["id"] as string;
+  switch (node.type.name) {
+    case "rich_text_block":
+      return { kind: "rich_text", id, content: blockNodeContentToBasicLeaf(node) };
+    case "metric_block":
+      return {
+        kind: "metric",
+        id,
+        label: node.attrs["label"] as string,
+        value: node.attrs["value"] as string,
+        unit: node.attrs["unit"] as string,
+        description: node.attrs["description"] as string,
+      };
+    case "image_block":
+      return {
+        kind: "image",
+        id,
+        assetId: node.attrs["assetId"] as string,
+        alt: node.attrs["alt"] as string,
+        caption: node.attrs["caption"] as string,
+      };
+    case "callout_block":
+      return {
+        kind: "callout",
+        id,
+        variant: node.attrs["variant"] as "note" | "warning" | "tip",
+        content: blockNodeContentToBasicLeaf(node),
+      };
+    case "timeline_block":
+      return {
+        kind: "timeline",
+        id,
+        title: node.attrs["title"] as string,
+        items: JSON.parse(node.attrs["itemsJson"] as string) as {
+          id: string;
+          label: string;
+          description: string;
+        }[],
+      };
+    default:
+      // Fallback: treat unknown blocks as rich_text
+      return { kind: "rich_text", id, content: { type: "doc", content: [] } };
+  }
 }
 
-// Extract a NarrativeScene from a PM scene node
-function nodeToScene(node: PMNode): NarrativeScene {
-  const blocks: NarrativeBlock[] = [];
-  node.forEach(child => { blocks.push(nodeToBlock(child)); });
+function nodeToSemanticScene(node: PMNode): NarrativeSemanticScene {
+  const blocks: NarrativeSemanticBlock[] = [];
+  node.forEach(child => {
+    blocks.push(nodeToSemanticBlock(child));
+  });
   return {
     id: node.attrs["id"] as string,
     title: node.attrs["title"] as string,
-    sceneType: node.attrs["sceneType"] as NarrativeScene["sceneType"],
-    tags: node.attrs["tags"] as string[],
+    layoutPreset: node.attrs["layoutPreset"] as SceneLayoutPreset,
+    atmosphere: node.attrs["atmosphere"] as SceneAtmosphere,
+    motionPreset: node.attrs["motionPreset"] as SceneMotionPreset,
     blocks,
   };
 }
 
-// Replace a child at index with newChild
-function replaceChild(parent: PMNode, index: number, newChild: PMNode): PMNode {
-  const children: PMNode[] = [];
-  parent.forEach((child, _offset, i) => { children.push(i === index ? newChild : child); });
-  return parent.copy(Fragment.from(children));
+// ---------------------------------------------------------------------------
+// fromSemanticDocument / toSemanticDocument
+// ---------------------------------------------------------------------------
+
+export function fromSemanticDocument(doc: NarrativeSemanticDocument): DocB {
+  const scenes = Fragment.from(doc.scenes.map(semanticSceneToNode));
+  return narrativeSchemaV1.node(
+    "doc",
+    {
+      documentId: doc.documentId,
+      title: doc.title,
+      templateId: doc.templateId,
+      schemaVersion: 1,
+    },
+    scenes,
+  );
 }
 
-export type DocB = PMNode;
+function pmDocToSemanticDocument(doc: DocB): NarrativeSemanticDocument {
+  const scenes: NarrativeSemanticScene[] = [];
+  doc.forEach(child => {
+    scenes.push(nodeToSemanticScene(child));
+  });
+  return {
+    schemaVersion: 1,
+    documentId: doc.attrs["documentId"] as string,
+    title: doc.attrs["title"] as string,
+    templateId: doc.attrs["templateId"] as "strategy_dashboard" | "knowledge_dossier",
+    scenes,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Immutable tree helpers
+// ---------------------------------------------------------------------------
+
+function replaceDocChild(doc: PMNode, index: number, newChild: PMNode): PMNode {
+  const children: PMNode[] = [];
+  doc.forEach((child, _offset, i) => {
+    children.push(i === index ? newChild : child);
+  });
+  return doc.copy(Fragment.from(children));
+}
+
+function replaceSceneChild(scene: PMNode, index: number, newChild: PMNode): PMNode {
+  const children: PMNode[] = [];
+  scene.forEach((child, _offset, i) => {
+    children.push(i === index ? newChild : child);
+  });
+  return scene.copy(Fragment.from(children));
+}
+
+// ---------------------------------------------------------------------------
+// Adapter implementation
+// ---------------------------------------------------------------------------
 
 export const adapterB: PrototypeAdapter<DocB> = {
   parse(json) {
-    const raw = JSON.parse(json) as object;
-    return narrativeSchema.nodeFromJSON(raw);
+    const raw = JSON.parse(json) as unknown;
+    const validated = validateRawJson(raw);
+    if (!validated.ok) throw new Error(validated.error);
+    return narrativeSchemaV1.nodeFromJSON(validated.value as object);
   },
 
   serialize(doc) {
     return JSON.stringify(doc.toJSON());
+  },
+
+  toSemanticDocument(doc) {
+    return pmDocToSemanticDocument(doc);
   },
 
   getSceneCount(doc) {
@@ -129,60 +242,121 @@ export const adapterB: PrototypeAdapter<DocB> = {
     return doc.child(sceneIndex).childCount;
   },
 
-  addScene(doc, scene) {
-    const newNode = sceneToNode(scene);
+  createScene(doc, scene) {
+    const newNode = semanticSceneToNode(scene);
     const children: PMNode[] = [];
-    doc.forEach(child => { children.push(child); });
+    doc.forEach(child => {
+      children.push(child);
+    });
     children.push(newNode);
-    return doc.copy(Fragment.from(children));
-  },
-
-  reorderScene(doc, from, to) {
-    const children: PMNode[] = [];
-    doc.forEach(child => { children.push(child); });
-    const [item] = children.splice(from, 1);
-    children.splice(to, 0, item!);
     return doc.copy(Fragment.from(children));
   },
 
   deleteScene(doc, sceneIndex) {
     const children: PMNode[] = [];
-    doc.forEach((child, _offset, i) => { if (i !== sceneIndex) children.push(child); });
+    doc.forEach((child, _offset, i) => {
+      if (i !== sceneIndex) children.push(child);
+    });
     return doc.copy(Fragment.from(children));
   },
 
-  editBlockContent(doc, sceneIndex, blockIndex, content) {
-    const scene = doc.child(sceneIndex);
-    const block = scene.child(blockIndex);
-    const newBlockContent = basicLeafToFragment(content);
-    const newBlock = block.copy(newBlockContent);
-    const newScene = replaceChild(scene, blockIndex, newBlock);
-    return replaceChild(doc, sceneIndex, newScene);
+  reorderScene(doc, from, to) {
+    const children: PMNode[] = [];
+    doc.forEach(child => {
+      children.push(child);
+    });
+    const [item] = children.splice(from, 1);
+    children.splice(to, 0, item!);
+    return doc.copy(Fragment.from(children));
   },
 
-  addBlock(doc, sceneIndex, block) {
+  updateSceneLayout(doc, sceneIndex, layout) {
+    const scene = doc.child(sceneIndex);
+    const newScene = scene.type.create(
+      { ...scene.attrs, layoutPreset: layout },
+      scene.content,
+      scene.marks,
+    );
+    return replaceDocChild(doc, sceneIndex, newScene);
+  },
+
+  updateSceneAtmosphere(doc, sceneIndex, atm) {
+    const scene = doc.child(sceneIndex);
+    const newScene = scene.type.create(
+      { ...scene.attrs, atmosphere: atm },
+      scene.content,
+      scene.marks,
+    );
+    return replaceDocChild(doc, sceneIndex, newScene);
+  },
+
+  updateSceneMotion(doc, sceneIndex, motion) {
+    const scene = doc.child(sceneIndex);
+    const newScene = scene.type.create(
+      { ...scene.attrs, motionPreset: motion },
+      scene.content,
+      scene.marks,
+    );
+    return replaceDocChild(doc, sceneIndex, newScene);
+  },
+
+  insertBlock(doc, sceneIndex, blockIndex, block) {
+    const scene = doc.child(sceneIndex);
+    const blockNode = semanticBlockToNode(block);
+    const children: PMNode[] = [];
+    scene.forEach(child => {
+      children.push(child);
+    });
+    children.splice(blockIndex, 0, blockNode);
+    const newScene = scene.copy(Fragment.from(children));
+    return replaceDocChild(doc, sceneIndex, newScene);
+  },
+
+  deleteBlock(doc, sceneIndex, blockIndex) {
     const scene = doc.child(sceneIndex);
     const children: PMNode[] = [];
-    scene.forEach(child => { children.push(child); });
-    children.push(blockToNode(block));
+    scene.forEach((child, _offset, i) => {
+      if (i !== blockIndex) children.push(child);
+    });
     const newScene = scene.copy(Fragment.from(children));
-    return replaceChild(doc, sceneIndex, newScene);
+    return replaceDocChild(doc, sceneIndex, newScene);
+  },
+
+  reorderBlock(doc, sceneIndex, from, to) {
+    const scene = doc.child(sceneIndex);
+    const children: PMNode[] = [];
+    scene.forEach(child => {
+      children.push(child);
+    });
+    const [item] = children.splice(from, 1);
+    children.splice(to, 0, item!);
+    const newScene = scene.copy(Fragment.from(children));
+    return replaceDocChild(doc, sceneIndex, newScene);
   },
 
   moveBlock(doc, fromScene, fromBlock, toScene, toBlock) {
-    // Extract the block node
+    // Extract the block node from source
     const sourceScene = doc.child(fromScene);
     const movedNode = sourceScene.child(fromBlock);
 
     // Remove from source scene
     const sourceChildren: PMNode[] = [];
-    sourceScene.forEach((child, _offset, i) => { if (i !== fromBlock) sourceChildren.push(child); });
+    sourceScene.forEach((child, _offset, i) => {
+      if (i !== fromBlock) sourceChildren.push(child);
+    });
     const newSourceScene = sourceScene.copy(Fragment.from(sourceChildren));
 
     // Insert into target scene
-    const targetScene = fromScene === toScene ? newSourceScene : doc.child(toScene);
+    let targetScene: PMNode;
+    if (fromScene === toScene) {
+      targetScene = newSourceScene;
+    } else {
+      targetScene = doc.child(toScene);
+    }
     const targetChildren: PMNode[] = [];
-    targetScene.forEach(child => { targetChildren.push(child); });
+    targetScene.forEach(child => {
+      targetChildren.push(child);
+    });
     targetChildren.splice(toBlock, 0, movedNode);
     const newTargetScene = targetScene.copy(Fragment.from(targetChildren));
 
@@ -202,36 +376,84 @@ export const adapterB: PrototypeAdapter<DocB> = {
     return doc.copy(Fragment.from(docChildren));
   },
 
-  extractPlainText(doc) {
-    // PM's textContent traverses all text nodes
-    return doc.textContent;
+  updateBlock(doc, sceneIndex, blockIndex, block) {
+    const scene = doc.child(sceneIndex);
+    const blockNode = semanticBlockToNode(block);
+    const newScene = replaceSceneChild(scene, blockIndex, blockNode);
+    return replaceDocChild(doc, sceneIndex, newScene);
   },
 
-  migrate(doc, _targetVersion) {
-    // v1 → v2: add narrativeType to each scene's attrs.
-    // Migration complexity proof: PM's computeAttrs() iterates schema-defined attrs only,
-    // silently dropping any unknown attr from the input JSON. The result is that
-    // `narrativeType` disappears without error. This is silent data loss — harder to
-    // detect than a thrown exception, and requires a schema update + re-parse to resolve.
-    const json = doc.toJSON() as { type: string; content?: Array<Record<string, unknown>> };
-    const v2Content = (json.content ?? []).map(scene => {
-      const attrs = (scene["attrs"] ?? {}) as Record<string, unknown>;
-      const narrativeType = attrs["sceneType"] === "branch" ? "branching" : "story";
-      return { ...scene, attrs: { ...attrs, narrativeType } };
-    });
-    // nodeFromJSON silently drops `narrativeType` because it is not in narrativeSchema
-    return narrativeSchema.nodeFromJSON({ ...json, content: v2Content } as object);
+  applyBatch(doc, ops) {
+    let current = doc;
+    for (const op of ops) {
+      switch (op.op) {
+        case "createScene":
+          current = adapterB.createScene(current, op.scene);
+          break;
+        case "deleteScene":
+          current = adapterB.deleteScene(current, op.sceneIndex);
+          break;
+        case "reorderScene":
+          current = adapterB.reorderScene(current, op.from, op.to);
+          break;
+        case "updateSceneLayout":
+          current = adapterB.updateSceneLayout(current, op.sceneIndex, op.layout);
+          break;
+        case "updateSceneAtmosphere":
+          current = adapterB.updateSceneAtmosphere(current, op.sceneIndex, op.atm);
+          break;
+        case "updateSceneMotion":
+          current = adapterB.updateSceneMotion(current, op.sceneIndex, op.motion);
+          break;
+        case "insertBlock":
+          current = adapterB.insertBlock(current, op.sceneIndex, op.blockIndex, op.block);
+          break;
+        case "deleteBlock":
+          current = adapterB.deleteBlock(current, op.sceneIndex, op.blockIndex);
+          break;
+        case "reorderBlock":
+          current = adapterB.reorderBlock(current, op.sceneIndex, op.from, op.to);
+          break;
+        case "moveBlock":
+          current = adapterB.moveBlock(current, op.fromScene, op.fromBlock, op.toScene, op.toBlock);
+          break;
+        case "updateBlock":
+          current = adapterB.updateBlock(current, op.sceneIndex, op.blockIndex, op.block);
+          break;
+      }
+    }
+    return current;
+  },
+
+  projectToStatic(doc): StaticProjection {
+    return semanticDocumentToStaticProjection(pmDocToSemanticDocument(doc));
+  },
+
+  extractPlainText(doc) {
+    return semanticDocumentToPlainText(pmDocToSemanticDocument(doc));
   },
 };
 
-// Convert a NarrativeDocumentA to PM doc (for cross-strategy comparison)
-export function fromNarrativeDocumentA(scenes: NarrativeScene[]): DocB {
-  return scenesToDoc(scenes);
+// ---------------------------------------------------------------------------
+// Fair migration using codec
+// ---------------------------------------------------------------------------
+
+export function migrateDocBToV2(doc: DocB): PMNode {
+  const json = doc.toJSON() as unknown;
+  const validated = validateRawJson(json);
+  if (!validated.ok) throw new Error(validated.error);
+  const migrated = migrateJson(validated.value, 2);
+  if (!migrated.ok) throw new Error(migrated.error);
+  return narrativeSchemaV2.nodeFromJSON(migrated.value as object);
 }
 
-// Convert PM doc back to scene array
-export function toNarrativeScenes(doc: DocB): NarrativeScene[] {
-  const scenes: NarrativeScene[] = [];
-  doc.forEach(child => { scenes.push(nodeToScene(child)); });
-  return scenes;
-}
+// ---------------------------------------------------------------------------
+// History integration
+// ---------------------------------------------------------------------------
+
+export const adapterBHistory = {
+  make: (doc: DocB): HistoryState<DocB> => makeHistory(doc),
+  push: (h: HistoryState<DocB>, doc: DocB): HistoryState<DocB> => pushHistory(h, doc),
+  undo: (h: HistoryState<DocB>) => undoHistory(h),
+  redo: (h: HistoryState<DocB>) => redoHistory(h),
+};

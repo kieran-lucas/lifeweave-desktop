@@ -1,6 +1,6 @@
 # ADR 0009 — Narrative Canvas canonical schema: Strategy A selected
 
-- Status: Accepted
+- Status: Superseded by ADR 0010
 - Date: 2026-08-03
 - Decision owner: Product Owner (informed by prototype evidence)
 - Scope: Task 20 / Slice 010 prototype decision only

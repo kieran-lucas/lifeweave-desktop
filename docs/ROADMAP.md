@@ -88,5 +88,8 @@ It does not activate generic Outline, Life tree duplication, Studio, Noteboard o
 ## Slice 010 — Narrative Canvas Schema Prototype
 
 Task 20 determines the canonical JSON structure for Narrative Canvas through isolated prototype comparison.
-Strategy A (domain envelope + rich-text islands) selected. No product feature activated.
+Complete re-implementation with correct vocabulary (metric/image/callout/timeline blocks), all 18 adapter ops,
+undo/redo, editor prototypes, fair B codec + static reader, medium/large fixtures, 100k simulation.
+Strategy A (domain envelope + rich-text islands) selected: score 82.8 vs B 67.9 (gap 14.9 ≥ 10 threshold).
+Decision in ADR 0010. No product feature activated.
 Production Narrative Canvas activation requires a separate approved task.
