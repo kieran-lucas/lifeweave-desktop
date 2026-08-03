@@ -123,31 +123,44 @@ fn validate_candidate(
             "candidate schema version does not match manifest".into(),
         ));
     }
-    if actual_schema >= 9 {
-        let mut statement = conn
-            .prepare("SELECT DISTINCT a.relative_original_path FROM assets a WHERE a.status='usable' AND (EXISTS(SELECT 1 FROM document_assets da WHERE da.asset_id=a.id) OR EXISTS(SELECT 1 FROM narrative_document_assets nda WHERE nda.asset_id=a.id)) ORDER BY a.relative_original_path")
-            .map_err(|_| BackupError::PostSwapValidationFailed("asset manifest validation failed".into()))?;
-        let required = statement
-            .query_map([], |row| row.get::<_, String>(0))
-            .map_err(|_| {
-                BackupError::PostSwapValidationFailed("asset manifest validation failed".into())
-            })?
-            .collect::<Result<Vec<_>, _>>()
-            .map_err(|_| {
-                BackupError::PostSwapValidationFailed("asset manifest validation failed".into())
-            })?;
-        let declared = manifest
-            .assets
-            .iter()
-            .map(|entry| entry.relative_path.clone())
-            .collect::<Vec<_>>();
-        if required != declared {
-            return Err(BackupError::PostSwapValidationFailed(
-                "backup asset manifest does not match the database".into(),
-            ));
-        }
+    let required = required_asset_paths(&conn, actual_schema)?;
+    let declared = manifest
+        .assets
+        .iter()
+        .map(|entry| entry.relative_path.clone())
+        .collect::<Vec<_>>();
+    if required != declared {
+        return Err(BackupError::PostSwapValidationFailed(
+            "backup asset manifest does not match the database".into(),
+        ));
     }
     Ok(())
+}
+
+fn required_asset_paths(
+    conn: &Connection,
+    schema_version: u32,
+) -> Result<Vec<String>, BackupError> {
+    if schema_version < 9 {
+        return Ok(Vec::new());
+    }
+    let sql = if schema_version < 11 {
+        "SELECT DISTINCT a.relative_original_path FROM assets a JOIN document_assets da ON da.asset_id=a.id WHERE a.status='usable' ORDER BY a.relative_original_path"
+    } else {
+        "SELECT DISTINCT a.relative_original_path FROM assets a WHERE a.status='usable' AND (EXISTS(SELECT 1 FROM document_assets da WHERE da.asset_id=a.id) OR EXISTS(SELECT 1 FROM narrative_document_assets nda WHERE nda.asset_id=a.id)) ORDER BY a.relative_original_path"
+    };
+    let mut statement = conn.prepare(sql).map_err(|_| {
+        BackupError::PostSwapValidationFailed("asset manifest validation failed".into())
+    })?;
+    statement
+        .query_map([], |row| row.get::<_, String>(0))
+        .map_err(|_| {
+            BackupError::PostSwapValidationFailed("asset manifest validation failed".into())
+        })?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|_| {
+            BackupError::PostSwapValidationFailed("asset manifest validation failed".into())
+        })
 }
 
 const MAX_BACKUP_ASSETS: usize = 10_000;
@@ -895,6 +908,166 @@ mod tests {
         let worker = DbWorkerHandle::spawn(conn);
         let rt = DatabaseRuntime::new(p.clone(), worker);
         (rt, p)
+    }
+
+    fn historical_asset_candidate(version: u32) -> (PathBuf, BackupManifest) {
+        use crate::infrastructure::sqlite::migrations::run_migrations_through;
+        let root = temp_backups_dir();
+        let candidate = root.join("lifeweave.db");
+        let asset_id = "00000000-0000-7000-8000-000000000901";
+        let relative = format!("assets/original/{asset_id}.png");
+        {
+            let mut conn = open_file_connection(&candidate).unwrap();
+            run_migrations_through(&mut conn, version).unwrap();
+            conn.execute("INSERT INTO life_nodes VALUES ('00000000-0000-7000-8000-000000000900','life-root','Leaf','','life-leaf','neutral',1,NULL,'now','now',0)", []).unwrap();
+            conn.execute("INSERT INTO reader_documents VALUES ('00000000-0000-7000-8000-000000000902','00000000-0000-7000-8000-000000000900',1,0,'{\"type\":\"doc\",\"content\":[]}','', 'now','now',NULL)", []).unwrap();
+            conn.execute("INSERT INTO assets VALUES(?1,'checksum-901','pixel.png','image/png',1,1,1,?2,'usable','now')", rusqlite::params![asset_id, relative]).unwrap();
+            conn.execute(
+                "INSERT INTO document_assets VALUES('00000000-0000-7000-8000-000000000902',?1,1)",
+                [asset_id],
+            )
+            .unwrap();
+        }
+        let bytes = std::fs::read(&candidate).unwrap();
+        let manifest = BackupManifest {
+            format_version: 2,
+            app_version: "0.0.0".into(),
+            schema_version: version,
+            created_at: "now".into(),
+            db_size_bytes: bytes.len() as u64,
+            db_sha256: sha256_file(&candidate).unwrap(),
+            assets: vec![crate::infrastructure::backup::manifest::BackupAssetEntry {
+                relative_path: relative,
+                byte_size: 1,
+                sha256: "00".repeat(32),
+            }],
+        };
+        (candidate, manifest)
+    }
+
+    #[test]
+    fn schema_9_and_10_candidates_use_only_basic_leaf_asset_authority() {
+        for version in [9, 10] {
+            let (candidate, manifest) = historical_asset_candidate(version);
+            validate_candidate(&candidate, &manifest, 14).unwrap();
+            let missing = BackupManifest {
+                assets: vec![],
+                ..manifest.clone()
+            };
+            assert!(validate_candidate(&candidate, &missing, 14).is_err());
+            let extra = BackupManifest {
+                assets: vec![
+                    manifest.assets[0].clone(),
+                    crate::infrastructure::backup::manifest::BackupAssetEntry {
+                        relative_path: "assets/original/unrelated.png".into(),
+                        byte_size: 1,
+                        sha256: "00".repeat(32),
+                    },
+                ],
+                ..manifest
+            };
+            assert!(validate_candidate(&candidate, &extra, 14).is_err());
+        }
+    }
+
+    #[test]
+    fn pre_asset_schema_has_empty_asset_authority() {
+        use crate::infrastructure::sqlite::migrations::run_migrations_through;
+        let mut conn = rusqlite::Connection::open_in_memory().unwrap();
+        run_migrations_through(&mut conn, 8).unwrap();
+        assert!(required_asset_paths(&conn, 8).unwrap().is_empty());
+    }
+
+    #[test]
+    fn schema_9_backup_restores_and_migrates_with_its_basic_leaf_asset() {
+        let (candidate, mut manifest) = historical_asset_candidate(9);
+        let package = candidate.parent().unwrap();
+        let asset = crate::document::assets::tiny_png();
+        let asset_path = package.join(&manifest.assets[0].relative_path);
+        std::fs::create_dir_all(asset_path.parent().unwrap()).unwrap();
+        std::fs::write(&asset_path, &asset).unwrap();
+        manifest.assets[0].byte_size = asset.len() as u64;
+        manifest.assets[0].sha256 = sha256_file(&asset_path).unwrap();
+        manifest.write_to_dir(package).unwrap();
+        let (runtime, db) = make_file_runtime();
+        let result = restore_db(&runtime, package).unwrap();
+        assert_eq!(result.schema_version, 14);
+        let reopened = open_existing_file_connection(&db).unwrap();
+        assert_eq!(current_schema_version(&reopened).unwrap(), 14);
+        assert_eq!(
+            reopened
+                .query_row(
+                    "SELECT count(*) FROM assets WHERE status='usable'",
+                    [],
+                    |row| row.get::<_, i64>(0)
+                )
+                .unwrap(),
+            1
+        );
+    }
+
+    #[test]
+    fn current_schema_requires_narrative_asset_authority() {
+        use crate::{
+            document::assets,
+            life,
+            narrative::{dto::CreateNarrativeDocumentInput, repository as narrative},
+        };
+        let (rt, db) = make_file_runtime();
+        let root = db.parent().unwrap().to_path_buf();
+        let asset = rt
+            .execute(move |conn| {
+                let node = life::repository::create(
+                    conn,
+                    life::dto::CreateLifeNodeInput {
+                        parent_id: "life-root".into(),
+                        title: "Leaf".into(),
+                        short_description: "".into(),
+                        icon_key: "life-leaf".into(),
+                        branch_theme_id: "neutral".into(),
+                    },
+                )
+                .map_err(|_| DbError::InvalidMigrationList)?
+                .node;
+                let canvas = narrative::create(
+                    conn,
+                    CreateNarrativeDocumentInput {
+                        life_node_id: node.id,
+                        operation_id: "restore-narrative-asset".into(),
+                    },
+                )
+                .map_err(|_| DbError::InvalidMigrationList)?;
+                let asset = assets::import(
+                    conn,
+                    &root,
+                    crate::document::dto::ImportDocumentAssetInput {
+                        original_name: "pixel.png".into(),
+                        bytes: assets::tiny_png(),
+                    },
+                )
+                .map_err(|_| DbError::InvalidMigrationList)?;
+                conn.execute(
+                    "INSERT INTO narrative_document_assets VALUES(?1,?2,1)",
+                    [&canvas.id, &asset.asset_id],
+                )?;
+                Ok(asset)
+            })
+            .unwrap();
+        let manifest = BackupManifest {
+            format_version: 2,
+            app_version: "0.0.0".into(),
+            schema_version: 14,
+            created_at: "now".into(),
+            db_size_bytes: std::fs::metadata(&db).unwrap().len(),
+            db_sha256: sha256_file(&db).unwrap(),
+            assets: vec![],
+        };
+        assert!(validate_candidate(&db, &manifest, 14).is_err());
+        let relative = format!("assets/original/{}.png", asset.asset_id);
+        assert_eq!(
+            required_asset_paths(&open_readonly_connection(&db).unwrap(), 14).unwrap(),
+            vec![relative]
+        );
     }
 
     #[test]

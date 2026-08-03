@@ -4,6 +4,8 @@
 **Final HEAD:** the single commit containing this audit  
 **Schema:** 14 (unchanged)
 
+**Superseded as acceptance evidence:** `6ee20b09` introduced a schema 9/10 restore validation regression. See `task-25-restore-compat-remediation.md` for the accepted remediation checkpoint.
+
 ## Changes and evidence
 
 - Replaced the ordinary wall-clock Canvas test with deterministic 5/50/128 block validation/extraction and save/revision coverage. `cargo test --locked`: **394 passed, 1 ignored**. The ignored test is explicitly run by `pnpm hardening:narrative-performance` in serial release mode: p95 46.5 µs / 511.6 µs / 1.1564 ms respectively, all below the preserved 50 ms target; representative save p50/p95 130.3/416.3 µs.

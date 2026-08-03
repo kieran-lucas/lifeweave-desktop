@@ -2,7 +2,7 @@
 
 Updated: 2026-08-03 Asia/Saigon
 
-## Task 25/60 — Core Evidence + Release Readiness Hardening (complete)
+## Task 25/60 — Core Evidence + Release Readiness Hardening (accepted after restore compatibility remediation)
 
 - Starting checkpoint: `7950273e90be160754170a9ded999a6dc7e6b9c1` (accepted Task 24).
 - Ordinary Canvas evidence is deterministic: 5/50/128 block validation and extraction plus save/revision. The unchanged 50 ms p95 target is isolated in serial release-mode evidence.
@@ -10,8 +10,9 @@ Updated: 2026-08-03 Asia/Saigon
 - Backup asset packaging covers Narrative Canvas joins as well as Basic Leaf joins.
 - Scene tabs now use roving `tabIndex`, ArrowLeft/ArrowRight wrap, Home/End, focus transfer, and preserve live island content. Multi-scene axe fixture passes.
 - Schema remains 14; no migration, dependency, IPC, workflow trigger, or feature expansion.
-- Current release evidence: 429 frontend tests; 394 ordinary Rust tests (+ 1 ignored isolated performance test); NSIS `Lifeweave_0.0.0_x64-setup.exe` 4,617,945 bytes SHA-256 `4e88fea24ef20c545a8026e9b21863edf84c61a9205bc7e5163cfd8d358b7ba3`; two-session RC dogfood passed.
+- Current release evidence: 429 frontend tests; 398 ordinary Rust tests (+ 1 ignored isolated performance test); NSIS `Lifeweave_0.0.0_x64-setup.exe` 4,617,945 bytes SHA-256 `4e88fea24ef20c545a8026e9b21863edf84c61a9205bc7e5163cfd8d358b7ba3`; two-session RC dogfood passed.
 - Native WebDriver prerequisites were present. One attempt failed in legacy Phase 1 due to the stale `Foundation Records` selector; artifacts retained under `target/e2e-artifacts/c0a3e7d0f70348feb7a8ab5acfc454c2`.
+- Initial Task 25 checkpoint `6ee20b09` had a P1 schema 9/10 restore regression: validation referenced the migration-11 Narrative asset join. The accepted follow-up checkpoint uses schema-aware asset authority and real schema-9/10 fixtures.
 
 ## Task 24/60 — Narrative Multi-Scene Composition (complete)
 

@@ -646,6 +646,15 @@ pub fn run_migrations(conn: &mut Connection) -> Result<(), DbError> {
     run_migrations_with(conn, MIGRATIONS)
 }
 
+#[cfg(test)]
+pub(crate) fn run_migrations_through(conn: &mut Connection, version: u32) -> Result<(), DbError> {
+    let count = MIGRATIONS
+        .iter()
+        .take_while(|migration| migration.version <= version)
+        .count();
+    run_migrations_with(conn, &MIGRATIONS[..count])
+}
+
 /// The highest schema version this binary knows how to apply or open.
 ///
 /// Restore rejects backup packages whose `schema_version` exceeds this value,
