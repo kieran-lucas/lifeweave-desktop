@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-create-narrative-document"
+description = "Enables the create_narrative_document command without any pre-configured scope."
+commands.allow = ["create_narrative_document"]
+
+[[permission]]
+identifier = "deny-create-narrative-document"
+description = "Denies the create_narrative_document command without any pre-configured scope."
+commands.deny = ["create_narrative_document"]

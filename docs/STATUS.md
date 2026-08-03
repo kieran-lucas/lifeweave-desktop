@@ -2,6 +2,18 @@
 
 Updated: 2026-08-03 Asia/Saigon
 
+## Task 21/60 — Narrative Canvas Core Schema + Single-Scene Read/Studio Vertical Slice
+
+- PASS at `(this commit; see git log -1)`; evidence: `docs/audits/task-21-narrative-canvas-core.md`.
+- Migration 11: `narrative_documents`, `narrative_document_revisions`, `narrative_document_drafts`, `narrative_save_operations`, `narrative_document_assets`.
+- Mutual exclusion enforced by SQL BEFORE INSERT triggers (canvas↔basic leaf, canvas↔child life nodes).
+- Search integration: narrative documents indexed as `entity_kind='reader_document'` (reuses Migration 10 CHECK constraint; immutable FTS virtual table). Navigation via `SearchNavigationTarget::LifeReader`.
+- 6 IPC commands: `get_narrative_document`, `create_narrative_document`, `save_narrative_document`, `save_narrative_draft`, `discard_narrative_draft`, `recover_narrative_draft`.
+- `NarrativeCanvasReader` (static, no Tiptap) + `NarrativeCanvasStudio` (lazy chunk, separate build artifact).
+- All 5 block kinds: rich_text, metric, image, callout, timeline.
+- 340 Rust tests pass (17 new: 5 schema + 5 markdown + 7 repository); 322 frontend tests pass (8 new: NarrativeCanvasReader; +7 updated BasicLeafReader).
+- ADR 0011 accepted; specs/011-narrative-canvas-core/ created.
+
 ## Task 20/60 — Narrative Canvas Canonical Schema A/B Prototype + Decision (complete reaudit)
 
 - PASS at `(this commit; see git log -1)`; evidence: `docs/audits/task-20-complete-reaudit.md`.

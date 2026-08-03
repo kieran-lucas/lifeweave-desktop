@@ -52,6 +52,12 @@ fn main() {
             "export_reader_markdown",
             "import_document_asset",
             "get_document_asset",
+            "get_narrative_document",
+            "create_narrative_document",
+            "save_narrative_document",
+            "save_narrative_draft",
+            "discard_narrative_draft",
+            "recover_narrative_draft",
             "search_global",
         ]),
     ))

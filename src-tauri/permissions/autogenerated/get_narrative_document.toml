@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-get-narrative-document"
+description = "Enables the get_narrative_document command without any pre-configured scope."
+commands.allow = ["get_narrative_document"]
+
+[[permission]]
+identifier = "deny-get-narrative-document"
+description = "Denies the get_narrative_document command without any pre-configured scope."
+commands.deny = ["get_narrative_document"]

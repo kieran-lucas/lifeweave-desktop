@@ -55,6 +55,13 @@ import type { DocumentAssetIdInput } from "./generated/DocumentAssetIdInput";
 import type { DocumentAssetBytes } from "./generated/DocumentAssetBytes";
 import type { SearchGlobalInput } from "./generated/SearchGlobalInput";
 import type { GlobalSearchProjection } from "./generated/GlobalSearchProjection";
+import type { NarrativeDocumentProjection } from "./generated/NarrativeDocumentProjection";
+import type { NarrativeDocumentView } from "./generated/NarrativeDocumentView";
+import type { NarrativeNodeInput } from "./generated/NarrativeNodeInput";
+import type { CreateNarrativeDocumentInput } from "./generated/CreateNarrativeDocumentInput";
+import type { SaveNarrativeDocumentInput } from "./generated/SaveNarrativeDocumentInput";
+import type { SaveNarrativeDraftInput } from "./generated/SaveNarrativeDraftInput";
+import type { NarrativeDocumentIdInput } from "./generated/NarrativeDocumentIdInput";
 
 export function healthCheck(): Promise<HealthCheck> {
   return invoke<HealthCheck>("health_check");
@@ -153,3 +160,9 @@ export const exportReaderMarkdown = (input: ReaderDocumentIdInput) => invoke<Mar
 export const importDocumentAsset = (input: ImportDocumentAssetInput) => invoke<DocumentAssetView>("import_document_asset", { input });
 export const getDocumentAsset = (input: DocumentAssetIdInput) => invoke<DocumentAssetBytes>("get_document_asset", { input });
 export const searchGlobal = (input: SearchGlobalInput) => invoke<GlobalSearchProjection>("search_global", { input });
+export const getNarrativeDocument = (input: NarrativeNodeInput) => invoke<NarrativeDocumentProjection>("get_narrative_document", { input });
+export const createNarrativeDocument = (input: CreateNarrativeDocumentInput) => invoke<NarrativeDocumentView>("create_narrative_document", { input });
+export const saveNarrativeDocument = (input: SaveNarrativeDocumentInput) => invoke<NarrativeDocumentView>("save_narrative_document", { input });
+export const saveNarrativeDraft = (input: SaveNarrativeDraftInput) => invoke<NarrativeDocumentProjection>("save_narrative_draft", { input });
+export const discardNarrativeDraft = (input: NarrativeDocumentIdInput) => invoke<NarrativeDocumentProjection>("discard_narrative_draft", { input });
+export const recoverNarrativeDraft = (input: NarrativeDocumentIdInput) => invoke<NarrativeDocumentView>("recover_narrative_draft", { input });

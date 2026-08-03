@@ -125,5 +125,13 @@ mod tests {
         SearchResultGroupKind::export_all_to(&out).unwrap();
         SearchResultGroup::export_all_to(&out).unwrap();
         GlobalSearchProjection::export_all_to(&out).unwrap();
+        use crate::narrative::dto::*;
+        NarrativeDocumentView::export_all_to(&out).unwrap();
+        NarrativeDocumentProjection::export_all_to(&out).unwrap();
+        NarrativeNodeInput::export_all_to(&out).unwrap();
+        CreateNarrativeDocumentInput::export_all_to(&out).unwrap();
+        SaveNarrativeDocumentInput::export_all_to(&out).unwrap();
+        SaveNarrativeDraftInput::export_all_to(&out).unwrap();
+        NarrativeDocumentIdInput::export_all_to(&out).unwrap();
     }
 }

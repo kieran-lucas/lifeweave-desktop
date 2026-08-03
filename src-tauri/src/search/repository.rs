@@ -497,6 +497,67 @@ fn rebuild_documents_scope_inner(
         .map_err(|_| SearchError::Storage)?;
     }
 
+    // Index narrative canvas documents using 'reader_document' entity_kind so they
+    // route via SearchNavigationTarget::LifeReader to the same Life node reader view.
+    // narrative_documents table only exists after migration 11; skip gracefully if absent.
+    let has_narrative: bool = conn
+        .query_row(
+            "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type='table' AND name='narrative_documents')",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap_or(false);
+
+    if has_narrative {
+        let mut nd_stmt = conn
+            .prepare(
+                "SELECT nd.id, nd.life_node_id, nd.plain_text, nd.updated_at
+                 FROM narrative_documents nd
+                 JOIN life_nodes ln ON ln.id = nd.life_node_id
+                 WHERE nd.archived_at IS NULL AND ln.archived_at IS NULL",
+            )
+            .map_err(|_| SearchError::Storage)?;
+        let narrative_docs: Vec<(String, String, String, String)> = nd_stmt
+            .query_map([], |row| {
+                Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?))
+            })
+            .map_err(|_| SearchError::Storage)?
+            .filter_map(|r| r.ok())
+            .collect();
+
+        let mut nd_ins = conn
+            .prepare(
+                "INSERT OR REPLACE INTO search_documents
+                 (entity_kind,entity_id,navigation_id,title,context_text,body_text,
+                  normalized_title,normalized_context,normalized_body,
+                  local_date,original_local_date,source_updated_at)
+                 VALUES ('reader_document',?1,?2,?3,?4,?5,?6,?7,?8,NULL,NULL,?9)",
+            )
+            .map_err(|_| SearchError::Storage)?;
+
+        for (doc_id, life_node_id, plain_text, updated_at) in narrative_docs {
+            let node_title = map
+                .get(life_node_id.as_str())
+                .map(|n| n.title.as_str())
+                .unwrap_or("");
+            let breadcrumb = build_breadcrumb(&life_node_id, &map);
+            let body: String = plain_text.chars().take(524_288).collect();
+            nd_ins
+                .execute(rusqlite::params![
+                    doc_id,
+                    life_node_id,
+                    node_title,
+                    breadcrumb,
+                    body,
+                    normalize(node_title),
+                    normalize(&breadcrumb),
+                    normalize(&body),
+                    updated_at,
+                ])
+                .map_err(|_| SearchError::Storage)?;
+        }
+    }
+
     Ok(())
 }
 
@@ -1126,7 +1187,7 @@ mod tests {
                     r.get(0)
                 })
                 .unwrap();
-            assert_eq!(ver, 10, "schema must be at version 10");
+            assert_eq!(ver, 11, "schema must be at version 11");
 
             // Insert one task with Vietnamese title.
             conn.execute(

@@ -302,6 +302,83 @@ static MIGRATIONS: &[Migration] = &[
                 VALUES('all',strftime('%Y-%m-%dT%H:%M:%SZ','now'));
         ",
     },
+    Migration {
+        version: 11,
+        sql: "
+            CREATE TABLE narrative_documents (
+                id TEXT PRIMARY KEY NOT NULL,
+                life_node_id TEXT NOT NULL REFERENCES life_nodes(id),
+                schema_version INTEGER NOT NULL,
+                revision INTEGER NOT NULL DEFAULT 0,
+                canonical_json TEXT NOT NULL,
+                plain_text TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                archived_at TEXT
+            );
+            CREATE TABLE narrative_document_revisions (
+                id TEXT PRIMARY KEY NOT NULL,
+                document_id TEXT NOT NULL REFERENCES narrative_documents(id),
+                revision INTEGER NOT NULL,
+                canonical_json TEXT NOT NULL,
+                plain_text TEXT NOT NULL,
+                reason TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            );
+            CREATE TABLE narrative_document_drafts (
+                document_id TEXT PRIMARY KEY NOT NULL REFERENCES narrative_documents(id),
+                base_revision INTEGER NOT NULL,
+                draft_json TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                recovery_state TEXT NOT NULL
+            );
+            CREATE TABLE narrative_save_operations (
+                operation_id TEXT PRIMARY KEY NOT NULL,
+                document_id TEXT NOT NULL,
+                result_revision INTEGER NOT NULL,
+                created_at TEXT NOT NULL
+            );
+            CREATE TABLE narrative_document_assets (
+                document_id TEXT NOT NULL REFERENCES narrative_documents(id),
+                asset_id TEXT NOT NULL REFERENCES assets(id),
+                reference_count INTEGER NOT NULL DEFAULT 1,
+                PRIMARY KEY (document_id, asset_id)
+            );
+
+            -- Mutual exclusion: Canvas cannot be created on a node that already has a Basic Leaf document
+            CREATE TRIGGER narrative_leaf_check_basic BEFORE INSERT ON narrative_documents
+              WHEN NEW.archived_at IS NULL AND EXISTS(
+                SELECT 1 FROM reader_documents WHERE life_node_id=NEW.life_node_id AND archived_at IS NULL)
+              BEGIN SELECT RAISE(ABORT,'this leaf already has a Basic Leaf document'); END;
+
+            -- Mutual exclusion: Basic Leaf cannot be created on a node that already has a Canvas
+            CREATE TRIGGER basic_leaf_check_narrative BEFORE INSERT ON reader_documents
+              WHEN NEW.archived_at IS NULL AND EXISTS(
+                SELECT 1 FROM narrative_documents WHERE life_node_id=NEW.life_node_id AND archived_at IS NULL)
+              BEGIN SELECT RAISE(ABORT,'this leaf already has a Narrative Canvas document'); END;
+
+            -- Canvas node cannot gain active children
+            CREATE TRIGGER narrative_document_child_insert BEFORE INSERT ON life_nodes
+              WHEN NEW.archived_at IS NULL AND EXISTS(
+                SELECT 1 FROM narrative_documents WHERE life_node_id=NEW.parent_id AND archived_at IS NULL)
+              BEGIN SELECT RAISE(ABORT,'document node cannot gain an active child'); END;
+            CREATE TRIGGER narrative_document_child_move BEFORE UPDATE OF parent_id,archived_at ON life_nodes
+              WHEN NEW.archived_at IS NULL AND EXISTS(
+                SELECT 1 FROM narrative_documents WHERE life_node_id=NEW.parent_id AND archived_at IS NULL)
+              BEGIN SELECT RAISE(ABORT,'document node cannot gain an active child'); END;
+
+            -- Search dirty triggers for narrative_documents
+            CREATE TRIGGER search_dirty_narrative_ai AFTER INSERT ON narrative_documents BEGIN
+                INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('documents',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+                ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at; END;
+            CREATE TRIGGER search_dirty_narrative_au AFTER UPDATE ON narrative_documents BEGIN
+                INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('documents',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+                ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at; END;
+            CREATE TRIGGER search_dirty_narrative_ad AFTER DELETE ON narrative_documents BEGIN
+                INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('documents',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+                ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at; END;
+        ",
+    },
 ];
 
 /// Bootstraps the migration tracking table and applies any pending migrations.
@@ -406,7 +483,7 @@ mod tests {
         let mut conn = open_memory_connection().unwrap();
         run_migrations(&mut conn).unwrap();
 
-        assert_eq!(current_schema_version(&conn).unwrap(), 10);
+        assert_eq!(current_schema_version(&conn).unwrap(), 11);
 
         let count: i64 = conn
             .query_row("SELECT COUNT(*) FROM db_metadata", [], |r| r.get(0))
@@ -420,7 +497,7 @@ mod tests {
         let mig_count: i64 = conn
             .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
             .unwrap();
-        assert_eq!(mig_count, 10);
+        assert_eq!(mig_count, 11);
     }
 
     #[test]
@@ -430,11 +507,11 @@ mod tests {
         run_migrations(&mut conn).unwrap();
 
         // The latest version remains stable; no duplicate migration rows.
-        assert_eq!(current_schema_version(&conn).unwrap(), 10);
+        assert_eq!(current_schema_version(&conn).unwrap(), 11);
         let mig_count: i64 = conn
             .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
             .unwrap();
-        assert_eq!(mig_count, 10);
+        assert_eq!(mig_count, 11);
     }
 
     #[test]
@@ -523,7 +600,7 @@ mod tests {
         match run_migrations_with(&mut conn, MIGRATIONS) {
             Err(DbError::SchemaTooNew { stored, supported }) => {
                 assert_eq!(stored, 9999);
-                assert_eq!(supported, 10);
+                assert_eq!(supported, 11);
             }
             other => panic!("expected SchemaTooNew, got {other:?}"),
         }
@@ -559,7 +636,7 @@ mod tests {
         {
             let mut conn = open_file_connection(&path).unwrap();
             run_migrations(&mut conn).unwrap();
-            assert_eq!(current_schema_version(&conn).unwrap(), 10);
+            assert_eq!(current_schema_version(&conn).unwrap(), 11);
             // Confirm the schema object created by migration 1 exists
             let count: i64 = conn
                 .query_row("SELECT COUNT(*) FROM db_metadata", [], |r| r.get(0))
@@ -573,7 +650,7 @@ mod tests {
             run_migrations(&mut conn).unwrap();
             assert_eq!(
                 current_schema_version(&conn).unwrap(),
-                10,
+                11,
                 "schema version must survive close/reopen"
             );
             let count: i64 = conn
@@ -586,7 +663,7 @@ mod tests {
                 .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
                 .unwrap();
             assert_eq!(
-                mig_count, 10,
+                mig_count, 11,
                 "no duplicate migration records after reopen + re-run"
             );
         }

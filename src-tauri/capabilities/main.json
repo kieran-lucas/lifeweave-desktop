@@ -60,6 +60,12 @@
     "allow-export-reader-markdown",
     "allow-import-document-asset",
     "allow-get-document-asset",
+    "allow-get-narrative-document",
+    "allow-create-narrative-document",
+    "allow-save-narrative-document",
+    "allow-save-narrative-draft",
+    "allow-discard-narrative-draft",
+    "allow-recover-narrative-draft",
     "allow-search-global"
   ]
 }

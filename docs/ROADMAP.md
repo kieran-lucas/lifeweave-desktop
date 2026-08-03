@@ -93,3 +93,14 @@ undo/redo, editor prototypes, fair B codec + static reader, medium/large fixture
 Strategy A (domain envelope + rich-text islands) selected: score 82.8 vs B 67.9 (gap 14.9 ≥ 10 threshold).
 Decision in ADR 0010. No product feature activated.
 Production Narrative Canvas activation requires a separate approved task.
+
+## Slice 011 — Narrative Canvas Core
+
+Task 21 activates the first production Narrative Canvas vertical slice (ADR 0010 Strategy A).
+
+- Migration 11: narrative tables, mutual exclusion triggers (canvas↔basic leaf, canvas↔child nodes), search dirty triggers
+- Schema validation enforces exactly one scene; all five block kinds (rich_text, metric, image, callout, timeline)
+- 6 IPC commands; `NarrativeCanvasReader` (static) + `NarrativeCanvasStudio` (lazy Tiptap chunk)
+- Search integration reuses `entity_kind='reader_document'` (immutable Migration 10 FTS constraint)
+- Revision retention: 50 revisions (same as Basic Leaf)
+- Decision in ADR 0011.

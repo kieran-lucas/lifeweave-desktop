@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-recover-narrative-draft"
+description = "Enables the recover_narrative_draft command without any pre-configured scope."
+commands.allow = ["recover_narrative_draft"]
+
+[[permission]]
+identifier = "deny-recover-narrative-draft"
+description = "Denies the recover_narrative_draft command without any pre-configured scope."
+commands.deny = ["recover_narrative_draft"]
