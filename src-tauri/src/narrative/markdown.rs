@@ -21,6 +21,7 @@ pub fn sanitize_file_stem(raw: &str) -> String {
         .unwrap_or(raw);
     let cleaned: String = without_ext
         .chars()
+        .filter(|c| !c.is_control())
         .map(|c| {
             if matches!(c, '/' | '\\' | ':' | '*' | '?' | '"' | '<' | '>' | '|') {
                 '_'
@@ -32,20 +33,14 @@ pub fn sanitize_file_stem(raw: &str) -> String {
     let trimmed = cleaned.trim_matches(|c: char| c == '.' || c.is_whitespace());
     let truncated: String = trimmed.chars().take(120).collect();
     let t = truncated.trim_matches(|c: char| c == '.' || c.is_whitespace());
-    if WINDOWS_RESERVED_NAMES.contains(&t.to_uppercase().as_str()) || t.is_empty() {
-        "export".to_owned()
-    } else {
-        t.to_owned()
+    if t.is_empty() {
+        return "narrative-canvas".to_owned();
     }
-}
-
-fn extract_title(markdown: &str) -> Option<String> {
-    markdown.lines().find_map(|line| {
-        line.strip_prefix("# ")
-            .map(str::trim)
-            .filter(|t| !t.is_empty())
-            .map(str::to_owned)
-    })
+    let primary_stem = t.split('.').next().unwrap_or(t);
+    if WINDOWS_RESERVED_NAMES.contains(&primary_stem.to_uppercase().as_str()) {
+        return "narrative-canvas".to_owned();
+    }
+    t.to_owned()
 }
 
 /// Converts Markdown into a Narrative Canvas JSON string (one scene, one
@@ -63,19 +58,10 @@ pub fn import_as_canvas(
         return Err(NarrativeError::Validation("Markdown is too large."));
     }
     let stem = sanitize_file_stem(original_name);
-    let title = extract_title(markdown)
-        .filter(|t| !t.is_empty())
-        .unwrap_or_else(|| {
-            if stem.is_empty() || stem == "export" {
-                fallback_title.to_owned()
-            } else {
-                stem
-            }
-        });
-    let title = if title.is_empty() {
+    let title = if stem.is_empty() || stem == "narrative-canvas" {
         fallback_title.to_owned()
     } else {
-        title
+        stem
     };
     let rich_text_json = crate::document::markdown::import(markdown)
         .map_err(|_| NarrativeError::Validation("Markdown contains unsupported content."))?;
@@ -126,18 +112,22 @@ pub fn export(canonical: &str) -> Result<String, NarrativeError> {
             .into_iter()
             .flatten()
         {
-            render_block(block, &mut out);
+            render_block(block, &mut out)?;
         }
     }
     Ok(out.trim_end().to_owned() + "\n")
 }
 
-fn render_block(block: &Value, out: &mut String) {
+fn render_block(block: &Value, out: &mut String) -> Result<(), NarrativeError> {
     let kind = block.get("kind").and_then(Value::as_str).unwrap_or("");
     match kind {
         "rich_text" => {
             if let Some(content) = block.get("content") {
-                render_rich_text(content, out);
+                let json = serde_json::to_string(content)
+                    .map_err(|_| NarrativeError::Validation("Rich text content is invalid."))?;
+                let md = crate::document::markdown::export(&json)
+                    .map_err(|_| NarrativeError::Validation("Rich text content export failed."))?;
+                out.push_str(&md);
             }
         }
         "metric" => {
@@ -159,22 +149,33 @@ fn render_block(block: &Value, out: &mut String) {
                 .and_then(Value::as_str)
                 .unwrap_or("missing");
             let alt = block.get("alt").and_then(Value::as_str).unwrap_or("");
+            let caption = block.get("caption").and_then(Value::as_str).unwrap_or("");
             out.push_str(&format!("![{alt}](assets/{asset_id})\n\n"));
+            if !caption.is_empty() {
+                out.push_str(&format!("*{caption}*\n\n"));
+            }
         }
         "callout" => {
             let variant = block
                 .get("variant")
                 .and_then(Value::as_str)
                 .unwrap_or("note");
-            out.push_str(&format!("> **[{variant}]**\n"));
+            let variant_upper = variant.to_uppercase();
+            out.push_str(&format!("> [!{variant_upper}]\n"));
             if let Some(content) = block.get("content") {
-                let mut inner = String::new();
-                render_rich_text(content, &mut inner);
-                for line in inner.trim().lines() {
-                    out.push_str(&format!("> {line}\n"));
+                let json = serde_json::to_string(content)
+                    .map_err(|_| NarrativeError::Validation("Callout content is invalid."))?;
+                let md = crate::document::markdown::export(&json)
+                    .map_err(|_| NarrativeError::Validation("Callout content export failed."))?;
+                for line in md.trim_end().lines() {
+                    if line.is_empty() {
+                        out.push_str(">\n");
+                    } else {
+                        out.push_str(&format!("> {line}\n"));
+                    }
                 }
-                out.push('\n');
             }
+            out.push('\n');
         }
         "timeline" => {
             let title = block.get("title").and_then(Value::as_str).unwrap_or("");
@@ -195,92 +196,20 @@ fn render_block(block: &Value, out: &mut String) {
             }
             out.push('\n');
         }
-        _ => {}
-    }
-}
-
-fn inline_text(node: &Value) -> String {
-    if let Some(obj) = node.as_object() {
-        if obj.get("type").and_then(Value::as_str) == Some("text") {
-            let text = obj
-                .get("text")
-                .and_then(Value::as_str)
-                .unwrap_or("")
-                .to_owned();
-            if let Some(marks) = obj.get("marks").and_then(Value::as_array) {
-                let mut s = text;
-                for m in marks.iter().rev() {
-                    match m.get("type").and_then(Value::as_str) {
-                        Some("bold") => s = format!("**{s}**"),
-                        Some("italic") => s = format!("*{s}*"),
-                        _ => {}
-                    }
-                }
-                return s;
-            }
-            return text;
-        }
-        if let Some(children) = obj.get("content").and_then(Value::as_array) {
-            return children
-                .iter()
-                .map(inline_text)
-                .collect::<Vec<_>>()
-                .join("");
-        }
-    }
-    String::new()
-}
-
-fn render_rich_text(content: &Value, out: &mut String) {
-    for node in content
-        .get("content")
-        .and_then(Value::as_array)
-        .into_iter()
-        .flatten()
-    {
-        let kind = node.get("type").and_then(Value::as_str).unwrap_or("");
-        match kind {
-            "paragraph" => out.push_str(&format!("{}\n\n", inline_text(node))),
-            "heading" => {
-                let level = node
-                    .get("attrs")
-                    .and_then(|a| a.get("level"))
-                    .and_then(Value::as_u64)
-                    .unwrap_or(2);
+        _ => {
+            let safe_kind: String = kind
+                .chars()
+                .take(64)
+                .filter(|c| c.is_alphanumeric() || *c == '_' || *c == '-')
+                .collect();
+            if !safe_kind.is_empty() {
                 out.push_str(&format!(
-                    "{} {}\n\n",
-                    "#".repeat(level as usize),
-                    inline_text(node)
+                    "> [!WARNING]\n> Unsupported Canvas block: {safe_kind}\n\n"
                 ));
             }
-            "blockquote" => out.push_str(&format!("> {}\n\n", inline_text(node))),
-            "codeBlock" => out.push_str(&format!("```\n{}\n```\n\n", inline_text(node))),
-            "bulletList" => {
-                for item in node
-                    .get("content")
-                    .and_then(Value::as_array)
-                    .into_iter()
-                    .flatten()
-                {
-                    out.push_str(&format!("- {}\n", inline_text(item)));
-                }
-                out.push('\n');
-            }
-            "orderedList" => {
-                for (i, item) in node
-                    .get("content")
-                    .and_then(Value::as_array)
-                    .into_iter()
-                    .flatten()
-                    .enumerate()
-                {
-                    out.push_str(&format!("{}. {}\n", i + 1, inline_text(item)));
-                }
-                out.push('\n');
-            }
-            _ => {}
         }
     }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -360,6 +289,83 @@ mod tests {
     }
 
     #[test]
+    fn exports_callout_block_with_admonition_format() {
+        let blocks = serde_json::json!([{
+            "kind": "callout", "id": new_id(),
+            "variant": "warning",
+            "content": {
+                "type": "doc",
+                "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Caution!"}]}]
+            }
+        }]);
+        let md = export(&make_doc(blocks)).unwrap();
+        assert!(md.contains("> [!WARNING]"));
+        assert!(md.contains("> Caution!"));
+    }
+
+    #[test]
+    fn exports_unknown_block_as_warning_placeholder() {
+        // schema::validate preserves unknown blocks in `canonical` field; build raw JSON directly
+        let raw = serde_json::json!({
+            "schemaVersion": 1,
+            "documentId": "00000000-0000-7000-8000-000000000010",
+            "title": "My Canvas",
+            "templateId": "knowledge_dossier",
+            "templateVersion": 1,
+            "scenes": [{
+                "id": "00000000-0000-7000-8000-000000000011",
+                "title": "Scene One",
+                "layoutPreset": "single_column",
+                "atmosphere": "neutral",
+                "motionPreset": "none",
+                "blocks": [{
+                    "kind": "future_block",
+                    "id": "ffffffff-ffff-7fff-8fff-000000000099",
+                    "canonical": {
+                        "kind": "future_block",
+                        "id": "ffffffff-ffff-7fff-8fff-000000000099"
+                    }
+                }]
+            }]
+        })
+        .to_string();
+        let md = export(&raw).unwrap();
+        assert!(md.contains("> [!WARNING]"));
+        assert!(md.contains("Unsupported Canvas block: future_block"));
+    }
+
+    #[test]
+    fn exports_rich_text_using_basic_leaf_exporter() {
+        let blocks = serde_json::json!([{
+            "kind": "rich_text",
+            "id": new_id(),
+            "content": {
+                "type": "doc",
+                "content": [
+                    {"type": "paragraph", "content": [{"type": "text", "text": "Hello", "marks": [{"type": "bold"}]}]},
+                    {"type": "heading", "attrs": {"level": 2}, "content": [{"type": "text", "text": "Section"}]}
+                ]
+            }
+        }]);
+        let md = export(&make_doc(blocks)).unwrap();
+        // Bold text and heading should be correctly rendered by document::markdown::export
+        assert!(md.contains("**Hello**"));
+        assert!(md.contains("## Section"));
+    }
+
+    #[test]
+    fn exports_image_block_with_caption() {
+        let asset_id = "00000000-0000-7000-8000-000000000012";
+        let blocks = serde_json::json!([{
+            "kind": "image", "id": new_id(),
+            "assetId": asset_id, "alt": "Chart", "caption": "Figure 1"
+        }]);
+        let md = export(&make_doc(blocks)).unwrap();
+        assert!(md.contains(&format!("![Chart](assets/{asset_id})")));
+        assert!(md.contains("*Figure 1*"));
+    }
+
+    #[test]
     fn no_mdx_imports_or_absolute_paths() {
         let md = export(&make_doc(serde_json::json!([seed_block()]))).unwrap();
         assert!(!md.contains("import "));
@@ -398,9 +404,12 @@ mod tests {
 
     #[test]
     fn sanitize_file_name_rejects_windows_reserved() {
-        assert_eq!(sanitize_file_name("CON"), "export.md");
-        assert_eq!(sanitize_file_name("NUL.md"), "export.md");
-        assert_eq!(sanitize_file_name("COM1"), "export.md");
+        assert_eq!(sanitize_file_name("CON"), "narrative-canvas.md");
+        assert_eq!(sanitize_file_name("NUL.md"), "narrative-canvas.md");
+        assert_eq!(sanitize_file_name("COM1"), "narrative-canvas.md");
+        assert_eq!(sanitize_file_name("CON.txt"), "narrative-canvas.md");
+        assert_eq!(sanitize_file_name("COM1.any"), "narrative-canvas.md");
+        assert_eq!(sanitize_file_name("LPT9.backup"), "narrative-canvas.md");
     }
 
     #[test]
@@ -412,15 +421,15 @@ mod tests {
     }
 
     #[test]
-    fn sanitize_file_stem_empty_gives_export() {
-        assert_eq!(sanitize_file_stem(""), "export");
-        assert_eq!(sanitize_file_stem("..."), "export");
+    fn sanitize_file_stem_empty_gives_narrative_canvas() {
+        assert_eq!(sanitize_file_stem(""), "narrative-canvas");
+        assert_eq!(sanitize_file_stem("..."), "narrative-canvas");
     }
 
     // import_as_canvas ---------------------------------------------------------
 
     #[test]
-    fn import_as_canvas_uses_h1_as_title() {
+    fn import_as_canvas_uses_file_stem_not_h1() {
         let doc_id = "00000000-0000-7000-8000-000000000020";
         let scene_id = "00000000-0000-7000-8000-000000000021";
         let block_id = "00000000-0000-7000-8000-000000000022";
@@ -428,7 +437,8 @@ mod tests {
         let canonical =
             import_as_canvas(doc_id, scene_id, block_id, "file.md", "Fallback", md).unwrap();
         let v: serde_json::Value = serde_json::from_str(&canonical).unwrap();
-        assert_eq!(v["title"].as_str().unwrap(), "My Title");
+        // Title must come from filename stem, not H1
+        assert_eq!(v["title"].as_str().unwrap(), "file");
     }
 
     #[test]

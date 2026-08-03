@@ -43,6 +43,31 @@ pub fn import(markdown: &str) -> Result<String, DocumentError> {
             index += 1;
             continue;
         }
+        if let Some((variant, rest)) = parse_admonition_header(line) {
+            if rest.is_empty() {
+                let mut inner_lines: Vec<&str> = Vec::new();
+                index += 1;
+                while index < lines.len() {
+                    let next = lines[index];
+                    if next.trim().is_empty() {
+                        break;
+                    }
+                    if let Some(content_line) = next.strip_prefix("> ") {
+                        inner_lines.push(content_line);
+                        index += 1;
+                    } else {
+                        break;
+                    }
+                }
+                let inner_text = inner_lines.join(" ");
+                let text_node = inline_node(inner_text.trim());
+                content.push(serde_json::json!({"type":"callout","attrs":{"variant":variant},"content":[text_node]}));
+            } else {
+                content.push(serde_json::json!({"type":"callout","attrs":{"variant":variant},"content":[inline_node(rest)]}));
+                index += 1;
+            }
+            continue;
+        }
         if let Some((alt, target)) = parse_image(line) {
             let id = target
                 .strip_prefix("assets/")
@@ -79,8 +104,6 @@ pub fn import(markdown: &str) -> Result<String, DocumentError> {
             ("heading", v, Some(json!({"level":2})))
         } else if let Some(v) = line.strip_prefix("# ") {
             ("heading", v, Some(json!({"level":1})))
-        } else if let Some(v) = line.strip_prefix("> [!NOTE] ") {
-            ("callout", v, Some(json!({"variant":"note"})))
         } else if let Some(v) = line.strip_prefix("> ") {
             ("blockquote", v, None)
         } else if let Some(v) = line.strip_prefix("- ") {
@@ -136,6 +159,20 @@ fn inline_node(text: &str) -> Value {
         return json!({"type":"text","text":label,"marks":[{"type":"link","attrs":{"href":href}}]});
     }
     json!({"type":"text","text":text})
+}
+fn parse_admonition_header(line: &str) -> Option<(&str, &str)> {
+    let inner = line.strip_prefix("> [!")?;
+    let bracket_end = inner.find(']')?;
+    let variant = match &inner[..bracket_end] {
+        "NOTE" => "note",
+        "WARNING" => "warning",
+        "TIP" => "info",
+        "INFO" => "info",
+        _ => return None,
+    };
+    let after = &inner[bracket_end + 1..];
+    let rest = after.strip_prefix(' ').unwrap_or(after);
+    Some((variant, rest))
 }
 fn parse_image(line: &str) -> Option<(&str, &str)> {
     let rest = line.strip_prefix("![")?;
@@ -208,7 +245,15 @@ fn render(n: &Value, out: &mut String, depth: usize) -> Result<(), DocumentError
         }
         "paragraph" => out.push_str(&format!("{}\n\n", text(n))),
         "blockquote" => out.push_str(&format!("> {}\n\n", text(n))),
-        "callout" => out.push_str(&format!("> [!NOTE] {}\n\n", text(n))),
+        "callout" => {
+            let variant = n
+                .get("attrs")
+                .and_then(|a| a.get("variant"))
+                .and_then(Value::as_str)
+                .unwrap_or("note")
+                .to_uppercase();
+            out.push_str(&format!("> [!{variant}] {}\n\n", text(n)));
+        }
         "codeBlock" => out.push_str(&format!("```\n{}\n```\n\n", text(n))),
         "bulletList" | "orderedList" => {
             for (i, item) in n
@@ -310,6 +355,36 @@ mod tests {
         let second = import(&exported).unwrap();
         assert!(second.contains("\"table\""));
         assert!(second.contains(id));
+    }
+
+    #[test]
+    fn multiline_admonition_note_warning_tip() {
+        // TIP maps to "info" since document schema only allows note|info|warning
+        let md = "> [!NOTE]\n> First line\n> Second line\n\n> [!WARNING]\n> Warn text\n\n> [!TIP]\n> Tip text";
+        let json = import(md).unwrap();
+        assert!(json.contains("\"callout\""));
+        assert!(json.contains("\"note\""));
+        assert!(json.contains("\"warning\""));
+        assert!(json.contains("\"info\""));
+        assert!(json.contains("First line"));
+    }
+
+    #[test]
+    fn single_line_admonition_warning_tip() {
+        let md = "> [!WARNING] Watch out\n\n> [!TIP] Try this";
+        let json = import(md).unwrap();
+        assert!(json.contains("\"warning\""));
+        assert!(json.contains("\"info\""));
+        assert!(json.contains("Watch out"));
+        assert!(json.contains("Try this"));
+    }
+
+    #[test]
+    fn callout_export_uses_variant() {
+        let json = import("> [!WARNING] Something\n\n> [!INFO] Also this").unwrap();
+        let exported = export(&json).unwrap();
+        assert!(exported.contains("> [!WARNING]"));
+        assert!(exported.contains("> [!INFO]"));
     }
 
     #[test]

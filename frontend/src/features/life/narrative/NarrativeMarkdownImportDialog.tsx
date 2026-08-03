@@ -24,20 +24,52 @@ export function NarrativeMarkdownImportDialog({
 }: Props) {
   const [status, setStatus] = useState<"idle" | "pending" | "error">("idle");
   const confirmRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const operationIdRef = useRef(operationId("md-import"));
+  const priorFocusRef = useRef<Element | null>(null);
 
   useEffect(() => {
+    priorFocusRef.current = document.activeElement;
     confirmRef.current?.focus();
+    return () => {
+      if (priorFocusRef.current instanceof HTMLElement) {
+        priorFocusRef.current.focus();
+      }
+    };
   }, []);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
+      if (e.key === "Escape" && status !== "pending") {
         onCancel();
+        return;
+      }
+      if (e.key === "Tab" && dialogRef.current) {
+        const focusable = Array.from(
+          dialogRef.current.querySelectorAll<HTMLElement>(
+            'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+          ),
+        );
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (!first || !last) return;
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [onCancel]);
+  }, [onCancel, status]);
 
   const handleConfirm = async () => {
     setStatus("pending");
@@ -46,7 +78,7 @@ export function NarrativeMarkdownImportDialog({
         life_node_id: nodeId,
         original_name: originalName,
         markdown,
-        operation_id: operationId("md-import"),
+        operation_id: operationIdRef.current,
       });
       onConfirmed(doc);
     } catch {
@@ -54,13 +86,21 @@ export function NarrativeMarkdownImportDialog({
     }
   };
 
+  const warningsId = "nc-import-warnings";
+
   return (
-    <div className={styles.overlay} onClick={onCancel} role="presentation">
+    <div
+      className={styles.overlay}
+      onClick={status === "pending" ? undefined : onCancel}
+      role="presentation"
+    >
       <div
+        ref={dialogRef}
         className={styles.dialog}
         role="dialog"
         aria-modal="true"
         aria-labelledby="nc-import-title"
+        aria-describedby={preview.warnings.length > 0 ? warningsId : undefined}
         onClick={e => e.stopPropagation()}
       >
         <h2 id="nc-import-title" className={styles.title}>
@@ -82,7 +122,12 @@ export function NarrativeMarkdownImportDialog({
           )}
         </dl>
         {preview.warnings.length > 0 && (
-          <div className={styles.warnings} role="note" aria-label="Import warnings">
+          <div
+            id={warningsId}
+            className={styles.warnings}
+            role="note"
+            aria-label="Import warnings"
+          >
             {preview.warnings.map((w, i) => (
               <p key={i} className={styles.warningItem}>
                 {w}

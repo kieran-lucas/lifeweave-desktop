@@ -82,9 +82,10 @@ export function BasicLeafReader({ nodeId }: { nodeId: string }) {
   const handleMarkdownImportFile = async (file?: File) => {
     if (!file) return;
     try {
-      const text = await file.text();
-      const preview = await previewNarrativeMarkdown({ original_name: file.name, markdown: text });
-      setMarkdownImport({ originalName: file.name, markdown: text, preview });
+      const bytes = await file.arrayBuffer();
+      const markdown = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+      const preview = await previewNarrativeMarkdown({ original_name: file.name, markdown });
+      setMarkdownImport({ originalName: file.name, markdown, preview });
     } catch {
       setNotice("Could not read the Markdown file.");
     }
@@ -112,8 +113,12 @@ export function BasicLeafReader({ nodeId }: { nodeId: string }) {
               <input
                 className={styles.hiddenFile}
                 type="file"
-                accept="text/markdown,.md"
-                onChange={event => void handleMarkdownImportFile(event.currentTarget.files?.[0])}
+                accept=".md,text/markdown,text/plain"
+                onChange={event => {
+                  const file = event.currentTarget.files?.[0];
+                  event.currentTarget.value = "";
+                  void handleMarkdownImportFile(file);
+                }}
               />
             </label>
           )}

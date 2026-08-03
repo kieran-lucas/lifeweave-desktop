@@ -2,19 +2,21 @@
 
 Updated: 2026-08-03 Asia/Saigon
 
-## Task 22/60 — Narrative Canvas Markdown Interoperability (complete)
+## Task 22/60 — Narrative Canvas Markdown Interoperability (complete, remediated)
 
 - Fixed `asset:` → `assets/` in `narrative::markdown::export` image rendering.
-- Added `sanitize_file_name` / `sanitize_file_stem` (single Rust authority; 120 scalar value limit; Windows reserved name rejection).
-- Added `import_as_canvas` to `narrative::markdown`; delegates all Markdown parsing to `document::markdown::import` (Basic Leaf authority).
-- Added `import_from_markdown` and `export_to_markdown` to `narrative/repository.rs`.
-- 3 new IPC commands: `preview_narrative_markdown` (stateless), `import_narrative_markdown` (idempotent via operation_id), `export_narrative_markdown`.
-- 4 new DTOs: `PreviewNarrativeMarkdownInput`, `NarrativeMarkdownPreview`, `ImportNarrativeMarkdownInput`, `NarrativeMarkdownExport`.
-- `NarrativeMarkdownExportButton` in `NarrativeCanvasReader` toolbar.
-- `NarrativeMarkdownImportDialog` in `BasicLeafReader` empty-leaf state (visible only when no Basic Leaf, no Canvas, both queries settled without error).
+- Added `sanitize_file_name` / `sanitize_file_stem`: 120 scalar value limit; primary-stem Windows reserved name rejection (`CON.txt` → `narrative-canvas.md`); fallback `narrative-canvas`; control character stripping.
+- Added `import_as_canvas` to `narrative::markdown`; delegates all Markdown parsing to `document::markdown::import` (Basic Leaf authority); title from filename stem only (not H1).
+- Added `import_from_markdown` and `export_to_markdown` to `narrative/repository.rs`; export derives filename from Canvas JSON `title` field; import inserts `narrative_document_assets` rows in transaction.
+- `render_block` delegates `rich_text` and `callout` to `crate::document::markdown::export` (links, tables, marks fully preserved); unknown blocks emit `> [!WARNING]` placeholder.
+- Added `repository::preview_markdown` (DB-aware, validates via `document::markdown::import`; unsafe Markdown fails at preview).
+- `document::markdown` extended: multi-line NOTE/WARNING/TIP admonitions; single-line WARNING/TIP; callout export uses actual variant; TIP maps to `"info"`.
+- 3 new IPC commands: `preview_narrative_markdown` (DB-aware), `import_narrative_markdown` (idempotent via operation_id), `export_narrative_markdown`.
+- 4 new DTOs; `NarrativeMarkdownExportButton` with pre-export lossiness warning; `NarrativeMarkdownImportDialog` with stable operationId, focus trap, focus restoration, pending guards.
+- Fatal UTF-8 decoding and file input reset in `BasicLeafReader`.
 - No new migration (schema stays at version 14). No new dependencies.
-- 381 Rust tests pass (12 new in `narrative::markdown`). 390 frontend tests pass (12 new in `NarrativeMarkdownImportDialog.test.tsx`).
-- ADR 0015 accepted.
+- 388 Rust tests pass (15 new). 399 frontend tests pass (21 new in import/export tests).
+- ADR 0015, ADR 0016 accepted. Remediation audit in `docs/audits/task-22-acceptance-remediation.md`.
 
 ## Task 21/60 — Narrative Canvas Core Schema + Single-Scene Read/Studio Vertical Slice (Accepted)
 

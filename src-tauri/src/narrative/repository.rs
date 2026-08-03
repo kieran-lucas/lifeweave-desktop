@@ -433,6 +433,13 @@ pub fn import_from_markdown(
             now
         ],
     )?;
+    ensure_assets(&tx, &valid.assets)?;
+    for (asset_id, count) in &valid.assets {
+        tx.execute(
+            "INSERT INTO narrative_document_assets VALUES(?1,?2,?3)",
+            params![id, asset_id, count],
+        )?;
+    }
     tx.execute(
         "INSERT INTO narrative_save_operations VALUES(?1,?2,0,?3)",
         params![input.operation_id, id, now],
@@ -441,23 +448,67 @@ pub fn import_from_markdown(
     by_id(conn, &id)
 }
 
+pub fn preview_markdown(
+    _conn: &Connection,
+    input: PreviewNarrativeMarkdownInput,
+) -> Result<NarrativeMarkdownPreview, NarrativeError> {
+    let canonical = crate::document::markdown::import(&input.markdown).map_err(|e| match e {
+        crate::document::domain::DocumentError::Validation(msg) => NarrativeError::Validation(msg),
+        _ => NarrativeError::Validation("Markdown is too large."),
+    })?;
+    let validated = crate::document::schema::validate(&canonical)
+        .map_err(|_| NarrativeError::Validation("Markdown document structure is invalid."))?;
+    let proposed_title = {
+        let stem = markdown::sanitize_file_stem(&input.original_name);
+        if stem.is_empty() || stem == "narrative-canvas" {
+            input.original_name.clone()
+        } else {
+            stem
+        }
+    };
+    let plain_text_excerpt: String = validated.plain_text.chars().take(240).collect();
+    let referenced_asset_count = validated.assets.len() as i32;
+    let doc: serde_json::Value = serde_json::from_str(&canonical).unwrap_or_default();
+    let top_level_node_count = doc
+        .get("content")
+        .and_then(serde_json::Value::as_array)
+        .map(|a| a.len() as i32)
+        .unwrap_or(0);
+    let mut warnings = vec![
+        "Import creates one rich_text block. Block types, layout, and metadata are not preserved."
+            .to_owned(),
+    ];
+    if referenced_asset_count > 0 {
+        warnings
+            .push("This document references local assets that will not be included.".to_owned());
+    }
+    Ok(NarrativeMarkdownPreview {
+        proposed_title,
+        plain_text_excerpt,
+        top_level_node_count,
+        referenced_asset_count,
+        warnings,
+    })
+}
+
 pub fn export_to_markdown(
     conn: &Connection,
     input: NarrativeDocumentIdInput,
 ) -> Result<NarrativeMarkdownExport, NarrativeError> {
     let doc = by_id(conn, &input.document_id)?;
     let md = markdown::export(&doc.canonical_json)?;
-    let node_title: String = conn
-        .query_row(
-            "SELECT title FROM life_nodes WHERE id=?1",
-            params![doc.life_node_id],
-            |r| r.get(0),
-        )
-        .unwrap_or_else(|_| "export".into());
+    let canvas_title: String = serde_json::from_str::<serde_json::Value>(&doc.canonical_json)
+        .ok()
+        .and_then(|v| {
+            v.get("title")
+                .and_then(serde_json::Value::as_str)
+                .map(str::to_owned)
+        })
+        .unwrap_or_else(|| "narrative-canvas".into());
     Ok(NarrativeMarkdownExport {
-        file_name: markdown::sanitize_file_name(&node_title),
+        file_name: markdown::sanitize_file_name(&canvas_title),
         markdown: md,
-        warning: "Import creates one rich_text block. Block types, layout, and metadata are not preserved.".to_owned(),
+        warning: "Markdown preserves readable content, not Canvas block structure or layout. Image bytes are not embedded; referenced local assets must already exist.".to_owned(),
     })
 }
 
