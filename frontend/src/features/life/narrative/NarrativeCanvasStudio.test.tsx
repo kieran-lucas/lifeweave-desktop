@@ -591,20 +591,63 @@ describe("NarrativeCanvasStudio multi-scene", () => {
     });
   });
 
-  it("delete scene confirmation uses materialized content", async () => {
-    const liveContent: unknown = { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "Non-empty live edit" }] }] };
+  it("cancelled delete preserves live editor state when scene starts empty", async () => {
+    // Create a scene with initially empty rich_text block (no metric block)
+    const emptySceneJson = JSON.stringify({
+      schemaVersion: 1,
+      documentId: DOC_ID,
+      title: "Test Canvas",
+      templateId: "knowledge_dossier",
+      templateVersion: 1,
+      scenes: [{
+        id: SCENE_ID,
+        title: "Empty Scene",
+        layoutPreset: "single_column",
+        atmosphere: "neutral",
+        motionPreset: "none",
+        blocks: [
+          { kind: "rich_text", id: BLOCK_ID, content: { type: "doc", content: [] } },
+        ],
+      }],
+    });
+
+    const liveContent: unknown = { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "Live edit before cancel" }] }] };
     tiptapMock.getJSON.mockReturnValue(liveContent);
     const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
-    mountWith(twoSceneJson);
-    fireEvent.click(screen.getByRole("tab", { name: "Scene Two" }));
-    // Scene two has a metric block which counts as non-empty
-    // But simulate live content being added
+
+    mountWith(emptySceneJson);
+    // Activate and edit the rich_text block
+    fireEvent.click(screen.getByLabelText("Click to edit rich text block"));
     act(() => tiptapMock.onUpdate?.({ editor: { getJSON: () => liveContent } }));
-    // Click delete — should prompt because scene has content
+    // Scene is empty (only has the initially empty block) — should NOT prompt
+    fireEvent.click(screen.getByRole("button", { name: "Delete scene" }));
+    // Empty scene — no confirmation shown, deletion should proceed
+    expect(confirmSpy).not.toHaveBeenCalled();
+    confirmSpy.mockRestore();
+  });
+
+  it("cancelled delete preserves live editor state when scene has existing content", async () => {
+    const liveContent: unknown = { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "Live edit — user will cancel" }] }] };
+    tiptapMock.getJSON.mockReturnValue(liveContent);
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
+
+    mountWith(twoSceneJson);
+    // Scene Two has a metric block (non-empty)
+    fireEvent.click(screen.getByRole("tab", { name: "Scene Two" }));
+    // Simulate typing in an editor on top of the existing content
+    act(() => tiptapMock.onUpdate?.({ editor: { getJSON: () => liveContent } }));
+    // Click delete — should prompt because scene is non-empty
     fireEvent.click(screen.getByRole("button", { name: "Delete scene" }));
     expect(confirmSpy).toHaveBeenCalledWith("Delete this scene and all its blocks?");
-    // User cancels
+    // User cancels — editor must still be active
     expect(screen.getByRole("tab", { name: "Scene Two" })).toBeInTheDocument();
+    // Verify editor is still active (not cleared by cancelled delete)
+    fireEvent.click(screen.getByRole("button", { name: "Publish" }));
+    await waitFor(() => {
+      const saved = JSON.parse(api.save.mock.calls[0]![0].canonical_json as string);
+      // Metric block should still be there
+      expect(saved.scenes[1].blocks[0].kind).toBe("metric");
+    });
     confirmSpy.mockRestore();
   });
 
@@ -628,5 +671,52 @@ describe("NarrativeCanvasStudio multi-scene", () => {
     // After Redo, the restored scene (or first valid scene) should be selected
     const selected = screen.getAllByRole("tab").filter(t => t.getAttribute("aria-selected") === "true");
     expect(selected).toHaveLength(1);
+  });
+
+  it("Undo preserves live Tiptap content in existing block", async () => {
+    const liveContent: unknown = { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "Typed after add scene" }] }] };
+    tiptapMock.getJSON.mockReturnValue(liveContent);
+    mountWith(twoSceneJson);
+    // Add a scene (structural change)
+    fireEvent.click(screen.getByRole("button", { name: "Add scene" }));
+    // Now activate the first scene's block and type
+    fireEvent.click(screen.getByRole("tab", { name: "Scene One" }));
+    fireEvent.click(screen.getByLabelText("Click to edit rich text block"));
+    act(() => tiptapMock.onUpdate?.({ editor: { getJSON: () => liveContent } }));
+    // Undo the Add Scene operation
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    // The block still exists and should retain the live content
+    // Publish and verify
+    fireEvent.click(screen.getByRole("button", { name: "Publish" }));
+    await waitFor(() => {
+      const saved = JSON.parse(api.save.mock.calls[0]![0].canonical_json as string);
+      // Should have 2 scenes still (undo undid the add, but block content persists)
+      expect(saved.scenes).toHaveLength(2);
+      // First scene's block should have the live text
+      expect(saved.scenes[0].blocks[0].content.content[0].content[0].text).toBe("Typed after add scene");
+    });
+  });
+
+  it("Redo preserves live Tiptap content in existing block", async () => {
+    const liveContent: unknown = { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "Persisted after redo" }] }] };
+    tiptapMock.getJSON.mockReturnValue(liveContent);
+    mountWith(twoSceneJson);
+    // Add a scene
+    fireEvent.click(screen.getByRole("button", { name: "Add scene" }));
+    // Undo it
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    // Go to first scene and type
+    fireEvent.click(screen.getByRole("tab", { name: "Scene One" }));
+    fireEvent.click(screen.getByLabelText("Click to edit rich text block"));
+    act(() => tiptapMock.onUpdate?.({ editor: { getJSON: () => liveContent } }));
+    // Redo the add scene
+    fireEvent.click(screen.getByRole("button", { name: "Redo" }));
+    // First scene should still be selected with its live content intact
+    fireEvent.click(screen.getByRole("button", { name: "Publish" }));
+    await waitFor(() => {
+      const saved = JSON.parse(api.save.mock.calls[0]![0].canonical_json as string);
+      expect(saved.scenes).toHaveLength(3);
+      expect(saved.scenes[0].blocks[0].content.content[0].content[0].text).toBe("Persisted after redo");
+    });
   });
 });

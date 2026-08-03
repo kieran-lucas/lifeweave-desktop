@@ -985,47 +985,60 @@ export default function NarrativeCanvasStudio({
 
   // ---- Scene CRUD ----
 
-  // Helper: materialize and clear live editor state for scene structural mutations
-  const prepareForSceneStructuralChange = useCallback(
+  // Helper: snapshot live island content without mutating editor state
+  const snapshotCurrentDocument = useCallback(
     (): ParsedNarrativeDocument => {
-      const materialized = materializeCurrentDocument();
-      activeContentRef.current = null;
-      setActiveBlockId(null);
-      return materialized;
+      return materializeCurrentDocument();
     },
     [materializeCurrentDocument],
   );
 
+  // Helper: commit scene structural change by clearing editor state and pushing to history
+  const commitSceneStructuralChange = useCallback(
+    (nextDoc: ParsedNarrativeDocument) => {
+      activeContentRef.current = null;
+      setActiveBlockId(null);
+      applyStructural(nextDoc);
+    },
+    [applyStructural],
+  );
+
   const handleAddScene = useCallback(() => {
     if (doc.scenes.length >= 20) return;
-    const materialized = prepareForSceneStructuralChange();
+    const snapshot = snapshotCurrentDocument();
     const newId = newNarrativeId();
     const newScene: NarrativeScene = {
       id: newId,
-      title: `Scene ${materialized.scenes.length + 1}`,
+      title: `Scene ${snapshot.scenes.length + 1}`,
       layoutPreset: "single_column",
       atmosphere: "neutral",
       motionPreset: "none",
       blocks: [{ kind: "rich_text", id: newNarrativeId(), content: emptyRichText() }],
     };
-    applyStructural({ ...materialized, scenes: [...materialized.scenes, newScene] as [NarrativeScene, ...NarrativeScene[]] });
+    commitSceneStructuralChange({
+      ...snapshot,
+      scenes: [...snapshot.scenes, newScene] as [NarrativeScene, ...NarrativeScene[]],
+    });
     setActiveSceneId(newId);
-  }, [doc, prepareForSceneStructuralChange, applyStructural]);
+  }, [doc, snapshotCurrentDocument, commitSceneStructuralChange]);
 
   const handleDeleteScene = useCallback(() => {
     if (doc.scenes.length <= 1) return;
-    const materialized = prepareForSceneStructuralChange();
-    const idx = Math.max(0, materialized.scenes.findIndex(s => s.id === activeSceneId));
-    const isEmpty = materialized.scenes[idx]!.blocks.every(b => isBlockEmpty(b));
+    // Snapshot live content WITHOUT clearing editor state
+    const snapshot = snapshotCurrentDocument();
+    const idx = Math.max(0, snapshot.scenes.findIndex(s => s.id === activeSceneId));
+    const isEmpty = snapshot.scenes[idx]!.blocks.every(b => isBlockEmpty(b));
+    // Ask for confirmation BEFORE clearing anything
     if (!isEmpty && !window.confirm("Delete this scene and all its blocks?")) {
-      // User cancelled — restore island state if it existed
+      // User cancelled — nothing was cleared, editor is still active
       return;
     }
-    const newScenes = materialized.scenes.filter((_, i) => i !== idx) as [NarrativeScene, ...NarrativeScene[]];
+    // User confirmed — now commit the change (this clears editor state)
+    const newScenes = snapshot.scenes.filter((_, i) => i !== idx) as [NarrativeScene, ...NarrativeScene[]];
     const newActiveId = (newScenes[idx] ?? newScenes[idx - 1] ?? newScenes[0])!.id;
-    applyStructural({ ...materialized, scenes: newScenes });
+    commitSceneStructuralChange({ ...snapshot, scenes: newScenes });
     setActiveSceneId(newActiveId);
-  }, [doc, activeSceneId, prepareForSceneStructuralChange, applyStructural]);
+  }, [doc, activeSceneId, snapshotCurrentDocument, commitSceneStructuralChange]);
 
   const handleRenameScene = useCallback((title: string) => {
     const materialized = materializeCurrentDocument();
@@ -1038,39 +1051,105 @@ export default function NarrativeCanvasStudio({
   const handleMoveScene = useCallback((direction: "left" | "right") => {
     const to = direction === "left" ? activeSceneIdx - 1 : activeSceneIdx + 1;
     if (to < 0 || to >= doc.scenes.length) return;
-    const materialized = prepareForSceneStructuralChange();
-    const idx = Math.max(0, materialized.scenes.findIndex(s => s.id === activeSceneId));
-    const scenes = [...materialized.scenes] as [NarrativeScene, ...NarrativeScene[]];
+    const snapshot = snapshotCurrentDocument();
+    const idx = Math.max(0, snapshot.scenes.findIndex(s => s.id === activeSceneId));
+    const scenes = [...snapshot.scenes] as [NarrativeScene, ...NarrativeScene[]];
     const [item] = scenes.splice(idx, 1);
     scenes.splice(to, 0, item!);
-    applyStructural({ ...materialized, scenes });
-  }, [doc, activeSceneId, activeSceneIdx, prepareForSceneStructuralChange, applyStructural]);
+    commitSceneStructuralChange({ ...snapshot, scenes });
+  }, [doc, activeSceneId, activeSceneIdx, snapshotCurrentDocument, commitSceneStructuralChange]);
 
   // ---- Undo / Redo ----
 
   const handleUndo = useCallback(() => {
-    activeContentRef.current = null;
-    setActiveBlockId(null);
+    // Materialize live content BEFORE history traversal
+    const currentWithLive = materializeCurrentDocument();
     setHistory(h => {
+      // Perform undo on historical state (not the live-materialized one)
       const prev = undo(h);
-      // Ensure activeSceneId is valid; if not, select first scene
+      // Check if active block still exists in previous state
+      const prevHasActiveBlock = prev.current.scenes.some(s =>
+        s.blocks.some(b => !isUnknownBlock(b) && b.id === activeBlockId)
+      );
+      // If active block still exists and hasn't changed, restore its materialized content
+      if (prevHasActiveBlock && activeBlockId !== null && activeContentRef.current !== null) {
+        const prevActiveScene = prev.current.scenes.find(s =>
+          s.blocks.some(b => !isUnknownBlock(b) && b.id === activeBlockId)
+        );
+        if (prevActiveScene) {
+          prev.current = {
+            ...prev.current,
+            scenes: prev.current.scenes.map(s =>
+              s.id === prevActiveScene.id
+                ? {
+                    ...s,
+                    blocks: s.blocks.map(b => {
+                      if (!isUnknownBlock(b) && b.id === activeBlockId && (b.kind === "rich_text" || b.kind === "callout")) {
+                        return { ...b, content: activeContentRef.current! };
+                      }
+                      return b;
+                    }),
+                  }
+                : s
+            ) as [NarrativeScene, ...NarrativeScene[]],
+          };
+        }
+      } else {
+        // Block no longer exists or was not active — clear island
+        activeContentRef.current = null;
+        setActiveBlockId(null);
+      }
+      // Reconcile scene selection
       const validId = prev.current.scenes.find(s => s.id === activeSceneId)?.id ?? prev.current.scenes[0]!.id;
       setActiveSceneId(validId);
       return prev;
     });
-  }, [activeSceneId]);
+  }, [activeSceneId, activeBlockId, materializeCurrentDocument]);
 
   const handleRedo = useCallback(() => {
-    activeContentRef.current = null;
-    setActiveBlockId(null);
+    // Materialize live content BEFORE history traversal
+    const currentWithLive = materializeCurrentDocument();
     setHistory(h => {
+      // Perform redo on historical state (not the live-materialized one)
       const next = redo(h);
-      // Ensure activeSceneId is valid; if not, select first scene
+      // Check if active block still exists in next state
+      const nextHasActiveBlock = next.current.scenes.some(s =>
+        s.blocks.some(b => !isUnknownBlock(b) && b.id === activeBlockId)
+      );
+      // If active block still exists and hasn't changed, restore its materialized content
+      if (nextHasActiveBlock && activeBlockId !== null && activeContentRef.current !== null) {
+        const nextActiveScene = next.current.scenes.find(s =>
+          s.blocks.some(b => !isUnknownBlock(b) && b.id === activeBlockId)
+        );
+        if (nextActiveScene) {
+          next.current = {
+            ...next.current,
+            scenes: next.current.scenes.map(s =>
+              s.id === nextActiveScene.id
+                ? {
+                    ...s,
+                    blocks: s.blocks.map(b => {
+                      if (!isUnknownBlock(b) && b.id === activeBlockId && (b.kind === "rich_text" || b.kind === "callout")) {
+                        return { ...b, content: activeContentRef.current! };
+                      }
+                      return b;
+                    }),
+                  }
+                : s
+            ) as [NarrativeScene, ...NarrativeScene[]],
+          };
+        }
+      } else {
+        // Block no longer exists or was not active — clear island
+        activeContentRef.current = null;
+        setActiveBlockId(null);
+      }
+      // Reconcile scene selection
       const validId = next.current.scenes.find(s => s.id === activeSceneId)?.id ?? next.current.scenes[0]!.id;
       setActiveSceneId(validId);
       return next;
     });
-  }, [activeSceneId]);
+  }, [activeSceneId, activeBlockId, materializeCurrentDocument]);
 
   // ---- Back with dirty confirmation ----
 
