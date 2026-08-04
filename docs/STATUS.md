@@ -1,6 +1,6 @@
 # Project Status
 
-## Task 32/60 — IN ACCEPTANCE — not closed
+## Task 32/60 — Upcoming and Overdue Task Planning
 
 - Today remains the application and Task-workspace default.
 - Upcoming and Overdue are manual-activation tabs inside Today, not new sidebar destinations.
@@ -9,8 +9,8 @@
 - Recurring projections preserve series + original-date identity and respect cancellation, replacement, overrides, splits, finite rules, and inherited Life links.
 - Planning rows navigate into the existing exact-day Today edit/evaluation workflow.
 - Database schema remains 16; no migration, dependency, plugin, broad capability, or Task 33 behavior.
-- Evidence: pending acceptance verification.
-- Task 33 has not started; next action after acceptance is Product Owner gate.
+- Evidence: 479 frontend tests and 449 Rust tests passed; source/governance/index/security, typecheck/build/check/fmt/Clippy, planning performance, seven-phase Windows E2E, final NSIS, and isolated RC passed. Upcoming/Overdue p95 was 17.32/22.55 ms. Final NSIS is 4,810,273 bytes with SHA-256 `1f26da95c02d96072abcd39a9478f0987b46c7d20d874aecce6a20e899086d6f`.
+- Task 33 has not started; next action is Product Owner gate.
 
 ## Task 31/60 — Lossless Portable Package
 

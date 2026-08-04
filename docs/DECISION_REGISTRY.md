@@ -29,6 +29,10 @@ The immutable source is authoritative. This registry makes operational status vi
 - Portable canonical JSON is import authority; Markdown is a human-readable fallback and supported local visual assets are privacy-sanitized, checksummed, and remapped.
 - Portable import creates a new document only on a selected empty active Life leaf; it does not import or rename the Life node and excludes tree, Task, draft, history, analytics, and settings state.
 - Portable Package is document interchange, not a database backup.
+- Today, Upcoming, and Overdue are manual-activation tabs within the existing Today destination; Today remains the startup and fresh-mount default.
+- Upcoming covers anchor +1 through +14 local calendar days; Overdue covers anchor -30 through -1 local calendar days.
+- Overdue is derived from the absence of any current evaluation; any current evaluation reviews the item, and undo may restore it.
+- Planning queue items open their exact displayed date and stable Task or recurring-series identity in Today; queue state is not persisted.
 
 ## LOCKED — Technology direction
 
@@ -59,8 +63,9 @@ The immutable source is authoritative. This registry makes operational status vi
 
 - final brand/name/logo;
 - final FAB icon and placement;
-- Upcoming/Overdue information architecture;
 - actual-time semantics;
+- deadline semantics beyond the existing scheduled date and time;
+- saved filter AST/view UI;
 - final score and hidden mappings;
 - final prediction;
 - tags;

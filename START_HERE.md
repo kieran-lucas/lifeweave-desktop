@@ -13,13 +13,13 @@
 
 ## Current state
 
-- Latest closed task: **31/60**
-- Latest product feature: **Task 31 — Lossless Portable Package**
-- Latest feature checkpoint: `a20aac0bf701fa5d7be473e12316ba97637f2958`
+- Latest closed task: **32/60**
+- Latest product feature: **Task 32 — Upcoming and Overdue Task Planning**
+- Latest feature checkpoint: `f64e51a8d61f30e79abb5469b58fcd06413ae780`
 - Database schema: **16**
-- Active implementation specification: **`specs/022-upcoming-overdue-planning`**
-- Next action: **Implement active spec**
-- Task 32 status: **IN ACCEPTANCE — not closed**
+- Active implementation specification: **none**
+- Next action: **Product Owner gate**
+- Task 33 status: **not selected or authorized**
 
 ## Core invariants
 
