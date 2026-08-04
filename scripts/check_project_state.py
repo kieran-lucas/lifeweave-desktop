@@ -5,20 +5,39 @@ from __future__ import annotations
 import json
 import re
 import sys
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 FIELDS = {
     "format_version", "repository", "branch", "latest_closed_task",
-    "latest_feature_task", "latest_feature_checkpoint", "database_schema_version",
-    "active_spec", "next_action", "forbidden_feature_jump",
-    "recommended_next_candidate", "source_sha256",
+    "latest_closed_slice", "latest_feature_task", "latest_feature_checkpoint",
+    "database_schema_version", "active_spec", "next_action",
+    "forbidden_feature_jump", "recommended_next_candidate", "source_sha256",
 }
+CHECKPOINT = re.compile(r"^[0-9a-f]{40}$")
+SNAKE_CASE = re.compile(r"^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$")
 
 
 def _is_int(value: Any) -> bool:
     return isinstance(value, int) and not isinstance(value, bool)
+
+
+def _safe_spec(value: str) -> bool:
+    path = PurePosixPath(value)
+    return (
+        value.startswith("specs/")
+        and "\\" not in value
+        and not path.is_absolute()
+        and all(part not in ("", ".", "..") for part in path.parts)
+    )
+
+
+def _next_action_label(value: str) -> str:
+    return {
+        "product_owner_gate": "Product Owner gate",
+        "implement_active_spec": "Implement active spec",
+    }.get(value, value)
 
 
 def validate(root: Path) -> list[str]:
@@ -44,13 +63,14 @@ def validate(root: Path) -> list[str]:
         "repository": lambda value: isinstance(value, str),
         "branch": lambda value: isinstance(value, str),
         "latest_closed_task": _is_int,
+        "latest_closed_slice": _is_int,
         "latest_feature_task": _is_int,
         "latest_feature_checkpoint": lambda value: isinstance(value, str),
         "database_schema_version": _is_int,
         "active_spec": lambda value: value is None or isinstance(value, str),
         "next_action": lambda value: isinstance(value, str),
         "forbidden_feature_jump": lambda value: isinstance(value, bool),
-        "recommended_next_candidate": lambda value: isinstance(value, str),
+        "recommended_next_candidate": lambda value: value is None or isinstance(value, str),
         "source_sha256": lambda value: isinstance(value, str),
     }
     invalid_types = [key for key, check in expected_types.items() if not check(ledger[key])]
@@ -58,19 +78,29 @@ def validate(root: Path) -> list[str]:
         return [f"correct PROJECT_STATE field type: {field}" for field in invalid_types]
 
     checks = [
-        (ledger["format_version"] == 1, "set format_version to 1"),
+        (ledger["format_version"] == 2, "set format_version to 2"),
         (ledger["repository"] == "kieran-lucas/lifeweave-desktop", "set repository to kieran-lucas/lifeweave-desktop"),
         (ledger["branch"] == "main", "set branch to main"),
-        (ledger["latest_closed_task"] >= ledger["latest_feature_task"], "make latest_closed_task greater than or equal to latest_feature_task"),
-        (ledger["latest_closed_task"] == 30, "set latest_closed_task to 30"),
-        (ledger["latest_feature_task"] == 29, "set latest_feature_task to 29"),
-        (ledger["latest_feature_checkpoint"] == "7240b7f371ada526ea5a31c0481612574d875fe0", "set latest_feature_checkpoint to the accepted Task 29 checkpoint"),
-        (ledger["active_spec"] is None, "set active_spec to null"),
-        (ledger["next_action"] == "product_owner_gate", "set next_action to product_owner_gate"),
+        (ledger["latest_feature_task"] <= ledger["latest_closed_task"], "make latest_feature_task less than or equal to latest_closed_task"),
+        (ledger["latest_closed_slice"] >= 0, "make latest_closed_slice non-negative"),
+        (CHECKPOINT.fullmatch(ledger["latest_feature_checkpoint"]) is not None, "set latest_feature_checkpoint to a lowercase 40-character hexadecimal commit"),
+        (ledger["next_action"] in {"product_owner_gate", "implement_active_spec"}, "set next_action to an allowed value"),
         (ledger["forbidden_feature_jump"] is True, "set forbidden_feature_jump to true"),
-        (ledger["recommended_next_candidate"] == "lossless_portable_package", "set recommended_next_candidate to lossless_portable_package"),
+        (ledger["recommended_next_candidate"] is None or SNAKE_CASE.fullmatch(ledger["recommended_next_candidate"]) is not None, "set recommended_next_candidate to null or safe snake_case"),
     ]
     errors.extend(message for valid, message in checks if not valid)
+
+    active_spec = ledger["active_spec"]
+    if active_spec is None:
+        if ledger["next_action"] != "product_owner_gate":
+            errors.append("set next_action to product_owner_gate when active_spec is null")
+    else:
+        if not _safe_spec(active_spec):
+            errors.append("set active_spec to a safe relative specs/... path")
+        elif not (root / PurePosixPath(active_spec)).is_dir():
+            errors.append(f"create active specification directory: {active_spec}")
+        if ledger["next_action"] != "implement_active_spec":
+            errors.append("set next_action to implement_active_spec when active_spec is non-null")
 
     try:
         manifest = json.loads((root / "docs/source-of-truth/SOURCE_MANIFEST.json").read_text(encoding="utf-8"))
@@ -94,18 +124,30 @@ def validate(root: Path) -> list[str]:
     try:
         status = (root / "docs/STATUS.md").read_text(encoding="utf-8")
         first_task = re.search(r"^## Task (\d+)(?:/60)?\b", status, re.MULTILINE)
-        if first_task is None or first_task.group(1) != "30":
-            errors.append("place the Task 30 STATUS section before every older Task section")
+        expected = str(ledger["latest_closed_task"] + (1 if active_spec is not None else 0))
+        if first_task is None or first_task.group(1) != expected:
+            errors.append(f"place the Task {expected} STATUS section before every older Task section")
     except OSError as exc:
         errors.append(f"make docs/STATUS.md readable: {exc}")
 
+    slice_markers = [f"Slice {ledger['latest_closed_slice']:03d}"]
+    if active_spec is not None:
+        match = re.search(r"specs/(\d{3})-", active_spec)
+        if match:
+            slice_markers.append(f"Slice {match.group(1)}")
     try:
-        if "Slice 020" not in (root / "docs/ROADMAP.md").read_text(encoding="utf-8"):
-            errors.append("add Slice 020 to docs/ROADMAP.md")
+        roadmap = (root / "docs/ROADMAP.md").read_text(encoding="utf-8")
+        for slice_marker in dict.fromkeys(slice_markers):
+            if slice_marker not in roadmap:
+                errors.append(f"add {slice_marker} to docs/ROADMAP.md")
     except OSError as exc:
         errors.append(f"make docs/ROADMAP.md readable: {exc}")
 
-    markers = ("Latest closed task: **30/60**", "Database schema: **16**", "Next action: **Product Owner gate**")
+    markers = (
+        f"Latest closed task: **{ledger['latest_closed_task']}/60**",
+        f"Database schema: **{ledger['database_schema_version']}**",
+        f"Next action: **{_next_action_label(ledger['next_action'])}**",
+    )
     try:
         start_here = (root / "START_HERE.md").read_text(encoding="utf-8")
         for marker in markers:

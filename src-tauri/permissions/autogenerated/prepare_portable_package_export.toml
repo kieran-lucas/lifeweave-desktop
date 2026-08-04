@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-prepare-portable-package-export"
+description = "Enables the prepare_portable_package_export command without any pre-configured scope."
+commands.allow = ["prepare_portable_package_export"]
+
+[[permission]]
+identifier = "deny-prepare-portable-package-export"
+description = "Denies the prepare_portable_package_export command without any pre-configured scope."
+commands.deny = ["prepare_portable_package_export"]

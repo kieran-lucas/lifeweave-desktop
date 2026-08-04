@@ -3,11 +3,11 @@ use super::{
     dto::{DocumentAssetBytes, DocumentAssetView, ImportDocumentAssetInput},
 };
 use crate::infrastructure::durability;
-use rusqlite::{Connection, OptionalExtension, params};
+use rusqlite::{Connection, OptionalExtension, Transaction, params};
 use sha2::{Digest, Sha256};
-use std::path::Path;
+use std::path::{Component, Path};
 
-fn hash(bytes: &[u8]) -> String {
+pub fn hash(bytes: &[u8]) -> String {
     format!("{:x}", Sha256::digest(bytes))
 }
 fn safe_name(value: &str) -> Result<String, DocumentError> {
@@ -21,7 +21,7 @@ fn safe_name(value: &str) -> Result<String, DocumentError> {
     }
     Ok(name.to_owned())
 }
-fn sniff(bytes: &[u8]) -> Result<(&'static str, &'static str, u32, u32), DocumentError> {
+pub fn sniff(bytes: &[u8]) -> Result<(&'static str, &'static str, u32, u32), DocumentError> {
     if bytes.len() >= 24 && &bytes[..8] == b"\x89PNG\r\n\x1a\n" {
         return Ok((
             "image/png",
@@ -104,13 +104,46 @@ pub fn import(
     root: &Path,
     input: ImportDocumentAssetInput,
 ) -> Result<DocumentAssetView, DocumentError> {
-    if input.bytes.is_empty() || input.bytes.len() > MAX_ASSET_BYTES {
+    let prepared = prepare_imported_asset(&input.original_name, input.bytes)?;
+    let tx = conn.transaction()?;
+    let receipt = install_prepared_asset_in_tx(&tx, root, &prepared)?;
+    if let Err(error) = tx.commit() {
+        if let Some(path) = receipt.created_file {
+            let _ = durability::durable_remove_file(&path);
+        }
+        return Err(error.into());
+    }
+    get(conn, root, &receipt.asset_id).map(|value| value.asset)
+}
+
+#[derive(Debug, Clone)]
+pub struct PreparedDocumentAsset {
+    pub safe_original_name: String,
+    pub mime: String,
+    pub extension: String,
+    pub byte_size: u64,
+    pub width: u32,
+    pub height: u32,
+    pub checksum: String,
+    pub bytes: Vec<u8>,
+}
+
+#[derive(Debug)]
+pub struct AssetInstallReceipt {
+    pub asset_id: String,
+    pub created_file: Option<std::path::PathBuf>,
+}
+
+pub fn prepare_imported_asset(
+    original_name: &str,
+    bytes: Vec<u8>,
+) -> Result<PreparedDocumentAsset, DocumentError> {
+    if bytes.is_empty() || bytes.len() > MAX_ASSET_BYTES {
         return Err(DocumentError::Validation("Image must be 10 MB or smaller."));
     }
-    let name = safe_name(&input.original_name)?;
-    let (mime, ext, _, _) = sniff(&input.bytes)?;
-    let format = image_format(mime)?;
-    let decoded = image::load_from_memory_with_format(&input.bytes, format)
+    let safe_original_name = safe_name(original_name)?;
+    let (mime, extension, _, _) = sniff(&bytes)?;
+    let decoded = image::load_from_memory_with_format(&bytes, image_format(mime)?)
         .map_err(|_| DocumentError::Validation("Image bytes are corrupt or unsupported."))?;
     let (width, height) = (decoded.width(), decoded.height());
     if width == 0 || height == 0 || width > 12000 || height > 12000 {
@@ -118,10 +151,55 @@ pub fn import(
             "Image dimensions are unsupported.",
         ));
     }
-    let checksum = hash(&input.bytes);
-    if let Some(v)=conn.query_row("SELECT id,original_name,sniffed_mime,byte_size,width,height,status FROM assets WHERE checksum=?1",params![checksum],view).optional()?{return Ok(v)}
+    Ok(PreparedDocumentAsset {
+        safe_original_name,
+        mime: mime.into(),
+        extension: extension.into(),
+        byte_size: bytes.len() as u64,
+        width,
+        height,
+        checksum: hash(&bytes),
+        bytes,
+    })
+}
+
+pub fn install_prepared_asset_in_tx(
+    tx: &Transaction<'_>,
+    root: &Path,
+    asset: &PreparedDocumentAsset,
+) -> Result<AssetInstallReceipt, DocumentError> {
+    if let Some((id, mime, width, height, status)) = tx
+        .query_row(
+            "SELECT id,sniffed_mime,width,height,status FROM assets WHERE checksum=?1",
+            [&asset.checksum],
+            |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, u32>(2)?,
+                    row.get::<_, u32>(3)?,
+                    row.get::<_, String>(4)?,
+                ))
+            },
+        )
+        .optional()?
+    {
+        if status != "usable"
+            || mime != asset.mime
+            || width != asset.width
+            || height != asset.height
+        {
+            return Err(DocumentError::Validation(
+                "Matching local asset authority is not usable.",
+            ));
+        }
+        return Ok(AssetInstallReceipt {
+            asset_id: id,
+            created_file: None,
+        });
+    }
     let id = domain::new_id();
-    let relative = format!("assets/original/{id}.{ext}");
+    let relative = format!("assets/original/{id}.{}", asset.extension);
     let dir = root.join("assets/original");
     std::fs::create_dir_all(&dir)?;
     let canonical_root = root.canonicalize()?;
@@ -130,36 +208,44 @@ pub fn import(
         return Err(DocumentError::Validation("Asset storage escaped app data."));
     }
     let final_path = root.join(&relative);
-    let temp = dir.join(format!(".{id}.tmp"));
-    {
-        let mut f = std::fs::OpenOptions::new()
+    let temporary = dir.join(format!(".{id}.tmp"));
+    let publish = (|| -> Result<(), std::io::Error> {
+        use std::io::Write as _;
+        let mut file = std::fs::OpenOptions::new()
             .create_new(true)
             .write(true)
-            .open(&temp)?;
-        use std::io::Write;
-        f.write_all(&input.bytes)?;
-        f.sync_all()?;
+            .open(&temporary)?;
+        file.write_all(&asset.bytes)?;
+        file.sync_all()?;
+        drop(file);
+        durability::durable_rename(&temporary, &final_path)
+    })();
+    if let Err(error) = publish {
+        let _ = std::fs::remove_file(&temporary);
+        let _ = durability::durable_remove_file(&final_path);
+        return Err(error.into());
     }
-    durability::durable_rename(&temp, &final_path)?;
-    let result = conn.execute(
+    if let Err(error) = tx.execute(
         "INSERT INTO assets VALUES(?1,?2,?3,?4,?5,?6,?7,?8,'usable',?9)",
         params![
             id,
-            checksum,
-            name,
-            mime,
-            input.bytes.len() as i64,
-            width,
-            height,
+            asset.checksum,
+            asset.safe_original_name,
+            asset.mime,
+            asset.byte_size as i64,
+            asset.width,
+            asset.height,
             relative,
             domain::now()
         ],
-    );
-    if let Err(e) = result {
+    ) {
         let _ = durability::durable_remove_file(&final_path);
-        return Err(e.into());
+        return Err(error.into());
     }
-    get(conn, root, &id).map(|v| v.asset)
+    Ok(AssetInstallReceipt {
+        asset_id: id,
+        created_file: Some(final_path),
+    })
 }
 
 fn image_format(mime: &str) -> Result<image::ImageFormat, DocumentError> {
@@ -184,22 +270,48 @@ pub fn sanitized_export(bytes: &[u8], mime: &str) -> Result<Vec<u8>, DocumentErr
         .map_err(|_| DocumentError::Validation("Image export failed."))?;
     Ok(output.into_inner())
 }
+
+pub fn read_verified_original(
+    root: &Path,
+    relative: &str,
+    checksum: &str,
+) -> Result<Vec<u8>, DocumentError> {
+    let relative_path = Path::new(relative);
+    if relative_path.is_absolute()
+        || relative_path
+            .components()
+            .any(|value| !matches!(value, Component::Normal(_)))
+    {
+        return Err(DocumentError::Validation(
+            "Asset storage identity is invalid.",
+        ));
+    }
+    let path = root.join(relative_path);
+    let metadata = std::fs::symlink_metadata(&path)
+        .map_err(|_| DocumentError::Validation("Asset file is missing."))?;
+    if !metadata.file_type().is_file() || metadata.file_type().is_symlink() {
+        return Err(DocumentError::Validation(
+            "Asset storage identity is invalid.",
+        ));
+    }
+    let canonical_root = root.canonicalize()?;
+    let canonical_path = path.canonicalize()?;
+    if !canonical_path.starts_with(canonical_root) {
+        return Err(DocumentError::Validation("Asset storage escaped app data."));
+    }
+    let bytes = std::fs::read(canonical_path)?;
+    if hash(&bytes) != checksum {
+        return Err(DocumentError::Validation("Asset checksum is invalid."));
+    }
+    Ok(bytes)
+}
+
 pub fn get(conn: &Connection, root: &Path, id: &str) -> Result<DocumentAssetBytes, DocumentError> {
     if !domain::valid_id(id) {
         return Err(DocumentError::NotFound);
     }
     let (asset,relative,checksum):(DocumentAssetView,String,String)=conn.query_row("SELECT id,original_name,sniffed_mime,byte_size,width,height,status,relative_original_path,checksum FROM assets WHERE id=?1",params![id],|r|Ok((view(r)?,r.get(7)?,r.get(8)?))).optional()?.ok_or(DocumentError::NotFound)?;
-    if relative.contains("..") || Path::new(&relative).is_absolute() {
-        return Err(DocumentError::Validation(
-            "Asset storage identity is invalid.",
-        ));
-    }
-    let path = root.join(relative);
-    let bytes =
-        std::fs::read(path).map_err(|_| DocumentError::Validation("Asset file is missing."))?;
-    if hash(&bytes) != checksum {
-        return Err(DocumentError::Validation("Asset checksum is invalid."));
-    }
+    let bytes = read_verified_original(root, &relative, &checksum)?;
     Ok(DocumentAssetBytes { asset, bytes })
 }
 
@@ -245,5 +357,41 @@ mod tests {
             .is_err()
         );
         let _ = std::fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn prepared_install_cleans_files_after_publish_or_insert_failure() {
+        for barrier in [0, 1] {
+            let mut conn = open_memory_connection().unwrap();
+            run_migrations(&mut conn).unwrap();
+            let root =
+                std::env::temp_dir().join(format!("lw_asset_fault_{barrier}_{}", domain::new_id()));
+            std::fs::create_dir_all(&root).unwrap();
+            let prepared = prepare_imported_asset("pixel.png", tiny_png()).unwrap();
+            let tx = conn.transaction().unwrap();
+            durability::fail_after(barrier);
+            assert!(install_prepared_asset_in_tx(&tx, &root, &prepared).is_err());
+            tx.rollback().unwrap();
+            let directory = root.join("assets/original");
+            if directory.exists() {
+                assert_eq!(std::fs::read_dir(directory).unwrap().count(), 0);
+            }
+            std::fs::remove_dir_all(root).unwrap();
+        }
+
+        let mut conn = open_memory_connection().unwrap();
+        run_migrations(&mut conn).unwrap();
+        conn.execute_batch("CREATE TEMP TRIGGER fail_asset_insert BEFORE INSERT ON assets BEGIN SELECT RAISE(FAIL, 'injected'); END;").unwrap();
+        let root = std::env::temp_dir().join(format!("lw_asset_insert_fault_{}", domain::new_id()));
+        std::fs::create_dir_all(&root).unwrap();
+        let prepared = prepare_imported_asset("pixel.png", tiny_png()).unwrap();
+        let tx = conn.transaction().unwrap();
+        assert!(install_prepared_asset_in_tx(&tx, &root, &prepared).is_err());
+        tx.rollback().unwrap();
+        let directory = root.join("assets/original");
+        if directory.exists() {
+            assert_eq!(std::fs::read_dir(directory).unwrap().count(), 0);
+        }
+        std::fs::remove_dir_all(root).unwrap();
     }
 }

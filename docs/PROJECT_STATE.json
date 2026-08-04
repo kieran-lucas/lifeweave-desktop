@@ -1,13 +1,14 @@
 {
-  "format_version": 1,
+  "format_version": 2,
   "repository": "kieran-lucas/lifeweave-desktop",
   "branch": "main",
   "latest_closed_task": 30,
+  "latest_closed_slice": 20,
   "latest_feature_task": 29,
   "latest_feature_checkpoint": "7240b7f371ada526ea5a31c0481612574d875fe0",
   "database_schema_version": 16,
-  "active_spec": null,
-  "next_action": "product_owner_gate",
+  "active_spec": "specs/021-lossless-portable-package",
+  "next_action": "implement_active_spec",
   "forbidden_feature_jump": true,
   "recommended_next_candidate": "lossless_portable_package",
   "source_sha256": "9c422927c09e26431d71b1ef5ab6306891a3e7c15ece0fc808bedf6f6689540a"

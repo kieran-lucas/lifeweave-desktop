@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-confirm-portable-package-import"
+description = "Enables the confirm_portable_package_import command without any pre-configured scope."
+commands.allow = ["confirm_portable_package_import"]
+
+[[permission]]
+identifier = "deny-confirm-portable-package-import"
+description = "Denies the confirm_portable_package_import command without any pre-configured scope."
+commands.deny = ["confirm_portable_package_import"]

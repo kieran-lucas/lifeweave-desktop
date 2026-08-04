@@ -68,6 +68,11 @@ import type { PreviewNarrativeMarkdownInput } from "./generated/PreviewNarrative
 import type { NarrativeMarkdownPreview } from "./generated/NarrativeMarkdownPreview";
 import type { ImportNarrativeMarkdownInput } from "./generated/ImportNarrativeMarkdownInput";
 import type { NarrativeMarkdownExport } from "./generated/NarrativeMarkdownExport";
+import type { PreparePortablePackageExportInput } from "./generated/PreparePortablePackageExportInput";
+import type { PortablePackageExportTicket } from "./generated/PortablePackageExportTicket";
+import type { PortablePackageImportPreview } from "./generated/PortablePackageImportPreview";
+import type { ConfirmPortablePackageImportInput } from "./generated/ConfirmPortablePackageImportInput";
+import type { PortablePackageImportResult } from "./generated/PortablePackageImportResult";
 
 export function healthCheck(): Promise<HealthCheck> {
   return invoke<HealthCheck>("health_check");
@@ -178,3 +183,13 @@ export const recoverNarrativeDraft = (input: NarrativeDocumentIdInput) => invoke
 export const previewNarrativeMarkdown = (input: PreviewNarrativeMarkdownInput) => invoke<NarrativeMarkdownPreview>("preview_narrative_markdown", { input });
 export const importNarrativeMarkdown = (input: ImportNarrativeMarkdownInput) => invoke<NarrativeDocumentView>("import_narrative_markdown", { input });
 export const exportNarrativeMarkdown = (input: NarrativeDocumentIdInput) => invoke<NarrativeMarkdownExport>("export_narrative_markdown", { input });
+export const preparePortablePackageExport = (input: PreparePortablePackageExportInput) =>
+  invoke<PortablePackageExportTicket>("prepare_portable_package_export", { input });
+export const readPortablePackageExport = (exportId: string) =>
+  invoke<ArrayBuffer>("read_portable_package_export", { exportId });
+export const previewPortablePackageImport = (bytes: Uint8Array) =>
+  invoke<PortablePackageImportPreview>("preview_portable_package_import", bytes);
+export const confirmPortablePackageImport = (input: ConfirmPortablePackageImportInput) =>
+  invoke<PortablePackageImportResult>("confirm_portable_package_import", { input });
+export const discardPortablePackageImport = (importId: string) =>
+  invoke<void>("discard_portable_package_import", { importId });

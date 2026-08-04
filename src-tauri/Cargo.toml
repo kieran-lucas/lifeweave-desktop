@@ -48,6 +48,13 @@ chrono = "=0.4.45"
 # re-encoding only the four Core formats. Exact-pinned and default formats are
 # disabled to avoid bringing unrelated codecs into the native binary.
 image = { version = "=0.25.5", default-features = false, features = ["png", "jpeg", "webp", "gif"] }
+# Task 31: bounded document-level portable ZIP.
+# Exact-pinned because the package is a durable interchange format.
+# Default features are disabled: v1 admits Stored entries only, with no encryption
+# or compression codec. zip 5.1.1 MSRV 1.83 is compatible with project Rust 1.85.
+# Alternatives rejected: dialog/fs plugins broaden capability; JSON/Base64 inflates
+# IPC; hand-written ZIP is unsafe and unnecessary. MIT license; no runtime network.
+zip = { version = "=5.1.1", default-features = false }
 
 # Directory-metadata durability barrier for the restore swap sequence (Finding F6).
 # windows-sys is already a transitive dependency through tauri v2.11.2; adding as a

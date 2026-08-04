@@ -62,6 +62,8 @@ try {
   if ($LASTEXITCODE -ne 0) { throw "Backup/restore dogfood fixture failed." }
   cargo test --manifest-path src-tauri/Cargo.toml --locked narrative
   if ($LASTEXITCODE -ne 0) { throw "Narrative dogfood fixture failed." }
+  cargo test --manifest-path src-tauri/Cargo.toml --locked portable::service::tests::
+  if ($LASTEXITCODE -ne 0) { throw "Portable Basic Leaf/Narrative round-trip dogfood fixtures failed." }
 
   $installer = Join-Path $repo "src-tauri\target\release\bundle\nsis\Lifeweave_0.0.0_x64-setup.exe"
   if (-not (Test-Path $installer)) { throw "Run the normal production Tauri build before RC dogfood." }

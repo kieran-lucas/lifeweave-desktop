@@ -8,6 +8,7 @@ import { AnalyticsScreen } from "../features/analytics/AnalyticsScreen";
 import { CategoryGoals } from "../features/analytics/CategoryGoals";
 import { LifeScreen } from "../features/life/LifeScreen";
 import { localToday } from "../features/calendar/date";
+import { useLocalDateRollover } from "../features/calendar/useLocalDateRollover";
 import type { SearchNavigationTarget } from "../ipc/generated/SearchNavigationTarget";
 import * as styles from "./App.css";
 import { RouteErrorBoundary } from "./RouteErrorBoundary";
@@ -46,7 +47,7 @@ export function App() {
   );
   const [destination, setDestination] = useState<Destination>("today");
   const [selectedDate, setSelectedDate] = useState(localToday);
-  const [anchorLocalDate] = useState(localToday);
+  const anchorLocalDate = useLocalDateRollover();
   const [taskSidebarMode, setTaskSidebarMode] =
     useState<SidebarMode>(readSidebarMode);
   const [lifeAutoCollapsed, setLifeAutoCollapsed] = useState(false);

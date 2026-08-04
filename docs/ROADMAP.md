@@ -1,5 +1,9 @@
 # Roadmap
 
+## Slice 021 — Lossless Portable Package
+
+Task 31 adds a bounded single-document ZIP interchange format for committed Basic Leaf and Narrative Canvas documents. Canonical JSON remains authoritative; Markdown is a readable fallback; supported local visual assets are privacy-sanitized, checksummed and remapped during atomic import into an empty Life leaf. It is not a database backup or Life-tree export.
+
 ## Slice 020 — Current-State Closure
 
 Task 30 introduces no new product feature. It reconciles repository authority, makes current-state drift machine-checkable, closes recurring Related Tasks navigation semantics, restores the ordinary security gate, and refreshes schema-16 release/continuity evidence.

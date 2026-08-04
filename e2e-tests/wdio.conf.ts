@@ -12,6 +12,7 @@ export const config: Options.Testrunner = {
   path: "/",
   capabilities: [{
     browserName: "wry",
+    "wdio:enforceWebDriverClassic": true,
     "tauri:options": { application: process.env.LIFEWEAVE_E2E_BINARY ?? "" },
   }],
   mochaOpts: { timeout: 120_000 },

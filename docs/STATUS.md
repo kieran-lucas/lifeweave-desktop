@@ -1,5 +1,13 @@
 # Project Status
 
+## Task 31/60 — Lossless Portable Package — IN ACCEPTANCE — not closed
+
+- Task 31 is the active Product Owner-approved slice; implementation and evidence are not yet accepted.
+- Package format v1 is scoped to one committed Basic Leaf or Narrative Canvas document with canonical JSON authority, Markdown fallback, privacy-sanitized assets, manifest and SHA-256 checksums.
+- Import is restricted to an empty active Life leaf through Rust-owned validation, opaque staging, identity/asset remapping, and a single SQLite transaction.
+- Raw Tauri IPC is required; no Base64, filesystem/dialog plugin, broad capability, migration, or Task 32 behavior is authorized.
+- Database schema remains 16.
+
 ## Task 30/60 — Current-State Closure
 
 - No new product feature or database migration.

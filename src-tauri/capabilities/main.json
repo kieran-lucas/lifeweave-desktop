@@ -71,6 +71,11 @@
     "allow-export-narrative-markdown",
     "allow-import-narrative-markdown",
     "allow-preview-narrative-markdown",
+    "allow-prepare-portable-package-export",
+    "allow-read-portable-package-export",
+    "allow-preview-portable-package-import",
+    "allow-confirm-portable-package-import",
+    "allow-discard-portable-package-import",
     "allow-search-global"
   ]
 }

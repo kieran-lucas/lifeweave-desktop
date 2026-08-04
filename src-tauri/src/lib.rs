@@ -6,6 +6,7 @@ pub mod ipc;
 pub mod life;
 pub mod narrative;
 pub mod platform;
+pub mod portable;
 pub mod search;
 pub mod task;
 
@@ -48,6 +49,10 @@ use narrative::service::{
     create_narrative_document, discard_narrative_draft, export_narrative_markdown,
     get_narrative_document, import_narrative_markdown, preview_narrative_markdown,
     recover_narrative_draft, save_narrative_document, save_narrative_draft,
+};
+use portable::{
+    confirm_portable_package_import, discard_portable_package_import,
+    prepare_portable_package_export, preview_portable_package_import, read_portable_package_export,
 };
 
 /// Initialize the local tracing subscriber.
@@ -197,6 +202,11 @@ pub fn run() {
             export_narrative_markdown,
             import_narrative_markdown,
             preview_narrative_markdown,
+            prepare_portable_package_export,
+            read_portable_package_export,
+            preview_portable_package_import,
+            confirm_portable_package_import,
+            discard_portable_package_import,
             search_global,
         ])
         .run(tauri::generate_context!())

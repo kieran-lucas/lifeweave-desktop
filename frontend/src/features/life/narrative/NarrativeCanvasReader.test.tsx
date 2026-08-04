@@ -87,6 +87,7 @@ describe("NarrativeCanvasReader", () => {
   it("renders canvas title and scene title statically", async () => {
     mount();
     expect(await screen.findByRole("heading", { name: "My Canvas", level: 1 })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Export Lifeweave package" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Scene One", level: 2 })).toBeInTheDocument();
   });
 

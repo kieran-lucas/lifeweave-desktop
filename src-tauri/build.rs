@@ -63,6 +63,11 @@ fn main() {
             "export_narrative_markdown",
             "import_narrative_markdown",
             "preview_narrative_markdown",
+            "prepare_portable_package_export",
+            "read_portable_package_export",
+            "preview_portable_package_import",
+            "confirm_portable_package_import",
+            "discard_portable_package_import",
             "search_global",
         ]),
     ))

@@ -15,6 +15,7 @@ import { StaticDocument } from "../document/StaticDocument";
 import * as styles from "./NarrativeCanvas.css";
 import { getDocumentAsset } from "../../../ipc/commands";
 import { NarrativeVisualWorld } from "./NarrativeVisualWorld";
+import { PortablePackageControls } from "../portable/PortablePackageControls";
 
 const NarrativeCanvasStudio = lazy(() => import("./NarrativeCanvasStudio"));
 
@@ -281,6 +282,7 @@ export function NarrativeCanvasReader({ nodeId }: { nodeId: string }) {
         <button className={styles.primary} onClick={() => setEditing(true)}>Edit canvas</button>
         <NarrativeMarkdownExportButton documentId={document.id} />
       </div>
+      <PortablePackageControls nodeId={nodeId} documentKind="narrative_canvas" documentId={document.id} hasDraft={projection.draft_state !== "none"} />
       {notice && <p role="status" aria-live="polite">{notice}</p>}
       <StaticCanvasView doc={parsed} />
     </div>

@@ -144,5 +144,12 @@ mod tests {
         NarrativeMarkdownPreview::export_all_to(&out).unwrap();
         ImportNarrativeMarkdownInput::export_all_to(&out).unwrap();
         NarrativeMarkdownExport::export_all_to(&out).unwrap();
+        use crate::portable::{domain::PortableDocumentKind, dto::*};
+        PortableDocumentKind::export_all_to(&out).unwrap();
+        PreparePortablePackageExportInput::export_all_to(&out).unwrap();
+        PortablePackageExportTicket::export_all_to(&out).unwrap();
+        PortablePackageImportPreview::export_all_to(&out).unwrap();
+        ConfirmPortablePackageImportInput::export_all_to(&out).unwrap();
+        PortablePackageImportResult::export_all_to(&out).unwrap();
     }
 }

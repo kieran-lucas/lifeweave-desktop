@@ -12,6 +12,7 @@ import { StaticDocument } from "./StaticDocument";
 import * as styles from "./BasicLeafDocument.css";
 import { NarrativeCanvasReader, narrativeKey } from "../narrative/NarrativeCanvasReader";
 import { NarrativeTemplateChooser } from "../narrative/NarrativeTemplateChooser";
+import { PortablePackageControls } from "../portable/PortablePackageControls";
 
 const BasicLeafEditor = lazy(() => import("./BasicLeafEditor"));
 export const documentKey = (nodeId: string) => ["life", "document", nodeId] as const;
@@ -94,6 +95,7 @@ export function BasicLeafReader({ nodeId }: { nodeId: string }) {
       <div className={styles.shell}>
         <h2>Reader</h2>
         <p>This leaf has no document yet.</p>
+        {canShowMarkdownImport && <PortablePackageControls nodeId={nodeId} />}
         <div className={styles.actions}>
           <button className={styles.primary} disabled={create.isPending} onClick={() => create.mutate()}>Create Basic Leaf document</button>
           {!narrativeQuery.isError && <NarrativeTemplateChooser nodeId={nodeId} />}
@@ -213,6 +215,7 @@ export function BasicLeafReader({ nodeId }: { nodeId: string }) {
         </label>
         <button className={styles.button} onClick={() => void exportMarkdown()}>Export Markdown</button>
       </div>
+      <PortablePackageControls nodeId={nodeId} documentKind="basic_leaf" documentId={document.id} hasDraft={projection.draft_state !== "none"} />
       {notice && <p role="status" aria-live="polite">{notice}</p>}
       <div className={styles.outlineContainer}>
         {showOutline
