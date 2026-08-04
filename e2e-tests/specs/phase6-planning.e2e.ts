@@ -8,7 +8,8 @@ describe("Phase 6 — Upcoming and Overdue planning", () => {
       const invoke = (window as unknown as { __TAURI_INTERNALS__: { invoke: <T>(command: string, payload?: unknown) => Promise<T> } }).__TAURI_INTERNALS__.invoke;
       const iso = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
       const shift = (days: number) => { const date = new Date(); date.setHours(12, 0, 0, 0); date.setDate(date.getDate() + days); return iso(date); };
-      const yesterday = shift(-1), tomorrow = shift(1), afterTomorrow = shift(2);
+      const today = shift(0), yesterday = shift(-1), tomorrow = shift(1), afterTomorrow = shift(2);
+      await invoke("create_task", { input: { title: "E2E Today Fan", description: "fan lifecycle", local_date: today, start_minute: 240, end_minute: 300, category_id: "general", priority: "medium", life_node_id: null } });
       await invoke("create_task", { input: { title: "E2E Past Review", description: "needs review", local_date: yesterday, start_minute: 360, end_minute: 420, category_id: "general", priority: "high", life_node_id: null } });
       await invoke("create_task", { input: { title: "E2E Future One-off", description: "upcoming", local_date: tomorrow, start_minute: 480, end_minute: 540, category_id: "general", priority: "medium", life_node_id: null } });
       const futureSeries = await invoke<string>("create_recurring_task", { input: { title: "E2E Future Recurring", description: "upcoming series", local_date: tomorrow, start_minute: 600, end_minute: 660, category_id: "general", priority: "medium", frequency: "daily", interval: 1, weekdays: [], until: null, count: 3, life_node_id: null } });
@@ -18,7 +19,17 @@ describe("Phase 6 — Upcoming and Overdue planning", () => {
       await invoke("update_recurring_occurrence", { input: { series_id: movedSeries, original_local_date: tomorrow, replacement_local_date: afterTomorrow, title: null, description: null, category_id: null, priority: null, start_minute: null, end_minute: null, scope: "only_this_occurrence", cancelled: false, frequency: null, interval: null, weekdays: null, until: null, count: null, life_node_id: null } });
       return { futureSeries };
     });
+    await browser.refresh();
+    await expect($("h1=Today")).toBeDisplayed();
+    const fanRow = $("//div[@role='listitem'][.//strong[normalize-space()='E2E Today Fan']]");
+    await expect(fanRow).toBeDisplayed();
+    await fanRow.$("button[aria-label^='Assess task']").click();
+    await expect($("[role='listbox'][aria-label='Completion assessment']")).toBeDisplayed();
     const upcoming = $("button=Upcoming");
+    await upcoming.click();
+    await expect($("[role='listbox'][aria-label='Completion assessment']")).not.toExist();
+    await $("button=Today").click();
+    await expect($("[role='listbox'][aria-label='Completion assessment']")).not.toExist();
     await upcoming.click();
     await expect($("//strong[normalize-space()='E2E Future One-off']")).toBeDisplayed();
     await expect($("//strong[normalize-space()='E2E Future Recurring']")).toBeDisplayed();

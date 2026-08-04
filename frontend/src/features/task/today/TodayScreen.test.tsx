@@ -1,5 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import axe from "axe-core";
+import type { ComponentProps } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TodayScreen, localToday } from "./TodayScreen";
 
@@ -46,21 +48,28 @@ const commands = vi.hoisted(() => ({
   getTaskPlanningProjection: vi.fn(),
 }));
 vi.mock("../../../ipc/commands", () => commands);
-const renderToday = (onLifeNavigate?: (nodeId: string) => void) =>
-  render(
+const renderToday = (
+  onLifeNavigate?: (nodeId: string) => void,
+  props: ComponentProps<typeof TodayScreen> = {},
+) => {
+  const client = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
+  const view = render(
     <QueryClientProvider
-      client={
-        new QueryClient({
-          defaultOptions: {
-            queries: { retry: false },
-            mutations: { retry: false },
-          },
-        })
-      }
+      client={client}
     >
-      <TodayScreen {...(onLifeNavigate ? { onLifeNavigate } : {})} />
+      <TodayScreen
+        {...props}
+        {...(onLifeNavigate ? { onLifeNavigate } : {})}
+      />
     </QueryClientProvider>,
   );
+  return { ...view, client };
+};
 
 describe("Today recurrence contract", () => {
   beforeEach(() => {
@@ -130,7 +139,11 @@ describe("Today recurrence contract", () => {
       }] }],
     });
   });
-  afterEach(() => vi.useRealTimers());
+  afterEach(() => {
+    vi.useRealTimers();
+    delete (HTMLElement.prototype as { scrollIntoView?: unknown })
+      .scrollIntoView;
+  });
   it("renders all timeline periods and keeps recurrence off by default", async () => {
     renderToday();
     await screen.findByText("Focus");
@@ -412,6 +425,158 @@ describe("Today recurrence contract", () => {
     fireEvent.click(await screen.findByRole("button", { name: /Open day for Focus/ }));
     await waitFor(() => expect(document.activeElement).toHaveAttribute("data-task-id", "future"));
     expect(screen.getByRole("tab", { name: "Today" })).toHaveAttribute("aria-selected", "true");
-    delete (HTMLElement.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+  });
+  it("closes an assessment fan across both tab round trips and stays axe clean", async () => {
+    const { container } = renderToday();
+    await screen.findByText("Focus");
+    fireEvent.click(screen.getByRole("button", { name: /Assess task/ }));
+    expect(await screen.findByRole("listbox", { name: "Completion assessment" })).toBeInTheDocument();
+
+    const upcoming = screen.getByRole("tab", { name: "Upcoming" });
+    upcoming.focus();
+    fireEvent.click(upcoming);
+    expect(upcoming).toHaveFocus();
+    expect(screen.queryByRole("listbox", { name: "Completion assessment" })).not.toBeInTheDocument();
+    await screen.findByRole("heading", { name: "Upcoming" });
+    expect((await axe.run(container)).violations).toEqual([]);
+
+    fireEvent.click(screen.getByRole("tab", { name: "Today" }));
+    await screen.findByText("Focus");
+    expect(screen.queryByRole("listbox", { name: "Completion assessment" })).not.toBeInTheDocument();
+    expect((await axe.run(container)).violations).toEqual([]);
+
+    fireEvent.click(screen.getByRole("button", { name: /Assess task/ }));
+    expect(await screen.findByRole("listbox", { name: "Completion assessment" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("tab", { name: "Overdue" }));
+    expect(screen.queryByRole("listbox", { name: "Completion assessment" })).not.toBeInTheDocument();
+  });
+  it("keeps editor tab disabling and the latest undo operation unchanged", async () => {
+    renderToday();
+    await screen.findByText("Focus");
+    fireEvent.doubleClick(screen.getByRole("listitem"));
+    expect(screen.getByRole("tab", { name: "Upcoming" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("tab", { name: "Upcoming" }));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+    fireEvent.click(screen.getByRole("button", { name: /Assess task/ }));
+    fireEvent.click(await screen.findByRole("option", { name: "Met expectation" }));
+    expect(await screen.findByRole("button", { name: "Undo assessment" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("tab", { name: "Upcoming" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Today" }));
+    expect(screen.getByRole("button", { name: "Undo assessment" })).toBeInTheDocument();
+  });
+  it("handles an external request once, preserves user focus on updates, and handles a new ID", async () => {
+    const scroll = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
+      configurable: true,
+      value: scroll,
+    });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const request = { requestId: "external-a", taskId: "one", seriesId: null };
+    const view = render(
+      <QueryClientProvider client={client}>
+        <TodayScreen focusRequest={request} />
+      </QueryClientProvider>,
+    );
+    await waitFor(() => expect(document.activeElement).toHaveAttribute("data-task-id", "one"));
+    expect(scroll).toHaveBeenCalledTimes(1);
+
+    const todayTab = screen.getByRole("tab", { name: "Today" });
+    todayTab.focus();
+    client.setQueryData(["today-items", "2026-08-02"], [{ ...oneOff }]);
+    await waitFor(() => expect(todayTab).toHaveFocus());
+    expect(scroll).toHaveBeenCalledTimes(1);
+
+    view.rerender(
+      <QueryClientProvider client={client}>
+        <TodayScreen focusRequest={request} />
+      </QueryClientProvider>,
+    );
+    expect(scroll).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: /Assess task/ }));
+    expect(await screen.findByRole("listbox", { name: "Completion assessment" })).toBeInTheDocument();
+    view.rerender(
+      <QueryClientProvider client={client}>
+        <TodayScreen focusRequest={{ ...request, requestId: "external-c" }} />
+      </QueryClientProvider>,
+    );
+    await waitFor(() => expect(scroll).toHaveBeenCalledTimes(2));
+    expect(screen.queryByRole("listbox", { name: "Completion assessment" })).not.toBeInTheDocument();
+  });
+  it("consumes recurring planning focus and does not revive it after a query update", async () => {
+    const scroll = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
+      configurable: true,
+      value: scroll,
+    });
+    commands.getTaskPlanningProjection.mockResolvedValueOnce({
+      mode: "upcoming",
+      algorithm_version: 1,
+      anchor_local_date: "2026-08-02",
+      range_start_local_date: "2026-08-03",
+      range_end_local_date: "2026-08-16",
+      total_item_count: 1,
+      scheduled_minutes: 60,
+      groups: [{
+        local_date: "2026-08-03",
+        scheduled_minutes: 60,
+        items: [{ ...recurring, local_date: "2026-08-03" }],
+      }],
+    });
+    commands.listTodayItems.mockImplementation((date: string) =>
+      Promise.resolve(date === "2026-08-03" ? [{ ...recurring, local_date: date }] : [oneOff]),
+    );
+    const { client } = renderToday();
+    await screen.findByText("Focus");
+    fireEvent.click(screen.getByRole("tab", { name: "Upcoming" }));
+    fireEvent.click(await screen.findByRole("button", { name: /Open day for Weekly review/ }));
+    await waitFor(() => expect(document.activeElement).toHaveAttribute("data-series-id", "series"));
+    expect(scroll).toHaveBeenCalledTimes(1);
+    const todayTab = screen.getByRole("tab", { name: "Today" });
+    todayTab.focus();
+    client.setQueryData(["today-items", "2026-08-03"], [{ ...recurring, local_date: "2026-08-03" }]);
+    await waitFor(() => expect(todayTab).toHaveFocus());
+    expect(scroll).toHaveBeenCalledTimes(1);
+  });
+  it("completes missing-target fallback once after data resolves", async () => {
+    let resolveItems!: (items: typeof oneOff[]) => void;
+    commands.listTodayItems.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveItems = resolve;
+      }),
+    );
+    const headingFocus = vi.spyOn(HTMLElement.prototype, "focus");
+    const { client } = renderToday(undefined, {
+      focusRequest: { requestId: "missing", taskId: "absent", seriesId: null },
+    });
+    expect(headingFocus).not.toHaveBeenCalled();
+    resolveItems([oneOff]);
+    await waitFor(() => expect(screen.getByRole("heading", { name: "Today" })).toHaveFocus());
+    const callsAfterFallback = headingFocus.mock.calls.length;
+    screen.getByRole("tab", { name: "Today" }).focus();
+    client.setQueryData(["today-items", "2026-08-02"], [{ ...oneOff }]);
+    await waitFor(() => expect(screen.getByRole("tab", { name: "Today" })).toHaveFocus());
+    expect(headingFocus).toHaveBeenCalledTimes(callsAfterFallback + 1);
+    headingFocus.mockRestore();
+  });
+  it("does not revive handled external A after internal B is consumed", async () => {
+    const scroll = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
+      configurable: true,
+      value: scroll,
+    });
+    const request = { requestId: "external-a", taskId: "one", seriesId: null };
+    const { client } = renderToday(undefined, { focusRequest: request });
+    await waitFor(() => expect(scroll).toHaveBeenCalledTimes(1));
+    fireEvent.click(screen.getByRole("tab", { name: "Upcoming" }));
+    fireEvent.click(await screen.findByRole("button", { name: /Open day for Focus/ }));
+    await waitFor(() => expect(screen.getByRole("heading", { name: "Today" })).toHaveFocus());
+    expect(scroll).toHaveBeenCalledTimes(1);
+    const todayTab = screen.getByRole("tab", { name: "Today" });
+    todayTab.focus();
+    client.setQueryData(["today-items", "2026-08-03"], [{ ...oneOff, id: "future", local_date: "2026-08-03" }]);
+    await waitFor(() => expect(todayTab).toHaveFocus());
+    expect(scroll).toHaveBeenCalledTimes(1);
   });
 });

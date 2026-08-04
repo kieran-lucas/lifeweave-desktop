@@ -173,6 +173,18 @@ type FocusRequest = {
   taskId: string | null;
   seriesId: string | null;
 } | null;
+function findTodayTarget(
+  taskId: string | null,
+  seriesId: string | null,
+): HTMLElement | null {
+  return (
+    [...document.querySelectorAll<HTMLElement>("[data-task-id],[data-series-id]")].find(
+      (element) =>
+        (taskId !== null && element.dataset.taskId === taskId) ||
+        (seriesId !== null && element.dataset.seriesId === seriesId),
+    ) ?? null
+  );
+}
 export function TodayScreen({
   selectedDate,
   onSelectedDateChange,
@@ -196,7 +208,8 @@ export function TodayScreen({
   const planningAnchor = anchorLocalDate ?? today;
   const [workspaceMode, setWorkspaceMode] = useState<TaskWorkspaceMode>("today");
   const [internalFocusRequest, setInternalFocusRequest] = useState<FocusRequest>(null);
-  const effectiveFocusRequest = internalFocusRequest ?? focusRequest;
+  const handledInternalFocusRequest = useRef<string | null>(null);
+  const handledExternalFocusRequest = useRef<string | null>(null);
   const selectDate = (value: string) =>
     onSelectedDateChange
       ? onSelectedDateChange(value)
@@ -460,25 +473,40 @@ export function TodayScreen({
     setOpen(true);
   }
   useEffect(() => {
-    if (!effectiveFocusRequest || !items.data || workspaceMode !== "today") return;
-    const targetId = effectiveFocusRequest.taskId ?? effectiveFocusRequest.seriesId;
-    if (!targetId) return;
-    const el = document.querySelector<HTMLElement>(
-      `[data-task-id="${targetId}"],[data-series-id="${targetId}"]`,
-    );
-    if (el) {
-      el.scrollIntoView({ block: "nearest" });
-      el.focus({ preventScroll: true });
-    } else {
-      document.getElementById("today-heading")?.focus({ preventScroll: true });
-    }
-  }, [effectiveFocusRequest, items.data, workspaceMode]);
-  useEffect(() => {
     if (focusRequest) {
+      setOpenFan(null);
       setInternalFocusRequest(null);
       setWorkspaceMode("today");
     }
   }, [focusRequest]);
+  useEffect(() => {
+    if (!items.data || items.isFetching || workspaceMode !== "today") return;
+    const source = internalFocusRequest
+      ? "internal"
+      : focusRequest
+        ? "external"
+        : null;
+    const request = internalFocusRequest ?? focusRequest;
+    if (!source || !request) return;
+    const handled =
+      source === "internal"
+        ? handledInternalFocusRequest
+        : handledExternalFocusRequest;
+    if (handled.current === request.requestId) return;
+    const target = findTodayTarget(request.taskId, request.seriesId);
+    if (target) {
+      target.scrollIntoView({ block: "nearest" });
+      target.focus({ preventScroll: true });
+    } else {
+      document.getElementById("today-heading")?.focus({ preventScroll: true });
+    }
+    handled.current = request.requestId;
+    if (source === "internal") {
+      setInternalFocusRequest((current) =>
+        current?.requestId === request.requestId ? null : current,
+      );
+    }
+  }, [focusRequest, internalFocusRequest, items.data, items.isFetching, workspaceMode]);
   useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => {
@@ -551,13 +579,18 @@ export function TodayScreen({
   const clock = new Date(),
     clockMinute = clock.getHours() * 60 + clock.getMinutes();
   const openPlanningItem = (request: { localDate: string; taskId: string | null; seriesId: string | null }) => {
+    setOpenFan(null);
     selectDate(request.localDate);
     setInternalFocusRequest({ requestId: globalThis.crypto.randomUUID(), taskId: request.taskId, seriesId: request.seriesId });
     setWorkspaceMode("today");
   };
+  const activateWorkspaceMode = (next: TaskWorkspaceMode) => {
+    if (next !== "today") setOpenFan(null);
+    setWorkspaceMode(next);
+  };
   return (
     <section className={styles.root}>
-      <TaskWorkspaceTabs active={workspaceMode} disabled={open} onActivate={setWorkspaceMode} />
+      <TaskWorkspaceTabs active={workspaceMode} disabled={open} onActivate={activateWorkspaceMode} />
       {workspaceMode === "today" ? (
       <div role="tabpanel" id="task-panel-today" aria-labelledby="task-tab-today">
       <div className={styles.header}>
