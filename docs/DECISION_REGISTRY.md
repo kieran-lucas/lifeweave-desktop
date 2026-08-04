@@ -25,6 +25,10 @@ The immutable source is authoritative. This registry makes operational status vi
 - Narrative Canvas has three immutable built-in creation template IDs: `knowledge_dossier`, `project_blueprint`, and `learning_journey`.
 - Narrative Canvas has four static document-level Visual World IDs: `paper`, `sakura`, `aurora`, and `nocturne`.
 - Visual Worlds are presentation only and remain independent from templates.
+- Portable Package v1 represents one committed Basic Leaf or Narrative Canvas leaf document.
+- Portable canonical JSON is import authority; Markdown is a human-readable fallback and supported local visual assets are privacy-sanitized, checksummed, and remapped.
+- Portable import creates a new document only on a selected empty active Life leaf; it does not import or rename the Life node and excludes tree, Task, draft, history, analytics, and settings state.
+- Portable Package is document interchange, not a database backup.
 
 ## LOCKED — Technology direction
 
@@ -64,7 +68,9 @@ The immutable source is authoritative. This registry makes operational status vi
 - Generic Outline role beyond the Basic Leaf heading navigator;
 - Noteboard role;
 - Graph;
-- final Canvas export scope;
+- whole-tree or multi-document interchange;
+- custom export profiles;
+- preserve-vs-strip original asset metadata policy beyond the privacy-safe default;
 - branch node content semantics;
 - shortcut map;
 - global application/branch appearance beyond the four locked Narrative Canvas worlds;

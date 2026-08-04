@@ -13,13 +13,13 @@
 
 ## Current state
 
-- Latest closed task: **30/60**
-- Latest product feature: **Task 29 — Task/Life Relationships**
-- Latest feature checkpoint: `7240b7f371ada526ea5a31c0481612574d875fe0`
+- Latest closed task: **31/60**
+- Latest product feature: **Task 31 — Lossless Portable Package**
+- Latest feature checkpoint: `a20aac0bf701fa5d7be473e12316ba97637f2958`
 - Database schema: **16**
-- Active implementation specification: **Task 31 — Lossless Portable Package**
-- Next action: **Implement active spec**
-- Task 31 status: **IN ACCEPTANCE — not closed**
+- Active implementation specification: **none**
+- Next action: **Product Owner gate**
+- Task 32 status: **not selected or authorized**
 
 ## Core invariants
 

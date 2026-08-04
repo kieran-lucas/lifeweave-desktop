@@ -2,12 +2,12 @@
 
 ## Metadata
 
-- generated_at: `2026-08-04T12:30:40.4939179+07:00`
+- generated_at: `2026-08-04T14:55:52.2679886+07:00`
 - repository: `kieran-lucas/lifeweave-desktop`
 - branch: `main`
-- Task 30 implementation checkpoint: `76963fe6300782c56acd849e49f54089dee3818e`
+- Task 31 implementation checkpoint: `a20aac0bf701fa5d7be473e12316ba97637f2958`
 - current handoff-containing HEAD: resolve at read time with `git rev-parse HEAD`
-- tracked working tree status at generation: clean after Commit A push/fetch
+- tracked working tree status at generation: Commit A was clean and matched `origin/main`; only the closure/evidence files committed with this handoff were then changed
 
 ## Immutable source
 
@@ -19,58 +19,65 @@
 
 ## Product compass
 
-- macro milestone: Post-Core Expansion, closure gate
-- latest closed task: Task 30 — Current-State Closure
-- latest feature task/checkpoint: Task 29 — Task/Life Relationships / `7240b7f371ada526ea5a31c0481612574d875fe0`
+- macro milestone: Post-Core Expansion, Product Owner gate
+- latest closed task: Task 31 — Lossless Portable Package
+- latest feature task/checkpoint: Task 31 / `a20aac0bf701fa5d7be473e12316ba97637f2958`
 - database schema: 16
 - active spec: none (`docs/PROJECT_STATE.json` has `active_spec: null`)
 - next allowed action: Product Owner gate
-- forbidden jump: any Task 31 feature implementation
+- forbidden jump: any Task 32 feature implementation
 
 ## Verified implementation
 
-- Task 29 relationship authority: zero-or-one Life link is stored only on one-off `tasks` and recurring `task_series`; recurring projections inherit it; occurrence/evaluation rows do not store it.
-- Task 30 navigation semantics: frontend-supplied ISO local anchor; one-offs use their own date; recurring series use the nearest non-cancelled displayed occurrence on/after the anchor; moved-in overrides remain authoritative; ended finite series are omitted.
-- Task 30 governance ledger: `docs/PROJECT_STATE.json` is validated against its closed schema, source manifest, highest released migration, START_HERE, Status, and Roadmap by the standard-library-only governance validator.
-- Task 30 security closure: all twelve static Visual World chips use semantic data attributes and static vanilla-extract selectors; no chip inline style or runtime color variable remains; CSP and the strict security verifier are unchanged.
+- Task 29 relationship authority: zero-or-one Life link remains stored only on `tasks` and `task_series`; occurrence/evaluation rows do not store it.
+- Task 30 navigation semantics: caller-supplied local anchor selects the nearest actionable displayed recurring occurrence; ended finite series are omitted.
+- Task 30 governance ledger: format-v2 validation now derives task, slice, active-spec, and navigation markers generically from `docs/PROJECT_STATE.json`.
+- Task 30 security closure: static Visual World chips remain inline-style free; CSP and the strict verifier remain unchanged.
+- Task 31 portable packages: Rust owns exact Stored-only ZIP creation/validation, manifest/checksum authority, privacy-sanitized assets, bounded opaque staging, raw IPC, canonical remapping, transactional empty-leaf import, idempotency, and rollback receipts.
+- Task 31 Reader UX: Basic Leaf and Narrative Reader share accessible portable import/export controls while retaining Markdown controls; import confirmation is lazy-loaded.
+- Midnight debt: `useLocalDateRollover` refreshes at local midnight plus one second and on window focus/visibility restoration without polling.
 
 ## Test and release evidence
 
-- `python -m unittest scripts.tests.test_check_project_state`: 7 passed.
-- `pnpm source:verify`: passed; exact immutable-source bytes, lines, and hash above.
-- `pnpm governance:check`: passed both repository and Project State validators.
-- `pnpm index:check`: passed; 402-heading index and coverage matrix current.
-- `pnpm verify`: passed no-remote, strict security, and hardening policy checks.
+- `python -m unittest scripts.tests.test_check_project_state`: 14 passed.
+- `pnpm source:verify`: passed; immutable-source size/line/hash shown above.
+- `pnpm governance:check`: passed repository and dynamic Project State validators.
+- `pnpm index:check`: passed; 402 headings indexed.
+- `pnpm verify`: passed strict no-remote, security, and hardening checks.
 - `pnpm typecheck`: passed.
-- `pnpm test`: 29 files, 450 passed, 0 failed.
-- `pnpm build`: passed; 817 modules transformed.
+- `pnpm test`: 31 files, 465 passed, 0 failed.
+- `pnpm build`: passed; 822 modules; main JS 515,396 bytes, total JS 1,110,757 bytes, portable lazy chunk 2,728 bytes.
 - `cargo check --manifest-path src-tauri/Cargo.toml --locked --all-targets`: passed.
 - `cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check`: passed.
 - `cargo clippy --manifest-path src-tauri/Cargo.toml --locked --all-targets -- -D warnings`: passed.
-- `cargo test --manifest-path src-tauri/Cargo.toml --locked`: 412 passed, 0 failed, 1 designated release-performance test ignored. Two pre-existing fault-injection cases transiently failed in the first parallel attempt; all seven related cases passed serially and the required unfiltered default rerun passed.
-- `pnpm hardening:performance`: passed; main JS 508,547 bytes and total JS 1,104,243 bytes.
-- `pnpm hardening:narrative-performance`: passed; validation p95 was 56.1 µs / 539.9 µs / 1.3002 ms for 5/50/128 blocks; five-block save p95 was 428.7 µs.
-- `pnpm e2e:windows`: passed three phases (Task lifecycle, opaque-backup restore, fresh-process persistence) with WebView2 and Microsoft-signed EdgeDriver `150.0.4078.105`; successful isolated profile cleaned.
-- `pnpm tauri build`: passed; unsigned NSIS path `src-tauri/target/release/bundle/nsis/Lifeweave_0.0.0_x64-setup.exe`, 4,655,924 bytes, SHA-256 `fdbf0565bdabbbe020c3494e1b4133c0d39f1ce623fd66236cbf9dceaeffc7b2`.
-- `pnpm hardening:rc`: passed run `core-rc-47135d438f394f9caf8fbc06de524bb2`; two isolated 25-second schema-16 reopen sessions; 19 document, 142 backup, and 58 Narrative tests passed; sentinel/process cleanup validated.
-- CI status: not run; the remaining workflow is manual-dispatch-only and Task 30 did not meet an accepted invocation trigger. Local evidence is authoritative.
-- external manual debt: manual screen-reader and physical alternate-DPI evidence remain unclaimed.
+- `cargo test --manifest-path src-tauri/Cargo.toml --locked`: 437 passed, 0 failed, 3 ignored evidence tests.
+- `pnpm hardening:performance`: passed.
+- `pnpm hardening:narrative-performance`: passed; 5/50/128 block p95 70 µs / 986.3 µs / 2.0078 ms; save p95 489 µs.
+- `pnpm hardening:portable-performance`: passed; small export/preview p95 47.28/1.35 ms; medium export/preview/confirm p95 285.44/103.99/1.82 ms; maximum representative package 50,629,896 bytes and 2,134.26 ms export-plus-preview.
+- `pnpm e2e:windows`: passed five isolated phases including Basic Leaf image package round trip and fresh-process persistence; WebView2/EdgeDriver `150.0.4078.105`.
+- `pnpm tauri build`: passed; release binary 13,023,744 bytes; unsigned NSIS `src-tauri/target/release/bundle/nsis/Lifeweave_0.0.0_x64-setup.exe`, 4,783,210 bytes, SHA-256 `c673e87f5a3733b50c556bcf8c2ba3bca48980a77752f6a1a40f040da0ab1519`.
+- `pnpm hardening:rc`: passed run `core-rc-81d0075c8d7041a7bac1e5a74a729c0e`; two 25-second isolated reopen sessions; document, backup/restore, Narrative, and portable round-trip suites passed.
+- Independent archive inspection: Windows `tar` confirmed exact lexicographic regular-file inventory, Stored/uncompressed method, `0644`, fixed 1980 timestamp, and readable UTF-8 manifest/Markdown/canonical JSON; inspection archive removed.
+- CI status: not run; manual-dispatch-only workflow had no accepted Task 31 invocation trigger.
+- External manual debt: physical screen-reader and physical alternate-DPI evidence are unclaimed.
 
 ## Decisions
 
-- locked: Windows/local-first; Today default; Task rows are not cards; Life Browse is selected plus direct children; SQLite/Rust domain authority; safe backup/restore; Task/Life links are navigation-only; Narrative Canvas has 1–20 scenes, three immutable built-in templates, and four static presentation-only Visual Worlds.
-- open: final Canvas export scope; Tags; Backlinks; Generic Outline beyond the Basic Leaf heading navigator; Noteboard role; Graph; score; prediction; global application/branch appearance beyond the four Canvas worlds.
-- recommended but not activated: Lossless Portable Package.
+- locked: Windows/local-first; Today default; Task is not a card; Life Browse is selected plus direct children; SQLite/Rust authority; safe backup/restore; Task/Life links are navigation-only; Narrative supports 1–20 scenes, three built-in templates, and four static Visual Worlds; Portable Package v1 represents one committed Basic Leaf or Narrative Canvas document with canonical JSON authority, readable Markdown, and privacy-sanitized assets imported only into an empty active leaf.
+- open: whole-tree or multi-document interchange; custom export profiles; original asset metadata policy beyond the privacy-safe default; Tags; Backlinks; Generic Outline beyond the Basic Leaf heading navigator; Noteboard; Graph; score; prediction; global appearance beyond the four Canvas worlds.
+- recommended but not activated: none; Task 32 is unselected.
 
 ## Risks/debt
 
 - P0: none known.
 - P1: none known.
-- P2: external manual screen-reader and physical alternate-DPI verification.
-- P3: none newly identified by Task 30.
+- P2: physical screen-reader and alternate-DPI verification remain external manual debt.
+- P3: peak working-set observation was unavailable inside the maximum-package Rust harness; hard size and completion limits passed.
 
 ## Recent commits
 
+- `a20aac0bf701fa5d7be473e12316ba97637f2958` — add lossless portable document packages
+- `a43e867abaa4915cd4fc062e5a4f4b1ee935575f` — refresh project continuity handoff
 - `76963fe6300782c56acd849e49f54089dee3818e` — close current state verification gaps
 - `7240b7f371ada526ea5a31c0481612574d875fe0` — link tasks to life areas
 - `b79a0898ae50962b378174f58fadf3dbffeaae04` — close narrative visual worlds
@@ -78,13 +85,13 @@
 - `6134d602ca8099640d8c01f67c32b6a53fec4091` — add narrative visual worlds
 - `b32839ac14e7f0463cd6580caa919642128ef2b1` — close task 27 release evidence
 - `a49528403ac119991b14b9f84fbedd01a7ccf6d2` — add narrative template system
-- `4e2c4ee347212b12d7497705518f5391c76a6b1` — refresh native e2e core flow
+- `4e2c4ee347212b9a26949f7c9df2d2ae77dab59a` — refresh native e2e core flow
 - `4cf6ca3f7e0492b12d7497705518f5391c76a6b1` — preserve legacy backup asset validation
 - `6ee20b09b33ea975a1e92e80f1995b3c0f3d87d6` — harden core release evidence
 
 ## Exact next action
 
-Product Owner gate. The recommended candidate is Lossless Portable Package. This handoff grants no implementation authorization; Task 31 must not begin without an explicit Product Owner decision.
+Product Owner gate. Task 32 is unselected and this handoff grants no implementation authorization.
 
 ## Files next AI must read
 
@@ -96,13 +103,15 @@ Product Owner gate. The recommended candidate is Lossless Portable Package. This
 6. `docs/STATUS.md`
 7. `docs/ROADMAP.md`
 8. `docs/ARCHITECTURE.md`
-9. `specs/020-current-state-closure/README.md`
-10. `specs/020-current-state-closure/spec.md`
-11. `specs/020-current-state-closure/acceptance.md`
-12. `docs/adr/0024-recurring-related-task-navigation.md`
-13. `docs/audits/task-30-current-state-closure.md`
-14. `docs/audits/task-30-release-candidate.json`
+9. `docs/DATA_SAFETY_AND_RECOVERY.md`
+10. `docs/SECURITY_PRIVACY_LOGGING.md`
+11. `specs/021-lossless-portable-package/README.md`
+12. `specs/021-lossless-portable-package/spec.md`
+13. `specs/021-lossless-portable-package/acceptance.md`
+14. `docs/adr/0025-lossless-portable-package.md`
+15. `docs/audits/task-31-lossless-portable-package.md`
+16. `docs/audits/task-31-release-candidate.json`
 
 ## Integrity statement
 
-This handoff reflects Commit A `76963fe6300782c56acd849e49f54089dee3818e`. Commit A was pushed directly to `main` without force push, amend, rebase, reset, stash, cleanup, or history rewrite. Its author and committer are `Kieran Lucas <kieranlucas.work@gmail.com>`. The tracked tree was clean at handoff generation before this file was added. Generated binaries, profiles, logs, databases, backups, screenshots, and installers are not tracked.
+This handoff reflects feature Commit A `a20aac0bf701fa5d7be473e12316ba97637f2958`. Commit A and this closure were pushed directly to `main` without force push, amend, rebase, reset, restore, stash, broad cleanup, or history rewrite. Author and committer are `Kieran Lucas <kieranlucas.work@gmail.com>`. The final tracked tree is required to be clean and match `origin/main`; generated binaries, profiles, logs, databases, backups, screenshots, packages, and installers are not tracked.

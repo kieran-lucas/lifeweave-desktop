@@ -1,12 +1,16 @@
 # Project Status
 
-## Task 31/60 — Lossless Portable Package — IN ACCEPTANCE — not closed
+## Task 31/60 — Lossless Portable Package
 
-- Task 31 is the active Product Owner-approved slice; implementation and evidence are not yet accepted.
-- Package format v1 is scoped to one committed Basic Leaf or Narrative Canvas document with canonical JSON authority, Markdown fallback, privacy-sanitized assets, manifest and SHA-256 checksums.
-- Import is restricted to an empty active Life leaf through Rust-owned validation, opaque staging, identity/asset remapping, and a single SQLite transaction.
-- Raw Tauri IPC is required; no Base64, filesystem/dialog plugin, broad capability, migration, or Task 32 behavior is authorized.
-- Database schema remains 16.
+- Package format v1 exports one committed Basic Leaf or Narrative Canvas document.
+- Canonical JSON, Markdown fallback, privacy-sanitized assets, manifest and SHA-256 checksums are included.
+- Import validates and stages in Rust, remaps identities/assets, and commits only to an empty active Life leaf.
+- Raw Tauri IPC avoids JSON/Base64 binary inflation; no filesystem/dialog plugin or broad capability was added.
+- ZIP dependency: exact `zip 5.1.1`, default features disabled, Stored entries only.
+- Database schema remains 16; no migration.
+- Midnight local-date rollover debt is closed.
+- Evidence: 31 frontend files / 465 tests and 437 ordinary Rust tests passed; all ordinary gates, portable/narrative performance, five-phase native E2E, a 4,783,210-byte NSIS (`c673e87f5a3733b50c556bcf8c2ba3bca48980a77752f6a1a40f040da0ab1519`), and RC run `core-rc-81d0075c8d7041a7bac1e5a74a729c0e` passed.
+- Task 32 has not started; next action is Product Owner gate.
 
 ## Task 30/60 — Current-State Closure
 
