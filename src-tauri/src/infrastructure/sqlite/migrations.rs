@@ -649,6 +649,15 @@ static MIGRATIONS: &[Migration] = &[
                 BEGIN SELECT RAISE(ABORT,'narrative template_id is immutable'); END;
         ",
     },
+    Migration {
+        version: 16,
+        // Tasks and recurring series are separate canonical task authorities.
+        // Occurrences are projections/overrides, so intentionally receive no column.
+        sql: "ALTER TABLE tasks ADD COLUMN life_node_id TEXT NULL REFERENCES life_nodes(id) ON DELETE RESTRICT;
+            ALTER TABLE task_series ADD COLUMN life_node_id TEXT NULL REFERENCES life_nodes(id) ON DELETE RESTRICT;
+            CREATE INDEX tasks_life_node_idx ON tasks(life_node_id);
+            CREATE INDEX task_series_life_node_idx ON task_series(life_node_id);",
+    },
 ];
 
 /// Bootstraps the migration tracking table and applies any pending migrations.
@@ -762,7 +771,7 @@ mod tests {
         let mut conn = open_memory_connection().unwrap();
         run_migrations(&mut conn).unwrap();
 
-        assert_eq!(current_schema_version(&conn).unwrap(), 15);
+        assert_eq!(current_schema_version(&conn).unwrap(), 16);
 
         let count: i64 = conn
             .query_row("SELECT COUNT(*) FROM db_metadata", [], |r| r.get(0))
@@ -776,7 +785,7 @@ mod tests {
         let mig_count: i64 = conn
             .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
             .unwrap();
-        assert_eq!(mig_count, 15);
+        assert_eq!(mig_count, 16);
     }
 
     #[test]
@@ -786,11 +795,37 @@ mod tests {
         run_migrations(&mut conn).unwrap();
 
         // The latest version remains stable; no duplicate migration rows.
-        assert_eq!(current_schema_version(&conn).unwrap(), 15);
+        assert_eq!(current_schema_version(&conn).unwrap(), 16);
         let mig_count: i64 = conn
             .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
             .unwrap();
-        assert_eq!(mig_count, 15);
+        assert_eq!(mig_count, 16);
+    }
+
+    #[test]
+    fn migration_16_adds_nullable_task_life_relationships() {
+        let mut conn = open_memory_connection().unwrap();
+        run_migrations_through(&mut conn, 15).unwrap();
+        conn.execute("INSERT INTO tasks(id,local_date,start_minute,end_minute,title,description,category_id,priority,created_at,updated_at) VALUES('legacy-task','2026-08-04',480,540,'Legacy','','general','medium','0','0')", []).unwrap();
+        conn.execute("INSERT INTO task_series(id,title,description,category_id,priority,start_minute,end_minute,dtstart_local_date,timezone_id,rrule,created_at,updated_at,archived_at) VALUES('legacy-series','Legacy series','','general','medium',600,660,'2026-08-04','local','FREQ=DAILY','0','0',NULL)", []).unwrap();
+        run_migrations(&mut conn).unwrap();
+        assert_eq!(current_schema_version(&conn).unwrap(), 16);
+        let task_link: Option<String> = conn
+            .query_row(
+                "SELECT life_node_id FROM tasks WHERE id='legacy-task'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        let series_link: Option<String> = conn
+            .query_row(
+                "SELECT life_node_id FROM task_series WHERE id='legacy-series'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(task_link, None);
+        assert_eq!(series_link, None);
     }
 
     #[test]
@@ -879,7 +914,7 @@ mod tests {
         match run_migrations_with(&mut conn, MIGRATIONS) {
             Err(DbError::SchemaTooNew { stored, supported }) => {
                 assert_eq!(stored, 9999);
-                assert_eq!(supported, 15);
+                assert_eq!(supported, 16);
             }
             other => panic!("expected SchemaTooNew, got {other:?}"),
         }
@@ -915,7 +950,7 @@ mod tests {
         let canonical = r#"{"templateId":"knowledge_dossier","templateVersion":1}"#;
         conn.execute("INSERT INTO narrative_documents (id,life_node_id,schema_version,revision,canonical_json,plain_text,created_at,updated_at,archived_at,template_id,template_version) VALUES ('template-existing','template-leaf',1,0,?1,'','now','now',NULL,'knowledge_dossier',1)", [canonical]).unwrap();
         run_migrations(&mut conn).unwrap();
-        assert_eq!(current_schema_version(&conn).unwrap(), 15);
+        assert_eq!(current_schema_version(&conn).unwrap(), 16);
         let preserved: String = conn
             .query_row(
                 "SELECT canonical_json FROM narrative_documents WHERE id='template-existing'",
@@ -950,7 +985,7 @@ mod tests {
         {
             let mut conn = open_file_connection(&path).unwrap();
             run_migrations(&mut conn).unwrap();
-            assert_eq!(current_schema_version(&conn).unwrap(), 15);
+            assert_eq!(current_schema_version(&conn).unwrap(), 16);
             // Confirm the schema object created by migration 1 exists
             let count: i64 = conn
                 .query_row("SELECT COUNT(*) FROM db_metadata", [], |r| r.get(0))
@@ -964,7 +999,7 @@ mod tests {
             run_migrations(&mut conn).unwrap();
             assert_eq!(
                 current_schema_version(&conn).unwrap(),
-                15,
+                16,
                 "schema version must survive close/reopen"
             );
             let count: i64 = conn
@@ -977,7 +1012,7 @@ mod tests {
                 .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
                 .unwrap();
             assert_eq!(
-                mig_count, 15,
+                mig_count, 16,
                 "no duplicate migration records after reopen + re-run"
             );
         }

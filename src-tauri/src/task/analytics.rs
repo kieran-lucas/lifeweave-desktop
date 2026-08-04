@@ -911,6 +911,7 @@ mod tests {
                     end_minute: end,
                     category_id: "general".into(),
                     priority: "medium".into(),
+                    life_node_id: None,
                 },
             )
             .unwrap();
@@ -968,6 +969,7 @@ mod tests {
                 weekdays: vec![],
                 until: None,
                 count: Some(3),
+                life_node_id: None,
             },
         )
         .unwrap();
@@ -991,6 +993,7 @@ mod tests {
                 weekdays: None,
                 until: None,
                 count: None,
+                life_node_id: None,
             },
         )
         .unwrap();
@@ -1013,6 +1016,7 @@ mod tests {
                 weekdays: None,
                 until: None,
                 count: None,
+                life_node_id: None,
             },
         )
         .unwrap();
@@ -1036,6 +1040,7 @@ mod tests {
                 end_minute: 540,
                 category_id: "general".into(),
                 priority: "medium".into(),
+                life_node_id: None,
             },
         )
         .unwrap();
@@ -1079,6 +1084,7 @@ mod tests {
                     end_minute: 540,
                     category_id: "general".into(),
                     priority: "medium".into(),
+                    life_node_id: None,
                 },
             )
             .unwrap();
@@ -1111,6 +1117,7 @@ mod tests {
                 end_minute: 540,
                 category_id: "general".into(),
                 priority: "medium".into(),
+                life_node_id: None,
             },
         )
         .unwrap();
@@ -1230,6 +1237,7 @@ mod tests {
                 end_minute: 540,
                 category_id: "general".into(),
                 priority: "medium".into(),
+                life_node_id: None,
             },
         )
         .unwrap();
@@ -1246,6 +1254,7 @@ mod tests {
                 end_minute: 540,
                 category_id: "general".into(),
                 priority: "medium".into(),
+                life_node_id: None,
             },
         )
         .unwrap();
@@ -1293,6 +1302,7 @@ mod tests {
                 weekdays: vec![0],
                 until: None,
                 count: Some(3),
+                life_node_id: None,
             },
         )
         .unwrap();
@@ -1317,6 +1327,7 @@ mod tests {
                 weekdays: None,
                 until: None,
                 count: None,
+                life_node_id: None,
             },
         )
         .unwrap();
@@ -1342,6 +1353,7 @@ mod tests {
                 weekdays: vec![],
                 until: None,
                 count: Some(2),
+                life_node_id: None,
             },
         )
         .unwrap();
@@ -1375,6 +1387,7 @@ mod tests {
                 end_minute: 540,
                 category_id: "general".into(),
                 priority: "medium".into(),
+                life_node_id: None,
             },
         )
         .unwrap();
@@ -1419,6 +1432,7 @@ mod tests {
                 end_minute: 600,
                 category_id: "general".into(),
                 priority: "medium".into(),
+                life_node_id: None,
             },
         )
         .unwrap();

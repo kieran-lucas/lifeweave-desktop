@@ -33,15 +33,16 @@ use ipc::foundation_record::{
 use ipc::search::search_global;
 use ipc::task::{
     create_recurring_task, create_task, delete_task, evaluate_task, get_analytics_projection,
-    get_month_projection, list_completion_states, list_recurring_occurrences, list_task_categories,
-    list_tasks_for_date, list_today_items, undo_task_evaluation, update_category_goals,
-    update_recurring_occurrence, update_task,
+    get_month_projection, get_related_tasks_for_life_node, list_completion_states,
+    list_recurring_occurrences, list_task_categories, list_tasks_for_date, list_today_items,
+    undo_task_evaluation, update_category_goals, update_recurring_occurrence, update_task,
 };
 use life::service::{
     archive_life_node, create_life_node, get_life_browse_projection, get_life_edit_projection,
-    get_pinned_life_nodes, pin_life_node, rename_life_node, reorder_life_sibling,
-    reparent_life_node, restore_life_node, save_life_navigation_preference, set_life_node_icon,
-    set_life_node_theme_variant, undo_life_operation, unpin_life_node, update_life_node_summary,
+    get_pinned_life_nodes, list_task_life_targets, pin_life_node, rename_life_node,
+    reorder_life_sibling, reparent_life_node, restore_life_node, save_life_navigation_preference,
+    set_life_node_icon, set_life_node_theme_variant, undo_life_operation, unpin_life_node,
+    update_life_node_summary,
 };
 use narrative::service::{
     create_narrative_document, discard_narrative_draft, export_narrative_markdown,
@@ -145,6 +146,7 @@ pub fn run() {
             list_backups,
             restore_database,
             list_task_categories,
+            get_related_tasks_for_life_node,
             list_tasks_for_date,
             create_task,
             update_task,
@@ -161,6 +163,7 @@ pub fn run() {
             get_analytics_projection,
             get_life_browse_projection,
             get_pinned_life_nodes,
+            list_task_life_targets,
             get_life_edit_projection,
             create_life_node,
             rename_life_node,

@@ -55,6 +55,13 @@ pub fn get_pinned_life_nodes(
 }
 #[tauri::command]
 #[tracing::instrument(skip(state))]
+pub fn list_task_life_targets(
+    state: State<'_, DatabaseRuntime>,
+) -> Result<Vec<TaskLifeTargetView>, IpcError> {
+    run!(state, repository::task_targets)
+}
+#[tauri::command]
+#[tracing::instrument(skip(state))]
 pub fn get_life_edit_projection(
     state: State<'_, DatabaseRuntime>,
 ) -> Result<LifeEditProjection, IpcError> {

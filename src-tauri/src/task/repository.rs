@@ -1,9 +1,10 @@
 use super::{
     conflict::overlaps,
     domain::{Priority, validate_date, validate_description, validate_range, validate_title},
-    dto::{CreateTaskInput, TaskCategoryView, TaskView, UpdateTaskInput},
+    dto::{CreateTaskInput, TaskCategoryView, TaskLifeAreaView, TaskView, UpdateTaskInput},
 };
 use rusqlite::{Connection, OptionalExtension, params};
+use std::collections::HashMap;
 use uuid::{NoContext, Timestamp, Uuid};
 
 #[derive(Debug)]
@@ -56,6 +57,62 @@ fn category_exists(conn: &Connection, id: &str) -> Result<bool, rusqlite::Error>
         |r| r.get(0),
     )
 }
+fn validate_life_target(conn: &Connection, id: Option<&str>) -> Result<(), TaskError> {
+    let Some(id) = id else {
+        return Ok(());
+    };
+    let valid: bool = conn.query_row(
+        "SELECT EXISTS(SELECT 1 FROM life_nodes WHERE id=?1 AND id!='life-root' AND archived_at IS NULL)",
+        params![id], |r| r.get(0),
+    )?;
+    if valid {
+        Ok(())
+    } else {
+        Err(TaskError::Validation(
+            "Choose an active non-root Life area.",
+        ))
+    }
+}
+fn life_area(
+    conn: &Connection,
+    id: Option<String>,
+) -> Result<Option<TaskLifeAreaView>, rusqlite::Error> {
+    let Some(id) = id else {
+        return Ok(None);
+    };
+    conn.query_row("WITH RECURSIVE path(id,parent_id,title,depth) AS (
+        SELECT id,parent_id,title,0 FROM life_nodes WHERE id=?1
+        UNION ALL SELECT n.id,n.parent_id,n.title,p.depth+1 FROM life_nodes n JOIN path p ON p.parent_id=n.id WHERE p.depth<128
+      ) SELECT (SELECT title FROM life_nodes WHERE id=?1),
+        (SELECT group_concat(title,' › ') FROM (SELECT title FROM path WHERE id!='life-root' ORDER BY depth DESC)),
+        (SELECT archived_at IS NOT NULL FROM life_nodes WHERE id=?1)", params![id], |r| Ok(TaskLifeAreaView { id: id.clone(), title: r.get(0)?, breadcrumb: r.get(1)?, archived: r.get(2)? })
+    ).optional()
+}
+fn life_area_map(conn: &Connection) -> Result<HashMap<String, TaskLifeAreaView>, rusqlite::Error> {
+    let mut statement = conn.prepare(
+        "WITH RECURSIVE paths(id,title,breadcrumb,archived) AS (
+          SELECT id,title,'',archived_at IS NOT NULL FROM life_nodes WHERE id='life-root'
+          UNION ALL
+          SELECT n.id,n.title,CASE WHEN p.id='life-root' THEN n.title ELSE p.breadcrumb || ' › ' || n.title END,
+                 n.archived_at IS NOT NULL
+          FROM life_nodes n JOIN paths p ON n.parent_id=p.id
+        ) SELECT id,title,breadcrumb,archived FROM paths WHERE id!='life-root'",
+    )?;
+    let rows = statement.query_map([], |r| {
+        Ok(TaskLifeAreaView {
+            id: r.get(0)?,
+            title: r.get(1)?,
+            breadcrumb: r.get(2)?,
+            archived: r.get(3)?,
+        })
+    })?;
+    let mut areas = HashMap::new();
+    for area in rows {
+        let area = area?;
+        areas.insert(area.id.clone(), area);
+    }
+    Ok(areas)
+}
 fn check_conflict(
     conn: &Connection,
     date: &str,
@@ -94,6 +151,7 @@ fn row(r: &rusqlite::Row<'_>) -> rusqlite::Result<TaskView> {
         priority: r.get(7)?,
         created_at: r.get(8)?,
         updated_at: r.get(9)?,
+        life_area: None,
     })
 }
 pub fn categories(conn: &Connection) -> Result<Vec<TaskCategoryView>, TaskError> {
@@ -112,20 +170,64 @@ pub fn categories(conn: &Connection) -> Result<Vec<TaskCategoryView>, TaskError>
         })?
         .collect::<Result<Vec<_>, _>>()?)
 }
+pub fn related_for_life_node(
+    conn: &Connection,
+    node_id: &str,
+) -> Result<Vec<super::dto::RelatedTaskView>, TaskError> {
+    if node_id == "life-root" {
+        return Ok(Vec::new());
+    }
+    let exists: bool = conn.query_row(
+        "SELECT EXISTS(SELECT 1 FROM life_nodes WHERE id=?1 AND archived_at IS NULL)",
+        params![node_id],
+        |r| r.get(0),
+    )?;
+    if !exists {
+        return Err(TaskError::NotFound);
+    }
+    let mut st=conn.prepare("SELECT id,title,local_date,CASE WHEN EXISTS(SELECT 1 FROM task_evaluations e WHERE e.subject_kind='one_off' AND e.task_id=tasks.id AND e.is_current=1) THEN 'completed' ELSE 'active' END,'one_off' FROM tasks WHERE life_node_id=?1 UNION ALL SELECT id,title,dtstart_local_date,'active','recurring' FROM task_series WHERE life_node_id=?1 AND archived_at IS NULL ORDER BY 4,3,2,1")?;
+    Ok(st
+        .query_map(params![node_id], |r| {
+            let date: Option<String> = r.get(2)?;
+            let id: String = r.get(0)?;
+            let kind: String = r.get(4)?;
+            Ok(super::dto::RelatedTaskView {
+                id: id.clone(),
+                kind: if kind == "one_off" {
+                    super::dto::RelatedTaskKind::OneOff
+                } else {
+                    super::dto::RelatedTaskKind::Recurring
+                },
+                title: r.get(1)?,
+                group: r.get(3)?,
+                local_date: date.clone(),
+                series_id: if kind == "one_off" { None } else { Some(id) },
+            })
+        })?
+        .collect::<Result<Vec<_>, _>>()?)
+}
 pub fn list(conn: &Connection, date: &str) -> Result<Vec<TaskView>, TaskError> {
     if !validate_date(date) {
         return Err(TaskError::Validation("Enter a valid date."));
     }
-    let mut st=conn.prepare("SELECT id,local_date,start_minute,end_minute,title,description,category_id,priority,created_at,updated_at FROM tasks WHERE local_date=?1 ORDER BY start_minute,end_minute,CASE priority WHEN 'high' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END,created_at,id")?;
-    Ok(st
-        .query_map(params![date], row)?
-        .collect::<Result<Vec<_>, _>>()?)
+    let areas = life_area_map(conn)?;
+    let mut st=conn.prepare("SELECT id,local_date,start_minute,end_minute,title,description,category_id,priority,created_at,updated_at,life_node_id FROM tasks WHERE local_date=?1 ORDER BY start_minute,end_minute,CASE priority WHEN 'high' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END,created_at,id")?;
+    let mut out = Vec::new();
+    for item in st.query_map(params![date], |r| {
+        Ok((row(r)?, r.get::<_, Option<String>>(10)?))
+    })? {
+        let (mut task, life) = item?;
+        task.life_area = life.and_then(|id| areas.get(&id).cloned());
+        out.push(task);
+    }
+    Ok(out)
 }
 pub fn create(conn: &Connection, input: CreateTaskInput) -> Result<TaskView, TaskError> {
     let p = validate(&input)?;
     if !category_exists(conn, &input.category_id)? {
         return Err(TaskError::Validation("Choose an active category."));
     }
+    validate_life_target(conn, input.life_node_id.as_deref())?;
     check_conflict(
         conn,
         &input.local_date,
@@ -137,7 +239,7 @@ pub fn create(conn: &Connection, input: CreateTaskInput) -> Result<TaskView, Tas
     let t = now();
     let tx = conn.unchecked_transaction()?;
     tx.execute(
-        "INSERT INTO tasks VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?9)",
+        "INSERT INTO tasks(id,local_date,start_minute,end_minute,title,description,category_id,priority,created_at,updated_at,life_node_id) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?9,?10)",
         params![
             id,
             input.local_date,
@@ -147,10 +249,11 @@ pub fn create(conn: &Connection, input: CreateTaskInput) -> Result<TaskView, Tas
             input.description,
             input.category_id,
             p.as_str(),
-            t
+            t,input.life_node_id
         ],
     )?;
-    let result=tx.query_row("SELECT id,local_date,start_minute,end_minute,title,description,category_id,priority,created_at,updated_at FROM tasks WHERE id=?1",params![id],row)?;
+    let mut result=tx.query_row("SELECT id,local_date,start_minute,end_minute,title,description,category_id,priority,created_at,updated_at FROM tasks WHERE id=?1",params![id],row)?;
+    result.life_area = life_area(&tx, input.life_node_id)?;
     crate::task::analytics::bump_source_revision(&tx)?;
     tx.commit()?;
     Ok(result)
@@ -164,10 +267,22 @@ pub fn update(conn: &Connection, input: UpdateTaskInput) -> Result<TaskView, Tas
         end_minute: input.end_minute,
         category_id: input.category_id.clone(),
         priority: input.priority.clone(),
+        life_node_id: input.life_node_id.clone(),
     };
     let p = validate(&create)?;
     if !category_exists(conn, &input.category_id)? {
         return Err(TaskError::Validation("Choose an active category."));
+    }
+    let existing: Option<String> = conn
+        .query_row(
+            "SELECT life_node_id FROM tasks WHERE id=?1",
+            params![input.id],
+            |r| r.get(0),
+        )
+        .optional()?
+        .flatten();
+    if input.life_node_id != existing {
+        validate_life_target(conn, input.life_node_id.as_deref())?;
     }
     check_conflict(
         conn,
@@ -178,8 +293,9 @@ pub fn update(conn: &Connection, input: UpdateTaskInput) -> Result<TaskView, Tas
     )?;
     let t = now();
     let tx = conn.unchecked_transaction()?;
-    if tx.execute("UPDATE tasks SET local_date=?2,start_minute=?3,end_minute=?4,title=?5,description=?6,category_id=?7,priority=?8,updated_at=?9 WHERE id=?1",params![input.id,input.local_date,input.start_minute,input.end_minute,input.title.trim(),input.description,input.category_id,p.as_str(),t])?==0{return Err(TaskError::NotFound)}
-    let result=tx.query_row("SELECT id,local_date,start_minute,end_minute,title,description,category_id,priority,created_at,updated_at FROM tasks WHERE id=?1",params![input.id],row)?;
+    if tx.execute("UPDATE tasks SET local_date=?2,start_minute=?3,end_minute=?4,title=?5,description=?6,category_id=?7,priority=?8,updated_at=?9,life_node_id=?10 WHERE id=?1",params![input.id,input.local_date,input.start_minute,input.end_minute,input.title.trim(),input.description,input.category_id,p.as_str(),t,input.life_node_id])?==0{return Err(TaskError::NotFound)}
+    let mut result=tx.query_row("SELECT id,local_date,start_minute,end_minute,title,description,category_id,priority,created_at,updated_at FROM tasks WHERE id=?1",params![input.id],row)?;
+    result.life_area = life_area(&tx, input.life_node_id)?;
     crate::task::analytics::bump_source_revision(&tx)?;
     tx.commit()?;
     Ok(result)
@@ -240,6 +356,7 @@ pub fn create_recurring(
         end_minute: input.end_minute,
         category_id: input.category_id.clone(),
         priority: input.priority.clone(),
+        life_node_id: input.life_node_id.clone(),
     };
     let priority = validate(&base)?;
     if !validate_date(&input.local_date) || !validate_range(input.start_minute, input.end_minute) {
@@ -256,6 +373,7 @@ pub fn create_recurring(
     if !category_exists(&tx, &input.category_id)? {
         return Err(TaskError::Validation("Choose an active category."));
     }
+    validate_life_target(&tx, input.life_node_id.as_deref())?;
     validate_series_conflicts(
         &tx,
         None,
@@ -266,7 +384,7 @@ pub fn create_recurring(
     )?;
     let id = id();
     let t = now();
-    tx.execute("INSERT INTO task_series(id,title,description,category_id,priority,start_minute,end_minute,dtstart_local_date,timezone_id,rrule,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",params![id,input.title.trim(),input.description,input.category_id,priority.as_str(),input.start_minute,input.end_minute,input.local_date,"local",rule,t,t])?;
+    tx.execute("INSERT INTO task_series(id,title,description,category_id,priority,start_minute,end_minute,dtstart_local_date,timezone_id,rrule,created_at,updated_at,life_node_id) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",params![id,input.title.trim(),input.description,input.category_id,priority.as_str(),input.start_minute,input.end_minute,input.local_date,"local",rule,t,t,input.life_node_id])?;
     crate::task::analytics::bump_source_revision(&tx)?;
     tx.commit()?;
     Ok(id)
@@ -334,7 +452,8 @@ pub fn recurring_for_date(
     conn: &Connection,
     date: &str,
 ) -> Result<Vec<crate::task::dto::RecurringOccurrenceView>, TaskError> {
-    let mut st=conn.prepare("SELECT id,title,description,category_id,priority,start_minute,end_minute,dtstart_local_date,rrule FROM task_series WHERE archived_at IS NULL AND dtstart_local_date<=?1")?;
+    let areas = life_area_map(conn)?;
+    let mut st=conn.prepare("SELECT id,title,description,category_id,priority,start_minute,end_minute,dtstart_local_date,rrule,life_node_id FROM task_series WHERE archived_at IS NULL AND dtstart_local_date<=?1")?;
     let mut out = Vec::new();
     for r in st.query_map(params![date], |r| {
         Ok((
@@ -347,9 +466,10 @@ pub fn recurring_for_date(
             r.get(6)?,
             r.get::<_, String>(7)?,
             r.get::<_, String>(8)?,
+            r.get::<_, Option<String>>(9)?,
         ))
     })? {
-        let (id, title, desc, cat, pri, start, end, dt, rule) = r?;
+        let (id, title, desc, cat, pri, start, end, dt, rule, life_node_id) = r?;
         let occurs = occurrence_matches(&dt, date, &rule)?;
         let occurrence_override=conn.query_row("SELECT original_local_date,replacement_local_date,title_override,description_override,category_id_override,priority_override,start_minute_override,end_minute_override,cancelled FROM task_occurrence_overrides WHERE series_id=?1 AND original_local_date=?2",params![id,date],|x|Ok((x.get::<_,String>(0)?,x.get::<_,Option<String>>(1)?,x.get::<_,Option<String>>(2)?,x.get::<_,Option<String>>(3)?,x.get::<_,Option<String>>(4)?,x.get::<_,Option<String>>(5)?,x.get::<_,Option<i32>>(6)?,x.get::<_,Option<i32>>(7)?,x.get::<_,i32>(8)?))).optional()?;
         // Overrides are explicit RFC-style occurrence authority. After a series
@@ -402,7 +522,7 @@ pub fn recurring_for_date(
                 || cat2 != cat;
             out.push(crate::task::dto::RecurringOccurrenceView {
                 occurrence_id: format!("{id}:{original}"),
-                series_id: id,
+                series_id: id.clone(),
                 original_local_date: original,
                 local_date: date.to_string(),
                 start_minute: start2,
@@ -413,12 +533,13 @@ pub fn recurring_for_date(
                 priority: pri2,
                 is_recurring: true,
                 is_override,
+                life_area: life_node_id.and_then(|id| areas.get(&id).cloned()),
             });
         }
     }
     // Include occurrences moved into this displayed date, even when their original
     // recurrence date is earlier; identity remains series + original date.
-    let mut moved = conn.prepare("SELECT s.id,s.title,s.description,s.category_id,s.priority,s.start_minute,s.end_minute,o.original_local_date,o.title_override,o.description_override,o.category_id_override,o.priority_override,o.start_minute_override,o.end_minute_override FROM task_series s JOIN task_occurrence_overrides o ON o.series_id=s.id WHERE s.archived_at IS NULL AND o.replacement_local_date=?1 AND o.original_local_date<>?1 AND o.cancelled=0")?;
+    let mut moved = conn.prepare("SELECT s.id,s.title,s.description,s.category_id,s.priority,s.start_minute,s.end_minute,o.original_local_date,o.title_override,o.description_override,o.category_id_override,o.priority_override,o.start_minute_override,o.end_minute_override,s.life_node_id FROM task_series s JOIN task_occurrence_overrides o ON o.series_id=s.id WHERE s.archived_at IS NULL AND o.replacement_local_date=?1 AND o.original_local_date<>?1 AND o.cancelled=0")?;
     for r in moved.query_map(params![date], |r| {
         Ok((
             r.get::<_, String>(0)?,
@@ -435,12 +556,14 @@ pub fn recurring_for_date(
             r.get::<_, Option<String>>(11)?,
             r.get::<_, Option<i32>>(12)?,
             r.get::<_, Option<i32>>(13)?,
+            r.get::<_, Option<String>>(14)?,
         ))
     })? {
-        let (sid, title, desc, cat, pri, start, end, orig, to, do_, co, po, so, eo) = r?;
+        let (sid, title, desc, cat, pri, start, end, orig, to, do_, co, po, so, eo, life_node_id) =
+            r?;
         out.push(crate::task::dto::RecurringOccurrenceView {
             occurrence_id: format!("{sid}:{orig}"),
-            series_id: sid,
+            series_id: sid.clone(),
             original_local_date: orig,
             local_date: date.to_string(),
             start_minute: so.unwrap_or(start),
@@ -451,6 +574,7 @@ pub fn recurring_for_date(
             priority: po.unwrap_or(pri),
             is_recurring: true,
             is_override: true,
+            life_area: life_node_id.and_then(|id| areas.get(&id).cloned()),
         });
     }
     Ok(out)
@@ -463,30 +587,36 @@ pub fn today_items(
     let mut out = Vec::new();
     let (one_off_evaluations, recurring_evaluations) =
         crate::task::evaluation::current_for_date(conn, date)?;
-    let mut stmt=conn.prepare("SELECT t.id,t.local_date,t.start_minute,t.end_minute,t.title,t.description,t.category_id,c.name,c.icon_key,c.color_key,t.priority FROM tasks t JOIN task_categories c ON c.id=t.category_id WHERE t.local_date=?1")?;
+    let areas = life_area_map(conn)?;
+    let mut stmt=conn.prepare("SELECT t.id,t.local_date,t.start_minute,t.end_minute,t.title,t.description,t.category_id,c.name,c.icon_key,c.color_key,t.priority,t.life_node_id FROM tasks t JOIN task_categories c ON c.id=t.category_id WHERE t.local_date=?1")?;
     for row in stmt.query_map(params![date], |r| {
-        Ok(crate::task::dto::TodayItemView {
-            kind: crate::task::dto::TodayItemKind::OneOff,
-            id: r.get(0)?,
-            occurrence_id: None,
-            series_id: None,
-            original_local_date: None,
-            local_date: r.get(1)?,
-            start_minute: r.get(2)?,
-            end_minute: r.get(3)?,
-            title: r.get(4)?,
-            description: r.get(5)?,
-            category_id: r.get(6)?,
-            category_name: r.get(7)?,
-            category_icon_key: r.get(8)?,
-            category_color_key: r.get(9)?,
-            priority: r.get(10)?,
-            is_override: false,
-            evaluation: None,
-        })
+        Ok((
+            crate::task::dto::TodayItemView {
+                kind: crate::task::dto::TodayItemKind::OneOff,
+                id: r.get(0)?,
+                occurrence_id: None,
+                series_id: None,
+                original_local_date: None,
+                local_date: r.get(1)?,
+                start_minute: r.get(2)?,
+                end_minute: r.get(3)?,
+                title: r.get(4)?,
+                description: r.get(5)?,
+                category_id: r.get(6)?,
+                category_name: r.get(7)?,
+                category_icon_key: r.get(8)?,
+                category_color_key: r.get(9)?,
+                priority: r.get(10)?,
+                is_override: false,
+                evaluation: None,
+                life_area: None,
+            },
+            r.get::<_, Option<String>>(11)?,
+        ))
     })? {
-        let mut item = row?;
+        let (mut item, life_node_id) = row?;
         item.evaluation = one_off_evaluations.get(&item.id).cloned();
+        item.life_area = life_node_id.and_then(|id| areas.get(&id).cloned());
         out.push(item);
     }
     for occurrence in recurring_for_date(conn, date)? {
@@ -519,6 +649,7 @@ pub fn today_items(
             priority: occurrence.priority,
             is_override: occurrence.is_override,
             evaluation,
+            life_area: occurrence.life_area,
         });
     }
     out.sort_by_key(|x| {
@@ -542,7 +673,10 @@ pub fn update_recurring(
 ) -> Result<(), TaskError> {
     use crate::task::dto::OccurrenceEditScope;
     let tx = conn.transaction()?;
-    let master:(String,String,String,String,i32,i32,String,String)=tx.query_row("SELECT title,description,category_id,priority,start_minute,end_minute,dtstart_local_date,rrule FROM task_series WHERE id=?1 AND archived_at IS NULL",params![input.series_id],|r|Ok((r.get(0)?,r.get(1)?,r.get(2)?,r.get(3)?,r.get(4)?,r.get(5)?,r.get(6)?,r.get(7)?))).map_err(|e|if matches!(e,rusqlite::Error::QueryReturnedNoRows){TaskError::NotFound}else{TaskError::Db(e)})?;
+    let master:(String,String,String,String,i32,i32,String,String,Option<String>)=tx.query_row("SELECT title,description,category_id,priority,start_minute,end_minute,dtstart_local_date,rrule,life_node_id FROM task_series WHERE id=?1 AND archived_at IS NULL",params![input.series_id],|r|Ok((r.get(0)?,r.get(1)?,r.get(2)?,r.get(3)?,r.get(4)?,r.get(5)?,r.get(6)?,r.get(7)?,r.get(8)?))).map_err(|e|if matches!(e,rusqlite::Error::QueryReturnedNoRows){TaskError::NotFound}else{TaskError::Db(e)})?;
+    if input.life_node_id != master.8 {
+        validate_life_target(&tx, input.life_node_id.as_deref())?;
+    }
     if !occurrence_matches(&master.6, &input.original_local_date, &master.7)? {
         return Err(TaskError::Validation(
             "Occurrence does not belong to this series.",
@@ -568,6 +702,11 @@ pub fn update_recurring(
     }
     match input.scope {
         OccurrenceEditScope::OnlyThisOccurrence => {
+            if input.life_node_id != master.8 {
+                return Err(TaskError::Validation(
+                    "Change the Life area for the entire series.",
+                ));
+            }
             tx.execute("INSERT INTO task_occurrence_overrides(id,series_id,original_local_date,replacement_local_date,title_override,description_override,category_id_override,priority_override,start_minute_override,end_minute_override,cancelled,created_at,updated_at) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?12) ON CONFLICT(series_id,original_local_date) DO UPDATE SET replacement_local_date=excluded.replacement_local_date,title_override=excluded.title_override,description_override=excluded.description_override,category_id_override=excluded.category_id_override,priority_override=excluded.priority_override,start_minute_override=excluded.start_minute_override,end_minute_override=excluded.end_minute_override,cancelled=excluded.cancelled,updated_at=excluded.updated_at",params![id(),input.series_id,input.original_local_date,input.replacement_local_date,input.title,input.description,input.category_id,input.priority,input.start_minute,input.end_minute,if input.cancelled{1}else{0},now()])?;
         }
         OccurrenceEditScope::EntireSeries => {
@@ -586,7 +725,7 @@ pub fn update_recurring(
                     target_start,
                     target_end,
                 )?;
-                tx.execute("UPDATE task_series SET title=COALESCE(?2,title),description=COALESCE(?3,description),category_id=COALESCE(?4,category_id),priority=COALESCE(?5,priority),start_minute=COALESCE(?6,start_minute),end_minute=COALESCE(?7,end_minute),rrule=?8,updated_at=?9 WHERE id=?1",params![input.series_id,input.title,input.description,input.category_id,input.priority,input.start_minute,input.end_minute,rule,now()])?;
+                tx.execute("UPDATE task_series SET title=COALESCE(?2,title),description=COALESCE(?3,description),category_id=COALESCE(?4,category_id),priority=COALESCE(?5,priority),start_minute=COALESCE(?6,start_minute),end_minute=COALESCE(?7,end_minute),rrule=?8,updated_at=?9,life_node_id=?10 WHERE id=?1",params![input.series_id,input.title,input.description,input.category_id,input.priority,input.start_minute,input.end_minute,rule,now(),input.life_node_id])?;
             }
         }
         OccurrenceEditScope::ThisAndFuture => {
@@ -606,7 +745,7 @@ pub fn update_recurring(
                     target_start,
                     target_end,
                 )?;
-                tx.execute("INSERT INTO task_series(id,title,description,category_id,priority,start_minute,end_minute,dtstart_local_date,timezone_id,rrule,created_at,updated_at) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,'local',?9,?10,?10)",params![new_id,input.title.unwrap_or(master.0),input.description.unwrap_or(master.1),input.category_id.unwrap_or(master.2),input.priority.unwrap_or(master.3),target_start,target_end,target_date,new_rule,now()])?;
+                tx.execute("INSERT INTO task_series(id,title,description,category_id,priority,start_minute,end_minute,dtstart_local_date,timezone_id,rrule,created_at,updated_at,life_node_id) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,'local',?9,?10,?10,?11)",params![new_id,input.title.unwrap_or(master.0),input.description.unwrap_or(master.1),input.category_id.unwrap_or(master.2),input.priority.unwrap_or(master.3),target_start,target_end,target_date,new_rule,now(),input.life_node_id])?;
                 tx.execute("UPDATE task_occurrence_overrides SET series_id=?1 WHERE series_id=?2 AND original_local_date>=?3",params![new_id,input.series_id,input.original_local_date])?;
             }
         }
@@ -757,6 +896,7 @@ mod recurrence_tests {
             weekdays: vec![],
             until: None,
             count: None,
+            life_node_id: None,
         }
     }
     fn mutation(
@@ -782,6 +922,7 @@ mod recurrence_tests {
             weekdays: None,
             until: None,
             count: None,
+            life_node_id: None,
         }
     }
     #[test]
@@ -908,6 +1049,7 @@ mod recurrence_tests {
                 end_minute: 540,
                 category_id: "general".into(),
                 priority: "low".into(),
+                life_node_id: None,
             },
         )
         .unwrap();
@@ -944,6 +1086,7 @@ mod recurrence_tests {
                 end_minute: 570,
                 category_id: "general".into(),
                 priority: "low".into(),
+                life_node_id: None,
             },
         )
         .unwrap();
@@ -964,6 +1107,7 @@ mod recurrence_tests {
                     end_minute: 560,
                     category_id: "general".into(),
                     priority: "low".into(),
+                    life_node_id: None,
                 },
             ),
             Err(TaskError::Conflict)
@@ -991,6 +1135,7 @@ mod recurrence_tests {
                 end_minute: 540,
                 category_id: "general".into(),
                 priority: "low".into(),
+                life_node_id: None,
             },
         )
         .unwrap();
@@ -1054,6 +1199,7 @@ mod recurrence_tests {
                 end_minute: 540,
                 category_id: "general".into(),
                 priority: "low".into(),
+                life_node_id: None,
             },
         )
         .unwrap();
@@ -1135,5 +1281,155 @@ mod recurrence_tests {
             }
         }
         std::fs::remove_dir(directory).unwrap();
+    }
+
+    #[test]
+    fn task_life_relationships_validate_preserve_and_project() {
+        use crate::task::dto::{CreateTaskInput, UpdateTaskInput};
+        let mut c = db();
+        c.execute("INSERT INTO life_nodes(id,parent_id,title,short_description,icon_key,branch_theme_id,sort_key,archived_at,created_at,updated_at,revision) VALUES('study','life-root','Study','','life-branch','neutral',1,NULL,'0','0',0),('university','study','University','','life-leaf','neutral',1,NULL,'0','0',0),('archived-area','life-root','Archived','','life-leaf','neutral',2,'1','0','0',0)", []).unwrap();
+        let one_off = create(
+            &c,
+            CreateTaskInput {
+                title: "Essay".into(),
+                description: "".into(),
+                local_date: "2026-08-04".into(),
+                start_minute: 600,
+                end_minute: 660,
+                category_id: "general".into(),
+                priority: "medium".into(),
+                life_node_id: Some("university".into()),
+            },
+        )
+        .unwrap();
+        assert_eq!(
+            one_off.life_area.as_ref().unwrap().breadcrumb,
+            "Study › University"
+        );
+        assert!(matches!(
+            create(
+                &c,
+                CreateTaskInput {
+                    title: "Root".into(),
+                    description: "".into(),
+                    local_date: "2026-08-04".into(),
+                    start_minute: 700,
+                    end_minute: 760,
+                    category_id: "general".into(),
+                    priority: "medium".into(),
+                    life_node_id: Some("life-root".into())
+                }
+            ),
+            Err(TaskError::Validation(_))
+        ));
+        assert!(matches!(
+            create(
+                &c,
+                CreateTaskInput {
+                    title: "Unknown".into(),
+                    description: "".into(),
+                    local_date: "2026-08-04".into(),
+                    start_minute: 700,
+                    end_minute: 760,
+                    category_id: "general".into(),
+                    priority: "medium".into(),
+                    life_node_id: Some("missing".into())
+                }
+            ),
+            Err(TaskError::Validation(_))
+        ));
+        assert!(matches!(
+            create(
+                &c,
+                CreateTaskInput {
+                    title: "Archived".into(),
+                    description: "".into(),
+                    local_date: "2026-08-04".into(),
+                    start_minute: 700,
+                    end_minute: 760,
+                    category_id: "general".into(),
+                    priority: "medium".into(),
+                    life_node_id: Some("archived-area".into())
+                }
+            ),
+            Err(TaskError::Validation(_))
+        ));
+        c.execute(
+            "UPDATE life_nodes SET archived_at='1' WHERE id='university'",
+            [],
+        )
+        .unwrap();
+        let preserved = update(
+            &c,
+            UpdateTaskInput {
+                id: one_off.id.clone(),
+                title: "Essay revised".into(),
+                description: "".into(),
+                local_date: "2026-08-04".into(),
+                start_minute: 600,
+                end_minute: 660,
+                category_id: "general".into(),
+                priority: "medium".into(),
+                life_node_id: Some("university".into()),
+            },
+        )
+        .unwrap();
+        assert!(preserved.life_area.unwrap().archived);
+        let unlinked = update(
+            &c,
+            UpdateTaskInput {
+                id: one_off.id,
+                title: "Essay revised".into(),
+                description: "".into(),
+                local_date: "2026-08-04".into(),
+                start_minute: 600,
+                end_minute: 660,
+                category_id: "general".into(),
+                priority: "medium".into(),
+                life_node_id: None,
+            },
+        )
+        .unwrap();
+        assert!(unlinked.life_area.is_none());
+        c.execute(
+            "UPDATE life_nodes SET archived_at=NULL WHERE id='university'",
+            [],
+        )
+        .unwrap();
+        let mut series_input = recurring("2026-08-05");
+        series_input.life_node_id = Some("university".into());
+        let series = create_recurring(&mut c, series_input).unwrap();
+        assert_eq!(
+            recurring_for_date(&c, "2026-08-05").unwrap()[0]
+                .life_area
+                .as_ref()
+                .unwrap()
+                .id,
+            "university"
+        );
+        let mut series_edit = mutation(
+            &series,
+            "2026-08-05",
+            OccurrenceEditScope::EntireSeries,
+            false,
+        );
+        series_edit.life_node_id = Some("study".into());
+        update_recurring(&mut c, series_edit).unwrap();
+        assert_eq!(
+            recurring_for_date(&c, "2026-08-06").unwrap()[0]
+                .life_area
+                .as_ref()
+                .unwrap()
+                .id,
+            "study"
+        );
+        let related = related_for_life_node(&c, "study").unwrap();
+        assert_eq!(
+            related
+                .iter()
+                .filter(|row| row.series_id.as_deref() == Some(&series))
+                .count(),
+            1
+        );
     }
 }

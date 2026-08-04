@@ -10,6 +10,7 @@ import type { UpdateFoundationRecordInput } from "./generated/UpdateFoundationRe
 import type { MutateFoundationRecordInput } from "./generated/MutateFoundationRecordInput";
 import type { TaskCategoryView } from "./generated/TaskCategoryView";
 import type { TaskView } from "./generated/TaskView";
+import type { RelatedTaskView } from "./generated/RelatedTaskView";
 import type { CreateTaskInput } from "./generated/CreateTaskInput";
 import type { UpdateTaskInput } from "./generated/UpdateTaskInput";
 import type { CreateRecurringTaskInput } from "./generated/CreateRecurringTaskInput";
@@ -27,6 +28,7 @@ import type { UpdateCategoryGoalsInput } from "./generated/UpdateCategoryGoalsIn
 import type { GetLifeBrowseInput } from "./generated/GetLifeBrowseInput";
 import type { LifeBrowseProjection } from "./generated/LifeBrowseProjection";
 import type { PinnedLifeNodeView } from "./generated/PinnedLifeNodeView";
+import type { TaskLifeTargetView } from "./generated/TaskLifeTargetView";
 import type { LifeNodeIdInput } from "./generated/LifeNodeIdInput";
 import type { LifeMutationResult } from "./generated/LifeMutationResult";
 import type { SaveLifeNavigationPreferenceInput } from "./generated/SaveLifeNavigationPreferenceInput";
@@ -122,6 +124,7 @@ export function restoreDatabase(backupId: string): Promise<RestoreResult> {
 export type { BackupProgress };
 
 export const listTaskCategories = () => invoke<TaskCategoryView[]>("list_task_categories");
+export const getRelatedTasksForLifeNode = (nodeId: string) => invoke<RelatedTaskView[]>("get_related_tasks_for_life_node", { nodeId });
 export const listTasksForDate = (localDate: string) => invoke<TaskView[]>("list_tasks_for_date", { localDate });
 export const createTask = (input: CreateTaskInput) => invoke<TaskView>("create_task", { input });
 export const updateTask = (input: UpdateTaskInput) => invoke<TaskView>("update_task", { input });
@@ -139,6 +142,7 @@ export const getAnalyticsProjection = (input: AnalyticsProjectionInput) => invok
 export const updateCategoryGoals = (input: UpdateCategoryGoalsInput) => invoke<TaskCategoryView>("update_category_goals", { input });
 export const getLifeBrowseProjection = (input: GetLifeBrowseInput) => invoke<LifeBrowseProjection>("get_life_browse_projection", { input });
 export const getPinnedLifeNodes = () => invoke<PinnedLifeNodeView[]>("get_pinned_life_nodes");
+export const listTaskLifeTargets = () => invoke<TaskLifeTargetView[]>("list_task_life_targets");
 export const pinLifeNode = (input: LifeNodeIdInput) => invoke<LifeMutationResult>("pin_life_node", { input });
 export const unpinLifeNode = (input: LifeNodeIdInput) => invoke<LifeMutationResult>("unpin_life_node", { input });
 export const saveLifeNavigationPreference = (input: SaveLifeNavigationPreferenceInput) => invoke<LifeNavigationPreferenceView>("save_life_navigation_preference", { input });

@@ -1,5 +1,11 @@
 # Project Status
 
+## Task 29/60 — Task/Life Relationships
+
+- Schema 16 links the separate `tasks` and `task_series` authorities to zero or one Life area.
+- Occurrences inherit the series link; archived links remain preservable; navigation is bidirectional.
+- Task 30 has not started.
+
 ## Task 28/60 - Narrative Visual Worlds (implementation)
 
 - Starting checkpoint: b32839ac14e7f0463cd6580caa919642128ef2b1.

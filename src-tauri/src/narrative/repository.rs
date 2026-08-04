@@ -1179,8 +1179,8 @@ mod tests {
             let rt = DatabaseRuntime::new(path.clone(), worker);
             let backup_result = backup_db(&rt, &backups_dir).unwrap();
             assert_eq!(
-                backup_result.schema_version, 15,
-                "backup must record schema version 15"
+                backup_result.schema_version, 16,
+                "backup must record schema version 16"
             );
 
             // ── Mutate: save revision 2 ───────────────────────────────────────
@@ -1225,8 +1225,8 @@ mod tests {
             let backup_dir = std::path::PathBuf::from(&backup_result.backup_dir);
             let restore_result = restore_db(&rt, &backup_dir).unwrap();
             assert_eq!(
-                restore_result.schema_version, 15,
-                "restore must report schema 15"
+                restore_result.schema_version, 16,
+                "restore must report schema 16"
             );
         }
 

@@ -450,6 +450,7 @@ mod tests {
                 end_minute: end,
                 category_id: "general".into(),
                 priority: "medium".into(),
+                life_node_id: None,
             },
         )
         .unwrap()
@@ -626,6 +627,7 @@ mod tests {
                 weekdays: vec![],
                 until: None,
                 count: Some(3),
+                life_node_id: None,
             },
         )
         .unwrap();
@@ -646,6 +648,7 @@ mod tests {
             weekdays: None,
             until: None,
             count: None,
+            life_node_id: None,
         };
         repository::update_recurring(&mut connection, moved).unwrap();
         let recurring = EvaluateTaskInput {
@@ -686,6 +689,7 @@ mod tests {
             weekdays: None,
             until: None,
             count: None,
+            life_node_id: None,
         };
         repository::update_recurring(&mut connection, cancel).unwrap();
         let cancelled = EvaluateTaskInput {

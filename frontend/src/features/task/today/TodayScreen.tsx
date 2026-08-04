@@ -3,53 +3,953 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { OccurrenceEditScope } from "../../../ipc/generated/OccurrenceEditScope";
 import type { TaskCategoryView } from "../../../ipc/generated/TaskCategoryView";
 import type { TodayItemView } from "../../../ipc/generated/TodayItemView";
-import { createRecurringTask, createTask, deleteTask, listTaskCategories, listTodayItems, updateRecurringOccurrence, updateTask } from "../../../ipc/commands";
-import { evaluateTask, listCompletionStates, undoTaskEvaluation } from "../../../ipc/commands";
+import {
+  createRecurringTask,
+  createTask,
+  deleteTask,
+  listTaskCategories,
+  listTodayItems,
+  updateRecurringOccurrence,
+  updateTask,
+} from "../../../ipc/commands";
+import {
+  evaluateTask,
+  listCompletionStates,
+  undoTaskEvaluation,
+} from "../../../ipc/commands";
 import type { CompletionStateView } from "../../../ipc/generated/CompletionStateView";
 import { localToday as getLocalToday } from "../../calendar/date";
 import { WeekStrip } from "../../calendar/WeekStrip";
 import { CategoryIcon } from "../categoryIcons";
 import { AssessmentControl } from "../../completion/AssessmentControl";
 import * as styles from "./TodayScreen.css";
+import { LifeAreaCombobox } from "../LifeAreaCombobox";
 
-type CommonItem = Omit<TodayItemView,"kind"|"series_id"|"occurrence_id"|"original_local_date">;
+type CommonItem = Omit<
+  TodayItemView,
+  "kind" | "series_id" | "occurrence_id" | "original_local_date"
+>;
 export type TodayItem =
-  | (CommonItem & {kind:"one_off";series_id:null;occurrence_id:null;original_local_date:null})
-  | (CommonItem & {kind:"recurring";series_id:string;occurrence_id:string;original_local_date:string});
-type Draft={title:string;description:string;local_date:string;start_minute:number;end_minute:number;category_id:string;priority:string};
-const periods=[{name:"Morning",start:240,end:720},{name:"Afternoon",start:720,end:1080},{name:"Evening",start:1080,end:1440}];
-const weekdays=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
-export const localToday=getLocalToday;
-export const formatMinute=(n:number)=>`${String(Math.floor(n/60)).padStart(2,"0")}:${String(n%60).padStart(2,"0")}`;
-const newOperationId=()=>globalThis.crypto.randomUUID();
-function normalize(value:TodayItemView):TodayItem { if(value.kind==="recurring"&&value.series_id&&value.occurrence_id&&value.original_local_date)return {...value,kind:"recurring",series_id:value.series_id,occurrence_id:value.occurrence_id,original_local_date:value.original_local_date}; return {...value,kind:"one_off",series_id:null,occurrence_id:null,original_local_date:null}; }
-function addDays(date:string,days:number){const [y,m,d]=date.split("-").map(Number);const value=new Date(y!,m!-1,d!+days);return `${value.getFullYear()}-${String(value.getMonth()+1).padStart(2,"0")}-${String(value.getDate()).padStart(2,"0")}`;}
-function previewDates(date:string,frequency:string,interval:number,selected:number[],endMode:string,count:number,until:string){const out:string[]=[];const limit=endMode==="count"?Math.min(5,Math.max(0,count)):5;for(let n=0;n<366&&out.length<limit;n++){const candidate=addDays(date,n);if(endMode==="until"&&candidate>until)break;if(frequency==="daily"&&n%interval===0)out.push(candidate);else if(frequency==="weekly"){const day=(new Date(`${candidate}T12:00:00`).getDay()+6)%7;if(Math.floor(n/7)%interval===0&&selected.includes(day))out.push(candidate);}else if(frequency==="monthly"){const [,,baseDay]=date.split("-").map(Number);const [cy,cm,cd]=candidate.split("-").map(Number);const [sy,sm]=date.split("-").map(Number);if(cd===baseDay&&((cy!-sy!)*12+cm!-sm!)%interval===0)out.push(candidate);}}return out;}
-function TimeWheel({name,value,onChange,end=false}:{name:string;value:number;onChange:(n:number)=>void;end?:boolean}){const hour=Math.floor(value/60),minute=value%60;return <div role="group" aria-label={`${name} time`} className={styles.wheel}><label>{name} hour<select aria-label={`${name} hour`} value={hour} onChange={e=>onChange(Number(e.target.value)*60+minute)}>{Array.from({length:end?21:20},(_,i)=>i+4).map(h=><option key={h} value={h}>{String(h).padStart(2,"0")}</option>)}</select></label><label>{name} minute<select aria-label={`${name} minute`} value={minute} onChange={e=>onChange(hour*60+Number(e.target.value))}>{Array.from({length:60},(_,m)=><option key={m} value={m}>{String(m).padStart(2,"0")}</option>)}</select></label></div>;}
+  | (CommonItem & {
+      kind: "one_off";
+      series_id: null;
+      occurrence_id: null;
+      original_local_date: null;
+    })
+  | (CommonItem & {
+      kind: "recurring";
+      series_id: string;
+      occurrence_id: string;
+      original_local_date: string;
+    });
+type Draft = {
+  title: string;
+  description: string;
+  local_date: string;
+  start_minute: number;
+  end_minute: number;
+  category_id: string;
+  priority: string;
+  life_node_id: string | null;
+};
+const periods = [
+  { name: "Morning", start: 240, end: 720 },
+  { name: "Afternoon", start: 720, end: 1080 },
+  { name: "Evening", start: 1080, end: 1440 },
+];
+const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+export const localToday = getLocalToday;
+export const formatMinute = (n: number) =>
+  `${String(Math.floor(n / 60)).padStart(2, "0")}:${String(n % 60).padStart(2, "0")}`;
+const newOperationId = () => globalThis.crypto.randomUUID();
+function normalize(value: TodayItemView): TodayItem {
+  if (
+    value.kind === "recurring" &&
+    value.series_id &&
+    value.occurrence_id &&
+    value.original_local_date
+  )
+    return {
+      ...value,
+      kind: "recurring",
+      series_id: value.series_id,
+      occurrence_id: value.occurrence_id,
+      original_local_date: value.original_local_date,
+    };
+  return {
+    ...value,
+    kind: "one_off",
+    series_id: null,
+    occurrence_id: null,
+    original_local_date: null,
+  };
+}
+function addDays(date: string, days: number) {
+  const [y, m, d] = date.split("-").map(Number);
+  const value = new Date(y!, m! - 1, d! + days);
+  return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
+}
+function previewDates(
+  date: string,
+  frequency: string,
+  interval: number,
+  selected: number[],
+  endMode: string,
+  count: number,
+  until: string,
+) {
+  const out: string[] = [];
+  const limit = endMode === "count" ? Math.min(5, Math.max(0, count)) : 5;
+  for (let n = 0; n < 366 && out.length < limit; n++) {
+    const candidate = addDays(date, n);
+    if (endMode === "until" && candidate > until) break;
+    if (frequency === "daily" && n % interval === 0) out.push(candidate);
+    else if (frequency === "weekly") {
+      const day = (new Date(`${candidate}T12:00:00`).getDay() + 6) % 7;
+      if (Math.floor(n / 7) % interval === 0 && selected.includes(day))
+        out.push(candidate);
+    } else if (frequency === "monthly") {
+      const [, , baseDay] = date.split("-").map(Number);
+      const [cy, cm, cd] = candidate.split("-").map(Number);
+      const [sy, sm] = date.split("-").map(Number);
+      if (cd === baseDay && ((cy! - sy!) * 12 + cm! - sm!) % interval === 0)
+        out.push(candidate);
+    }
+  }
+  return out;
+}
+function TimeWheel({
+  name,
+  value,
+  onChange,
+  end = false,
+}: {
+  name: string;
+  value: number;
+  onChange: (n: number) => void;
+  end?: boolean;
+}) {
+  const hour = Math.floor(value / 60),
+    minute = value % 60;
+  return (
+    <div role="group" aria-label={`${name} time`} className={styles.wheel}>
+      <label>
+        {name} hour
+        <select
+          aria-label={`${name} hour`}
+          value={hour}
+          onChange={(e) => onChange(Number(e.target.value) * 60 + minute)}
+        >
+          {Array.from({ length: end ? 21 : 20 }, (_, i) => i + 4).map((h) => (
+            <option key={h} value={h}>
+              {String(h).padStart(2, "0")}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        {name} minute
+        <select
+          aria-label={`${name} minute`}
+          value={minute}
+          onChange={(e) => onChange(hour * 60 + Number(e.target.value))}
+        >
+          {Array.from({ length: 60 }, (_, m) => (
+            <option key={m} value={m}>
+              {String(m).padStart(2, "0")}
+            </option>
+          ))}
+        </select>
+      </label>
+    </div>
+  );
+}
 
-type FocusRequest = { requestId: string; taskId: string | null; seriesId: string | null } | null;
-export function TodayScreen({selectedDate,onSelectedDateChange,focusRequest}:{selectedDate?:string;onSelectedDateChange?:(date:string)=>void;focusRequest?:FocusRequest}={}){
- const today=localToday(),[standaloneDate,setStandaloneDate]=useState(today),date=selectedDate??standaloneDate,client=useQueryClient(),trigger=useRef<HTMLButtonElement>(null),dialog=useRef<HTMLDivElement>(null),returnFocus=useRef<HTMLElement|null>(null);
- const selectDate=(value:string)=>onSelectedDateChange?onSelectedDateChange(value):setStandaloneDate(value);
- const [open,setOpen]=useState(false),[editing,setEditing]=useState<TodayItem|null>(null),[selected,setSelected]=useState<string|null>(null),[error,setError]=useState(""),[recurring,setRecurring]=useState(false),[frequency,setFrequency]=useState("daily"),[interval,setInterval]=useState(1),[selectedDays,setSelectedDays]=useState<number[]>([]),[endMode,setEndMode]=useState("never"),[count,setCount]=useState(5),[until,setUntil]=useState(date),[scope,setScope]=useState<OccurrenceEditScope>("only_this_occurrence");
- const [draft,setDraft]=useState<Draft>({title:"",description:"",local_date:date,start_minute:480,end_minute:540,category_id:"general",priority:"medium"});
- const [openFan,setOpenFan]=useState<string|null>(null),[assessmentError,setAssessmentError]=useState(""),[lastOperation,setLastOperation]=useState<{itemId:string;localDate:string;operationId:string}|null>(null);
- const items=useQuery({queryKey:["today-items",date],queryFn:async()=> (await listTodayItems(date)).map(normalize)}),categories=useQuery({queryKey:["task-categories"],queryFn:listTaskCategories}),completionStates=useQuery({queryKey:["completion-states"],queryFn:listCompletionStates});
- const recurrenceInput={frequency,interval,weekdays:selectedDays,until:endMode==="until"?until:null,count:endMode==="count"?count:null};
- const refreshSchedule=async()=>{await Promise.all([client.invalidateQueries({queryKey:["today-items"]}),client.invalidateQueries({queryKey:["month-projection"]}),client.invalidateQueries({queryKey:["analytics"]})]);};
- const save=useMutation({mutationFn:async()=>{if(editing?.kind==="recurring")return updateRecurringOccurrence({series_id:editing.series_id,original_local_date:editing.original_local_date,replacement_local_date:draft.local_date,...draft,scope,cancelled:false,...recurrenceInput});if(editing)return updateTask({id:editing.id,...draft});if(recurring)return createRecurringTask({...draft,...recurrenceInput});return createTask(draft);},onSuccess:async()=>{await refreshSchedule();closeDialog();},onError:e=>setError(e instanceof Error?e.message:"Unable to save task.")});
- const remove=useMutation({mutationFn:async()=>{if(!editing)return;if(editing.kind==="recurring")return updateRecurringOccurrence({series_id:editing.series_id,original_local_date:editing.original_local_date,replacement_local_date:null,title:null,description:null,category_id:null,priority:null,start_minute:null,end_minute:null,scope,cancelled:true,frequency:null,interval:null,weekdays:null,until:null,count:null});return deleteTask(editing.id);},onSuccess:async()=>{await refreshSchedule();closeDialog();},onError:e=>setError(e instanceof Error?e.message:"Unable to delete task.")});
- const assessment=useMutation({mutationFn:async({item,state,operationId}:{item:TodayItem;state:CompletionStateView;operationId:string})=>{const now=new Date();return evaluateTask({subject_kind:item.kind,task_id:item.kind==="one_off"?item.id:null,series_id:item.kind==="recurring"?item.series_id:null,original_local_date:item.kind==="recurring"?item.original_local_date:null,state_id:state.id,operation_id:operationId,observed_local_date:localToday(),observed_local_minute:now.getHours()*60+now.getMinutes()});},onMutate:async variables=>{setAssessmentError("");setOpenFan(null);await client.cancelQueries({queryKey:["today-items",variables.item.local_date]});const previous=client.getQueryData<TodayItem[]>(["today-items",variables.item.local_date]);client.setQueryData<TodayItem[]>(["today-items",variables.item.local_date],current=>current?.map(item=>item.id===variables.item.id?{...item,evaluation:{state_id:variables.state.id,label:variables.state.label,visual_token:variables.state.visual_token,evaluated_at:"",operation_id:variables.operationId}}:item));return {previous,localDate:variables.item.local_date};},onError:(value,_variables,context)=>{client.setQueryData(["today-items",context?.localDate],context?.previous);setAssessmentError(value instanceof Error?value.message:"Unable to save assessment.");},onSuccess:async(value,variables)=>{client.setQueryData<TodayItem[]>(["today-items",variables.item.local_date],current=>current?.map(item=>item.id===variables.item.id?{...item,evaluation:value}:item));setLastOperation({itemId:variables.item.id,localDate:variables.item.local_date,operationId:value.operation_id});await Promise.all([client.invalidateQueries({queryKey:["month-projection"]}),client.invalidateQueries({queryKey:["analytics"]})]);}});
- const undoAssessment=useMutation({mutationFn:(operationId:string)=>undoTaskEvaluation({operation_id:operationId}),onSuccess:async(value)=>{if(lastOperation)client.setQueryData<TodayItem[]>(["today-items",lastOperation.localDate],current=>current?.map(item=>item.id===lastOperation.itemId?{...item,evaluation:value}:item));setLastOperation(null);await Promise.all([client.invalidateQueries({queryKey:["month-projection"]}),client.invalidateQueries({queryKey:["analytics"]})]);},onError:value=>setAssessmentError(value instanceof Error?value.message:"Unable to undo assessment.")});
- function closeDialog(){setOpen(false);setEditing(null);setError("");queueMicrotask(()=>returnFocus.current?.focus());}
- function begin(item?:TodayItem,eventTarget?:HTMLElement){returnFocus.current=eventTarget??trigger.current;setEditing(item??null);setRecurring(false);setScope("only_this_occurrence");setDraft(item?{title:item.title,description:item.description,local_date:item.local_date,start_minute:item.start_minute,end_minute:item.end_minute,category_id:item.category_id,priority:item.priority}:{title:"",description:"",local_date:date,start_minute:480,end_minute:540,category_id:categories.data?.[0]?.id??"general",priority:"medium"});setOpen(true);}
- useEffect(()=>{if(!focusRequest||!items.data)return;const targetId=focusRequest.taskId??focusRequest.seriesId;if(!targetId)return;const el=document.querySelector<HTMLElement>(`[data-task-id="${targetId}"],[data-series-id="${targetId}"]`);if(el){el.scrollIntoView({block:"nearest"});el.focus({preventScroll:true});}else{document.getElementById("today-heading")?.focus({preventScroll:true});}},[focusRequest,items.data]);
- useEffect(()=>{if(!open)return;const handler=(e:KeyboardEvent)=>{if(e.key==="Escape")closeDialog();if(e.key==="Tab"&&dialog.current){const controls=[...dialog.current.querySelectorAll<HTMLElement>("button,input,textarea,select")].filter(x=>!x.hasAttribute("disabled"));if(controls.length&&(e.shiftKey?document.activeElement===controls[0]:document.activeElement===controls.at(-1))){e.preventDefault();(e.shiftKey?controls.at(-1):controls[0])?.focus();}}};document.addEventListener("keydown",handler);dialog.current?.querySelector<HTMLElement>("input")?.focus();return()=>document.removeEventListener("keydown",handler);},[open]);
- const grouped=useMemo(()=>periods.map(period=>({...period,groups:Object.values((items.data??[]).filter(x=>x.start_minute>=period.start&&x.start_minute<period.end).reduce((all,item)=>{(all[`${item.start_minute}-${item.end_minute}`]??=[]).push(item);return all;},{} as Record<string,TodayItem[]>))})),[items.data]);
- const previews=useMemo(()=>previewDates(draft.local_date,frequency,Math.max(1,interval),selectedDays,endMode,count,until),[draft.local_date,frequency,interval,selectedDays,endMode,count,until]);
- const clock=new Date(),clockMinute=clock.getHours()*60+clock.getMinutes();
- return <section aria-labelledby="today-heading" className={styles.root}><div className={styles.header}><div><p className={styles.eyebrow}>{date===today?"Today":"Selected day"} · {date}</p><h1 id="today-heading" tabIndex={-1}>Today</h1></div><button ref={trigger} className={styles.create} aria-label="Create task" onClick={()=>begin()}>Plan task</button></div><WeekStrip selectedDate={date} today={today} onSelectDate={selectDate}/>{assessmentError&&<p role="alert">{assessmentError}</p>}{lastOperation&&<p aria-live="polite" className={styles.undo}>Assessment saved. <button type="button" disabled={undoAssessment.isPending} onClick={()=>undoAssessment.mutate(lastOperation.operationId)}>Undo assessment</button></p>}{items.isLoading?<p aria-live="polite">Loading tasks…</p>:items.isError?<p role="alert">Unable to load tasks.</p>:<div className={styles.timeline}>{grouped.map(period=><section key={period.name} aria-labelledby={`${period.name}-heading`}><h2 id={`${period.name}-heading`}>{period.name}<span>{formatMinute(period.start)}–{formatMinute(period.end)}</span></h2>{period.groups.length===0?<p className={styles.empty}>No tasks scheduled.</p>:period.groups.map(group=><div className={styles.group} key={`${group[0]!.start_minute}-${group[0]!.end_minute}`}><div className={styles.time}>{formatMinute(group[0]!.start_minute)}–{formatMinute(group[0]!.end_minute)}</div><div role="list" aria-label={`${formatMinute(group[0]!.start_minute)} to ${formatMinute(group[0]!.end_minute)} tasks`}>{group.map(item=><div role="listitem" key={item.id} className={`${styles.row} ${selected===item.id?styles.selected:""}`} tabIndex={0} onClick={()=>setSelected(item.id)} onDoubleClick={e=>begin(item,e.currentTarget)} onKeyDown={e=>{if(e.key==="Enter")begin(item,e.currentTarget)}}><div><strong>{item.title}</strong><p>{item.description}</p><span className={styles.category}><CategoryIcon iconKey={item.category_icon_key} label={`Category ${item.category_name}`}/> {item.category_name}</span>{item.kind==="recurring"&&<span aria-label="Recurring task"> ↻</span>}</div><span aria-label={`Priority ${item.priority}`}>•</span><AssessmentControl itemId={item.id} states={completionStates.data??[]} evaluation={item.evaluation} eligible={item.local_date<today||(item.local_date===today&&item.end_minute<=clockMinute)} open={openFan===item.id} onOpen={()=>setOpenFan(item.id)} onClose={()=>setOpenFan(null)} onSelect={state=>assessment.mutate({item,state,operationId:newOperationId()})}/></div>)}</div></div>)}</section>)}</div>}
- {open&&<div className={styles.dialog} role="dialog" aria-modal="true" aria-labelledby="task-dialog-heading" ref={dialog}><form onSubmit={e=>{e.preventDefault();setError("");if(draft.start_minute>=draft.end_minute){setError("Start time must be before end time.");return;}if(recurring&&(!(interval>=1&&interval<=366))){setError("Recurrence interval must be between 1 and 366.");return;}if(recurring&&frequency==="weekly"&&selectedDays.length===0){setError("Choose at least one weekday.");return;}if(recurring&&endMode==="count"&&(!(count>=1&&count<=1000))){setError("Occurrence count must be between 1 and 1000.");return;}if(recurring&&endMode==="until"&&until<draft.local_date){setError("Recurrence end date cannot be before the task date.");return;}save.mutate();}}><h2 id="task-dialog-heading">{editing?"Edit task":"Create task"}</h2>{error&&<p role="alert" id="task-error">{error}</p>}<label>Title<input value={draft.title} aria-describedby={error?"task-error":undefined} onChange={e=>setDraft({...draft,title:e.target.value})}/></label><label>Description<textarea value={draft.description} onChange={e=>setDraft({...draft,description:e.target.value})}/></label><label>Date<input type="date" value={draft.local_date} onChange={e=>setDraft({...draft,local_date:e.target.value})}/></label><TimeWheel name="Start" value={draft.start_minute} onChange={n=>setDraft({...draft,start_minute:n})}/><TimeWheel name="End" end value={draft.end_minute} onChange={n=>setDraft({...draft,end_minute:n})}/><label>Category<select value={draft.category_id} onChange={e=>setDraft({...draft,category_id:e.target.value})}>{(categories.data??[]).map((c:TaskCategoryView)=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label><label>Priority<select value={draft.priority} onChange={e=>setDraft({...draft,priority:e.target.value})}><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label>
- {!editing&&<fieldset><legend>Recurring</legend><label><input type="checkbox" checked={recurring} onChange={e=>setRecurring(e.target.checked)}/> Repeat task</label>{recurring&&<><label>Frequency<select value={frequency} onChange={e=>setFrequency(e.target.value)}><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select></label><label>Interval<input aria-label="Recurrence interval" type="number" min="1" max="366" value={interval} onChange={e=>setInterval(Number(e.target.value))}/></label>{frequency==="weekly"&&<fieldset><legend>Weekdays</legend>{weekdays.map((day,index)=><label key={day}><input type="checkbox" checked={selectedDays.includes(index)} onChange={e=>setSelectedDays(e.target.checked?[...selectedDays,index]:selectedDays.filter(x=>x!==index))}/>{day}</label>)}</fieldset>}<fieldset><legend>Ends</legend>{["never","count","until"].map(mode=><label key={mode}><input type="radio" name="end-mode" checked={endMode===mode} onChange={()=>setEndMode(mode)}/>{mode}</label>)}{endMode==="count"&&<label>Occurrence count<input type="number" min="1" max="1000" value={count} onChange={e=>setCount(Number(e.target.value))}/></label>}{endMode==="until"&&<label>Until<input type="date" value={until} onChange={e=>setUntil(e.target.value)}/></label>}</fieldset><ol aria-label="Recurrence preview">{previews.map(value=><li key={value}>{value}</li>)}</ol></>}</fieldset>}
- {editing?.kind==="recurring"&&<fieldset><legend>Occurrence scope</legend>{(["only_this_occurrence","this_and_future","entire_series"] as OccurrenceEditScope[]).map(value=><label key={value}><input type="radio" name="scope" checked={scope===value} onChange={()=>setScope(value)}/>{value==="only_this_occurrence"?"Only this occurrence":value==="this_and_future"?"This and future occurrences":"Entire series"}</label>)}</fieldset>}<button type="submit" disabled={save.isPending||remove.isPending}>{save.isPending?"Saving…":"Save"}</button><button type="button" onClick={closeDialog}>Cancel</button>{editing&&<button type="button" disabled={save.isPending||remove.isPending} onClick={()=>remove.mutate()}>{remove.isPending?"Deleting…":"Delete"}</button>}</form></div>}</section>;
+type FocusRequest = {
+  requestId: string;
+  taskId: string | null;
+  seriesId: string | null;
+} | null;
+export function TodayScreen({
+  selectedDate,
+  onSelectedDateChange,
+  focusRequest,
+  onLifeNavigate,
+}: {
+  selectedDate?: string;
+  onSelectedDateChange?: (date: string) => void;
+  focusRequest?: FocusRequest;
+  onLifeNavigate?: (nodeId: string) => void;
+} = {}) {
+  const today = localToday(),
+    [standaloneDate, setStandaloneDate] = useState(today),
+    date = selectedDate ?? standaloneDate,
+    client = useQueryClient(),
+    trigger = useRef<HTMLButtonElement>(null),
+    dialog = useRef<HTMLDivElement>(null),
+    returnFocus = useRef<HTMLElement | null>(null);
+  const selectDate = (value: string) =>
+    onSelectedDateChange
+      ? onSelectedDateChange(value)
+      : setStandaloneDate(value);
+  const [open, setOpen] = useState(false),
+    [editing, setEditing] = useState<TodayItem | null>(null),
+    [selected, setSelected] = useState<string | null>(null),
+    [error, setError] = useState(""),
+    [recurring, setRecurring] = useState(false),
+    [frequency, setFrequency] = useState("daily"),
+    [interval, setInterval] = useState(1),
+    [selectedDays, setSelectedDays] = useState<number[]>([]),
+    [endMode, setEndMode] = useState("never"),
+    [count, setCount] = useState(5),
+    [until, setUntil] = useState(date),
+    [scope, setScope] = useState<OccurrenceEditScope>("only_this_occurrence");
+  const [draft, setDraft] = useState<Draft>({
+    title: "",
+    description: "",
+    local_date: date,
+    start_minute: 480,
+    end_minute: 540,
+    category_id: "general",
+    priority: "medium",
+    life_node_id: null,
+  });
+  const [openFan, setOpenFan] = useState<string | null>(null),
+    [assessmentError, setAssessmentError] = useState(""),
+    [lastOperation, setLastOperation] = useState<{
+      itemId: string;
+      localDate: string;
+      operationId: string;
+    } | null>(null);
+  const items = useQuery({
+      queryKey: ["today-items", date],
+      queryFn: async () => (await listTodayItems(date)).map(normalize),
+    }),
+    categories = useQuery({
+      queryKey: ["task-categories"],
+      queryFn: listTaskCategories,
+    }),
+    completionStates = useQuery({
+      queryKey: ["completion-states"],
+      queryFn: listCompletionStates,
+    });
+  const recurrenceInput = {
+    frequency,
+    interval,
+    weekdays: selectedDays,
+    until: endMode === "until" ? until : null,
+    count: endMode === "count" ? count : null,
+  };
+  const refreshSchedule = async () => {
+    await Promise.all([
+      client.invalidateQueries({ queryKey: ["today-items"] }),
+      client.invalidateQueries({ queryKey: ["month-projection"] }),
+      client.invalidateQueries({ queryKey: ["analytics"] }),
+    ]);
+  };
+  const save = useMutation({
+    mutationFn: async () => {
+      if (editing?.kind === "recurring")
+        return updateRecurringOccurrence({
+          series_id: editing.series_id,
+          original_local_date: editing.original_local_date,
+          replacement_local_date: draft.local_date,
+          ...draft,
+          scope,
+          cancelled: false,
+          ...recurrenceInput,
+        });
+      if (editing) return updateTask({ id: editing.id, ...draft });
+      if (recurring)
+        return createRecurringTask({ ...draft, ...recurrenceInput });
+      return createTask(draft);
+    },
+    onSuccess: async () => {
+      await refreshSchedule();
+      closeDialog();
+    },
+    onError: (e) =>
+      setError(e instanceof Error ? e.message : "Unable to save task."),
+  });
+  const remove = useMutation({
+    mutationFn: async () => {
+      if (!editing) return;
+      if (editing.kind === "recurring")
+        return updateRecurringOccurrence({
+          series_id: editing.series_id,
+          original_local_date: editing.original_local_date,
+          replacement_local_date: null,
+          title: null,
+          description: null,
+          category_id: null,
+          priority: null,
+          start_minute: null,
+          end_minute: null,
+          scope,
+          cancelled: true,
+          frequency: null,
+          interval: null,
+          weekdays: null,
+          until: null,
+          count: null,
+          life_node_id: editing.life_area?.id ?? null,
+        });
+      return deleteTask(editing.id);
+    },
+    onSuccess: async () => {
+      await refreshSchedule();
+      closeDialog();
+    },
+    onError: (e) =>
+      setError(e instanceof Error ? e.message : "Unable to delete task."),
+  });
+  const assessment = useMutation({
+    mutationFn: async ({
+      item,
+      state,
+      operationId,
+    }: {
+      item: TodayItem;
+      state: CompletionStateView;
+      operationId: string;
+    }) => {
+      const now = new Date();
+      return evaluateTask({
+        subject_kind: item.kind,
+        task_id: item.kind === "one_off" ? item.id : null,
+        series_id: item.kind === "recurring" ? item.series_id : null,
+        original_local_date:
+          item.kind === "recurring" ? item.original_local_date : null,
+        state_id: state.id,
+        operation_id: operationId,
+        observed_local_date: localToday(),
+        observed_local_minute: now.getHours() * 60 + now.getMinutes(),
+      });
+    },
+    onMutate: async (variables) => {
+      setAssessmentError("");
+      setOpenFan(null);
+      await client.cancelQueries({
+        queryKey: ["today-items", variables.item.local_date],
+      });
+      const previous = client.getQueryData<TodayItem[]>([
+        "today-items",
+        variables.item.local_date,
+      ]);
+      client.setQueryData<TodayItem[]>(
+        ["today-items", variables.item.local_date],
+        (current) =>
+          current?.map((item) =>
+            item.id === variables.item.id
+              ? {
+                  ...item,
+                  evaluation: {
+                    state_id: variables.state.id,
+                    label: variables.state.label,
+                    visual_token: variables.state.visual_token,
+                    evaluated_at: "",
+                    operation_id: variables.operationId,
+                  },
+                }
+              : item,
+          ),
+      );
+      return { previous, localDate: variables.item.local_date };
+    },
+    onError: (value, _variables, context) => {
+      client.setQueryData(
+        ["today-items", context?.localDate],
+        context?.previous,
+      );
+      setAssessmentError(
+        value instanceof Error ? value.message : "Unable to save assessment.",
+      );
+    },
+    onSuccess: async (value, variables) => {
+      client.setQueryData<TodayItem[]>(
+        ["today-items", variables.item.local_date],
+        (current) =>
+          current?.map((item) =>
+            item.id === variables.item.id
+              ? { ...item, evaluation: value }
+              : item,
+          ),
+      );
+      setLastOperation({
+        itemId: variables.item.id,
+        localDate: variables.item.local_date,
+        operationId: value.operation_id,
+      });
+      await Promise.all([
+        client.invalidateQueries({ queryKey: ["month-projection"] }),
+        client.invalidateQueries({ queryKey: ["analytics"] }),
+      ]);
+    },
+  });
+  const undoAssessment = useMutation({
+    mutationFn: (operationId: string) =>
+      undoTaskEvaluation({ operation_id: operationId }),
+    onSuccess: async (value) => {
+      if (lastOperation)
+        client.setQueryData<TodayItem[]>(
+          ["today-items", lastOperation.localDate],
+          (current) =>
+            current?.map((item) =>
+              item.id === lastOperation.itemId
+                ? { ...item, evaluation: value }
+                : item,
+            ),
+        );
+      setLastOperation(null);
+      await Promise.all([
+        client.invalidateQueries({ queryKey: ["month-projection"] }),
+        client.invalidateQueries({ queryKey: ["analytics"] }),
+      ]);
+    },
+    onError: (value) =>
+      setAssessmentError(
+        value instanceof Error ? value.message : "Unable to undo assessment.",
+      ),
+  });
+  function closeDialog() {
+    setOpen(false);
+    setEditing(null);
+    setError("");
+    queueMicrotask(() => returnFocus.current?.focus());
+  }
+  function begin(item?: TodayItem, eventTarget?: HTMLElement) {
+    returnFocus.current = eventTarget ?? trigger.current;
+    setEditing(item ?? null);
+    setRecurring(false);
+    setScope("only_this_occurrence");
+    setDraft(
+      item
+        ? {
+            title: item.title,
+            description: item.description,
+            local_date: item.local_date,
+            start_minute: item.start_minute,
+            end_minute: item.end_minute,
+            category_id: item.category_id,
+            priority: item.priority,
+            life_node_id: item.life_area?.id ?? null,
+          }
+        : {
+            title: "",
+            description: "",
+            local_date: date,
+            start_minute: 480,
+            end_minute: 540,
+            category_id: categories.data?.[0]?.id ?? "general",
+            priority: "medium",
+            life_node_id: null,
+          },
+    );
+    setOpen(true);
+  }
+  useEffect(() => {
+    if (!focusRequest || !items.data) return;
+    const targetId = focusRequest.taskId ?? focusRequest.seriesId;
+    if (!targetId) return;
+    const el = document.querySelector<HTMLElement>(
+      `[data-task-id="${targetId}"],[data-series-id="${targetId}"]`,
+    );
+    if (el) {
+      el.scrollIntoView({ block: "nearest" });
+      el.focus({ preventScroll: true });
+    } else {
+      document.getElementById("today-heading")?.focus({ preventScroll: true });
+    }
+  }, [focusRequest, items.data]);
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeDialog();
+      if (e.key === "Tab" && dialog.current) {
+        const controls = [
+          ...dialog.current.querySelectorAll<HTMLElement>(
+            "button,input,textarea,select",
+          ),
+        ].filter((x) => !x.hasAttribute("disabled"));
+        if (
+          controls.length &&
+          (e.shiftKey
+            ? document.activeElement === controls[0]
+            : document.activeElement === controls.at(-1))
+        ) {
+          e.preventDefault();
+          (e.shiftKey ? controls.at(-1) : controls[0])?.focus();
+        }
+      }
+    };
+    document.addEventListener("keydown", handler);
+    dialog.current?.querySelector<HTMLElement>("input")?.focus();
+    return () => document.removeEventListener("keydown", handler);
+  }, [open]);
+  const grouped = useMemo(
+    () =>
+      periods.map((period) => ({
+        ...period,
+        groups: Object.values(
+          (items.data ?? [])
+            .filter(
+              (x) =>
+                x.start_minute >= period.start && x.start_minute < period.end,
+            )
+            .reduce(
+              (all, item) => {
+                (all[`${item.start_minute}-${item.end_minute}`] ??= []).push(
+                  item,
+                );
+                return all;
+              },
+              {} as Record<string, TodayItem[]>,
+            ),
+        ),
+      })),
+    [items.data],
+  );
+  const previews = useMemo(
+    () =>
+      previewDates(
+        draft.local_date,
+        frequency,
+        Math.max(1, interval),
+        selectedDays,
+        endMode,
+        count,
+        until,
+      ),
+    [
+      draft.local_date,
+      frequency,
+      interval,
+      selectedDays,
+      endMode,
+      count,
+      until,
+    ],
+  );
+  const clock = new Date(),
+    clockMinute = clock.getHours() * 60 + clock.getMinutes();
+  return (
+    <section aria-labelledby="today-heading" className={styles.root}>
+      <div className={styles.header}>
+        <div>
+          <p className={styles.eyebrow}>
+            {date === today ? "Today" : "Selected day"} · {date}
+          </p>
+          <h1 id="today-heading" tabIndex={-1}>
+            Today
+          </h1>
+        </div>
+        <button
+          ref={trigger}
+          className={styles.create}
+          aria-label="Create task"
+          onClick={() => begin()}
+        >
+          Plan task
+        </button>
+      </div>
+      <WeekStrip selectedDate={date} today={today} onSelectDate={selectDate} />
+      {assessmentError && <p role="alert">{assessmentError}</p>}
+      {lastOperation && (
+        <p aria-live="polite" className={styles.undo}>
+          Assessment saved.{" "}
+          <button
+            type="button"
+            disabled={undoAssessment.isPending}
+            onClick={() => undoAssessment.mutate(lastOperation.operationId)}
+          >
+            Undo assessment
+          </button>
+        </p>
+      )}
+      {items.isLoading ? (
+        <p aria-live="polite">Loading tasks…</p>
+      ) : items.isError ? (
+        <p role="alert">Unable to load tasks.</p>
+      ) : (
+        <div className={styles.timeline}>
+          {grouped.map((period) => (
+            <section
+              key={period.name}
+              aria-labelledby={`${period.name}-heading`}
+            >
+              <h2 id={`${period.name}-heading`}>
+                {period.name}
+                <span>
+                  {formatMinute(period.start)}–{formatMinute(period.end)}
+                </span>
+              </h2>
+              {period.groups.length === 0 ? (
+                <p className={styles.empty}>No tasks scheduled.</p>
+              ) : (
+                period.groups.map((group) => (
+                  <div
+                    className={styles.group}
+                    key={`${group[0]!.start_minute}-${group[0]!.end_minute}`}
+                  >
+                    <div className={styles.time}>
+                      {formatMinute(group[0]!.start_minute)}–
+                      {formatMinute(group[0]!.end_minute)}
+                    </div>
+                    <div
+                      role="list"
+                      aria-label={`${formatMinute(group[0]!.start_minute)} to ${formatMinute(group[0]!.end_minute)} tasks`}
+                    >
+                      {group.map((item) => (
+                        <div
+                          role="listitem"
+                          key={item.id}
+                          className={`${styles.row} ${selected === item.id ? styles.selected : ""}`}
+                          tabIndex={0}
+                          onClick={() => setSelected(item.id)}
+                          onDoubleClick={(e) => begin(item, e.currentTarget)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") begin(item, e.currentTarget);
+                          }}
+                        >
+                          <div>
+                            <strong>{item.title}</strong>
+                            <p>{item.description}</p>
+                            <span className={styles.category}>
+                              <CategoryIcon
+                                iconKey={item.category_icon_key}
+                                label={`Category ${item.category_name}`}
+                              />{" "}
+                              {item.category_name}
+                            </span>
+                            {item.life_area &&
+                              (item.life_area.archived ? (
+                                <span aria-label={`Life breadcrumb ${item.life_area.breadcrumb}`}>
+                                  Archived life area: {item.life_area.title}
+                                </span>
+                              ) : (
+                                <button
+                                  type="button"
+                                  aria-label={`Life area: ${item.life_area.title}. ${item.life_area.breadcrumb}`}
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    onLifeNavigate?.(item.life_area!.id);
+                                  }}
+                                  onDoubleClick={(event) => event.stopPropagation()}
+                                >
+                                  Life area: {item.life_area.title}
+                                </button>
+                              ))}
+                            {item.kind === "recurring" && (
+                              <span aria-label="Recurring task"> ↻</span>
+                            )}
+                          </div>
+                          <span aria-label={`Priority ${item.priority}`}>
+                            •
+                          </span>
+                          <AssessmentControl
+                            itemId={item.id}
+                            states={completionStates.data ?? []}
+                            evaluation={item.evaluation}
+                            eligible={
+                              item.local_date < today ||
+                              (item.local_date === today &&
+                                item.end_minute <= clockMinute)
+                            }
+                            open={openFan === item.id}
+                            onOpen={() => setOpenFan(item.id)}
+                            onClose={() => setOpenFan(null)}
+                            onSelect={(state) =>
+                              assessment.mutate({
+                                item,
+                                state,
+                                operationId: newOperationId(),
+                              })
+                            }
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )}
+            </section>
+          ))}
+        </div>
+      )}
+      {open && (
+        <div
+          className={styles.dialog}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="task-dialog-heading"
+          ref={dialog}
+        >
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              setError("");
+              if (draft.start_minute >= draft.end_minute) {
+                setError("Start time must be before end time.");
+                return;
+              }
+              if (recurring && !(interval >= 1 && interval <= 366)) {
+                setError("Recurrence interval must be between 1 and 366.");
+                return;
+              }
+              if (
+                recurring &&
+                frequency === "weekly" &&
+                selectedDays.length === 0
+              ) {
+                setError("Choose at least one weekday.");
+                return;
+              }
+              if (
+                recurring &&
+                endMode === "count" &&
+                !(count >= 1 && count <= 1000)
+              ) {
+                setError("Occurrence count must be between 1 and 1000.");
+                return;
+              }
+              if (
+                recurring &&
+                endMode === "until" &&
+                until < draft.local_date
+              ) {
+                setError("Recurrence end date cannot be before the task date.");
+                return;
+              }
+              save.mutate();
+            }}
+          >
+            <h2 id="task-dialog-heading">
+              {editing ? "Edit task" : "Create task"}
+            </h2>
+            {error && (
+              <p role="alert" id="task-error">
+                {error}
+              </p>
+            )}
+            <label>
+              Title
+              <input
+                value={draft.title}
+                aria-describedby={error ? "task-error" : undefined}
+                onChange={(e) => setDraft({ ...draft, title: e.target.value })}
+              />
+            </label>
+            <label>
+              Description
+              <textarea
+                value={draft.description}
+                onChange={(e) =>
+                  setDraft({ ...draft, description: e.target.value })
+                }
+              />
+            </label>
+            <label>
+              Date
+              <input
+                type="date"
+                value={draft.local_date}
+                onChange={(e) =>
+                  setDraft({ ...draft, local_date: e.target.value })
+                }
+              />
+            </label>
+            <TimeWheel
+              name="Start"
+              value={draft.start_minute}
+              onChange={(n) => setDraft({ ...draft, start_minute: n })}
+            />
+            <TimeWheel
+              name="End"
+              end
+              value={draft.end_minute}
+              onChange={(n) => setDraft({ ...draft, end_minute: n })}
+            />
+            <label>
+              Category
+              <select
+                value={draft.category_id}
+                onChange={(e) =>
+                  setDraft({ ...draft, category_id: e.target.value })
+                }
+              >
+                {(categories.data ?? []).map((c: TaskCategoryView) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Priority
+              <select
+                value={draft.priority}
+                onChange={(e) =>
+                  setDraft({ ...draft, priority: e.target.value })
+                }
+              >
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+            </label>
+            <LifeAreaCombobox
+              value={draft.life_node_id}
+              current={editing?.life_area}
+              onChange={(life_node_id) => {
+                setDraft({ ...draft, life_node_id });
+                if (editing?.kind === "recurring") setScope("entire_series");
+              }}
+            />
+            {!editing && (
+              <fieldset>
+                <legend>Recurring</legend>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={recurring}
+                    onChange={(e) => setRecurring(e.target.checked)}
+                  />{" "}
+                  Repeat task
+                </label>
+                {recurring && (
+                  <>
+                    <label>
+                      Frequency
+                      <select
+                        value={frequency}
+                        onChange={(e) => setFrequency(e.target.value)}
+                      >
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                      </select>
+                    </label>
+                    <label>
+                      Interval
+                      <input
+                        aria-label="Recurrence interval"
+                        type="number"
+                        min="1"
+                        max="366"
+                        value={interval}
+                        onChange={(e) => setInterval(Number(e.target.value))}
+                      />
+                    </label>
+                    {frequency === "weekly" && (
+                      <fieldset>
+                        <legend>Weekdays</legend>
+                        {weekdays.map((day, index) => (
+                          <label key={day}>
+                            <input
+                              type="checkbox"
+                              checked={selectedDays.includes(index)}
+                              onChange={(e) =>
+                                setSelectedDays(
+                                  e.target.checked
+                                    ? [...selectedDays, index]
+                                    : selectedDays.filter((x) => x !== index),
+                                )
+                              }
+                            />
+                            {day}
+                          </label>
+                        ))}
+                      </fieldset>
+                    )}
+                    <fieldset>
+                      <legend>Ends</legend>
+                      {["never", "count", "until"].map((mode) => (
+                        <label key={mode}>
+                          <input
+                            type="radio"
+                            name="end-mode"
+                            checked={endMode === mode}
+                            onChange={() => setEndMode(mode)}
+                          />
+                          {mode}
+                        </label>
+                      ))}
+                      {endMode === "count" && (
+                        <label>
+                          Occurrence count
+                          <input
+                            type="number"
+                            min="1"
+                            max="1000"
+                            value={count}
+                            onChange={(e) => setCount(Number(e.target.value))}
+                          />
+                        </label>
+                      )}
+                      {endMode === "until" && (
+                        <label>
+                          Until
+                          <input
+                            type="date"
+                            value={until}
+                            onChange={(e) => setUntil(e.target.value)}
+                          />
+                        </label>
+                      )}
+                    </fieldset>
+                    <ol aria-label="Recurrence preview">
+                      {previews.map((value) => (
+                        <li key={value}>{value}</li>
+                      ))}
+                    </ol>
+                  </>
+                )}
+              </fieldset>
+            )}
+            {editing?.kind === "recurring" && (
+              <fieldset>
+                <legend>Occurrence scope</legend>
+                {(
+                  [
+                    "only_this_occurrence",
+                    "this_and_future",
+                    "entire_series",
+                  ] as OccurrenceEditScope[]
+                ).map((value) => (
+                  <label key={value}>
+                    <input
+                      type="radio"
+                      name="scope"
+                      checked={scope === value}
+                      onChange={() => setScope(value)}
+                    />
+                    {value === "only_this_occurrence"
+                      ? "Only this occurrence"
+                      : value === "this_and_future"
+                        ? "This and future occurrences"
+                        : "Entire series"}
+                  </label>
+                ))}
+              </fieldset>
+            )}
+            <button type="submit" disabled={save.isPending || remove.isPending}>
+              {save.isPending ? "Saving…" : "Save"}
+            </button>
+            <button type="button" onClick={closeDialog}>
+              Cancel
+            </button>
+            {editing && (
+              <button
+                type="button"
+                disabled={save.isPending || remove.isPending}
+                onClick={() => remove.mutate()}
+              >
+                {remove.isPending ? "Deleting…" : "Delete"}
+              </button>
+            )}
+          </form>
+        </div>
+      )}
+    </section>
+  );
 }

@@ -940,7 +940,7 @@ mod tests {
     #[test]
     fn migration_eight_adds_ledger_and_edit_preference() {
         let c = db();
-        assert_eq!(current_schema_version(&c).unwrap(), 15);
+        assert_eq!(current_schema_version(&c).unwrap(), 16);
         assert_eq!(
             c.query_row("SELECT COUNT(*) FROM life_operations", [], |r| r
                 .get::<_, i64>(0))

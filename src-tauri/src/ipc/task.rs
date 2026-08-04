@@ -71,6 +71,16 @@ pub fn list_task_categories(
         .map_err(map_task)
 }
 #[tauri::command]
+pub fn get_related_tasks_for_life_node(
+    state: State<'_, DatabaseRuntime>,
+    node_id: String,
+) -> Result<Vec<crate::task::dto::RelatedTaskView>, IpcError> {
+    state
+        .execute(move |conn| Ok(repository::related_for_life_node(conn, &node_id)))
+        .map_err(map_db)?
+        .map_err(map_task)
+}
+#[tauri::command]
 #[tracing::instrument(skip(state))]
 pub fn list_tasks_for_date(
     state: State<'_, DatabaseRuntime>,

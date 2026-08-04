@@ -1,5 +1,13 @@
 use serde::{Deserialize, Serialize};
 
+#[derive(Debug, Clone, Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct TaskLifeTargetView {
+    pub id: String,
+    pub title: String,
+    pub breadcrumb: String,
+}
+
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[cfg_attr(test, derive(ts_rs::TS))]
 pub struct LifeNodeView {

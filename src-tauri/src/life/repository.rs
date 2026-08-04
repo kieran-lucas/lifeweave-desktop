@@ -169,6 +169,26 @@ pub fn pinned(conn: &Connection) -> Result<Vec<PinnedLifeNodeView>, LifeError> {
         })?
         .collect::<Result<Vec<_>, _>>()?)
 }
+pub fn task_targets(conn: &Connection) -> Result<Vec<TaskLifeTargetView>, LifeError> {
+    let mut st = conn.prepare("WITH RECURSIVE paths(id,parent_id,title,sort_key,path) AS (
+      SELECT id,parent_id,title,sort_key,printf('%08d',sort_key) FROM life_nodes WHERE id='life-root'
+      UNION ALL SELECT n.id,n.parent_id,n.title,n.sort_key,p.path || '.' || printf('%08d',n.sort_key)
+        FROM life_nodes n JOIN paths p ON n.parent_id=p.id WHERE n.archived_at IS NULL
+    ) SELECT p.id,p.title,(WITH RECURSIVE ancestors(id,parent_id,title,depth) AS (
+      SELECT id,parent_id,title,0 FROM life_nodes WHERE id=p.id
+      UNION ALL SELECT n.id,n.parent_id,n.title,a.depth+1 FROM life_nodes n JOIN ancestors a ON a.parent_id=n.id
+    ) SELECT group_concat(title,' › ') FROM (SELECT title FROM ancestors WHERE id!='life-root' ORDER BY depth DESC))
+    FROM paths p WHERE p.id!='life-root' ORDER BY p.path,p.id")?;
+    Ok(st
+        .query_map([], |r| {
+            Ok(TaskLifeTargetView {
+                id: r.get(0)?,
+                title: r.get(1)?,
+                breadcrumb: r.get(2)?,
+            })
+        })?
+        .collect::<Result<Vec<_>, _>>()?)
+}
 fn validate_common(title: &str, desc: &str, icon: &str, theme: &str) -> Result<(), LifeError> {
     if !domain::valid_title(title) {
         return Err(LifeError::Validation(
@@ -475,7 +495,7 @@ mod tests {
     #[test]
     fn life_migration_seeds_only_protected_root() {
         let mut c = db();
-        assert_eq!(current_schema_version(&c).unwrap(), 15);
+        assert_eq!(current_schema_version(&c).unwrap(), 16);
         assert_eq!(
             c.query_row("SELECT COUNT(*) FROM life_nodes", [], |r| r
                 .get::<_, i64>(0))

@@ -54,9 +54,15 @@ mod tests {
             .expect("ts binding export failed for UpdateFoundationRecordInput");
         MutateFoundationRecordInput::export_all_to(&out)
             .expect("ts binding export failed for MutateFoundationRecordInput");
-        use crate::task::dto::{CreateTaskInput, TaskCategoryView, TaskView, UpdateTaskInput};
+        use crate::task::dto::{
+            CreateTaskInput, RelatedTaskKind, RelatedTaskView, TaskCategoryView, TaskLifeAreaView,
+            TaskView, UpdateTaskInput,
+        };
         TaskCategoryView::export_all_to(&out).unwrap();
         TaskView::export_all_to(&out).unwrap();
+        TaskLifeAreaView::export_all_to(&out).unwrap();
+        RelatedTaskKind::export_all_to(&out).unwrap();
+        RelatedTaskView::export_all_to(&out).unwrap();
         CreateTaskInput::export_all_to(&out).unwrap();
         UpdateTaskInput::export_all_to(&out).unwrap();
         use crate::task::dto::{CreateRecurringTaskInput, RecurringOccurrenceView};
@@ -79,6 +85,7 @@ mod tests {
         crate::task::dto::AnalyticsStreakView::export_all_to(&out).unwrap();
         crate::task::dto::AnalyticsProjection::export_all_to(&out).unwrap();
         use crate::life::dto::*;
+        TaskLifeTargetView::export_all_to(&out).unwrap();
         LifeNodeView::export_all_to(&out).unwrap();
         LifeBrowseProjection::export_all_to(&out).unwrap();
         PinnedLifeNodeView::export_all_to(&out).unwrap();

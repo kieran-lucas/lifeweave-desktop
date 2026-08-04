@@ -877,7 +877,7 @@ mod tests {
         conn.execute_batch("DELETE FROM search_dirty_scopes")
             .unwrap();
         conn.execute(
-            "INSERT INTO tasks VALUES('t1','2026-08-03',540,600,'Test','',
+            "INSERT INTO tasks(id,local_date,start_minute,end_minute,title,description,category_id,priority,created_at,updated_at) VALUES('t1','2026-08-03',540,600,'Test','',
              'general','medium','2026-08-03','2026-08-03')",
             [],
         )
@@ -919,7 +919,7 @@ mod tests {
     fn task_one_off_indexed_and_searchable() {
         let conn = setup();
         conn.execute(
-            "INSERT INTO tasks VALUES('t1','2026-08-03',540,600,'Lập kế hoạch','mô tả',
+            "INSERT INTO tasks(id,local_date,start_minute,end_minute,title,description,category_id,priority,created_at,updated_at) VALUES('t1','2026-08-03',540,600,'Lập kế hoạch','mô tả',
              'general','medium','2026-08-03','2026-08-03')",
             [],
         )
@@ -946,7 +946,7 @@ mod tests {
     fn vietnamese_accent_insensitive_search() {
         let conn = setup();
         conn.execute(
-            "INSERT INTO tasks VALUES('t1','2026-08-03',540,600,'Nguyễn Văn A','',
+            "INSERT INTO tasks(id,local_date,start_minute,end_minute,title,description,category_id,priority,created_at,updated_at) VALUES('t1','2026-08-03',540,600,'Nguyễn Văn A','',
              'general','medium','2026-08-03','2026-08-03')",
             [],
         )
@@ -970,7 +970,7 @@ mod tests {
     fn d_stroke_search_matches_d_stroke_title() {
         let conn = setup();
         conn.execute(
-            "INSERT INTO tasks VALUES('t1','2026-08-03',540,600,'Đường phố','',
+            "INSERT INTO tasks(id,local_date,start_minute,end_minute,title,description,category_id,priority,created_at,updated_at) VALUES('t1','2026-08-03',540,600,'Đường phố','',
              'general','medium','2026-08-03','2026-08-03')",
             [],
         )
@@ -1069,7 +1069,7 @@ mod tests {
     fn one_off_task_navigation_target_uses_local_date() {
         let conn = setup();
         conn.execute(
-            "INSERT INTO tasks VALUES('t1','2026-08-05',540,600,'Nav test','',
+            "INSERT INTO tasks(id,local_date,start_minute,end_minute,title,description,category_id,priority,created_at,updated_at) VALUES('t1','2026-08-05',540,600,'Nav test','',
              'general','medium','2026-08-03','2026-08-03')",
             [],
         )
@@ -1134,7 +1134,7 @@ mod tests {
         for i in 0..10i32 {
             conn.execute(
                 &format!(
-                    "INSERT INTO tasks VALUES('t{i}','2026-08-03',{},{},\
+                    "INSERT INTO tasks(id,local_date,start_minute,end_minute,title,description,category_id,priority,created_at,updated_at) VALUES('t{i}','2026-08-03',{},{},\
                      'test task {i}','', 'general','medium','2026-08-03','2026-08-03')",
                     540 + i * 2,
                     542 + i * 2
@@ -1530,11 +1530,11 @@ mod tests {
                     r.get(0)
                 })
                 .unwrap();
-            assert_eq!(ver, 15, "schema must be at version 15");
+            assert_eq!(ver, 16, "schema must be at version 16");
 
             // Insert one task with Vietnamese title.
             conn.execute(
-                "INSERT INTO tasks VALUES('t-smoke','2026-08-03',480,540,'Đường phố Hà Nội','',
+                "INSERT INTO tasks(id,local_date,start_minute,end_minute,title,description,category_id,priority,created_at,updated_at) VALUES('t-smoke','2026-08-03',480,540,'Đường phố Hà Nội','',
                  'general','medium','2026-08-03','2026-08-03')",
                 [],
             )
@@ -1637,7 +1637,7 @@ mod tests {
                 let day = (i % 28) + 1;
                 let start = (480 + i % 480) as i32;
                 tx.execute(
-                    "INSERT INTO tasks VALUES(?1,?2,?3,?4,?5,'','general','medium','2026-01-01','2026-01-01')",
+                    "INSERT INTO tasks(id,local_date,start_minute,end_minute,title,description,category_id,priority,created_at,updated_at) VALUES(?1,?2,?3,?4,?5,'','general','medium','2026-01-01','2026-01-01')",
                     rusqlite::params![
                         format!("task-{i}"),
                         format!("2026-{month:02}-{day:02}"),
@@ -1659,7 +1659,7 @@ mod tests {
                 let day = (i % 28) + 1;
                 let dtstart = format!("2026-{month:02}-{day:02}");
                 tx.execute(
-                    "INSERT INTO task_series VALUES(?1,?2,'','general','medium',480,540,?3,'UTC','FREQ=WEEKLY','2026-01-01','2026-01-01',NULL)",
+                    "INSERT INTO task_series(id,title,description,category_id,priority,start_minute,end_minute,dtstart_local_date,timezone_id,rrule,created_at,updated_at,archived_at) VALUES(?1,?2,'','general','medium',480,540,?3,'UTC','FREQ=WEEKLY','2026-01-01','2026-01-01',NULL)",
                     rusqlite::params![
                         format!("series-{i}"),
                         format!("Weekly review {i}"),

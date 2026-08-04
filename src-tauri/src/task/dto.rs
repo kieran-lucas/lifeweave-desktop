@@ -114,6 +114,32 @@ pub struct TaskView {
     pub priority: String,
     pub created_at: String,
     pub updated_at: String,
+    pub life_area: Option<TaskLifeAreaView>,
+}
+#[derive(Debug, Clone, Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct TaskLifeAreaView {
+    pub id: String,
+    pub title: String,
+    pub breadcrumb: String,
+    pub archived: bool,
+}
+#[derive(Debug, Clone, Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+#[serde(rename_all = "snake_case")]
+pub enum RelatedTaskKind {
+    OneOff,
+    Recurring,
+}
+#[derive(Debug, Clone, Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct RelatedTaskView {
+    pub id: String,
+    pub kind: RelatedTaskKind,
+    pub title: String,
+    pub group: String,
+    pub local_date: Option<String>,
+    pub series_id: Option<String>,
 }
 #[derive(Debug, Deserialize)]
 #[cfg_attr(test, derive(ts_rs::TS))]
@@ -125,6 +151,7 @@ pub struct CreateTaskInput {
     pub end_minute: i32,
     pub category_id: String,
     pub priority: String,
+    pub life_node_id: Option<String>,
 }
 #[derive(Debug, Deserialize)]
 #[cfg_attr(test, derive(ts_rs::TS))]
@@ -137,6 +164,7 @@ pub struct UpdateTaskInput {
     pub end_minute: i32,
     pub category_id: String,
     pub priority: String,
+    pub life_node_id: Option<String>,
 }
 #[derive(Debug, Clone, Serialize)]
 #[cfg_attr(test, derive(ts_rs::TS))]
@@ -153,6 +181,7 @@ pub struct RecurringOccurrenceView {
     pub priority: String,
     pub is_recurring: bool,
     pub is_override: bool,
+    pub life_area: Option<TaskLifeAreaView>,
 }
 #[derive(Debug, Deserialize)]
 #[cfg_attr(test, derive(ts_rs::TS))]
@@ -169,6 +198,7 @@ pub struct CreateRecurringTaskInput {
     pub weekdays: Vec<i32>,
     pub until: Option<String>,
     pub count: Option<i32>,
+    pub life_node_id: Option<String>,
 }
 #[derive(Debug, Deserialize, Clone)]
 #[cfg_attr(test, derive(ts_rs::TS))]
@@ -197,6 +227,7 @@ pub struct UpdateRecurringOccurrenceInput {
     pub weekdays: Option<Vec<i32>>,
     pub until: Option<String>,
     pub count: Option<i32>,
+    pub life_node_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -227,6 +258,7 @@ pub struct TodayItemView {
     pub priority: String,
     pub is_override: bool,
     pub evaluation: Option<TaskEvaluationView>,
+    pub life_area: Option<TaskLifeAreaView>,
 }
 
 #[derive(Debug, Clone, Serialize)]

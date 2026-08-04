@@ -1,5 +1,9 @@
 # Roadmap
 
+## Slice 019 — Task/Life Relationships
+
+Task 29 adds navigation-only, zero-or-one Life area relationships for one-off Tasks and recurring-series sources. Occurrence rows do not store relationships.
+
 ## Slice 018 - Narrative Visual Worlds
 - four curated static document-level Canvas worlds;
 - Studio-only mutable presentation selection.
