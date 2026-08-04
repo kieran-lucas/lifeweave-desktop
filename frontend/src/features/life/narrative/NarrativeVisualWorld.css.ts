@@ -13,6 +13,6 @@ export const sakura = worldStyle(visualWorlds[1].light, visualWorlds[1].dark);
 export const aurora = worldStyle(visualWorlds[2].light, visualWorlds[2].dark);
 export const nocturne = worldStyle(visualWorlds[3].light, visualWorlds[3].dark);
 export const selector = style({ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(13rem,1fr))", gap:8, border:0, padding:0, margin:"12px 0" });
-export const option = style({ display:"grid", gridTemplateColumns:"auto 1fr", gap:8, padding:10, border:"1px solid var(--border-subtle)", borderRadius:8, background:"var(--surface)" });
+export const option = style({ display:"grid", gridTemplateColumns:"auto 1fr", gap:8, padding:10, border:"1px solid var(--border-subtle)", borderRadius:8, background:"var(--surface)", selectors:{ "&:has(input:checked)": { borderColor: worldTokens.accent, background: worldTokens.accentSoft, fontWeight: 700 } } });
 export const chips = style({ display:"flex", gap:3, gridColumn:"2" });
 export const chip = style({ width:14, height:14, borderRadius:"50%", background:"var(--world-chip)" });

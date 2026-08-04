@@ -14,7 +14,7 @@ describe("visual worlds", () => {
       expect(contrast(palette.text, palette.surface)).toBeGreaterThanOrEqual(4.5);
       expect(contrast(palette.text, palette.canvas)).toBeGreaterThanOrEqual(4.5);
       expect(contrast(palette.muted, palette.surface)).toBeGreaterThanOrEqual(4.5);
-      expect(contrast(palette.accent, palette.surface)).toBeGreaterThanOrEqual(3);
+      expect(contrast(palette.accent, palette.surface)).toBeGreaterThanOrEqual(4.5);
       expect(contrast(palette.rule, palette.surface)).toBeGreaterThanOrEqual(3);
     }
   });
