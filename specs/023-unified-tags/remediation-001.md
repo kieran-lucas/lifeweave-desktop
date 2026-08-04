@@ -1,6 +1,6 @@
 # Spec 023 — Unified Tags: Remediation 001
 
-> Status: **implemented** — Commit A: `723bb87adf10efb5124fac1c45d66a85c34ee0cb`.
+> Status: **implemented** — Commit A: `723bb875ad47d097b7fb17aef026c0c2a998df1a`.
 
 ## Summary
 

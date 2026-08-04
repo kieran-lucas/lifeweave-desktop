@@ -12,7 +12,6 @@ import type { TagView } from "../../ipc/generated/TagView";
 import * as styles from "./TagSettings.css";
 
 export function TagSettings() {
-  const [showArchived, setShowArchived] = useState(false);
   const [createName, setCreateName] = useState("");
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
@@ -22,10 +21,14 @@ export function TagSettings() {
     sourceId: string;
     sourceName: string;
     sourceRev: number;
+    sourceTaskCount: number;
+    sourceSeriesCount: number;
+    sourceLifeCount: number;
     targetId: string;
     targetName: string;
     targetRev: number;
   } | null>(null);
+  const [mergeError, setMergeError] = useState<string | null>(null);
   const [mergeAnnouncement, setMergeAnnouncement] = useState("");
   const targetRowRef = useRef<Map<string, HTMLTableRowElement>>(new Map());
   const queryClient = useQueryClient();
@@ -38,8 +41,8 @@ export function TagSettings() {
   };
 
   const tagsQuery = useQuery({
-    queryKey: ["tags", showArchived],
-    queryFn: () => listTags(showArchived),
+    queryKey: ["tags", true],
+    queryFn: () => listTags(true),
   });
 
   const createMutation = useMutation({
@@ -78,6 +81,7 @@ export function TagSettings() {
       }),
     onSuccess: (_, vars) => {
       setMergePending(null);
+      setMergeError(null);
       setMergeSourceId("");
       setMergeTargetId("");
       invalidateAll();
@@ -86,21 +90,27 @@ export function TagSettings() {
         targetRowRef.current.get(vars.targetId)?.focus();
       }, 100);
     },
-    onError: () => {
-      setMergePending(null);
+    onError: (e: unknown) => {
+      setMergeError(e instanceof Error ? e.message : "Merge failed. Try again.");
       invalidateAll();
     },
   });
 
   const tags = tagsQuery.data ?? [];
   const activeTags = tags.filter((t) => !t.archived && !t.merged_into);
+  const archivedTags = tags.filter((t) => t.archived && !t.merged_into);
+  const mergedTags = tags.filter((t) => !!t.merged_into);
 
   const beginMerge = () => {
     const source = tags.find((t) => t.id === mergeSourceId);
     const target = tags.find((t) => t.id === mergeTargetId);
     if (!source || !target) return;
+    setMergeError(null);
     setMergePending({
       sourceId: source.id, sourceName: source.name, sourceRev: source.revision,
+      sourceTaskCount: source.task_count,
+      sourceSeriesCount: source.series_count,
+      sourceLifeCount: source.life_node_count,
       targetId: target.id, targetName: target.name, targetRev: target.revision,
     });
   };
@@ -141,55 +151,122 @@ export function TagSettings() {
         <p className={styles.warning} role="alert">{String(createMutation.error)}</p>
       )}
 
-      <div className={styles.toggleRow}>
-        <label>
-          <input
-            type="checkbox"
-            checked={showArchived}
-            onChange={(e) => setShowArchived(e.target.checked)}
-          />{" "}
-          Show archived and merged tags
-        </label>
-      </div>
-
       {tagsQuery.isLoading && <p>Loading tags…</p>}
-      {tagsQuery.isError && <p role="alert">Failed to load tags.</p>}
+      {tagsQuery.isError && (
+        <div role="alert">
+          <p className={styles.warning}>Failed to load tags.</p>
+          <button
+            type="button"
+            onClick={() => void queryClient.invalidateQueries({ queryKey: ["tags", true] })}
+          >
+            Retry
+          </button>
+        </div>
+      )}
 
-      {tags.length > 0 && (
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Tasks</th>
-              <th>Series</th>
-              <th>Life nodes</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {tags.map((tag) => (
-              <TagRow
-                key={tag.id}
-                tag={tag}
-                renamingId={renamingId}
-                renameValue={renameValue}
-                onStartRename={() => { setRenamingId(tag.id); setRenameValue(tag.name); }}
-                onRenameChange={setRenameValue}
-                onRenameConfirm={() => renameMutation.mutate({ id: tag.id, revision: tag.revision })}
-                onRenameCancel={() => setRenamingId(null)}
-                onArchive={() => archiveMutation.mutate({ id: tag.id, revision: tag.revision })}
-                onRestore={() => restoreMutation.mutate({ id: tag.id, revision: tag.revision })}
-                isPending={archiveMutation.isPending || restoreMutation.isPending || renameMutation.isPending}
-                archiveError={archiveMutation.isError ? String(archiveMutation.error) : null}
-                restoreError={restoreMutation.isError ? String(restoreMutation.error) : null}
-                rowRef={(el) => {
+      {activeTags.length > 0 && (
+        <section aria-label="Active tags">
+          <h3 className={styles.mergeHeading}>Active tags</h3>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Tasks</th>
+                <th>Series</th>
+                <th>Life nodes</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {activeTags.map((tag) => (
+                <TagRow
+                  key={tag.id}
+                  tag={tag}
+                  renamingId={renamingId}
+                  renameValue={renameValue}
+                  onStartRename={() => { setRenamingId(tag.id); setRenameValue(tag.name); }}
+                  onRenameChange={setRenameValue}
+                  onRenameConfirm={() => renameMutation.mutate({ id: tag.id, revision: tag.revision })}
+                  onRenameCancel={() => setRenamingId(null)}
+                  onArchive={() => archiveMutation.mutate({ id: tag.id, revision: tag.revision })}
+                  onRestore={() => restoreMutation.mutate({ id: tag.id, revision: tag.revision })}
+                  isPending={archiveMutation.isPending || restoreMutation.isPending || renameMutation.isPending}
+                  archiveError={archiveMutation.isError ? String(archiveMutation.error) : null}
+                  restoreError={restoreMutation.isError ? String(restoreMutation.error) : null}
+                  rowRef={(el) => {
+                    if (el) targetRowRef.current.set(tag.id, el);
+                    else targetRowRef.current.delete(tag.id);
+                  }}
+                />
+              ))}
+            </tbody>
+          </table>
+        </section>
+      )}
+
+      {archivedTags.length > 0 && (
+        <section aria-label="Archived tags">
+          <h3 className={styles.mergeHeading}>Archived tags</h3>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Tasks</th>
+                <th>Series</th>
+                <th>Life nodes</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {archivedTags.map((tag) => (
+                <TagRow
+                  key={tag.id}
+                  tag={tag}
+                  renamingId={renamingId}
+                  renameValue={renameValue}
+                  onStartRename={() => { setRenamingId(tag.id); setRenameValue(tag.name); }}
+                  onRenameChange={setRenameValue}
+                  onRenameConfirm={() => renameMutation.mutate({ id: tag.id, revision: tag.revision })}
+                  onRenameCancel={() => setRenamingId(null)}
+                  onArchive={() => archiveMutation.mutate({ id: tag.id, revision: tag.revision })}
+                  onRestore={() => restoreMutation.mutate({ id: tag.id, revision: tag.revision })}
+                  isPending={archiveMutation.isPending || restoreMutation.isPending || renameMutation.isPending}
+                  archiveError={archiveMutation.isError ? String(archiveMutation.error) : null}
+                  restoreError={restoreMutation.isError ? String(restoreMutation.error) : null}
+                  rowRef={(el) => {
+                    if (el) targetRowRef.current.set(tag.id, el);
+                    else targetRowRef.current.delete(tag.id);
+                  }}
+                />
+              ))}
+            </tbody>
+          </table>
+        </section>
+      )}
+
+      {mergedTags.length > 0 && (
+        <section aria-label="Merged aliases">
+          <h3 className={styles.mergeHeading}>Merged aliases</h3>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Alias</th>
+                <th>Canonical tag</th>
+              </tr>
+            </thead>
+            <tbody>
+              {mergedTags.map((tag) => (
+                <tr key={tag.id} ref={(el) => {
                   if (el) targetRowRef.current.set(tag.id, el);
                   else targetRowRef.current.delete(tag.id);
-                }}
-              />
-            ))}
-          </tbody>
-        </table>
+                }} tabIndex={-1}>
+                  <td className={styles.archived}>{tag.name}</td>
+                  <td>{tag.merged_into?.name}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
       )}
 
       <span aria-live="polite" className={styles.srOnly}>{mergeAnnouncement}</span>
@@ -240,10 +317,15 @@ export function TagSettings() {
               aria-label="Confirm merge"
             >
               <p className={styles.mergeConfirmText}>
-                Merge <strong>{mergePending.sourceName}</strong> into{" "}
+                Merge <strong>{mergePending.sourceName}</strong>{" "}
+                ({mergePending.sourceTaskCount} tasks, {mergePending.sourceSeriesCount} series,{" "}
+                {mergePending.sourceLifeCount} life nodes) into{" "}
                 <strong>{mergePending.targetName}</strong>? This creates a permanent alias and
                 cannot be undone.
               </p>
+              {mergeError && (
+                <p className={styles.warning} role="alert">{mergeError}</p>
+              )}
               <div className={styles.mergeConfirmActions}>
                 <button
                   type="button"
@@ -254,17 +336,13 @@ export function TagSettings() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setMergePending(null)}
+                  onClick={() => { setMergePending(null); setMergeError(null); }}
                   disabled={mergeMutation.isPending}
                 >
                   Cancel
                 </button>
               </div>
             </div>
-          )}
-
-          {mergeMutation.isError && (
-            <p className={styles.warning} role="alert">{String(mergeMutation.error)}</p>
           )}
         </div>
       )}
@@ -339,6 +417,7 @@ function TagRow({
             </>
           ) : isArchived && !isMerged ? (
             <>
+              <button type="button" onClick={onStartRename} disabled={isPending}>Rename</button>
               <button type="button" onClick={onRestore} disabled={isPending}>Restore</button>
               {restoreError && <span className={styles.warning} role="alert">{restoreError}</span>}
             </>

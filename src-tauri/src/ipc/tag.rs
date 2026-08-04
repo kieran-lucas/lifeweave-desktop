@@ -26,7 +26,7 @@ fn map_db(e: DbError) -> IpcError {
 fn map_tag(e: TagError) -> IpcError {
     match e {
         TagError::Validation(msg) => IpcError::Validation {
-            message: msg.into(),
+            message: msg,
         },
         TagError::NotFound => IpcError::NotFound,
         TagError::Stale => IpcError::StaleRevision,

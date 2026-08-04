@@ -819,6 +819,22 @@ static MIGRATIONS: &[Migration] = &[
                 ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at;
         ",
     },
+    Migration {
+        version: 19,
+        sql: "
+            -- Guard against moving a life_node_tags row to an invalid, archived, or root node.
+            CREATE TRIGGER life_node_tags_node_move_guard BEFORE UPDATE OF life_node_id ON life_node_tags
+            BEGIN
+                SELECT RAISE(ABORT, 'cannot move a tag assignment to an invalid, archived, or root life node')
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM life_nodes
+                    WHERE id = NEW.life_node_id
+                      AND archived_at IS NULL
+                      AND id != 'life-root'
+                );
+            END;
+        ",
+    },
 ];
 
 /// Bootstraps the migration tracking table and applies any pending migrations.
@@ -932,7 +948,7 @@ mod tests {
         let mut conn = open_memory_connection().unwrap();
         run_migrations(&mut conn).unwrap();
 
-        assert_eq!(current_schema_version(&conn).unwrap(), 18);
+        assert_eq!(current_schema_version(&conn).unwrap(), 19);
 
         let count: i64 = conn
             .query_row("SELECT COUNT(*) FROM db_metadata", [], |r| r.get(0))
@@ -946,7 +962,7 @@ mod tests {
         let mig_count: i64 = conn
             .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
             .unwrap();
-        assert_eq!(mig_count, 18);
+        assert_eq!(mig_count, 19);
     }
 
     #[test]
@@ -956,11 +972,11 @@ mod tests {
         run_migrations(&mut conn).unwrap();
 
         // The latest version remains stable; no duplicate migration rows.
-        assert_eq!(current_schema_version(&conn).unwrap(), 18);
+        assert_eq!(current_schema_version(&conn).unwrap(), 19);
         let mig_count: i64 = conn
             .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
             .unwrap();
-        assert_eq!(mig_count, 18);
+        assert_eq!(mig_count, 19);
     }
 
     #[test]
@@ -970,7 +986,7 @@ mod tests {
         conn.execute("INSERT INTO tasks(id,local_date,start_minute,end_minute,title,description,category_id,priority,created_at,updated_at) VALUES('legacy-task','2026-08-04',480,540,'Legacy','','general','medium','0','0')", []).unwrap();
         conn.execute("INSERT INTO task_series(id,title,description,category_id,priority,start_minute,end_minute,dtstart_local_date,timezone_id,rrule,created_at,updated_at,archived_at) VALUES('legacy-series','Legacy series','','general','medium',600,660,'2026-08-04','local','FREQ=DAILY','0','0',NULL)", []).unwrap();
         run_migrations(&mut conn).unwrap();
-        assert_eq!(current_schema_version(&conn).unwrap(), 18);
+        assert_eq!(current_schema_version(&conn).unwrap(), 19);
         let task_link: Option<String> = conn
             .query_row(
                 "SELECT life_node_id FROM tasks WHERE id='legacy-task'",
@@ -1075,7 +1091,7 @@ mod tests {
         match run_migrations_with(&mut conn, MIGRATIONS) {
             Err(DbError::SchemaTooNew { stored, supported }) => {
                 assert_eq!(stored, 9999);
-                assert_eq!(supported, 18);
+                assert_eq!(supported, 19);
             }
             other => panic!("expected SchemaTooNew, got {other:?}"),
         }
@@ -1111,7 +1127,7 @@ mod tests {
         let canonical = r#"{"templateId":"knowledge_dossier","templateVersion":1}"#;
         conn.execute("INSERT INTO narrative_documents (id,life_node_id,schema_version,revision,canonical_json,plain_text,created_at,updated_at,archived_at,template_id,template_version) VALUES ('template-existing','template-leaf',1,0,?1,'','now','now',NULL,'knowledge_dossier',1)", [canonical]).unwrap();
         run_migrations(&mut conn).unwrap();
-        assert_eq!(current_schema_version(&conn).unwrap(), 18);
+        assert_eq!(current_schema_version(&conn).unwrap(), 19);
         let preserved: String = conn
             .query_row(
                 "SELECT canonical_json FROM narrative_documents WHERE id='template-existing'",
@@ -1146,7 +1162,7 @@ mod tests {
         {
             let mut conn = open_file_connection(&path).unwrap();
             run_migrations(&mut conn).unwrap();
-            assert_eq!(current_schema_version(&conn).unwrap(), 18);
+            assert_eq!(current_schema_version(&conn).unwrap(), 19);
             // Confirm the schema object created by migration 1 exists
             let count: i64 = conn
                 .query_row("SELECT COUNT(*) FROM db_metadata", [], |r| r.get(0))
@@ -1160,7 +1176,7 @@ mod tests {
             run_migrations(&mut conn).unwrap();
             assert_eq!(
                 current_schema_version(&conn).unwrap(),
-                18,
+                19,
                 "schema version must survive close/reopen"
             );
             let count: i64 = conn
@@ -1173,7 +1189,7 @@ mod tests {
                 .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
                 .unwrap();
             assert_eq!(
-                mig_count, 18,
+                mig_count, 19,
                 "no duplicate migration records after reopen + re-run"
             );
         }
@@ -1567,7 +1583,7 @@ mod tests {
         run_migrations_through(&mut conn, 17).unwrap();
         assert_eq!(current_schema_version(&conn).unwrap(), 17);
         run_migrations(&mut conn).unwrap();
-        assert_eq!(current_schema_version(&conn).unwrap(), 18);
+        assert_eq!(current_schema_version(&conn).unwrap(), 19);
     }
 
     #[test]
@@ -1576,7 +1592,94 @@ mod tests {
         run_migrations_through(&mut conn, 16).unwrap();
         assert_eq!(current_schema_version(&conn).unwrap(), 16);
         run_migrations(&mut conn).unwrap();
+        assert_eq!(current_schema_version(&conn).unwrap(), 19);
+    }
+
+    fn setup_m19() -> (rusqlite::Connection, String) {
+        let mut conn = open_memory_connection().unwrap();
+        run_migrations(&mut conn).unwrap();
+        let tag_id = "00000000-0000-7000-8000-000000000m19";
+        conn.execute(
+            "INSERT INTO tags(id,name,normalized_name,revision,archived_at,merged_into_tag_id,created_at,updated_at) \
+             VALUES(?1,'Fitness','fitness',0,NULL,NULL,'now','now')",
+            rusqlite::params![tag_id],
+        ).unwrap();
+        conn.execute(
+            "INSERT INTO life_nodes VALUES('leaf-m19a','life-root','Leaf A','','life-leaf','neutral',20,NULL,'now','now',0)",
+            [],
+        ).unwrap();
+        conn.execute(
+            "INSERT INTO life_nodes VALUES('leaf-m19b','life-root','Leaf B','','life-leaf','neutral',21,NULL,'now','now',0)",
+            [],
+        ).unwrap();
+        conn.execute(
+            "INSERT INTO life_node_tags(life_node_id,tag_id,created_at) VALUES('leaf-m19a',?1,'now')",
+            rusqlite::params![tag_id],
+        ).unwrap();
+        (conn, tag_id.to_string())
+    }
+
+    #[test]
+    fn schema_19_applies_cleanly_from_18() {
+        let mut conn = open_memory_connection().unwrap();
+        run_migrations_through(&mut conn, 18).unwrap();
         assert_eq!(current_schema_version(&conn).unwrap(), 18);
+        run_migrations(&mut conn).unwrap();
+        assert_eq!(current_schema_version(&conn).unwrap(), 19);
+    }
+
+    #[test]
+    fn life_node_tags_node_move_to_active_node_accepted() {
+        let (conn, tag_id) = setup_m19();
+        let result = conn.execute(
+            "UPDATE life_node_tags SET life_node_id='leaf-m19b' WHERE life_node_id='leaf-m19a' AND tag_id=?1",
+            rusqlite::params![tag_id],
+        );
+        assert!(
+            result.is_ok(),
+            "moving tag to an active non-root node must succeed"
+        );
+    }
+
+    #[test]
+    fn life_node_tags_node_move_guard_fires_for_archived_node() {
+        let (conn, tag_id) = setup_m19();
+        conn.execute(
+            "UPDATE life_nodes SET archived_at='2026-01-01' WHERE id='leaf-m19b'",
+            [],
+        )
+        .unwrap();
+        let result = conn.execute(
+            "UPDATE life_node_tags SET life_node_id='leaf-m19b' WHERE life_node_id='leaf-m19a' AND tag_id=?1",
+            rusqlite::params![tag_id],
+        );
+        assert!(
+            result.is_err(),
+            "moving tag to archived node must be rejected"
+        );
+    }
+
+    #[test]
+    fn life_node_tags_node_move_guard_fires_for_root() {
+        let (conn, tag_id) = setup_m19();
+        let result = conn.execute(
+            "UPDATE life_node_tags SET life_node_id='life-root' WHERE life_node_id='leaf-m19a' AND tag_id=?1",
+            rusqlite::params![tag_id],
+        );
+        assert!(result.is_err(), "moving tag to life-root must be rejected");
+    }
+
+    #[test]
+    fn life_node_tags_node_move_guard_fires_for_missing_node() {
+        let (conn, tag_id) = setup_m19();
+        let result = conn.execute(
+            "UPDATE life_node_tags SET life_node_id='nonexistent-node' WHERE life_node_id='leaf-m19a' AND tag_id=?1",
+            rusqlite::params![tag_id],
+        );
+        assert!(
+            result.is_err(),
+            "moving tag to nonexistent node must be rejected"
+        );
     }
 
     #[test]

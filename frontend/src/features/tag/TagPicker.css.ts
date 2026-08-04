@@ -133,3 +133,13 @@ export const errorMsg = style({
   color: "var(--color-error, #c00)",
   marginTop: 2,
 });
+
+export const retryButton = style({
+  fontSize: 11,
+  padding: "2px 8px",
+  border: "1px solid var(--border-subtle, #ddd)",
+  borderRadius: 4,
+  background: "transparent",
+  cursor: "pointer",
+  marginTop: 2,
+});

@@ -1706,7 +1706,7 @@ mod tests {
                     r.get(0)
                 })
                 .unwrap();
-            assert_eq!(ver, 18, "schema must be at version 18");
+            assert_eq!(ver, 19, "schema must be at version 19");
 
             // Insert one task with Vietnamese title.
             conn.execute(

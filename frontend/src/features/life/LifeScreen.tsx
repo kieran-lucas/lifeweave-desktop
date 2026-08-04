@@ -352,6 +352,7 @@ export function LifeScreen({
             {reader.title}
           </h1>
           <p className={styles.nodeDescription}>{reader.short_description}</p>
+          <TagChipList tags={reader.tags} maxVisible={12} />
           <BasicLeafReader nodeId={readerId} />
           <RelatedTasksPanel nodeId={readerId} anchorLocalDate={anchorLocalDate} onNavigate={onTaskNavigate} />
         </motion.div>
@@ -638,6 +639,7 @@ function PinnedView({
                   : "Opens Browse"
                 : "Unavailable"}
             </span>
+            {item.available && <TagChipList tags={item.tags} />}
           </button>
           <button
             className={styles.pinButton}

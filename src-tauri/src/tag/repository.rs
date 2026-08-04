@@ -8,7 +8,7 @@ use super::{dto::*, normalize::normalize_tag};
 #[derive(Debug)]
 pub enum TagError {
     Db(rusqlite::Error),
-    Validation(&'static str),
+    Validation(String),
     NotFound,
     Stale,
 }
@@ -93,7 +93,7 @@ pub fn list(conn: &Connection, include_archived: bool) -> Result<Vec<TagView>, T
 }
 
 pub fn create(conn: &Connection, input: CreateTagInput) -> Result<TagView, TagError> {
-    let normalized = normalize_tag(&input.name).map_err(TagError::Validation)?;
+    let normalized = normalize_tag(&input.name).map_err(|e| TagError::Validation(e.to_string()))?;
 
     // Check if normalized name already exists.
     let existing: Option<(String, Option<String>, Option<String>)> = conn
@@ -107,13 +107,29 @@ pub fn create(conn: &Connection, input: CreateTagInput) -> Result<TagView, TagEr
     if let Some((id, archived_at, merged_into_id)) = existing {
         if archived_at.is_none() && merged_into_id.is_none() {
             return get_by_id_inner(conn, &id);
-        } else if merged_into_id.is_some() {
-            return Err(TagError::Validation(
-                "This name is a permanent alias for another tag. Use the canonical tag directly.",
-            ));
+        } else if let Some(canonical_id) = merged_into_id {
+            let canonical_name: Option<String> = conn
+                .query_row(
+                    "SELECT name FROM tags WHERE id=?1",
+                    params![canonical_id],
+                    |r| r.get(0),
+                )
+                .optional()?
+                .flatten();
+            let msg = if let Some(canonical_name) = canonical_name {
+                format!(
+                    "\"#{}\" is a permanent alias for \"#{}\". Use the canonical tag.",
+                    normalized.canonical, canonical_name
+                )
+            } else {
+                "This name is a permanent alias for another tag. Use the canonical tag directly."
+                    .to_string()
+            };
+            return Err(TagError::Validation(msg));
         } else {
             return Err(TagError::Validation(
-                "A tag with this name exists but is archived. Use Restore to reactivate it.",
+                "A tag with this name exists but is archived. Use Restore to reactivate it."
+                    .to_string(),
             ));
         }
     }
@@ -125,7 +141,9 @@ pub fn create(conn: &Connection, input: CreateTagInput) -> Result<TagView, TagEr
         |r| r.get(0),
     )?;
     if active_count >= 500 {
-        return Err(TagError::Validation("Maximum of 500 active tags reached."));
+        return Err(TagError::Validation(
+            "Maximum of 500 active tags reached.".to_string(),
+        ));
     }
 
     let id = new_id();
@@ -139,7 +157,7 @@ pub fn create(conn: &Connection, input: CreateTagInput) -> Result<TagView, TagEr
 }
 
 pub fn rename(conn: &Connection, input: RenameTagInput) -> Result<TagView, TagError> {
-    let normalized = normalize_tag(&input.name).map_err(TagError::Validation)?;
+    let normalized = normalize_tag(&input.name).map_err(|e| TagError::Validation(e.to_string()))?;
 
     let row: Option<(i32, Option<String>, Option<String>)> = conn
         .query_row(
@@ -152,7 +170,9 @@ pub fn rename(conn: &Connection, input: RenameTagInput) -> Result<TagView, TagEr
     let (current_revision, _archived_at, merged_into_id) = row.ok_or(TagError::NotFound)?;
 
     if merged_into_id.is_some() {
-        return Err(TagError::Validation("Merged alias tags cannot be renamed."));
+        return Err(TagError::Validation(
+            "Merged alias tags cannot be renamed.".to_string(),
+        ));
     }
     if current_revision != input.expected_revision {
         return Err(TagError::Stale);
@@ -165,7 +185,9 @@ pub fn rename(conn: &Connection, input: RenameTagInput) -> Result<TagView, TagEr
         |r| r.get(0),
     )?;
     if collision {
-        return Err(TagError::Validation("A tag with this name already exists."));
+        return Err(TagError::Validation(
+            "A tag with this name already exists.".to_string(),
+        ));
     }
 
     let t = now();
@@ -188,11 +210,11 @@ pub fn archive(conn: &Connection, input: MutateTagInput) -> Result<TagView, TagE
     let (current_revision, archived_at, merged_into_id) = row.ok_or(TagError::NotFound)?;
 
     if archived_at.is_some() {
-        return Err(TagError::Validation("Tag is already archived."));
+        return Err(TagError::Validation("Tag is already archived.".to_string()));
     }
     if merged_into_id.is_some() {
         return Err(TagError::Validation(
-            "Merged alias tags cannot be archived.",
+            "Merged alias tags cannot be archived.".to_string(),
         ));
     }
     if current_revision != input.expected_revision {
@@ -219,11 +241,11 @@ pub fn restore(conn: &Connection, input: MutateTagInput) -> Result<TagView, TagE
     let (current_revision, archived_at, merged_into_id) = row.ok_or(TagError::NotFound)?;
 
     if archived_at.is_none() {
-        return Err(TagError::Validation("Tag is not archived."));
+        return Err(TagError::Validation("Tag is not archived.".to_string()));
     }
     if merged_into_id.is_some() {
         return Err(TagError::Validation(
-            "Merged alias tags cannot be restored.",
+            "Merged alias tags cannot be restored.".to_string(),
         ));
     }
     if current_revision != input.expected_revision {
@@ -238,7 +260,7 @@ pub fn restore(conn: &Connection, input: MutateTagInput) -> Result<TagView, TagE
     )?;
     if active_count >= 500 {
         return Err(TagError::Validation(
-            "Cannot restore: maximum of 500 active tags reached.",
+            "Cannot restore: maximum of 500 active tags reached.".to_string(),
         ));
     }
 
@@ -263,7 +285,8 @@ pub fn restore(conn: &Connection, input: MutateTagInput) -> Result<TagView, TagE
 
     if would_exceed_tasks {
         return Err(TagError::Validation(
-            "Restoring this tag would exceed the 12-tag limit on one or more assigned tasks.",
+            "Restoring this tag would exceed the 12-tag limit on one or more assigned tasks."
+                .to_string(),
         ));
     }
 
@@ -286,7 +309,8 @@ pub fn restore(conn: &Connection, input: MutateTagInput) -> Result<TagView, TagE
 
     if would_exceed_series {
         return Err(TagError::Validation(
-            "Restoring this tag would exceed the 12-tag limit on one or more assigned series.",
+            "Restoring this tag would exceed the 12-tag limit on one or more assigned series."
+                .to_string(),
         ));
     }
 
@@ -309,7 +333,8 @@ pub fn restore(conn: &Connection, input: MutateTagInput) -> Result<TagView, TagE
 
     if would_exceed_life {
         return Err(TagError::Validation(
-            "Restoring this tag would exceed the 12-tag limit on one or more assigned life nodes.",
+            "Restoring this tag would exceed the 12-tag limit on one or more assigned life nodes."
+                .to_string(),
         ));
     }
 
@@ -324,7 +349,7 @@ pub fn restore(conn: &Connection, input: MutateTagInput) -> Result<TagView, TagE
 pub fn merge(conn: &Connection, input: MergeTagsInput) -> Result<MergeTagsResult, TagError> {
     if input.source_tag_id == input.target_tag_id {
         return Err(TagError::Validation(
-            "Source and target must be different tags.",
+            "Source and target must be different tags.".to_string(),
         ));
     }
 
@@ -343,7 +368,7 @@ pub fn merge(conn: &Connection, input: MergeTagsInput) -> Result<MergeTagsResult
     let (source_rev, source_archived, source_merged) = load(&input.source_tag_id)?;
     if source_archived.is_some() || source_merged.is_some() {
         return Err(TagError::Validation(
-            "Source tag must be active and non-merged.",
+            "Source tag must be active and non-merged.".to_string(),
         ));
     }
     if source_rev != input.source_expected_revision {
@@ -353,7 +378,7 @@ pub fn merge(conn: &Connection, input: MergeTagsInput) -> Result<MergeTagsResult
     let (target_rev, target_archived, target_merged) = load(&input.target_tag_id)?;
     if target_archived.is_some() || target_merged.is_some() {
         return Err(TagError::Validation(
-            "Target tag must be active and non-merged.",
+            "Target tag must be active and non-merged.".to_string(),
         ));
     }
     if target_rev != input.target_expected_revision {
@@ -428,7 +453,9 @@ pub fn set_life_node_tags(
     input: SetLifeNodeTagsInput,
 ) -> Result<SetLifeNodeTagsResult, TagError> {
     if input.node_id == "life-root" {
-        return Err(TagError::Validation("Cannot assign tags to the life root."));
+        return Err(TagError::Validation(
+            "Cannot assign tags to the life root.".to_string(),
+        ));
     }
     validate_active_tag_ids(conn, &input.tag_ids)?;
 
@@ -444,7 +471,7 @@ pub fn set_life_node_tags(
 
     if archived_at.is_some() {
         return Err(TagError::Validation(
-            "Cannot assign tags to an archived life node.",
+            "Cannot assign tags to an archived life node.".to_string(),
         ));
     }
     if current_revision != input.expected_node_revision {
@@ -482,12 +509,16 @@ pub fn set_life_node_tags(
 /// and each refers to an active non-merged tag.
 pub fn validate_active_tag_ids(conn: &Connection, ids: &[String]) -> Result<(), TagError> {
     if ids.len() > 12 {
-        return Err(TagError::Validation("Maximum 12 tags per subject."));
+        return Err(TagError::Validation(
+            "Maximum 12 tags per subject.".to_string(),
+        ));
     }
     let mut seen = std::collections::HashSet::new();
     for id in ids {
         if !seen.insert(id.as_str()) {
-            return Err(TagError::Validation("Duplicate tag IDs are not allowed."));
+            return Err(TagError::Validation(
+                "Duplicate tag IDs are not allowed.".to_string(),
+            ));
         }
     }
     for id in ids {
@@ -498,7 +529,7 @@ pub fn validate_active_tag_ids(conn: &Connection, ids: &[String]) -> Result<(), 
         )?;
         if !exists {
             return Err(TagError::Validation(
-                "One or more tag IDs are invalid or not active.",
+                "One or more tag IDs are invalid or not active.".to_string(),
             ));
         }
     }

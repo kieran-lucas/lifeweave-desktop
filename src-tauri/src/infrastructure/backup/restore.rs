@@ -991,9 +991,9 @@ mod tests {
         manifest.write_to_dir(package).unwrap();
         let (runtime, db) = make_file_runtime();
         let result = restore_db(&runtime, package).unwrap();
-        assert_eq!(result.schema_version, 18);
+        assert_eq!(result.schema_version, 19);
         let reopened = open_existing_file_connection(&db).unwrap();
-        assert_eq!(current_schema_version(&reopened).unwrap(), 18);
+        assert_eq!(current_schema_version(&reopened).unwrap(), 19);
         assert_eq!(
             reopened
                 .query_row(
@@ -1162,7 +1162,7 @@ mod tests {
         );
 
         let restore_result = restore_db(&rt, &backup_dir).unwrap();
-        assert_eq!(restore_result.schema_version, 18);
+        assert_eq!(restore_result.schema_version, 19);
 
         let active = rt.execute(|conn| repo::list_active(conn)).unwrap();
         assert_eq!(active.len(), 1);

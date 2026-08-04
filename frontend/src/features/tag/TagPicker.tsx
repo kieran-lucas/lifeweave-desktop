@@ -17,6 +17,14 @@ type TagPickerProps = {
   error?: string | null;
 };
 
+function normalizeSearch(s: string): string {
+  return s
+    .replace(/[đĐ]/g, "d")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase();
+}
+
 export function TagPicker({
   selectedTags,
   onChange,
@@ -52,6 +60,9 @@ export function TagPicker({
         ? selectedTags
         : [...selectedTags, { id: tag.id, name: tag.name }];
       void onChange(next);
+      setTimeout(() => {
+        document.getElementById(`${uid}-check-${tag.id}`)?.focus();
+      }, 50);
     },
     onError: (e: unknown) => {
       setCreateError(e instanceof Error ? e.message : "Could not create tag.");
@@ -85,6 +96,7 @@ export function TagPicker({
   // Escape key to close.
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Escape" && open) {
+      e.preventDefault();
       e.stopPropagation();
       closePanel();
     }
@@ -92,8 +104,9 @@ export function TagPicker({
 
   const selectedIds = new Set(selectedTags.map((t) => t.id));
   const all = tagsQuery.data ?? [];
+  const normalizedQuery = normalizeSearch(query);
   const filtered = query
-    ? all.filter((t) => t.name.toLowerCase().includes(query.toLowerCase()))
+    ? all.filter((t) => normalizeSearch(t.name).includes(normalizedQuery))
     : all;
   const atLimit = selectedTags.length >= MAX_TAGS;
 
@@ -164,6 +177,9 @@ export function TagPicker({
                     setQuery(e.target.value);
                     setCreateError(null);
                   }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") e.preventDefault();
+                  }}
                   placeholder="Filter…"
                   aria-describedby={searchLabelId}
                 />
@@ -183,11 +199,24 @@ export function TagPicker({
                   : `${selectedTags.length} of ${MAX_TAGS} selected`}
               </span>
 
+              {tagsQuery.isError && (
+                <div role="alert">
+                  <p className={styles.errorMsg}>Could not load tags.</p>
+                  <button
+                    type="button"
+                    className={styles.retryButton}
+                    onClick={() => void queryClient.invalidateQueries({ queryKey: ["tags"] })}
+                  >
+                    Retry
+                  </button>
+                </div>
+              )}
+
               {tagsQuery.isLoading && (
                 <p className={styles.status}>Loading…</p>
               )}
 
-              {!tagsQuery.isLoading && filtered.length === 0 && !query && (
+              {!tagsQuery.isLoading && !tagsQuery.isError && filtered.length === 0 && !query && (
                 <p className={styles.status}>No tags yet.</p>
               )}
 

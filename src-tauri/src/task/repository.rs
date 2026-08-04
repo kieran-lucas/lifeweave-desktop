@@ -53,7 +53,6 @@ fn validate(input: &CreateTaskInput) -> Result<Priority, TaskError> {
 }
 fn map_tag_err(e: tag_repo::TagError) -> TaskError {
     match e {
-        tag_repo::TagError::Validation(msg) => TaskError::Validation(msg),
         tag_repo::TagError::Db(e) => TaskError::Db(e),
         _ => TaskError::Validation("Invalid tags."),
     }
@@ -1950,7 +1949,7 @@ mod recurrence_tests {
             })
             .unwrap();
         assert_eq!(occurrence_columns, 0);
-        assert_eq!(schema, 18);
+        assert_eq!(schema, 19);
     }
 
     #[test]
