@@ -57,3 +57,7 @@ Closed debt: fan restoration after tab round trip, live internal focus request, 
 - Commit B: this evidence-only commit — `record task 32 remediation evidence`; its SHA is reported by the final Git evidence after creation.
 
 Task 32 Remediation 001: PASS. Task 32 remains accepted. Task 33 is not started. Schema remains 16, active spec remains null, and the exact next action is Product Owner gate.
+
+## Historical correction
+
+Remediation 001 correctly closed component-local fan and focus replay, but its application-lifetime external one-shot claim was incomplete. Remediation 002 supersedes that narrow claim with App-owned acknowledgment. The component-local duplicate guards remain valid as short-interval protection while App processes exact-ID settlement.

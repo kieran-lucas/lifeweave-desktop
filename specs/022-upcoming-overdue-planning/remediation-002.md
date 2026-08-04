@@ -28,8 +28,8 @@ No Task 33 behavior, database/schema/migration, Rust Task/Life semantics, IPC/DT
 
 ## Implementation commit
 
-Commit A is the bounded product-code, test, E2E, and remediation-spec commit. Its SHA is recorded in the final remediation audit and Project State evidence after the commit exists.
+The Product Owner explicitly authorized the implementation as two preserved commits after both had been created locally: A1 `712de9873422f80c34df0cd06a673783cf8a60e0` contains product code, tests, and E2E; A2 `8d2475daac724b1b9aa8a0f5120f43974f5c6fd6` contains this remediation specification and is the final implementation checkpoint. No history was rewritten.
 
 ## Acceptance
 
-Acceptance requires focused and full verification, Windows native E2E, NSIS packaging, release-candidate dogfood, independent diff/scope audit, and a clean pushed two-commit history. Task and slice remain 32 and 22, schema remains 16, active spec remains null, and Task 33 remains unselected.
+Acceptance requires focused and full verification, Windows native E2E, NSIS packaging, release-candidate dogfood, independent diff/scope audit, and the Product Owner-authorized clean pushed A1/A2/evidence sequence without history rewrite. Task and slice remain 32 and 22, schema remains 16, active spec remains null, and Task 33 remains unselected.

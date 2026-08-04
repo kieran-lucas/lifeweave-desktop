@@ -2,6 +2,7 @@
 
 ## Task 32/60 — Upcoming and Overdue Task Planning
 
+- Remediation 002 gives App-owned navigation requests explicit ID-guarded acknowledgment and cancellation across Today and Life, preventing replay after rerender/remount and completing remote Life Reader delivery.
 - Remediation 001 closes the assessment fan when leaving Today and consumes internal/external Task focus requests exactly once, preventing stale fan restoration and later focus theft after query updates.
 - Today remains the application and Task-workspace default.
 - Upcoming and Overdue are manual-activation tabs inside Today, not new sidebar destinations.
@@ -12,6 +13,7 @@
 - Database schema remains 16; no migration, dependency, plugin, broad capability, or Task 33 behavior.
 - Evidence: 479 frontend tests and 449 Rust tests passed; source/governance/index/security, typecheck/build/check/fmt/Clippy, planning performance, seven-phase Windows E2E, final NSIS, and isolated RC passed. Upcoming/Overdue p95 was 17.32/22.55 ms. Final NSIS is 4,810,273 bytes with SHA-256 `1f26da95c02d96072abcd39a9478f0987b46c7d20d874aecce6a20e899086d6f`.
 - Remediation evidence: focused TodayScreen 21, TaskWorkspaceTabs 3, TaskPlanning 5, App 18, AssessmentControl 9, Rust planning 4 passed/1 ignored evidence, and recurrence 7 passed. Full verification passed with 33 frontend files/485 tests and 449 Rust tests/4 ignored evidence tests, source/governance/index/security, typecheck/build/check/fmt/Clippy, performance budgets, seven-phase Windows E2E, a 4,810,700-byte NSIS (`b9c01a547bd659e0362741905965d34b92d9b311975344f2d62aaf413dea970f`), and RC run `core-rc-77ca3cab93f64c158debe6f08cae23a0`.
+- Remediation 002 evidence: focused App 21, TodayScreen 25, LifeScreen 19, Search 18, Related Tasks 5, Planning 5, Tabs 3, Assessment 9; Rust planning 4 passed/1 ignored, recurrence 7, and `life` filter 91 passed. The bounded full frontend run passed 498/498; Rust passed 449 with 4 designated evidence tests ignored. Source/governance/index/security, typecheck/build/check/fmt/Clippy, performance budgets, seven-spec Windows E2E, 4,810,490-byte NSIS (`675e0d7dbea9f237baee1e6d54683070775eb50743801888ad56cf823f7b1e69`), and RC run `core-rc-95a4c33721e74aa2a0a19b74161ba11f` passed.
 - Task 33 has not started; next action is Product Owner gate.
 
 ## Task 31/60 — Lossless Portable Package
