@@ -2,6 +2,7 @@ pub mod backup;
 pub mod error;
 pub mod foundation_record;
 pub mod search;
+pub mod tag;
 pub mod task;
 
 use serde::Serialize;
@@ -156,5 +157,15 @@ mod tests {
         PortablePackageImportPreview::export_all_to(&out).unwrap();
         ConfirmPortablePackageImportInput::export_all_to(&out).unwrap();
         PortablePackageImportResult::export_all_to(&out).unwrap();
+        use crate::tag::dto::*;
+        TagSummaryView::export_all_to(&out).unwrap();
+        TagView::export_all_to(&out).unwrap();
+        CreateTagInput::export_all_to(&out).unwrap();
+        RenameTagInput::export_all_to(&out).unwrap();
+        MutateTagInput::export_all_to(&out).unwrap();
+        MergeTagsInput::export_all_to(&out).unwrap();
+        MergeTagsResult::export_all_to(&out).unwrap();
+        SetLifeNodeTagsInput::export_all_to(&out).unwrap();
+        SetLifeNodeTagsResult::export_all_to(&out).unwrap();
     }
 }

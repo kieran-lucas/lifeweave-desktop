@@ -75,6 +75,14 @@ import type { PortablePackageExportTicket } from "./generated/PortablePackageExp
 import type { PortablePackageImportPreview } from "./generated/PortablePackageImportPreview";
 import type { ConfirmPortablePackageImportInput } from "./generated/ConfirmPortablePackageImportInput";
 import type { PortablePackageImportResult } from "./generated/PortablePackageImportResult";
+import type { TagView } from "./generated/TagView";
+import type { CreateTagInput } from "./generated/CreateTagInput";
+import type { RenameTagInput } from "./generated/RenameTagInput";
+import type { MutateTagInput } from "./generated/MutateTagInput";
+import type { MergeTagsInput } from "./generated/MergeTagsInput";
+import type { MergeTagsResult } from "./generated/MergeTagsResult";
+import type { SetLifeNodeTagsInput } from "./generated/SetLifeNodeTagsInput";
+import type { SetLifeNodeTagsResult } from "./generated/SetLifeNodeTagsResult";
 
 export function healthCheck(): Promise<HealthCheck> {
   return invoke<HealthCheck>("health_check");
@@ -197,3 +205,11 @@ export const confirmPortablePackageImport = (input: ConfirmPortablePackageImport
   invoke<PortablePackageImportResult>("confirm_portable_package_import", { input });
 export const discardPortablePackageImport = (importId: string) =>
   invoke<void>("discard_portable_package_import", { importId });
+
+export const listTags = (includeArchived: boolean) => invoke<TagView[]>("list_tags", { includeArchived });
+export const createTag = (input: CreateTagInput) => invoke<TagView>("create_tag", { input });
+export const renameTag = (input: RenameTagInput) => invoke<TagView>("rename_tag", { input });
+export const archiveTag = (input: MutateTagInput) => invoke<TagView>("archive_tag", { input });
+export const restoreTag = (input: MutateTagInput) => invoke<TagView>("restore_tag", { input });
+export const mergeTags = (input: MergeTagsInput) => invoke<MergeTagsResult>("merge_tags", { input });
+export const setLifeNodeTags = (input: SetLifeNodeTagsInput) => invoke<SetLifeNodeTagsResult>("set_life_node_tags", { input });

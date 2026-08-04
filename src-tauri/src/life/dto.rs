@@ -1,3 +1,4 @@
+use crate::tag::dto::TagSummaryView;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize)]
@@ -20,6 +21,7 @@ pub struct LifeNodeView {
     pub is_leaf: bool,
     pub is_pinned: bool,
     pub revision: i32,
+    pub tags: Vec<TagSummaryView>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -51,6 +53,7 @@ pub struct PinnedLifeNodeView {
     pub is_leaf: bool,
     pub available: bool,
     pub revision: i32,
+    pub tags: Vec<TagSummaryView>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -216,6 +219,7 @@ pub struct LifeEditNodeView {
     pub is_leaf: bool,
     pub is_pinned: bool,
     pub revision: i32,
+    pub tags: Vec<TagSummaryView>,
 }
 
 #[derive(Debug, Clone, Serialize)]

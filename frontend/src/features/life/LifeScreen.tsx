@@ -11,6 +11,8 @@ import {
 import type { LifeNodeView } from "../../ipc/generated/LifeNodeView";
 import type { PinnedLifeNodeView } from "../../ipc/generated/PinnedLifeNodeView";
 import * as styles from "./LifeScreen.css";
+import { TagChipList } from "../tag/TagChipList";
+import { TagPicker } from "../tag/TagPicker";
 import { LifeEditWorkspace } from "./LifeEditWorkspace";
 import { BasicLeafReader } from "./document/BasicLeafReader";
 import { RelatedTasksPanel } from "./RelatedTasksPanel";
@@ -483,6 +485,12 @@ export function LifeScreen({
                 <p className={styles.nodeDescription}>
                   {projection.selected.short_description}
                 </p>
+                <TagChipList tags={projection.selected.tags} />
+                <TagPicker
+                  nodeId={projection.selected.id}
+                  nodeRevision={projection.selected.revision}
+                  currentTags={projection.selected.tags}
+                />
                 <button
                   className={styles.quietButton}
                   onClick={() =>
@@ -534,6 +542,7 @@ export function LifeScreen({
                           ? "Leaf — opens Reader"
                           : `${child.child_count} direct children`}
                       </span>
+                      <TagChipList tags={child.tags} />
                     </motion.button>
                     <button
                       className={styles.pinButton}

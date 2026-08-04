@@ -8,6 +8,7 @@ pub mod narrative;
 pub mod platform;
 pub mod portable;
 pub mod search;
+pub mod tag;
 pub mod task;
 
 use tauri::Manager;
@@ -32,6 +33,9 @@ use ipc::foundation_record::{
     list_foundation_records, restore_foundation_record, update_foundation_record,
 };
 use ipc::search::search_global;
+use ipc::tag::{
+    archive_tag, create_tag, list_tags, merge_tags, rename_tag, restore_tag, set_life_node_tags,
+};
 use ipc::task::{
     create_recurring_task, create_task, delete_task, evaluate_task, get_analytics_projection,
     get_month_projection, get_related_tasks_for_life_node, get_task_planning_projection,
@@ -207,6 +211,13 @@ pub fn run() {
             confirm_portable_package_import,
             discard_portable_package_import,
             search_global,
+            list_tags,
+            create_tag,
+            rename_tag,
+            archive_tag,
+            restore_tag,
+            merge_tags,
+            set_life_node_tags,
         ])
         .run(tauri::generate_context!())
         .expect("failed to run Lifeweave");

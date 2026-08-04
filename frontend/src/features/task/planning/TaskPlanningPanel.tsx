@@ -4,6 +4,7 @@ import { getTaskPlanningProjection } from "../../../ipc/commands";
 import { CategoryIcon } from "../categoryIcons";
 import type { TaskWorkspaceMode } from "./TaskWorkspaceTabs";
 import * as styles from "./TaskPlanning.css";
+import { TagChipList } from "../../tag/TagChipList";
 
 type PlanningMode = Exclude<TaskWorkspaceMode, "today">;
 const formatMinute = (value: number) =>
@@ -101,6 +102,7 @@ function PlanningRow({ item, mode, onOpenItem }: {
         {item.life_area && <span>{item.life_area.archived ? "Archived life area: " : "Life area: "}{item.life_area.breadcrumb}</span>}
         {item.kind === "recurring" && <span>Recurring</span>}
         {mode === "overdue" && <span className={styles.needsReview}>Needs review</span>}
+        <TagChipList tags={item.tags} />
       </div>
       <button
         type="button"

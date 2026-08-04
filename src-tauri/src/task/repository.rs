@@ -3,6 +3,7 @@ use super::{
     domain::{Priority, validate_date, validate_description, validate_range, validate_title},
     dto::{CreateTaskInput, TaskCategoryView, TaskLifeAreaView, TaskView, UpdateTaskInput},
 };
+use crate::tag::repository as tag_repo;
 use rusqlite::{Connection, OptionalExtension, params};
 use std::collections::HashMap;
 use uuid::{NoContext, Timestamp, Uuid};
@@ -49,6 +50,13 @@ fn validate(input: &CreateTaskInput) -> Result<Priority, TaskError> {
         return Err(TaskError::Validation("Description is too long."));
     }
     Priority::parse(&input.priority).ok_or(TaskError::Validation("Choose a valid priority."))
+}
+fn map_tag_err(e: tag_repo::TagError) -> TaskError {
+    match e {
+        tag_repo::TagError::Validation(msg) => TaskError::Validation(msg),
+        tag_repo::TagError::Db(e) => TaskError::Db(e),
+        _ => TaskError::Validation("Invalid tags."),
+    }
 }
 fn category_exists(conn: &Connection, id: &str) -> Result<bool, rusqlite::Error> {
     conn.query_row(
@@ -154,6 +162,7 @@ fn row(r: &rusqlite::Row<'_>) -> rusqlite::Result<TaskView> {
         created_at: r.get(8)?,
         updated_at: r.get(9)?,
         life_area: None,
+        tags: vec![],
     })
 }
 pub fn categories(conn: &Connection) -> Result<Vec<TaskCategoryView>, TaskError> {
@@ -207,6 +216,7 @@ pub fn related_for_life_node(
             group: row.get(3)?,
             navigation_local_date: row.get(2)?,
             series_id: None,
+            tags: vec![],
         })
     })? {
         result.push(row?);
@@ -306,6 +316,7 @@ pub fn related_for_life_node(
                 group: "active".into(),
                 navigation_local_date,
                 series_id: Some(series_id),
+                tags: vec![],
             });
         }
     }
@@ -330,6 +341,33 @@ pub fn related_for_life_node(
             .then_with(|| kind_rank(&left.kind).cmp(&kind_rank(&right.kind)))
             .then_with(|| left.id.cmp(&right.id))
     });
+    let task_ids: Vec<String> = result.iter()
+        .filter(|item| matches!(item.kind, super::dto::RelatedTaskKind::OneOff))
+        .map(|item| item.id.clone())
+        .collect();
+    if !task_ids.is_empty() {
+        let tag_map = tag_repo::batch_load_task_tags(conn, &task_ids).map_err(TaskError::Db)?;
+        for item in &mut result {
+            if matches!(item.kind, super::dto::RelatedTaskKind::OneOff) {
+                if let Some(tags) = tag_map.get(&item.id) {
+                    item.tags = tags.clone();
+                }
+            }
+        }
+    }
+    let series_ids: Vec<String> = result.iter()
+        .filter_map(|item| item.series_id.clone())
+        .collect();
+    if !series_ids.is_empty() {
+        let tag_map = tag_repo::batch_load_series_tags(conn, &series_ids).map_err(TaskError::Db)?;
+        for item in &mut result {
+            if let Some(sid) = &item.series_id {
+                if let Some(tags) = tag_map.get(sid) {
+                    item.tags = tags.clone();
+                }
+            }
+        }
+    }
     Ok(result)
 }
 pub fn list(conn: &Connection, date: &str) -> Result<Vec<TaskView>, TaskError> {
@@ -346,6 +384,13 @@ pub fn list(conn: &Connection, date: &str) -> Result<Vec<TaskView>, TaskError> {
         task.life_area = life.and_then(|id| areas.get(&id).cloned());
         out.push(task);
     }
+    let ids: Vec<String> = out.iter().map(|t| t.id.clone()).collect();
+    let tag_map = tag_repo::batch_load_task_tags(conn, &ids).map_err(TaskError::Db)?;
+    for task in &mut out {
+        if let Some(tags) = tag_map.get(&task.id) {
+            task.tags = tags.clone();
+        }
+    }
     Ok(out)
 }
 pub fn create(conn: &Connection, input: CreateTaskInput) -> Result<TaskView, TaskError> {
@@ -361,6 +406,7 @@ pub fn create(conn: &Connection, input: CreateTaskInput) -> Result<TaskView, Tas
         input.end_minute,
         None,
     )?;
+    tag_repo::validate_active_tag_ids(conn, &input.tag_ids).map_err(map_tag_err)?;
     let id = id();
     let t = now();
     let tx = conn.unchecked_transaction()?;
@@ -378,8 +424,11 @@ pub fn create(conn: &Connection, input: CreateTaskInput) -> Result<TaskView, Tas
             t,input.life_node_id
         ],
     )?;
+    tag_repo::replace_active_task_tags(&tx, &id, &input.tag_ids, &t)?;
     let mut result=tx.query_row("SELECT id,local_date,start_minute,end_minute,title,description,category_id,priority,created_at,updated_at FROM tasks WHERE id=?1",params![id],row)?;
     result.life_area = life_area(&tx, input.life_node_id)?;
+    let tag_map = tag_repo::batch_load_task_tags(&*tx, &[id.clone()]).map_err(TaskError::Db)?;
+    result.tags = tag_map.get(&id).cloned().unwrap_or_default();
     crate::task::analytics::bump_source_revision(&tx)?;
     tx.commit()?;
     Ok(result)
@@ -394,6 +443,7 @@ pub fn update(conn: &Connection, input: UpdateTaskInput) -> Result<TaskView, Tas
         category_id: input.category_id.clone(),
         priority: input.priority.clone(),
         life_node_id: input.life_node_id.clone(),
+        tag_ids: vec![],
     };
     let p = validate(&create)?;
     if !category_exists(conn, &input.category_id)? {
@@ -417,11 +467,15 @@ pub fn update(conn: &Connection, input: UpdateTaskInput) -> Result<TaskView, Tas
         input.end_minute,
         Some(&input.id),
     )?;
+    tag_repo::validate_active_tag_ids(conn, &input.tag_ids).map_err(map_tag_err)?;
     let t = now();
     let tx = conn.unchecked_transaction()?;
     if tx.execute("UPDATE tasks SET local_date=?2,start_minute=?3,end_minute=?4,title=?5,description=?6,category_id=?7,priority=?8,updated_at=?9,life_node_id=?10 WHERE id=?1",params![input.id,input.local_date,input.start_minute,input.end_minute,input.title.trim(),input.description,input.category_id,p.as_str(),t,input.life_node_id])?==0{return Err(TaskError::NotFound)}
+    tag_repo::replace_active_task_tags(&tx, &input.id, &input.tag_ids, &t)?;
     let mut result=tx.query_row("SELECT id,local_date,start_minute,end_minute,title,description,category_id,priority,created_at,updated_at FROM tasks WHERE id=?1",params![input.id],row)?;
     result.life_area = life_area(&tx, input.life_node_id)?;
+    let tag_map = tag_repo::batch_load_task_tags(&*tx, &[input.id.clone()]).map_err(TaskError::Db)?;
+    result.tags = tag_map.get(&input.id).cloned().unwrap_or_default();
     crate::task::analytics::bump_source_revision(&tx)?;
     tx.commit()?;
     Ok(result)
@@ -483,6 +537,7 @@ pub fn create_recurring(
         category_id: input.category_id.clone(),
         priority: input.priority.clone(),
         life_node_id: input.life_node_id.clone(),
+        tag_ids: vec![],
     };
     let priority = validate(&base)?;
     if !validate_date(&input.local_date) || !validate_range(input.start_minute, input.end_minute) {
@@ -495,6 +550,7 @@ pub fn create_recurring(
         input.until.as_deref(),
         input.count,
     )?;
+    tag_repo::validate_active_tag_ids(conn, &input.tag_ids).map_err(map_tag_err)?;
     let tx = conn.transaction()?;
     if !category_exists(&tx, &input.category_id)? {
         return Err(TaskError::Validation("Choose an active category."));
@@ -511,6 +567,7 @@ pub fn create_recurring(
     let id = id();
     let t = now();
     tx.execute("INSERT INTO task_series(id,title,description,category_id,priority,start_minute,end_minute,dtstart_local_date,timezone_id,rrule,created_at,updated_at,life_node_id) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",params![id,input.title.trim(),input.description,input.category_id,priority.as_str(),input.start_minute,input.end_minute,input.local_date,"local",rule,t,t,input.life_node_id])?;
+    tag_repo::replace_active_series_tags(&tx, &id, &input.tag_ids, &t)?;
     crate::task::analytics::bump_source_revision(&tx)?;
     tx.commit()?;
     Ok(id)
@@ -660,6 +717,7 @@ pub fn recurring_for_date(
                 is_recurring: true,
                 is_override,
                 life_area: life_node_id.and_then(|id| areas.get(&id).cloned()),
+                tags: vec![],
             });
         }
     }
@@ -701,7 +759,15 @@ pub fn recurring_for_date(
             is_recurring: true,
             is_override: true,
             life_area: life_node_id.and_then(|id| areas.get(&id).cloned()),
+            tags: vec![],
         });
+    }
+    let series_ids: Vec<String> = out.iter().map(|o| o.series_id.clone()).collect();
+    let tag_map = tag_repo::batch_load_series_tags(conn, &series_ids).map_err(TaskError::Db)?;
+    for occurrence in &mut out {
+        if let Some(tags) = tag_map.get(&occurrence.series_id) {
+            occurrence.tags = tags.clone();
+        }
     }
     Ok(out)
 }
@@ -736,6 +802,7 @@ pub fn today_items(
                 is_override: false,
                 evaluation: None,
                 life_area: None,
+                tags: vec![],
             },
             r.get::<_, Option<String>>(11)?,
         ))
@@ -776,7 +843,22 @@ pub fn today_items(
             is_override: occurrence.is_override,
             evaluation,
             life_area: occurrence.life_area,
+            tags: occurrence.tags,
         });
+    }
+    let task_ids: Vec<String> = out.iter()
+        .filter(|item| matches!(item.kind, crate::task::dto::TodayItemKind::OneOff))
+        .map(|item| item.id.clone())
+        .collect();
+    if !task_ids.is_empty() {
+        let tag_map = tag_repo::batch_load_task_tags(conn, &task_ids).map_err(TaskError::Db)?;
+        for item in &mut out {
+            if matches!(item.kind, crate::task::dto::TodayItemKind::OneOff) {
+                if let Some(tags) = tag_map.get(&item.id) {
+                    item.tags = tags.clone();
+                }
+            }
+        }
     }
     out.sort_by_key(|x| {
         (
@@ -852,6 +934,10 @@ pub fn update_recurring(
                     target_end,
                 )?;
                 tx.execute("UPDATE task_series SET title=COALESCE(?2,title),description=COALESCE(?3,description),category_id=COALESCE(?4,category_id),priority=COALESCE(?5,priority),start_minute=COALESCE(?6,start_minute),end_minute=COALESCE(?7,end_minute),rrule=?8,updated_at=?9,life_node_id=?10 WHERE id=?1",params![input.series_id,input.title,input.description,input.category_id,input.priority,input.start_minute,input.end_minute,rule,now(),input.life_node_id])?;
+                if let Some(tag_ids) = &input.series_tag_ids {
+                    tag_repo::validate_active_tag_ids(&*tx, tag_ids).map_err(map_tag_err)?;
+                    tag_repo::replace_active_series_tags(&tx, &input.series_id, tag_ids, &now())?;
+                }
             }
         }
         OccurrenceEditScope::ThisAndFuture => {
@@ -872,6 +958,7 @@ pub fn update_recurring(
                     target_end,
                 )?;
                 tx.execute("INSERT INTO task_series(id,title,description,category_id,priority,start_minute,end_minute,dtstart_local_date,timezone_id,rrule,created_at,updated_at,life_node_id) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,'local',?9,?10,?10,?11)",params![new_id,input.title.unwrap_or(master.0),input.description.unwrap_or(master.1),input.category_id.unwrap_or(master.2),input.priority.unwrap_or(master.3),target_start,target_end,target_date,new_rule,now(),input.life_node_id])?;
+                tag_repo::copy_all_series_tags(&tx, &input.series_id, &new_id, &now())?;
                 tx.execute("UPDATE task_occurrence_overrides SET series_id=?1 WHERE series_id=?2 AND original_local_date>=?3",params![new_id,input.series_id,input.original_local_date])?;
             }
         }
@@ -1023,6 +1110,7 @@ mod recurrence_tests {
             until: None,
             count: None,
             life_node_id: None,
+            tag_ids: vec![],
         }
     }
     fn mutation(
@@ -1049,6 +1137,7 @@ mod recurrence_tests {
             until: None,
             count: None,
             life_node_id: None,
+            series_tag_ids: None,
         }
     }
     #[test]
@@ -1176,6 +1265,7 @@ mod recurrence_tests {
                 category_id: "general".into(),
                 priority: "low".into(),
                 life_node_id: None,
+                tag_ids: vec![],
             },
         )
         .unwrap();
@@ -1213,6 +1303,7 @@ mod recurrence_tests {
                 category_id: "general".into(),
                 priority: "low".into(),
                 life_node_id: None,
+                tag_ids: vec![],
             },
         )
         .unwrap();
@@ -1234,6 +1325,7 @@ mod recurrence_tests {
                     category_id: "general".into(),
                     priority: "low".into(),
                     life_node_id: None,
+                    tag_ids: vec![],
                 },
             ),
             Err(TaskError::Conflict)
@@ -1262,6 +1354,7 @@ mod recurrence_tests {
                 category_id: "general".into(),
                 priority: "low".into(),
                 life_node_id: None,
+                tag_ids: vec![],
             },
         )
         .unwrap();
@@ -1326,6 +1419,7 @@ mod recurrence_tests {
                 category_id: "general".into(),
                 priority: "low".into(),
                 life_node_id: None,
+                tag_ids: vec![],
             },
         )
         .unwrap();
@@ -1425,6 +1519,7 @@ mod recurrence_tests {
                 category_id: "general".into(),
                 priority: "medium".into(),
                 life_node_id: Some("university".into()),
+                tag_ids: vec![],
             },
         )
         .unwrap();
@@ -1443,7 +1538,8 @@ mod recurrence_tests {
                     end_minute: 760,
                     category_id: "general".into(),
                     priority: "medium".into(),
-                    life_node_id: Some("life-root".into())
+                    life_node_id: Some("life-root".into()),
+                    tag_ids: vec![],
                 }
             ),
             Err(TaskError::Validation(_))
@@ -1459,7 +1555,8 @@ mod recurrence_tests {
                     end_minute: 760,
                     category_id: "general".into(),
                     priority: "medium".into(),
-                    life_node_id: Some("missing".into())
+                    life_node_id: Some("missing".into()),
+                    tag_ids: vec![],
                 }
             ),
             Err(TaskError::Validation(_))
@@ -1475,7 +1572,8 @@ mod recurrence_tests {
                     end_minute: 760,
                     category_id: "general".into(),
                     priority: "medium".into(),
-                    life_node_id: Some("archived-area".into())
+                    life_node_id: Some("archived-area".into()),
+                    tag_ids: vec![],
                 }
             ),
             Err(TaskError::Validation(_))
@@ -1497,6 +1595,7 @@ mod recurrence_tests {
                 category_id: "general".into(),
                 priority: "medium".into(),
                 life_node_id: Some("university".into()),
+                tag_ids: vec![],
             },
         )
         .unwrap();
@@ -1513,6 +1612,7 @@ mod recurrence_tests {
                 category_id: "general".into(),
                 priority: "medium".into(),
                 life_node_id: None,
+                tag_ids: vec![],
             },
         )
         .unwrap();
@@ -1616,6 +1716,7 @@ mod recurrence_tests {
                 category_id: "general".into(),
                 priority: "medium".into(),
                 life_node_id: Some("related-area".into()),
+                tag_ids: vec![],
             },
         )
         .unwrap();
@@ -1630,6 +1731,7 @@ mod recurrence_tests {
                 category_id: "general".into(),
                 priority: "medium".into(),
                 life_node_id: Some("related-area".into()),
+                tag_ids: vec![],
             },
         )
         .unwrap();
@@ -1819,7 +1921,7 @@ mod recurrence_tests {
             })
             .unwrap();
         assert_eq!(occurrence_columns, 0);
-        assert_eq!(schema, 16);
+        assert_eq!(schema, 17);
     }
 
     #[test]

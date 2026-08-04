@@ -25,6 +25,7 @@ import { AssessmentControl } from "../../completion/AssessmentControl";
 import * as styles from "./TodayScreen.css";
 import { LifeAreaCombobox } from "../LifeAreaCombobox";
 import { TaskWorkspaceTabs, type TaskWorkspaceMode } from "../planning/TaskWorkspaceTabs";
+import { TagChipList } from "../../tag/TagChipList";
 
 const TaskPlanningPanel = lazy(() => import("../planning/TaskPlanningPanel"));
 
@@ -54,6 +55,7 @@ type Draft = {
   category_id: string;
   priority: string;
   life_node_id: string | null;
+  tag_ids: string[];
 };
 const periods = [
   { name: "Morning", start: 240, end: 720 },
@@ -238,6 +240,7 @@ export function TodayScreen({
     category_id: "general",
     priority: "medium",
     life_node_id: null,
+    tag_ids: [],
   });
   const [openFan, setOpenFan] = useState<string | null>(null),
     [assessmentError, setAssessmentError] = useState(""),
@@ -283,6 +286,7 @@ export function TodayScreen({
           ...draft,
           scope,
           cancelled: false,
+          series_tag_ids: null,
           ...recurrenceInput,
         });
       if (editing) return updateTask({ id: editing.id, ...draft });
@@ -319,6 +323,7 @@ export function TodayScreen({
           until: null,
           count: null,
           life_node_id: editing.life_area?.id ?? null,
+          series_tag_ids: null,
         });
       return deleteTask(editing.id);
     },
@@ -461,6 +466,7 @@ export function TodayScreen({
             category_id: item.category_id,
             priority: item.priority,
             life_node_id: item.life_area?.id ?? null,
+            tag_ids: [],
           }
         : {
             title: "",
@@ -471,6 +477,7 @@ export function TodayScreen({
             category_id: categories.data?.[0]?.id ?? "general",
             priority: "medium",
             life_node_id: null,
+            tag_ids: [],
           },
     );
     setOpen(true);
@@ -761,6 +768,7 @@ export function TodayScreen({
                             {item.kind === "recurring" && (
                               <span aria-label="Recurring task"> ↻</span>
                             )}
+                            <TagChipList tags={item.tags} />
                           </div>
                           <span aria-label={`Priority ${item.priority}`}>
                             •

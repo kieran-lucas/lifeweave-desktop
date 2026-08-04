@@ -15,6 +15,7 @@ import { CalendarScreen } from "../features/calendar/CalendarScreen";
 import { AnalyticsScreen } from "../features/analytics/AnalyticsScreen";
 import { CategoryGoals } from "../features/analytics/CategoryGoals";
 import { LifeScreen } from "../features/life/LifeScreen";
+import { TagSettings } from "../features/tag/TagSettings";
 import { localToday } from "../features/calendar/date";
 import { useLocalDateRollover } from "../features/calendar/useLocalDateRollover";
 import type { SearchNavigationTarget } from "../ipc/generated/SearchNavigationTarget";
@@ -302,6 +303,7 @@ export function App() {
                   Application preferences and foundation verification tools.
                 </p>
                 <CategoryGoals />
+                <TagSettings />
                 <div className={styles.foundationPanel}>
                   <h2>Foundation tools</h2>
                   <p>

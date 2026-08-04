@@ -108,6 +108,65 @@ fn update_search_meta_rebuild(conn: &Connection) -> Result<(), SearchError> {
     Ok(())
 }
 
+fn load_alias_map(conn: &Connection) -> Result<HashMap<String, Vec<String>>, SearchError> {
+    let mut stmt = conn
+        .prepare(
+            "SELECT merged_into_tag_id, normalized_name FROM tags \
+             WHERE merged_into_tag_id IS NOT NULL",
+        )
+        .map_err(|_| SearchError::Storage)?;
+    let mut map: HashMap<String, Vec<String>> = HashMap::new();
+    stmt.query_map([], |row| Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?)))
+        .map_err(|_| SearchError::Storage)?
+        .filter_map(|r| r.ok())
+        .for_each(|(target, alias)| map.entry(target).or_default().push(alias));
+    Ok(map)
+}
+
+fn load_tag_context(
+    conn: &Connection,
+    join_table: &str,
+    id_col: &str,
+    alias_map: &HashMap<String, Vec<String>>,
+) -> Result<HashMap<String, String>, SearchError> {
+    let sql = format!(
+        "SELECT jt.{id_col}, t.id, t.normalized_name \
+         FROM {join_table} jt \
+         JOIN tags t ON t.id = jt.tag_id \
+         WHERE t.archived_at IS NULL AND t.merged_into_tag_id IS NULL"
+    );
+    let mut stmt = conn.prepare(&sql).map_err(|_| SearchError::Storage)?;
+    let mut parts: HashMap<String, Vec<String>> = HashMap::new();
+    stmt.query_map([], |row| {
+        Ok((
+            row.get::<_, String>(0)?,
+            row.get::<_, String>(1)?,
+            row.get::<_, String>(2)?,
+        ))
+    })
+    .map_err(|_| SearchError::Storage)?
+    .filter_map(|r| r.ok())
+    .for_each(|(entity_id, tag_id, norm_name)| {
+        let entry = parts.entry(entity_id).or_default();
+        entry.push(norm_name);
+        if let Some(aliases) = alias_map.get(&tag_id) {
+            entry.extend(aliases.iter().cloned());
+        }
+    });
+    Ok(parts
+        .into_iter()
+        .map(|(k, v)| (k, v.join(" ")))
+        .collect())
+}
+
+fn append_tags(base: String, tag_ctx: &str) -> String {
+    if tag_ctx.is_empty() {
+        base
+    } else {
+        format!("{base} {tag_ctx}")
+    }
+}
+
 fn load_all_life_nodes(conn: &Connection) -> Result<Vec<LifeNodeEntry>, SearchError> {
     let mut stmt = conn
         .prepare(
@@ -179,6 +238,10 @@ fn rebuild_tasks_scope_inner(conn: &Connection) -> Result<(), SearchError> {
     )
     .map_err(|_| SearchError::Storage)?;
 
+    let alias_map = load_alias_map(conn)?;
+    let task_tag_ctx = load_tag_context(conn, "task_tags", "task_id", &alias_map)?;
+    let series_tag_ctx = load_tag_context(conn, "task_series_tags", "series_id", &alias_map)?;
+
     // One-off tasks.
     {
         let mut stmt = conn
@@ -215,13 +278,14 @@ fn rebuild_tasks_scope_inner(conn: &Connection) -> Result<(), SearchError> {
 
         for (id, title, description, local_date, updated_at, category_name) in rows {
             let context = format!("{} · {}", category_name, local_date);
+            let tag_ctx = task_tag_ctx.get(&id).map(|s| s.as_str()).unwrap_or("");
             ins.execute(rusqlite::params![
                 id,
                 title,
                 context,
                 description,
                 normalize(&title),
-                normalize(&context),
+                append_tags(normalize(&context), tag_ctx),
                 normalize(&description),
                 local_date,
                 updated_at,
@@ -266,13 +330,14 @@ fn rebuild_tasks_scope_inner(conn: &Connection) -> Result<(), SearchError> {
 
         for (id, title, description, updated_at, category_name) in rows {
             let context = format!("{} · Recurring", category_name);
+            let tag_ctx = series_tag_ctx.get(&id).map(|s| s.as_str()).unwrap_or("");
             ins.execute(rusqlite::params![
                 id,
                 title,
                 context,
                 description,
                 normalize(&title),
-                normalize(&context),
+                append_tags(normalize(&context), tag_ctx),
                 normalize(&description),
                 updated_at,
             ])
@@ -349,6 +414,7 @@ fn rebuild_tasks_scope_inner(conn: &Connection) -> Result<(), SearchError> {
                 .as_deref()
                 .unwrap_or(original_date.as_str());
             let context = format!("{} · {}", category_name, effective_date);
+            let tag_ctx = series_tag_ctx.get(&series_id).map(|s| s.as_str()).unwrap_or("");
             ins.execute(rusqlite::params![
                 id,
                 series_id,
@@ -356,7 +422,7 @@ fn rebuild_tasks_scope_inner(conn: &Connection) -> Result<(), SearchError> {
                 context,
                 description,
                 normalize(&title),
-                normalize(&context),
+                append_tags(normalize(&context), tag_ctx),
                 normalize(&description),
                 effective_date,
                 original_date,
@@ -388,6 +454,8 @@ fn rebuild_life_scope_inner(conn: &Connection, nodes: &[LifeNodeEntry]) -> Resul
         .map_err(|_| SearchError::Storage)?;
 
     let map = build_node_map(nodes);
+    let alias_map = load_alias_map(conn)?;
+    let node_tag_ctx = load_tag_context(conn, "life_node_tags", "life_node_id", &alias_map)?;
 
     let mut ins = conn
         .prepare(
@@ -410,13 +478,14 @@ fn rebuild_life_scope_inner(conn: &Connection, nodes: &[LifeNodeEntry]) -> Resul
         }
         let breadcrumb = build_breadcrumb(&node.id, &map);
         let body = &node.short_description;
+        let tag_ctx = node_tag_ctx.get(&node.id).map(|s| s.as_str()).unwrap_or("");
         ins.execute(rusqlite::params![
             node.id,
             node.title,
             breadcrumb,
             body,
             normalize(&node.title),
-            normalize(&breadcrumb),
+            append_tags(normalize(&breadcrumb), tag_ctx),
             normalize(body),
             node.updated_at,
         ])
@@ -448,6 +517,8 @@ fn rebuild_documents_scope_inner(
         .map_err(|_| SearchError::Storage)?;
 
     let map = build_node_map(nodes);
+    let alias_map = load_alias_map(conn)?;
+    let node_tag_ctx = load_tag_context(conn, "life_node_tags", "life_node_id", &alias_map)?;
 
     let mut stmt = conn
         .prepare(
@@ -483,6 +554,7 @@ fn rebuild_documents_scope_inner(
         let breadcrumb = build_breadcrumb(&life_node_id, &map);
         // Truncate body to 524288 chars (matches DB constraint on plain_text).
         let body: String = plain_text.chars().take(524288).collect();
+        let tag_ctx = node_tag_ctx.get(&life_node_id).map(|s| s.as_str()).unwrap_or("");
         ins.execute(rusqlite::params![
             doc_id,
             life_node_id,
@@ -490,7 +562,7 @@ fn rebuild_documents_scope_inner(
             breadcrumb,
             body,
             normalize(node_title),
-            normalize(&breadcrumb),
+            append_tags(normalize(&breadcrumb), tag_ctx),
             normalize(&body),
             updated_at,
         ])
@@ -542,6 +614,7 @@ fn rebuild_documents_scope_inner(
                 .unwrap_or("");
             let breadcrumb = build_breadcrumb(&life_node_id, &map);
             let body: String = plain_text.chars().take(524_288).collect();
+            let tag_ctx = node_tag_ctx.get(&life_node_id).map(|s| s.as_str()).unwrap_or("");
             nd_ins
                 .execute(rusqlite::params![
                     doc_id,
@@ -550,7 +623,7 @@ fn rebuild_documents_scope_inner(
                     breadcrumb,
                     body,
                     normalize(node_title),
-                    normalize(&breadcrumb),
+                    append_tags(normalize(&breadcrumb), tag_ctx),
                     normalize(&body),
                     updated_at,
                 ])
@@ -1530,7 +1603,7 @@ mod tests {
                     r.get(0)
                 })
                 .unwrap();
-            assert_eq!(ver, 16, "schema must be at version 16");
+            assert_eq!(ver, 17, "schema must be at version 17");
 
             // Insert one task with Vietnamese title.
             conn.execute(

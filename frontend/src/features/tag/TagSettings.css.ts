@@ -1,0 +1,14 @@
+import { globalStyle, style } from "@vanilla-extract/css";
+export const root = style({ display: "flex", flexDirection: "column", gap: 20, maxWidth: 600 });
+export const createRow = style({ display: "flex", gap: 8, alignItems: "center" });
+export const input = style({ flex: 1, padding: "7px 10px", border: "1px solid var(--border-subtle, #ddd)", borderRadius: 4, fontSize: 14 });
+export const table = style({ width: "100%", borderCollapse: "collapse" });
+globalStyle(`${table} th`, { textAlign: "left", fontWeight: 600, fontSize: 12, color: "var(--text-muted, #666)", padding: "4px 8px", borderBottom: "1px solid var(--border-subtle, #ddd)" });
+globalStyle(`${table} td`, { padding: "6px 8px", borderBottom: "1px solid var(--border-subtle, #ddd)", fontSize: 14 });
+export const archived = style({ color: "var(--text-muted, #666)", fontStyle: "italic" });
+export const actions = style({ display: "flex", gap: 6, flexWrap: "wrap" });
+export const toggleRow = style({ display: "flex", alignItems: "center", gap: 8 });
+export const mergePanel = style({ display: "flex", flexDirection: "column", gap: 8, padding: 12, background: "var(--surface-raised, #f3f3f3)", borderRadius: 6, border: "1px solid var(--border-subtle, #ddd)" });
+export const mergeRow = style({ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" });
+export const select = style({ padding: "6px 8px", border: "1px solid var(--border-subtle, #ddd)", borderRadius: 4, fontSize: 14, background: "var(--surface, #fff)" });
+export const warning = style({ color: "var(--danger, #c00)", fontSize: 13, margin: 0 });

@@ -451,6 +451,7 @@ mod tests {
                 category_id: "general".into(),
                 priority: "medium".into(),
                 life_node_id: None,
+                tag_ids: vec![],
             },
         )
         .unwrap()
@@ -628,6 +629,7 @@ mod tests {
                 until: None,
                 count: Some(3),
                 life_node_id: None,
+                tag_ids: vec![],
             },
         )
         .unwrap();
@@ -649,6 +651,7 @@ mod tests {
             until: None,
             count: None,
             life_node_id: None,
+            series_tag_ids: None,
         };
         repository::update_recurring(&mut connection, moved).unwrap();
         let recurring = EvaluateTaskInput {
@@ -690,6 +693,7 @@ mod tests {
             until: None,
             count: None,
             life_node_id: None,
+            series_tag_ids: None,
         };
         repository::update_recurring(&mut connection, cancel).unwrap();
         let cancelled = EvaluateTaskInput {

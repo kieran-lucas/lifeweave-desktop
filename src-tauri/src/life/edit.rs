@@ -3,6 +3,7 @@ use super::{
     dto::*,
     repository::LifeError,
 };
+use crate::tag::repository as tag_repo;
 use rusqlite::{Connection, OptionalExtension, Transaction, params};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -134,6 +135,7 @@ fn edit_node(
                 short_description: r.get(3)?, icon_key: r.get(4)?, theme_variant: r.get(5)?,
                 sort_key: r.get(6)?, depth: r.get(7)?, child_count: count,
                 is_leaf: count == 0, is_pinned: r.get(9)?, revision: r.get(10)?,
+                tags: vec![],
             })
         },
     )
@@ -152,6 +154,7 @@ fn as_browse(value: LifeEditNodeView) -> LifeNodeView {
         is_leaf: value.is_leaf,
         is_pinned: value.is_pinned,
         revision: value.revision,
+        tags: value.tags,
     }
 }
 
@@ -254,7 +257,7 @@ pub fn projection(conn: &Connection) -> Result<LifeEditProjection, LifeError> {
            EXISTS(SELECT 1 FROM life_node_pins p WHERE p.node_id=t.id),t.revision
       FROM tree t LEFT JOIN counts c ON c.parent_id=t.id ORDER BY t.path";
     let mut statement = conn.prepare(sql)?;
-    let nodes = statement
+    let mut nodes = statement
         .query_map([], |r| {
             let count: i32 = r.get(8)?;
             Ok(LifeEditNodeView {
@@ -270,13 +273,14 @@ pub fn projection(conn: &Connection) -> Result<LifeEditProjection, LifeError> {
                 is_leaf: count == 0,
                 is_pinned: r.get(9)?,
                 revision: r.get(10)?,
+                tags: vec![],
             })
         })?
         .collect::<Result<Vec<_>, _>>()?;
     let mut archived_statement = conn.prepare(
         "WITH RECURSIVE all_nodes(id,parent_id,depth) AS (SELECT id,parent_id,0 FROM life_nodes WHERE parent_id IS NULL UNION ALL SELECT n.id,n.parent_id,a.depth+1 FROM life_nodes n JOIN all_nodes a ON n.parent_id=a.id WHERE a.depth<4096), counts AS (SELECT parent_id,COUNT(*) count FROM life_nodes WHERE archived_at IS NULL GROUP BY parent_id) SELECT n.id,n.parent_id,n.title,n.short_description,n.icon_key,n.branch_theme_id,n.sort_key,a.depth,COALESCE(c.count,0),EXISTS(SELECT 1 FROM life_node_pins p WHERE p.node_id=n.id),n.revision FROM life_nodes n JOIN all_nodes a ON a.id=n.id LEFT JOIN counts c ON c.parent_id=n.id WHERE n.archived_at IS NOT NULL ORDER BY a.depth,n.sort_key,n.id",
     )?;
-    let archived_nodes = archived_statement
+    let mut archived_nodes = archived_statement
         .query_map([], |r| {
             let count: i32 = r.get(8)?;
             Ok(LifeEditNodeView {
@@ -292,9 +296,19 @@ pub fn projection(conn: &Connection) -> Result<LifeEditProjection, LifeError> {
                 is_leaf: count == 0,
                 is_pinned: r.get(9)?,
                 revision: r.get(10)?,
+                tags: vec![],
             })
         })?
         .collect::<Result<Vec<_>, _>>()?;
+    {
+        let mut all_ids: Vec<String> = nodes.iter().map(|n| n.id.clone()).collect();
+        all_ids.extend(archived_nodes.iter().map(|n| n.id.clone()));
+        if !all_ids.is_empty() {
+            let tag_map = tag_repo::batch_load_life_tags(conn, &all_ids).map_err(LifeError::Db)?;
+            for n in &mut nodes { if let Some(tags) = tag_map.get(&n.id) { n.tags = tags.clone(); } }
+            for n in &mut archived_nodes { if let Some(tags) = tag_map.get(&n.id) { n.tags = tags.clone(); } }
+        }
+    }
     let current = tree_revision(conn)?;
     let latest_undo = conn
         .query_row(
@@ -940,7 +954,7 @@ mod tests {
     #[test]
     fn migration_eight_adds_ledger_and_edit_preference() {
         let c = db();
-        assert_eq!(current_schema_version(&c).unwrap(), 16);
+        assert_eq!(current_schema_version(&c).unwrap(), 17);
         assert_eq!(
             c.query_row("SELECT COUNT(*) FROM life_operations", [], |r| r
                 .get::<_, i64>(0))

@@ -193,6 +193,7 @@ pub fn projection(
                     .life_node_id
                     .as_ref()
                     .and_then(|id| life_areas.get(id).cloned()),
+                tags: vec![],
             });
             if items.len() > MAX_PLANNING_ITEMS {
                 return Err(TaskError::Validation(TOO_MANY));
@@ -322,6 +323,7 @@ fn load_one_offs(
             life_area: life_node_id
                 .as_ref()
                 .and_then(|id| life_areas.get(id).cloned()),
+            tags: vec![],
         });
     }
     Ok(items)

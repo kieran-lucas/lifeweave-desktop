@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::tag::dto::TagSummaryView;
+
 #[derive(Debug, Clone, Serialize)]
 #[cfg_attr(test, derive(ts_rs::TS))]
 pub struct TaskCategoryView {
@@ -115,6 +117,7 @@ pub struct TaskView {
     pub created_at: String,
     pub updated_at: String,
     pub life_area: Option<TaskLifeAreaView>,
+    pub tags: Vec<TagSummaryView>,
 }
 #[derive(Debug, Clone, Serialize)]
 #[cfg_attr(test, derive(ts_rs::TS))]
@@ -140,6 +143,7 @@ pub struct RelatedTaskView {
     pub group: String,
     pub navigation_local_date: String,
     pub series_id: Option<String>,
+    pub tags: Vec<TagSummaryView>,
 }
 #[derive(Debug, Deserialize)]
 #[cfg_attr(test, derive(ts_rs::TS))]
@@ -152,6 +156,7 @@ pub struct CreateTaskInput {
     pub category_id: String,
     pub priority: String,
     pub life_node_id: Option<String>,
+    pub tag_ids: Vec<String>,
 }
 #[derive(Debug, Deserialize)]
 #[cfg_attr(test, derive(ts_rs::TS))]
@@ -165,6 +170,7 @@ pub struct UpdateTaskInput {
     pub category_id: String,
     pub priority: String,
     pub life_node_id: Option<String>,
+    pub tag_ids: Vec<String>,
 }
 #[derive(Debug, Clone, Serialize)]
 #[cfg_attr(test, derive(ts_rs::TS))]
@@ -182,6 +188,7 @@ pub struct RecurringOccurrenceView {
     pub is_recurring: bool,
     pub is_override: bool,
     pub life_area: Option<TaskLifeAreaView>,
+    pub tags: Vec<TagSummaryView>,
 }
 #[derive(Debug, Deserialize)]
 #[cfg_attr(test, derive(ts_rs::TS))]
@@ -199,6 +206,7 @@ pub struct CreateRecurringTaskInput {
     pub until: Option<String>,
     pub count: Option<i32>,
     pub life_node_id: Option<String>,
+    pub tag_ids: Vec<String>,
 }
 #[derive(Debug, Deserialize, Clone)]
 #[cfg_attr(test, derive(ts_rs::TS))]
@@ -228,6 +236,9 @@ pub struct UpdateRecurringOccurrenceInput {
     pub until: Option<String>,
     pub count: Option<i32>,
     pub life_node_id: Option<String>,
+    /// Only used for EntireSeries scope. Must be None for OnlyThisOccurrence
+    /// and ThisAndFuture scopes.
+    pub series_tag_ids: Option<Vec<String>>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -259,6 +270,7 @@ pub struct TodayItemView {
     pub is_override: bool,
     pub evaluation: Option<TaskEvaluationView>,
     pub life_area: Option<TaskLifeAreaView>,
+    pub tags: Vec<TagSummaryView>,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -296,6 +308,7 @@ pub struct TaskPlanningItemView {
     pub priority: String,
     pub is_override: bool,
     pub life_area: Option<TaskLifeAreaView>,
+    pub tags: Vec<TagSummaryView>,
 }
 
 #[derive(Debug, Clone, Serialize)]

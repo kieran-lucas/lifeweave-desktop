@@ -393,6 +393,7 @@ mod tests {
                     category_id: "general".into(),
                     priority: "high".into(),
                     life_node_id: None,
+                    tag_ids: vec![],
                 },
             )
             .unwrap();
@@ -420,6 +421,7 @@ mod tests {
                 category_id: "general".into(),
                 priority: "medium".into(),
                 life_node_id: None,
+                tag_ids: vec![],
             },
         )
         .unwrap()
@@ -472,6 +474,7 @@ mod tests {
                 until: None,
                 count: None,
                 life_node_id: None,
+                tag_ids: vec![],
             },
         )
         .unwrap();
@@ -495,6 +498,7 @@ mod tests {
                 until: None,
                 count: None,
                 life_node_id: None,
+                series_tag_ids: None,
             },
         )
         .unwrap();
@@ -518,6 +522,7 @@ mod tests {
                 until: None,
                 count: None,
                 life_node_id: None,
+                series_tag_ids: None,
             },
         )
         .unwrap();

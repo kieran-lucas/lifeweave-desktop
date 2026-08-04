@@ -42,6 +42,7 @@ const node = (id: string, title: string, children = 0, pinned = false) => ({
   is_leaf: children === 0,
   is_pinned: pinned,
   revision: 0,
+  tags: [],
 });
 const root = node("life-root", "Life", 2);
 const branch = node("00000000-0000-7000-8000-000000000001", "Branch", 1);

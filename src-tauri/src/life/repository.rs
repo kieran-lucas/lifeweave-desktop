@@ -3,6 +3,7 @@ use super::{
     dto::*,
     navigation,
 };
+use crate::tag::repository as tag_repo;
 use rusqlite::{Connection, OptionalExtension, Transaction, params};
 use uuid::{NoContext, Timestamp, Uuid};
 
@@ -60,6 +61,7 @@ fn node(conn: &Connection, id: &str, include_archived: bool) -> Result<LifeNodeV
             is_leaf: count == 0,
             is_pinned: r.get(6)?,
             revision: r.get(7)?,
+            tags: vec![],
         })
     })
     .optional()?
@@ -83,15 +85,15 @@ pub fn browse(
         return Err(LifeError::Validation("Choose a valid child page."));
     }
     let (selected_id, fallback) = navigation::resolve_node(conn, input.node_id.as_deref())?;
-    let selected = node(conn, &selected_id, false)?;
-    let parent = active_parent(conn, &selected_id)?
+    let mut selected = node(conn, &selected_id, false)?;
+    let mut parent = active_parent(conn, &selected_id)?
         .map(|id| node(conn, &id, false))
         .transpose()?;
     let total = selected.child_count as i64;
     let pages = ((total + CHILD_PAGE_SIZE - 1) / CHILD_PAGE_SIZE).max(1);
     let page = (input.child_page as i64).min(pages - 1);
     let mut st=conn.prepare("SELECT n.id,n.title,n.short_description,n.icon_key,n.branch_theme_id,(SELECT COUNT(*) FROM life_nodes c WHERE c.parent_id=n.id AND c.archived_at IS NULL),EXISTS(SELECT 1 FROM life_node_pins p WHERE p.node_id=n.id),n.revision FROM life_nodes n WHERE n.parent_id=?1 AND n.archived_at IS NULL ORDER BY n.sort_key,n.id LIMIT ?2 OFFSET ?3")?;
-    let children = st
+    let mut children = st
         .query_map(
             params![selected_id, CHILD_PAGE_SIZE, page * CHILD_PAGE_SIZE],
             |r| {
@@ -106,12 +108,13 @@ pub fn browse(
                     is_leaf: count == 0,
                     is_pinned: r.get(6)?,
                     revision: r.get(7)?,
+                    tags: vec![],
                 })
             },
         )?
         .collect::<Result<Vec<_>, _>>()?;
     let mut bc=conn.prepare("WITH RECURSIVE path(id,parent_id,title,short_description,icon_key,branch_theme_id,revision,depth) AS (SELECT id,parent_id,title,short_description,icon_key,branch_theme_id,revision,0 FROM life_nodes WHERE id=?1 UNION ALL SELECT n.id,n.parent_id,n.title,n.short_description,n.icon_key,n.branch_theme_id,n.revision,p.depth+1 FROM life_nodes n JOIN path p ON n.id=p.parent_id WHERE p.depth<128) SELECT p.id,p.title,p.short_description,p.icon_key,p.branch_theme_id,(SELECT COUNT(*) FROM life_nodes c WHERE c.parent_id=p.id AND c.archived_at IS NULL),EXISTS(SELECT 1 FROM life_node_pins pin WHERE pin.node_id=p.id),p.revision FROM path p ORDER BY p.depth DESC")?;
-    let breadcrumb = bc
+    let mut breadcrumb = bc
         .query_map(params![selected_id], |r| {
             let count: i32 = r.get(5)?;
             Ok(LifeNodeView {
@@ -124,6 +127,7 @@ pub fn browse(
                 is_leaf: count == 0,
                 is_pinned: r.get(6)?,
                 revision: r.get(7)?,
+                tags: vec![],
             })
         })?
         .collect::<Result<Vec<_>, _>>()?;
@@ -132,6 +136,21 @@ pub fn browse(
         [],
         |r| Ok((r.get(0)?, r.get(1)?)),
     )?;
+    {
+        let mut all_ids: Vec<String> = vec![selected_id.clone()];
+        if let Some(ref p) = parent { all_ids.push(p.id.clone()); }
+        all_ids.extend(children.iter().map(|n| n.id.clone()));
+        all_ids.extend(breadcrumb.iter().map(|n| n.id.clone()));
+        all_ids.sort_unstable();
+        all_ids.dedup();
+        let tag_map = tag_repo::batch_load_life_tags(conn, &all_ids).map_err(LifeError::Db)?;
+        if let Some(tags) = tag_map.get(&selected.id) { selected.tags = tags.clone(); }
+        if let Some(ref mut p) = parent {
+            if let Some(tags) = tag_map.get(&p.id) { p.tags = tags.clone(); }
+        }
+        for n in &mut children { if let Some(tags) = tag_map.get(&n.id) { n.tags = tags.clone(); } }
+        for n in &mut breadcrumb { if let Some(tags) = tag_map.get(&n.id) { n.tags = tags.clone(); } }
+    }
     if fallback {
         tracing::warn!("life navigation target resolved by fallback");
     }
@@ -152,7 +171,7 @@ pub fn browse(
 }
 pub fn pinned(conn: &Connection) -> Result<Vec<PinnedLifeNodeView>, LifeError> {
     let mut st=conn.prepare("SELECT n.id,n.title,n.short_description,n.icon_key,n.branch_theme_id,(SELECT COUNT(*) FROM life_nodes c WHERE c.parent_id=n.id AND c.archived_at IS NULL),n.archived_at IS NULL,n.revision FROM life_node_pins p JOIN life_nodes n ON n.id=p.node_id ORDER BY p.sort_key,p.node_id")?;
-    Ok(st
+    let mut out = st
         .query_map([], |r| {
             let count: i32 = r.get(5)?;
             Ok(PinnedLifeNodeView {
@@ -165,9 +184,18 @@ pub fn pinned(conn: &Connection) -> Result<Vec<PinnedLifeNodeView>, LifeError> {
                 is_leaf: count == 0,
                 available: r.get(6)?,
                 revision: r.get(7)?,
+                tags: vec![],
             })
         })?
-        .collect::<Result<Vec<_>, _>>()?)
+        .collect::<Result<Vec<_>, _>>()?;
+    let node_ids: Vec<String> = out.iter().map(|n| n.node_id.clone()).collect();
+    if !node_ids.is_empty() {
+        let tag_map = tag_repo::batch_load_life_tags(conn, &node_ids).map_err(LifeError::Db)?;
+        for n in &mut out {
+            if let Some(tags) = tag_map.get(&n.node_id) { n.tags = tags.clone(); }
+        }
+    }
+    Ok(out)
 }
 pub fn task_targets(conn: &Connection) -> Result<Vec<TaskLifeTargetView>, LifeError> {
     let mut st = conn.prepare("WITH RECURSIVE paths(id,parent_id,title,sort_key,path) AS (
@@ -495,7 +523,7 @@ mod tests {
     #[test]
     fn life_migration_seeds_only_protected_root() {
         let mut c = db();
-        assert_eq!(current_schema_version(&c).unwrap(), 16);
+        assert_eq!(current_schema_version(&c).unwrap(), 17);
         assert_eq!(
             c.query_row("SELECT COUNT(*) FROM life_nodes", [], |r| r
                 .get::<_, i64>(0))

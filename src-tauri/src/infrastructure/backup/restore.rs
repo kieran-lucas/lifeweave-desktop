@@ -991,9 +991,9 @@ mod tests {
         manifest.write_to_dir(package).unwrap();
         let (runtime, db) = make_file_runtime();
         let result = restore_db(&runtime, package).unwrap();
-        assert_eq!(result.schema_version, 16);
+        assert_eq!(result.schema_version, 17);
         let reopened = open_existing_file_connection(&db).unwrap();
-        assert_eq!(current_schema_version(&reopened).unwrap(), 16);
+        assert_eq!(current_schema_version(&reopened).unwrap(), 17);
         assert_eq!(
             reopened
                 .query_row(
@@ -1162,7 +1162,7 @@ mod tests {
         );
 
         let restore_result = restore_db(&rt, &backup_dir).unwrap();
-        assert_eq!(restore_result.schema_version, 16);
+        assert_eq!(restore_result.schema_version, 17);
 
         let active = rt.execute(|conn| repo::list_active(conn)).unwrap();
         assert_eq!(active.len(), 1);
@@ -1390,6 +1390,7 @@ mod tests {
                         category_id: "general".into(),
                         priority: "medium".into(),
                         life_node_id: None,
+                        tag_ids: vec![],
                     },
                 )
                 .unwrap();
@@ -1470,7 +1471,7 @@ mod tests {
         let backups = temp_backups_dir();
         let task_id = rt.execute(|conn| {
             conn.execute("INSERT INTO life_nodes(id,parent_id,title,short_description,icon_key,branch_theme_id,sort_key,archived_at,created_at,updated_at,revision) VALUES('backup-life','life-root','Backup Life','','life-leaf','neutral',1,NULL,'0','0',0)", [])?;
-            Ok(task_repository::create(conn, CreateTaskInput { title:"Linked backup task".into(), description:"".into(), local_date:"2026-08-04".into(), start_minute:600, end_minute:660, category_id:"general".into(), priority:"medium".into(), life_node_id:Some("backup-life".into()) }).map_err(|_| DbError::InvalidMigrationList)?.id)
+            Ok(task_repository::create(conn, CreateTaskInput { title:"Linked backup task".into(), description:"".into(), local_date:"2026-08-04".into(), start_minute:600, end_minute:660, category_id:"general".into(), priority:"medium".into(), life_node_id:Some("backup-life".into()), tag_ids:vec![] }).map_err(|_| DbError::InvalidMigrationList)?.id)
         }).unwrap();
         let backup_dir = PathBuf::from(backup_db(&rt, &backups).unwrap().backup_dir);
         let mutated_id = task_id.clone();

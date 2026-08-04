@@ -658,6 +658,92 @@ static MIGRATIONS: &[Migration] = &[
             CREATE INDEX tasks_life_node_idx ON tasks(life_node_id);
             CREATE INDEX task_series_life_node_idx ON task_series(life_node_id);",
     },
+    Migration {
+        version: 17,
+        // Global reusable tag vocabulary shared across Tasks and Life.
+        // Three typed join tables instead of one polymorphic table so SQLite can
+        // enforce target foreign keys.  Assignment guards and merge alias semantics
+        // are enforced in Rust; the database layer enforces structural invariants
+        // (root guard, CASCADE deletes, RESTRICT tag deletion).
+        sql: "
+            CREATE TABLE tags (
+                id                 TEXT PRIMARY KEY NOT NULL,
+                name               TEXT NOT NULL,
+                normalized_name    TEXT NOT NULL UNIQUE,
+                revision           INTEGER NOT NULL DEFAULT 0 CHECK(revision >= 0),
+                archived_at        TEXT,
+                merged_into_tag_id TEXT REFERENCES tags(id) ON DELETE RESTRICT,
+                created_at         TEXT NOT NULL,
+                updated_at         TEXT NOT NULL,
+                CHECK(length(trim(name)) BETWEEN 1 AND 256),
+                CHECK(merged_into_tag_id IS NULL OR archived_at IS NOT NULL),
+                CHECK(merged_into_tag_id IS NULL OR merged_into_tag_id != id)
+            );
+            CREATE INDEX tags_list_order ON tags(archived_at IS NOT NULL, normalized_name, id);
+            CREATE INDEX tags_merge_lookup ON tags(merged_into_tag_id) WHERE merged_into_tag_id IS NOT NULL;
+
+            CREATE TABLE task_tags (
+                task_id    TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+                tag_id     TEXT NOT NULL REFERENCES tags(id) ON DELETE RESTRICT,
+                created_at TEXT NOT NULL,
+                PRIMARY KEY(task_id, tag_id)
+            );
+            CREATE INDEX task_tags_by_tag ON task_tags(tag_id, task_id);
+
+            CREATE TABLE task_series_tags (
+                series_id  TEXT NOT NULL REFERENCES task_series(id) ON DELETE CASCADE,
+                tag_id     TEXT NOT NULL REFERENCES tags(id) ON DELETE RESTRICT,
+                created_at TEXT NOT NULL,
+                PRIMARY KEY(series_id, tag_id)
+            );
+            CREATE INDEX task_series_tags_by_tag ON task_series_tags(tag_id, series_id);
+
+            CREATE TABLE life_node_tags (
+                life_node_id TEXT NOT NULL REFERENCES life_nodes(id) ON DELETE CASCADE,
+                tag_id       TEXT NOT NULL REFERENCES tags(id) ON DELETE RESTRICT,
+                created_at   TEXT NOT NULL,
+                PRIMARY KEY(life_node_id, tag_id)
+            );
+            CREATE INDEX life_node_tags_by_tag ON life_node_tags(tag_id, life_node_id);
+
+            CREATE TRIGGER life_node_tags_root_guard BEFORE INSERT ON life_node_tags
+            BEGIN
+                SELECT RAISE(ABORT, 'cannot assign tags to the life root')
+                WHERE NEW.life_node_id = 'life-root';
+            END;
+
+            CREATE TRIGGER search_dirty_tags_au AFTER UPDATE ON tags BEGIN
+                INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('all',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+                ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at; END;
+            CREATE TRIGGER search_dirty_task_tags_ai AFTER INSERT ON task_tags BEGIN
+                INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('tasks',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+                ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at; END;
+            CREATE TRIGGER search_dirty_task_tags_ad AFTER DELETE ON task_tags BEGIN
+                INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('tasks',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+                ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at; END;
+            CREATE TRIGGER search_dirty_task_series_tags_ai AFTER INSERT ON task_series_tags BEGIN
+                INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('tasks',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+                ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at; END;
+            CREATE TRIGGER search_dirty_task_series_tags_ad AFTER DELETE ON task_series_tags BEGIN
+                INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('tasks',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+                ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at; END;
+            CREATE TRIGGER search_dirty_life_node_tags_ai AFTER INSERT ON life_node_tags BEGIN
+                INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('life',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+                ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at;
+                INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('documents',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+                ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at; END;
+            CREATE TRIGGER search_dirty_life_node_tags_ad AFTER DELETE ON life_node_tags BEGIN
+                INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('life',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+                ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at;
+                INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('documents',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+                ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at; END;
+
+            UPDATE search_meta SET algorithm_version=2 WHERE id=1;
+            INSERT INTO search_dirty_scopes(scope,queued_at)
+                VALUES('all',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+                ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at;
+        ",
+    },
 ];
 
 /// Bootstraps the migration tracking table and applies any pending migrations.
@@ -771,7 +857,7 @@ mod tests {
         let mut conn = open_memory_connection().unwrap();
         run_migrations(&mut conn).unwrap();
 
-        assert_eq!(current_schema_version(&conn).unwrap(), 16);
+        assert_eq!(current_schema_version(&conn).unwrap(), 17);
 
         let count: i64 = conn
             .query_row("SELECT COUNT(*) FROM db_metadata", [], |r| r.get(0))
@@ -785,7 +871,7 @@ mod tests {
         let mig_count: i64 = conn
             .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
             .unwrap();
-        assert_eq!(mig_count, 16);
+        assert_eq!(mig_count, 17);
     }
 
     #[test]
@@ -795,11 +881,11 @@ mod tests {
         run_migrations(&mut conn).unwrap();
 
         // The latest version remains stable; no duplicate migration rows.
-        assert_eq!(current_schema_version(&conn).unwrap(), 16);
+        assert_eq!(current_schema_version(&conn).unwrap(), 17);
         let mig_count: i64 = conn
             .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
             .unwrap();
-        assert_eq!(mig_count, 16);
+        assert_eq!(mig_count, 17);
     }
 
     #[test]
@@ -809,7 +895,7 @@ mod tests {
         conn.execute("INSERT INTO tasks(id,local_date,start_minute,end_minute,title,description,category_id,priority,created_at,updated_at) VALUES('legacy-task','2026-08-04',480,540,'Legacy','','general','medium','0','0')", []).unwrap();
         conn.execute("INSERT INTO task_series(id,title,description,category_id,priority,start_minute,end_minute,dtstart_local_date,timezone_id,rrule,created_at,updated_at,archived_at) VALUES('legacy-series','Legacy series','','general','medium',600,660,'2026-08-04','local','FREQ=DAILY','0','0',NULL)", []).unwrap();
         run_migrations(&mut conn).unwrap();
-        assert_eq!(current_schema_version(&conn).unwrap(), 16);
+        assert_eq!(current_schema_version(&conn).unwrap(), 17);
         let task_link: Option<String> = conn
             .query_row(
                 "SELECT life_node_id FROM tasks WHERE id='legacy-task'",
@@ -914,7 +1000,7 @@ mod tests {
         match run_migrations_with(&mut conn, MIGRATIONS) {
             Err(DbError::SchemaTooNew { stored, supported }) => {
                 assert_eq!(stored, 9999);
-                assert_eq!(supported, 16);
+                assert_eq!(supported, 17);
             }
             other => panic!("expected SchemaTooNew, got {other:?}"),
         }
@@ -950,7 +1036,7 @@ mod tests {
         let canonical = r#"{"templateId":"knowledge_dossier","templateVersion":1}"#;
         conn.execute("INSERT INTO narrative_documents (id,life_node_id,schema_version,revision,canonical_json,plain_text,created_at,updated_at,archived_at,template_id,template_version) VALUES ('template-existing','template-leaf',1,0,?1,'','now','now',NULL,'knowledge_dossier',1)", [canonical]).unwrap();
         run_migrations(&mut conn).unwrap();
-        assert_eq!(current_schema_version(&conn).unwrap(), 16);
+        assert_eq!(current_schema_version(&conn).unwrap(), 17);
         let preserved: String = conn
             .query_row(
                 "SELECT canonical_json FROM narrative_documents WHERE id='template-existing'",
@@ -985,7 +1071,7 @@ mod tests {
         {
             let mut conn = open_file_connection(&path).unwrap();
             run_migrations(&mut conn).unwrap();
-            assert_eq!(current_schema_version(&conn).unwrap(), 16);
+            assert_eq!(current_schema_version(&conn).unwrap(), 17);
             // Confirm the schema object created by migration 1 exists
             let count: i64 = conn
                 .query_row("SELECT COUNT(*) FROM db_metadata", [], |r| r.get(0))
@@ -999,7 +1085,7 @@ mod tests {
             run_migrations(&mut conn).unwrap();
             assert_eq!(
                 current_schema_version(&conn).unwrap(),
-                16,
+                17,
                 "schema version must survive close/reopen"
             );
             let count: i64 = conn
@@ -1012,7 +1098,7 @@ mod tests {
                 .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
                 .unwrap();
             assert_eq!(
-                mig_count, 16,
+                mig_count, 17,
                 "no duplicate migration records after reopen + re-run"
             );
         }
