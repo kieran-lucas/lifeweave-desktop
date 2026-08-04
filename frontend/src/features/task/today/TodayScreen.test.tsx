@@ -23,6 +23,8 @@ const oneOff = {
   priority: "high",
   is_override: false,
   evaluation: null,
+  tags: [],
+  life_area: null,
 };
 const recurring = {
   ...oneOff,

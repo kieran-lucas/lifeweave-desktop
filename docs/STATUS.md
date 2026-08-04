@@ -2,6 +2,25 @@
 
 ## Task 33/60 — Unified Tags Core + Cross-Pillar Retrieval
 
+### Remediation 001
+
+- Migration 18 adds DB-level BEFORE INSERT/UPDATE triggers on all three tag join tables, rejecting archived or merged tag assignments at the SQLite layer. Life node tags also reject assignments to archived nodes or the root.
+- `search_meta.algorithm_version` bumped to 3; dirty rebuild queued for all entity scopes so the search worker rebuilds with new visible context on next tick.
+- Tag domain: `merge_tags` now flattens alias chains (A→B then B→C yields A→C); `restore_tag` runs a preflight checking that no subject with a preserved join row already holds ≥12 active non-merged tags.
+- Task scope validation: `update_recurring_occurrence` rejects `series_tag_ids` when scope is `OnlyThisOccurrence`/`ThisAndFuture`; requires it (non-None) when scope is `EntireSeries` and not cancelling.
+- Search visible context now includes "Tags: A, B" in the displayed context string for tasks, life nodes, and documents; `algorithm_version=3` triggers full rebuild.
+- Controlled `TagPicker` redesign: fieldset/legend/native-checkbox semantics, 12-tag limit enforcement, create-and-select, Escape focus management, click-outside close; no internal IPC mutations.
+- `TagChipList` updated: `#Name` format, `maxVisible` prop (default 4), overflow `+N` span with accessible label.
+- `TagSettings` upgraded: lazy-loaded via `React.lazy`, inline two-step merge confirmation (no `window.confirm`), complete query invalidation (tags, today-items, task-planning, life), post-merge focus and aria-live announcement.
+- P1 tag-erasure bug fixed in `TodayScreen`: `begin()` now initialises `tag_ids` and `selectedTags` from the existing item rather than resetting to empty.
+- `TodayScreen` dialog adds `TagPicker` for create and edit; recurring edits with `OnlyThisOccurrence`/`ThisAndFuture` show read-only `TagChipList` with explanatory note; `EntireSeries` sends `series_tag_ids`.
+- Life Edit inspector (`LifeEditWorkspace`) gains `TagPicker`; Life Browse removes its TagPicker (assignment authority moved to Edit).
+- `RelatedTasksPanel` renders `TagChipList` for each task.
+- `build.rs` and `capabilities/main.json` updated to register the 7 tag IPC commands.
+- Evidence: 500 Rust tests (4 ignored), 539 frontend tests (36 files), typecheck, cargo check/fmt/clippy, `pnpm build`, `pnpm tauri build`, `pnpm verify`, RC run `core-rc-acd6272756d74903ad0c2450bb94f76d`. NSIS 4,865,263 bytes SHA-256 `23a5b571ac487b3761d2d312ce0ec78e6955efc38fb537aaa2ef8e3fe52bae57`.
+
+### Original delivery
+
 - Migration 17 adds the `tags` authority table (normalized name, archive, merge semantics) and three join tables: `task_tags`, `task_series_tags`, `life_node_tags`. All join tables carry expected-revision guards.
 - Seven new IPC commands: `list_tags`, `create_tag`, `rename_tag`, `archive_tag`, `restore_tag`, `merge_tags`, `set_life_node_tags`.
 - Task mutation inputs gain `tag_ids` / `series_tag_ids` fields so task tags are settable atomically.

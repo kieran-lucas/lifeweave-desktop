@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { getRelatedTasksForLifeNode } from "../../ipc/commands";
 import type { RelatedTaskView } from "../../ipc/generated/RelatedTaskView";
+import { TagChipList } from "../tag/TagChipList";
 
 export function RelatedTasksPanel({
   nodeId,
@@ -53,6 +54,7 @@ export function RelatedTasksPanel({
         }
       >
         {row.title}
+        <TagChipList tags={row.tags} />
       </button>
     </li>
   );

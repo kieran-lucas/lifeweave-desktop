@@ -208,7 +208,7 @@ pub struct CreateRecurringTaskInput {
     pub life_node_id: Option<String>,
     pub tag_ids: Vec<String>,
 }
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, PartialEq)]
 #[cfg_attr(test, derive(ts_rs::TS))]
 #[serde(rename_all = "snake_case")]
 pub enum OccurrenceEditScope {

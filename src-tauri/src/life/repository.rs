@@ -138,18 +138,32 @@ pub fn browse(
     )?;
     {
         let mut all_ids: Vec<String> = vec![selected_id.clone()];
-        if let Some(ref p) = parent { all_ids.push(p.id.clone()); }
+        if let Some(ref p) = parent {
+            all_ids.push(p.id.clone());
+        }
         all_ids.extend(children.iter().map(|n| n.id.clone()));
         all_ids.extend(breadcrumb.iter().map(|n| n.id.clone()));
         all_ids.sort_unstable();
         all_ids.dedup();
         let tag_map = tag_repo::batch_load_life_tags(conn, &all_ids).map_err(LifeError::Db)?;
-        if let Some(tags) = tag_map.get(&selected.id) { selected.tags = tags.clone(); }
-        if let Some(ref mut p) = parent {
-            if let Some(tags) = tag_map.get(&p.id) { p.tags = tags.clone(); }
+        if let Some(tags) = tag_map.get(&selected.id) {
+            selected.tags = tags.clone();
         }
-        for n in &mut children { if let Some(tags) = tag_map.get(&n.id) { n.tags = tags.clone(); } }
-        for n in &mut breadcrumb { if let Some(tags) = tag_map.get(&n.id) { n.tags = tags.clone(); } }
+        if let Some(ref mut p) = parent {
+            if let Some(tags) = tag_map.get(&p.id) {
+                p.tags = tags.clone();
+            }
+        }
+        for n in &mut children {
+            if let Some(tags) = tag_map.get(&n.id) {
+                n.tags = tags.clone();
+            }
+        }
+        for n in &mut breadcrumb {
+            if let Some(tags) = tag_map.get(&n.id) {
+                n.tags = tags.clone();
+            }
+        }
     }
     if fallback {
         tracing::warn!("life navigation target resolved by fallback");
@@ -192,7 +206,9 @@ pub fn pinned(conn: &Connection) -> Result<Vec<PinnedLifeNodeView>, LifeError> {
     if !node_ids.is_empty() {
         let tag_map = tag_repo::batch_load_life_tags(conn, &node_ids).map_err(LifeError::Db)?;
         for n in &mut out {
-            if let Some(tags) = tag_map.get(&n.node_id) { n.tags = tags.clone(); }
+            if let Some(tags) = tag_map.get(&n.node_id) {
+                n.tags = tags.clone();
+            }
         }
     }
     Ok(out)
@@ -523,7 +539,7 @@ mod tests {
     #[test]
     fn life_migration_seeds_only_protected_root() {
         let mut c = db();
-        assert_eq!(current_schema_version(&c).unwrap(), 17);
+        assert_eq!(current_schema_version(&c).unwrap(), 18);
         assert_eq!(
             c.query_row("SELECT COUNT(*) FROM life_nodes", [], |r| r
                 .get::<_, i64>(0))

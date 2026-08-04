@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-set-life-node-tags"
+description = "Enables the set_life_node_tags command without any pre-configured scope."
+commands.allow = ["set_life_node_tags"]
+
+[[permission]]
+identifier = "deny-set-life-node-tags"
+description = "Denies the set_life_node_tags command without any pre-configured scope."
+commands.deny = ["set_life_node_tags"]

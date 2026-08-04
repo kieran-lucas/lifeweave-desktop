@@ -54,7 +54,10 @@ pub fn normalize_tag(raw: &str) -> Result<NormalizedTag, &'static str> {
     // 8. Lowercase for identity.
     let normalized_name: String = canonical.chars().flat_map(|c| c.to_lowercase()).collect();
 
-    Ok(NormalizedTag { canonical, normalized_name })
+    Ok(NormalizedTag {
+        canonical,
+        normalized_name,
+    })
 }
 
 #[cfg(test)]

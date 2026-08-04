@@ -341,7 +341,8 @@ pub fn related_for_life_node(
             .then_with(|| kind_rank(&left.kind).cmp(&kind_rank(&right.kind)))
             .then_with(|| left.id.cmp(&right.id))
     });
-    let task_ids: Vec<String> = result.iter()
+    let task_ids: Vec<String> = result
+        .iter()
         .filter(|item| matches!(item.kind, super::dto::RelatedTaskKind::OneOff))
         .map(|item| item.id.clone())
         .collect();
@@ -355,7 +356,8 @@ pub fn related_for_life_node(
             }
         }
     }
-    let series_ids: Vec<String> = result.iter()
+    let series_ids: Vec<String> = result
+        .iter()
         .filter_map(|item| item.series_id.clone())
         .collect();
     if !series_ids.is_empty() {
@@ -427,7 +429,8 @@ pub fn create(conn: &Connection, input: CreateTaskInput) -> Result<TaskView, Tas
     tag_repo::replace_active_task_tags(&tx, &id, &input.tag_ids, &t)?;
     let mut result=tx.query_row("SELECT id,local_date,start_minute,end_minute,title,description,category_id,priority,created_at,updated_at FROM tasks WHERE id=?1",params![id],row)?;
     result.life_area = life_area(&tx, input.life_node_id)?;
-    let tag_map = tag_repo::batch_load_task_tags(&*tx, &[id.clone()]).map_err(TaskError::Db)?;
+    let tag_map =
+        tag_repo::batch_load_task_tags(&tx, std::slice::from_ref(&id)).map_err(TaskError::Db)?;
     result.tags = tag_map.get(&id).cloned().unwrap_or_default();
     crate::task::analytics::bump_source_revision(&tx)?;
     tx.commit()?;
@@ -474,7 +477,8 @@ pub fn update(conn: &Connection, input: UpdateTaskInput) -> Result<TaskView, Tas
     tag_repo::replace_active_task_tags(&tx, &input.id, &input.tag_ids, &t)?;
     let mut result=tx.query_row("SELECT id,local_date,start_minute,end_minute,title,description,category_id,priority,created_at,updated_at FROM tasks WHERE id=?1",params![input.id],row)?;
     result.life_area = life_area(&tx, input.life_node_id)?;
-    let tag_map = tag_repo::batch_load_task_tags(&*tx, &[input.id.clone()]).map_err(TaskError::Db)?;
+    let tag_map = tag_repo::batch_load_task_tags(&tx, std::slice::from_ref(&input.id))
+        .map_err(TaskError::Db)?;
     result.tags = tag_map.get(&input.id).cloned().unwrap_or_default();
     crate::task::analytics::bump_source_revision(&tx)?;
     tx.commit()?;
@@ -846,7 +850,8 @@ pub fn today_items(
             tags: occurrence.tags,
         });
     }
-    let task_ids: Vec<String> = out.iter()
+    let task_ids: Vec<String> = out
+        .iter()
         .filter(|item| matches!(item.kind, crate::task::dto::TodayItemKind::OneOff))
         .map(|item| item.id.clone())
         .collect();
@@ -908,6 +913,24 @@ pub fn update_recurring(
             Some((&input.series_id, &input.original_local_date)),
         )?;
     }
+    // series_tag_ids is only meaningful for EntireSeries non-cancel edits.
+    match input.scope {
+        OccurrenceEditScope::OnlyThisOccurrence | OccurrenceEditScope::ThisAndFuture => {
+            if input.series_tag_ids.is_some() {
+                return Err(TaskError::Validation(
+                    "series_tag_ids must be None for this scope",
+                ));
+            }
+        }
+        OccurrenceEditScope::EntireSeries => {
+            if !input.cancelled && input.series_tag_ids.is_none() {
+                return Err(TaskError::Validation(
+                    "series_tag_ids is required for EntireSeries scope",
+                ));
+            }
+        }
+    }
+
     match input.scope {
         OccurrenceEditScope::OnlyThisOccurrence => {
             if input.life_node_id != master.8 {
@@ -935,7 +958,7 @@ pub fn update_recurring(
                 )?;
                 tx.execute("UPDATE task_series SET title=COALESCE(?2,title),description=COALESCE(?3,description),category_id=COALESCE(?4,category_id),priority=COALESCE(?5,priority),start_minute=COALESCE(?6,start_minute),end_minute=COALESCE(?7,end_minute),rrule=?8,updated_at=?9,life_node_id=?10 WHERE id=?1",params![input.series_id,input.title,input.description,input.category_id,input.priority,input.start_minute,input.end_minute,rule,now(),input.life_node_id])?;
                 if let Some(tag_ids) = &input.series_tag_ids {
-                    tag_repo::validate_active_tag_ids(&*tx, tag_ids).map_err(map_tag_err)?;
+                    tag_repo::validate_active_tag_ids(&tx, tag_ids).map_err(map_tag_err)?;
                     tag_repo::replace_active_series_tags(&tx, &input.series_id, tag_ids, &now())?;
                 }
             }
@@ -1119,6 +1142,12 @@ mod recurrence_tests {
         scope: OccurrenceEditScope,
         cancelled: bool,
     ) -> UpdateRecurringOccurrenceInput {
+        // EntireSeries non-cancel edits must provide series_tag_ids (even empty).
+        let series_tag_ids = if scope == OccurrenceEditScope::EntireSeries && !cancelled {
+            Some(vec![])
+        } else {
+            None
+        };
         UpdateRecurringOccurrenceInput {
             series_id: series.into(),
             original_local_date: date.into(),
@@ -1137,7 +1166,7 @@ mod recurrence_tests {
             until: None,
             count: None,
             life_node_id: None,
-            series_tag_ids: None,
+            series_tag_ids,
         }
     }
     #[test]
@@ -1921,7 +1950,7 @@ mod recurrence_tests {
             })
             .unwrap();
         assert_eq!(occurrence_columns, 0);
-        assert_eq!(schema, 17);
+        assert_eq!(schema, 18);
     }
 
     #[test]
@@ -1937,5 +1966,47 @@ mod recurrence_tests {
             .map(|row| row.id)
             .collect::<Vec<_>>();
         assert_eq!(ids, ["a-series", "b-series", "z-series"]);
+    }
+
+    #[test]
+    fn scope_only_this_occurrence_rejects_series_tag_ids() {
+        let mut c = db();
+        let sid = create_recurring(&mut c, recurring("2026-08-01")).unwrap();
+        let mut m = mutation(
+            &sid,
+            "2026-08-02",
+            OccurrenceEditScope::OnlyThisOccurrence,
+            false,
+        );
+        m.series_tag_ids = Some(vec![]);
+        assert!(matches!(
+            update_recurring(&mut c, m),
+            Err(TaskError::Validation(_))
+        ));
+    }
+
+    #[test]
+    fn scope_this_and_future_rejects_series_tag_ids() {
+        let mut c = db();
+        let sid = create_recurring(&mut c, recurring("2026-08-01")).unwrap();
+        let mut m = mutation(
+            &sid,
+            "2026-08-02",
+            OccurrenceEditScope::ThisAndFuture,
+            false,
+        );
+        m.series_tag_ids = Some(vec![]);
+        assert!(matches!(
+            update_recurring(&mut c, m),
+            Err(TaskError::Validation(_))
+        ));
+    }
+
+    #[test]
+    fn scope_entire_series_accepts_series_tag_ids() {
+        let mut c = db();
+        let sid = create_recurring(&mut c, recurring("2026-08-01")).unwrap();
+        let m = mutation(&sid, "2026-08-01", OccurrenceEditScope::EntireSeries, false);
+        assert!(update_recurring(&mut c, m).is_ok());
     }
 }

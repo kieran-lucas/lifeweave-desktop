@@ -744,6 +744,81 @@ static MIGRATIONS: &[Migration] = &[
                 ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at;
         ",
     },
+    Migration {
+        version: 18,
+        // DB-level guards enforcing that only active (non-archived, non-merged) tags
+        // can be assigned to tasks, series, and life nodes.  Previously these were
+        // Rust-only; adding BEFORE INSERT / BEFORE UPDATE triggers makes the
+        // invariant unbypassable even from direct SQL.  Also adds a guard preventing
+        // assignment to archived life nodes, and bumps search algorithm version to 3
+        // so the search worker rebuilds all indexed rows with the new "Tags: …"
+        // visible context format introduced by the Rust-side search changes.
+        sql: "
+            -- task_tags: reject archived or merged tags on INSERT
+            CREATE TRIGGER task_tags_active_tag_insert_guard BEFORE INSERT ON task_tags
+            BEGIN
+                SELECT RAISE(ABORT, 'cannot assign an archived or merged tag to a task')
+                WHERE (SELECT archived_at IS NOT NULL OR merged_into_tag_id IS NOT NULL
+                       FROM tags WHERE id = NEW.tag_id);
+            END;
+
+            -- task_tags: reject archived or merged tags on tag_id UPDATE
+            CREATE TRIGGER task_tags_active_tag_update_guard BEFORE UPDATE OF tag_id ON task_tags
+            BEGIN
+                SELECT RAISE(ABORT, 'cannot assign an archived or merged tag to a task')
+                WHERE (SELECT archived_at IS NOT NULL OR merged_into_tag_id IS NOT NULL
+                       FROM tags WHERE id = NEW.tag_id);
+            END;
+
+            -- task_series_tags: reject archived or merged tags on INSERT
+            CREATE TRIGGER task_series_tags_active_tag_insert_guard BEFORE INSERT ON task_series_tags
+            BEGIN
+                SELECT RAISE(ABORT, 'cannot assign an archived or merged tag to a task series')
+                WHERE (SELECT archived_at IS NOT NULL OR merged_into_tag_id IS NOT NULL
+                       FROM tags WHERE id = NEW.tag_id);
+            END;
+
+            -- task_series_tags: reject archived or merged tags on tag_id UPDATE
+            CREATE TRIGGER task_series_tags_active_tag_update_guard BEFORE UPDATE OF tag_id ON task_series_tags
+            BEGIN
+                SELECT RAISE(ABORT, 'cannot assign an archived or merged tag to a task series')
+                WHERE (SELECT archived_at IS NOT NULL OR merged_into_tag_id IS NOT NULL
+                       FROM tags WHERE id = NEW.tag_id);
+            END;
+
+            -- life_node_tags: reject archived or merged tags on INSERT
+            CREATE TRIGGER life_node_tags_active_tag_insert_guard BEFORE INSERT ON life_node_tags
+            BEGIN
+                SELECT RAISE(ABORT, 'cannot assign an archived or merged tag to a life node')
+                WHERE (SELECT archived_at IS NOT NULL OR merged_into_tag_id IS NOT NULL
+                       FROM tags WHERE id = NEW.tag_id);
+            END;
+
+            -- life_node_tags: reject archived or merged tags on tag_id UPDATE
+            CREATE TRIGGER life_node_tags_active_tag_update_guard BEFORE UPDATE OF tag_id ON life_node_tags
+            BEGIN
+                SELECT RAISE(ABORT, 'cannot assign an archived or merged tag to a life node')
+                WHERE (SELECT archived_at IS NOT NULL OR merged_into_tag_id IS NOT NULL
+                       FROM tags WHERE id = NEW.tag_id);
+            END;
+
+            -- life_node_tags: reject assignment to archived life nodes on INSERT
+            CREATE TRIGGER life_node_tags_archived_node_insert_guard BEFORE INSERT ON life_node_tags
+            BEGIN
+                SELECT RAISE(ABORT, 'cannot assign tags to an archived life node')
+                WHERE (SELECT archived_at IS NOT NULL FROM life_nodes WHERE id = NEW.life_node_id);
+            END;
+
+            -- Bump search algorithm version so the worker rebuilds all rows with
+            -- the new Tags-prefix visible context on next tick.
+            UPDATE search_meta SET algorithm_version=3 WHERE id=1;
+
+            -- Queue full rebuild across all scopes.
+            INSERT INTO search_dirty_scopes(scope,queued_at)
+                VALUES('all',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+                ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at;
+        ",
+    },
 ];
 
 /// Bootstraps the migration tracking table and applies any pending migrations.
@@ -857,7 +932,7 @@ mod tests {
         let mut conn = open_memory_connection().unwrap();
         run_migrations(&mut conn).unwrap();
 
-        assert_eq!(current_schema_version(&conn).unwrap(), 17);
+        assert_eq!(current_schema_version(&conn).unwrap(), 18);
 
         let count: i64 = conn
             .query_row("SELECT COUNT(*) FROM db_metadata", [], |r| r.get(0))
@@ -871,7 +946,7 @@ mod tests {
         let mig_count: i64 = conn
             .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
             .unwrap();
-        assert_eq!(mig_count, 17);
+        assert_eq!(mig_count, 18);
     }
 
     #[test]
@@ -881,11 +956,11 @@ mod tests {
         run_migrations(&mut conn).unwrap();
 
         // The latest version remains stable; no duplicate migration rows.
-        assert_eq!(current_schema_version(&conn).unwrap(), 17);
+        assert_eq!(current_schema_version(&conn).unwrap(), 18);
         let mig_count: i64 = conn
             .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
             .unwrap();
-        assert_eq!(mig_count, 17);
+        assert_eq!(mig_count, 18);
     }
 
     #[test]
@@ -895,7 +970,7 @@ mod tests {
         conn.execute("INSERT INTO tasks(id,local_date,start_minute,end_minute,title,description,category_id,priority,created_at,updated_at) VALUES('legacy-task','2026-08-04',480,540,'Legacy','','general','medium','0','0')", []).unwrap();
         conn.execute("INSERT INTO task_series(id,title,description,category_id,priority,start_minute,end_minute,dtstart_local_date,timezone_id,rrule,created_at,updated_at,archived_at) VALUES('legacy-series','Legacy series','','general','medium',600,660,'2026-08-04','local','FREQ=DAILY','0','0',NULL)", []).unwrap();
         run_migrations(&mut conn).unwrap();
-        assert_eq!(current_schema_version(&conn).unwrap(), 17);
+        assert_eq!(current_schema_version(&conn).unwrap(), 18);
         let task_link: Option<String> = conn
             .query_row(
                 "SELECT life_node_id FROM tasks WHERE id='legacy-task'",
@@ -1000,7 +1075,7 @@ mod tests {
         match run_migrations_with(&mut conn, MIGRATIONS) {
             Err(DbError::SchemaTooNew { stored, supported }) => {
                 assert_eq!(stored, 9999);
-                assert_eq!(supported, 17);
+                assert_eq!(supported, 18);
             }
             other => panic!("expected SchemaTooNew, got {other:?}"),
         }
@@ -1036,7 +1111,7 @@ mod tests {
         let canonical = r#"{"templateId":"knowledge_dossier","templateVersion":1}"#;
         conn.execute("INSERT INTO narrative_documents (id,life_node_id,schema_version,revision,canonical_json,plain_text,created_at,updated_at,archived_at,template_id,template_version) VALUES ('template-existing','template-leaf',1,0,?1,'','now','now',NULL,'knowledge_dossier',1)", [canonical]).unwrap();
         run_migrations(&mut conn).unwrap();
-        assert_eq!(current_schema_version(&conn).unwrap(), 17);
+        assert_eq!(current_schema_version(&conn).unwrap(), 18);
         let preserved: String = conn
             .query_row(
                 "SELECT canonical_json FROM narrative_documents WHERE id='template-existing'",
@@ -1071,7 +1146,7 @@ mod tests {
         {
             let mut conn = open_file_connection(&path).unwrap();
             run_migrations(&mut conn).unwrap();
-            assert_eq!(current_schema_version(&conn).unwrap(), 17);
+            assert_eq!(current_schema_version(&conn).unwrap(), 18);
             // Confirm the schema object created by migration 1 exists
             let count: i64 = conn
                 .query_row("SELECT COUNT(*) FROM db_metadata", [], |r| r.get(0))
@@ -1085,7 +1160,7 @@ mod tests {
             run_migrations(&mut conn).unwrap();
             assert_eq!(
                 current_schema_version(&conn).unwrap(),
-                17,
+                18,
                 "schema version must survive close/reopen"
             );
             let count: i64 = conn
@@ -1098,7 +1173,7 @@ mod tests {
                 .query_row("SELECT COUNT(*) FROM schema_migrations", [], |r| r.get(0))
                 .unwrap();
             assert_eq!(
-                mig_count, 17,
+                mig_count, 18,
                 "no duplicate migration records after reopen + re-run"
             );
         }
@@ -1457,6 +1532,198 @@ mod tests {
         assert!(
             result.is_err(),
             "restoring basic leaf must be blocked when a canvas exists on same node"
+        );
+    }
+
+    // ── Migration 18: active-tag guards and search algorithm version bump ─────
+
+    fn setup_m18() -> (Connection, String, String, String) {
+        let mut conn = open_memory_connection().unwrap();
+        run_migrations(&mut conn).unwrap();
+        let tag_id = "00000000-0000-7000-8000-000000000001".to_string();
+        conn.execute(
+            "INSERT INTO tags (id,name,normalized_name,revision,archived_at,merged_into_tag_id,created_at,updated_at) \
+             VALUES (?1,'Work','work',0,NULL,NULL,'now','now')",
+            rusqlite::params![tag_id],
+        ).unwrap();
+        // task
+        conn.execute(
+            "INSERT INTO tasks(id,local_date,start_minute,end_minute,title,description,category_id,priority,created_at,updated_at) \
+             VALUES('task-a','2026-08-04',480,540,'Task A','','general','medium','now','now')",
+            [],
+        ).unwrap();
+        // task_series
+        conn.execute(
+            "INSERT INTO task_series(id,title,description,category_id,priority,start_minute,end_minute,dtstart_local_date,timezone_id,rrule,created_at,updated_at,archived_at) \
+             VALUES('series-a','Series A','','general','medium',600,660,'2026-08-04','local','FREQ=DAILY','now','now',NULL)",
+            [],
+        ).unwrap();
+        (conn, tag_id, "task-a".to_string(), "series-a".to_string())
+    }
+
+    #[test]
+    fn schema_18_applies_cleanly_from_17() {
+        let mut conn = open_memory_connection().unwrap();
+        run_migrations_through(&mut conn, 17).unwrap();
+        assert_eq!(current_schema_version(&conn).unwrap(), 17);
+        run_migrations(&mut conn).unwrap();
+        assert_eq!(current_schema_version(&conn).unwrap(), 18);
+    }
+
+    #[test]
+    fn schema_18_applies_cleanly_from_16() {
+        let mut conn = open_memory_connection().unwrap();
+        run_migrations_through(&mut conn, 16).unwrap();
+        assert_eq!(current_schema_version(&conn).unwrap(), 16);
+        run_migrations(&mut conn).unwrap();
+        assert_eq!(current_schema_version(&conn).unwrap(), 18);
+    }
+
+    #[test]
+    fn search_algorithm_version_becomes_3() {
+        let (conn, _, _, _) = setup_m18();
+        let ver: i64 = conn
+            .query_row(
+                "SELECT algorithm_version FROM search_meta WHERE id=1",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(
+            ver, 3,
+            "search_meta.algorithm_version must be 3 after migration 18"
+        );
+    }
+
+    #[test]
+    fn active_canonical_tag_insert_accepted() {
+        let (conn, tag_id, task_id, series_id) = setup_m18();
+        // active tag → task_tags must succeed
+        conn.execute(
+            "INSERT INTO task_tags(task_id,tag_id,created_at) VALUES(?1,?2,'now')",
+            rusqlite::params![task_id, tag_id],
+        )
+        .unwrap();
+        // active tag → task_series_tags must succeed
+        conn.execute(
+            "INSERT INTO task_series_tags(series_id,tag_id,created_at) VALUES(?1,?2,'now')",
+            rusqlite::params![series_id, tag_id],
+        )
+        .unwrap();
+        // active tag → life_node_tags (non-root leaf) must succeed
+        conn.execute(
+            "INSERT INTO life_nodes VALUES('leaf-m18','life-root','M18 Leaf','','life-leaf','neutral',10,NULL,'now','now',0)",
+            [],
+        ).unwrap();
+        conn.execute(
+            "INSERT INTO life_node_tags(life_node_id,tag_id,created_at) VALUES('leaf-m18',?1,'now')",
+            rusqlite::params![tag_id],
+        ).unwrap();
+    }
+
+    #[test]
+    fn task_tags_archived_guard_fires() {
+        let (conn, tag_id, task_id, _) = setup_m18();
+        conn.execute(
+            "UPDATE tags SET archived_at='2026-01-01' WHERE id=?1",
+            rusqlite::params![tag_id],
+        )
+        .unwrap();
+        let result = conn.execute(
+            "INSERT INTO task_tags(task_id,tag_id,created_at) VALUES(?1,?2,'now')",
+            rusqlite::params![task_id, tag_id],
+        );
+        assert!(
+            result.is_err(),
+            "inserting archived tag into task_tags must be rejected"
+        );
+    }
+
+    #[test]
+    fn task_tags_merged_guard_fires() {
+        let (conn, tag_id, task_id, _) = setup_m18();
+        // Create a second tag as merge target.
+        let target_id = "00000000-0000-7000-8000-000000000002";
+        conn.execute(
+            "INSERT INTO tags(id,name,normalized_name,revision,archived_at,merged_into_tag_id,created_at,updated_at) \
+             VALUES(?1,'Research','research',0,NULL,NULL,'now','now')",
+            rusqlite::params![target_id],
+        ).unwrap();
+        // Merge source into target (set archived_at and merged_into_tag_id).
+        conn.execute(
+            "UPDATE tags SET archived_at='2026-01-01', merged_into_tag_id=?2 WHERE id=?1",
+            rusqlite::params![tag_id, target_id],
+        )
+        .unwrap();
+        let result = conn.execute(
+            "INSERT INTO task_tags(task_id,tag_id,created_at) VALUES(?1,?2,'now')",
+            rusqlite::params![task_id, tag_id],
+        );
+        assert!(
+            result.is_err(),
+            "inserting merged tag into task_tags must be rejected"
+        );
+    }
+
+    #[test]
+    fn task_series_tags_archived_guard_fires() {
+        let (conn, tag_id, _, series_id) = setup_m18();
+        conn.execute(
+            "UPDATE tags SET archived_at='2026-01-01' WHERE id=?1",
+            rusqlite::params![tag_id],
+        )
+        .unwrap();
+        let result = conn.execute(
+            "INSERT INTO task_series_tags(series_id,tag_id,created_at) VALUES(?1,?2,'now')",
+            rusqlite::params![series_id, tag_id],
+        );
+        assert!(
+            result.is_err(),
+            "inserting archived tag into task_series_tags must be rejected"
+        );
+    }
+
+    #[test]
+    fn life_node_tags_archived_guard_fires() {
+        let (conn, tag_id, _, _) = setup_m18();
+        conn.execute(
+            "INSERT INTO life_nodes VALUES('leaf-guard','life-root','Guard Leaf','','life-leaf','neutral',11,NULL,'now','now',0)",
+            [],
+        ).unwrap();
+        conn.execute(
+            "UPDATE tags SET archived_at='2026-01-01' WHERE id=?1",
+            rusqlite::params![tag_id],
+        )
+        .unwrap();
+        let result = conn.execute(
+            "INSERT INTO life_node_tags(life_node_id,tag_id,created_at) VALUES('leaf-guard',?1,'now')",
+            rusqlite::params![tag_id],
+        );
+        assert!(
+            result.is_err(),
+            "inserting archived tag into life_node_tags must be rejected"
+        );
+    }
+
+    #[test]
+    fn life_node_tags_archived_node_guard_fires() {
+        let (conn, tag_id, _, _) = setup_m18();
+        conn.execute(
+            "INSERT INTO life_nodes VALUES('leaf-archived','life-root','Archived Leaf','','life-leaf','neutral',12,NULL,'now','now',0)",
+            [],
+        ).unwrap();
+        conn.execute(
+            "UPDATE life_nodes SET archived_at='2026-01-01' WHERE id='leaf-archived'",
+            [],
+        )
+        .unwrap();
+        let result = conn.execute(
+            "INSERT INTO life_node_tags(life_node_id,tag_id,created_at) VALUES('leaf-archived',?1,'now')",
+            rusqlite::params![tag_id],
+        );
+        assert!(
+            result.is_err(),
+            "assigning tag to archived life node must be rejected"
         );
     }
 }

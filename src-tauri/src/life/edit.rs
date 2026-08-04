@@ -305,8 +305,16 @@ pub fn projection(conn: &Connection) -> Result<LifeEditProjection, LifeError> {
         all_ids.extend(archived_nodes.iter().map(|n| n.id.clone()));
         if !all_ids.is_empty() {
             let tag_map = tag_repo::batch_load_life_tags(conn, &all_ids).map_err(LifeError::Db)?;
-            for n in &mut nodes { if let Some(tags) = tag_map.get(&n.id) { n.tags = tags.clone(); } }
-            for n in &mut archived_nodes { if let Some(tags) = tag_map.get(&n.id) { n.tags = tags.clone(); } }
+            for n in &mut nodes {
+                if let Some(tags) = tag_map.get(&n.id) {
+                    n.tags = tags.clone();
+                }
+            }
+            for n in &mut archived_nodes {
+                if let Some(tags) = tag_map.get(&n.id) {
+                    n.tags = tags.clone();
+                }
+            }
         }
     }
     let current = tree_revision(conn)?;
@@ -954,7 +962,7 @@ mod tests {
     #[test]
     fn migration_eight_adds_ledger_and_edit_preference() {
         let c = db();
-        assert_eq!(current_schema_version(&c).unwrap(), 17);
+        assert_eq!(current_schema_version(&c).unwrap(), 18);
         assert_eq!(
             c.query_row("SELECT COUNT(*) FROM life_operations", [], |r| r
                 .get::<_, i64>(0))

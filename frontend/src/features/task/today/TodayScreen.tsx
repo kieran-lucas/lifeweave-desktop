@@ -26,6 +26,8 @@ import * as styles from "./TodayScreen.css";
 import { LifeAreaCombobox } from "../LifeAreaCombobox";
 import { TaskWorkspaceTabs, type TaskWorkspaceMode } from "../planning/TaskWorkspaceTabs";
 import { TagChipList } from "../../tag/TagChipList";
+import { TagPicker } from "../../tag/TagPicker";
+import type { TagSummaryView } from "../../../ipc/generated/TagSummaryView";
 
 const TaskPlanningPanel = lazy(() => import("../planning/TaskPlanningPanel"));
 
@@ -56,6 +58,7 @@ type Draft = {
   priority: string;
   life_node_id: string | null;
   tag_ids: string[];
+  selectedTags: TagSummaryView[];
 };
 const periods = [
   { name: "Morning", start: 240, end: 720 },
@@ -241,6 +244,7 @@ export function TodayScreen({
     priority: "medium",
     life_node_id: null,
     tag_ids: [],
+    selectedTags: [],
   });
   const [openFan, setOpenFan] = useState<string | null>(null),
     [assessmentError, setAssessmentError] = useState(""),
@@ -274,6 +278,8 @@ export function TodayScreen({
       client.invalidateQueries({ queryKey: ["month-projection"] }),
       client.invalidateQueries({ queryKey: ["analytics"] }),
       client.invalidateQueries({ queryKey: ["task-planning"] }),
+      client.invalidateQueries({ queryKey: ["life"] }),
+      client.invalidateQueries({ queryKey: ["tags"] }),
     ]);
   };
   const save = useMutation({
@@ -286,7 +292,7 @@ export function TodayScreen({
           ...draft,
           scope,
           cancelled: false,
-          series_tag_ids: null,
+          series_tag_ids: scope === "entire_series" ? draft.tag_ids : null,
           ...recurrenceInput,
         });
       if (editing) return updateTask({ id: editing.id, ...draft });
@@ -466,7 +472,8 @@ export function TodayScreen({
             category_id: item.category_id,
             priority: item.priority,
             life_node_id: item.life_area?.id ?? null,
-            tag_ids: [],
+            tag_ids: item.tags.map((t) => t.id),
+            selectedTags: item.tags,
           }
         : {
             title: "",
@@ -478,6 +485,7 @@ export function TodayScreen({
             priority: "medium",
             life_node_id: null,
             tag_ids: [],
+            selectedTags: [],
           },
     );
     setOpen(true);
@@ -940,6 +948,23 @@ export function TodayScreen({
                 if (editing?.kind === "recurring") setScope("entire_series");
               }}
             />
+            {editing?.kind === "recurring" &&
+            scope !== "entire_series" ? (
+              <div>
+                <TagChipList tags={editing.tags} maxVisible={12} />
+                <p className={styles.seriesTagsNote}>
+                  Tags belong to the series. Change scope to Entire series to edit.
+                </p>
+              </div>
+            ) : (
+              <TagPicker
+                selectedTags={draft.selectedTags}
+                onChange={(next) =>
+                  setDraft({ ...draft, selectedTags: next, tag_ids: next.map((t) => t.id) })
+                }
+                allowCreate
+              />
+            )}
             {!editing && (
               <fieldset>
                 <legend>Recurring</legend>

@@ -1,5 +1,7 @@
 # Task 33 audit — Unified Tags Core + Cross-Pillar Retrieval
 
+> **Superseded by Remediation 001** — see `docs/audits/task-33-remediation-001.md`. Remediation 001 adds Migration 18 (DB guards, search algorithm version 3), alias chain flattening, restore preflight, task scope validation, visible search context, controlled TagPicker redesign, TagChipList `#Name` format, TagSettings lazy + inline merge, Life Edit TagPicker authority, P1 tag-erasure fix, and RelatedTasksPanel tags.
+
 ## Scope and checkpoints
 
 - Starting HEAD: `f7d3fd167f7e22d5e3892e0a64e048eb4e10e0c6` (Task 32 evidence commit).

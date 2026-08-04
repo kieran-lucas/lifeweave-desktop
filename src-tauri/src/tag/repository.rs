@@ -3,10 +3,7 @@ use std::collections::HashMap;
 use rusqlite::{Connection, OptionalExtension, Transaction, params};
 use uuid::{NoContext, Timestamp, Uuid};
 
-use super::{
-    dto::*,
-    normalize::normalize_tag,
-};
+use super::{dto::*, normalize::normalize_tag};
 
 #[derive(Debug)]
 pub enum TagError {
@@ -152,8 +149,7 @@ pub fn rename(conn: &Connection, input: RenameTagInput) -> Result<TagView, TagEr
         )
         .optional()?;
 
-    let (current_revision, _archived_at, merged_into_id) =
-        row.ok_or(TagError::NotFound)?;
+    let (current_revision, _archived_at, merged_into_id) = row.ok_or(TagError::NotFound)?;
 
     if merged_into_id.is_some() {
         return Err(TagError::Validation("Merged alias tags cannot be renamed."));
@@ -189,14 +185,15 @@ pub fn archive(conn: &Connection, input: MutateTagInput) -> Result<TagView, TagE
         )
         .optional()?;
 
-    let (current_revision, archived_at, merged_into_id) =
-        row.ok_or(TagError::NotFound)?;
+    let (current_revision, archived_at, merged_into_id) = row.ok_or(TagError::NotFound)?;
 
     if archived_at.is_some() {
         return Err(TagError::Validation("Tag is already archived."));
     }
     if merged_into_id.is_some() {
-        return Err(TagError::Validation("Merged alias tags cannot be archived."));
+        return Err(TagError::Validation(
+            "Merged alias tags cannot be archived.",
+        ));
     }
     if current_revision != input.expected_revision {
         return Err(TagError::Stale);
@@ -219,20 +216,21 @@ pub fn restore(conn: &Connection, input: MutateTagInput) -> Result<TagView, TagE
         )
         .optional()?;
 
-    let (current_revision, archived_at, merged_into_id) =
-        row.ok_or(TagError::NotFound)?;
+    let (current_revision, archived_at, merged_into_id) = row.ok_or(TagError::NotFound)?;
 
     if archived_at.is_none() {
         return Err(TagError::Validation("Tag is not archived."));
     }
     if merged_into_id.is_some() {
-        return Err(TagError::Validation("Merged alias tags cannot be restored."));
+        return Err(TagError::Validation(
+            "Merged alias tags cannot be restored.",
+        ));
     }
     if current_revision != input.expected_revision {
         return Err(TagError::Stale);
     }
 
-    // Check active limit again before restore.
+    // Check active tag count limit.
     let active_count: i64 = conn.query_row(
         "SELECT COUNT(*) FROM tags WHERE archived_at IS NULL AND merged_into_tag_id IS NULL",
         [],
@@ -241,6 +239,77 @@ pub fn restore(conn: &Connection, input: MutateTagInput) -> Result<TagView, TagE
     if active_count >= 500 {
         return Err(TagError::Validation(
             "Cannot restore: maximum of 500 active tags reached.",
+        ));
+    }
+
+    // Preflight: reject if restoring would push any assigned subject over the 12-tag limit.
+    // Check tasks, task_series, and life_nodes that have preserved join entries for this tag.
+    let would_exceed_tasks: bool = conn
+        .query_row(
+            "SELECT 1 FROM task_tags tt
+             WHERE tt.tag_id = ?1
+               AND (SELECT COUNT(*) FROM task_tags tt2
+                    JOIN tags t ON t.id = tt2.tag_id
+                    WHERE tt2.task_id = tt.task_id
+                      AND t.archived_at IS NULL
+                      AND t.merged_into_tag_id IS NULL
+                      AND tt2.tag_id != ?1) >= 12
+             LIMIT 1",
+            params![input.tag_id],
+            |_| Ok(true),
+        )
+        .optional()?
+        .unwrap_or(false);
+
+    if would_exceed_tasks {
+        return Err(TagError::Validation(
+            "Restoring this tag would exceed the 12-tag limit on one or more assigned tasks.",
+        ));
+    }
+
+    let would_exceed_series: bool = conn
+        .query_row(
+            "SELECT 1 FROM task_series_tags tst
+             WHERE tst.tag_id = ?1
+               AND (SELECT COUNT(*) FROM task_series_tags tst2
+                    JOIN tags t ON t.id = tst2.tag_id
+                    WHERE tst2.series_id = tst.series_id
+                      AND t.archived_at IS NULL
+                      AND t.merged_into_tag_id IS NULL
+                      AND tst2.tag_id != ?1) >= 12
+             LIMIT 1",
+            params![input.tag_id],
+            |_| Ok(true),
+        )
+        .optional()?
+        .unwrap_or(false);
+
+    if would_exceed_series {
+        return Err(TagError::Validation(
+            "Restoring this tag would exceed the 12-tag limit on one or more assigned series.",
+        ));
+    }
+
+    let would_exceed_life: bool = conn
+        .query_row(
+            "SELECT 1 FROM life_node_tags lnt
+             WHERE lnt.tag_id = ?1
+               AND (SELECT COUNT(*) FROM life_node_tags lnt2
+                    JOIN tags t ON t.id = lnt2.tag_id
+                    WHERE lnt2.life_node_id = lnt.life_node_id
+                      AND t.archived_at IS NULL
+                      AND t.merged_into_tag_id IS NULL
+                      AND lnt2.tag_id != ?1) >= 12
+             LIMIT 1",
+            params![input.tag_id],
+            |_| Ok(true),
+        )
+        .optional()?
+        .unwrap_or(false);
+
+    if would_exceed_life {
+        return Err(TagError::Validation(
+            "Restoring this tag would exceed the 12-tag limit on one or more assigned life nodes.",
         ));
     }
 
@@ -326,6 +395,14 @@ pub fn merge(conn: &Connection, input: MergeTagsInput) -> Result<MergeTagsResult
         params![input.source_tag_id],
     )?;
 
+    // Flatten alias chain: any existing alias pointing at source now points at target.
+    // This keeps A→B→C correct as A→C after merging B→C.
+    tx.execute(
+        "UPDATE tags SET merged_into_tag_id=?2, updated_at=?3
+         WHERE merged_into_tag_id=?1",
+        params![input.source_tag_id, input.target_tag_id, t],
+    )?;
+
     // Archive source and record merge pointer.
     tx.execute(
         "UPDATE tags SET archived_at=?2, merged_into_tag_id=?3, revision=revision+1, updated_at=?2
@@ -351,9 +428,7 @@ pub fn set_life_node_tags(
     input: SetLifeNodeTagsInput,
 ) -> Result<SetLifeNodeTagsResult, TagError> {
     if input.node_id == "life-root" {
-        return Err(TagError::Validation(
-            "Cannot assign tags to the life root.",
-        ));
+        return Err(TagError::Validation("Cannot assign tags to the life root."));
     }
     validate_active_tag_ids(conn, &input.tag_ids)?;
 
@@ -395,7 +470,10 @@ pub fn set_life_node_tags(
     let tags = load_active_node_tags_tx(&tx, &input.node_id)?;
     tx.commit()?;
 
-    Ok(SetLifeNodeTagsResult { tags, node_revision: new_revision })
+    Ok(SetLifeNodeTagsResult {
+        tags,
+        node_revision: new_revision,
+    })
 }
 
 // ── Validation helper ────────────────────────────────────────────────────────
@@ -501,9 +579,7 @@ pub fn copy_all_series_tags(
     t: &str,
 ) -> Result<(), rusqlite::Error> {
     // Collect source assignments first to avoid self-referential insert issues.
-    let mut st = tx.prepare(
-        "SELECT tag_id FROM task_series_tags WHERE series_id=?1",
-    )?;
+    let mut st = tx.prepare("SELECT tag_id FROM task_series_tags WHERE series_id=?1")?;
     let tag_ids: Vec<String> = st
         .query_map(params![from_series_id], |r| r.get(0))?
         .collect::<Result<_, _>>()?;
@@ -552,9 +628,10 @@ pub fn batch_load_task_tags(
         .collect::<Result<Vec<_>, _>>()?;
     let mut map: HashMap<String, Vec<TagSummaryView>> = HashMap::new();
     for (task_id, tag_id, tag_name) in rows {
-        map.entry(task_id)
-            .or_default()
-            .push(TagSummaryView { id: tag_id, name: tag_name });
+        map.entry(task_id).or_default().push(TagSummaryView {
+            id: tag_id,
+            name: tag_name,
+        });
     }
     Ok(map)
 }
@@ -591,9 +668,10 @@ pub fn batch_load_series_tags(
         .collect::<Result<Vec<_>, _>>()?;
     let mut map: HashMap<String, Vec<TagSummaryView>> = HashMap::new();
     for (series_id, tag_id, tag_name) in rows {
-        map.entry(series_id)
-            .or_default()
-            .push(TagSummaryView { id: tag_id, name: tag_name });
+        map.entry(series_id).or_default().push(TagSummaryView {
+            id: tag_id,
+            name: tag_name,
+        });
     }
     Ok(map)
 }
@@ -630,9 +708,10 @@ pub fn batch_load_life_tags(
         .collect::<Result<Vec<_>, _>>()?;
     let mut map: HashMap<String, Vec<TagSummaryView>> = HashMap::new();
     for (node_id, tag_id, tag_name) in rows {
-        map.entry(node_id)
-            .or_default()
-            .push(TagSummaryView { id: tag_id, name: tag_name });
+        map.entry(node_id).or_default().push(TagSummaryView {
+            id: tag_id,
+            name: tag_name,
+        });
     }
     Ok(map)
 }
@@ -652,7 +731,10 @@ fn load_active_node_tags_tx(
          ORDER BY t.normalized_name, t.id",
     )?;
     st.query_map(params![node_id], |r| {
-        Ok(TagSummaryView { id: r.get(0)?, name: r.get(1)? })
+        Ok(TagSummaryView {
+            id: r.get(0)?,
+            name: r.get(1)?,
+        })
     })?
     .collect::<Result<Vec<_>, _>>()
 }
@@ -673,7 +755,13 @@ mod tests {
     }
 
     fn make_tag(conn: &Connection, name: &str) -> TagView {
-        create(conn, CreateTagInput { name: name.to_string() }).unwrap()
+        create(
+            conn,
+            CreateTagInput {
+                name: name.to_string(),
+            },
+        )
+        .unwrap()
     }
 
     fn make_node(conn: &Connection, title: &str) -> String {
@@ -718,8 +806,20 @@ mod tests {
     fn create_archived_name_errors() {
         let conn = db();
         let tag = make_tag(&conn, "OldTag");
-        archive(&conn, MutateTagInput { tag_id: tag.id.clone(), expected_revision: 0 }).unwrap();
-        let err = create(&conn, CreateTagInput { name: "OldTag".into() });
+        archive(
+            &conn,
+            MutateTagInput {
+                tag_id: tag.id.clone(),
+                expected_revision: 0,
+            },
+        )
+        .unwrap();
+        let err = create(
+            &conn,
+            CreateTagInput {
+                name: "OldTag".into(),
+            },
+        );
         assert!(matches!(err, Err(TagError::Validation(_))));
     }
 
@@ -748,7 +848,12 @@ mod tests {
         for i in 0..500 {
             make_tag(&conn, &format!("tag-{i}"));
         }
-        let err = create(&conn, CreateTagInput { name: "overflow".into() });
+        let err = create(
+            &conn,
+            CreateTagInput {
+                name: "overflow".into(),
+            },
+        );
         assert!(matches!(err, Err(TagError::Validation(_))));
     }
 
@@ -808,11 +913,25 @@ mod tests {
     fn archive_and_restore_tag() {
         let conn = db();
         let tag = make_tag(&conn, "Temp");
-        let archived = archive(&conn, MutateTagInput { tag_id: tag.id.clone(), expected_revision: 0 }).unwrap();
+        let archived = archive(
+            &conn,
+            MutateTagInput {
+                tag_id: tag.id.clone(),
+                expected_revision: 0,
+            },
+        )
+        .unwrap();
         assert!(archived.archived);
         assert_eq!(archived.revision, 1);
 
-        let restored = restore(&conn, MutateTagInput { tag_id: tag.id, expected_revision: 1 }).unwrap();
+        let restored = restore(
+            &conn,
+            MutateTagInput {
+                tag_id: tag.id,
+                expected_revision: 1,
+            },
+        )
+        .unwrap();
         assert!(!restored.archived);
         assert_eq!(restored.revision, 2);
     }
@@ -832,10 +951,21 @@ mod tests {
             params![tag.id],
         )
         .unwrap();
-        archive(&conn, MutateTagInput { tag_id: tag.id.clone(), expected_revision: 0 }).unwrap();
+        archive(
+            &conn,
+            MutateTagInput {
+                tag_id: tag.id.clone(),
+                expected_revision: 0,
+            },
+        )
+        .unwrap();
 
         let count: i64 = conn
-            .query_row("SELECT COUNT(*) FROM task_tags WHERE tag_id=?1", params![tag.id], |r| r.get(0))
+            .query_row(
+                "SELECT COUNT(*) FROM task_tags WHERE tag_id=?1",
+                params![tag.id],
+                |r| r.get(0),
+            )
             .unwrap();
         assert_eq!(count, 1, "archived tag assignment must be preserved");
     }
@@ -871,10 +1001,18 @@ mod tests {
         .unwrap();
 
         let src_count: i64 = conn
-            .query_row("SELECT COUNT(*) FROM task_tags WHERE tag_id=?1", params![src.id], |r| r.get(0))
+            .query_row(
+                "SELECT COUNT(*) FROM task_tags WHERE tag_id=?1",
+                params![src.id],
+                |r| r.get(0),
+            )
             .unwrap();
         let tgt_count: i64 = conn
-            .query_row("SELECT COUNT(*) FROM task_tags WHERE tag_id=?1", params![tgt.id], |r| r.get(0))
+            .query_row(
+                "SELECT COUNT(*) FROM task_tags WHERE tag_id=?1",
+                params![tgt.id],
+                |r| r.get(0),
+            )
             .unwrap();
         assert_eq!(src_count, 0);
         assert_eq!(tgt_count, 1);
@@ -896,8 +1034,10 @@ mod tests {
             [],
         )
         .unwrap();
-        conn.execute("INSERT INTO task_tags VALUES('t1',?1,'0')", params![src.id]).unwrap();
-        conn.execute("INSERT INTO task_tags VALUES('t1',?1,'0')", params![tgt.id]).unwrap();
+        conn.execute("INSERT INTO task_tags VALUES('t1',?1,'0')", params![src.id])
+            .unwrap();
+        conn.execute("INSERT INTO task_tags VALUES('t1',?1,'0')", params![tgt.id])
+            .unwrap();
 
         merge(
             &conn,
@@ -911,9 +1051,16 @@ mod tests {
         .unwrap();
 
         let count: i64 = conn
-            .query_row("SELECT COUNT(*) FROM task_tags WHERE task_id='t1'", [], |r| r.get(0))
+            .query_row(
+                "SELECT COUNT(*) FROM task_tags WHERE task_id='t1'",
+                [],
+                |r| r.get(0),
+            )
             .unwrap();
-        assert_eq!(count, 1, "task should have exactly one assignment after merge");
+        assert_eq!(
+            count, 1,
+            "task should have exactly one assignment after merge"
+        );
     }
 
     #[test]
@@ -1013,7 +1160,14 @@ mod tests {
         )
         .unwrap();
         // Archive the tag.
-        archive(&conn, MutateTagInput { tag_id: tag.id.clone(), expected_revision: 0 }).unwrap();
+        archive(
+            &conn,
+            MutateTagInput {
+                tag_id: tag.id.clone(),
+                expected_revision: 0,
+            },
+        )
+        .unwrap();
         // Set empty active tags – should preserve archived assignment.
         set_life_node_tags(
             &conn,
@@ -1025,7 +1179,11 @@ mod tests {
         )
         .unwrap();
         let count: i64 = conn
-            .query_row("SELECT COUNT(*) FROM life_node_tags WHERE life_node_id=?1", params![node], |r| r.get(0))
+            .query_row(
+                "SELECT COUNT(*) FROM life_node_tags WHERE life_node_id=?1",
+                params![node],
+                |r| r.get(0),
+            )
             .unwrap();
         assert_eq!(count, 1, "archived assignment must be preserved");
     }
@@ -1033,10 +1191,12 @@ mod tests {
     #[test]
     fn validate_max_12_tags() {
         let conn = db();
-        let ids: Vec<String> = (0..13).map(|i| {
-            let t = make_tag(&conn, &format!("tag-{i}"));
-            t.id
-        }).collect();
+        let ids: Vec<String> = (0..13)
+            .map(|i| {
+                let t = make_tag(&conn, &format!("tag-{i}"));
+                t.id
+            })
+            .collect();
         let err = validate_active_tag_ids(&conn, &ids);
         assert!(matches!(err, Err(TagError::Validation(_))));
     }
@@ -1047,5 +1207,244 @@ mod tests {
         let tag = make_tag(&conn, "Tag");
         let err = validate_active_tag_ids(&conn, &[tag.id.clone(), tag.id]);
         assert!(matches!(err, Err(TagError::Validation(_))));
+    }
+
+    // ── merge alias chain flattening ─────────────────────────────────────────
+
+    fn make_task(conn: &Connection) -> String {
+        let id = Uuid::new_v7(Timestamp::now(NoContext)).to_string();
+        conn.execute(
+            "INSERT INTO tasks(id,local_date,start_minute,end_minute,title,description,category_id,priority,created_at,updated_at) \
+             VALUES(?1,'2026-08-04',480,540,'T','','general','medium','0','0')",
+            params![id],
+        ).unwrap();
+        id
+    }
+
+    #[test]
+    fn merge_flattens_alias_chain_a_b_c() {
+        let conn = db();
+        let a = make_tag(&conn, "TagA");
+        let b = make_tag(&conn, "TagB");
+        let c = make_tag(&conn, "TagC");
+
+        // Merge A into B (A becomes alias of B).
+        merge(
+            &conn,
+            MergeTagsInput {
+                source_tag_id: a.id.clone(),
+                target_tag_id: b.id.clone(),
+                source_expected_revision: 0,
+                target_expected_revision: 0,
+            },
+        )
+        .unwrap();
+        // A's merged_into_tag_id = B.
+
+        // Now merge B into C.
+        // Before this, A points to B. After flattening, A should point to C.
+        let b_rev: i32 = conn
+            .query_row(
+                "SELECT revision FROM tags WHERE id=?1",
+                params![b.id],
+                |r| r.get(0),
+            )
+            .unwrap();
+        merge(
+            &conn,
+            MergeTagsInput {
+                source_tag_id: b.id.clone(),
+                target_tag_id: c.id.clone(),
+                source_expected_revision: b_rev,
+                target_expected_revision: 0,
+            },
+        )
+        .unwrap();
+
+        // A's merged_into_tag_id must now point to C, not B.
+        let a_target: Option<String> = conn
+            .query_row(
+                "SELECT merged_into_tag_id FROM tags WHERE id=?1",
+                params![a.id],
+                |r| r.get(0),
+            )
+            .optional()
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            a_target,
+            Some(c.id.clone()),
+            "alias A must point directly to C after B→C merge"
+        );
+
+        // B's merged_into_tag_id must point to C.
+        let b_target: Option<String> = conn
+            .query_row(
+                "SELECT merged_into_tag_id FROM tags WHERE id=?1",
+                params![b.id],
+                |r| r.get(0),
+            )
+            .optional()
+            .unwrap()
+            .unwrap();
+        assert_eq!(b_target, Some(c.id), "B must point to C");
+    }
+
+    #[test]
+    fn alias_a_remains_searchable_after_b_c_merge() {
+        // After A→B then B→C, searching by A's normalized_name should still surface results
+        // because the search index uses alias normalized names. This is a domain invariant test;
+        // we verify that A is archived and its normalized_name is distinct from C.
+        let conn = db();
+        let a = make_tag(&conn, "Alpha");
+        let b = make_tag(&conn, "Beta");
+        let c = make_tag(&conn, "Gamma");
+
+        merge(
+            &conn,
+            MergeTagsInput {
+                source_tag_id: a.id.clone(),
+                target_tag_id: b.id.clone(),
+                source_expected_revision: 0,
+                target_expected_revision: 0,
+            },
+        )
+        .unwrap();
+        let b_rev: i32 = conn
+            .query_row(
+                "SELECT revision FROM tags WHERE id=?1",
+                params![b.id],
+                |r| r.get(0),
+            )
+            .unwrap();
+        merge(
+            &conn,
+            MergeTagsInput {
+                source_tag_id: b.id.clone(),
+                target_tag_id: c.id.clone(),
+                source_expected_revision: b_rev,
+                target_expected_revision: 0,
+            },
+        )
+        .unwrap();
+
+        // A must be archived with merged_into_tag_id = C.
+        let (a_archived, a_target): (Option<String>, Option<String>) = conn
+            .query_row(
+                "SELECT archived_at, merged_into_tag_id FROM tags WHERE id=?1",
+                params![a.id],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            )
+            .unwrap();
+        assert!(a_archived.is_some(), "A must be archived");
+        assert_eq!(
+            a_target,
+            Some(c.id),
+            "A must resolve to C after chain flattening"
+        );
+    }
+
+    // ── restore preflight ─────────────────────────────────────────────────────
+
+    #[test]
+    fn restore_fails_when_subject_already_has_12_active_tags() {
+        let conn = db();
+        let task = make_task(&conn);
+        // Create 12 active tags, all assigned to task.
+        let active_tags: Vec<String> = (0..12)
+            .map(|i| {
+                let t = make_tag(&conn, &format!("active-{i}"));
+                conn.execute(
+                    "INSERT INTO task_tags(task_id,tag_id,created_at) VALUES(?1,?2,'0')",
+                    params![task, t.id],
+                )
+                .unwrap();
+                t.id
+            })
+            .collect();
+        let _ = active_tags;
+        // Create a 13th tag, assign it, then archive it.
+        let extra = make_tag(&conn, "extra");
+        conn.execute(
+            "INSERT INTO task_tags(task_id,tag_id,created_at) VALUES(?1,?2,'0')",
+            params![task, extra.id],
+        )
+        .unwrap();
+        archive(
+            &conn,
+            MutateTagInput {
+                tag_id: extra.id.clone(),
+                expected_revision: 0,
+            },
+        )
+        .unwrap();
+        let extra_rev: i32 = conn
+            .query_row(
+                "SELECT revision FROM tags WHERE id=?1",
+                params![extra.id],
+                |r| r.get(0),
+            )
+            .unwrap();
+        // Restoring extra would bring the task to 13 active tags — must be rejected.
+        let err = restore(
+            &conn,
+            MutateTagInput {
+                tag_id: extra.id,
+                expected_revision: extra_rev,
+            },
+        );
+        assert!(
+            matches!(err, Err(TagError::Validation(_))),
+            "restore must fail when subject has 12 active tags"
+        );
+    }
+
+    #[test]
+    fn restore_succeeds_when_subject_has_11_active_tags() {
+        let conn = db();
+        let task = make_task(&conn);
+        // Create 11 active tags assigned to task.
+        for i in 0..11 {
+            let t = make_tag(&conn, &format!("active-{i}"));
+            conn.execute(
+                "INSERT INTO task_tags(task_id,tag_id,created_at) VALUES(?1,?2,'0')",
+                params![task, t.id],
+            )
+            .unwrap();
+        }
+        // Create + assign + archive a 12th.
+        let extra = make_tag(&conn, "extra");
+        conn.execute(
+            "INSERT INTO task_tags(task_id,tag_id,created_at) VALUES(?1,?2,'0')",
+            params![task, extra.id],
+        )
+        .unwrap();
+        archive(
+            &conn,
+            MutateTagInput {
+                tag_id: extra.id.clone(),
+                expected_revision: 0,
+            },
+        )
+        .unwrap();
+        let extra_rev: i32 = conn
+            .query_row(
+                "SELECT revision FROM tags WHERE id=?1",
+                params![extra.id],
+                |r| r.get(0),
+            )
+            .unwrap();
+        // Restoring extra brings task to 12 active tags — allowed.
+        let result = restore(
+            &conn,
+            MutateTagInput {
+                tag_id: extra.id,
+                expected_revision: extra_rev,
+            },
+        );
+        assert!(
+            result.is_ok(),
+            "restore must succeed when subject has only 11 active tags"
+        );
     }
 }

@@ -70,6 +70,13 @@ fn main() {
             "confirm_portable_package_import",
             "discard_portable_package_import",
             "search_global",
+            "list_tags",
+            "create_tag",
+            "rename_tag",
+            "archive_tag",
+            "restore_tag",
+            "merge_tags",
+            "set_life_node_tags",
         ]),
     ))
     .expect("failed to generate Tauri ACL manifest");

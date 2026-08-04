@@ -11,13 +11,15 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   archiveLifeNode, createLifeNode, getLifeEditProjection, renameLifeNode,
-  reparentLifeNode, reorderLifeSibling, restoreLifeNode, undoLifeOperation,
+  reparentLifeNode, reorderLifeSibling, restoreLifeNode, setLifeNodeTags, undoLifeOperation,
   updateLifeNodeSummary,
 } from "../../ipc/commands";
 import type { LifeEditNodeView } from "../../ipc/generated/LifeEditNodeView";
 import type { LifeEditProjection } from "../../ipc/generated/LifeEditProjection";
+import type { TagSummaryView } from "../../ipc/generated/TagSummaryView";
 import * as styles from "./LifeEditWorkspace.css";
 import { TagChipList } from "../tag/TagChipList";
+import { TagPicker } from "../tag/TagPicker";
 
 type Point={x:number;y:number};
 type Layout={points:Map<string,Point>;links:Array<{id:string;d:string}>;width:number;height:number};
@@ -75,6 +77,9 @@ export function LifeEditWorkspace({initialNodeId,onBrowse}:{initialNodeId:string
  useEffect(()=>{if(!selected)return;setSelectedId(selected.id);setTitle(selected.title);setDescription(selected.short_description);setIcon(selected.icon_key);setTheme(selected.theme_variant);setMoveParent(selected.parent_id??"");},[selected?.id,selected?.revision]);
  useEffect(()=>{const id=focusAfter.current;if(!id)return;requestAnimationFrame(()=>document.querySelector<HTMLElement>(`[data-life-edit-id="${id}"]`)?.focus({preventScroll:true}));focusAfter.current=undefined;},[projection?.tree_revision]);
  const mutation=useMutation({mutationFn:(work:()=>Promise<unknown>)=>work(),onSuccess:async()=>{setMessage("Life tree updated.");await client.invalidateQueries({queryKey:["life"]});},onError:(error)=>setMessage(error instanceof Error?error.message:"Life tree update failed; authoritative geometry was restored.")});
+ const [tagError,setTagError]=useState<string|null>(null);
+ const tagMutation=useMutation({mutationFn:({nodeId,revision,tagIds}:{nodeId:string;revision:number;tagIds:string[]})=>setLifeNodeTags({node_id:nodeId,expected_node_revision:revision,tag_ids:tagIds}),onSuccess:async()=>{setTagError(null);await client.invalidateQueries({queryKey:["life"]});},onError:(e)=>setTagError(e instanceof Error?e.message:"Could not save tags.")});
+ const handleTagChange=(node:LifeEditNodeView,next:TagSummaryView[])=>{tagMutation.mutate({nodeId:node.id,revision:node.revision,tagIds:next.map(t=>t.id)});};
  const context=()=>({operation_id:operationId(),expected_tree_revision:projection!.tree_revision});
  const run=(nodeId:string,work:()=>Promise<unknown>)=>{focusAfter.current=nodeId;mutation.mutate(work);};
  const siblings=(node:LifeEditNodeView)=>projection?.nodes.filter(item=>item.parent_id===node.parent_id).sort((a,b)=>a.sort_key-b.sort_key||a.id.localeCompare(b.id))??[];
@@ -101,6 +106,7 @@ export function LifeEditWorkspace({initialNodeId,onBrowse}:{initialNodeId:string
     <label className={styles.field}>Local icon<select className={styles.input} value={icon} onChange={event=>setIcon(event.target.value)}>{icons.map(value=><option key={value} value={value}>{value}</option>)}</select></label>
     <label className={styles.field}>Theme variant<select className={styles.input} value={theme} onChange={event=>setTheme(event.target.value)}>{themes.map(value=><option key={value} value={value}>{value}</option>)}</select></label>
     <button className={styles.button} disabled={mutation.isPending} onClick={()=>run(selected.id,()=>updateLifeNodeSummary({context:context(),node_id:selected.id,short_description:description,icon_key:icon,theme_variant:theme,expected_node_revision:selected.revision}))}>Save details</button>
+    {selected.depth===0?<p className={styles.instructions}>The Life root cannot have tags.</p>:<TagPicker selectedTags={selected.tags} onChange={(next)=>handleTagChange(selected,next)} busy={tagMutation.isPending} error={tagError} allowCreate/>}
     <div className={styles.actions}><input className={styles.input} aria-label="New child title" placeholder="New child" value={createTitle} onChange={event=>setCreateTitle(event.target.value)}/><button className={styles.button} disabled={mutation.isPending||!createTitle.trim()} onClick={()=>{const parent=selected.id;run(parent,async()=>{const value=await createLifeNode({context:context(),parent_id:parent,title:createTitle,short_description:"",icon_key:"life-branch",theme_variant:"neutral"});setCreateTitle("");setSelectedId(value.node.id);return value;});}}>Create child</button></div>
     {selected.parent_id&&<><div className={styles.actions}><button className={styles.button} disabled={mutation.isPending||siblings(selected).findIndex(item=>item.id===selected.id)===0} onClick={()=>reorder(selected,siblings(selected).findIndex(item=>item.id===selected.id)-1)}>Move up</button><button className={styles.button} disabled={mutation.isPending||siblings(selected).findIndex(item=>item.id===selected.id)===siblings(selected).length-1} onClick={()=>reorder(selected,siblings(selected).findIndex(item=>item.id===selected.id)+1)}>Move down</button>{projection.nodes.find(node=>node.id===selected.parent_id)?.parent_id&&<button className={styles.button} disabled={mutation.isPending} onClick={()=>{const parent=projection.nodes.find(node=>node.id===selected.parent_id)!;const grand=parent.parent_id!;reparent(selected,grand,projection.nodes.filter(node=>node.parent_id===grand).length);}}>Move to parent level</button>}</div>
     <label className={styles.field}>Move into branch<select className={styles.input} value={moveParent} onChange={event=>setMoveParent(event.target.value)}>{projection.nodes.filter(node=>node.id!==selected.id&&!selectedDescendants.has(node.id)).map(node=><option key={node.id} value={node.id}>{node.title}</option>)}</select></label><button className={styles.button} disabled={mutation.isPending||!moveParent||moveParent===selected.parent_id} onClick={()=>reparent(selected,moveParent,projection.nodes.filter(node=>node.parent_id===moveParent).length)}>Move into selected branch</button>

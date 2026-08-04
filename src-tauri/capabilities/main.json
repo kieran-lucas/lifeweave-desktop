@@ -77,6 +77,13 @@
     "allow-preview-portable-package-import",
     "allow-confirm-portable-package-import",
     "allow-discard-portable-package-import",
-    "allow-search-global"
+    "allow-search-global",
+    "allow-list-tags",
+    "allow-create-tag",
+    "allow-rename-tag",
+    "allow-archive-tag",
+    "allow-restore-tag",
+    "allow-merge-tags",
+    "allow-set-life-node-tags"
   ]
 }
