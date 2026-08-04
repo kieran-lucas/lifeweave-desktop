@@ -5,7 +5,7 @@
   "latest_closed_task": 32,
   "latest_closed_slice": 22,
   "latest_feature_task": 32,
-  "latest_feature_checkpoint": "f64e51a8d61f30e79abb5469b58fcd06413ae780",
+  "latest_feature_checkpoint": "940e70a871544e7d65b6555a819f1da22164e4d3",
   "database_schema_version": 16,
   "active_spec": null,
   "next_action": "product_owner_gate",

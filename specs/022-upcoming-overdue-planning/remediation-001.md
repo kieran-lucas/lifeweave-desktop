@@ -26,7 +26,7 @@ No Task 33 behavior, planning range or overdue semantic change, recurrence/evalu
 
 ## Implementation commit
 
-The implementation commit is Commit A, `harden task planning focus lifecycle`; its immutable SHA is recorded in Project State and the remediation audit after Commit A is created.
+The implementation commit is Commit A, `940e70a871544e7d65b6555a819f1da22164e4d3` (`harden task planning focus lifecycle`).
 
 ## Acceptance
 
