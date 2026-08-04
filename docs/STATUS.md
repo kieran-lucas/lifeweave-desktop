@@ -1,5 +1,17 @@
 # Project Status
 
+## Task 33/60 — Unified Tags Core + Cross-Pillar Retrieval
+
+- Migration 17 adds the `tags` authority table (normalized name, archive, merge semantics) and three join tables: `task_tags`, `task_series_tags`, `life_node_tags`. All join tables carry expected-revision guards.
+- Seven new IPC commands: `list_tags`, `create_tag`, `rename_tag`, `archive_tag`, `restore_tag`, `merge_tags`, `set_life_node_tags`.
+- Task mutation inputs gain `tag_ids` / `series_tag_ids` fields so task tags are settable atomically.
+- All read projections (`LifeNodeView`, `LifeEditNodeView`, `PinnedLifeNodeView`, `TodayItemView`, `TaskView`, `RecurringOccurrenceView`, `RelatedTaskView`, `TaskPlanningItemView`) gain a `tags` field populated by N+1-free batch loaders.
+- The search index appends tag normalized names and merged-alias normalized names to each entity's `normalized_context`; searching for a merged name continues to surface tagged entities.
+- Frontend: `TagChipList` (read-only chips), `TagPicker` (life-node assignment dropdown), `TagSettings` (create/rename/archive/restore/merge management). `TagChipList` wired into Today, Planning, Life Browse, and Life Edit; `TagPicker` into Life Browse focal panel; `TagSettings` into Settings.
+- No new runtime dependency, sidebar destination, plugin, or broad capability.
+- Evidence: 484 Rust tests and 498 frontend tests passed; typecheck passed.
+- Task 34 has not started; next action is Product Owner gate.
+
 ## Task 32/60 — Upcoming and Overdue Task Planning
 
 - Remediation 002 gives App-owned navigation requests explicit ID-guarded acknowledgment and cancellation across Today and Life, preventing replay after rerender/remount and completing remote Life Reader delivery.

@@ -1,0 +1,20 @@
+{
+  "task": 33,
+  "starting_head": "f7d3fd167f7e22d5e3892e0a64e048eb4e10e0c6",
+  "feature_checkpoint": "d081d306a450d0e7b930721b224b901143e260b3",
+  "schema_version": 17,
+  "source_sha256": "9c422927c09e26431d71b1ef5ab6306891a3e7c15ece0fc808bedf6f6689540a",
+  "frontend_tests": { "files": 33, "passed": 498, "failed": 0 },
+  "ordinary_rust_tests": { "passed": 484, "failed": 0, "ignored_evidence": 4 },
+  "project_state_tests": null,
+  "bundle_bytes": null,
+  "native_e2e": null,
+  "release_binary": null,
+  "nsis": null,
+  "rc_dogfood": null,
+  "dependency_changes": 0,
+  "migration_changes": 1,
+  "ci": { "status": "not_run", "reason": "manual-dispatch workflow not required by accepted policy" },
+  "external_manual_debt": ["physical screen-reader evidence", "physical alternate-DPI evidence", "build/NSIS/E2E/RC evidence deferred to Commit B"],
+  "evidence_debt": ["pnpm build not yet run", "pnpm e2e:windows not yet run", "pnpm hardening:rc not yet run"]
+}

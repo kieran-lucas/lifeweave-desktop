@@ -1,5 +1,9 @@
 # Roadmap
 
+## Slice 023 — Unified Tags Core + Cross-Pillar Retrieval
+
+Task 33 adds a flat globally-shared tag vocabulary applicable to Life nodes and Tasks. Tags have display names, normalized names, archive states, and merge semantics. Merge reassigns all join-table rows to the surviving tag; superseded normalized names are indexed as aliases so searches for a merged name continue to surface tagged entities. No hierarchy, filter views, scoring, or prediction is added.
+
 ## Slice 022 — Upcoming and Overdue Task Planning
 
 Task 32 completes the bounded Task planning triad inside the existing Today

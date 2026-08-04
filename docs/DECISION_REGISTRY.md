@@ -33,6 +33,7 @@ The immutable source is authoritative. This registry makes operational status vi
 - Upcoming covers anchor +1 through +14 local calendar days; Overdue covers anchor -30 through -1 local calendar days.
 - Overdue is derived from the absence of any current evaluation; any current evaluation reviews the item, and undo may restore it.
 - Planning queue items open their exact displayed date and stable Task or recurring-series identity in Today; queue state is not persisted.
+- Tags are a flat, globally shared vocabulary applied to Life nodes and Tasks. Normalized name (lowercase, Vietnamese-decomposed, whitespace-collapsed) is the deduplication and search key. Merging reassigns all join-table entries to the surviving tag; superseded normalized names are indexed as aliases. Task tag assignment in the create/edit dialog defaults to no tags; a task-level picker is deferred.
 
 ## LOCKED — Technology direction
 
@@ -68,7 +69,6 @@ The immutable source is authoritative. This registry makes operational status vi
 - saved filter AST/view UI;
 - final score and hidden mappings;
 - final prediction;
-- tags;
 - backlinks;
 - Generic Outline role beyond the Basic Leaf heading navigator;
 - Noteboard role;

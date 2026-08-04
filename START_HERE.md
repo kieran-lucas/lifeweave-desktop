@@ -13,13 +13,13 @@
 
 ## Current state
 
-- Latest closed task: **32/60**
-- Latest product feature: **Task 32 — Upcoming and Overdue Task Planning**
-- Latest feature checkpoint: `f64e51a8d61f30e79abb5469b58fcd06413ae780`
-- Database schema: **16**
+- Latest closed task: **33/60**
+- Latest product feature: **Task 33 — Unified Tags Core + Cross-Pillar Retrieval**
+- Latest feature checkpoint: `d081d306a450d0e7b930721b224b901143e260b3`
+- Database schema: **17**
 - Active implementation specification: **none**
 - Next action: **Product Owner gate**
-- Task 33 status: **not selected or authorized**
+- Task 34 status: **not selected or authorized**
 
 ## Core invariants
 
