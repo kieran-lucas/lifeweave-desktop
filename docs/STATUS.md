@@ -5,8 +5,9 @@
 - Starting checkpoint: 4e2c4ee347212b9a26949f7c9df2d2ae77dab59a (accepted Task 26).
 - Schema 15 is an append-only trigger-only expansion from one persisted template ID to three immutable built-in IDs. Templates seed initial Canvas scenes only.
 - The empty Life-leaf surface now offers an explicit native-radio template chooser; no custom templates, conversion, or Visual Worlds behavior was added.
+- Current release evidence: schema-15 NSIS Lifeweave_0.0.0_x64-setup.exe is 4,623,409 bytes, SHA-256 8656589c64bacf529e4de278866a3e58e5b108862e08bd04983451b2f9324b2d; contained RC run core-rc-5477cd24eacb4716be05c536a8789293 passed two isolated reopen sessions, focused recovery/backup/Narrative coverage, fatal diagnostics, and cleanup.
 
-Updated: 2026-08-03 Asia/Saigon
+Updated: 2026-08-04 Asia/Saigon
 
 ## Task 26/60 — Native E2E Contract Refresh (complete)
 
