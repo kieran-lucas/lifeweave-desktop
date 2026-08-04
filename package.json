@@ -9,7 +9,7 @@
   },
   "scripts": {
     "source:verify": "python scripts/verify_source_integrity.py",
-    "governance:check": "python scripts/check_repository.py",
+    "governance:check": "python scripts/check_repository.py && python scripts/check_project_state.py",
     "index:check": "python scripts/generate_spec_index.py --check && python scripts/generate_coverage_matrix.py --check",
     "verify": "pnpm source:verify && pnpm governance:check && pnpm index:check && python scripts/verify_no_remote_assets.py && python scripts/verify_security.py && python scripts/verify_hardening.py",
     "hardening:performance": "python scripts/check_performance_budgets.py",
@@ -19,7 +19,7 @@
     "build": "pnpm --dir frontend build",
     "typecheck": "pnpm --dir frontend typecheck",
     "test": "pnpm --dir frontend test",
-    "tauri": "node frontend/node_modules/@tauri-apps/cli/tauri.js"
-    ,"e2e:windows": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run_windows_e2e.ps1"
+    "tauri": "node frontend/node_modules/@tauri-apps/cli/tauri.js",
+    "e2e:windows": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run_windows_e2e.ps1"
   }
 }

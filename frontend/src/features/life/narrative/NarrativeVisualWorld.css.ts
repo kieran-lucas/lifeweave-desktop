@@ -15,4 +15,28 @@ export const nocturne = worldStyle(visualWorlds[3].light, visualWorlds[3].dark);
 export const selector = style({ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(13rem,1fr))", gap:8, border:0, padding:0, margin:"12px 0" });
 export const option = style({ display:"grid", gridTemplateColumns:"auto 1fr", gap:8, padding:10, border:"1px solid var(--border-subtle)", borderRadius:8, background:"var(--surface)", selectors:{ "&:has(input:checked)": { borderColor: worldTokens.accent, background: worldTokens.accentSoft, fontWeight: 700 } } });
 export const chips = style({ display:"flex", gap:3, gridColumn:"2" });
-export const chip = style({ width:14, height:14, borderRadius:"50%", background:"var(--world-chip)" });
+export const chip = style({
+  width: 14,
+  height: 14,
+  borderRadius: "50%",
+  selectors: {
+    '&[data-world="paper"][data-chip="canvas"]': { background: "#FAF8F4" },
+    '&[data-world="paper"][data-chip="accent"]': { background: "#6B5B4B" },
+    '&[data-world="paper"][data-chip="rule"]': { background: "#9A8977" },
+    '&[data-world="sakura"][data-chip="canvas"]': { background: "#FFF7FA" },
+    '&[data-world="sakura"][data-chip="accent"]': { background: "#A63D68" },
+    '&[data-world="sakura"][data-chip="rule"]': { background: "#C56B8F" },
+    '&[data-world="aurora"][data-chip="canvas"]': { background: "#F4FBFF" },
+    '&[data-world="aurora"][data-chip="accent"]': { background: "#0F738A" },
+    '&[data-world="aurora"][data-chip="rule"]': { background: "#2D7F91" },
+    '&[data-world="nocturne"][data-chip="canvas"]': { background: "#F7F5FF" },
+    '&[data-world="nocturne"][data-chip="accent"]': { background: "#5746A6" },
+    '&[data-world="nocturne"][data-chip="rule"]': { background: "#7A68BD" },
+  },
+  "@media": {
+    "(forced-colors: active)": {
+      background: "ButtonText",
+      border: "1px solid Canvas",
+    },
+  },
+});

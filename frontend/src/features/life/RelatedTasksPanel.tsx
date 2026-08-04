@@ -4,9 +4,11 @@ import type { RelatedTaskView } from "../../ipc/generated/RelatedTaskView";
 
 export function RelatedTasksPanel({
   nodeId,
+  anchorLocalDate,
   onNavigate,
 }: {
   nodeId: string;
+  anchorLocalDate: string;
   onNavigate?:
     | ((
         localDate: string,
@@ -16,8 +18,8 @@ export function RelatedTasksPanel({
     | undefined;
 }) {
   const query = useQuery({
-    queryKey: ["life", "related-tasks", nodeId],
-    queryFn: () => getRelatedTasksForLifeNode(nodeId),
+    queryKey: ["life", "related-tasks", nodeId, anchorLocalDate],
+    queryFn: () => getRelatedTasksForLifeNode(nodeId, anchorLocalDate),
     enabled: nodeId !== "life-root",
   });
   if (nodeId === "life-root") return null;
@@ -43,9 +45,8 @@ export function RelatedTasksPanel({
       <button
         type="button"
         onClick={() =>
-          row.local_date &&
           onNavigate?.(
-            row.local_date,
+            row.navigation_local_date,
             row.kind === "one_off" ? row.id : null,
             row.kind === "recurring" ? row.series_id : null,
           )

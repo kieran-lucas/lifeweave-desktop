@@ -173,7 +173,11 @@ pub fn categories(conn: &Connection) -> Result<Vec<TaskCategoryView>, TaskError>
 pub fn related_for_life_node(
     conn: &Connection,
     node_id: &str,
+    anchor_local_date: &str,
 ) -> Result<Vec<super::dto::RelatedTaskView>, TaskError> {
+    if !validate_date(anchor_local_date) {
+        return Err(TaskError::Validation("Enter a valid anchor date."));
+    }
     if node_id == "life-root" {
         return Ok(Vec::new());
     }
@@ -185,26 +189,146 @@ pub fn related_for_life_node(
     if !exists {
         return Err(TaskError::NotFound);
     }
-    let mut st=conn.prepare("SELECT id,title,local_date,CASE WHEN EXISTS(SELECT 1 FROM task_evaluations e WHERE e.subject_kind='one_off' AND e.task_id=tasks.id AND e.is_current=1) THEN 'completed' ELSE 'active' END,'one_off' FROM tasks WHERE life_node_id=?1 UNION ALL SELECT id,title,dtstart_local_date,'active','recurring' FROM task_series WHERE life_node_id=?1 AND archived_at IS NULL ORDER BY 4,3,2,1")?;
-    Ok(st
-        .query_map(params![node_id], |r| {
-            let date: Option<String> = r.get(2)?;
-            let id: String = r.get(0)?;
-            let kind: String = r.get(4)?;
-            Ok(super::dto::RelatedTaskView {
-                id: id.clone(),
-                kind: if kind == "one_off" {
-                    super::dto::RelatedTaskKind::OneOff
-                } else {
-                    super::dto::RelatedTaskKind::Recurring
-                },
-                title: r.get(1)?,
-                group: r.get(3)?,
-                local_date: date.clone(),
-                series_id: if kind == "one_off" { None } else { Some(id) },
-            })
+    let mut result = Vec::new();
+    let mut one_offs = conn.prepare(
+        "SELECT id,title,local_date,CASE WHEN EXISTS(
+           SELECT 1 FROM task_evaluations e
+           WHERE e.subject_kind='one_off' AND e.task_id=tasks.id AND e.is_current=1
+         ) THEN 'completed' ELSE 'active' END
+         FROM tasks WHERE life_node_id=?1",
+    )?;
+    for row in one_offs.query_map(params![node_id], |row| {
+        Ok(super::dto::RelatedTaskView {
+            id: row.get(0)?,
+            kind: super::dto::RelatedTaskKind::OneOff,
+            title: row.get(1)?,
+            group: row.get(3)?,
+            navigation_local_date: row.get(2)?,
+            series_id: None,
+        })
+    })? {
+        result.push(row?);
+    }
+
+    let mut series_statement = conn.prepare(
+        "SELECT id,title,dtstart_local_date,rrule
+         FROM task_series WHERE life_node_id=?1 AND archived_at IS NULL",
+    )?;
+    let series = series_statement
+        .query_map(params![node_id], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+                row.get::<_, String>(3)?,
+            ))
         })?
-        .collect::<Result<Vec<_>, _>>()?)
+        .collect::<Result<Vec<_>, _>>()?;
+
+    #[derive(Clone)]
+    struct NavigationOverride {
+        replacement_local_date: Option<String>,
+        cancelled: bool,
+    }
+    let mut overrides: HashMap<(String, String), NavigationOverride> = HashMap::new();
+    let mut moved_in: HashMap<String, Vec<(String, String)>> = HashMap::new();
+    let mut override_statement = conn.prepare(
+        "SELECT o.series_id,o.original_local_date,o.replacement_local_date,o.cancelled
+         FROM task_occurrence_overrides o
+         JOIN task_series s ON s.id=o.series_id
+         WHERE s.life_node_id=?1 AND s.archived_at IS NULL",
+    )?;
+    for row in override_statement.query_map(params![node_id], |row| {
+        Ok((
+            row.get::<_, String>(0)?,
+            row.get::<_, String>(1)?,
+            row.get::<_, Option<String>>(2)?,
+            row.get::<_, i32>(3)? != 0,
+        ))
+    })? {
+        let (series_id, original, replacement, cancelled) = row?;
+        if !cancelled {
+            if let Some(replacement_date) = replacement.as_ref() {
+                if replacement_date.as_str() >= anchor_local_date {
+                    moved_in
+                        .entry(series_id.clone())
+                        .or_default()
+                        .push((original.clone(), replacement_date.clone()));
+                }
+            }
+        }
+        overrides.insert(
+            (series_id, original),
+            NavigationOverride {
+                replacement_local_date: replacement,
+                cancelled,
+            },
+        );
+    }
+
+    for (series_id, title, dtstart, rule) in series {
+        let generated = crate::task::recurrence::occurrences_on_or_after(
+            &dtstart,
+            anchor_local_date,
+            &rule,
+            crate::task::recurrence::MAX_EXPANSION_OCCURRENCES,
+        )?;
+        let mut candidates: HashMap<String, String> = HashMap::new();
+        for original in generated {
+            match overrides.get(&(series_id.clone(), original.clone())) {
+                Some(value) if value.cancelled => {}
+                Some(value) => {
+                    if let Some(replacement) = value.replacement_local_date.as_ref() {
+                        if replacement.as_str() >= anchor_local_date {
+                            candidates.insert(original, replacement.clone());
+                        }
+                    } else {
+                        candidates.insert(original.clone(), original);
+                    }
+                }
+                None => {
+                    candidates.insert(original.clone(), original);
+                }
+            }
+        }
+        if let Some(authoritative) = moved_in.get(&series_id) {
+            for (original, replacement) in authoritative {
+                candidates.insert(original.clone(), replacement.clone());
+            }
+        }
+        if let Some(navigation_local_date) = candidates.into_values().min() {
+            result.push(super::dto::RelatedTaskView {
+                id: series_id.clone(),
+                kind: super::dto::RelatedTaskKind::Recurring,
+                title,
+                group: "active".into(),
+                navigation_local_date,
+                series_id: Some(series_id),
+            });
+        }
+    }
+
+    let kind_rank = |kind: &super::dto::RelatedTaskKind| match kind {
+        super::dto::RelatedTaskKind::OneOff => 0,
+        super::dto::RelatedTaskKind::Recurring => 1,
+    };
+    result.sort_by(|left, right| {
+        let left_group = if left.group == "active" { 0 } else { 1 };
+        let right_group = if right.group == "active" { 0 } else { 1 };
+        left_group
+            .cmp(&right_group)
+            .then_with(|| {
+                if left_group == 0 {
+                    left.navigation_local_date.cmp(&right.navigation_local_date)
+                } else {
+                    right.navigation_local_date.cmp(&left.navigation_local_date)
+                }
+            })
+            .then_with(|| left.title.cmp(&right.title))
+            .then_with(|| kind_rank(&left.kind).cmp(&kind_rank(&right.kind)))
+            .then_with(|| left.id.cmp(&right.id))
+    });
+    Ok(result)
 }
 pub fn list(conn: &Connection, date: &str) -> Result<Vec<TaskView>, TaskError> {
     if !validate_date(date) {
@@ -1423,7 +1547,7 @@ mod recurrence_tests {
                 .id,
             "study"
         );
-        let related = related_for_life_node(&c, "study").unwrap();
+        let related = related_for_life_node(&c, "study", "2026-08-04").unwrap();
         assert_eq!(
             related
                 .iter()
@@ -1431,5 +1555,283 @@ mod recurrence_tests {
                 .count(),
             1
         );
+    }
+
+    fn seed_related_area(conn: &Connection) {
+        conn.execute(
+            "INSERT INTO life_nodes(id,parent_id,title,short_description,icon_key,branch_theme_id,sort_key,archived_at,created_at,updated_at,revision)
+             VALUES('related-area','life-root','Related','','life-leaf','neutral',1,NULL,'0','0',0),
+                   ('related-archived','life-root','Archived','','life-leaf','neutral',2,'1','0','0',0)",
+            [],
+        )
+        .unwrap();
+    }
+
+    fn insert_related_series(
+        conn: &Connection,
+        series_id: &str,
+        title: &str,
+        start: &str,
+        rule: &str,
+        archived: bool,
+    ) {
+        conn.execute(
+            "INSERT INTO task_series(id,title,description,category_id,priority,start_minute,end_minute,dtstart_local_date,timezone_id,rrule,created_at,updated_at,archived_at,life_node_id)
+             VALUES(?1,?2,'','general','medium',480,540,?3,'local',?4,'0','0',?5,'related-area')",
+            params![series_id, title, start, rule, archived.then_some("1")],
+        )
+        .unwrap();
+    }
+
+    fn insert_related_override(
+        conn: &Connection,
+        override_id: &str,
+        series_id: &str,
+        original: &str,
+        replacement: Option<&str>,
+        cancelled: bool,
+    ) {
+        conn.execute(
+            "INSERT INTO task_occurrence_overrides(id,series_id,original_local_date,replacement_local_date,cancelled,created_at,updated_at)
+             VALUES(?1,?2,?3,?4,?5,'0','0')",
+            params![override_id, series_id, original, replacement, i32::from(cancelled)],
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn related_navigation_projects_one_off_groups_and_recurring_dates() {
+        let c = db();
+        seed_related_area(&c);
+        let active = create(
+            &c,
+            CreateTaskInput {
+                title: "Active one-off".into(),
+                description: "".into(),
+                local_date: "2026-08-09".into(),
+                start_minute: 600,
+                end_minute: 660,
+                category_id: "general".into(),
+                priority: "medium".into(),
+                life_node_id: Some("related-area".into()),
+            },
+        )
+        .unwrap();
+        let completed = create(
+            &c,
+            CreateTaskInput {
+                title: "Completed one-off".into(),
+                description: "".into(),
+                local_date: "2026-08-02".into(),
+                start_minute: 700,
+                end_minute: 760,
+                category_id: "general".into(),
+                priority: "medium".into(),
+                life_node_id: Some("related-area".into()),
+            },
+        )
+        .unwrap();
+        c.execute(
+            "INSERT INTO task_evaluations(id,subject_kind,task_id,series_id,original_local_date,state_id,state_label_snapshot,state_value_bp_snapshot,state_visual_snapshot,evaluated_at,operation_id,supersedes_evaluation_id,is_current)
+             VALUES('eval-related','one_off',?1,NULL,NULL,'completion-met','Met expectation',7500,'met','0','op-related',NULL,1)",
+            params![completed.id],
+        )
+        .unwrap();
+        insert_related_series(
+            &c,
+            "series-first",
+            "First",
+            "2026-08-07",
+            "FREQ=DAILY;COUNT=3",
+            false,
+        );
+        insert_related_series(
+            &c,
+            "series-interval",
+            "Interval",
+            "2026-08-05",
+            "FREQ=DAILY;INTERVAL=3",
+            false,
+        );
+
+        let rows = related_for_life_node(&c, "related-area", "2026-08-06").unwrap();
+        let active_row = rows.iter().find(|row| row.id == active.id).unwrap();
+        assert_eq!(active_row.navigation_local_date, "2026-08-09");
+        assert_eq!(active_row.group, "active");
+        assert!(active_row.series_id.is_none());
+        let completed_row = rows.iter().find(|row| row.id == completed.id).unwrap();
+        assert_eq!(completed_row.navigation_local_date, "2026-08-02");
+        assert_eq!(completed_row.group, "completed");
+        assert_eq!(
+            rows.iter()
+                .find(|row| row.id == "series-first")
+                .unwrap()
+                .navigation_local_date,
+            "2026-08-07"
+        );
+        let interval = rows.iter().find(|row| row.id == "series-interval").unwrap();
+        assert_eq!(interval.navigation_local_date, "2026-08-08");
+        assert_eq!(interval.series_id.as_deref(), Some("series-interval"));
+        assert_eq!(rows.last().unwrap().group, "completed");
+    }
+
+    #[test]
+    fn related_navigation_respects_cancelled_and_moved_overrides() {
+        let c = db();
+        seed_related_area(&c);
+        insert_related_series(
+            &c,
+            "series-cancel",
+            "Cancelled first",
+            "2026-08-05",
+            "FREQ=DAILY;COUNT=3",
+            false,
+        );
+        insert_related_override(
+            &c,
+            "override-cancel",
+            "series-cancel",
+            "2026-08-05",
+            None,
+            true,
+        );
+        insert_related_series(
+            &c,
+            "series-moved-later",
+            "Moved later",
+            "2026-08-05",
+            "FREQ=DAILY;COUNT=1",
+            false,
+        );
+        insert_related_override(
+            &c,
+            "override-later",
+            "series-moved-later",
+            "2026-08-05",
+            Some("2026-08-10"),
+            false,
+        );
+        insert_related_series(
+            &c,
+            "series-moved-out",
+            "Moved before",
+            "2026-08-05",
+            "FREQ=DAILY;COUNT=1",
+            false,
+        );
+        insert_related_override(
+            &c,
+            "override-out",
+            "series-moved-out",
+            "2026-08-05",
+            Some("2026-08-03"),
+            false,
+        );
+        insert_related_series(
+            &c,
+            "series-moved-in",
+            "Moved in",
+            "2026-08-01",
+            "FREQ=DAILY;COUNT=1",
+            false,
+        );
+        insert_related_override(
+            &c,
+            "override-in",
+            "series-moved-in",
+            "2026-08-01",
+            Some("2026-08-09"),
+            false,
+        );
+
+        let rows = related_for_life_node(&c, "related-area", "2026-08-05").unwrap();
+        assert_eq!(
+            rows.iter()
+                .find(|row| row.id == "series-cancel")
+                .unwrap()
+                .navigation_local_date,
+            "2026-08-06"
+        );
+        assert_eq!(
+            rows.iter()
+                .find(|row| row.id == "series-moved-later")
+                .unwrap()
+                .navigation_local_date,
+            "2026-08-10"
+        );
+        assert!(rows.iter().all(|row| row.id != "series-moved-out"));
+        assert_eq!(
+            rows.iter()
+                .find(|row| row.id == "series-moved-in")
+                .unwrap()
+                .navigation_local_date,
+            "2026-08-09"
+        );
+    }
+
+    #[test]
+    fn related_navigation_omits_ended_and_archived_and_validates_inputs() {
+        let c = db();
+        seed_related_area(&c);
+        insert_related_series(
+            &c,
+            "ended",
+            "Ended",
+            "2026-08-01",
+            "FREQ=DAILY;COUNT=2",
+            false,
+        );
+        insert_related_series(&c, "archived", "Archived", "2026-08-06", "FREQ=DAILY", true);
+        assert!(
+            related_for_life_node(&c, "related-area", "2026-08-05")
+                .unwrap()
+                .is_empty()
+        );
+        assert!(
+            related_for_life_node(&c, "life-root", "2026-08-05")
+                .unwrap()
+                .is_empty()
+        );
+        assert!(matches!(
+            related_for_life_node(&c, "missing", "2026-08-05"),
+            Err(TaskError::NotFound)
+        ));
+        assert!(matches!(
+            related_for_life_node(&c, "related-archived", "2026-08-05"),
+            Err(TaskError::NotFound)
+        ));
+        assert!(matches!(
+            related_for_life_node(&c, "related-area", "not-a-date"),
+            Err(TaskError::Validation(_))
+        ));
+        let occurrence_columns: i64 = c
+            .query_row(
+                "SELECT COUNT(*) FROM pragma_table_info('task_occurrence_overrides') WHERE name='life_node_id'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        let schema: u32 = c
+            .query_row("SELECT MAX(version) FROM schema_migrations", [], |row| {
+                row.get(0)
+            })
+            .unwrap();
+        assert_eq!(occurrence_columns, 0);
+        assert_eq!(schema, 16);
+    }
+
+    #[test]
+    fn related_navigation_sorts_multiple_series_deterministically() {
+        let c = db();
+        seed_related_area(&c);
+        insert_related_series(&c, "z-series", "Beta", "2026-08-06", "FREQ=DAILY", false);
+        insert_related_series(&c, "b-series", "Alpha", "2026-08-06", "FREQ=DAILY", false);
+        insert_related_series(&c, "a-series", "Alpha", "2026-08-06", "FREQ=DAILY", false);
+        let ids = related_for_life_node(&c, "related-area", "2026-08-06")
+            .unwrap()
+            .into_iter()
+            .map(|row| row.id)
+            .collect::<Vec<_>>();
+        assert_eq!(ids, ["a-series", "b-series", "z-series"]);
     }
 }

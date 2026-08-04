@@ -82,7 +82,12 @@ type EntryRequest = {
 export function LifeScreen({
   entryRequest,
   onTaskNavigate,
-}: { entryRequest?: EntryRequest; onTaskNavigate?: (localDate: string, taskId: string | null, seriesId: string | null) => void } = {}) {
+  anchorLocalDate,
+}: {
+  entryRequest?: EntryRequest;
+  onTaskNavigate?: (localDate: string, taskId: string | null, seriesId: string | null) => void;
+  anchorLocalDate: string;
+}) {
   const client = useQueryClient();
   const reduced = useReducedMotion();
   const [nodeId, setNodeId] = useState<string>();
@@ -272,7 +277,7 @@ export function LifeScreen({
           </h1>
           <p className={styles.nodeDescription}>{reader.short_description}</p>
           <BasicLeafReader nodeId={readerId} />
-          <RelatedTasksPanel nodeId={readerId} onNavigate={onTaskNavigate} />
+          <RelatedTasksPanel nodeId={readerId} anchorLocalDate={anchorLocalDate} onNavigate={onTaskNavigate} />
         </motion.div>
       </section>
     );
@@ -491,7 +496,7 @@ export function LifeScreen({
               </button>
             </nav>
           )}
-          <RelatedTasksPanel nodeId={projection.selected.id} onNavigate={onTaskNavigate} />
+          <RelatedTasksPanel nodeId={projection.selected.id} anchorLocalDate={anchorLocalDate} onNavigate={onTaskNavigate} />
         </>
       )}
     </section>

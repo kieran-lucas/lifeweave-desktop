@@ -1,0 +1,65 @@
+{
+  "task": 30,
+  "starting_head": "7240b7f371ada526ea5a31c0481612574d875fe0",
+  "schema_version": 16,
+  "feature_activation": null,
+  "source": {
+    "bytes": 165171,
+    "lines": 4637,
+    "sha256": "9c422927c09e26431d71b1ef5ab6306891a3e7c15ece0fc808bedf6f6689540a"
+  },
+  "frontend_tests": {
+    "files": 29,
+    "passed": 450,
+    "failed": 0
+  },
+  "ordinary_rust_tests": {
+    "passed": 412,
+    "failed": 0,
+    "ignored_release_performance": 1
+  },
+  "narrative_release_performance": {
+    "target_p95_ms": 50,
+    "five_blocks": { "p50": "28.7us", "p95": "56.1us", "max": "85.3us" },
+    "fifty_blocks": { "p50": "339.3us", "p95": "539.9us", "max": "655.7us" },
+    "one_twenty_eight_blocks": { "p50": "789.1us", "p95": "1.3002ms", "max": "1.3923ms" },
+    "save_five_blocks": { "p50": "137.4us", "p95": "428.7us" }
+  },
+  "bundle_bytes": {
+    "main": 508547,
+    "basic_leaf_editor": 52351,
+    "markdown": 116541,
+    "total": 1104243
+  },
+  "native_e2e": {
+    "result": "passed",
+    "phases": 3,
+    "webview2": "150.0.4078.105",
+    "edge_webdriver": "150.0.4078.105",
+    "successful_profile_cleanup": true
+  },
+  "nsis": {
+    "path": "src-tauri/target/release/bundle/nsis/Lifeweave_0.0.0_x64-setup.exe",
+    "bytes": 4655924,
+    "sha256": "fdbf0565bdabbbe020c3494e1b4133c0d39f1ce623fd66236cbf9dceaeffc7b2"
+  },
+  "rc_dogfood": {
+    "result": "passed",
+    "run_id": "core-rc-47135d438f394f9caf8fbc06de524bb2",
+    "schema_reopen_sessions": 2,
+    "liveness_seconds_each": 25,
+    "document_tests": 19,
+    "backup_tests": 142,
+    "narrative_tests_passed": 58,
+    "narrative_tests_ignored": 1,
+    "cleanup": "validated sentinel containment; owned processes stopped"
+  },
+  "ci": {
+    "status": "not_run",
+    "reason": "manual-dispatch workflow not required by accepted policy"
+  },
+  "external_manual_debt": [
+    "manual screen-reader evidence",
+    "physical alternate-DPI evidence"
+  ]
+}

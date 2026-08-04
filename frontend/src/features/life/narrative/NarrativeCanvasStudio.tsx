@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import {
@@ -1370,9 +1370,18 @@ export default function NarrativeCanvasStudio({
         <legend>Visual world</legend>
         {visualWorlds.map(world => (
           <label key={world.id} className={worldStyles.option}>
-            <input type="radio" name="visual-world" checked={doc.visualWorldId === world.id} onChange={() => selectVisualWorld(world.id)} />
+            <input type="radio" name="visual-world" value={world.id} checked={doc.visualWorldId === world.id} onChange={() => selectVisualWorld(world.id)} />
             <span><strong>{world.name}</strong> {world.description}</span>
-            <span className={worldStyles.chips} aria-hidden="true">{[world.light.canvas, world.light.accent, world.light.rule].map(color => <span key={color} className={worldStyles.chip} style={{ "--world-chip": color } as CSSProperties} />)}</span>
+            <span className={worldStyles.chips} aria-hidden="true">
+              {(["canvas", "accent", "rule"] as const).map((chip) => (
+                <span
+                  key={chip}
+                  className={worldStyles.chip}
+                  data-world={world.id}
+                  data-chip={chip}
+                />
+              ))}
+            </span>
           </label>
         ))}
       </fieldset>

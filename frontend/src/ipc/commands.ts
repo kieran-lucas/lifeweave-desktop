@@ -124,7 +124,8 @@ export function restoreDatabase(backupId: string): Promise<RestoreResult> {
 export type { BackupProgress };
 
 export const listTaskCategories = () => invoke<TaskCategoryView[]>("list_task_categories");
-export const getRelatedTasksForLifeNode = (nodeId: string) => invoke<RelatedTaskView[]>("get_related_tasks_for_life_node", { nodeId });
+export const getRelatedTasksForLifeNode = (nodeId: string, anchorLocalDate: string) =>
+  invoke<RelatedTaskView[]>("get_related_tasks_for_life_node", { nodeId, anchorLocalDate });
 export const listTasksForDate = (localDate: string) => invoke<TaskView[]>("list_tasks_for_date", { localDate });
 export const createTask = (input: CreateTaskInput) => invoke<TaskView>("create_task", { input });
 export const updateTask = (input: UpdateTaskInput) => invoke<TaskView>("update_task", { input });

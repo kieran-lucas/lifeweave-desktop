@@ -74,9 +74,16 @@ pub fn list_task_categories(
 pub fn get_related_tasks_for_life_node(
     state: State<'_, DatabaseRuntime>,
     node_id: String,
+    anchor_local_date: String,
 ) -> Result<Vec<crate::task::dto::RelatedTaskView>, IpcError> {
     state
-        .execute(move |conn| Ok(repository::related_for_life_node(conn, &node_id)))
+        .execute(move |conn| {
+            Ok(repository::related_for_life_node(
+                conn,
+                &node_id,
+                &anchor_local_date,
+            ))
+        })
         .map_err(map_db)?
         .map_err(map_task)
 }

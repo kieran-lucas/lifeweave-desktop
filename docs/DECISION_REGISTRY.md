@@ -19,6 +19,12 @@ The immutable source is authoritative. This registry makes operational status vi
 - Leaf opens a separate reader.
 - Reduced Motion required.
 - Data backup/restore/export are first-class.
+- Task/Life relationships are navigation-only; each one-off Task or recurring Task series links to zero or one Life node.
+- Relationship authority is stored on `tasks` and `task_series`; occurrence and evaluation rows do not store it, and recurring projections inherit the series relationship.
+- Narrative Canvas supports 1–20 ordered scenes.
+- Narrative Canvas has three immutable built-in creation template IDs: `knowledge_dossier`, `project_blueprint`, and `learning_journey`.
+- Narrative Canvas has four static document-level Visual World IDs: `paper`, `sakura`, `aurora`, and `nocturne`.
+- Visual Worlds are presentation only and remain independent from templates.
 
 ## LOCKED — Technology direction
 
@@ -39,7 +45,6 @@ The immutable source is authoritative. This registry makes operational status vi
 - radial fan geometry and probability emphasis;
 - completion prediction algorithm;
 - global scoring formula;
-- Narrative canonical schema;
 - autosave cadence/patch model;
 - shared-element exact choreography;
 - large-tree virtualization;
@@ -54,19 +59,25 @@ The immutable source is authoritative. This registry makes operational status vi
 - actual-time semantics;
 - final score and hidden mappings;
 - final prediction;
-- role of Outline, Noteboard, tags, backlinks, Graph;
+- tags;
+- backlinks;
+- Generic Outline role beyond the Basic Leaf heading navigator;
+- Noteboard role;
+- Graph;
 - final Canvas export scope;
 - branch node content semantics;
 - shortcut map;
-- final light/dark palettes and world count;
+- global application/branch appearance beyond the four locked Narrative Canvas worlds;
 - backup retention/version policy;
 - multi-monitor details.
 
 ## DEFERRED
 
 - prediction and opaque ML;
-- advanced Narrative Canvas;
-- multiple visual worlds;
+- custom user-authored Narrative templates;
+- custom user-authored Visual Worlds or arbitrary palettes;
+- cross-scene block drag;
+- scene-level independent layout/atmosphere/motion;
 - Graph;
 - generalized knowledge features;
 - public updater/store distribution;

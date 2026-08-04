@@ -1,5 +1,9 @@
 # Roadmap
 
+## Slice 020 — Current-State Closure
+
+Task 30 introduces no new product feature. It reconciles repository authority, makes current-state drift machine-checkable, closes recurring Related Tasks navigation semantics, restores the ordinary security gate, and refreshes schema-16 release/continuity evidence.
+
 ## Slice 019 — Task/Life Relationships
 
 Task 29 adds navigation-only, zero-or-one Life area relationships for one-off Tasks and recurring-series sources. Occurrence rows do not store relationships.

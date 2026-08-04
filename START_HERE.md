@@ -1,34 +1,46 @@
-# Start here — Lifeweave Desktop setup pack
+# Start here — Lifeweave Desktop
 
-This repository is a **source-preserving, GitHub-ready project setup** for the Windows local-first application described by the Product Owner.
+## Authority
 
-## Read in this order
-
-1. [`docs/source-of-truth/SIEU_DAC_TA_TICH_HOP_SAN_PHAM_CONG_NGHE_TASK_LIFE_SYSTEM(1).md`](docs/source-of-truth/SIEU_DAC_TA_TICH_HOP_SAN_PHAM_CONG_NGHE_TASK_LIFE_SYSTEM(1).md) — immutable original specification.
-2. [`docs/source-of-truth/SOURCE_INTEGRITY.md`](docs/source-of-truth/SOURCE_INTEGRITY.md) — exact-copy and checksum contract.
-3. [`AI_CONSTITUTION.md`](AI_CONSTITUTION.md) — non-negotiable invariants for humans and coding agents.
-4. [`docs/DECISION_REGISTRY.md`](docs/DECISION_REGISTRY.md) — what is locked, prototype-gated, open, deferred, or removed.
-5. [`docs/CORE_PRODUCT_SPEC.md`](docs/CORE_PRODUCT_SPEC.md) — executable Core scope.
-6. [`docs/EXPANSION_VISION.md`](docs/EXPANSION_VISION.md) — retained long-term vision that is not on the Core critical path.
-7. [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — system boundaries and dependency direction.
-8. [`specs/000-foundation-proof/`](specs/000-foundation-proof/) — first active vertical slice.
-9. [`docs/DEVELOPMENT_ENVIRONMENT_WINDOWS.md`](docs/DEVELOPMENT_ENVIRONMENT_WINDOWS.md) — local setup.
-10. [`docs/GITHUB_REPOSITORY_SETUP.md`](docs/GITHUB_REPOSITORY_SETUP.md) — GitHub configuration.
+1. [Immutable source](docs/source-of-truth/SIEU_DAC_TA_TICH_HOP_SAN_PHAM_CONG_NGHE_TASK_LIFE_SYSTEM(1).md)
+2. [Source integrity](docs/source-of-truth/SOURCE_INTEGRITY.md)
+3. [AI Constitution](AI_CONSTITUTION.md)
+4. [Project State](docs/PROJECT_STATE.json)
+5. [Decision Registry](docs/DECISION_REGISTRY.md)
+6. [Status](docs/STATUS.md) and [Roadmap](docs/ROADMAP.md)
+7. [Architecture](docs/ARCHITECTURE.md)
+8. Active specification, only when `PROJECT_STATE.active_spec` is non-null
 
 ## Current state
 
-- Phase: **0 — source preservation and project governance**
-- Production feature implementation: **not started**
-- Active specification: `000-foundation-proof`
-- Original source SHA-256: `9c422927c09e26431d71b1ef5ab6306891a3e7c15ece0fc808bedf6f6689540a`
-- Core rule: an AI agent may not infer or implement an OPEN/DEFERRED feature merely because technical substrate exists.
+- Latest closed task: **30/60**
+- Latest product feature: **Task 29 — Task/Life Relationships**
+- Latest feature checkpoint: `7240b7f371ada526ea5a31c0481612574d875fe0`
+- Database schema: **16**
+- Active implementation specification: **none**
+- Next action: **Product Owner gate**
+- Recommended candidate, not activated: **Lossless Portable Package**
 
-## First commands
+## Core invariants
+
+- Windows-first and local-first; core use requires no account, server, network, or default cloud service.
+- Today is the default destination; Task is an independent row/timeline entity, never a card.
+- Life Browse shows the selected node and direct children; full-tree editing stays in Life Edit.
+- SQLite through Rust is persistent and domain authority; React owns rendering and ephemeral interaction state.
+- Backup and restore use staging, checksums, integrity checks, database closure, and safe replacement.
+
+## First verification commands
 
 ```powershell
-python scripts/verify_source_integrity.py
-python scripts/check_repository.py
-./scripts/doctor.ps1
+pnpm source:verify
+pnpm governance:check
+pnpm verify
+pnpm typecheck
+pnpm test
+cargo check --manifest-path src-tauri/Cargo.toml --locked --all-targets
+cargo test --manifest-path src-tauri/Cargo.toml --locked
 ```
 
-The generated index and coverage matrix account for all **402 headings** in the original source.
+## Freshness rule
+
+Repository code, accepted ADRs, `PROJECT_STATE.json`, `STATUS.md`, and Git history override historical bundle task counts and implementation snapshots.

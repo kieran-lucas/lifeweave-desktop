@@ -138,7 +138,7 @@ pub struct RelatedTaskView {
     pub kind: RelatedTaskKind,
     pub title: String,
     pub group: String,
-    pub local_date: Option<String>,
+    pub navigation_local_date: String,
     pub series_id: Option<String>,
 }
 #[derive(Debug, Deserialize)]

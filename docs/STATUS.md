@@ -1,5 +1,14 @@
 # Project Status
 
+## Task 30/60 — Current-State Closure
+
+- No new product feature or database migration.
+- Repository operational state is recorded in `docs/PROJECT_STATE.json` and checked by governance.
+- Recurring Related Tasks navigate to the nearest actionable displayed occurrence on or after a caller-supplied local anchor date.
+- Static Visual World chips no longer require an inline style; the strict security verifier remains unchanged.
+- Schema-16 evidence passed: 450 frontend tests; 412 ordinary Rust tests with 1 designated release-performance test ignored and separately passed; governance/typecheck/build/check/fmt/Clippy; three-phase native E2E; performance budgets; 4,655,924-byte NSIS SHA-256 `fdbf0565bdabbbe020c3494e1b4133c0d39f1ce623fd66236cbf9dceaeffc7b2`; and two-session RC dogfood.
+- Task 31 has not started. Lossless Portable Package is a recommendation only and remains behind Product Owner approval.
+
 ## Task 29/60 — Task/Life Relationships
 
 - Schema 16 links the separate `tasks` and `task_series` authorities to zero or one Life area.

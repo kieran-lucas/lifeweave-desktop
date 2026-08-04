@@ -605,6 +605,8 @@ export function TodayScreen({
                           key={item.id}
                           className={`${styles.row} ${selected === item.id ? styles.selected : ""}`}
                           tabIndex={0}
+                          data-task-id={item.kind === "one_off" ? item.id : undefined}
+                          data-series-id={item.kind === "recurring" ? item.series_id : undefined}
                           onClick={() => setSelected(item.id)}
                           onDoubleClick={(e) => begin(item, e.currentTarget)}
                           onKeyDown={(e) => {

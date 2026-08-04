@@ -46,6 +46,7 @@ export function App() {
   );
   const [destination, setDestination] = useState<Destination>("today");
   const [selectedDate, setSelectedDate] = useState(localToday);
+  const [anchorLocalDate] = useState(localToday);
   const [taskSidebarMode, setTaskSidebarMode] =
     useState<SidebarMode>(readSidebarMode);
   const [lifeAutoCollapsed, setLifeAutoCollapsed] = useState(false);
@@ -283,6 +284,7 @@ export function App() {
                 }}
               >
                 <LifeScreen
+                  anchorLocalDate={anchorLocalDate}
                   onTaskNavigate={navigateToTask}
                   entryRequest={
                     pendingNav?.target.kind === "life_browse" ||

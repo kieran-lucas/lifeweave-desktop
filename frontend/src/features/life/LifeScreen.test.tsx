@@ -82,7 +82,10 @@ const renderLife = (
         })
       }
     >
-      <LifeScreen {...(onTaskNavigate ? { onTaskNavigate } : {})} />
+      <LifeScreen
+        anchorLocalDate="2026-08-04"
+        {...(onTaskNavigate ? { onTaskNavigate } : {})}
+      />
     </QueryClientProvider>,
   );
 
@@ -309,7 +312,7 @@ describe("Life Browse", () => {
         kind: "one_off",
         title: "Finished",
         group: "completed",
-        local_date: "2026-08-01",
+        navigation_local_date: "2026-08-01",
         series_id: null,
       },
       {
@@ -317,7 +320,7 @@ describe("Life Browse", () => {
         kind: "recurring",
         title: "Weekly",
         group: "active",
-        local_date: "2026-08-03",
+        navigation_local_date: "2026-08-05",
         series_id: "series-1",
       },
     ]);
@@ -338,6 +341,7 @@ describe("Life Browse", () => {
     });
     expect(accessibility.violations).toEqual([]);
     fireEvent.click(screen.getByRole("button", { name: "Weekly" }));
-    expect(navigate).toHaveBeenCalledWith("2026-08-03", null, "series-1");
+    expect(api.related).toHaveBeenCalledWith(branch.id, "2026-08-04");
+    expect(navigate).toHaveBeenCalledWith("2026-08-05", null, "series-1");
   });
 });

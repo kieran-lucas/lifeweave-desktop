@@ -784,4 +784,31 @@ describe("NarrativeCanvasStudio multi-scene", () => {
       expect(saved.scenes[0].blocks[0].content.content[0].content[0].text).toBe("Persisted after redo");
     });
   });
+
+  it("renders four semantic Visual World radios with three static chips and no inline style", async () => {
+    const { container } = mountWith(baseCanvasJson);
+    const radios = screen.getAllByRole("radio");
+    expect(radios).toHaveLength(4);
+    expect(radios.map((radio) => radio.getAttribute("value"))).toEqual([
+      "paper",
+      "sakura",
+      "aurora",
+      "nocturne",
+    ]);
+    const expected = ["canvas", "accent", "rule"];
+    for (const world of ["paper", "sakura", "aurora", "nocturne"]) {
+      const chips = Array.from(
+        container.querySelectorAll(`[data-world="${world}"]`),
+      );
+      expect(chips).toHaveLength(3);
+      expect(chips.map((chip) => chip.getAttribute("data-chip"))).toEqual(
+        expected,
+      );
+      expect(chips.every((chip) => !chip.hasAttribute("style"))).toBe(true);
+    }
+    const accessibility = await axe.run(container, {
+      rules: { "color-contrast": { enabled: false } },
+    });
+    expect(accessibility.violations).toEqual([]);
+  });
 });

@@ -1,9 +1,19 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, beforeEach, vi } from "vitest";
 
 import { App } from "./App";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import axe from "axe-core";
+
+const appApi = vi.hoisted(() => ({
+  listTodayItems: vi.fn(),
+  getLifeBrowseProjection: vi.fn(),
+  getRelatedTasksForLifeNode: vi.fn(),
+}));
+
+vi.mock("../features/calendar/date", () => ({
+  localToday: () => "2026-08-04",
+}));
 
 const renderApp = () =>
   render(
@@ -24,7 +34,7 @@ vi.mock("../ipc/commands", () => ({
   backupDatabase: vi.fn(),
   restoreDatabase: vi.fn(),
   listTasksForDate: vi.fn().mockResolvedValue([]),
-  listTodayItems: vi.fn().mockResolvedValue([]),
+  listTodayItems: appApi.listTodayItems,
   listTaskCategories: vi.fn().mockResolvedValue([]),
   listTaskLifeTargets: vi.fn().mockResolvedValue([]),
   getMonthProjection: vi
@@ -55,9 +65,15 @@ vi.mock("../ipc/commands", () => ({
   createTask: vi.fn(),
   updateTask: vi.fn(),
   deleteTask: vi.fn(),
-  getLifeBrowseProjection: vi
-    .fn()
-    .mockResolvedValue({
+  getLifeBrowseProjection: appApi.getLifeBrowseProjection,
+  getRelatedTasksForLifeNode: appApi.getRelatedTasksForLifeNode,
+  getPinnedLifeNodes: vi.fn().mockResolvedValue([]),
+  pinLifeNode: vi.fn(),
+  unpinLifeNode: vi.fn(),
+  saveLifeNavigationPreference: vi.fn().mockResolvedValue({}),
+}));
+
+const rootProjection = {
       root_id: "life-root",
       selected: {
         id: "life-root",
@@ -80,16 +96,84 @@ vi.mock("../ipc/commands", () => ({
       resolved_from_fallback: false,
       preferred_mode: "browse",
       viewport_anchor: null,
-    }),
-  getRelatedTasksForLifeNode: vi.fn().mockResolvedValue([]),
-  getPinnedLifeNodes: vi.fn().mockResolvedValue([]),
-  pinLifeNode: vi.fn(),
-  unpinLifeNode: vi.fn(),
-  saveLifeNavigationPreference: vi.fn().mockResolvedValue({}),
-}));
+};
 
 describe("App shell", () => {
-  beforeEach(() => window.localStorage.clear());
+  beforeEach(() => {
+    window.localStorage.clear();
+    appApi.listTodayItems.mockReset().mockResolvedValue([]);
+    appApi.getLifeBrowseProjection.mockReset().mockResolvedValue(rootProjection);
+    appApi.getRelatedTasksForLifeNode.mockReset().mockResolvedValue([]);
+  });
+
+  it("passes fixed local today to Life and focuses the backend-provided recurring navigation date", async () => {
+    Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
+      configurable: true,
+      value: vi.fn(),
+    });
+    const leaf = {
+      ...rootProjection.selected,
+      id: "life-area",
+      title: "Area",
+    };
+    appApi.getLifeBrowseProjection.mockResolvedValue({
+      ...rootProjection,
+      selected: leaf,
+      breadcrumb: [rootProjection.selected, leaf],
+    });
+    appApi.getRelatedTasksForLifeNode.mockResolvedValue([
+      {
+        id: "series-1",
+        kind: "recurring",
+        title: "Weekly review",
+        group: "active",
+        navigation_local_date: "2026-08-06",
+        series_id: "series-1",
+      },
+    ]);
+    appApi.listTodayItems.mockImplementation((date: string) =>
+      Promise.resolve(
+        date === "2026-08-06"
+          ? [
+              {
+                kind: "recurring",
+                id: "series-1:2026-08-06",
+                occurrence_id: "series-1:2026-08-06",
+                series_id: "series-1",
+                original_local_date: "2026-08-06",
+                local_date: "2026-08-06",
+                start_minute: 480,
+                end_minute: 540,
+                title: "Weekly review",
+                description: "",
+                category_id: "general",
+                category_name: "General",
+                category_icon_key: "category-general",
+                category_color_key: "blue",
+                priority: "medium",
+                is_override: false,
+                evaluation: null,
+                life_area: { id: "life-area", title: "Area", breadcrumb: "Area", archived: false },
+              },
+            ]
+          : [],
+      ),
+    );
+    renderApp();
+    await screen.findByRole("heading", { name: "Today" });
+    fireEvent.click(screen.getByRole("button", { name: "Life System" }));
+    expect(await screen.findByRole("button", { name: "Weekly review" })).toBeInTheDocument();
+    expect(appApi.getRelatedTasksForLifeNode).toHaveBeenCalledWith(
+      "life-area",
+      "2026-08-04",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Weekly review" }));
+    await screen.findByRole("heading", { name: "Today" });
+    await waitFor(() =>
+      expect(document.activeElement).toHaveAttribute("data-series-id", "series-1"),
+    );
+    delete (HTMLElement.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+  });
 
   it("defaults to Today and exposes the locked navigation order", async () => {
     renderApp();
