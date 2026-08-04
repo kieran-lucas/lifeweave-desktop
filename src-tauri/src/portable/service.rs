@@ -68,13 +68,12 @@ fn package_path(root: &Path, id: &str) -> PathBuf {
     export_root(root).join(format!("{id}.lifeweave.zip"))
 }
 
-fn cleanup_stale_exports(root: &Path) {
+fn cleanup_stale_exports_where(root: &Path, stale: impl Fn(&std::fs::DirEntry) -> bool) {
     let directory = export_root(root);
     let Ok(entries) = std::fs::read_dir(&directory) else {
         return;
     };
-    let now = std::time::SystemTime::now();
-    for entry in entries.flatten() {
+    for entry in entries.take(domain::MAX_STALE_CLEANUP_ENTRIES).flatten() {
         let Ok(kind) = entry.file_type() else {
             continue;
         };
@@ -93,23 +92,28 @@ fn cleanup_stale_exports(root: &Path) {
         if !id.is_some_and(domain::valid_opaque_id) {
             continue;
         }
-        if entry
-            .metadata()
-            .and_then(|m| m.modified())
-            .is_ok_and(|time| domain::staging_is_stale(time, now))
-        {
+        if stale(&entry) {
             let _ = durability::durable_remove_file(&entry.path());
         }
     }
 }
 
-fn cleanup_stale_imports(root: &Path) {
+fn cleanup_stale_exports(root: &Path) {
+    let now = std::time::SystemTime::now();
+    cleanup_stale_exports_where(root, |entry| {
+        entry
+            .metadata()
+            .and_then(|metadata| metadata.modified())
+            .is_ok_and(|modified| domain::staging_is_stale(modified, now))
+    });
+}
+
+fn cleanup_stale_imports_where(root: &Path, stale: impl Fn(&std::fs::DirEntry) -> bool) {
     let directory = import_root(root);
     let Ok(entries) = std::fs::read_dir(&directory) else {
         return;
     };
-    let now = std::time::SystemTime::now();
-    for entry in entries.flatten() {
+    for entry in entries.take(domain::MAX_STALE_CLEANUP_ENTRIES).flatten() {
         let Ok(kind) = entry.file_type() else {
             continue;
         };
@@ -122,14 +126,25 @@ fn cleanup_stale_imports(root: &Path) {
         if !domain::valid_opaque_id(&name) {
             continue;
         }
-        if entry
-            .metadata()
-            .and_then(|m| m.modified())
-            .is_ok_and(|time| domain::staging_is_stale(time, now))
-        {
+        if stale(&entry) {
             let _ = durability::durable_remove_dir_all(&entry.path());
         }
     }
+}
+
+fn cleanup_stale_imports(root: &Path) {
+    let now = std::time::SystemTime::now();
+    cleanup_stale_imports_where(root, |entry| {
+        entry
+            .metadata()
+            .and_then(|metadata| metadata.modified())
+            .is_ok_and(|modified| domain::staging_is_stale(modified, now))
+    });
+}
+
+pub(crate) fn cleanup_stale_portable_artifacts(root: &Path) {
+    cleanup_stale_exports(root);
+    cleanup_stale_imports(root);
 }
 
 fn assemble_export(
@@ -514,6 +529,82 @@ mod tests {
             ]))
             .is_err()
         );
+    }
+
+    #[test]
+    fn stale_cleanup_is_owned_bounded_idempotent_and_missing_safe() {
+        let root = root("stale-cleanup");
+        cleanup_stale_portable_artifacts(&root);
+
+        let exports = export_root(&root);
+        let imports = import_root(&root);
+        std::fs::create_dir_all(&exports).unwrap();
+        std::fs::create_dir_all(&imports).unwrap();
+        let stale_export = domain::new_opaque_id();
+        let fresh_export = domain::new_opaque_id();
+        for suffix in [".lifeweave.zip", ".ticket.json"] {
+            std::fs::write(exports.join(format!("{stale_export}{suffix}")), b"stale").unwrap();
+            std::fs::write(exports.join(format!("{fresh_export}{suffix}")), b"fresh").unwrap();
+        }
+        std::fs::write(exports.join(format!(".{stale_export}.staging")), b"stale").unwrap();
+        std::fs::write(exports.join("unrelated.txt"), b"keep").unwrap();
+        let stale_import = domain::new_opaque_id();
+        let fresh_import = domain::new_opaque_id();
+        std::fs::create_dir(imports.join(&stale_import)).unwrap();
+        std::fs::write(
+            imports.join(&stale_import).join("package.lifeweave.zip"),
+            b"x",
+        )
+        .unwrap();
+        std::fs::create_dir(imports.join(&fresh_import)).unwrap();
+        std::fs::create_dir(imports.join("not-an-owned-id")).unwrap();
+
+        cleanup_stale_exports_where(&root, |entry| {
+            entry.file_name().to_string_lossy().contains(&stale_export)
+        });
+        cleanup_stale_imports_where(&root, |entry| {
+            entry.file_name().to_string_lossy() == stale_import
+        });
+        assert!(
+            !exports
+                .join(format!("{stale_export}.lifeweave.zip"))
+                .exists()
+        );
+        assert!(!exports.join(format!("{stale_export}.ticket.json")).exists());
+        assert!(!exports.join(format!(".{stale_export}.staging")).exists());
+        assert!(
+            exports
+                .join(format!("{fresh_export}.lifeweave.zip"))
+                .exists()
+        );
+        assert!(exports.join(format!("{fresh_export}.ticket.json")).exists());
+        assert!(exports.join("unrelated.txt").exists());
+        assert!(!imports.join(&stale_import).exists());
+        assert!(imports.join(&fresh_import).exists());
+        assert!(imports.join("not-an-owned-id").exists());
+
+        cleanup_stale_exports_where(&root, |_| true);
+        cleanup_stale_imports_where(&root, |_| true);
+        assert!(exports.join("unrelated.txt").exists());
+        assert!(imports.join("not-an-owned-id").exists());
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn stale_cleanup_inspects_at_most_the_direct_child_cap() {
+        let root = root("stale-cap");
+        let exports = export_root(&root);
+        std::fs::create_dir_all(&exports).unwrap();
+        for _ in 0..=domain::MAX_STALE_CLEANUP_ENTRIES {
+            std::fs::write(
+                exports.join(format!("{}.ticket.json", domain::new_opaque_id())),
+                b"stale",
+            )
+            .unwrap();
+        }
+        cleanup_stale_exports_where(&root, |_| true);
+        assert_eq!(std::fs::read_dir(&exports).unwrap().count(), 1);
+        std::fs::remove_dir_all(root).unwrap();
     }
 
     fn minimal_package_bytes() -> Vec<u8> {
@@ -993,6 +1084,77 @@ mod tests {
             }
             let directory = root.join("assets/original");
             if directory.exists() { assert_eq!(std::fs::read_dir(directory).unwrap().count(), 0); }
+            std::fs::remove_dir_all(root).unwrap();
+        }
+    }
+
+    #[test]
+    fn corrupt_checksum_match_blocks_portable_document_and_join_commit() {
+        for defect in ["deleted", "modified"] {
+            let root = root(&format!("dedup-authority-{defect}"));
+            let mut conn = db();
+            let existing = document::assets::import(
+                &mut conn,
+                &root,
+                document::dto::ImportDocumentAssetInput {
+                    original_name: "pixel.png".into(),
+                    bytes: document::assets::tiny_png(),
+                },
+            )
+            .unwrap();
+            let relative: String = conn
+                .query_row(
+                    "SELECT relative_original_path FROM assets WHERE id=?1",
+                    [&existing.asset_id],
+                    |row| row.get(0),
+                )
+                .unwrap();
+            let backing = root.join(relative);
+            if defect == "deleted" {
+                std::fs::remove_file(&backing).unwrap();
+            } else {
+                std::fs::write(&backing, b"corrupt").unwrap();
+            }
+            let target = leaf(&mut conn, "Dedup authority target");
+            assert!(
+                repository::confirm_import(
+                    &mut conn,
+                    &root,
+                    ConfirmPortablePackageImportInput {
+                        import_id: domain::new_opaque_id(),
+                        life_node_id: target,
+                        operation_id: format!("dedup-authority-{defect}"),
+                    },
+                    single_asset_package(),
+                )
+                .is_err()
+            );
+            for table in [
+                "reader_documents",
+                "document_assets",
+                "reader_save_operations",
+            ] {
+                assert_eq!(
+                    conn.query_row(&format!("SELECT COUNT(*) FROM {table}"), [], |row| {
+                        row.get::<_, i64>(0)
+                    })
+                    .unwrap(),
+                    0,
+                    "{defect}: {table}"
+                );
+            }
+            assert_eq!(
+                conn.query_row("SELECT COUNT(*) FROM assets", [], |row| row
+                    .get::<_, i64>(0))
+                    .unwrap(),
+                1
+            );
+            assert_eq!(
+                std::fs::read_dir(root.join("assets/original"))
+                    .unwrap()
+                    .count(),
+                if defect == "deleted" { 0 } else { 1 }
+            );
             std::fs::remove_dir_all(root).unwrap();
         }
     }

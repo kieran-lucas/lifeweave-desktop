@@ -12,7 +12,7 @@ vi.mock("../../../ipc/commands", () => ({
 }));
 
 const client = () => new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
-const mount = (ui: React.ReactNode) => render(<QueryClientProvider client={client()}>{ui}</QueryClientProvider>);
+const mount = (ui: React.ReactNode, queryClient = client()) => render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
 const preview = { import_id: "00000000-0000-7000-8000-000000000010", document_kind: "narrative_canvas" as const,
   title: "Portable Canvas", document_schema_version: 1, template_id: "knowledge_dossier", template_version: 1,
   visual_world_id: "aurora", scene_count: 3, asset_count: 2, total_asset_bytes: 2048n, package_bytes: 4096n,
@@ -44,11 +44,14 @@ describe("PortablePackageControls", () => {
 
   it("confirms once, disables duplicate commit, and invalidates the empty leaf", async () => {
     let resolve!: () => void; api.confirm.mockReturnValue(new Promise<void>(value => { resolve = value; }));
-    mount(<PortablePackageControls nodeId="node" />);
+    const queryClient = client(); const invalidate = vi.spyOn(queryClient, "invalidateQueries");
+    mount(<PortablePackageControls nodeId="node" />, queryClient);
     fireEvent.change(screen.getByLabelText("Import Lifeweave package"), { target: { files: [packageFile()] } });
     const confirm = await screen.findByRole("button", { name: "Import into this empty leaf" }); fireEvent.click(confirm); fireEvent.click(confirm);
     expect(api.confirm).toHaveBeenCalledTimes(1); expect(screen.getByRole("button", { name: "Importing…" })).toBeDisabled();
     resolve(); await screen.findByText("Lifeweave package imported into this empty leaf.");
+    expect(invalidate).toHaveBeenCalledTimes(3);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
   it("cancels with Escape, discards the ticket, and restores focus", async () => {
@@ -105,5 +108,46 @@ describe("PortablePackageControls", () => {
     fireEvent.change(screen.getByLabelText("Import Lifeweave package"), { target: { files: [packageFile()] } });
     await screen.findByRole("dialog"); mounted.unmount();
     await waitFor(() => expect(api.discard).toHaveBeenCalledWith(preview.import_id));
+  });
+
+  it("reports committed success when one cache refresh rejects", async () => {
+    const queryClient = client();
+    vi.spyOn(queryClient, "invalidateQueries")
+      .mockRejectedValueOnce(new Error("reader refresh"))
+      .mockResolvedValue(undefined);
+    mount(<PortablePackageControls nodeId="node" />, queryClient);
+    fireEvent.change(screen.getByLabelText("Import Lifeweave package"), { target: { files: [packageFile()] } });
+    fireEvent.click(await screen.findByRole("button", { name: "Import into this empty leaf" }));
+    expect(await screen.findByRole("status")).toHaveTextContent("imported successfully");
+    expect(screen.queryByText(/without changing this leaf/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("attempts every refresh and never reports unchanged after committed success", async () => {
+    const queryClient = client();
+    const invalidate = vi.spyOn(queryClient, "invalidateQueries").mockRejectedValue(new Error("offline cache"));
+    const mounted = mount(<PortablePackageControls nodeId="node" />, queryClient);
+    fireEvent.change(screen.getByLabelText("Import Lifeweave package"), { target: { files: [packageFile()] } });
+    fireEvent.click(await screen.findByRole("button", { name: "Import into this empty leaf" }));
+    expect(await screen.findByRole("status")).toHaveTextContent("imported successfully");
+    expect(invalidate).toHaveBeenCalledTimes(3);
+    mounted.unmount();
+    expect(api.discard).not.toHaveBeenCalled();
+  });
+
+  it("keeps the same preview and operation authority retryable after confirm rejection", async () => {
+    api.confirm.mockRejectedValueOnce(new Error("conflict")).mockResolvedValueOnce({});
+    mount(<PortablePackageControls nodeId="node" />);
+    fireEvent.change(screen.getByLabelText("Import Lifeweave package"), { target: { files: [packageFile()] } });
+    const confirm = await screen.findByRole("button", { name: "Import into this empty leaf" });
+    fireEvent.click(confirm);
+    expect(await screen.findByRole("alert")).toHaveTextContent("without changing this leaf");
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Import into this empty leaf" }));
+    await screen.findByText("Lifeweave package imported into this empty leaf.");
+    expect(api.confirm).toHaveBeenCalledTimes(2);
+    const firstInput = api.confirm.mock.calls.at(0)![0];
+    const secondInput = api.confirm.mock.calls.at(1)![0];
+    expect(secondInput.operation_id).toBe(firstInput.operation_id);
   });
 });

@@ -12,6 +12,7 @@ pub const MAX_README_BYTES: usize = 64 * 1024;
 pub const MAX_MANIFEST_BYTES: usize = 256 * 1024;
 pub const MAX_CHECKSUMS_BYTES: usize = 256 * 1024;
 pub const STAGING_MAX_AGE_SECONDS: u64 = 24 * 60 * 60;
+pub const MAX_STALE_CLEANUP_ENTRIES: usize = 1024;
 pub const MAX_CANONICAL_BYTES: usize = 1024 * 1024;
 pub const MAX_MARKDOWN_BYTES: usize = 1024 * 1024;
 
@@ -192,5 +193,19 @@ mod tests {
         assert!(safe_archive_path("content/document.json"));
         assert_eq!(safe_file_stem("CON.txt"), "lifeweave-document");
         assert_eq!(safe_file_stem("Tài liệu"), "Tài liệu");
+    }
+
+    #[test]
+    fn stale_threshold_is_strictly_older_than_twenty_four_hours() {
+        let now = std::time::SystemTime::UNIX_EPOCH
+            + std::time::Duration::from_secs(STAGING_MAX_AGE_SECONDS + 10);
+        assert!(!staging_is_stale(
+            now - std::time::Duration::from_secs(STAGING_MAX_AGE_SECONDS),
+            now
+        ));
+        assert!(staging_is_stale(
+            now - std::time::Duration::from_secs(STAGING_MAX_AGE_SECONDS + 1),
+            now
+        ));
     }
 }

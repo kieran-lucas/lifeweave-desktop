@@ -25,13 +25,14 @@ export function PortablePackageControls({ nodeId, documentKind, documentId, hasD
   const [error, setError] = useState<string>();
   const currentImportId = useRef<string | undefined>(undefined);
   const currentOperationId = useRef<string | undefined>(undefined);
+  const importCommitted = useRef(false);
 
   const discard = async (restoreFocus = true) => {
-    const id = currentImportId.current; currentImportId.current = undefined; currentOperationId.current = undefined; setPreview(undefined); setError(undefined);
+    const id = currentImportId.current; currentImportId.current = undefined; currentOperationId.current = undefined; importCommitted.current = false; setPreview(undefined); setError(undefined);
     if (id) { try { await discardPortablePackageImport(id); } catch { /* stale cleanup remains authoritative */ } }
     if (restoreFocus) requestAnimationFrame(() => trigger.current?.focus());
   };
-  useEffect(() => () => { const id = currentImportId.current; if (id) void discardPortablePackageImport(id); }, []);
+  useEffect(() => () => { const id = currentImportId.current; if (id && !importCommitted.current) void discardPortablePackageImport(id); }, []);
 
   const choose = async (file?: File) => {
     if (!file) return;
@@ -40,19 +41,29 @@ export function PortablePackageControls({ nodeId, documentKind, documentId, hasD
     await discard(false);
     try {
       const value = await previewPortablePackageImport(new Uint8Array(await file.arrayBuffer()));
-      currentImportId.current = value.import_id; currentOperationId.current = operationId("portable-import"); setPreview(value);
+      importCommitted.current = false; currentImportId.current = value.import_id; currentOperationId.current = operationId("portable-import"); setPreview(value);
     } catch { setError("The package could not be validated. The empty leaf was not changed."); }
   };
 
   const confirm = async () => {
-    if (!preview || pending) return; setPending(true); setError(undefined);
+    if (!preview || pending) return; setPending(true); setError(undefined); setNotice(undefined);
     try {
       await confirmPortablePackageImport({ import_id: preview.import_id, life_node_id: nodeId, operation_id: currentOperationId.current ?? operationId("portable-import") });
-      currentImportId.current = undefined; currentOperationId.current = undefined; setPreview(undefined);
-      await Promise.all([client.invalidateQueries({ queryKey: readerKey(nodeId) }), client.invalidateQueries({ queryKey: canvasKey(nodeId) }), client.invalidateQueries({ queryKey: ["search"] })]);
-      setNotice("Lifeweave package imported into this empty leaf.");
-    } catch { setError("Import failed without changing this leaf. You can retry or cancel."); }
-    finally { setPending(false); }
+    } catch {
+      setError("Import failed without changing this leaf. You can retry or cancel.");
+      setPending(false);
+      return;
+    }
+    importCommitted.current = true; currentImportId.current = undefined; currentOperationId.current = undefined; setPreview(undefined);
+    const refresh = await Promise.allSettled([
+      client.invalidateQueries({ queryKey: readerKey(nodeId) }),
+      client.invalidateQueries({ queryKey: canvasKey(nodeId) }),
+      client.invalidateQueries({ queryKey: ["search"] }),
+    ]);
+    setNotice(refresh.every(result => result.status === "fulfilled")
+      ? "Lifeweave package imported into this empty leaf."
+      : "Lifeweave package imported successfully, but this view could not refresh automatically. Reopen this leaf.");
+    setPending(false);
   };
 
   const exportPackage = async () => {

@@ -113,13 +113,10 @@ pub fn run() {
     init_tracing();
     tauri::Builder::default()
         .setup(|app| {
-            let db_path = app_data_directory(app.handle())
-                .expect("app data dir unavailable")
-                .join("lifeweave.db");
-
-            if let Some(parent) = db_path.parent() {
-                std::fs::create_dir_all(parent)?;
-            }
+            let app_data_root = app_data_directory(app.handle()).expect("app data dir unavailable");
+            std::fs::create_dir_all(&app_data_root)?;
+            portable::cleanup_stale_portable_artifacts(&app_data_root);
+            let db_path = app_data_root.join("lifeweave.db");
 
             let marker_path = db_path
                 .parent()

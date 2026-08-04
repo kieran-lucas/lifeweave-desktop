@@ -168,9 +168,9 @@ pub fn install_prepared_asset_in_tx(
     root: &Path,
     asset: &PreparedDocumentAsset,
 ) -> Result<AssetInstallReceipt, DocumentError> {
-    if let Some((id, mime, width, height, status)) = tx
+    if let Some((id, mime, width, height, status, relative, checksum, byte_size)) = tx
         .query_row(
-            "SELECT id,sniffed_mime,width,height,status FROM assets WHERE checksum=?1",
+            "SELECT id,sniffed_mime,width,height,status,relative_original_path,checksum,byte_size FROM assets WHERE checksum=?1",
             [&asset.checksum],
             |row| {
                 Ok((
@@ -179,18 +179,31 @@ pub fn install_prepared_asset_in_tx(
                     row.get::<_, u32>(2)?,
                     row.get::<_, u32>(3)?,
                     row.get::<_, String>(4)?,
+                    row.get::<_, String>(5)?,
+                    row.get::<_, String>(6)?,
+                    row.get::<_, i64>(7)? as u64,
                 ))
             },
         )
         .optional()?
     {
         if status != "usable"
+            || checksum != asset.checksum
             || mime != asset.mime
             || width != asset.width
             || height != asset.height
+            || byte_size != asset.byte_size
         {
             return Err(DocumentError::Validation(
-                "Matching local asset authority is not usable.",
+                "Matching local asset authority is missing or corrupt.",
+            ));
+        }
+        let verified = read_verified_original(root, &relative, &checksum).map_err(|_| {
+            DocumentError::Validation("Matching local asset authority is missing or corrupt.")
+        })?;
+        if verified.len() as u64 != asset.byte_size {
+            return Err(DocumentError::Validation(
+                "Matching local asset authority is missing or corrupt.",
             ));
         }
         return Ok(AssetInstallReceipt {
@@ -392,6 +405,125 @@ mod tests {
         if directory.exists() {
             assert_eq!(std::fs::read_dir(directory).unwrap().count(), 0);
         }
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn existing_checksum_requires_valid_backing_authority_and_metadata() {
+        for defect in [
+            "deleted",
+            "modified",
+            "status",
+            "mime",
+            "width",
+            "height",
+            "byte_size",
+        ] {
+            let mut conn = open_memory_connection().unwrap();
+            run_migrations(&mut conn).unwrap();
+            let root = std::env::temp_dir()
+                .join(format!("lw_asset_existing_{defect}_{}", domain::new_id()));
+            std::fs::create_dir_all(&root).unwrap();
+            let input = ImportDocumentAssetInput {
+                original_name: "pixel.png".into(),
+                bytes: tiny_png(),
+            };
+            let existing = import(&mut conn, &root, input.clone()).unwrap();
+            let relative: String = conn
+                .query_row(
+                    "SELECT relative_original_path FROM assets WHERE id=?1",
+                    [&existing.asset_id],
+                    |row| row.get(0),
+                )
+                .unwrap();
+            let path = root.join(relative);
+            match defect {
+                "deleted" => std::fs::remove_file(&path).unwrap(),
+                "modified" => std::fs::write(&path, b"corrupt").unwrap(),
+                "status" => {
+                    conn.execute(
+                        "UPDATE assets SET status='missing' WHERE id=?1",
+                        [&existing.asset_id],
+                    )
+                    .unwrap();
+                }
+                "mime" => {
+                    conn.execute(
+                        "UPDATE assets SET sniffed_mime='image/gif' WHERE id=?1",
+                        [&existing.asset_id],
+                    )
+                    .unwrap();
+                }
+                "width" => {
+                    conn.execute(
+                        "UPDATE assets SET width=width+1 WHERE id=?1",
+                        [&existing.asset_id],
+                    )
+                    .unwrap();
+                }
+                "height" => {
+                    conn.execute(
+                        "UPDATE assets SET height=height+1 WHERE id=?1",
+                        [&existing.asset_id],
+                    )
+                    .unwrap();
+                }
+                _ => {
+                    conn.execute(
+                        "UPDATE assets SET byte_size=byte_size+1 WHERE id=?1",
+                        [&existing.asset_id],
+                    )
+                    .unwrap();
+                }
+            }
+
+            assert!(import(&mut conn, &root, input).is_err(), "{defect}");
+            assert_eq!(
+                conn.query_row("SELECT COUNT(*) FROM assets", [], |row| row
+                    .get::<_, i64>(0))
+                    .unwrap(),
+                1,
+                "{defect}"
+            );
+            assert_eq!(
+                std::fs::read_dir(root.join("assets/original"))
+                    .unwrap()
+                    .count(),
+                if defect == "deleted" { 0 } else { 1 },
+                "{defect}"
+            );
+            std::fs::remove_dir_all(root).unwrap();
+        }
+    }
+
+    #[test]
+    fn valid_existing_asset_is_reused_and_never_rollback_owned() {
+        let mut conn = open_memory_connection().unwrap();
+        run_migrations(&mut conn).unwrap();
+        let root = std::env::temp_dir().join(format!("lw_asset_reuse_{}", domain::new_id()));
+        std::fs::create_dir_all(&root).unwrap();
+        let prepared = prepare_imported_asset("pixel.png", tiny_png()).unwrap();
+        let first = {
+            let tx = conn.transaction().unwrap();
+            let receipt = install_prepared_asset_in_tx(&tx, &root, &prepared).unwrap();
+            tx.commit().unwrap();
+            receipt
+        };
+        let second = {
+            let tx = conn.transaction().unwrap();
+            let receipt = install_prepared_asset_in_tx(&tx, &root, &prepared).unwrap();
+            tx.rollback().unwrap();
+            receipt
+        };
+        assert_eq!(second.asset_id, first.asset_id);
+        assert!(second.created_file.is_none());
+        assert!(get(&conn, &root, &first.asset_id).is_ok());
+        assert_eq!(
+            conn.query_row("SELECT COUNT(*) FROM assets", [], |row| row
+                .get::<_, i64>(0))
+                .unwrap(),
+            1
+        );
         std::fs::remove_dir_all(root).unwrap();
     }
 }

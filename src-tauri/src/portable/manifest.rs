@@ -95,7 +95,8 @@ impl PortableManifest {
             || self.document.asset_policy != "privacy_sanitized_visual_v1"
             || !crate::document::domain::valid_id(&self.document.source_document_id)
             || self.document.title.trim().is_empty()
-            || self.document.title.len() > 200
+            || self.document.title.chars().count() > 200
+            || self.document.title.chars().any(char::is_control)
             || chrono::DateTime::parse_from_rfc3339(&self.exported_at).is_err()
         {
             return Err(PortableError::Validation(
@@ -340,5 +341,26 @@ mod tests {
         let text = String::from_utf8(readme(&value)).unwrap();
         assert!(text.contains("- Title: Line one Line two\n"));
         assert_eq!(readme(&value), readme(&value));
+    }
+
+    #[test]
+    fn title_limit_counts_unicode_scalars_and_rejects_controls() {
+        let mut value = basic();
+        value.document.title = "á".repeat(100);
+        value.validate().unwrap();
+        value.document.title = "á".repeat(200);
+        value.validate().unwrap();
+        value.document.title = "á".repeat(201);
+        assert!(value.validate().is_err());
+        value.document.title = "line\nbreak".into();
+        assert!(value.validate().is_err());
+        value.document.title = " \t ".into();
+        assert!(value.validate().is_err());
+        value.document.title = "ASCII title".into();
+        value.validate().unwrap();
+        assert_eq!(
+            domain::safe_file_stem(&"á".repeat(121)).chars().count(),
+            120
+        );
     }
 }
