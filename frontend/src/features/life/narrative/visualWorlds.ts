@@ -1,11 +1,15 @@
+export type NarrativeWorldPalette = {
+  canvas: string; surface: string; surfaceRaised: string; text: string; muted: string; heading: string;
+  accent: string; accentSoft: string; border: string; rule: string; shadow: string;
+  patternA: string; patternB: string; patternOpacity: string;
+};
+const palette = (values: Omit<NarrativeWorldPalette, "shadow">): NarrativeWorldPalette => ({ ...values, shadow: "0 2px 10px rgb(0 0 0 / 0.12)" });
 export const visualWorlds = [
-  { id: "paper", name: "Paper", description: "Quiet editorial surfaces with warm neutral depth.", light: ["#FAF8F4", "#FFFFFF", "#2E2924"], dark: ["#1E1C1A", "#262321", "#F4EFE8"] },
-  { id: "sakura", name: "Sakura", description: "Soft rose surfaces inspired by petals and stationery.", light: ["#FFF7FA", "#FFFFFF", "#3B2430"], dark: ["#21171C", "#2B1D24", "#FFEAF2"] },
-  { id: "aurora", name: "Aurora", description: "Cool cyan and violet light with restrained luminosity.", light: ["#F4FBFF", "#FFFFFF", "#17323A"], dark: ["#101B22", "#16252E", "#EAF8FC"] },
-  { id: "nocturne", name: "Nocturne", description: "Deep indigo atmosphere with subtle celestial contrast.", light: ["#F7F5FF", "#FFFFFF", "#28233E"], dark: ["#11121F", "#191B2C", "#F1F0FF"] },
+  { id: "paper", name: "Paper", description: "Quiet editorial surfaces with warm neutral depth.", light: palette({ canvas:"#FAF8F4",surface:"#FFFFFF",surfaceRaised:"#FFFDFC",text:"#2E2924",muted:"#655E55",heading:"#2E2924",accent:"#6B5B4B",accentSoft:"#EEE8DF",border:"#D7D1C7",rule:"#9A8977",patternA:"#DCCFC1",patternB:"#F0E8DE",patternOpacity:"0.22" }), dark: palette({ canvas:"#1E1C1A",surface:"#262321",surfaceRaised:"#2E2A27",text:"#F4EFE8",muted:"#C7BEB4",heading:"#F4EFE8",accent:"#D2B89A",accentSoft:"#3A332D",border:"#4A443E",rule:"#A68E75",patternA:"#695B4E",patternB:"#3D342E",patternOpacity:"0.18" }) },
+  { id: "sakura", name: "Sakura", description: "Soft rose surfaces inspired by petals and stationery.", light: palette({ canvas:"#FFF7FA",surface:"#FFFFFF",surfaceRaised:"#FFF9FB",text:"#3B2430",muted:"#765465",heading:"#3B2430",accent:"#A63D68",accentSoft:"#F8DFE9",border:"#E8C8D4",rule:"#C56B8F",patternA:"#F0AFC7",patternB:"#F9DCE7",patternOpacity:"0.24" }), dark: palette({ canvas:"#21171C",surface:"#2B1D24",surfaceRaised:"#34232B",text:"#FFEAF2",muted:"#DAB5C4",heading:"#FFEAF2",accent:"#F28AB2",accentSoft:"#462636",border:"#6A3C50",rule:"#D66F9A",patternA:"#8A4561",patternB:"#522C3C",patternOpacity:"0.18" }) },
+  { id: "aurora", name: "Aurora", description: "Cool cyan and violet light with restrained luminosity.", light: palette({ canvas:"#F4FBFF",surface:"#FFFFFF",surfaceRaised:"#F8FDFF",text:"#17323A",muted:"#4D6870",heading:"#17323A",accent:"#0F738A",accentSoft:"#DDF4F8",border:"#BFDDE7",rule:"#2D7F91",patternA:"#8BDBE8",patternB:"#B9AEFF",patternOpacity:"0.22" }), dark: palette({ canvas:"#101B22",surface:"#16252E",surfaceRaised:"#1C2D37",text:"#EAF8FC",muted:"#B5CED7",heading:"#EAF8FC",accent:"#66D3E8",accentSoft:"#1E3B46",border:"#315565",rule:"#56BFD3",patternA:"#277286",patternB:"#6258A3",patternOpacity:"0.20" }) },
+  { id: "nocturne", name: "Nocturne", description: "Deep indigo atmosphere with subtle celestial contrast.", light: palette({ canvas:"#F7F5FF",surface:"#FFFFFF",surfaceRaised:"#FBFAFF",text:"#28233E",muted:"#625D78",heading:"#28233E",accent:"#5746A6",accentSoft:"#E8E3FF",border:"#CDC7E8",rule:"#7A68BD",patternA:"#9B8AE3",patternB:"#77C5CB",patternOpacity:"0.20" }), dark: palette({ canvas:"#11121F",surface:"#191B2C",surfaceRaised:"#22243A",text:"#F1F0FF",muted:"#B9B8D2",heading:"#F1F0FF",accent:"#A99BFF",accentSoft:"#292B46",border:"#3C4163",rule:"#9B8DEA",patternA:"#514B91",patternB:"#28747B",patternOpacity:"0.18" }) },
 ] as const;
 export type NarrativeVisualWorldId = typeof visualWorlds[number]["id"];
 export const defaultVisualWorldId: NarrativeVisualWorldId = "paper";
-export function isNarrativeVisualWorldId(value: unknown): value is NarrativeVisualWorldId {
-  return visualWorlds.some(world => world.id === value);
-}
+export function isNarrativeVisualWorldId(value: unknown): value is NarrativeVisualWorldId { return visualWorlds.some(world => world.id === value); }

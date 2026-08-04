@@ -1,7 +1,7 @@
 import { globalStyle, style } from "@vanilla-extract/css";
 
 export const shell = style({ marginTop: 30, borderTop: "1px solid var(--border-subtle)", paddingTop: 24 });
-export const title = style({ fontSize: "1.5rem", fontWeight: 700, marginBottom: 8 });
+export const title = style({ fontSize: "1.5rem", fontWeight: 700, marginBottom: 8, color: "var(--text-primary)" });
 export const sceneTitle = style({ fontSize: "1.1rem", fontWeight: 600, color: "var(--text-muted)", marginBottom: 16 });
 export const blockList = style({ display: "flex", flexDirection: "column", gap: 20, marginBottom: 24 });
 
@@ -12,7 +12,7 @@ export const status = style({ color: "var(--text-muted)", minHeight: 24 });
 export const recovery = style({ border: "1px solid var(--focus-ring)", borderRadius: 12, padding: 16, marginBottom: 20, background: "var(--active-background)" });
 export const missing = style({ border: "1px dashed var(--border-subtle)", borderRadius: 8, padding: 14, color: "var(--text-muted)" });
 
-export const metricBlock = style({ border: "1px solid var(--border-subtle)", borderRadius: 12, padding: "16px 20px", background: "var(--surface)" });
+export const metricBlock = style({ border: "1px solid var(--border-subtle)", borderRadius: 12, padding: "16px 20px", background: "var(--surface)", boxShadow: "var(--world-shadow, none)" });
 export const metricLabel = style({ fontWeight: 700, fontSize: "0.85rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" });
 export const metricValue = style({ fontSize: "2rem", fontWeight: 700, lineHeight: 1.1 });
 export const metricUnit = style({ fontSize: "1rem", color: "var(--text-muted)", marginLeft: 6 });
@@ -21,7 +21,7 @@ export const metricDescription = style({ fontSize: "0.9rem", color: "var(--text-
 export const calloutBlock = style({ borderLeft: "4px solid var(--focus-ring)", borderRadius: "0 8px 8px 0", padding: "12px 16px", background: "var(--active-background)" });
 export const calloutVariant = style({ fontWeight: 700, fontSize: "0.8rem", textTransform: "uppercase", marginBottom: 6, color: "var(--text-muted)" });
 
-export const timelineBlock = style({ borderLeft: "2px solid var(--border-subtle)", paddingLeft: 16 });
+export const timelineBlock = style({ borderLeft: "2px solid var(--world-rule, var(--border-subtle))", paddingLeft: 16 });
 export const timelineHeading = style({ fontWeight: 700, marginBottom: 12 });
 export const timelineList = style({ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 8 });
 export const timelineItem = style({ display: "flex", flexDirection: "column", gap: 2 });
