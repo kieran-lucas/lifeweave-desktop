@@ -5,7 +5,7 @@
 - generated_at: `2026-08-05T01:45:00.0000000+07:00`
 - repository: `kieran-lucas/lifeweave-desktop`
 - branch: `main`
-- Task 33 Remediation 001 implementation checkpoint: to be resolved from Commit A SHA after commit
+- Task 33 Remediation 001 implementation checkpoint: `723bb87adf10efb5124fac1c45d66a85c34ee0cb`
 - current handoff-containing HEAD: resolve at read time with `git rev-parse HEAD`
 - tracked working tree status at generation: authorized implementation was clean and matched `origin/main`; only closure/evidence files committed with this handoff were then changed
 
@@ -21,7 +21,7 @@
 
 - macro milestone: Post-Core Expansion, Product Owner gate
 - latest closed task: Task 33 — Unified Tags Core + Cross-Pillar Retrieval (Remediation 001)
-- latest feature task/checkpoint: Task 33 / resolve from Commit A SHA
+- latest feature task/checkpoint: Task 33 / `723bb87adf10efb5124fac1c45d66a85c34ee0cb`
 - database schema: 18
 - active spec: none
 - next allowed action: Product Owner gate
@@ -84,7 +84,7 @@
 
 ## Recent commits
 
-- Task 33 Remediation 001 implementation commit — see HEAD after commit
+- `723bb87adf10efb5124fac1c45d66a85c34ee0cb` — complete task 33 remediation 001
 - `d081d306a450d0e7b930721b224b901143e260b3` — add unified tags with cross-pillar retrieval (Task 33 implementation)
 - `f7d3fd167f7e22d5e3892e0a64e048eb4e10e0c6` — record task 32 navigation remediation evidence
 

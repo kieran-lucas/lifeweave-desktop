@@ -1,6 +1,6 @@
 # Spec 023 — Unified Tags: Remediation 001
 
-> Status: **implemented** — Commit A SHA to be updated after commit.
+> Status: **implemented** — Commit A: `723bb87adf10efb5124fac1c45d66a85c34ee0cb`.
 
 ## Summary
 
