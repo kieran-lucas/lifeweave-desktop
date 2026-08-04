@@ -38,6 +38,15 @@ describe("Phase 6 — Upcoming and Overdue planning", () => {
     await $("button[aria-label^='Open day for E2E Future Recurring']").click();
     await expect($("//button[@role='tab' and @aria-selected='true' and normalize-space()='Today']")).toBeDisplayed();
     await expect($(`[data-series-id='${fixture.futureSeries}']`)).toBeDisplayed();
+    await upcoming.click();
+    await $("button[aria-label='Collapse sidebar']").click();
+    await $("button[aria-label='Expand sidebar']").click();
+    await expect($("//button[@role='tab' and @aria-selected='true' and normalize-space()='Upcoming']")).toBeDisplayed();
+    await $("button[aria-label='Calendar']").click();
+    await expect($("h1=Calendar")).toBeDisplayed();
+    await $("button[aria-label='Today']").click();
+    await expect($("//button[@role='tab' and @aria-selected='true' and normalize-space()='Today']")).toBeDisplayed();
+    await expect($("[role='listbox'][aria-label='Completion assessment']")).not.toExist();
 
     await $("button=Overdue").click();
     await expect($("//strong[normalize-space()='E2E Past Review']")).toBeDisplayed();

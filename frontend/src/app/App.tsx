@@ -1,4 +1,12 @@
-import { Suspense, lazy, useEffect, useRef, useState } from "react";
+import {
+  Suspense,
+  lazy,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import { healthCheck } from "../ipc/commands";
 import { FoundationScreen } from "../features/foundation/FoundationScreen";
@@ -23,6 +31,23 @@ type SearchNavRequest = {
   requestId: string;
   target: SearchNavigationTarget;
 } | null;
+
+export function settleNavigationEnvelope(
+  current: SearchNavRequest,
+  requestId: string,
+): SearchNavRequest {
+  return current?.requestId === requestId ? null : current;
+}
+type TodayFocusRequest = {
+  requestId: string;
+  taskId: string | null;
+  seriesId: string | null;
+};
+type LifeEntryRequest = {
+  requestId: string;
+  nodeId: string;
+  mode: "browse" | "reader";
+};
 const preferenceKey = "lifeweave.task-sidebar-mode.v1";
 const destinations: Array<{ id: Destination; label: string }> = [
   { id: "today", label: "Today" },
@@ -56,11 +81,38 @@ export function App() {
   const [pendingNav, setPendingNav] = useState<SearchNavRequest>(null);
   const headingRef = useRef<HTMLElement>(null);
   const searchTriggerRef = useRef<HTMLButtonElement>(null);
+  const pendingTodayRequestId =
+    pendingNav?.target.kind === "today" ? pendingNav.requestId : null;
+  const todayFocusRequest = useMemo<TodayFocusRequest | null>(() => {
+    if (!pendingNav || pendingNav.target.kind !== "today") return null;
+    return {
+      requestId: pendingNav.requestId,
+      taskId: pendingNav.target.task_id,
+      seriesId: pendingNav.target.series_id,
+    };
+  }, [pendingNav]);
+  const lifeEntryRequest = useMemo<LifeEntryRequest | null>(() => {
+    if (
+      !pendingNav ||
+      (pendingNav.target.kind !== "life_browse" &&
+        pendingNav.target.kind !== "life_reader")
+    )
+      return null;
+    return {
+      requestId: pendingNav.requestId,
+      nodeId: pendingNav.target.node_id,
+      mode: pendingNav.target.kind === "life_reader" ? "reader" : "browse",
+    };
+  }, [pendingNav]);
+  const settleNavigationRequest = useCallback((requestId: string) => {
+    setPendingNav((current) => settleNavigationEnvelope(current, requestId));
+  }, []);
 
   useEffect(() => {
-    if (selectedDate === previousAnchor.current) setSelectedDate(anchorLocalDate);
+    if (!pendingTodayRequestId && selectedDate === previousAnchor.current)
+      setSelectedDate(anchorLocalDate);
     previousAnchor.current = anchorLocalDate;
-  }, [anchorLocalDate, selectedDate]);
+  }, [anchorLocalDate, pendingTodayRequestId, selectedDate]);
   useEffect(() => {
     healthCheck()
       .then(() => setIpcStatus("ready"))
@@ -103,17 +155,37 @@ export function App() {
   };
   const navigateToLifeNode = (nodeId: string) => {
     setDestination("life");
-    setPendingNav({ requestId: globalThis.crypto.randomUUID(), target: { kind: "life_browse", node_id: nodeId } });
+    setPendingNav({
+      requestId: globalThis.crypto.randomUUID(),
+      target: { kind: "life_browse", node_id: nodeId },
+    });
   };
-  const navigateToTask = (localDate: string, taskId: string | null, seriesId: string | null) => {
+  const navigateToTask = (
+    localDate: string,
+    taskId: string | null,
+    seriesId: string | null,
+  ) => {
     setSelectedDate(localDate);
     setDestination("today");
-    setPendingNav({ requestId: globalThis.crypto.randomUUID(), target: { kind: "today", local_date: localDate, task_id: taskId, series_id: seriesId, original_local_date: null } });
+    setPendingNav({
+      requestId: globalThis.crypto.randomUUID(),
+      target: {
+        kind: "today",
+        local_date: localDate,
+        task_id: taskId,
+        series_id: seriesId,
+        original_local_date: null,
+      },
+    });
   };
 
   const collapsed = lifeAutoCollapsed || taskSidebarMode === "collapsed";
-  const selectDestination = (next: Destination) => setDestination(next);
+  const selectDestination = (next: Destination) => {
+    setPendingNav(null);
+    setDestination(next);
+  };
   const activateCalendarDate = (date: string) => {
+    setPendingNav(null);
     setSelectedDate(date);
     setDestination("today");
     requestAnimationFrame(() =>
@@ -250,15 +322,8 @@ export function App() {
                   anchorLocalDate={anchorLocalDate}
                   onSelectedDateChange={setSelectedDate}
                   onLifeNavigate={navigateToLifeNode}
-                  focusRequest={
-                    pendingNav?.target.kind === "today"
-                      ? {
-                          requestId: pendingNav.requestId,
-                          taskId: pendingNav.target.task_id,
-                          seriesId: pendingNav.target.series_id,
-                        }
-                      : null
-                  }
+                  focusRequest={todayFocusRequest}
+                  onFocusRequestSettled={settleNavigationRequest}
                 />
               </div>
             )}
@@ -293,19 +358,8 @@ export function App() {
                 <LifeScreen
                   anchorLocalDate={anchorLocalDate}
                   onTaskNavigate={navigateToTask}
-                  entryRequest={
-                    pendingNav?.target.kind === "life_browse" ||
-                    pendingNav?.target.kind === "life_reader"
-                      ? {
-                          requestId: pendingNav.requestId,
-                          nodeId: pendingNav.target.node_id,
-                          mode:
-                            pendingNav.target.kind === "life_reader"
-                              ? "reader"
-                              : "browse",
-                        }
-                      : null
-                  }
+                  entryRequest={lifeEntryRequest}
+                  onEntryRequestSettled={settleNavigationRequest}
                 />
               </div>
             )}

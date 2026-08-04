@@ -81,10 +81,12 @@ type EntryRequest = {
 } | null;
 export function LifeScreen({
   entryRequest,
+  onEntryRequestSettled,
   onTaskNavigate,
   anchorLocalDate,
 }: {
   entryRequest?: EntryRequest;
+  onEntryRequestSettled?: (requestId: string) => void;
   onTaskNavigate?: (localDate: string, taskId: string | null, seriesId: string | null) => void;
   anchorLocalDate: string;
 }) {
@@ -100,11 +102,14 @@ export function LifeScreen({
   const sceneRef = useRef<HTMLDivElement>(null),
     focalRef = useRef<HTMLDivElement>(null),
     childRefs = useRef(new Map<string, HTMLElement>()),
-    restoreFocus = useRef<string | undefined>(undefined);
+    restoreFocus = useRef<string | undefined>(undefined),
+    preparedEntryRequestId = useRef<string | null>(null),
+    settledEntryRequestId = useRef<string | null>(null);
   const browse = useQuery({
     queryKey: lifeKeys.browse(nodeId, page),
     queryFn: () =>
       getLifeBrowseProjection({ node_id: nodeId ?? null, child_page: page }),
+    placeholderData: (previous) => previous,
   });
   const pins = useQuery({
     queryKey: lifeKeys.pinned,
@@ -146,32 +151,99 @@ export function LifeScreen({
         restoreFocus.current = undefined;
       });
   }, [browse.data, mode]);
+  const settleEntryRequest = (requestId: string) => {
+    if (settledEntryRequestId.current === requestId) return;
+    settledEntryRequestId.current = requestId;
+    onEntryRequestSettled?.(requestId);
+  };
+  const cancelPendingEntryRequest = () => {
+    if (entryRequest) settleEntryRequest(entryRequest.requestId);
+  };
+  const pushEntryHistory = (focusId?: string) => {
+    setHistory((value) => [
+      ...value,
+      {
+        nodeId: browse.data?.selected.id ?? entryRequest?.nodeId ?? "life-root",
+        page,
+        mode: mode === "pinned" ? "pinned" : "browse",
+        ...(focusId ? { focusId } : {}),
+      },
+    ]);
+  };
   useEffect(() => {
-    if (!entryRequest || !initialized) return;
-    if (entryRequest.mode === "reader") {
-      const node =
-        browse.data?.children.find((c) => c.id === entryRequest.nodeId) ??
-        browse.data?.selected;
-      if (node && node.is_leaf) {
-        setHistory((v) => [
-          ...v,
-          {
-            nodeId: browse.data?.selected.id ?? entryRequest.nodeId,
-            page,
-            mode: "browse",
-          },
-        ]);
-        setReader(node);
+    const requestId = entryRequest?.requestId;
+    if (
+      !entryRequest ||
+      !requestId ||
+      !initialized ||
+      !browse.data ||
+      settledEntryRequestId.current === requestId ||
+      preparedEntryRequestId.current === requestId
+    )
+      return;
+    preparedEntryRequestId.current = requestId;
+    const selected = browse.data.selected;
+    const directChild = browse.data.children.find(
+      (child) => child.id === entryRequest.nodeId,
+    );
+    if (entryRequest.mode === "reader" && selected.id === entryRequest.nodeId) {
+      if (selected.is_leaf) {
+        pushEntryHistory(selected.id);
+        setReader(selected);
         setMode("reader");
-        return;
+      } else {
+        setReader(undefined);
+        setMode("browse");
       }
-      setNodeId(entryRequest.nodeId);
-      setPage(0);
-      setMode("browse");
-    } else {
-      goTo(entryRequest.nodeId);
+      settleEntryRequest(requestId);
+      return;
     }
-  }, [entryRequest, initialized]);
+    if (entryRequest.mode === "reader" && directChild?.is_leaf) {
+      pushEntryHistory(directChild.id);
+      setReader(directChild);
+      setMode("reader");
+      settleEntryRequest(requestId);
+      return;
+    }
+    if (selected.id !== entryRequest.nodeId)
+      pushEntryHistory(entryRequest.nodeId);
+    setReader(undefined);
+    setNodeId(entryRequest.nodeId);
+    setPage(0);
+    setMode("browse");
+  }, [entryRequest?.requestId, initialized]);
+  useEffect(() => {
+    if (
+      !entryRequest ||
+      preparedEntryRequestId.current !== entryRequest.requestId ||
+      settledEntryRequestId.current === entryRequest.requestId ||
+      !browse.isSuccess ||
+      browse.isFetching ||
+      !browse.data
+    )
+      return;
+    if (browse.data.resolved_from_fallback) {
+      setReader(undefined);
+      setMode("browse");
+      settleEntryRequest(entryRequest.requestId);
+      return;
+    }
+    if (browse.data.selected.id !== entryRequest.nodeId) return;
+    if (entryRequest.mode === "reader" && browse.data.selected.is_leaf) {
+      setReader(browse.data.selected);
+      setMode("reader");
+    } else {
+      setReader(undefined);
+      setMode("browse");
+    }
+    settleEntryRequest(entryRequest.requestId);
+  }, [
+    browse.data,
+    browse.isFetching,
+    browse.isSuccess,
+    entryRequest,
+    onEntryRequestSettled,
+  ]);
   const pin = useMutation({
     mutationFn: (value: { id: string; pinned: boolean }) =>
       value.pinned
@@ -186,6 +258,7 @@ export function LifeScreen({
     originMode: "browse" | "pinned" = mode === "pinned" ? "pinned" : "browse",
   ) => {
     if (busy || ("available" in node && !node.available)) return;
+    cancelPendingEntryRequest();
     setBusy(true);
     const id = "id" in node ? node.id : node.node_id;
     if (node.is_leaf) {
@@ -218,6 +291,7 @@ export function LifeScreen({
     setTimeout(() => setBusy(false), reduced ? 0 : 320);
   };
   const goTo = (id: string) => {
+    cancelPendingEntryRequest();
     if (browse.data?.selected.id !== id)
       setHistory((v) => [
         ...v,
@@ -228,6 +302,7 @@ export function LifeScreen({
     setMode("browse");
   };
   const back = () => {
+    cancelPendingEntryRequest();
     const previous = history.at(-1);
     if (mode === "reader") {
       setReader(undefined);
@@ -299,21 +374,30 @@ export function LifeScreen({
           <button
             className={styles.modeButton}
             aria-pressed={mode === "browse"}
-            onClick={() => setMode("browse")}
+            onClick={() => {
+              cancelPendingEntryRequest();
+              setMode("browse");
+            }}
           >
             Browse
           </button>
           <button
             className={styles.modeButton}
             aria-pressed={mode === "edit"}
-            onClick={() => setMode("edit")}
+            onClick={() => {
+              cancelPendingEntryRequest();
+              setMode("edit");
+            }}
           >
             Edit
           </button>
           <button
             className={styles.modeButton}
             aria-pressed={mode === "pinned"}
-            onClick={() => setMode("pinned")}
+            onClick={() => {
+              cancelPendingEntryRequest();
+              setMode("pinned");
+            }}
           >
             Pinned
           </button>
@@ -323,6 +407,7 @@ export function LifeScreen({
         <LifeEditWorkspace
           initialNodeId={projection.selected.id}
           onBrowse={(id) => {
+            cancelPendingEntryRequest();
             setNodeId(id);
             setPage(0);
             setMode("browse");
@@ -474,6 +559,7 @@ export function LifeScreen({
                 className={styles.quietButton}
                 disabled={page === 0}
                 onClick={() => {
+                  cancelPendingEntryRequest();
                   setNodeId(projection.selected.id);
                   setPage((v) => v - 1);
                 }}
@@ -488,6 +574,7 @@ export function LifeScreen({
                 className={styles.quietButton}
                 disabled={page + 1 >= projection.child_page_count}
                 onClick={() => {
+                  cancelPendingEntryRequest();
                   setNodeId(projection.selected.id);
                   setPage((v) => v + 1);
                 }}

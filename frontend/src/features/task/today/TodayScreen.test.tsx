@@ -1,7 +1,7 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import axe from "axe-core";
-import type { ComponentProps } from "react";
+import { StrictMode, type ComponentProps } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TodayScreen, localToday } from "./TodayScreen";
 
@@ -474,13 +474,16 @@ describe("Today recurrence contract", () => {
     });
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const request = { requestId: "external-a", taskId: "one", seriesId: null };
+    const settled = vi.fn();
     const view = render(
       <QueryClientProvider client={client}>
-        <TodayScreen focusRequest={request} />
+        <TodayScreen focusRequest={request} onFocusRequestSettled={settled} />
       </QueryClientProvider>,
     );
     await waitFor(() => expect(document.activeElement).toHaveAttribute("data-task-id", "one"));
     expect(scroll).toHaveBeenCalledTimes(1);
+    expect(settled).toHaveBeenCalledTimes(1);
+    expect(settled).toHaveBeenCalledWith("external-a");
 
     const todayTab = screen.getByRole("tab", { name: "Today" });
     todayTab.focus();
@@ -490,18 +493,41 @@ describe("Today recurrence contract", () => {
 
     view.rerender(
       <QueryClientProvider client={client}>
-        <TodayScreen focusRequest={request} />
+        <TodayScreen focusRequest={{ ...request }} onFocusRequestSettled={settled} />
       </QueryClientProvider>,
     );
     expect(scroll).toHaveBeenCalledTimes(1);
+    expect(settled).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("tab", { name: "Upcoming" }));
+    view.rerender(
+      <QueryClientProvider client={client}>
+        <TodayScreen focusRequest={{ ...request }} onFocusRequestSettled={settled} />
+      </QueryClientProvider>,
+    );
+    expect(screen.getByRole("tab", { name: "Upcoming" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    fireEvent.click(screen.getByRole("tab", { name: "Today" }));
     fireEvent.click(screen.getByRole("button", { name: /Assess task/ }));
     expect(await screen.findByRole("listbox", { name: "Completion assessment" })).toBeInTheDocument();
     view.rerender(
       <QueryClientProvider client={client}>
-        <TodayScreen focusRequest={{ ...request, requestId: "external-c" }} />
+        <TodayScreen focusRequest={{ ...request }} onFocusRequestSettled={settled} />
+      </QueryClientProvider>,
+    );
+    expect(screen.getByRole("listbox", { name: "Completion assessment" })).toBeInTheDocument();
+    view.rerender(
+      <QueryClientProvider client={client}>
+        <TodayScreen
+          focusRequest={{ ...request, requestId: "external-c" }}
+          onFocusRequestSettled={settled}
+        />
       </QueryClientProvider>,
     );
     await waitFor(() => expect(scroll).toHaveBeenCalledTimes(2));
+    expect(settled).toHaveBeenCalledTimes(2);
+    expect(settled).toHaveBeenLastCalledWith("external-c");
     expect(screen.queryByRole("listbox", { name: "Completion assessment" })).not.toBeInTheDocument();
   });
   it("consumes recurring planning focus and does not revive it after a query update", async () => {
@@ -547,18 +573,135 @@ describe("Today recurrence contract", () => {
       }),
     );
     const headingFocus = vi.spyOn(HTMLElement.prototype, "focus");
+    const settled = vi.fn();
     const { client } = renderToday(undefined, {
       focusRequest: { requestId: "missing", taskId: "absent", seriesId: null },
+      onFocusRequestSettled: settled,
     });
     expect(headingFocus).not.toHaveBeenCalled();
     resolveItems([oneOff]);
     await waitFor(() => expect(screen.getByRole("heading", { name: "Today" })).toHaveFocus());
+    expect(settled).toHaveBeenCalledTimes(1);
+    expect(settled).toHaveBeenCalledWith("missing");
     const callsAfterFallback = headingFocus.mock.calls.length;
     screen.getByRole("tab", { name: "Today" }).focus();
     client.setQueryData(["today-items", "2026-08-02"], [{ ...oneOff }]);
     await waitFor(() => expect(screen.getByRole("tab", { name: "Today" })).toHaveFocus());
     expect(headingFocus).toHaveBeenCalledTimes(callsAfterFallback + 1);
     headingFocus.mockRestore();
+  });
+  it("keeps a query-error request pending and acknowledges once after retry", async () => {
+    Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
+      configurable: true,
+      value: vi.fn(),
+    });
+    commands.listTodayItems
+      .mockRejectedValueOnce(new Error("offline"))
+      .mockResolvedValueOnce([oneOff]);
+    const settled = vi.fn();
+    const { client } = renderToday(undefined, {
+      focusRequest: { requestId: "retry", taskId: "one", seriesId: null },
+      onFocusRequestSettled: settled,
+    });
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Unable to load tasks",
+    );
+    expect(settled).not.toHaveBeenCalled();
+    await client.refetchQueries({ queryKey: ["today-items", "2026-08-02"] });
+    await waitFor(() => expect(settled).toHaveBeenCalledWith("retry"));
+    expect(settled).toHaveBeenCalledTimes(1);
+  });
+  it("delays external focus behind an open editor and preserves its draft", async () => {
+    const scroll = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
+      configurable: true,
+      value: scroll,
+    });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const settled = vi.fn();
+    const view = render(
+      <QueryClientProvider client={client}>
+        <TodayScreen />
+      </QueryClientProvider>,
+    );
+    await screen.findByText("Focus");
+    fireEvent.doubleClick(screen.getByRole("listitem"));
+    fireEvent.change(screen.getByLabelText("Title"), {
+      target: { value: "Unsaved draft" },
+    });
+    view.rerender(
+      <QueryClientProvider client={client}>
+        <TodayScreen
+          focusRequest={{ requestId: "modal", taskId: "one", seriesId: null }}
+          onFocusRequestSettled={settled}
+        />
+      </QueryClientProvider>,
+    );
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByLabelText("Title")).toHaveValue("Unsaved draft");
+    expect(scroll).not.toHaveBeenCalled();
+    expect(settled).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(settled).toHaveBeenCalledWith("modal"));
+    expect(scroll).toHaveBeenCalledTimes(1);
+  });
+  it("lets a workspace tab or Week Strip supersede a loading request", async () => {
+    let resolveItems!: (items: typeof oneOff[]) => void;
+    commands.listTodayItems.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveItems = resolve;
+      }),
+    );
+    const settled = vi.fn();
+    const first = renderToday(undefined, {
+      focusRequest: { requestId: "tab-cancel", taskId: "one", seriesId: null },
+      onFocusRequestSettled: settled,
+    });
+    fireEvent.click(screen.getByRole("tab", { name: "Upcoming" }));
+    expect(settled).toHaveBeenCalledWith("tab-cancel");
+    resolveItems([oneOff]);
+    await screen.findByRole("heading", { name: "Upcoming" });
+    expect(screen.getByRole("tab", { name: "Upcoming" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    first.unmount();
+
+    commands.listTodayItems.mockReturnValueOnce(new Promise(() => {}));
+    const settledDate = vi.fn();
+    const second = renderToday(undefined, {
+      focusRequest: { requestId: "date-cancel", taskId: "one", seriesId: null },
+      onFocusRequestSettled: settledDate,
+    });
+    const week = screen.getAllByRole("navigation", { name: "Week navigation" }).at(-1)!;
+    const otherDate = within(week)
+      .getAllByRole("button")
+      .find((button) => button.getAttribute("aria-pressed") === "false")!;
+    fireEvent.click(otherDate);
+    expect(settledDate).toHaveBeenCalledWith("date-cancel");
+    expect(otherDate).toHaveAttribute("aria-pressed", "true");
+    second.unmount();
+  });
+  it("is StrictMode-safe for external settlement and focus", async () => {
+    const scroll = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
+      configurable: true,
+      value: scroll,
+    });
+    const settled = vi.fn();
+    render(
+      <StrictMode>
+        <QueryClientProvider client={new QueryClient()}>
+          <TodayScreen
+            focusRequest={{ requestId: "strict", taskId: "one", seriesId: null }}
+            onFocusRequestSettled={settled}
+          />
+        </QueryClientProvider>
+      </StrictMode>,
+    );
+    await waitFor(() => expect(settled).toHaveBeenCalledWith("strict"));
+    expect(settled).toHaveBeenCalledTimes(1);
+    expect(scroll).toHaveBeenCalledTimes(1);
   });
   it("does not revive handled external A after internal B is consumed", async () => {
     const scroll = vi.fn();

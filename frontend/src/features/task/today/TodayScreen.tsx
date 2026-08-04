@@ -189,12 +189,14 @@ export function TodayScreen({
   selectedDate,
   onSelectedDateChange,
   focusRequest,
+  onFocusRequestSettled,
   onLifeNavigate,
   anchorLocalDate,
 }: {
   selectedDate?: string;
   onSelectedDateChange?: (date: string) => void;
   focusRequest?: FocusRequest;
+  onFocusRequestSettled?: (requestId: string) => void;
   onLifeNavigate?: (nodeId: string) => void;
   anchorLocalDate?: string;
 } = {}) {
@@ -210,6 +212,7 @@ export function TodayScreen({
   const [internalFocusRequest, setInternalFocusRequest] = useState<FocusRequest>(null);
   const handledInternalFocusRequest = useRef<string | null>(null);
   const handledExternalFocusRequest = useRef<string | null>(null);
+  const preparedExternalFocusRequest = useRef<string | null>(null);
   const selectDate = (value: string) =>
     onSelectedDateChange
       ? onSelectedDateChange(value)
@@ -472,21 +475,45 @@ export function TodayScreen({
     );
     setOpen(true);
   }
+  const settleExternalFocusRequest = (requestId: string) => {
+    handledExternalFocusRequest.current = requestId;
+    onFocusRequestSettled?.(requestId);
+  };
+  const cancelPendingFocusRequests = () => {
+    if (
+      focusRequest &&
+      handledExternalFocusRequest.current !== focusRequest.requestId
+    )
+      settleExternalFocusRequest(focusRequest.requestId);
+    setInternalFocusRequest(null);
+  };
   useEffect(() => {
-    if (focusRequest) {
-      setOpenFan(null);
-      setInternalFocusRequest(null);
-      setWorkspaceMode("today");
-    }
-  }, [focusRequest]);
+    const requestId = focusRequest?.requestId;
+    if (!requestId || preparedExternalFocusRequest.current === requestId)
+      return;
+    preparedExternalFocusRequest.current = requestId;
+    setOpenFan(null);
+    setInternalFocusRequest(null);
+    setWorkspaceMode("today");
+  }, [focusRequest?.requestId]);
   useEffect(() => {
-    if (!items.data || items.isFetching || workspaceMode !== "today") return;
-    const source = internalFocusRequest
-      ? "internal"
-      : focusRequest
-        ? "external"
+    if (
+      open ||
+      !items.isSuccess ||
+      !items.data ||
+      items.isFetching ||
+      workspaceMode !== "today"
+    )
+      return;
+    const externalPending =
+      focusRequest &&
+      handledExternalFocusRequest.current !== focusRequest.requestId;
+    const source = externalPending
+      ? "external"
+      : internalFocusRequest
+        ? "internal"
         : null;
-    const request = internalFocusRequest ?? focusRequest;
+    const request = externalPending ? focusRequest : internalFocusRequest;
     if (!source || !request) return;
     const handled =
       source === "internal"
@@ -501,12 +528,23 @@ export function TodayScreen({
       document.getElementById("today-heading")?.focus({ preventScroll: true });
     }
     handled.current = request.requestId;
-    if (source === "internal") {
+    if (source === "external") {
+      onFocusRequestSettled?.(request.requestId);
+    } else {
       setInternalFocusRequest((current) =>
         current?.requestId === request.requestId ? null : current,
       );
     }
-  }, [focusRequest, internalFocusRequest, items.data, items.isFetching, workspaceMode]);
+  }, [
+    focusRequest,
+    internalFocusRequest,
+    items.data,
+    items.isFetching,
+    items.isSuccess,
+    onFocusRequestSettled,
+    open,
+    workspaceMode,
+  ]);
   useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => {
@@ -578,19 +616,39 @@ export function TodayScreen({
   );
   const clock = new Date(),
     clockMinute = clock.getHours() * 60 + clock.getMinutes();
-  const openPlanningItem = (request: { localDate: string; taskId: string | null; seriesId: string | null }) => {
+  const openPlanningItem = (request: {
+    localDate: string;
+    taskId: string | null;
+    seriesId: string | null;
+  }) => {
+    cancelPendingFocusRequests();
     setOpenFan(null);
     selectDate(request.localDate);
-    setInternalFocusRequest({ requestId: globalThis.crypto.randomUUID(), taskId: request.taskId, seriesId: request.seriesId });
+    setInternalFocusRequest({
+      requestId: globalThis.crypto.randomUUID(),
+      taskId: request.taskId,
+      seriesId: request.seriesId,
+    });
     setWorkspaceMode("today");
   };
   const activateWorkspaceMode = (next: TaskWorkspaceMode) => {
-    if (next !== "today") setOpenFan(null);
+    if (next !== "today") {
+      setOpenFan(null);
+      cancelPendingFocusRequests();
+    }
     setWorkspaceMode(next);
+  };
+  const selectUserDate = (value: string) => {
+    cancelPendingFocusRequests();
+    selectDate(value);
   };
   return (
     <section className={styles.root}>
-      <TaskWorkspaceTabs active={workspaceMode} disabled={open} onActivate={activateWorkspaceMode} />
+      <TaskWorkspaceTabs
+        active={workspaceMode}
+        disabled={open}
+        onActivate={activateWorkspaceMode}
+      />
       {workspaceMode === "today" ? (
       <div role="tabpanel" id="task-panel-today" aria-labelledby="task-tab-today">
       <div className={styles.header}>
@@ -611,7 +669,7 @@ export function TodayScreen({
           Plan task
         </button>
       </div>
-      <WeekStrip selectedDate={date} today={today} onSelectDate={selectDate} />
+      <WeekStrip selectedDate={date} today={today} onSelectDate={selectUserDate} />
       {assessmentError && <p role="alert">{assessmentError}</p>}
       {lastOperation && (
         <p aria-live="polite" className={styles.undo}>

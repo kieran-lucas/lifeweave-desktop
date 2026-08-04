@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, beforeEach, vi } from "vitest";
 
-import { App } from "./App";
+import { App, settleNavigationEnvelope } from "./App";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import axe from "axe-core";
 
@@ -19,12 +19,17 @@ vi.mock("../features/calendar/useLocalDateRollover", () => ({
   useLocalDateRollover: () => appApi.anchorLocalDate,
 }));
 
-const renderApp = () =>
-  render(
-    <QueryClientProvider client={new QueryClient()}>
+const renderApp = () => {
+  const client = new QueryClient();
+  return {
+    ...render(
+    <QueryClientProvider client={client}>
       <App />
     </QueryClientProvider>,
-  );
+    ),
+    client,
+  };
+};
 
 vi.mock("../ipc/commands", () => ({
   healthCheck: vi.fn().mockResolvedValue({ status: "ok" }),
@@ -177,7 +182,146 @@ describe("App shell", () => {
     await waitFor(() =>
       expect(document.activeElement).toHaveAttribute("data-series-id", "series-1"),
     );
+    fireEvent.click(screen.getByRole("tab", { name: "Upcoming" }));
+    fireEvent.click(screen.getByRole("button", { name: "Collapse sidebar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Expand sidebar" }));
+    expect(screen.getByRole("tab", { name: "Upcoming" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Calendar" }));
+    await screen.findByRole("heading", { name: "Calendar" });
+    fireEvent.click(
+      within(screen.getByRole("navigation", { name: "Primary navigation" }))
+        .getByRole("button", { name: "Today" }),
+    );
+    expect(await screen.findByRole("tab", { name: "Today" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
     delete (HTMLElement.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+  });
+
+  it("guards settlement by request ID so a late A cannot clear B", () => {
+    const requestA = {
+      requestId: "a",
+      target: {
+        kind: "today" as const,
+        local_date: "2026-08-04",
+        task_id: "task-a",
+        series_id: null,
+        original_local_date: null,
+      },
+    };
+    const requestB = {
+      ...requestA,
+      requestId: "b",
+      target: { ...requestA.target, task_id: "task-b" },
+    };
+    expect(settleNavigationEnvelope(requestB, requestA.requestId)).toBe(
+      requestB,
+    );
+    expect(settleNavigationEnvelope(requestB, requestB.requestId)).toBeNull();
+  });
+
+  it("acknowledges Today-to-Life navigation so a route remount cannot replay it", async () => {
+    const area = {
+      ...rootProjection.selected,
+      id: "life-area",
+      title: "Area",
+      is_leaf: false,
+      child_count: 1,
+    };
+    appApi.getLifeBrowseProjection.mockImplementation(
+      ({ node_id }: { node_id: string | null }) =>
+        Promise.resolve(
+          node_id === area.id
+            ? {
+                ...rootProjection,
+                selected: area,
+                breadcrumb: [rootProjection.selected, area],
+              }
+            : rootProjection,
+        ),
+    );
+    appApi.listTodayItems.mockResolvedValue([
+      {
+        kind: "one_off",
+        id: "task-life",
+        occurrence_id: null,
+        series_id: null,
+        original_local_date: null,
+        local_date: "2026-08-04",
+        start_minute: 480,
+        end_minute: 540,
+        title: "Linked work",
+        description: "",
+        category_id: "general",
+        category_name: "General",
+        category_icon_key: "category-general",
+        category_color_key: "blue",
+        priority: "medium",
+        is_override: false,
+        evaluation: null,
+        life_area: {
+          id: area.id,
+          title: area.title,
+          breadcrumb: area.title,
+          archived: false,
+        },
+      },
+    ]);
+    renderApp();
+    fireEvent.click(await screen.findByRole("button", { name: /Area/ }));
+    expect(await screen.findByRole("heading", { name: "Area" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+    await screen.findByRole("heading", { name: "Settings" });
+    fireEvent.click(screen.getByRole("button", { name: "Life System" }));
+    expect(await screen.findByRole("heading", { name: "Life" })).toBeInTheDocument();
+  });
+
+  it("preserves an exact pending Today date through midnight rollover", async () => {
+    let resolveToday!: (items: unknown[]) => void;
+    appApi.listTodayItems.mockReturnValue(
+      new Promise((resolve) => {
+        resolveToday = resolve;
+      }),
+    );
+    const leaf = {
+      ...rootProjection.selected,
+      id: "life-area",
+      title: "Area",
+    };
+    appApi.getLifeBrowseProjection.mockResolvedValue({
+      ...rootProjection,
+      selected: leaf,
+      breadcrumb: [rootProjection.selected, leaf],
+    });
+    appApi.getRelatedTasksForLifeNode.mockResolvedValue([
+      {
+        id: "task-pending",
+        kind: "one_off",
+        title: "Pending exact day",
+        group: "active",
+        navigation_local_date: "2026-08-04",
+        series_id: null,
+      },
+    ]);
+    const view = renderApp();
+    fireEvent.click(await screen.findByRole("button", { name: "Life System" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Pending exact day" }));
+    expect(await screen.findByText(/2026-08-04/)).toBeInTheDocument();
+    appApi.anchorLocalDate = "2026-08-05";
+    view.rerender(
+      <QueryClientProvider client={view.client}>
+        <App />
+      </QueryClientProvider>,
+    );
+    expect(await screen.findByText(/2026-08-04/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Tuesday, August 4, 2026" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    resolveToday([]);
   });
 
   it("defaults to Today and exposes the locked navigation order", async () => {

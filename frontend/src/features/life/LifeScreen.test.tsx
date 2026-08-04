@@ -7,6 +7,7 @@ import {
 } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import axe from "axe-core";
+import { StrictMode, type ComponentProps, type ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { LifeScreen } from "./LifeScreen";
 import type { LifeBrowseProjection } from "../../ipc/generated/LifeBrowseProjection";
@@ -45,6 +46,11 @@ const node = (id: string, title: string, children = 0, pinned = false) => ({
 const root = node("life-root", "Life", 2);
 const branch = node("00000000-0000-7000-8000-000000000001", "Branch", 1);
 const leaf = node("00000000-0000-7000-8000-000000000002", "Leaf", 0);
+const remoteLeaf = node(
+  "00000000-0000-7000-8000-000000000003",
+  "Remote Leaf",
+  0,
+);
 const projection = (
   selected = root,
   children = [branch, leaf],
@@ -70,24 +76,26 @@ const renderLife = (
     taskId: string | null,
     seriesId: string | null,
   ) => void,
-) =>
-  render(
-    <QueryClientProvider
-      client={
-        new QueryClient({
-          defaultOptions: {
-            queries: { retry: false },
-            mutations: { retry: false },
-          },
-        })
-      }
-    >
+  props: Partial<ComponentProps<typeof LifeScreen>> = {},
+  wrapper?: (child: ReactNode) => ReactNode,
+) => {
+  const client = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
+  const screen = (
+    <QueryClientProvider client={client}>
       <LifeScreen
         anchorLocalDate="2026-08-04"
         {...(onTaskNavigate ? { onTaskNavigate } : {})}
+        {...props}
       />
-    </QueryClientProvider>,
+    </QueryClientProvider>
   );
+  return { ...render(wrapper ? wrapper(screen) : screen), client };
+};
 
 describe("Life Browse", () => {
   beforeEach(() => {
@@ -343,5 +351,254 @@ describe("Life Browse", () => {
     fireEvent.click(screen.getByRole("button", { name: "Weekly" }));
     expect(api.related).toHaveBeenCalledWith(branch.id, "2026-08-04");
     expect(navigate).toHaveBeenCalledWith("2026-08-05", null, "series-1");
+  });
+  it("settles Browse once and treats a new ID as a new delivery", async () => {
+    const settled = vi.fn();
+    const first = {
+      requestId: "browse-a",
+      nodeId: root.id,
+      mode: "browse" as const,
+    };
+    const view = renderLife(undefined, {
+      entryRequest: first,
+      onEntryRequestSettled: settled,
+    });
+    await waitFor(() => expect(settled).toHaveBeenCalledWith("browse-a"));
+    view.rerender(
+      <QueryClientProvider client={view.client}>
+        <LifeScreen
+          anchorLocalDate="2026-08-04"
+          entryRequest={{ ...first }}
+          onEntryRequestSettled={settled}
+        />
+      </QueryClientProvider>,
+    );
+    expect(settled).toHaveBeenCalledTimes(1);
+    view.rerender(
+      <QueryClientProvider client={view.client}>
+        <LifeScreen
+          anchorLocalDate="2026-08-04"
+          entryRequest={{ ...first, requestId: "browse-b" }}
+          onEntryRequestSettled={settled}
+        />
+      </QueryClientProvider>,
+    );
+    await waitFor(() => expect(settled).toHaveBeenCalledWith("browse-b"));
+    expect(settled).toHaveBeenCalledTimes(2);
+  });
+  it("waits for a remote Browse projection and settles backend fallback", async () => {
+    let resolveRemote!: (value: LifeBrowseProjection) => void;
+    api.browse.mockImplementation(({ node_id }: { node_id: string | null }) =>
+      node_id === branch.id
+        ? new Promise((resolve) => {
+            resolveRemote = resolve;
+          })
+        : Promise.resolve(projection()),
+    );
+    const settled = vi.fn();
+    const view = renderLife(undefined, {
+      entryRequest: {
+        requestId: "remote-browse",
+        nodeId: branch.id,
+        mode: "browse",
+      },
+      onEntryRequestSettled: settled,
+    });
+    await waitFor(() =>
+      expect(api.browse).toHaveBeenCalledWith({ node_id: branch.id, child_page: 0 }),
+    );
+    expect(settled).not.toHaveBeenCalled();
+    resolveRemote(projection(branch, [leaf]));
+    await waitFor(() => expect(settled).toHaveBeenCalledWith("remote-browse"));
+    view.unmount();
+
+    api.browse.mockImplementation(({ node_id }: { node_id: string | null }) =>
+      Promise.resolve(
+        node_id === branch.id
+          ? { ...projection(), resolved_from_fallback: true }
+          : projection(),
+      ),
+    );
+    const fallbackSettled = vi.fn();
+    renderLife(undefined, {
+      entryRequest: {
+        requestId: "browse-fallback",
+        nodeId: branch.id,
+        mode: "browse",
+      },
+      onEntryRequestSettled: fallbackSettled,
+    });
+    await waitFor(() =>
+      expect(fallbackSettled).toHaveBeenCalledWith("browse-fallback"),
+    );
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      /nearest available branch/,
+    );
+  });
+  it("opens direct and remote Reader requests and settles each once", async () => {
+    const directSettled = vi.fn();
+    const direct = renderLife(undefined, {
+      entryRequest: {
+        requestId: "direct-reader",
+        nodeId: leaf.id,
+        mode: "reader",
+      },
+      onEntryRequestSettled: directSettled,
+    });
+    expect(await screen.findByRole("heading", { name: "Reader" })).toBeInTheDocument();
+    expect(await screen.findByText("Leaf")).toBeInTheDocument();
+    expect(directSettled).toHaveBeenCalledTimes(1);
+    direct.unmount();
+
+    api.browse.mockImplementation(({ node_id }: { node_id: string | null }) =>
+      Promise.resolve(
+        node_id === remoteLeaf.id ? projection(remoteLeaf, []) : projection(),
+      ),
+    );
+    const remoteSettled = vi.fn();
+    renderLife(undefined, {
+      entryRequest: {
+        requestId: "remote-reader",
+        nodeId: remoteLeaf.id,
+        mode: "reader",
+      },
+      onEntryRequestSettled: remoteSettled,
+    });
+    expect(await screen.findByRole("heading", { name: "Reader" })).toBeInTheDocument();
+    expect(await screen.findByText("Remote Leaf")).toBeInTheDocument();
+    expect(remoteSettled).toHaveBeenCalledTimes(1);
+    const accessibility = await axe.run(document.body, {
+      rules: { "color-contrast": { enabled: false } },
+    });
+    expect(accessibility.violations).toEqual([]);
+  });
+  it("settles invalid Reader targets in Browse and retries after query error", async () => {
+    const nonLeafSettled = vi.fn();
+    const nonLeaf = renderLife(undefined, {
+      entryRequest: {
+        requestId: "non-leaf-reader",
+        nodeId: branch.id,
+        mode: "reader",
+      },
+      onEntryRequestSettled: nonLeafSettled,
+    });
+    await waitFor(() =>
+      expect(nonLeafSettled).toHaveBeenCalledWith("non-leaf-reader"),
+    );
+    expect(screen.queryByRole("heading", { name: "Reader" })).not.toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Branch" })).toBeInTheDocument();
+    nonLeaf.unmount();
+
+    api.browse.mockImplementation(({ node_id }: { node_id: string | null }) => {
+      if (node_id === remoteLeaf.id) return Promise.reject(new Error("offline"));
+      return Promise.resolve(projection());
+    });
+    const retrySettled = vi.fn();
+    const retry = renderLife(undefined, {
+      entryRequest: {
+        requestId: "reader-retry",
+        nodeId: remoteLeaf.id,
+        mode: "reader",
+      },
+      onEntryRequestSettled: retrySettled,
+    });
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Life System could not be loaded",
+    );
+    expect(retrySettled).not.toHaveBeenCalled();
+    api.browse.mockImplementation(({ node_id }: { node_id: string | null }) =>
+      Promise.resolve(
+        node_id === remoteLeaf.id ? projection(remoteLeaf, []) : projection(),
+      ),
+    );
+    await retry.client.refetchQueries({
+      queryKey: ["life", "browse", remoteLeaf.id, 0],
+    });
+    await waitFor(() => expect(retrySettled).toHaveBeenCalledWith("reader-retry"));
+    expect(await screen.findByRole("heading", { name: "Reader" })).toBeInTheDocument();
+  });
+  it("lets manual Life actions supersede a pending remote request", async () => {
+    let resolveRemote!: (value: LifeBrowseProjection) => void;
+    api.browse.mockImplementation(({ node_id }: { node_id: string | null }) =>
+      node_id === remoteLeaf.id
+        ? new Promise((resolve) => {
+            resolveRemote = resolve;
+          })
+        : Promise.resolve(projection()),
+    );
+    const settled = vi.fn();
+    renderLife(undefined, {
+      entryRequest: {
+        requestId: "manual-wins",
+        nodeId: remoteLeaf.id,
+        mode: "reader",
+      },
+      onEntryRequestSettled: settled,
+    });
+    await waitFor(() =>
+      expect(api.browse).toHaveBeenCalledWith({
+        node_id: remoteLeaf.id,
+        child_page: 0,
+      }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Pinned" }));
+    expect(settled).toHaveBeenCalledWith("manual-wins");
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Pinned" })).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      ),
+    );
+    resolveRemote(projection(remoteLeaf, []));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Pinned" })).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      ),
+    );
+    expect(screen.queryByRole("heading", { name: "Reader" })).not.toBeInTheDocument();
+    expect(settled).toHaveBeenCalledTimes(1);
+  });
+  it("does not duplicate Reader history for a reallocated request or StrictMode", async () => {
+    const settled = vi.fn();
+    const request = {
+      requestId: "history-once",
+      nodeId: leaf.id,
+      mode: "reader" as const,
+    };
+    const view = renderLife(undefined, {
+      entryRequest: request,
+      onEntryRequestSettled: settled,
+    });
+    await screen.findByRole("heading", { name: "Reader" });
+    view.rerender(
+      <QueryClientProvider client={view.client}>
+        <LifeScreen
+          anchorLocalDate="2026-08-04"
+          entryRequest={{ ...request }}
+          onEntryRequestSettled={settled}
+        />
+      </QueryClientProvider>,
+    );
+    expect(settled).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: /Back to Life Browse/ }));
+    expect(await screen.findByRole("heading", { name: "Life" })).toBeInTheDocument();
+    view.unmount();
+
+    const strictSettled = vi.fn();
+    renderLife(
+      undefined,
+      {
+        entryRequest: {
+          requestId: "strict-reader",
+          nodeId: leaf.id,
+          mode: "reader",
+        },
+        onEntryRequestSettled: strictSettled,
+      },
+      (child) => <StrictMode>{child}</StrictMode>,
+    );
+    await screen.findByRole("heading", { name: "Reader" });
+    expect(strictSettled).toHaveBeenCalledTimes(1);
   });
 });
