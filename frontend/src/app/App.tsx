@@ -48,6 +48,7 @@ export function App() {
   const [destination, setDestination] = useState<Destination>("today");
   const [selectedDate, setSelectedDate] = useState(localToday);
   const anchorLocalDate = useLocalDateRollover();
+  const previousAnchor = useRef(anchorLocalDate);
   const [taskSidebarMode, setTaskSidebarMode] =
     useState<SidebarMode>(readSidebarMode);
   const [lifeAutoCollapsed, setLifeAutoCollapsed] = useState(false);
@@ -56,6 +57,10 @@ export function App() {
   const headingRef = useRef<HTMLElement>(null);
   const searchTriggerRef = useRef<HTMLButtonElement>(null);
 
+  useEffect(() => {
+    if (selectedDate === previousAnchor.current) setSelectedDate(anchorLocalDate);
+    previousAnchor.current = anchorLocalDate;
+  }, [anchorLocalDate, selectedDate]);
   useEffect(() => {
     healthCheck()
       .then(() => setIpcStatus("ready"))
@@ -242,6 +247,7 @@ export function App() {
               >
                 <TodayScreen
                   selectedDate={selectedDate}
+                  anchorLocalDate={anchorLocalDate}
                   onSelectedDateChange={setSelectedDate}
                   onLifeNavigate={navigateToLifeNode}
                   focusRequest={

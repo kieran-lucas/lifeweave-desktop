@@ -17,6 +17,8 @@ import type { CreateRecurringTaskInput } from "./generated/CreateRecurringTaskIn
 import type { RecurringOccurrenceView } from "./generated/RecurringOccurrenceView";
 import type { UpdateRecurringOccurrenceInput } from "./generated/UpdateRecurringOccurrenceInput";
 import type { TodayItemView } from "./generated/TodayItemView";
+import type { GetTaskPlanningProjectionInput } from "./generated/GetTaskPlanningProjectionInput";
+import type { TaskPlanningProjection } from "./generated/TaskPlanningProjection";
 import type { MonthProjection } from "./generated/MonthProjection";
 import type { CompletionStateView } from "./generated/CompletionStateView";
 import type { EvaluateTaskInput } from "./generated/EvaluateTaskInput";
@@ -139,6 +141,8 @@ export const createRecurringTask = (input: CreateRecurringTaskInput) => invoke<s
 export const listRecurringOccurrences = (localDate: string) => invoke<RecurringOccurrenceView[]>("list_recurring_occurrences", { localDate });
 export const updateRecurringOccurrence = (input: UpdateRecurringOccurrenceInput) => invoke<void>("update_recurring_occurrence", { input });
 export const listTodayItems = (localDate: string) => invoke<TodayItemView[]>("list_today_items", { localDate });
+export const getTaskPlanningProjection = (input: GetTaskPlanningProjectionInput) =>
+  invoke<TaskPlanningProjection>("get_task_planning_projection", { input });
 export const getMonthProjection = (year: number, month: number, selectedDate: string, today: string) =>
   invoke<MonthProjection>("get_month_projection", { year, month, selectedDate, today });
 export const listCompletionStates = () => invoke<CompletionStateView[]>("list_completion_states");

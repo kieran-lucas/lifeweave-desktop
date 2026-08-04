@@ -4,10 +4,11 @@ use crate::task::{
     analytics, calendar,
     dto::{
         AnalyticsProjection, AnalyticsProjectionInput, CompletionStateView, CreateTaskInput,
-        EvaluateTaskInput, MonthProjection, TaskCategoryView, TaskEvaluationView, TaskView,
-        UndoTaskEvaluationInput, UpdateCategoryGoalsInput, UpdateTaskInput,
+        EvaluateTaskInput, GetTaskPlanningProjectionInput, MonthProjection, TaskCategoryView,
+        TaskEvaluationView, TaskPlanningProjection, TaskView, UndoTaskEvaluationInput,
+        UpdateCategoryGoalsInput, UpdateTaskInput,
     },
-    evaluation,
+    evaluation, planning,
     repository::{self, TaskError},
 };
 use tauri::State;
@@ -156,6 +157,18 @@ pub fn list_today_items(
 ) -> Result<Vec<crate::task::dto::TodayItemView>, IpcError> {
     state
         .execute(move |conn| Ok(repository::today_items(conn, &local_date)))
+        .map_err(map_db)?
+        .map_err(map_task)
+}
+
+#[tauri::command]
+#[tracing::instrument(skip(state, input), fields(mode = ?input.mode))]
+pub fn get_task_planning_projection(
+    state: State<'_, DatabaseRuntime>,
+    input: GetTaskPlanningProjectionInput,
+) -> Result<TaskPlanningProjection, IpcError> {
+    state
+        .execute(move |conn| Ok(planning::projection(conn, input)))
         .map_err(map_db)?
         .map_err(map_task)
 }

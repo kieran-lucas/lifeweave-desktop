@@ -1,5 +1,17 @@
 # Project Status
 
+## Task 32/60 — IN ACCEPTANCE — not closed
+
+- Today remains the application and Task-workspace default.
+- Upcoming and Overdue are manual-activation tabs inside Today, not new sidebar destinations.
+- Upcoming covers tomorrow through the next 14 local calendar days.
+- Overdue covers unevaluated non-cancelled items from the prior 30 days; Missed remains derived and any current evaluation counts as reviewed.
+- Recurring projections preserve series + original-date identity and respect cancellation, replacement, overrides, splits, finite rules, and inherited Life links.
+- Planning rows navigate into the existing exact-day Today edit/evaluation workflow.
+- Database schema remains 16; no migration, dependency, plugin, broad capability, or Task 33 behavior.
+- Evidence: pending acceptance verification.
+- Task 33 has not started; next action after acceptance is Product Owner gate.
+
 ## Task 31/60 — Lossless Portable Package
 
 - Package format v1 exports one committed Basic Leaf or Narrative Canvas document.

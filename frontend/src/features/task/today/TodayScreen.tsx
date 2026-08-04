@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { OccurrenceEditScope } from "../../../ipc/generated/OccurrenceEditScope";
 import type { TaskCategoryView } from "../../../ipc/generated/TaskCategoryView";
@@ -24,6 +24,9 @@ import { CategoryIcon } from "../categoryIcons";
 import { AssessmentControl } from "../../completion/AssessmentControl";
 import * as styles from "./TodayScreen.css";
 import { LifeAreaCombobox } from "../LifeAreaCombobox";
+import { TaskWorkspaceTabs, type TaskWorkspaceMode } from "../planning/TaskWorkspaceTabs";
+
+const TaskPlanningPanel = lazy(() => import("../planning/TaskPlanningPanel"));
 
 type CommonItem = Omit<
   TodayItemView,
@@ -175,19 +178,25 @@ export function TodayScreen({
   onSelectedDateChange,
   focusRequest,
   onLifeNavigate,
+  anchorLocalDate,
 }: {
   selectedDate?: string;
   onSelectedDateChange?: (date: string) => void;
   focusRequest?: FocusRequest;
   onLifeNavigate?: (nodeId: string) => void;
+  anchorLocalDate?: string;
 } = {}) {
-  const today = localToday(),
+  const today = anchorLocalDate ?? localToday(),
     [standaloneDate, setStandaloneDate] = useState(today),
     date = selectedDate ?? standaloneDate,
     client = useQueryClient(),
     trigger = useRef<HTMLButtonElement>(null),
     dialog = useRef<HTMLDivElement>(null),
     returnFocus = useRef<HTMLElement | null>(null);
+  const planningAnchor = anchorLocalDate ?? today;
+  const [workspaceMode, setWorkspaceMode] = useState<TaskWorkspaceMode>("today");
+  const [internalFocusRequest, setInternalFocusRequest] = useState<FocusRequest>(null);
+  const effectiveFocusRequest = internalFocusRequest ?? focusRequest;
   const selectDate = (value: string) =>
     onSelectedDateChange
       ? onSelectedDateChange(value)
@@ -241,10 +250,11 @@ export function TodayScreen({
     count: endMode === "count" ? count : null,
   };
   const refreshSchedule = async () => {
-    await Promise.all([
+    await Promise.allSettled([
       client.invalidateQueries({ queryKey: ["today-items"] }),
       client.invalidateQueries({ queryKey: ["month-projection"] }),
       client.invalidateQueries({ queryKey: ["analytics"] }),
+      client.invalidateQueries({ queryKey: ["task-planning"] }),
     ]);
   };
   const save = useMutation({
@@ -380,9 +390,10 @@ export function TodayScreen({
         localDate: variables.item.local_date,
         operationId: value.operation_id,
       });
-      await Promise.all([
+      await Promise.allSettled([
         client.invalidateQueries({ queryKey: ["month-projection"] }),
         client.invalidateQueries({ queryKey: ["analytics"] }),
+        client.invalidateQueries({ queryKey: ["task-planning"] }),
       ]);
     },
   });
@@ -401,9 +412,10 @@ export function TodayScreen({
             ),
         );
       setLastOperation(null);
-      await Promise.all([
+      await Promise.allSettled([
         client.invalidateQueries({ queryKey: ["month-projection"] }),
         client.invalidateQueries({ queryKey: ["analytics"] }),
+        client.invalidateQueries({ queryKey: ["task-planning"] }),
       ]);
     },
     onError: (value) =>
@@ -448,8 +460,8 @@ export function TodayScreen({
     setOpen(true);
   }
   useEffect(() => {
-    if (!focusRequest || !items.data) return;
-    const targetId = focusRequest.taskId ?? focusRequest.seriesId;
+    if (!effectiveFocusRequest || !items.data || workspaceMode !== "today") return;
+    const targetId = effectiveFocusRequest.taskId ?? effectiveFocusRequest.seriesId;
     if (!targetId) return;
     const el = document.querySelector<HTMLElement>(
       `[data-task-id="${targetId}"],[data-series-id="${targetId}"]`,
@@ -460,7 +472,13 @@ export function TodayScreen({
     } else {
       document.getElementById("today-heading")?.focus({ preventScroll: true });
     }
-  }, [focusRequest, items.data]);
+  }, [effectiveFocusRequest, items.data, workspaceMode]);
+  useEffect(() => {
+    if (focusRequest) {
+      setInternalFocusRequest(null);
+      setWorkspaceMode("today");
+    }
+  }, [focusRequest]);
   useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => {
@@ -532,8 +550,16 @@ export function TodayScreen({
   );
   const clock = new Date(),
     clockMinute = clock.getHours() * 60 + clock.getMinutes();
+  const openPlanningItem = (request: { localDate: string; taskId: string | null; seriesId: string | null }) => {
+    selectDate(request.localDate);
+    setInternalFocusRequest({ requestId: globalThis.crypto.randomUUID(), taskId: request.taskId, seriesId: request.seriesId });
+    setWorkspaceMode("today");
+  };
   return (
-    <section aria-labelledby="today-heading" className={styles.root}>
+    <section className={styles.root}>
+      <TaskWorkspaceTabs active={workspaceMode} disabled={open} onActivate={setWorkspaceMode} />
+      {workspaceMode === "today" ? (
+      <div role="tabpanel" id="task-panel-today" aria-labelledby="task-tab-today">
       <div className={styles.header}>
         <div>
           <p className={styles.eyebrow}>
@@ -678,7 +704,15 @@ export function TodayScreen({
           ))}
         </div>
       )}
-      {open && (
+      </div>
+      ) : (
+        <div role="tabpanel" id={`task-panel-${workspaceMode}`} aria-labelledby={`task-tab-${workspaceMode}`}>
+          <Suspense fallback={<p role="status">Loading {workspaceMode} tasks…</p>}>
+            <TaskPlanningPanel mode={workspaceMode} anchorLocalDate={planningAnchor} onOpenItem={openPlanningItem} />
+          </Suspense>
+        </div>
+      )}
+      {workspaceMode === "today" && open && (
         <div
           className={styles.dialog}
           role="dialog"

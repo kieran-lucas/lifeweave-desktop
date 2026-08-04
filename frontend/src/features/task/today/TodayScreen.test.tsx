@@ -43,6 +43,7 @@ const commands = vi.hoisted(() => ({
   evaluateTask: vi.fn(),
   undoTaskEvaluation: vi.fn(),
   listTaskLifeTargets: vi.fn(),
+  getTaskPlanningProjection: vi.fn(),
 }));
 vi.mock("../../../ipc/commands", () => commands);
 const renderToday = (onLifeNavigate?: (nodeId: string) => void) =>
@@ -120,6 +121,14 @@ describe("Today recurrence contract", () => {
     commands.createRecurringTask.mockResolvedValue("series");
     commands.updateRecurringOccurrence.mockResolvedValue(undefined);
     commands.deleteTask.mockResolvedValue(undefined);
+    commands.getTaskPlanningProjection.mockResolvedValue({
+      mode: "upcoming", algorithm_version: 1, anchor_local_date: "2026-08-02",
+      range_start_local_date: "2026-08-03", range_end_local_date: "2026-08-16",
+      total_item_count: 1, scheduled_minutes: 60,
+      groups: [{ local_date: "2026-08-03", scheduled_minutes: 60, items: [{
+        ...oneOff, id: "future", local_date: "2026-08-03", start_minute: 600, end_minute: 660,
+      }] }],
+    });
   });
   afterEach(() => vi.useRealTimers());
   it("renders all timeline periods and keeps recurrence off by default", async () => {
@@ -393,5 +402,16 @@ describe("Today recurrence contract", () => {
     renderToday();
     fireEvent.doubleClick(await screen.findByRole("listitem"));
     expect(screen.getAllByText("Archived life area: Old")).toHaveLength(2);
+  });
+  it("opens a planning item on its exact Today date and identity", async () => {
+    Object.defineProperty(HTMLElement.prototype, "scrollIntoView", { configurable: true, value: vi.fn() });
+    commands.listTodayItems.mockImplementation((date: string) => Promise.resolve(date === "2026-08-03" ? [{ ...oneOff, id: "future", local_date: date }] : [oneOff]));
+    renderToday();
+    await screen.findByText("Focus");
+    fireEvent.click(screen.getByRole("tab", { name: "Upcoming" }));
+    fireEvent.click(await screen.findByRole("button", { name: /Open day for Focus/ }));
+    await waitFor(() => expect(document.activeElement).toHaveAttribute("data-task-id", "future"));
+    expect(screen.getByRole("tab", { name: "Today" })).toHaveAttribute("aria-selected", "true");
+    delete (HTMLElement.prototype as { scrollIntoView?: unknown }).scrollIntoView;
   });
 });

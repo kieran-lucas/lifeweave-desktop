@@ -261,6 +261,64 @@ pub struct TodayItemView {
     pub life_area: Option<TaskLifeAreaView>,
 }
 
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub enum TaskPlanningMode {
+    Upcoming,
+    Overdue,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct GetTaskPlanningProjectionInput {
+    pub mode: TaskPlanningMode,
+    pub anchor_local_date: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct TaskPlanningItemView {
+    pub kind: TodayItemKind,
+    pub id: String,
+    pub occurrence_id: Option<String>,
+    pub series_id: Option<String>,
+    pub original_local_date: Option<String>,
+    pub local_date: String,
+    pub start_minute: i32,
+    pub end_minute: i32,
+    pub title: String,
+    pub description: String,
+    pub category_id: String,
+    pub category_name: String,
+    pub category_icon_key: String,
+    pub category_color_key: String,
+    pub priority: String,
+    pub is_override: bool,
+    pub life_area: Option<TaskLifeAreaView>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct TaskPlanningDayGroup {
+    pub local_date: String,
+    pub scheduled_minutes: i32,
+    pub items: Vec<TaskPlanningItemView>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct TaskPlanningProjection {
+    pub mode: TaskPlanningMode,
+    pub algorithm_version: i32,
+    pub anchor_local_date: String,
+    pub range_start_local_date: String,
+    pub range_end_local_date: String,
+    pub total_item_count: u32,
+    pub scheduled_minutes: i32,
+    pub groups: Vec<TaskPlanningDayGroup>,
+}
+
 #[derive(Debug, Clone, Serialize)]
 #[cfg_attr(test, derive(ts_rs::TS))]
 pub struct CompletionStateView {

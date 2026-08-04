@@ -88,7 +88,9 @@ fn life_area(
         (SELECT archived_at IS NOT NULL FROM life_nodes WHERE id=?1)", params![id], |r| Ok(TaskLifeAreaView { id: id.clone(), title: r.get(0)?, breadcrumb: r.get(1)?, archived: r.get(2)? })
     ).optional()
 }
-fn life_area_map(conn: &Connection) -> Result<HashMap<String, TaskLifeAreaView>, rusqlite::Error> {
+pub(crate) fn life_area_map(
+    conn: &Connection,
+) -> Result<HashMap<String, TaskLifeAreaView>, rusqlite::Error> {
     let mut statement = conn.prepare(
         "WITH RECURSIVE paths(id,title,breadcrumb,archived) AS (
           SELECT id,title,'',archived_at IS NOT NULL FROM life_nodes WHERE id='life-root'

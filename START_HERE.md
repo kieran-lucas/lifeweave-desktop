@@ -17,9 +17,9 @@
 - Latest product feature: **Task 31 — Lossless Portable Package**
 - Latest feature checkpoint: `a20aac0bf701fa5d7be473e12316ba97637f2958`
 - Database schema: **16**
-- Active implementation specification: **none**
-- Next action: **Product Owner gate**
-- Task 32 status: **not selected or authorized**
+- Active implementation specification: **`specs/022-upcoming-overdue-planning`**
+- Next action: **Implement active spec**
+- Task 32 status: **IN ACCEPTANCE — not closed**
 
 ## Core invariants
 

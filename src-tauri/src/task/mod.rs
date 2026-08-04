@@ -4,6 +4,7 @@ pub mod conflict;
 pub mod domain;
 pub mod dto;
 pub mod evaluation;
+pub mod planning;
 pub mod recurrence;
 pub mod repository;
 pub mod service;

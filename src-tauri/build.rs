@@ -21,6 +21,7 @@ fn main() {
             "list_recurring_occurrences",
             "update_recurring_occurrence",
             "list_today_items",
+            "get_task_planning_projection",
             "get_month_projection",
             "list_completion_states",
             "evaluate_task",

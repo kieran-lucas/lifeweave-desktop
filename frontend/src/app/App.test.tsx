@@ -9,10 +9,14 @@ const appApi = vi.hoisted(() => ({
   listTodayItems: vi.fn(),
   getLifeBrowseProjection: vi.fn(),
   getRelatedTasksForLifeNode: vi.fn(),
+  anchorLocalDate: "2026-08-04",
 }));
 
 vi.mock("../features/calendar/date", () => ({
   localToday: () => "2026-08-04",
+}));
+vi.mock("../features/calendar/useLocalDateRollover", () => ({
+  useLocalDateRollover: () => appApi.anchorLocalDate,
 }));
 
 const renderApp = () =>
@@ -104,6 +108,7 @@ describe("App shell", () => {
     appApi.listTodayItems.mockReset().mockResolvedValue([]);
     appApi.getLifeBrowseProjection.mockReset().mockResolvedValue(rootProjection);
     appApi.getRelatedTasksForLifeNode.mockReset().mockResolvedValue([]);
+    appApi.anchorLocalDate = "2026-08-04";
   });
 
   it("passes fixed local today to Life and focuses the backend-provided recurring navigation date", async () => {
@@ -269,6 +274,30 @@ describe("App shell", () => {
     const selectedIso = selectedLabel.textContent!.split(" · ")[1]!;
     fireEvent.click(screen.getByRole("button", { name: "Create task" }));
     expect(screen.getByLabelText("Date")).toHaveValue(selectedIso);
+  });
+
+  it("advances a selected Today date when the local anchor rolls over", async () => {
+    const view = renderApp();
+    expect(await screen.findByText("Today · 2026-08-04")).toBeInTheDocument();
+    appApi.anchorLocalDate = "2026-08-05";
+    view.rerender(
+      <QueryClientProvider client={new QueryClient()}><App /></QueryClientProvider>,
+    );
+    expect(await screen.findByText("Today · 2026-08-05")).toBeInTheDocument();
+  });
+
+  it("preserves an intentionally selected date when the local anchor rolls over", async () => {
+    const view = renderApp();
+    await screen.findByText("Today · 2026-08-04");
+    const week = screen.getByRole("navigation", { name: "Week navigation" });
+    const other = within(week).getAllByRole("button").find((button) => button.getAttribute("aria-pressed") === "false")!;
+    fireEvent.click(other);
+    const selected = (await screen.findByText(/Selected day ·/)).textContent;
+    appApi.anchorLocalDate = "2026-08-05";
+    view.rerender(
+      <QueryClientProvider client={new QueryClient()}><App /></QueryClientProvider>,
+    );
+    expect(await screen.findByText(selected!)).toBeInTheDocument();
   });
 
   it("activates a Calendar cell by returning to the day timeline", async () => {

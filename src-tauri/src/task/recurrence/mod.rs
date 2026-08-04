@@ -91,6 +91,40 @@ pub fn occurrences_on_or_after(
     Ok(dates)
 }
 
+pub fn occurrences_between(
+    dtstart: &str,
+    range_start: &str,
+    range_end: &str,
+    rule: &str,
+    limit: u16,
+) -> Result<Vec<String>, TaskError> {
+    let start = parse_date(dtstart)?;
+    let from = parse_date(range_start)?;
+    let through = parse_date(range_end)?;
+    if from > through || limit == 0 {
+        return Ok(Vec::new());
+    }
+    let normalized = normalize_rule(rule)?;
+    let source = format!(
+        "DTSTART:{}T000000Z\nRRULE:{normalized}",
+        start.format("%Y%m%d")
+    );
+    let set: RRuleSet = source
+        .parse()
+        .map_err(|_| TaskError::Validation("Malformed recurrence rule."))?;
+    let mut dates = set
+        .after(from - chrono::Duration::seconds(1))
+        .before(through)
+        .all(limit.min(MAX_EXPANSION_OCCURRENCES))
+        .dates
+        .into_iter()
+        .map(|date| date.format("%Y-%m-%d").to_string())
+        .collect::<Vec<_>>();
+    dates.sort_unstable();
+    dates.dedup();
+    Ok(dates)
+}
+
 fn parse_date(value: &str) -> Result<chrono::DateTime<Tz>, TaskError> {
     let date = chrono::NaiveDate::parse_from_str(value, "%Y-%m-%d")
         .map_err(|_| TaskError::Validation("Enter a valid recurrence date."))?;
@@ -184,5 +218,30 @@ mod tests {
         .unwrap();
         assert_eq!(dates.len(), MAX_EXPANSION_OCCURRENCES as usize);
         assert!(dates.windows(2).all(|pair| pair[0] < pair[1]));
+    }
+
+    #[test]
+    fn occurrences_between_is_inclusive_bounded_and_respects_finite_rules() {
+        assert_eq!(
+            occurrences_between("2026-08-01", "2026-08-03", "2026-08-05", "FREQ=DAILY", 8).unwrap(),
+            ["2026-08-03", "2026-08-04", "2026-08-05"]
+        );
+        assert!(
+            occurrences_between(
+                "2026-08-01",
+                "2026-08-03",
+                "2026-08-05",
+                "FREQ=DAILY;COUNT=2",
+                8
+            )
+            .unwrap()
+            .is_empty()
+        );
+        assert_eq!(
+            occurrences_between("2024-02-29", "2028-02-29", "2028-02-29", "FREQ=YEARLY", 8)
+                .unwrap(),
+            ["2028-02-29"]
+        );
+        assert!(occurrences_between("bad", "2026-01-01", "2026-01-02", "FREQ=DAILY", 8).is_err());
     }
 }

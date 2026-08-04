@@ -1,5 +1,14 @@
 # Roadmap
 
+## Slice 022 — Upcoming and Overdue Task Planning
+
+Task 32 completes the bounded Task planning triad inside the existing Today
+destination. Upcoming projects tomorrow through the next 14 local calendar
+days. Overdue projects unevaluated, non-cancelled items from the prior 30 days.
+Both reuse canonical recurrence/evaluation authority and navigate into the
+existing exact-day Today workflow. No migration, dependency, sidebar route, or
+persisted overdue state is added.
+
 ## Slice 021 — Lossless Portable Package
 
 Task 31 adds a bounded single-document ZIP interchange format for committed Basic Leaf and Narrative Canvas documents. Canonical JSON remains authoritative; Markdown is a readable fallback; supported local visual assets are privacy-sanitized, checksummed and remapped during atomic import into an empty Life leaf. It is not a database backup or Life-tree export.

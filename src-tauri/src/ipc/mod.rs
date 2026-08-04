@@ -71,6 +71,11 @@ mod tests {
         crate::task::dto::UpdateRecurringOccurrenceInput::export_all_to(&out).unwrap();
         crate::task::dto::TodayItemView::export_all_to(&out).unwrap();
         crate::task::dto::TodayItemKind::export_all_to(&out).unwrap();
+        crate::task::dto::TaskPlanningMode::export_all_to(&out).unwrap();
+        crate::task::dto::GetTaskPlanningProjectionInput::export_all_to(&out).unwrap();
+        crate::task::dto::TaskPlanningItemView::export_all_to(&out).unwrap();
+        crate::task::dto::TaskPlanningDayGroup::export_all_to(&out).unwrap();
+        crate::task::dto::TaskPlanningProjection::export_all_to(&out).unwrap();
         crate::task::dto::CalendarDayProjection::export_all_to(&out).unwrap();
         crate::task::dto::MonthProjection::export_all_to(&out).unwrap();
         crate::task::dto::CompletionStateView::export_all_to(&out).unwrap();
