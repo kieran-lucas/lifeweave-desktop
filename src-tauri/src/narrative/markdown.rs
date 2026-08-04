@@ -73,6 +73,7 @@ pub fn import_as_canvas(
         "title": title,
         "templateId": "knowledge_dossier",
         "templateVersion": 1,
+        "visualWorldId": "paper",
         "scenes": [{
             "id": scene_id,
             "title": "Overview",

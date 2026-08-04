@@ -1,5 +1,9 @@
 # Roadmap
 
+## Slice 018 - Narrative Visual Worlds
+- four curated static document-level Canvas worlds;
+- Studio-only mutable presentation selection.
+
 ## Slice 017 - Narrative Template System
 - three static seed-only Narrative Canvas templates;
 - immutable persisted creation provenance;

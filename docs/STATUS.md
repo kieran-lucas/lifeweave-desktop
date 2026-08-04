@@ -1,5 +1,10 @@
 # Project Status
 
+## Task 28/60 - Narrative Visual Worlds (implementation)
+
+- Starting checkpoint: b32839ac14e7f0463cd6580caa919642128ef2b1.
+- Four document-level canonical worlds are scoped to Narrative Canvas only: Paper, Sakura, Aurora, and Nocturne.
+
 ## Task 27/60 - Narrative Template System (implementation)
 
 - Starting checkpoint: 4e2c4ee347212b9a26949f7c9df2d2ae77dab59a (accepted Task 26).

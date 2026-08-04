@@ -43,6 +43,8 @@ import type {
   RichTextContent,
 } from "./schema";
 import * as styles from "./NarrativeCanvas.css";
+import { visualWorlds } from "./visualWorlds";
+import { NarrativeVisualWorld } from "./NarrativeVisualWorld";
 
 // ---------------------------------------------------------------------------
 // Structural history (max 50 snapshots — Tiptap keystrokes do NOT push here)
@@ -1293,8 +1295,13 @@ export default function NarrativeCanvasStudio({
 
   // ---- Render ----
 
+  const selectVisualWorld = (visualWorldId: ParsedNarrativeDocument["visualWorldId"]) => {
+    if (visualWorldId === doc.visualWorldId) return;
+    applyStructural({ ...materializeCurrentDocument(), visualWorldId });
+  };
+
   return (
-    <div className={styles.shell}>
+    <NarrativeVisualWorld id={doc.visualWorldId}><div className={styles.shell}>
       <h2>Narrative Canvas — Studio</h2>
       <div className={styles.actions}>
         <button
@@ -1357,6 +1364,17 @@ export default function NarrativeCanvasStudio({
           applyStructural({ ...materializeCurrentDocument(), title: e.currentTarget.value });
         }}
       />
+
+      <fieldset>
+        <legend>Visual world</legend>
+        {visualWorlds.map(world => (
+          <label key={world.id}>
+            <input type="radio" name="visual-world" checked={doc.visualWorldId === world.id} onChange={() => selectVisualWorld(world.id)} />
+            <span aria-hidden="true">{world.light.join(" ")}</span>
+            <strong>{world.name}</strong> {world.description}
+          </label>
+        ))}
+      </fieldset>
 
       <div className={styles.sceneTabBar}>
         <div className={styles.sceneTabList} role="tablist" aria-label="Canvas scenes">
@@ -1499,7 +1517,7 @@ export default function NarrativeCanvasStudio({
         </button>
       </div>
       </div>
-    </div>
+    </div></NarrativeVisualWorld>
   );
 }
 

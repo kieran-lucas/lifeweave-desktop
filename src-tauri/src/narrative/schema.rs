@@ -103,6 +103,16 @@ pub fn validate(
             "Narrative templateVersion must be 1.",
         ));
     }
+    if let Some(value) = obj.get("visualWorldId") {
+        let value = value.as_str().ok_or(NarrativeError::Validation(
+            "Narrative visualWorldId must be a string.",
+        ))?;
+        if super::visual_worlds::NarrativeVisualWorldId::parse(value).is_none() {
+            return Err(NarrativeError::Validation(
+                "Narrative visualWorldId is unsupported.",
+            ));
+        }
+    }
 
     let scenes = obj
         .get("scenes")
@@ -755,5 +765,19 @@ mod tests {
             "scenes": [scene(serde_json::json!([rich_text_block(&block_id)]))]
         });
         assert!(validate(&doc.to_string(), None).is_err());
+    }
+
+    #[test]
+    fn visual_world_is_optional_but_present_values_are_strict() {
+        let raw = doc_with_scene(scene(serde_json::json!([rich_text_block(&new_id())])));
+        assert!(validate(&raw, None).is_ok());
+        for world in ["paper", "sakura", "aurora", "nocturne"] {
+            let mut value: Value = serde_json::from_str(&raw).unwrap();
+            value["visualWorldId"] = Value::String(world.into());
+            assert!(validate(&value.to_string(), None).is_ok());
+        }
+        let mut invalid: Value = serde_json::from_str(&raw).unwrap();
+        invalid["visualWorldId"] = Value::String("unknown".into());
+        assert!(validate(&invalid.to_string(), None).is_err());
     }
 }

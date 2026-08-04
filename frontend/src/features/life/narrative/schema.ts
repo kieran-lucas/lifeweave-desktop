@@ -11,6 +11,7 @@ export type RichTextContent = {
   content: RichTextNode[];
 };
 export type NarrativeTemplateId = "knowledge_dossier" | "project_blueprint" | "learning_journey";
+import { defaultVisualWorldId, isNarrativeVisualWorldId, type NarrativeVisualWorldId } from "./visualWorlds";
 
 // Known block kinds — closed union for component dispatch
 export type NarrativeBlock =
@@ -52,6 +53,7 @@ export type ParsedNarrativeDocument = {
   title: string;
   templateId: NarrativeTemplateId;
   templateVersion: 1;
+  visualWorldId: NarrativeVisualWorldId;
   scenes: [NarrativeScene, ...NarrativeScene[]];
 };
 
@@ -156,6 +158,7 @@ export function parseNarrative(json: string): ParsedNarrativeDocument {
   const doc = raw as Record<string, unknown>;
   if (doc["schemaVersion"] !== 1) throw new Error("Unsupported schemaVersion");
   const templateId = assertStringExact(doc["templateId"], "templateId", ["knowledge_dossier", "project_blueprint", "learning_journey"] as const);
+  const visualWorldId = doc["visualWorldId"] === undefined ? defaultVisualWorldId : (isNarrativeVisualWorldId(doc["visualWorldId"]) ? doc["visualWorldId"] : (() => { throw new Error("visualWorldId must be supported"); })());
   if (doc["templateVersion"] !== 1) throw new Error("Unsupported templateVersion");
   assertString(doc["documentId"], "documentId");
   assertString(doc["title"], "title");
@@ -183,6 +186,7 @@ export function parseNarrative(json: string): ParsedNarrativeDocument {
     title: assertString(doc["title"], "title"),
     templateId,
     templateVersion: 1,
+    visualWorldId,
     scenes: parsedScenes as [NarrativeScene, ...NarrativeScene[]],
   };
 }
@@ -196,6 +200,7 @@ export function toNarrativeCanonicalValue(doc: ParsedNarrativeDocument): Record<
     title: doc.title,
     templateId: doc.templateId,
     templateVersion: doc.templateVersion,
+    visualWorldId: doc.visualWorldId,
     scenes: doc.scenes.map(scene => ({
       id: scene.id,
       title: scene.title,

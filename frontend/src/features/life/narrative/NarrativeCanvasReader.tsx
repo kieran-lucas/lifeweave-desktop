@@ -14,6 +14,7 @@ import { parseDocument } from "../document/schema";
 import { StaticDocument } from "../document/StaticDocument";
 import * as styles from "./NarrativeCanvas.css";
 import { getDocumentAsset } from "../../../ipc/commands";
+import { NarrativeVisualWorld } from "./NarrativeVisualWorld";
 
 const NarrativeCanvasStudio = lazy(() => import("./NarrativeCanvasStudio"));
 
@@ -121,7 +122,7 @@ function BlockReader({ block }: { block: ParsedNarrativeBlock }) {
 
 function StaticCanvasView({ doc }: { doc: ParsedNarrativeDocument }) {
   return (
-    <article aria-labelledby="nc-canvas-title">
+    <NarrativeVisualWorld id={doc.visualWorldId}><article aria-labelledby="nc-canvas-title">
       <header>
         <h1 id="nc-canvas-title" className={styles.title}>{doc.title || "Untitled Canvas"}</h1>
       </header>
@@ -140,7 +141,7 @@ function StaticCanvasView({ doc }: { doc: ParsedNarrativeDocument }) {
           </div>
         </section>
       ))}
-    </article>
+    </article></NarrativeVisualWorld>
   );
 }
 

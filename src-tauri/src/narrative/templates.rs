@@ -37,7 +37,7 @@ pub fn seed_document(template: NarrativeTemplateId, document_id: &str, node_titl
         "id": domain::new_id(), "title": title, "layoutPreset": "single_column", "atmosphere": "neutral", "motionPreset": "none",
         "blocks": [{"kind":"rich_text","id":domain::new_id(),"content":{"type":"doc","content":[{"type":"paragraph"}]}}]
     })).collect();
-    serde_json::json!({"schemaVersion":1,"documentId":document_id,"title":node_title,"templateId":template.as_str(),"templateVersion":1,"scenes":scenes}).to_string()
+    serde_json::json!({"schemaVersion":1,"documentId":document_id,"title":node_title,"templateId":template.as_str(),"templateVersion":1,"visualWorldId":"paper","scenes":scenes}).to_string()
 }
 
 #[cfg(test)]
