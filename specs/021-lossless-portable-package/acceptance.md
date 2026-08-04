@@ -16,3 +16,10 @@ Status: **PASS WITH EXTERNAL DEBT**
 - [x] Task 32 remains unstarted and final state returns to Product Owner gate.
 
 External debt is limited to unclaimed physical screen-reader and alternate-DPI review; automated accessibility, keyboard, forced-colors, and Reduced Motion checks passed.
+
+## Remediation 001
+
+- [x] Existing checksum matches require verified contained, non-symlink backing bytes plus matching status, checksum, MIME, dimensions, and byte size.
+- [x] Startup performs best-effort portable export/import cleanup with UUID ownership, 24-hour age, symlink exclusion, and a 1,024-child cap per directory.
+- [x] Manifest title limits count Unicode scalar values and reject controls while the filename sanitizer remains character-based.
+- [x] Backend confirmation is the import commit boundary; cache-refresh rejection produces committed-success warning copy and cannot trigger unchanged-leaf failure copy.

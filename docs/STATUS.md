@@ -9,7 +9,8 @@
 - ZIP dependency: exact `zip 5.1.1`, default features disabled, Stored entries only.
 - Database schema remains 16; no migration.
 - Midnight local-date rollover debt is closed.
-- Evidence: 31 frontend files / 465 tests and 437 ordinary Rust tests passed; all ordinary gates, portable/narrative performance, five-phase native E2E, a 4,783,210-byte NSIS (`c673e87f5a3733b50c556bcf8c2ba3bca48980a77752f6a1a40f040da0ab1519`), and RC run `core-rc-81d0075c8d7041a7bac1e5a74a729c0e` passed.
+- Remediation 001 verifies checksum-deduplicated asset files before reuse, performs bounded stale portable cleanup during startup, validates package titles by Unicode character count, and separates committed import success from cache-refresh warnings.
+- Remediation evidence: 31 frontend files / 468 tests and 444 ordinary Rust tests passed; all ordinary gates, five-phase native E2E, a 4,783,749-byte NSIS (`d7a9f6a1a41463cf26e5862528e308b08c813734d5c023cd92dcdb0ba79b55a7`), and RC run `core-rc-ec1f261bad434cce8a6d0d8aaad598d1` passed.
 - Task 32 has not started; next action is Product Owner gate.
 
 ## Task 30/60 — Current-State Closure
