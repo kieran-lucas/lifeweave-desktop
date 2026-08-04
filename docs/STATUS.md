@@ -2,6 +2,16 @@
 
 ## Task 33/60 — Unified Tags Core + Cross-Pillar Retrieval
 
+### Remediation 002
+
+- Migration 19 adds a `BEFORE UPDATE OF life_node_id` trigger on `life_node_tags` enforcing active-node and non-root assignment at the SQLite update path. Schema assertions bumped 18→19 across all repositories.
+- `TagError::Validation` changed from `&'static str` to `String`; dynamic alias-collision errors in `create_tag` now name the canonical tag.
+- `LifeScreen` Reader section gains `TagChipList` (maxVisible=12); Pinned cards gain `TagChipList`.
+- `TagPicker` gains accent-insensitive `normalizeSearch` filter, Enter-key prevention, load-error retry via `invalidateQueries`, and post-create focus to the new checkbox.
+- `TagSettings` gains three distinct sections (Active, Archived, Merged Aliases); merge confirmation shows source usage counts; `mergeError` state keeps confirmation open on failure; load-error retry via `invalidateQueries`.
+- `e2e-tests/specs/phase7-unified-tags.e2e.ts`: 10-step lifecycle flow (seed, chip verify, P1 title-only edit preserves chip, Life chip, Search, Archive, verify gone, Restore via IPC, verify restored).
+- Evidence: 505 Rust tests (4 ignored), 539 frontend tests (36 files), typecheck, cargo check/fmt/clippy, `pnpm build`, `pnpm tauri build`, `pnpm verify`, RC run `core-rc-8702a09`. NSIS 4,866,352 bytes SHA-256 `d87653e0918cd3ac7a82a03dfb9bb976f52e594c95de7b59b461acdacdf9a25d`.
+
 ### Remediation 001
 
 - Migration 18 adds DB-level BEFORE INSERT/UPDATE triggers on all three tag join tables, rejecting archived or merged tag assignments at the SQLite layer. Life node tags also reject assignments to archived nodes or the root.

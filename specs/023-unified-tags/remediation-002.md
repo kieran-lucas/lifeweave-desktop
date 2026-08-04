@@ -1,6 +1,6 @@
 # Spec 023 — Unified Tags: Remediation 002
 
-> Status: **implemented** — Commit A: `placeholder`.
+> Status: **implemented** — Commit A: `5d7b004e6769a6859ba1fa6d626281555b4f80e3`.
 
 ## Summary
 
