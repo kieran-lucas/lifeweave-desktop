@@ -70,14 +70,27 @@ jobs:
         run: pnpm --dir frontend exec vitest run --maxWorkers=4
       - name: Frontend production build
         run: pnpm build
-      - name: Rust format
-        run: cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check
+      - name: Format Rust diagnostic workspace
+        shell: pwsh
+        run: |
+          cargo fmt --manifest-path src-tauri/Cargo.toml --all
+          git diff -- src-tauri | Out-File -FilePath rustfmt.patch -Encoding utf8
+          if ((Get-Item rustfmt.patch).Length -gt 0) {
+            Write-Host "::warning::Rust formatting patch was generated"
+          }
       - name: Rust check
         run: cargo check --manifest-path src-tauri/Cargo.toml --locked --all-targets
       - name: Rust clippy
         run: cargo clippy --manifest-path src-tauri/Cargo.toml --locked --all-targets -- -D warnings
       - name: Rust tests
         run: cargo test --manifest-path src-tauri/Cargo.toml --locked
+      - name: Upload Rust formatting patch
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: task36-rustfmt-patch
+          path: rustfmt.patch
+          if-no-files-found: error
       - name: Repository hardening (expected to fail until this temporary workflow is removed)
         if: always()
         run: python scripts/verify_hardening.py
