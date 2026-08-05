@@ -60,7 +60,7 @@ jobs:
           '@ | python -
       - name: Apply bounded Phase 3 patch
         run: python scripts/task36_phase3_apply.py
-      - name: Repair migration 20 search scope authority
+      - name: Preserve historical Search triggers during migration 20
         run: python scripts/task36_migration20_scope_fix.py
       - name: Enforce Task 37 prohibition
         shell: pwsh
