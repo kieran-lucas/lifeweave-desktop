@@ -1,0 +1,98 @@
+{
+  "canonical_aggregate": {
+    "max_convergence_drift": 0.0013400000000000079,
+    "mean_rank": {
+      "actual_time": 5.220702500000001,
+      "backlinks": 4.692405333333333,
+      "deadline": 1.458842,
+      "hardening": 2.7299075,
+      "saved_views": 2.552325666666667,
+      "whole_tree_interchange": 4.345816999999999
+    },
+    "minimum_winner_profile_top1": 0.072618,
+    "pairwise_winner_vs_runner_up": 0.7018374999999999,
+    "profiles": ["base", "utility_workflow", "knowledge_interconnection", "task_execution", "safety_maintenance", "interoperability_longevity"],
+    "runner_up": "hardening",
+    "stability": "UNSTABLE",
+    "top1": {
+      "actual_time": 0.0001095,
+      "backlinks": 0.006421833333333334,
+      "deadline": 0.5928183333333333,
+      "hardening": 0.2934,
+      "saved_views": 0.10062966666666666,
+      "whole_tree_interchange": 0.006620666666666666
+    },
+    "winner": "deadline"
+  },
+  "canonical_product_only": {
+    "max_convergence_drift": 0.0012299999999999534,
+    "minimum_winner_profile_top1": 0.645078,
+    "pairwise_winner_vs_runner_up": 0.8740728333333333,
+    "runner_up": "saved_views",
+    "stability": "ROBUST",
+    "top1": {
+      "actual_time": 0.00015933333333333335,
+      "backlinks": 0.006543333333333335,
+      "deadline": 0.8567471666666667,
+      "saved_views": 0.12023933333333332,
+      "whole_tree_interchange": 0.016310833333333333
+    },
+    "winner": "deadline"
+  },
+  "base_scores": {
+    "actual_time": 7.405,
+    "backlinks": 7.55,
+    "deadline": 8.42,
+    "generic_outline": 6.36,
+    "graph": 4.875,
+    "hardening": 8.055,
+    "noteboard": 5.195,
+    "prediction": 4.26,
+    "saved_views": 8.095,
+    "score": 5.02,
+    "whole_tree_interchange": 7.61
+  },
+  "base_eligible_runner_up": "saved_views",
+  "base_eligible_winner": "deadline",
+  "base_lead": 0.3249999999999993,
+  "canonical_profiles": ["base", "utility_workflow", "knowledge_interconnection", "task_execution", "safety_maintenance", "interoperability_longevity"],
+  "conditional": ["generic_outline"],
+  "eligible": ["actual_time", "deadline", "saved_views", "backlinks", "whole_tree_interchange", "hardening"],
+  "format_version": 1,
+  "hard_filter_outcomes": {
+    "actual_time": "PASS",
+    "backlinks": "PASS",
+    "deadline": "PASS",
+    "generic_outline": "CONDITIONAL",
+    "graph": "FAIL",
+    "hardening": "PASS",
+    "noteboard": "FAIL",
+    "prediction": "FAIL",
+    "saved_views": "PASS",
+    "score": "FAIL",
+    "whole_tree_interchange": "PASS"
+  },
+  "interpretation": "Sensitivity analysis over disclosed expert assumptions; top-1 probability is not user-demand probability.",
+  "method": {
+    "chunk_size": 100000,
+    "dirichlet_concentration": 300.0,
+    "scores": "Gaussian aggregate perturbation using criterion-induced variance, clipped to [0,10]",
+    "weights": "Dirichlet positive normalized perturbation"
+  },
+  "model_version": "task34-v1.0",
+  "profile_winners": {
+    "accessibility_maintenance_stress": "hardening",
+    "base": "deadline",
+    "interoperability_longevity": "hardening",
+    "knowledge_interconnection": "deadline",
+    "minimal_complexity_local_stress": "hardening",
+    "product_identity_stress": "deadline",
+    "safety_maintenance": "hardening",
+    "task_execution": "deadline",
+    "utility_workflow": "deadline"
+  },
+  "samples_per_profile": 1000000,
+  "seed": 20260805,
+  "stress_profiles": ["accessibility_maintenance_stress", "product_identity_stress", "minimal_complexity_local_stress"],
+  "total_profile_samples": 9000000
+}
