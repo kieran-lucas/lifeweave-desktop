@@ -1,0 +1,53 @@
+{
+  "task": 34,
+  "execution_baseline": "09b1284f7e17a6e64feeb2bfe8ff6998e7a80bfd",
+  "decision_analysis_commit": "c38e634dc41c0ee9f9afba7cc01c59a0b4d3018f",
+  "closure_commit": "35808fb7764548163992273989963ebb74d7374a",
+  "schema_version": 19,
+  "product_checkpoint": "4d1b65c816312a9e6ae8aa39f4a565555af9feb9",
+  "executed": {
+    "project_state_unit_tests": { "passed": 14, "failed": 0 },
+    "project_state_actual_closure_validate": { "result": "passed", "errors": [] },
+    "analysis_check": { "result": "passed", "samples_per_profile": 1000000, "profiles": 9 },
+    "analysis_artifact_byte_match": "passed",
+    "analysis_python_compile": "passed",
+    "changed_json_parse": "passed",
+    "main_ref_after_closure": "35808fb7764548163992273989963ebb74d7374a",
+    "baseline_compare_scope": "passed",
+    "task35_spec_tree_search": "passed_no_match"
+  },
+  "static_equivalent": {
+    "check_repository": {
+      "result": "passed",
+      "basis": [
+        "required governance files existed in the accepted Task 33 baseline and were not deleted",
+        "all changed JSON parsed successfully",
+        "GitHub baseline comparison added no forbidden database, key, generated, target, node_modules, backup, user-data, or AppData artifact",
+        "immutable source manifest and .gitattributes were unchanged"
+      ]
+    }
+  },
+  "reused_from_task33": {
+    "source_verify": "accepted; immutable source, manifest, and verifier unchanged",
+    "index_check": "accepted; immutable source, generators, SPEC_INDEX, SPEC_HEADINGS, and coverage matrix unchanged",
+    "verify_no_remote_assets": "accepted; production asset inputs unchanged",
+    "verify_security": "accepted; frontend and security verifier unchanged",
+    "verify_hardening": "accepted; workflow and hardening inputs unchanged",
+    "frontend_rust_native_release": "accepted governance-only reuse; no build or product input changed"
+  },
+  "wrapper_commands": {
+    "pnpm_source_verify": { "status": "not_applicable", "reason": "connector-only execution has no repository shell checkout; exact constituent inputs are unchanged and accepted evidence is reused" },
+    "pnpm_governance_check": { "status": "not_applicable", "reason": "connector-only execution; both constituent checks are covered by executed Project State tests and exact static check_repository decomposition" },
+    "pnpm_index_check": { "status": "not_applicable", "reason": "connector-only execution; immutable indexed source and all generator/output inputs are unchanged" },
+    "pnpm_verify": { "status": "not_applicable", "reason": "connector-only execution; every constituent is executed, statically decomposed, or reused with unchanged inputs" },
+    "git_diff_check": { "status": "not_applicable", "reason": "connector-only execution; GitHub per-file comparison and generated UTF-8 artifacts were reviewed instead" }
+  },
+  "evidence_debt": [],
+  "external_manual_debt": [
+    "physical screen-reader verification",
+    "physical alternate-DPI verification"
+  ],
+  "verdict": "passed",
+  "next_action": "product_owner_gate",
+  "task35_started": false
+}

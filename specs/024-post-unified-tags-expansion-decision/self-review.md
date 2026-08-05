@@ -64,4 +64,4 @@ Separated repository facts, source authority, market workflow analogies, and mod
 
 Verified one recommendation packet exists, no Task 35 spec/product code exists, active spec is null, and all closure documents repeat `APPROVE / REJECT / MODIFY`. Historical STATUS/ROADMAP blobs are preserved under archive paths. Final ref synchronization must be checked after the closure commit.
 
-**Result:** PASS pending final ref equality check, then closed.
+**Result:** PASS. `main` was verified at closure commit `35808fb7764548163992273989963ebb74d7374a`; the final evidence-only record is verified after its ref update.
