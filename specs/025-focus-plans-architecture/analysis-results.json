@@ -29,170 +29,49 @@
   "canonical_profile_count": 6,
   "canonical_profiles": [
     {
-      "final_checkpoint": {
-        "samples": 200000,
-        "top1": {
-          "A_life_document": 0.0,
-          "B_standalone_entity": 1.0,
-          "C_basic_leaf_template": 0.0
-        }
-      },
-      "means": {
-        "A_life_document": 5.43,
-        "B_standalone_entity": 8.85,
-        "C_basic_leaf_template": 5.685
-      },
-      "name": "balanced",
-      "pairwise_b_over_a": 1.0,
-      "pairwise_b_over_c": 1.0,
-      "top1_all_options": {
-        "A_life_document": 0.0,
-        "B_standalone_entity": 1.0,
-        "C_basic_leaf_template": 0.0
-      }
+      "final_checkpoint": {"samples": 200000, "top1": {"A_life_document": 0.0, "B_standalone_entity": 1.0, "C_basic_leaf_template": 0.0}},
+      "means": {"A_life_document": 5.43, "B_standalone_entity": 8.85, "C_basic_leaf_template": 5.685},
+      "name": "balanced", "pairwise_b_over_a": 1.0, "pairwise_b_over_c": 1.0,
+      "top1_all_options": {"A_life_document": 0.0, "B_standalone_entity": 1.0, "C_basic_leaf_template": 0.0}
     },
     {
-      "final_checkpoint": {
-        "samples": 200000,
-        "top1": {
-          "A_life_document": 0.0,
-          "B_standalone_entity": 1.0,
-          "C_basic_leaf_template": 0.0
-        }
-      },
-      "means": {
-        "A_life_document": 5.185,
-        "B_standalone_entity": 9.005,
-        "C_basic_leaf_template": 5.415
-      },
-      "name": "semantic_integrity",
-      "pairwise_b_over_a": 1.0,
-      "pairwise_b_over_c": 1.0,
-      "top1_all_options": {
-        "A_life_document": 0.0,
-        "B_standalone_entity": 1.0,
-        "C_basic_leaf_template": 0.0
-      }
+      "final_checkpoint": {"samples": 200000, "top1": {"A_life_document": 0.0, "B_standalone_entity": 1.0, "C_basic_leaf_template": 0.0}},
+      "means": {"A_life_document": 5.185, "B_standalone_entity": 9.005, "C_basic_leaf_template": 5.415},
+      "name": "semantic_integrity", "pairwise_b_over_a": 1.0, "pairwise_b_over_c": 1.0,
+      "top1_all_options": {"A_life_document": 0.0, "B_standalone_entity": 1.0, "C_basic_leaf_template": 0.0}
     },
     {
-      "final_checkpoint": {
-        "samples": 200000,
-        "top1": {
-          "A_life_document": 0.0,
-          "B_standalone_entity": 1.0,
-          "C_basic_leaf_template": 0.0
-        }
-      },
-      "means": {
-        "A_life_document": 5.435,
-        "B_standalone_entity": 8.89,
-        "C_basic_leaf_template": 5.675
-      },
-      "name": "task_execution",
-      "pairwise_b_over_a": 1.0,
-      "pairwise_b_over_c": 1.0,
-      "top1_all_options": {
-        "A_life_document": 0.0,
-        "B_standalone_entity": 1.0,
-        "C_basic_leaf_template": 0.0
-      }
+      "final_checkpoint": {"samples": 200000, "top1": {"A_life_document": 0.0, "B_standalone_entity": 1.0, "C_basic_leaf_template": 0.0}},
+      "means": {"A_life_document": 5.435, "B_standalone_entity": 8.89, "C_basic_leaf_template": 5.675},
+      "name": "task_execution", "pairwise_b_over_a": 1.0, "pairwise_b_over_c": 1.0,
+      "top1_all_options": {"A_life_document": 0.0, "B_standalone_entity": 1.0, "C_basic_leaf_template": 0.0}
     },
     {
-      "final_checkpoint": {
-        "samples": 200000,
-        "top1": {
-          "A_life_document": 0.0,
-          "B_standalone_entity": 1.0,
-          "C_basic_leaf_template": 0.0
-        }
-      },
-      "means": {
-        "A_life_document": 5.735,
-        "B_standalone_entity": 8.795,
-        "C_basic_leaf_template": 5.96
-      },
-      "name": "data_recovery",
-      "pairwise_b_over_a": 1.0,
-      "pairwise_b_over_c": 1.0,
-      "top1_all_options": {
-        "A_life_document": 0.0,
-        "B_standalone_entity": 1.0,
-        "C_basic_leaf_template": 0.0
-      }
+      "final_checkpoint": {"samples": 200000, "top1": {"A_life_document": 0.0, "B_standalone_entity": 1.0, "C_basic_leaf_template": 0.0}},
+      "means": {"A_life_document": 5.735, "B_standalone_entity": 8.795, "C_basic_leaf_template": 5.96},
+      "name": "data_recovery", "pairwise_b_over_a": 1.0, "pairwise_b_over_c": 1.0,
+      "top1_all_options": {"A_life_document": 0.0, "B_standalone_entity": 1.0, "C_basic_leaf_template": 0.0}
     },
     {
-      "final_checkpoint": {
-        "samples": 200000,
-        "top1": {
-          "A_life_document": 0.0,
-          "B_standalone_entity": 1.0,
-          "C_basic_leaf_template": 0.0
-        }
-      },
-      "means": {
-        "A_life_document": 5.515,
-        "B_standalone_entity": 8.895,
-        "C_basic_leaf_template": 5.835
-      },
-      "name": "accessibility_workflow",
-      "pairwise_b_over_a": 1.0,
-      "pairwise_b_over_c": 1.0,
-      "top1_all_options": {
-        "A_life_document": 0.0,
-        "B_standalone_entity": 1.0,
-        "C_basic_leaf_template": 0.0
-      }
+      "final_checkpoint": {"samples": 200000, "top1": {"A_life_document": 0.0, "B_standalone_entity": 1.0, "C_basic_leaf_template": 0.0}},
+      "means": {"A_life_document": 5.515, "B_standalone_entity": 8.895, "C_basic_leaf_template": 5.835},
+      "name": "accessibility_workflow", "pairwise_b_over_a": 1.0, "pairwise_b_over_c": 1.0,
+      "top1_all_options": {"A_life_document": 0.0, "B_standalone_entity": 1.0, "C_basic_leaf_template": 0.0}
     },
     {
-      "final_checkpoint": {
-        "samples": 200000,
-        "top1": {
-          "A_life_document": 0.0,
-          "B_standalone_entity": 1.0,
-          "C_basic_leaf_template": 0.0
-        }
-      },
-      "means": {
-        "A_life_document": 5.42,
-        "B_standalone_entity": 8.3,
-        "C_basic_leaf_template": 6.165
-      },
-      "name": "implementation_boundedness",
-      "pairwise_b_over_a": 1.0,
-      "pairwise_b_over_c": 1.0,
-      "top1_all_options": {
-        "A_life_document": 0.0,
-        "B_standalone_entity": 1.0,
-        "C_basic_leaf_template": 0.0
-      }
+      "final_checkpoint": {"samples": 200000, "top1": {"A_life_document": 0.0, "B_standalone_entity": 1.0, "C_basic_leaf_template": 0.0}},
+      "means": {"A_life_document": 5.42, "B_standalone_entity": 8.3, "C_basic_leaf_template": 6.165},
+      "name": "implementation_boundedness", "pairwise_b_over_a": 1.0, "pairwise_b_over_c": 1.0,
+      "top1_all_options": {"A_life_document": 0.0, "B_standalone_entity": 1.0, "C_basic_leaf_template": 0.0}
     }
   ],
-  "criteria": [
-    "domain_semantic_clarity",
-    "life_boundary_preservation",
-    "task_integration_readiness",
-    "variant_draft_modeling",
-    "lifecycle_correctness",
-    "data_safety_recovery",
-    "navigation_workflow_fit",
-    "search_tag_backup_interop",
-    "implementation_boundedness",
-    "migration_rollback_clarity",
-    "accessibility_architecture",
-    "performance_query_boundedness",
-    "editor_content_reuse",
-    "testability_observability"
-  ],
+  "criteria": ["domain_semantic_clarity", "life_boundary_preservation", "task_integration_readiness", "variant_draft_modeling", "lifecycle_correctness", "data_safety_recovery", "navigation_workflow_fit", "search_tag_backup_interop", "implementation_boundedness", "migration_rollback_clarity", "accessibility_architecture", "performance_query_boundedness", "editor_content_reuse", "testability_observability"],
   "decision": "SELECT_STANDALONE_FOCUS_PLAN_ENTITY",
-  "format_version": 1,
-  "hard_filter_classification": {
-    "A_life_document": "FAIL",
-    "B_standalone_entity": "PASS",
-    "C_basic_leaf_template": "FAIL"
-  },
+  "format_version": 2,
+  "hard_filter_classification": {"A_life_document": "FAIL", "B_standalone_entity": "PASS", "C_basic_leaf_template": "FAIL"},
   "maximum_convergence_drift": 0.0,
   "minimum_canonical_b_top1": 1.0,
-  "model": "task35-focus-plans-v1.0",
+  "model": "task35-focus-plans-v2.0",
   "samples_per_profile": 200000,
   "seed": 20260805,
   "selected_option": "B_standalone_entity",
@@ -200,73 +79,22 @@
   "stress_profile_count": 3,
   "stress_profiles": [
     {
-      "final_checkpoint": {
-        "samples": 200000,
-        "top1": {
-          "A_life_document": 3e-05,
-          "B_standalone_entity": 0.51937,
-          "C_basic_leaf_template": 0.4806
-        }
-      },
-      "means": {
-        "A_life_document": 5.98,
-        "B_standalone_entity": 7.485,
-        "C_basic_leaf_template": 7.46
-      },
-      "name": "editor_reuse_extreme",
-      "pairwise_b_over_a": 0.99951,
-      "pairwise_b_over_c": 0.51938,
-      "top1_all_options": {
-        "A_life_document": 3e-05,
-        "B_standalone_entity": 0.51937,
-        "C_basic_leaf_template": 0.4806
-      }
+      "final_checkpoint": {"samples": 200000, "top1": {"A_life_document": 4e-05, "B_standalone_entity": 0.52209, "C_basic_leaf_template": 0.47787}},
+      "means": {"A_life_document": 5.98, "B_standalone_entity": 7.485, "C_basic_leaf_template": 7.46},
+      "name": "editor_reuse_extreme", "pairwise_b_over_a": 0.999625, "pairwise_b_over_c": 0.5221,
+      "top1_all_options": {"A_life_document": 4e-05, "B_standalone_entity": 0.52209, "C_basic_leaf_template": 0.47787}
     },
     {
-      "final_checkpoint": {
-        "samples": 200000,
-        "top1": {
-          "A_life_document": 0.0,
-          "B_standalone_entity": 1.0,
-          "C_basic_leaf_template": 0.0
-        }
-      },
-      "means": {
-        "A_life_document": 5.37,
-        "B_standalone_entity": 8.065,
-        "C_basic_leaf_template": 6.3
-      },
-      "name": "minimum_new_domain",
-      "pairwise_b_over_a": 1.0,
-      "pairwise_b_over_c": 1.0,
-      "top1_all_options": {
-        "A_life_document": 0.0,
-        "B_standalone_entity": 1.0,
-        "C_basic_leaf_template": 0.0
-      }
+      "final_checkpoint": {"samples": 200000, "top1": {"A_life_document": 0.0, "B_standalone_entity": 1.0, "C_basic_leaf_template": 0.0}},
+      "means": {"A_life_document": 5.37, "B_standalone_entity": 8.065, "C_basic_leaf_template": 6.3},
+      "name": "minimum_new_domain", "pairwise_b_over_a": 1.0, "pairwise_b_over_c": 1.0,
+      "top1_all_options": {"A_life_document": 0.0, "B_standalone_entity": 1.0, "C_basic_leaf_template": 0.0}
     },
     {
-      "final_checkpoint": {
-        "samples": 200000,
-        "top1": {
-          "A_life_document": 0.0,
-          "B_standalone_entity": 1.0,
-          "C_basic_leaf_template": 0.0
-        }
-      },
-      "means": {
-        "A_life_document": 5.61,
-        "B_standalone_entity": 8.48,
-        "C_basic_leaf_template": 6.265
-      },
-      "name": "life_tree_reuse_bias",
-      "pairwise_b_over_a": 1.0,
-      "pairwise_b_over_c": 1.0,
-      "top1_all_options": {
-        "A_life_document": 0.0,
-        "B_standalone_entity": 1.0,
-        "C_basic_leaf_template": 0.0
-      }
+      "final_checkpoint": {"samples": 200000, "top1": {"A_life_document": 0.0, "B_standalone_entity": 1.0, "C_basic_leaf_template": 0.0}},
+      "means": {"A_life_document": 5.61, "B_standalone_entity": 8.48, "C_basic_leaf_template": 6.265},
+      "name": "life_tree_reuse_bias", "pairwise_b_over_a": 1.0, "pairwise_b_over_c": 1.0,
+      "top1_all_options": {"A_life_document": 0.0, "B_standalone_entity": 1.0, "C_basic_leaf_template": 0.0}
     }
   ],
   "task36_candidate": "standalone_focus_plan_core",
