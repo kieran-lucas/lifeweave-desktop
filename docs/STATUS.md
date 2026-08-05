@@ -2,6 +2,18 @@
 
 ## Task 33/60 — Unified Tags Core + Cross-Pillar Retrieval
 
+### Remediation 003
+
+- `LifeScreen` prepare effect now defers `settleEntryRequest` when `browse.isFetching` is true, allowing the second settle effect to overwrite the reader with fresh post-restore tag data. Fixes archive-then-restore followed by search-to-reader navigation showing stale (pre-restore) reader.
+- `TagPicker`: controlled selection authority, accent-insensitive filter, Retry via `refetch()`, Enter prevention, layered Escape (picker-only close without closing parent dialog), StrictMode-safe `onChange`.
+- `TagSettings`: fifth "Create tag" section, Retry via `tagsQuery.refetch()`, failure-triggered refetch on all mutations, merge focus/announcement.
+- `TodayScreen` Escape integration: first Escape closes TagPicker (Task dialog retained); second Escape closes Task dialog.
+- `phase6-planning.e2e.ts` compatibility: `tag_ids: []` and `series_tag_ids: null` added to all fixture IPC calls.
+- `phase7-unified-tags.e2e.ts`: full product UI lifecycle — tag creation, task and life-node assignment, Browse/Reader/Pinned/Search verification, archive, restore, restored-state verification (Reader chip fix confirmed).
+- `phase7-unified-tags-restart.e2e.ts`: fresh-process persistence.
+- `scripts/run_windows_e2e.ps1`: includes phase7 restart spec.
+- Evidence: 505 Rust tests (4 ignored, no Rust files changed), 561 frontend tests (36 files), typecheck, `pnpm e2e:windows` 9/9 specs passed.
+
 ### Remediation 002
 
 - Migration 19 adds a `BEFORE UPDATE OF life_node_id` trigger on `life_node_tags` enforcing active-node and non-root assignment at the SQLite update path. Schema assertions bumped 18→19 across all repositories.

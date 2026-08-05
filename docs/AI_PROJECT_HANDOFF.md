@@ -2,10 +2,10 @@
 
 ## Metadata
 
-- generated_at: `2026-08-05T02:50:00.0000000+07:00`
+- generated_at: `2026-08-05T05:00:00.0000000+07:00`
 - repository: `kieran-lucas/lifeweave-desktop`
 - branch: `main`
-- Task 33 Remediation 002 implementation checkpoint: `5d7b004e6769a6859ba1fa6d626281555b4f80e3`
+- Task 33 Remediation 003 implementation checkpoint: `4d1b65c`
 - current handoff-containing HEAD: resolve at read time with `git rev-parse HEAD`
 - tracked working tree status at generation: authorized implementation was clean and matched `origin/main`; only closure/evidence files committed with this handoff were then changed
 
@@ -20,14 +20,25 @@
 ## Product compass
 
 - macro milestone: Post-Core Expansion, Product Owner gate
-- latest closed task: Task 33 — Unified Tags Core + Cross-Pillar Retrieval (Remediation 002)
-- latest feature task/checkpoint: Task 33 / `5d7b004e6769a6859ba1fa6d626281555b4f80e3`
+- latest closed task: Task 33 — Unified Tags Core + Cross-Pillar Retrieval (Remediation 003)
+- latest feature task/checkpoint: Task 33 / `4d1b65c`
 - database schema: 19
 - active spec: none
 - next allowed action: Product Owner gate
 - forbidden jump: any Task 34 feature implementation
 
 ## Verified implementation
+
+### Task 33 Remediation 003
+
+- `LifeScreen` prepare effect: defers `settleEntryRequest` when `browse.isFetching` is true (stale-while-revalidate). This allows the second settle effect to overwrite the reader with fresh post-restore tag data. Previously, archive-then-restore followed by search-to-reader navigation would show the pre-restore reader (no chip) because the entry request was settled with stale cache data before the background fetch completed.
+- `TagPicker`: controlled selection is the sole selection authority; no internal state fork; accent-insensitive `normalizeSearch` (NFD + diacritic strip + đ/Đ + lowercase); Retry uses explicit `refetch()`; search Enter is prevented from submitting ancestor forms; Escape closes only the picker (prevents default + propagation), restores toggle focus without closing the parent dialog; `onChange` called exactly once per create (StrictMode safe).
+- `TagSettings`: five named sections (Create tag, Active tags, Archived tags, Merged aliases, Merge tags); Retry uses `tagsQuery.refetch()`; rename/archive/restore/merge failures each refetch to flush stale state; successful merge announces once via `aria-live="polite"`, focuses target row, clears confirmation state.
+- `TodayScreen` Escape integration: first Escape while TagPicker is open closes picker only (Task dialog retained); second Escape closes Task dialog.
+- `phase6-planning.e2e.ts` compatibility: `tag_ids: []` on all create_task and create_recurring_task inputs; `series_tag_ids: null` on all update_recurring_occurrence inputs scoped to `only_this_occurrence`.
+- `phase7-unified-tags.e2e.ts`: full product UI lifecycle with no IPC for tag/assignment/archive/restore — creates Research via Settings UI; assigns to task and life node via product UI; verifies Browse/Reader/Pinned/Search; archives via Settings UI; restores via Settings UI; verifies all restored-state including Reader chip.
+- `phase7-unified-tags-restart.e2e.ts`: fresh-process persistence verification (no reseeding or mutation).
+- `scripts/run_windows_e2e.ps1`: includes phase7-unified-tags and phase7-unified-tags-restart after phase6-planning-restart.
 
 ### Task 33 Remediation 002
 
@@ -68,14 +79,13 @@
 ## Test and release evidence
 
 - `pnpm typecheck`: passed.
-- `pnpm test` (frontend): 36 files, 539 passed, 0 failed.
-- `cargo test --locked`: 505 passed, 0 failed, 4 ignored evidence tests.
-- `cargo fmt --check`: passed.
-- `cargo clippy -D warnings`: passed.
-- `pnpm verify`: source/governance/index/security/hardening passed.
+- `pnpm test` (frontend): 36 files, 561 passed, 0 failed.
+- `cargo test --locked`: 505 passed, 0 failed, 4 ignored evidence tests (unchanged; no Rust files modified in Remediation 003).
+- `cargo fmt --check`: passed (unchanged).
+- `cargo clippy -D warnings`: passed (unchanged).
+- `pnpm verify`: source/governance/index/security/hardening passed (unchanged).
 - `pnpm build`: passed.
-- `pnpm tauri build`: passed. NSIS 4,866,352 bytes SHA-256 `d87653e0918cd3ac7a82a03dfb9bb976f52e594c95de7b59b461acdacdf9a25d`.
-- `pnpm hardening:rc`: RC run `core-rc-8702a09` passed (run ID `core-rc-36e96814e91e48ca935971d20438bcb2`).
+- `pnpm e2e:windows`: 9 specs — phase1-lifecycle, phase2-backup-restore, phase3-restart, phase4-portable-roundtrip, phase4-portable-restart, phase6-planning, phase6-planning-restart, phase7-unified-tags, phase7-unified-tags-restart — all passed.
 
 ## Decisions
 
@@ -88,14 +98,15 @@
 
 - P0: none known.
 - P1: none known.
-- P2: physical screen-reader and physical alternate-DPI verification remain external manual debt. Native E2E phase7-unified-tags spec requires a live Tauri instance to run (not run in CI gate).
+- P2: physical screen-reader and physical alternate-DPI verification remain external manual debt. Native E2E phase7 specs require a live Tauri instance to run (not run in CI gate).
 - P3: none known.
 
 ## Recent commits
 
+- `4d1b65c` — complete unified tags verification contract (Remediation 003 implementation)
+- `f08eb34885776e1df6b66ab60779bbebe57d558d` — record task 33 remediation 002 evidence
 - `5d7b004e6769a6859ba1fa6d626281555b4f80e3` — finish unified tags product and release contract
 - `723bb875ad47d097b7fb17aef026c0c2a998df1a` — complete task 33 remediation 001
-- `d081d306a450d0e7b930721b224b901143e260b3` — add unified tags with cross-pillar retrieval (Task 33 implementation)
 
 ## Exact next action
 

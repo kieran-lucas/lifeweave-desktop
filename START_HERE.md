@@ -15,7 +15,7 @@
 
 - Latest closed task: **33/60**
 - Latest product feature: **Task 33 — Unified Tags Core + Cross-Pillar Retrieval**
-- Latest feature checkpoint: `5d7b004e6769a6859ba1fa6d626281555b4f80e3`
+- Latest feature checkpoint: `4d1b65c`
 - Database schema: **19**
 - Active implementation specification: **none**
 - Next action: **Product Owner gate**
