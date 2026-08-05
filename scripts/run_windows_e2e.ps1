@@ -1,3 +1,7 @@
+param(
+  [string[]]$Phases
+)
+
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent $PSScriptRoot
 $dataRoot = Join-Path $repo 'target\e2e-data'
@@ -8,6 +12,23 @@ $artifacts = Join-Path $artifactRoot $runId
 $lock = Join-Path $dataRoot '.e2e.lock'
 $driver = $null
 $success = $false
+$allPhases = @(
+  'phase1-lifecycle.e2e.ts',
+  'phase2-backup-restore.e2e.ts',
+  'phase3-restart.e2e.ts',
+  'phase4-portable-roundtrip.e2e.ts',
+  'phase4-portable-restart.e2e.ts',
+  'phase6-planning.e2e.ts',
+  'phase6-planning-restart.e2e.ts',
+  'phase7-unified-tags.e2e.ts',
+  'phase7-unified-tags-restart.e2e.ts',
+  'phase8-focus-plans.e2e.ts',
+  'phase8-focus-plans-restart.e2e.ts'
+)
+if (-not $Phases -or $Phases.Count -eq 0) { $Phases = $allPhases }
+foreach ($phase in $Phases) {
+  if ($phase -notin $allPhases) { throw "unknown native E2E phase: $phase" }
+}
 New-Item -ItemType Directory -Force -Path $dataRoot | Out-Null
 if (Test-Path $lock) { throw "another native E2E run owns $lock" }
 New-Item -ItemType File -Path $lock -Force | Out-Null
@@ -50,7 +71,7 @@ try {
   pnpm tauri build --debug --features e2e-test
   if ($LASTEXITCODE -ne 0) { throw 'E2E binary build failed' }
   $env:LIFEWEAVE_E2E_BINARY = (Resolve-Path 'src-tauri\target\debug\lifeweave-desktop.exe').Path
-  foreach ($phase in @('phase1-lifecycle.e2e.ts','phase2-backup-restore.e2e.ts','phase3-restart.e2e.ts','phase4-portable-roundtrip.e2e.ts','phase4-portable-restart.e2e.ts','phase6-planning.e2e.ts','phase6-planning-restart.e2e.ts','phase7-unified-tags.e2e.ts','phase7-unified-tags-restart.e2e.ts','phase8-focus-plans.e2e.ts','phase8-focus-plans-restart.e2e.ts')) {
+  foreach ($phase in $Phases) {
     $out = Join-Path $run "$phase.out.log"; $err = Join-Path $run "$phase.err.log"
     $driver = Start-Process -FilePath 'tauri-driver.exe' -ArgumentList '--native-driver', $nativeDriver, '--port','4444' -RedirectStandardOutput $out -RedirectStandardError $err -PassThru
     $ready = $false
