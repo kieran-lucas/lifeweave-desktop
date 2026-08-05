@@ -77,6 +77,12 @@ fn main() {
             "restore_tag",
             "merge_tags",
             "set_life_node_tags",
+            "list_focus_plans",
+            "get_focus_plan",
+            "create_focus_plan",
+            "mutate_focus_plan",
+            "save_focus_plan_draft",
+            "discard_focus_plan_draft",
         ]),
     ))
     .expect("failed to generate Tauri ACL manifest");
