@@ -66,7 +66,8 @@ pub struct CreateFocusPlanInput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[cfg_attr(test, derive(ts_rs::TS))]\pub struct SaveFocusPlanDraftInput {
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct SaveFocusPlanDraftInput {
     pub plan_id: String,
     pub base_revision: u64,
     pub draft_json: String,
