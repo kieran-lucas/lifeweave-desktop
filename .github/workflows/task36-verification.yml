@@ -32,6 +32,31 @@ jobs:
           if ((git rev-parse HEAD) -ne (git rev-parse origin/main)) {
             throw "main advanced after this Phase 3 run started"
           }
+      - name: Correct bounded patch selector in runner
+        shell: pwsh
+        run: |
+          @'
+          from pathlib import Path
+
+          path = Path("scripts/task36_phase3_apply.py")
+          text = path.read_text(encoding="utf-8")
+          old = '''    text = replace(
+              text,
+              "        run_migrations(&mut conn).unwrap();",
+              "        run_all_migrations(&mut conn).unwrap();",
+              count=1,
+              label="search test migration call",
+          )'''
+          new = '''    text = replace(
+              text,
+              "    fn setup() -> Connection {\\n        let mut conn = open_memory_connection().unwrap();\\n        run_migrations(&mut conn).unwrap();\\n        conn\\n    }",
+              "    fn setup() -> Connection {\\n        let mut conn = open_memory_connection().unwrap();\\n        run_all_migrations(&mut conn).unwrap();\\n        conn\\n    }",
+              label="search test setup migration authority",
+          )'''
+          if text.count(old) != 1:
+              raise SystemExit(f"expected one obsolete selector, found {text.count(old)}")
+          path.write_text(text.replace(old, new), encoding="utf-8", newline="\n")
+          '@ | python -
       - name: Apply bounded Phase 3 patch
         run: python scripts/task36_phase3_apply.py
       - name: Enforce Task 37 prohibition
