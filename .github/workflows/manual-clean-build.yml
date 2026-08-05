@@ -46,6 +46,9 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Task 36 remediation script failed' }
           Remove-Item -LiteralPath scripts/task36_remediation.py -Force
 
+      - name: Format Rust remediation
+        run: cargo fmt --manifest-path src-tauri/Cargo.toml --all
+
       - name: Project final manual-only workflow authority
         shell: powershell
         run: |
