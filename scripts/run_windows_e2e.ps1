@@ -54,8 +54,11 @@ try {
     $url = "https://msedgedriver.microsoft.com/$runtime/edgedriver_win64.zip"
     try { Invoke-WebRequest -Uri $url -OutFile $tmpZip -TimeoutSec 60 } catch { & curl.exe --fail --location --retry 2 --max-time 120 $url --output $tmpZip; if ($LASTEXITCODE -ne 0) { throw "driver download failed: $($_.Exception.Message)" } }
     Expand-Archive -LiteralPath $tmpZip -DestinationPath $tmpDir -Force
-    $downloaded = Join-Path $tmpDir 'edgedriver.exe'
-    if (-not (Test-Path $downloaded)) { throw 'driver archive did not contain edgedriver.exe' }
+    $downloaded = @(
+      (Join-Path $tmpDir 'msedgedriver.exe'),
+      (Join-Path $tmpDir 'edgedriver.exe')
+    ) | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+    if (-not $downloaded) { throw 'driver archive did not contain a supported Edge WebDriver executable' }
     New-Item -ItemType Directory -Force -Path (Split-Path $driverCache) | Out-Null
     Move-Item -LiteralPath $downloaded -Destination $driverCache -Force
     $nativeDriver = $driverCache
