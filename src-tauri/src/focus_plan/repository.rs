@@ -544,7 +544,11 @@ fn replace_tags(
     timestamp: &str,
 ) -> Result<()> {
     let tag_ids = validate_tags(tx, tag_ids)?;
-    tx.execute("DELETE FROM focus_plan_tags WHERE plan_id=?1", [plan_id])?;
+    tx.execute(
+        "DELETE FROM focus_plan_tags WHERE plan_id=?1
+         AND tag_id IN (SELECT id FROM tags WHERE archived_at IS NULL AND merged_into_tag_id IS NULL)",
+        [plan_id],
+    )?;
     for tag_id in tag_ids {
         tx.execute(
             "INSERT INTO focus_plan_tags(plan_id,tag_id,created_at) VALUES(?1,?2,?3)",

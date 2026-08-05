@@ -1,4 +1,5 @@
 pub mod dto;
+mod focus_plan;
 pub mod normalize;
 pub mod repository;
 

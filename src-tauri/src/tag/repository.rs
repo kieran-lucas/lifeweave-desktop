@@ -338,6 +338,30 @@ pub fn restore(conn: &Connection, input: MutateTagInput) -> Result<TagView, TagE
         ));
     }
 
+    let would_exceed_plans: bool = conn
+        .query_row(
+            "SELECT 1 FROM focus_plan_tags fpt
+             WHERE fpt.tag_id = ?1
+               AND (SELECT COUNT(*) FROM focus_plan_tags fpt2
+                    JOIN tags t ON t.id = fpt2.tag_id
+                    WHERE fpt2.plan_id = fpt.plan_id
+                      AND t.archived_at IS NULL
+                      AND t.merged_into_tag_id IS NULL
+                      AND fpt2.tag_id != ?1) >= 20
+             LIMIT 1",
+            params![input.tag_id],
+            |_| Ok(true),
+        )
+        .optional()?
+        .unwrap_or(false);
+
+    if would_exceed_plans {
+        return Err(TagError::Validation(
+            "Restoring this tag would exceed the 20-tag limit on one or more Focus Plans."
+                .to_string(),
+        ));
+    }
+
     let t = now();
     conn.execute(
         "UPDATE tags SET archived_at=NULL, revision=revision+1, updated_at=?2 WHERE id=?1",
@@ -417,6 +441,17 @@ pub fn merge(conn: &Connection, input: MergeTagsInput) -> Result<MergeTagsResult
     )?;
     tx.execute(
         "DELETE FROM life_node_tags WHERE tag_id=?1",
+        params![input.source_tag_id],
+    )?;
+
+    // Move Focus Plan tags and deduplicate when the target is already assigned.
+    tx.execute(
+        "INSERT OR IGNORE INTO focus_plan_tags(plan_id,tag_id,created_at)
+         SELECT plan_id,?2,?3 FROM focus_plan_tags WHERE tag_id=?1",
+        params![input.source_tag_id, input.target_tag_id, t],
+    )?;
+    tx.execute(
+        "DELETE FROM focus_plan_tags WHERE tag_id=?1",
         params![input.source_tag_id],
     )?;
 
@@ -776,12 +811,12 @@ fn load_active_node_tags_tx(
 mod tests {
     use super::*;
     use crate::infrastructure::sqlite::{
-        connection::open_memory_connection, migrations::run_migrations,
+        connection::open_memory_connection, task36_migration::run_all_migrations,
     };
 
     fn db() -> Connection {
         let mut conn = open_memory_connection().unwrap();
-        run_migrations(&mut conn).unwrap();
+        run_all_migrations(&mut conn).unwrap();
         conn
     }
 
@@ -1477,5 +1512,64 @@ mod tests {
             result.is_ok(),
             "restore must succeed when subject has only 11 active tags"
         );
+    }
+
+    #[test]
+    fn merge_moves_and_deduplicates_focus_plan_assignments() {
+        let mut conn = db();
+        let source = make_tag(&conn, "machine-learning");
+        let target = make_tag(&conn, "artificial-intelligence");
+        let plan = crate::focus_plan::repository::create(
+            &mut conn,
+            crate::focus_plan::dto::CreateFocusPlanInput {
+                title: "AI Foundations".into(),
+                life_node_id: None,
+                start_date: None,
+                target_date: None,
+                outcome: "Learn".into(),
+                success_criteria: vec!["Complete".into()],
+                initial_variant_label: "Primary".into(),
+                operation_id: "tag-merge-plan".into(),
+            },
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO focus_plan_tags(plan_id,tag_id,created_at) VALUES(?1,?2,'0')",
+            params![plan.id, source.id],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO focus_plan_tags(plan_id,tag_id,created_at) VALUES(?1,?2,'0')",
+            params![plan.id, target.id],
+        )
+        .unwrap();
+
+        merge(
+            &conn,
+            MergeTagsInput {
+                source_tag_id: source.id.clone(),
+                target_tag_id: target.id.clone(),
+                source_expected_revision: 0,
+                target_expected_revision: 0,
+            },
+        )
+        .unwrap();
+
+        let source_count: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM focus_plan_tags WHERE plan_id=?1 AND tag_id=?2",
+                params![plan.id, source.id],
+                |row| row.get(0),
+            )
+            .unwrap();
+        let target_count: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM focus_plan_tags WHERE plan_id=?1 AND tag_id=?2",
+                params![plan.id, target.id],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(source_count, 0);
+        assert_eq!(target_count, 1);
     }
 }

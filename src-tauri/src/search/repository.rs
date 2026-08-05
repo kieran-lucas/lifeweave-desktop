@@ -9,6 +9,7 @@ use super::dto::{
     GlobalSearchProjection, SearchEntityKind, SearchGlobalInput, SearchNavigationTarget,
     SearchResultGroup, SearchResultGroupKind, SearchResultView, SearchTextFragment,
 };
+use super::focus_plan::rebuild_focus_plans_scope;
 use super::normalize::{build_fts_expression, normalize};
 
 const MAX_RESULTS_PER_GROUP: usize = 8;
@@ -41,6 +42,7 @@ pub fn refresh_dirty_and_query(
         let rebuild_tasks = rebuild_all || has("tasks");
         let rebuild_life = rebuild_all || has("life");
         let rebuild_docs = rebuild_all || has("documents");
+        let rebuild_plans = rebuild_all || has("focus_plans");
 
         // Life nodes are needed for both life and documents scopes.
         let life_nodes: Option<Vec<LifeNodeEntry>> = if rebuild_life || rebuild_docs {
@@ -61,6 +63,9 @@ pub fn refresh_dirty_and_query(
             if let Some(ref nodes) = life_nodes {
                 rebuild_documents_scope(conn, nodes)?;
             }
+        }
+        if rebuild_plans {
+            rebuild_focus_plans_scope(conn)?;
         }
         clear_dirty_scopes(conn)?;
 
@@ -806,6 +811,7 @@ fn run_fts_query(
     let mut task_results: Vec<SearchResultView> = Vec::new();
     let mut life_results: Vec<SearchResultView> = Vec::new();
     let mut doc_results: Vec<SearchResultView> = Vec::new();
+    let mut plan_results: Vec<SearchResultView> = Vec::new();
 
     for row in raw_rows {
         let entity_kind = match row.entity_kind.as_str() {
@@ -814,6 +820,7 @@ fn run_fts_query(
             "task_override" => SearchEntityKind::TaskOverride,
             "life_node" => SearchEntityKind::LifeNode,
             "reader_document" => SearchEntityKind::ReaderDocument,
+            "focus_plan" => SearchEntityKind::FocusPlan,
             _ => continue,
         };
 
@@ -856,6 +863,9 @@ fn run_fts_query(
             SearchEntityKind::ReaderDocument => SearchNavigationTarget::LifeReader {
                 node_id: row.navigation_id.clone(),
             },
+            SearchEntityKind::FocusPlan => SearchNavigationTarget::FocusPlan {
+                plan_id: row.entity_id.clone(),
+            },
         };
 
         let title_fragments = parse_fragments(&row.hl_title);
@@ -878,6 +888,7 @@ fn run_fts_query(
             | SearchEntityKind::TaskOverride => task_results.push(result),
             SearchEntityKind::LifeNode => life_results.push(result),
             SearchEntityKind::ReaderDocument => doc_results.push(result),
+            SearchEntityKind::FocusPlan => plan_results.push(result),
         }
     }
 
@@ -902,6 +913,7 @@ fn run_fts_query(
     add_group(task_results, SearchResultGroupKind::Tasks, &mut groups);
     add_group(life_results, SearchResultGroupKind::Life, &mut groups);
     add_group(doc_results, SearchResultGroupKind::Documents, &mut groups);
+    add_group(plan_results, SearchResultGroupKind::Plans, &mut groups);
 
     let total_visible_results: usize = groups.iter().map(|g| g.results.len()).sum();
 
@@ -998,12 +1010,12 @@ fn parse_fragments(marked: &str) -> Vec<SearchTextFragment> {
 mod tests {
     use super::*;
     use crate::infrastructure::sqlite::{
-        connection::open_memory_connection, migrations::run_migrations,
+        connection::open_memory_connection, task36_migration::run_all_migrations,
     };
 
     fn setup() -> Connection {
         let mut conn = open_memory_connection().unwrap();
-        run_migrations(&mut conn).unwrap();
+        run_all_migrations(&mut conn).unwrap();
         conn
     }
 
@@ -1684,7 +1696,7 @@ mod tests {
     #[test]
     fn search_file_backed_smoke() {
         use crate::infrastructure::sqlite::{
-            connection::open_file_connection, migrations::run_migrations,
+            connection::open_file_connection, task36_migration::run_all_migrations,
         };
 
         let tag = std::time::SystemTime::now()
@@ -1698,7 +1710,7 @@ mod tests {
         // ── Session 1: migrate, insert, rebuild, verify ───────────────────────
         {
             let mut conn = open_file_connection(&db_path).unwrap();
-            run_migrations(&mut conn).unwrap();
+            run_all_migrations(&mut conn).unwrap();
 
             // Verify schema version 10.
             let ver: i64 = conn
@@ -1706,7 +1718,11 @@ mod tests {
                     r.get(0)
                 })
                 .unwrap();
-            assert_eq!(ver, 19, "schema must be at version 19");
+            assert_eq!(
+                ver,
+                i64::from(crate::infrastructure::sqlite::task36_migration::TASK36_SCHEMA_VERSION),
+                "schema must be current"
+            );
 
             // Insert one task with Vietnamese title.
             conn.execute(
@@ -1790,7 +1806,7 @@ mod tests {
     #[test]
     fn search_perf_realistic_fixture() {
         use crate::infrastructure::sqlite::{
-            connection::open_file_connection, migrations::run_migrations,
+            connection::open_file_connection, task36_migration::run_all_migrations,
         };
         use std::time::Instant;
 
@@ -1803,7 +1819,7 @@ mod tests {
         let db_path = dir.join("lifeweave.db");
 
         let mut conn = open_file_connection(&db_path).unwrap();
-        run_migrations(&mut conn).unwrap();
+        run_all_migrations(&mut conn).unwrap();
 
         // ── Fixture: 10 000 one-off tasks ────────────────────────────────────
         {

@@ -192,7 +192,6 @@ fn load_plans(conn: &Connection) -> Result<Vec<SearchablePlan>, SearchError> {
              FROM focus_plans p
              JOIN focus_plan_variants v
                ON v.id=p.selected_variant_id AND v.archived_at IS NULL
-             LEFT JOIN focus_plan_phases ignored_phase ON 1=0
              LEFT JOIN phase_context pc ON pc.variant_id=v.id
              LEFT JOIN life_nodes ln ON ln.id=p.life_node_id AND ln.archived_at IS NULL
              LEFT JOIN tag_context tc ON tc.plan_id=p.id
@@ -231,13 +230,9 @@ fn load_plans(conn: &Connection) -> Result<Vec<SearchablePlan>, SearchError> {
 mod tests {
     use super::*;
     use crate::{
-        focus_plan::{
-            dto::CreateFocusPlanInput,
-            repository as focus_plan_repository,
-        },
+        focus_plan::{dto::CreateFocusPlanInput, repository as focus_plan_repository},
         infrastructure::sqlite::{
-            connection::open_memory_connection,
-            task36_migration::run_all_migrations,
+            connection::open_memory_connection, task36_migration::run_all_migrations,
         },
     };
 
@@ -271,8 +266,55 @@ mod tests {
         assert_eq!(indexed.1, "AI Foundations");
         assert!(indexed.2.contains("machine learning"));
         let reader_rows: i64 = conn
-            .query_row("SELECT COUNT(*) FROM reader_documents", [], |row| row.get(0))
+            .query_row("SELECT COUNT(*) FROM reader_documents", [], |row| {
+                row.get(0)
+            })
             .unwrap();
         assert_eq!(reader_rows, 0);
+    }
+
+    #[test]
+    fn archived_plan_is_removed_from_search_projection() {
+        let mut conn = open_memory_connection().unwrap();
+        run_all_migrations(&mut conn).unwrap();
+        let plan = focus_plan_repository::create(
+            &mut conn,
+            CreateFocusPlanInput {
+                title: "Temporary Strategy".into(),
+                life_node_id: None,
+                start_date: None,
+                target_date: None,
+                outcome: "Should disappear".into(),
+                success_criteria: vec!["Archive it".into()],
+                initial_variant_label: "Only variant".into(),
+                operation_id: "search-archive-create".into(),
+            },
+        )
+        .unwrap();
+        rebuild_focus_plans_scope(&conn).unwrap();
+        assert_eq!(
+            conn.query_row::<i64, _, _>(
+                "SELECT COUNT(*) FROM search_documents WHERE entity_id=?1",
+                [&plan.id],
+                |row| row.get(0),
+            )
+            .unwrap(),
+            1
+        );
+        conn.execute(
+            "UPDATE focus_plans SET archived_at='now' WHERE id=?1",
+            [&plan.id],
+        )
+        .unwrap();
+        rebuild_focus_plans_scope(&conn).unwrap();
+        assert_eq!(
+            conn.query_row::<i64, _, _>(
+                "SELECT COUNT(*) FROM search_documents WHERE entity_id=?1",
+                [&plan.id],
+                |row| row.get(0),
+            )
+            .unwrap(),
+            0
+        );
     }
 }

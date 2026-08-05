@@ -17,8 +17,8 @@ use crate::infrastructure::durability;
 use crate::infrastructure::sqlite::{
     DbError,
     connection::{open_existing_file_connection, open_file_connection, open_readonly_connection},
-    migrations::{current_schema_version, max_supported_schema_version, run_migrations},
     runtime::DatabaseRuntime,
+    task36_migration::{current_schema_version, max_supported_schema_version, run_all_migrations},
     worker::DbWorkerHandle,
 };
 
@@ -651,7 +651,7 @@ fn create_verified_safety_backup(
 /// success. Callers are responsible for rollback on failure.
 fn reopen_and_validate(live_path: &Path) -> Result<(DbWorkerHandle, u32), BackupError> {
     let mut conn = open_existing_file_connection(live_path).map_err(BackupError::Db)?;
-    run_migrations(&mut conn).map_err(BackupError::Db)?;
+    run_all_migrations(&mut conn).map_err(BackupError::Db)?;
 
     let ic: String = conn
         .query_row("PRAGMA integrity_check", [], |r| r.get(0))
@@ -767,7 +767,7 @@ fn attempt_rollback(
     // guaranteed. Dropping the connection first makes the rename safe.
     let validated_conn: Option<Connection> = (|| -> Option<Connection> {
         let mut conn = open_existing_file_connection(live_path).ok()?;
-        run_migrations(&mut conn).ok()?;
+        run_all_migrations(&mut conn).ok()?;
         let ic: String = conn
             .query_row("PRAGMA integrity_check", [], |r| r.get(0))
             .ok()?;
@@ -803,7 +803,7 @@ fn attempt_rollback(
 
             let mut fresh = open_existing_file_connection(live_path)
                 .map_err(|_| BackupError::RollbackFailed)?;
-            run_migrations(&mut fresh).map_err(|_| BackupError::RollbackFailed)?;
+            run_all_migrations(&mut fresh).map_err(|_| BackupError::RollbackFailed)?;
             let worker = DbWorkerHandle::spawn(fresh);
             runtime.install_worker(worker);
             // Clean candidate only after worker is confirmed installed.
@@ -991,9 +991,15 @@ mod tests {
         manifest.write_to_dir(package).unwrap();
         let (runtime, db) = make_file_runtime();
         let result = restore_db(&runtime, package).unwrap();
-        assert_eq!(result.schema_version, 19);
+        assert_eq!(
+            result.schema_version,
+            crate::infrastructure::sqlite::task36_migration::TASK36_SCHEMA_VERSION
+        );
         let reopened = open_existing_file_connection(&db).unwrap();
-        assert_eq!(current_schema_version(&reopened).unwrap(), 19);
+        assert_eq!(
+            current_schema_version(&reopened).unwrap(),
+            crate::infrastructure::sqlite::task36_migration::TASK36_SCHEMA_VERSION
+        );
         assert_eq!(
             reopened
                 .query_row(
@@ -1162,7 +1168,10 @@ mod tests {
         );
 
         let restore_result = restore_db(&rt, &backup_dir).unwrap();
-        assert_eq!(restore_result.schema_version, 19);
+        assert_eq!(
+            restore_result.schema_version,
+            crate::infrastructure::sqlite::task36_migration::TASK36_SCHEMA_VERSION
+        );
 
         let active = rt.execute(|conn| repo::list_active(conn)).unwrap();
         assert_eq!(active.len(), 1);

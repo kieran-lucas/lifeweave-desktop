@@ -16,6 +16,7 @@ pub enum SearchEntityKind {
     TaskOverride,
     LifeNode,
     ReaderDocument,
+    FocusPlan,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -33,6 +34,9 @@ pub enum SearchNavigationTarget {
     },
     LifeReader {
         node_id: String,
+    },
+    FocusPlan {
+        plan_id: String,
     },
 }
 
@@ -63,6 +67,7 @@ pub enum SearchResultGroupKind {
     Tasks,
     Life,
     Documents,
+    Plans,
 }
 
 #[derive(Debug, Clone, Serialize)]

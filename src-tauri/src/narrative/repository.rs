@@ -1225,15 +1225,16 @@ mod tests {
             let backup_dir = std::path::PathBuf::from(&backup_result.backup_dir);
             let restore_result = restore_db(&rt, &backup_dir).unwrap();
             assert_eq!(
-                restore_result.schema_version, 19,
-                "restore must report schema 19"
+                restore_result.schema_version,
+                crate::infrastructure::sqlite::task36_migration::TASK36_SCHEMA_VERSION,
+                "restore must report the current schema"
             );
         }
 
         // ── Session 3: verify restored state ─────────────────────────────────
         {
             let mut c = open_file_connection(&path).unwrap();
-            run_migrations(&mut c).unwrap();
+            crate::infrastructure::sqlite::task36_migration::run_all_migrations(&mut c).unwrap();
 
             let doc = by_id(&c, &doc_id).unwrap();
             // After restore, we should be back to revision 1

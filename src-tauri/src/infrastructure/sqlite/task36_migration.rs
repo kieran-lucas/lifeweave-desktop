@@ -1,4 +1,4 @@
-use rusqlite::{Connection, params};
+use rusqlite::{Connection, Transaction, params};
 
 use super::{DbError, migrations};
 
@@ -162,7 +162,8 @@ BEGIN
     SELECT RAISE(ABORT,'cannot assign archived or merged tag to focus plan')
     WHERE NOT EXISTS(SELECT 1 FROM tags WHERE id=NEW.tag_id AND archived_at IS NULL AND merged_into_tag_id IS NULL);
     SELECT RAISE(ABORT,'focus plan tag limit reached')
-    WHERE (SELECT COUNT(*) FROM focus_plan_tags WHERE plan_id=NEW.plan_id) >= 20;
+    WHERE (SELECT COUNT(*) FROM focus_plan_tags fpt JOIN tags t ON t.id=fpt.tag_id
+           WHERE fpt.plan_id=NEW.plan_id AND t.archived_at IS NULL AND t.merged_into_tag_id IS NULL) >= 20;
 END;
 CREATE TRIGGER focus_plan_tags_active_update_guard BEFORE UPDATE OF tag_id ON focus_plan_tags
 BEGIN
@@ -170,35 +171,189 @@ BEGIN
     WHERE NOT EXISTS(SELECT 1 FROM tags WHERE id=NEW.tag_id AND archived_at IS NULL AND merged_into_tag_id IS NULL);
 END;
 
+CREATE TABLE search_dirty_scopes_v20 (
+    scope TEXT PRIMARY KEY NOT NULL
+        CHECK(scope IN ('tasks','life','documents','focus_plans','all')),
+    queued_at TEXT NOT NULL
+);
+INSERT INTO search_dirty_scopes_v20(scope,queued_at)
+    SELECT scope,queued_at FROM search_dirty_scopes;
+DROP TABLE search_dirty_scopes;
+ALTER TABLE search_dirty_scopes_v20 RENAME TO search_dirty_scopes;
+
 CREATE TRIGGER search_dirty_focus_plans_ai AFTER INSERT ON focus_plans BEGIN
-    INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('all',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+    INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('focus_plans',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
     ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at; END;
 CREATE TRIGGER search_dirty_focus_plans_au AFTER UPDATE ON focus_plans BEGIN
-    INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('all',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+    INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('focus_plans',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
     ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at; END;
 CREATE TRIGGER search_dirty_focus_plan_variants_ai AFTER INSERT ON focus_plan_variants BEGIN
-    INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('all',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+    INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('focus_plans',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
     ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at; END;
 CREATE TRIGGER search_dirty_focus_plan_variants_au AFTER UPDATE ON focus_plan_variants BEGIN
-    INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('all',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+    INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('focus_plans',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
     ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at; END;
 CREATE TRIGGER search_dirty_focus_plan_phases_ai AFTER INSERT ON focus_plan_phases BEGIN
-    INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('all',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+    INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('focus_plans',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
     ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at; END;
 CREATE TRIGGER search_dirty_focus_plan_phases_au AFTER UPDATE ON focus_plan_phases BEGIN
-    INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('all',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+    INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('focus_plans',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
     ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at; END;
+CREATE TRIGGER search_dirty_focus_plans_ad AFTER DELETE ON focus_plans BEGIN
+    INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('focus_plans',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+    ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at; END;
+CREATE TRIGGER search_dirty_focus_plan_variants_ad AFTER DELETE ON focus_plan_variants BEGIN
+    INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('focus_plans',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+    ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at; END;
+CREATE TRIGGER search_dirty_focus_plan_phases_ad AFTER DELETE ON focus_plan_phases BEGIN
+    INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('focus_plans',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+    ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at; END;
+
 CREATE TRIGGER search_dirty_focus_plan_tags_ai AFTER INSERT ON focus_plan_tags BEGIN
-    INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('all',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+    INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('focus_plans',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
     ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at; END;
 CREATE TRIGGER search_dirty_focus_plan_tags_ad AFTER DELETE ON focus_plan_tags BEGIN
-    INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('all',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+    INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('focus_plans',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
     ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at; END;
 
 UPDATE search_meta SET algorithm_version=4 WHERE id=1;
-INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('all',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+INSERT INTO search_dirty_scopes(scope,queued_at) VALUES('focus_plans',strftime('%Y-%m-%dT%H:%M:%SZ','now'))
 ON CONFLICT(scope) DO UPDATE SET queued_at=excluded.queued_at;
 "#;
+
+fn capture_historical_search_dirty_triggers(
+    tx: &Transaction<'_>,
+) -> Result<Vec<(String, String)>, DbError> {
+    let mut statement = tx.prepare(
+        "SELECT name, sql
+         FROM sqlite_master
+         WHERE type='trigger'
+           AND sql IS NOT NULL
+           AND instr(lower(sql), 'search_dirty_scopes') > 0
+         ORDER BY name",
+    )?;
+    let triggers = statement
+        .query_map([], |row| {
+            Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+        })?
+        .collect::<Result<Vec<_>, _>>()?;
+
+    if !triggers
+        .iter()
+        .any(|(name, _)| name == "search_dirty_tasks_ai")
+    {
+        return Err(DbError::InvalidMigrationList);
+    }
+    Ok(triggers)
+}
+
+fn quoted_identifier(identifier: &str) -> String {
+    format!("\"{}\"", identifier.replace('"', "\"\""))
+}
+
+fn drop_historical_search_dirty_triggers(
+    tx: &Transaction<'_>,
+    triggers: &[(String, String)],
+) -> Result<(), DbError> {
+    for (name, _) in triggers {
+        tx.execute_batch(&format!("DROP TRIGGER {};", quoted_identifier(name)))?;
+    }
+    Ok(())
+}
+
+fn restore_historical_search_dirty_triggers(
+    tx: &Transaction<'_>,
+    triggers: &[(String, String)],
+) -> Result<(), DbError> {
+    for (_, sql) in triggers {
+        tx.execute_batch(sql)?;
+    }
+    Ok(())
+}
+
+fn capture_search_index_schema(
+    tx: &Transaction<'_>,
+) -> Result<(String, Vec<(String, String)>), DbError> {
+    let virtual_table_sql = tx.query_row(
+        "SELECT sql FROM sqlite_master WHERE type='table' AND name='search_fts' AND sql IS NOT NULL",
+        [],
+        |row| row.get::<_, String>(0),
+    )?;
+    let mut statement = tx.prepare(
+        "SELECT name,sql FROM sqlite_master
+         WHERE type='trigger'
+           AND name IN ('search_fts_ai','search_fts_ad','search_fts_au')
+           AND sql IS NOT NULL
+         ORDER BY name",
+    )?;
+    let triggers = statement
+        .query_map([], |row| {
+            Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+        })?
+        .collect::<Result<Vec<_>, _>>()?;
+    if triggers.len() != 3 {
+        return Err(DbError::InvalidMigrationList);
+    }
+    Ok((virtual_table_sql, triggers))
+}
+
+fn drop_search_index(tx: &Transaction<'_>, triggers: &[(String, String)]) -> Result<(), DbError> {
+    for (name, _) in triggers {
+        tx.execute_batch(&format!("DROP TRIGGER {};", quoted_identifier(name)))?;
+    }
+    tx.execute_batch("DROP TABLE search_fts;")?;
+    Ok(())
+}
+
+fn rebuild_search_documents_for_focus_plans(tx: &Transaction<'_>) -> Result<(), DbError> {
+    tx.execute_batch(
+        "CREATE TABLE search_documents_v20 (
+            rowid INTEGER PRIMARY KEY,
+            entity_kind TEXT NOT NULL CHECK(entity_kind IN (
+                'task_one_off','task_series','task_override',
+                'life_node','reader_document','focus_plan'
+            )),
+            entity_id TEXT NOT NULL,
+            navigation_id TEXT NOT NULL,
+            title TEXT NOT NULL,
+            context_text TEXT NOT NULL,
+            body_text TEXT NOT NULL,
+            normalized_title TEXT NOT NULL,
+            normalized_context TEXT NOT NULL,
+            normalized_body TEXT NOT NULL,
+            local_date TEXT,
+            original_local_date TEXT,
+            source_updated_at TEXT NOT NULL,
+            UNIQUE(entity_kind,entity_id)
+        );
+        INSERT INTO search_documents_v20(
+            rowid,entity_kind,entity_id,navigation_id,title,context_text,body_text,
+            normalized_title,normalized_context,normalized_body,
+            local_date,original_local_date,source_updated_at
+        )
+        SELECT
+            rowid,entity_kind,entity_id,navigation_id,title,context_text,body_text,
+            normalized_title,normalized_context,normalized_body,
+            local_date,original_local_date,source_updated_at
+        FROM search_documents;
+        DROP TABLE search_documents;
+        ALTER TABLE search_documents_v20 RENAME TO search_documents;",
+    )?;
+    Ok(())
+}
+
+fn restore_search_index(
+    tx: &Transaction<'_>,
+    virtual_table_sql: &str,
+    triggers: &[(String, String)],
+) -> Result<(), DbError> {
+    tx.execute_batch(virtual_table_sql)?;
+    for (_, sql) in triggers {
+        tx.execute_batch(sql)?;
+    }
+    tx.execute("INSERT INTO search_fts(search_fts) VALUES('rebuild')", [])?;
+    Ok(())
+}
 
 fn schema_version_if_present(conn: &Connection) -> Result<u32, DbError> {
     let exists: i64 = conn.query_row(
@@ -237,7 +392,14 @@ pub fn run_all_migrations(conn: &mut Connection) -> Result<(), DbError> {
     }
 
     let tx = conn.transaction()?;
+    let historical_search_triggers = capture_historical_search_dirty_triggers(&tx)?;
+    let (search_fts_sql, search_fts_triggers) = capture_search_index_schema(&tx)?;
+    drop_historical_search_dirty_triggers(&tx, &historical_search_triggers)?;
+    drop_search_index(&tx, &search_fts_triggers)?;
     tx.execute_batch(MIGRATION_20_SQL)?;
+    rebuild_search_documents_for_focus_plans(&tx)?;
+    restore_search_index(&tx, &search_fts_sql, &search_fts_triggers)?;
+    restore_historical_search_dirty_triggers(&tx, &historical_search_triggers)?;
     tx.execute(
         "INSERT INTO schema_migrations(version,applied_at) VALUES(?1,strftime('%Y-%m-%dT%H:%M:%SZ','now'))",
         params![TASK36_SCHEMA_VERSION],
@@ -341,5 +503,91 @@ mod tests {
             )
             .is_err()
         );
+    }
+
+    #[test]
+    fn migration_20_preserves_old_dirty_triggers_and_adds_focus_plan_scope() {
+        let mut conn = open_memory_connection().unwrap();
+        run_all_migrations(&mut conn).unwrap();
+        conn.execute_batch("DELETE FROM search_dirty_scopes")
+            .unwrap();
+
+        let historical_trigger_count: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM sqlite_master
+                 WHERE type='trigger'
+                   AND name IN ('search_dirty_tasks_ai','search_dirty_life_ai','search_dirty_narrative_ai')",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(historical_trigger_count, 3);
+
+        conn.execute(
+            "INSERT INTO tasks(id,local_date,start_minute,end_minute,title,description,category_id,priority,created_at,updated_at)
+             VALUES('task-scope-v20','2026-08-05',540,600,'Existing trigger','','general','medium','now','now')",
+            [],
+        )
+        .unwrap();
+
+        let tx = conn.transaction().unwrap();
+        tx.execute(
+            "INSERT INTO focus_plans(id,selected_variant_id,title,lifecycle,outcome,success_criteria_json,revision,created_at,updated_at)
+             VALUES('plan-scope-v20','variant-scope-v20','Plan trigger','draft','','[]',0,'now','now')",
+            [],
+        )
+        .unwrap();
+        tx.execute(
+            "INSERT INTO focus_plan_variants(id,plan_id,label,canonical_json,plain_text,sort_key,created_at,updated_at)
+             VALUES('variant-scope-v20','plan-scope-v20','Primary','{\"type\":\"doc\",\"content\":[]}','',0,'now','now')",
+            [],
+        )
+        .unwrap();
+        tx.commit().unwrap();
+
+        let scopes = conn
+            .prepare("SELECT scope FROM search_dirty_scopes ORDER BY scope")
+            .unwrap()
+            .query_map([], |row| row.get::<_, String>(0))
+            .unwrap()
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap();
+        assert!(scopes.contains(&"tasks".to_string()));
+        assert!(scopes.contains(&"focus_plans".to_string()));
+    }
+
+    #[test]
+    fn migration_20_expands_search_entity_kind_and_preserves_fts() {
+        let mut conn = open_memory_connection().unwrap();
+        run_all_migrations(&mut conn).unwrap();
+
+        let fts_trigger_count: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM sqlite_master
+                 WHERE type='trigger'
+                   AND name IN ('search_fts_ai','search_fts_ad','search_fts_au')",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(fts_trigger_count, 3);
+
+        conn.execute(
+            "INSERT INTO search_documents(
+                entity_kind,entity_id,navigation_id,title,context_text,body_text,
+                normalized_title,normalized_context,normalized_body,source_updated_at
+             ) VALUES('focus_plan','plan-search-v20','plan-search-v20','Focus Plan Search','','',
+                      'focus plan search','','','now')",
+            [],
+        )
+        .unwrap();
+        let hit_count: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM search_fts WHERE search_fts MATCH 'focus'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(hit_count, 1);
     }
 }
