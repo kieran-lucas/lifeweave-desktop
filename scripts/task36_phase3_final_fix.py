@@ -7,12 +7,27 @@ from pathlib import Path
 MIGRATION = Path("src-tauri/src/infrastructure/sqlite/task36_migration.rs")
 RESTORE = Path("src-tauri/src/infrastructure/backup/restore.rs")
 NARRATIVE = Path("src-tauri/src/narrative/repository.rs")
+SEARCH = Path("src-tauri/src/search/repository.rs")
 
 
 def replace_once(text: str, old: str, new: str, label: str) -> str:
     actual = text.count(old)
     if actual != 1:
         raise SystemExit(f"{label}: expected one anchor, found {actual}")
+    return text.replace(old, new)
+
+
+def replace_exact_count(
+    text: str,
+    old: str,
+    new: str,
+    *,
+    count: int,
+    label: str,
+) -> str:
+    actual = text.count(old)
+    if actual != count:
+        raise SystemExit(f"{label}: expected {count} anchors, found {actual}")
     return text.replace(old, new)
 
 
@@ -226,12 +241,53 @@ def repair_schema_assertions() -> None:
                 "restore must report the current schema"
             );'''
     text = replace_once(text, old, new, "narrative restore schema authority")
+    text = replace_once(
+        text,
+        '''            let mut c = open_file_connection(&path).unwrap();
+            run_migrations(&mut c).unwrap();''',
+        '''            let mut c = open_file_connection(&path).unwrap();
+            crate::infrastructure::sqlite::task36_migration::run_all_migrations(&mut c)
+                .unwrap();''',
+        "narrative reopen migration authority",
+    )
     NARRATIVE.write_text(text, encoding="utf-8", newline="\n")
+
+
+def repair_file_backed_search_tests() -> None:
+    text = SEARCH.read_text(encoding="utf-8")
+    old_import = '''        use crate::infrastructure::sqlite::{
+            connection::open_file_connection, migrations::run_migrations,
+        };'''
+    new_import = '''        use crate::infrastructure::sqlite::{
+            connection::open_file_connection, task36_migration::run_all_migrations,
+        };'''
+    text = replace_exact_count(
+        text,
+        old_import,
+        new_import,
+        count=2,
+        label="file-backed Search migration imports",
+    )
+    text = replace_exact_count(
+        text,
+        "        run_migrations(&mut conn).unwrap();",
+        "        run_all_migrations(&mut conn).unwrap();",
+        count=2,
+        label="file-backed Search migration calls",
+    )
+    text = replace_once(
+        text,
+        '            assert_eq!(ver, 19, "schema must be at version 19");',
+        '            assert_eq!(\n                ver,\n                i64::from(crate::infrastructure::sqlite::task36_migration::TASK36_SCHEMA_VERSION),\n                "schema must be current"\n            );',
+        "file-backed Search schema assertion",
+    )
+    SEARCH.write_text(text, encoding="utf-8", newline="\n")
 
 
 def main() -> None:
     repair_search_documents()
     repair_schema_assertions()
+    repair_file_backed_search_tests()
 
 
 if __name__ == "__main__":
