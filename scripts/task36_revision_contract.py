@@ -27,14 +27,13 @@ replace_exact(REPOSITORY, "revision: u64::from(revision),", "revision,", expecte
 replace_exact(REPOSITORY, "revision: u64::from(plan.10),", "revision: plan.10,")
 replace_exact(
     REPOSITORY,
-    "revision: u64::from(row.get::<_, u32>(0)?),",
-    "revision: row.get(0)?,",
-    expected=2,
+    "base_revision: u64::from(row.get::<_, u32>(0)?),",
+    "base_revision: row.get(0)?,",
 )
 replace_exact(
     REPOSITORY,
-    "base_revision: u64::from(row.get::<_, u32>(0)?),",
-    "base_revision: row.get(0)?,",
+    "revision: u64::from(row.get::<_, u32>(0)?),",
+    "revision: row.get(0)?,",
 )
 replace_exact(
     REPOSITORY,
