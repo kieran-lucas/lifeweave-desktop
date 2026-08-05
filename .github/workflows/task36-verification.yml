@@ -60,8 +60,12 @@ jobs:
           exit $code
       - name: Generated indexes
         run: pnpm index:check
-      - name: Security and hardening
-        run: pnpm verify
+      - name: Remote asset policy
+        run: python scripts/verify_no_remote_assets.py
+      - name: Security verification
+        run: python scripts/verify_security.py
+      - name: Hardening verification
+        run: python scripts/verify_hardening.py
       - name: Frontend typecheck
         run: pnpm typecheck
       - name: Frontend tests
