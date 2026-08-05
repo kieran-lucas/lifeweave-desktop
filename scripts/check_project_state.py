@@ -41,22 +41,27 @@ def _next_action_label(value: str) -> str:
 
 
 def _released_migration_versions(root: Path) -> list[int]:
-    primary = (root / "src-tauri/src/infrastructure/sqlite/migrations.rs").read_text(encoding="utf-8")
-    released = re.search(
-        r"static\s+MIGRATIONS:\s*&\[Migration\]\s*=\s*&\[(.*?)\n\];\n\npub\s+fn",
-        primary,
-        re.DOTALL,
+    primary = (root / "src-tauri/src/infrastructure/sqlite/migrations.rs").read_text(
+        encoding="utf-8"
     )
-    if released is None:
+    start_marker = "static MIGRATIONS: &[Migration] = &["
+    end_marker = "pub fn run_migrations"
+    start = primary.find(start_marker)
+    end = primary.find(end_marker, start + len(start_marker))
+    if start < 0 or end < 0 or end <= start:
         raise ValueError("released MIGRATIONS static could not be parsed")
+    released = primary[start:end]
     versions = [
         int(value)
-        for value in re.findall(r"Migration\s*\{\s*version:\s*(\d+)", released.group(1))
+        for value in re.findall(r"Migration\s*\{\s*version:\s*(\d+)", released)
     ]
+
     extension = root / "src-tauri/src/infrastructure/sqlite/task36_migration.rs"
     if extension.is_file():
         text = extension.read_text(encoding="utf-8")
-        match = re.search(r"pub const TASK36_SCHEMA_VERSION:\s*u32\s*=\s*(\d+)\s*;", text)
+        match = re.search(
+            r"pub const TASK36_SCHEMA_VERSION:\s*u32\s*=\s*(\d+)\s*;", text
+        )
         if match:
             versions.append(int(match.group(1)))
     return versions
@@ -65,7 +70,9 @@ def _released_migration_versions(root: Path) -> list[int]:
 def validate(root: Path) -> list[str]:
     errors: list[str] = []
     try:
-        ledger = json.loads((root / "docs/PROJECT_STATE.json").read_text(encoding="utf-8"))
+        ledger = json.loads(
+            (root / "docs/PROJECT_STATE.json").read_text(encoding="utf-8")
+        )
     except FileNotFoundError:
         return ["create docs/PROJECT_STATE.json"]
     except (OSError, json.JSONDecodeError) as exc:
@@ -92,23 +99,50 @@ def validate(root: Path) -> list[str]:
         "active_spec": lambda value: value is None or isinstance(value, str),
         "next_action": lambda value: isinstance(value, str),
         "forbidden_feature_jump": lambda value: isinstance(value, bool),
-        "recommended_next_candidate": lambda value: value is None or isinstance(value, str),
+        "recommended_next_candidate": lambda value: value is None
+        or isinstance(value, str),
         "source_sha256": lambda value: isinstance(value, str),
     }
-    invalid_types = [key for key, check in expected_types.items() if not check(ledger[key])]
+    invalid_types = [
+        key for key, check in expected_types.items() if not check(ledger[key])
+    ]
     if invalid_types:
-        return [f"correct PROJECT_STATE field type: {field}" for field in invalid_types]
+        return [
+            f"correct PROJECT_STATE field type: {field}" for field in invalid_types
+        ]
 
     checks = [
         (ledger["format_version"] == 2, "set format_version to 2"),
-        (ledger["repository"] == "kieran-lucas/lifeweave-desktop", "set repository to kieran-lucas/lifeweave-desktop"),
+        (
+            ledger["repository"] == "kieran-lucas/lifeweave-desktop",
+            "set repository to kieran-lucas/lifeweave-desktop",
+        ),
         (ledger["branch"] == "main", "set branch to main"),
-        (ledger["latest_feature_task"] <= ledger["latest_closed_task"], "make latest_feature_task less than or equal to latest_closed_task"),
-        (ledger["latest_closed_slice"] >= 0, "make latest_closed_slice non-negative"),
-        (CHECKPOINT.fullmatch(ledger["latest_feature_checkpoint"]) is not None, "set latest_feature_checkpoint to a lowercase 40-character hexadecimal commit"),
-        (ledger["next_action"] in {"product_owner_gate", "implement_active_spec"}, "set next_action to an allowed value"),
-        (ledger["forbidden_feature_jump"] is True, "set forbidden_feature_jump to true"),
-        (ledger["recommended_next_candidate"] is None or SNAKE_CASE.fullmatch(ledger["recommended_next_candidate"]) is not None, "set recommended_next_candidate to null or safe snake_case"),
+        (
+            ledger["latest_feature_task"] <= ledger["latest_closed_task"],
+            "make latest_feature_task less than or equal to latest_closed_task",
+        ),
+        (
+            ledger["latest_closed_slice"] >= 0,
+            "make latest_closed_slice non-negative",
+        ),
+        (
+            CHECKPOINT.fullmatch(ledger["latest_feature_checkpoint"]) is not None,
+            "set latest_feature_checkpoint to a lowercase 40-character hexadecimal commit",
+        ),
+        (
+            ledger["next_action"] in {"product_owner_gate", "implement_active_spec"},
+            "set next_action to an allowed value",
+        ),
+        (
+            ledger["forbidden_feature_jump"] is True,
+            "set forbidden_feature_jump to true",
+        ),
+        (
+            ledger["recommended_next_candidate"] is None
+            or SNAKE_CASE.fullmatch(ledger["recommended_next_candidate"]) is not None,
+            "set recommended_next_candidate to null or safe snake_case",
+        ),
     ]
     errors.extend(message for valid, message in checks if not valid)
 
@@ -122,10 +156,16 @@ def validate(root: Path) -> list[str]:
         elif not (root / PurePosixPath(active_spec)).is_dir():
             errors.append(f"create active specification directory: {active_spec}")
         if ledger["next_action"] != "implement_active_spec":
-            errors.append("set next_action to implement_active_spec when active_spec is non-null")
+            errors.append(
+                "set next_action to implement_active_spec when active_spec is non-null"
+            )
 
     try:
-        manifest = json.loads((root / "docs/source-of-truth/SOURCE_MANIFEST.json").read_text(encoding="utf-8"))
+        manifest = json.loads(
+            (root / "docs/source-of-truth/SOURCE_MANIFEST.json").read_text(
+                encoding="utf-8"
+            )
+        )
     except (OSError, json.JSONDecodeError) as exc:
         errors.append(f"make SOURCE_MANIFEST.json readable valid JSON: {exc}")
     else:
@@ -144,14 +184,20 @@ def validate(root: Path) -> list[str]:
         elif versions != sorted(versions):
             errors.append("make released migration versions strictly ascending")
         elif max(versions) != ledger["database_schema_version"]:
-            errors.append(f"set database_schema_version to highest released migration {max(versions)}")
+            errors.append(
+                f"set database_schema_version to highest released migration {max(versions)}"
+            )
 
     try:
         status = (root / "docs/STATUS.md").read_text(encoding="utf-8")
         first_task = re.search(r"^## Task (\d+)(?:/60)?\b", status, re.MULTILINE)
-        expected = str(ledger["latest_closed_task"] + (1 if active_spec is not None else 0))
+        expected = str(
+            ledger["latest_closed_task"] + (1 if active_spec is not None else 0)
+        )
         if first_task is None or first_task.group(1) != expected:
-            errors.append(f"place the Task {expected} STATUS section before every older Task section")
+            errors.append(
+                f"place the Task {expected} STATUS section before every older Task section"
+            )
     except OSError as exc:
         errors.append(f"make docs/STATUS.md readable: {exc}")
 
