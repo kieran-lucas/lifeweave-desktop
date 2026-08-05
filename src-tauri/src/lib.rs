@@ -23,8 +23,8 @@ use infrastructure::backup::lifecycle::{
 };
 use infrastructure::sqlite::{
     connection::{open_existing_file_connection, open_file_connection},
-    migrations::run_migrations,
     runtime::DatabaseRuntime,
+    task36_migration::run_all_migrations,
     worker::DbWorkerHandle,
 };
 use ipc::backup::{backup_database, list_backups, restore_database};
@@ -135,7 +135,7 @@ pub fn run() {
                 StartupDisposition::ExistingOrRecovered => open_existing_file_connection(&db_path),
             }
             .expect("failed to open SQLite database");
-            run_migrations(&mut conn).expect("database migration failed");
+            run_all_migrations(&mut conn).expect("database migration failed");
 
             let worker = DbWorkerHandle::spawn(conn);
             app.manage(DatabaseRuntime::new(db_path.clone(), worker));
