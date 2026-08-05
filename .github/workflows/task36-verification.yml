@@ -11,7 +11,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: task36-phase3-integration
+  group: task36-phase3-final-integration
   cancel-in-progress: false
 
 jobs:
@@ -76,7 +76,6 @@ jobs:
           if ($grepCode -ne 1) {
             throw "Task 37 leak scan failed with exit code $grepCode"
           }
-
           $sql = Get-Content src-tauri/src/infrastructure/sqlite/task36_migration.rs -Raw
           if ($sql -match "ALTER TABLE (tasks|task_series)" -or $sql -match "REFERENCES (tasks|task_series)") {
             throw "Task 37 SQL leaked into migration 20"
@@ -101,22 +100,6 @@ jobs:
           $code = $LASTEXITCODE
           $output | Tee-Object -FilePath task36-phase3-evidence/cargo-clippy.log | ForEach-Object { Write-Host $_ }
           exit $code
-      - name: Run focused Phase 3 regressions
-        shell: pwsh
-        run: |
-          $filters = @(
-            "migration_20_expands_search_entity_kind_and_preserves_fts",
-            "migration_20_preserves_old_dirty_triggers_and_adds_focus_plan_scope",
-            "rebuild_indexes_plan_context_without_reader_rows",
-            "archived_plan_is_removed_from_search_projection",
-            "schema_9_backup_restores_and_migrates_with_its_basic_leaf_asset",
-            "round_trip_restore_recovers_exact_data",
-            "narrative_canvas_backup_relaunch_evidence"
-          )
-          foreach ($filter in $filters) {
-            cargo test --manifest-path src-tauri/Cargo.toml --locked $filter -- --exact --nocapture
-            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          }
       - name: Run all Rust tests
         shell: pwsh
         run: |
@@ -134,9 +117,16 @@ jobs:
         if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
-          name: task36-phase3-evidence
+          name: task36-phase3-final-evidence
           path: task36-phase3-evidence
           if-no-files-found: warn
+      - name: Reassert exact main before commit
+        shell: pwsh
+        run: |
+          git fetch origin main
+          if ((git rev-parse HEAD) -ne (git rev-parse origin/main)) {
+            throw "main advanced before Phase 3 commit"
+          }
       - name: Commit only after every Phase 3 gate passes
         shell: pwsh
         run: |
