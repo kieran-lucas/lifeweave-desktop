@@ -46,8 +46,7 @@ def run_profile(name: str, profile: dict[str, int], samples: int, seed_offset: i
         if index in marks:
             checkpoints.append({"samples": index, "top1": {candidate: round(wins[candidate] / index, 9) for candidate in candidates}})
     return {
-        "name": name,
-        "weights": profile,
+        "name": name, "weights": profile,
         "means": {key: round(value, 6) for key, value in means.items()},
         "aggregate_sigma": {key: round(value, 6) for key, value in sigmas.items()},
         "top1_all_options": {candidate: round(wins[candidate] / samples, 9) for candidate in candidates},
@@ -66,75 +65,49 @@ def generate(samples: int = SAMPLES_PER_PROFILE) -> dict[str, Any]:
     b_min = min(row["top1_all_options"]["B_standalone_entity"] for row in canonical)
     drift = max(abs(point["top1"]["B_standalone_entity"] - row["top1_all_options"]["B_standalone_entity"]) for row in canonical for point in row["checkpoints"][:-1])
     return {
-        "format_version": 2,
-        "model": "task35-focus-plans-v2.0",
-        "seed": SEED,
-        "samples_per_profile": samples,
-        "canonical_profile_count": len(canonical),
-        "stress_profile_count": len(stress),
-        "criteria": list(CRITERIA),
-        "base_weights": BASE_WEIGHTS,
+        "format_version": 2, "model": "task35-focus-plans-v2.0", "seed": SEED,
+        "samples_per_profile": samples, "canonical_profile_count": len(canonical), "stress_profile_count": len(stress),
+        "criteria": list(CRITERIA), "base_weights": BASE_WEIGHTS,
         "hard_filter_classification": {candidate: classification(candidate) for candidate in SCORES},
         "base_scores": base_scores,
         "base_ranking": sorted(base_scores, key=lambda candidate: (-base_scores[candidate], candidate)),
         "base_lead_b_over_runner_up": round(base_scores[selected] - max(score for candidate, score in base_scores.items() if candidate != selected), 6),
-        "canonical_profiles": canonical,
-        "stress_profiles": stress,
-        "selected_option": selected,
+        "canonical_profiles": canonical, "stress_profiles": stress, "selected_option": selected,
         "selected_option_stability": "ROBUST" if b_min >= 0.80 and drift <= 0.01 else "MODERATE",
-        "minimum_canonical_b_top1": round(b_min, 9),
-        "maximum_convergence_drift": round(drift, 9),
-        "decision": "SELECT_STANDALONE_FOCUS_PLAN_ENTITY",
-        "task36_candidate": "standalone_focus_plan_core",
+        "minimum_canonical_b_top1": round(b_min, 9), "maximum_convergence_drift": round(drift, 9),
+        "decision": "SELECT_STANDALONE_FOCUS_PLAN_ENTITY", "task36_candidate": "standalone_focus_plan_core",
         "warning": "Monte Carlo values express model sensitivity, not empirical adoption or product-success probabilities.",
     }
 
 
 def compact_results(results: dict[str, Any]) -> dict[str, Any]:
     def compact_profile(row: dict[str, Any]) -> dict[str, Any]:
-        return {
-            "name": row["name"],
-            "means": row["means"],
-            "top1_all_options": row["top1_all_options"],
-            "pairwise_b_over_c": row["pairwise_b_over_c"],
-            "pairwise_b_over_a": row["pairwise_b_over_a"],
-            "final_checkpoint": row["checkpoints"][-1],
-        }
+        return {"name": row["name"], "means": row["means"], "top1_all_options": row["top1_all_options"], "pairwise_b_over_c": row["pairwise_b_over_c"], "pairwise_b_over_a": row["pairwise_b_over_a"], "final_checkpoint": row["checkpoints"][-1]}
     return {
-        "format_version": results["format_version"],
-        "model": results["model"],
-        "seed": results["seed"],
-        "samples_per_profile": results["samples_per_profile"],
-        "canonical_profile_count": results["canonical_profile_count"],
-        "stress_profile_count": results["stress_profile_count"],
-        "criteria": results["criteria"],
-        "base_weights": results["base_weights"],
-        "hard_filter_classification": results["hard_filter_classification"],
-        "base_scores": results["base_scores"],
-        "base_ranking": results["base_ranking"],
+        "format_version": results["format_version"], "model": results["model"], "seed": results["seed"],
+        "samples_per_profile": results["samples_per_profile"], "canonical_profile_count": results["canonical_profile_count"],
+        "stress_profile_count": results["stress_profile_count"], "criteria": results["criteria"],
+        "base_weights": results["base_weights"], "hard_filter_classification": results["hard_filter_classification"],
+        "base_scores": results["base_scores"], "base_ranking": results["base_ranking"],
         "base_lead_b_over_runner_up": results["base_lead_b_over_runner_up"],
         "canonical_profiles": [compact_profile(row) for row in results["canonical_profiles"]],
         "stress_profiles": [compact_profile(row) for row in results["stress_profiles"]],
-        "selected_option": results["selected_option"],
-        "selected_option_stability": results["selected_option_stability"],
-        "minimum_canonical_b_top1": results["minimum_canonical_b_top1"],
-        "maximum_convergence_drift": results["maximum_convergence_drift"],
-        "decision": results["decision"],
-        "task36_candidate": results["task36_candidate"],
-        "warning": results["warning"],
+        "selected_option": results["selected_option"], "selected_option_stability": results["selected_option_stability"],
+        "minimum_canonical_b_top1": results["minimum_canonical_b_top1"], "maximum_convergence_drift": results["maximum_convergence_drift"],
+        "decision": results["decision"], "task36_candidate": results["task36_candidate"], "warning": results["warning"],
     }
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(); parser.add_argument("--check", action="store_true"); parser.add_argument("--samples", type=int, default=SAMPLES_PER_PROFILE); args = parser.parse_args()
-    text = json.dumps(compact_results(generate(args.samples)), ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+    expected = compact_results(generate(args.samples))
     if args.check:
-        if not RESULT_PATH.exists() or RESULT_PATH.read_text(encoding="utf-8") != text:
-            print("analysis-results.json is stale"); return 1
-        print(f"Task 35 analysis check passed: {len(PROFILES)} canonical profiles; {args.samples} samples/profile")
-        return 0
-    RESULT_PATH.write_text(text, encoding="utf-8", newline="\n"); print(f"Wrote {RESULT_PATH}"); return 0
+        try: committed = json.loads(RESULT_PATH.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError): print("analysis-results.json missing or invalid"); return 1
+        if committed != expected: print("analysis-results.json is semantically stale"); return 1
+        print(f"Task 35 analysis check passed: {len(PROFILES)} canonical profiles; {args.samples} samples/profile"); return 0
+    RESULT_PATH.write_text(json.dumps(expected, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
+    print(f"Wrote {RESULT_PATH}"); return 0
 
 
-if __name__ == "__main__":
-    raise SystemExit(main())
+if __name__ == "__main__": raise SystemExit(main())
