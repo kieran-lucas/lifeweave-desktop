@@ -75,9 +75,8 @@ fn validate_title(value: &str, label: &str, max: usize) -> Result<String> {
 
 fn validate_dates(start: Option<&str>, target: Option<&str>) -> Result<()> {
     let parse = |value: &str| {
-        NaiveDate::parse_from_str(value, "%Y-%m-%d").map_err(|_| {
-            FocusPlanError::Validation("Focus Plan dates must use YYYY-MM-DD".into())
-        })
+        NaiveDate::parse_from_str(value, "%Y-%m-%d")
+            .map_err(|_| FocusPlanError::Validation("Focus Plan dates must use YYYY-MM-DD".into()))
     };
     let start = start.map(parse).transpose()?;
     let target = target.map(parse).transpose()?;
@@ -264,7 +263,7 @@ pub fn list(conn: &Connection, input: &FocusPlanListInput) -> Result<Vec<FocusPl
             row.get::<_, u32>(8)?,
             row.get::<_, u32>(9)?,
             tags,
-            row.get::<_, u64>(11)?,
+            row.get::<_, u32>(11)?,
             row.get::<_, String>(12)?,
             row.get::<_, Option<String>>(13)?,
         ))
@@ -302,7 +301,7 @@ pub fn list(conn: &Connection, input: &FocusPlanListInput) -> Result<Vec<FocusPl
             } else {
                 tags.split('\u{1f}').map(str::to_string).collect()
             },
-            revision,
+            revision: u64::from(revision),
             updated_at,
             archived: archived_at.is_some(),
         })
@@ -322,7 +321,7 @@ pub fn get(conn: &Connection, plan_id: &str) -> Result<FocusPlanDetailView> {
                     row.get::<_, String>(0)?, row.get::<_, String>(1)?, row.get::<_, String>(2)?,
                     row.get::<_, Option<String>>(3)?, row.get::<_, Option<String>>(4)?, row.get::<_, Option<String>>(5)?,
                     row.get::<_, Option<String>>(6)?, row.get::<_, String>(7)?, row.get::<_, String>(8)?,
-                    row.get::<_, String>(9)?, row.get::<_, u64>(10)?, row.get::<_, String>(11)?,
+                    row.get::<_, String>(9)?, row.get::<_, u32>(10)?, row.get::<_, String>(11)?,
                     row.get::<_, String>(12)?, row.get::<_, Option<String>>(13)?,
                 ))
             },
@@ -336,8 +335,12 @@ pub fn get(conn: &Connection, plan_id: &str) -> Result<FocusPlanDetailView> {
     let variant_rows = variant_statement
         .query_map([plan_id], |row| {
             Ok((
-                row.get::<_, String>(0)?, row.get::<_, String>(1)?, row.get::<_, String>(2)?,
-                row.get::<_, String>(3)?, row.get::<_, u32>(4)?, row.get::<_, Option<String>>(5)?,
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+                row.get::<_, String>(3)?,
+                row.get::<_, u32>(4)?,
+                row.get::<_, Option<String>>(5)?,
             ))
         })?
         .collect::<std::result::Result<Vec<_>, _>>()?;
@@ -385,7 +388,7 @@ pub fn get(conn: &Connection, plan_id: &str) -> Result<FocusPlanDetailView> {
     let revisions = revision_statement
         .query_map([plan_id], |row| {
             Ok(FocusPlanRevisionView {
-                revision: row.get(0)?,
+                revision: u64::from(row.get::<_, u32>(0)?),
                 reason: row.get(1)?,
                 created_at: row.get(2)?,
             })
@@ -398,7 +401,7 @@ pub fn get(conn: &Connection, plan_id: &str) -> Result<FocusPlanDetailView> {
             [plan_id],
             |row| {
                 Ok(FocusPlanRecoveryDraftView {
-                    base_revision: row.get(0)?,
+                    base_revision: u64::from(row.get::<_, u32>(0)?),
                     draft_json: row.get(1)?,
                     conflict: row.get::<_, String>(2)? == "conflict",
                     updated_at: row.get(3)?,
@@ -424,7 +427,7 @@ pub fn get(conn: &Connection, plan_id: &str) -> Result<FocusPlanDetailView> {
         tags,
         revisions,
         recovery_draft,
-        revision: plan.10,
+        revision: u64::from(plan.10),
         created_at: plan.11,
         updated_at: plan.12,
         archived: plan.13.is_some(),
@@ -462,7 +465,7 @@ fn existing_operation(
             |row| {
                 Ok(FocusPlanMutationResult {
                     plan_id: row.get(0)?,
-                    revision: row.get(1)?,
+                    revision: u64::from(row.get::<_, u32>(1)?),
                     created_id: None,
                     replayed: true,
                 })
@@ -534,7 +537,12 @@ fn mutation_reason(action: &FocusPlanMutationAction) -> &'static str {
     }
 }
 
-fn replace_tags(tx: &Transaction<'_>, plan_id: &str, tag_ids: &[String], timestamp: &str) -> Result<()> {
+fn replace_tags(
+    tx: &Transaction<'_>,
+    plan_id: &str,
+    tag_ids: &[String],
+    timestamp: &str,
+) -> Result<()> {
     let tag_ids = validate_tags(tx, tag_ids)?;
     tx.execute("DELETE FROM focus_plan_tags WHERE plan_id=?1", [plan_id])?;
     for tag_id in tag_ids {
@@ -572,9 +580,8 @@ fn apply_mutation(
             validate_dates(start_date.as_deref(), target_date.as_deref())?;
             validate_life_target(tx, life_node_id.as_deref())?;
             let criteria = validate_criteria(success_criteria)?;
-            let criteria_json = serde_json::to_string(&criteria).map_err(|_| {
-                FocusPlanError::Validation("Success criteria are invalid".into())
-            })?;
+            let criteria_json = serde_json::to_string(&criteria)
+                .map_err(|_| FocusPlanError::Validation("Success criteria are invalid".into()))?;
             tx.execute(
                 "UPDATE focus_plans SET title=?2,lifecycle=?3,life_node_id=?4,start_date=?5,target_date=?6,outcome=?7,success_criteria_json=?8 WHERE id=?1",
                 params![plan_id, title, lifecycle.as_str(), life_node_id, start_date, target_date, outcome, criteria_json],
@@ -644,9 +651,7 @@ fn apply_mutation(
         }
         FocusPlanMutationAction::RestoreVariant { variant_id } => {
             if !ensure_variant(tx, plan_id, variant_id)? {
-                return Err(FocusPlanError::Validation(
-                    "Variant is not archived".into(),
-                ));
+                return Err(FocusPlanError::Validation("Variant is not archived".into()));
             }
             tx.execute(
                 "UPDATE focus_plan_variants SET archived_at=NULL,updated_at=?3 WHERE id=?1 AND plan_id=?2",
@@ -733,9 +738,7 @@ fn apply_mutation(
             phase_id,
         } => {
             if !ensure_phase(tx, plan_id, variant_id, phase_id)? {
-                return Err(FocusPlanError::Validation(
-                    "Phase is not archived".into(),
-                ));
+                return Err(FocusPlanError::Validation("Phase is not archived".into()));
             }
             tx.execute(
                 "UPDATE focus_plan_phases SET archived_at=NULL,updated_at=?3 WHERE id=?1 AND variant_id=?2",
@@ -781,7 +784,10 @@ fn apply_mutation(
     Ok(created_id)
 }
 
-pub fn mutate(conn: &mut Connection, input: MutateFocusPlanInput) -> Result<FocusPlanMutationResult> {
+pub fn mutate(
+    conn: &mut Connection,
+    input: MutateFocusPlanInput,
+) -> Result<FocusPlanMutationResult> {
     validate_id(&input.plan_id, "Focus Plan ID")?;
     validate_id(&input.operation_id, "Operation ID")?;
     if let Some(existing) = existing_operation(conn, &input.operation_id)? {
@@ -794,20 +800,23 @@ pub fn mutate(conn: &mut Connection, input: MutateFocusPlanInput) -> Result<Focu
     }
     plan_exists(conn, &input.plan_id)?;
 
+    let expected_revision = u32::try_from(input.expected_revision).map_err(|_| {
+        FocusPlanError::Validation("Focus Plan revision exceeds the supported range".into())
+    })?;
     let tx = conn.transaction()?;
-    let current_revision: u64 = tx.query_row(
+    let current_revision: u32 = tx.query_row(
         "SELECT revision FROM focus_plans WHERE id=?1",
         [&input.plan_id],
         |row| row.get(0),
     )?;
-    if current_revision != input.expected_revision {
+    if current_revision != expected_revision {
         let attempted = serde_json::to_string(&input.mutation).map_err(|_| {
             FocusPlanError::Validation("Focus Plan recovery draft could not be encoded".into())
         })?;
         if attempted.len() <= 2_097_152 {
             tx.execute(
                 "INSERT INTO focus_plan_drafts(plan_id,base_revision,draft_json,recovery_state,updated_at) VALUES(?1,?2,?3,'conflict',?4) ON CONFLICT(plan_id) DO UPDATE SET base_revision=excluded.base_revision,draft_json=excluded.draft_json,recovery_state='conflict',updated_at=excluded.updated_at",
-                params![input.plan_id, input.expected_revision, attempted, now()],
+                params![input.plan_id, expected_revision, attempted, now()],
             )?;
             tx.commit()?;
         }
@@ -818,12 +827,12 @@ pub fn mutate(conn: &mut Connection, input: MutateFocusPlanInput) -> Result<Focu
     let created_id = apply_mutation(&tx, &input.plan_id, &input.mutation, &timestamp)?;
     let changed = tx.execute(
         "UPDATE focus_plans SET revision=revision+1,updated_at=?2 WHERE id=?1 AND revision=?3",
-        params![input.plan_id, timestamp, input.expected_revision],
+        params![input.plan_id, timestamp, expected_revision],
     )?;
     if changed != 1 {
         return Err(FocusPlanError::StaleRevision);
     }
-    let revision = input.expected_revision + 1;
+    let revision = expected_revision + 1;
     let canonical = snapshot(&tx, &input.plan_id)?;
     tx.execute(
         "INSERT INTO focus_plan_revisions(id,plan_id,revision,canonical_json,reason,created_at) VALUES(?1,?2,?3,?4,?5,?6)",
@@ -837,7 +846,7 @@ pub fn mutate(conn: &mut Connection, input: MutateFocusPlanInput) -> Result<Focu
     tx.commit()?;
     Ok(FocusPlanMutationResult {
         plan_id: input.plan_id,
-        revision,
+        revision: u64::from(revision),
         created_id,
         replayed: false,
     })
@@ -845,15 +854,20 @@ pub fn mutate(conn: &mut Connection, input: MutateFocusPlanInput) -> Result<Focu
 
 pub fn save_draft(conn: &mut Connection, input: SaveFocusPlanDraftInput) -> Result<()> {
     validate_id(&input.plan_id, "Focus Plan ID")?;
-    if input.draft_json.len() > 2_097_152 || serde_json::from_str::<serde_json::Value>(&input.draft_json).is_err() {
+    if input.draft_json.len() > 2_097_152
+        || serde_json::from_str::<serde_json::Value>(&input.draft_json).is_err()
+    {
         return Err(FocusPlanError::Validation(
             "Recovery draft must be valid JSON within the 2 MiB limit".into(),
         ));
     }
     plan_exists(conn, &input.plan_id)?;
+    let base_revision = u32::try_from(input.base_revision).map_err(|_| {
+        FocusPlanError::Validation("Focus Plan revision exceeds the supported range".into())
+    })?;
     conn.execute(
         "INSERT INTO focus_plan_drafts(plan_id,base_revision,draft_json,recovery_state,updated_at) VALUES(?1,?2,?3,'available',?4) ON CONFLICT(plan_id) DO UPDATE SET base_revision=excluded.base_revision,draft_json=excluded.draft_json,recovery_state='available',updated_at=excluded.updated_at",
-        params![input.plan_id, input.base_revision, input.draft_json, now()],
+        params![input.plan_id, base_revision, input.draft_json, now()],
     )?;
     Ok(())
 }
@@ -974,14 +988,17 @@ mod tests {
                 operation_id: "op-body".into(),
                 mutation: FocusPlanMutationAction::UpdateVariantBody {
                     variant_id: plan.selected_variant_id,
-                    canonical_json: "{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\"}]}".into(),
+                    canonical_json: "{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\"}]}"
+                        .into(),
                     plain_text: "Plan".into(),
                 },
             },
         )
         .unwrap();
         let count: i64 = conn
-            .query_row("SELECT COUNT(*) FROM reader_documents", [], |row| row.get(0))
+            .query_row("SELECT COUNT(*) FROM reader_documents", [], |row| {
+                row.get(0)
+            })
             .unwrap();
         assert_eq!(count, 0);
     }
@@ -994,20 +1011,29 @@ mod tests {
         mutate(
             &mut conn,
             MutateFocusPlanInput {
-                plan_id: plan.id.clone(), expected_revision: 0, operation_id: "op-archive".into(),
+                plan_id: plan.id.clone(),
+                expected_revision: 0,
+                operation_id: "op-archive".into(),
                 mutation: FocusPlanMutationAction::ArchivePlan,
             },
-        ).unwrap();
+        )
+        .unwrap();
         mutate(
             &mut conn,
             MutateFocusPlanInput {
-                plan_id: plan.id.clone(), expected_revision: 1, operation_id: "op-restore".into(),
+                plan_id: plan.id.clone(),
+                expected_revision: 1,
+                operation_id: "op-restore".into(),
                 mutation: FocusPlanMutationAction::RestorePlan,
             },
-        ).unwrap();
+        )
+        .unwrap();
         let after = get(&conn, &plan.id).unwrap();
         assert_eq!(before.selected_variant_id, after.selected_variant_id);
-        assert_eq!(before.variants[0].canonical_json, after.variants[0].canonical_json);
+        assert_eq!(
+            before.variants[0].canonical_json,
+            after.variants[0].canonical_json
+        );
         assert!(!after.archived);
         assert_eq!(after.revision, 2);
     }

@@ -93,17 +93,31 @@ pub enum FocusPlanMutationAction {
         success_criteria: Vec<String>,
         tag_ids: Vec<String>,
     },
-    AddVariant { label: String },
-    RenameVariant { variant_id: String, label: String },
-    SelectVariant { variant_id: String },
+    AddVariant {
+        label: String,
+    },
+    RenameVariant {
+        variant_id: String,
+        label: String,
+    },
+    SelectVariant {
+        variant_id: String,
+    },
     UpdateVariantBody {
         variant_id: String,
         canonical_json: String,
         plain_text: String,
     },
-    ArchiveVariant { variant_id: String },
-    RestoreVariant { variant_id: String },
-    AddPhase { variant_id: String, title: String },
+    ArchiveVariant {
+        variant_id: String,
+    },
+    RestoreVariant {
+        variant_id: String,
+    },
+    AddPhase {
+        variant_id: String,
+        title: String,
+    },
     RenamePhase {
         variant_id: String,
         phase_id: String,
@@ -114,8 +128,14 @@ pub enum FocusPlanMutationAction {
         phase_id: String,
         new_index: u32,
     },
-    ArchivePhase { variant_id: String, phase_id: String },
-    RestorePhase { variant_id: String, phase_id: String },
+    ArchivePhase {
+        variant_id: String,
+        phase_id: String,
+    },
+    RestorePhase {
+        variant_id: String,
+        phase_id: String,
+    },
     ArchivePlan,
     RestorePlan,
 }

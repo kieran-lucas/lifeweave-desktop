@@ -1,4 +1,4 @@
-use rusqlite::{Connection, OptionalExtension, params};
+use rusqlite::{Connection, params};
 
 use super::{DbError, migrations};
 
@@ -215,7 +215,10 @@ fn schema_version_if_present(conn: &Connection) -> Result<u32, DbError> {
 pub fn run_all_migrations(conn: &mut Connection) -> Result<(), DbError> {
     let current = schema_version_if_present(conn)?;
     if current > TASK36_SCHEMA_VERSION {
-        return Err(DbError::SchemaTooNew { stored: current, supported: TASK36_SCHEMA_VERSION });
+        return Err(DbError::SchemaTooNew {
+            stored: current,
+            supported: TASK36_SCHEMA_VERSION,
+        });
     }
     if current == TASK36_SCHEMA_VERSION {
         return Ok(());
@@ -227,7 +230,10 @@ pub fn run_all_migrations(conn: &mut Connection) -> Result<(), DbError> {
         return Ok(());
     }
     if current != 19 {
-        return Err(DbError::SchemaTooNew { stored: current, supported: TASK36_SCHEMA_VERSION });
+        return Err(DbError::SchemaTooNew {
+            stored: current,
+            supported: TASK36_SCHEMA_VERSION,
+        });
     }
 
     let tx = conn.transaction()?;
@@ -252,6 +258,7 @@ pub fn current_schema_version(conn: &Connection) -> Result<u32, DbError> {
 mod tests {
     use super::*;
     use crate::infrastructure::sqlite::connection::open_memory_connection;
+    use rusqlite::OptionalExtension;
 
     fn table_exists(conn: &Connection, name: &str) -> bool {
         conn.query_row(
@@ -270,8 +277,24 @@ mod tests {
         run_all_migrations(&mut conn).unwrap();
         run_all_migrations(&mut conn).unwrap();
         assert_eq!(current_schema_version(&conn).unwrap(), 20);
-        assert_eq!(conn.query_row::<i64,_,_>("SELECT COUNT(*) FROM schema_migrations WHERE version=20", [], |r| r.get(0)).unwrap(), 1);
-        for table in ["focus_plans","focus_plan_variants","focus_plan_phases","focus_plan_revisions","focus_plan_drafts","focus_plan_save_operations","focus_plan_tags"] {
+        assert_eq!(
+            conn.query_row::<i64, _, _>(
+                "SELECT COUNT(*) FROM schema_migrations WHERE version=20",
+                [],
+                |r| r.get(0)
+            )
+            .unwrap(),
+            1
+        );
+        for table in [
+            "focus_plans",
+            "focus_plan_variants",
+            "focus_plan_phases",
+            "focus_plan_revisions",
+            "focus_plan_drafts",
+            "focus_plan_save_operations",
+            "focus_plan_tags",
+        ] {
             assert!(table_exists(&conn, table), "missing {table}");
         }
     }
@@ -311,6 +334,12 @@ mod tests {
         tx.execute("INSERT INTO focus_plans(id,selected_variant_id,title,lifecycle,outcome,success_criteria_json,revision,created_at,updated_at) VALUES('plan-1','variant-1','Plan','draft','','[]',0,'now','now')", []).unwrap();
         tx.execute("INSERT INTO focus_plan_variants(id,plan_id,label,canonical_json,plain_text,sort_key,created_at,updated_at) VALUES('variant-1','plan-1','A','{\"type\":\"doc\",\"content\":[]}','',0,'now','now')", []).unwrap();
         tx.commit().unwrap();
-        assert!(conn.execute("UPDATE focus_plan_variants SET archived_at='now' WHERE id='variant-1'", []).is_err());
+        assert!(
+            conn.execute(
+                "UPDATE focus_plan_variants SET archived_at='now' WHERE id='variant-1'",
+                []
+            )
+            .is_err()
+        );
     }
 }
