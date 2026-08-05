@@ -1,6 +1,7 @@
 pub mod application;
 pub mod document;
 pub mod domain;
+pub mod focus_plan;
 pub mod infrastructure;
 pub mod ipc;
 pub mod life;
@@ -17,6 +18,10 @@ use document::service::{
     create_reader_document, discard_reader_draft, export_reader_markdown, get_document_asset,
     get_reader_document, import_document_asset, import_reader_markdown, recover_reader_draft,
     save_reader_document, save_reader_draft,
+};
+use focus_plan::service::{
+    create_focus_plan, discard_focus_plan_draft, get_focus_plan, list_focus_plans,
+    mutate_focus_plan, save_focus_plan_draft,
 };
 use infrastructure::backup::lifecycle::{
     StartupDisposition, preflight_startup_check, recover_if_interrupted,
@@ -218,6 +223,12 @@ pub fn run() {
             restore_tag,
             merge_tags,
             set_life_node_tags,
+            list_focus_plans,
+            get_focus_plan,
+            create_focus_plan,
+            mutate_focus_plan,
+            save_focus_plan_draft,
+            discard_focus_plan_draft,
         ])
         .run(tauri::generate_context!())
         .expect("failed to run Lifeweave");
