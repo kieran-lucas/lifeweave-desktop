@@ -8,47 +8,36 @@ The immutable source is authoritative. This registry makes operational status vi
 - No account, server, collaboration, hidden telemetry, or default cloud dependency.
 - Task-first navigation; Today default.
 - Task is not a card.
-- Continuous Task timeline 04:00–24:00.
-- Required exact-minute start/end.
+- Continuous Task timeline 04:00–24:00 with required exact-minute start/end.
 - Ordinary overlaps rejected; exact-slot groups allowed.
 - Retrospective completion selection through a radial fan.
-- Reminder, Windows notification, sound, and app-open streak removed.
+- Reminder, Windows notification, sound, snooze, and app-open streak removed.
 - Analytics is a separate destination.
-- Life Browse shows selected + direct children.
-- Full tree belongs to Life Edit.
-- Leaf opens a separate reader.
+- Life Browse shows selected + direct children; full tree belongs to Life Edit; leaf opens a separate reader.
 - Reduced Motion required.
-- Data backup/restore/export are first-class.
-- Task/Life relationships are navigation-only; each one-off Task or recurring Task series links to zero or one Life node.
-- Relationship authority is stored on `tasks` and `task_series`; occurrence and evaluation rows do not store it, and recurring projections inherit the series relationship.
-- Narrative Canvas supports 1–20 ordered scenes.
-- Narrative Canvas has three immutable built-in creation template IDs: `knowledge_dossier`, `project_blueprint`, and `learning_journey`.
-- Narrative Canvas has four static document-level Visual World IDs: `paper`, `sakura`, `aurora`, and `nocturne`.
-- Visual Worlds are presentation only and remain independent from templates.
-- Portable Package v1 represents one committed Basic Leaf or Narrative Canvas leaf document.
-- Portable canonical JSON is import authority; Markdown is a human-readable fallback and supported local visual assets are privacy-sanitized, checksummed, and remapped.
-- Portable import creates a new document only on a selected empty active Life leaf; it does not import or rename the Life node and excludes tree, Task, draft, history, analytics, and settings state.
-- Portable Package is document interchange, not a database backup.
-- Today, Upcoming, and Overdue are manual-activation tabs within the existing Today destination; Today remains the startup and fresh-mount default.
-- Upcoming covers anchor +1 through +14 local calendar days; Overdue covers anchor -30 through -1 local calendar days.
-- Overdue is derived from the absence of any current evaluation; any current evaluation reviews the item, and undo may restore it.
-- Planning queue items open their exact displayed date and stable Task or recurring-series identity in Today; queue state is not persisted.
-- Tags are a flat, globally shared vocabulary applied to Life nodes and Tasks. Normalized name (lowercase, Vietnamese-decomposed, whitespace-collapsed) is the deduplication and search key. Merging reassigns all join-table entries to the surviving tag; superseded normalized names are indexed as aliases. Task tag assignment in the create/edit dialog defaults to no tags; a task-level picker is deferred.
+- Data backup/restore/export are first-class and distinct from interchange.
+- Task/Life relationships are navigation-only; each one-off Task or recurring Task series links to zero or one Life node. Authority is stored on `tasks` and `task_series`; occurrences/evaluations inherit and do not store it.
+- Narrative Canvas supports 1–20 ordered scenes, three immutable built-in template IDs, and four static document-level Visual World IDs. Visual Worlds are presentation only.
+- Portable Package v1 represents one committed Basic Leaf or Narrative Canvas leaf document. Import creates a new document on a selected empty active Life leaf and excludes tree, Task, draft, history, analytics, and settings state.
+- Today, Upcoming, and Overdue are manual-activation tabs within Today. Upcoming is +1 through +14 local days; Overdue is -30 through -1 and is derived from absence of current evaluation.
+- Tags are a flat global vocabulary for Life nodes and Tasks. Normalized name is the deduplication/search key; merges retain aliases.
+- **Focus Plan is a standalone entity**, not a Life document or Basic Leaf template.
+- Focus Plan has stable identity; explicit `draft | active | paused | completed` lifecycle; archive is orthogonal.
+- Focus Plan links to zero or one active non-root Life node; one Life node may contextualize many Plans without new Life nodes.
+- Focus Plan owns first-class variants, ordered phases, committed revisions, and one recovery draft. Rich-text bodies reuse the accepted Basic Leaf canonical value schema by value, not `reader_documents` rows.
+- Focus Plans use shared tags, a distinct `focus_plan` Search entity kind, and full-database backup authority.
+- Focus Plans have no automatic progress percentage and no reminder/notification dependency.
+- Future Task 37 relationship target is zero-or-one Focus Plan per one-off Task or recurring series; occurrences inherit and do not own the relation.
 - The execution roadmap remains a 60-task envelope. Product Owner allocation may reuse unstarted positions without increasing the total.
 
 ## LOCKED — Technology direction
 
-- Tauri 2.
-- React UI + Rust application core.
-- TypeScript strict.
-- Vite 8.
+- Tauri 2; React UI + Rust application core; TypeScript strict; Vite 8.
 - `rusqlite` bundled, dedicated DB worker, forward-only migration.
-- typed IPC/DTO generation.
-- vanilla-extract/theme contracts/native CSS.
-- TanStack Query + narrow Zustand.
-- dnd-kit and d3-hierarchy where activated.
+- typed IPC/DTO generation; vanilla-extract/theme contracts/native CSS.
+- TanStack Query + narrow Zustand; dnd-kit and d3-hierarchy where activated.
 - Tiptap/ProseMirror direction for editor work when the relevant slice activates.
-- FTS5/rrule/testing/release foundations as specified, but dependencies install only when their feature activates.
+- FTS5/rrule/testing/release foundations as specified; dependencies install only when activated.
 
 ## PROTOTYPE-GATED
 
@@ -59,19 +48,15 @@ The immutable source is authoritative. This registry makes operational status vi
 - shared-element exact choreography;
 - large-tree virtualization;
 - visual-world asset intensity/performance;
-- narrow-window and DPI threshold decisions;
-- Focus Plans canonical model, navigation placement, lifecycle, and relationship authority.
+- narrow-window and DPI threshold decisions.
 
 ## OPEN — Product/UX
 
 - final brand/name/logo;
 - final FAB icon and placement;
 - actual-time semantics;
-- deadline semantics beyond the existing scheduled date and time;
+- deadline semantics beyond scheduled date/time;
 - saved filter AST/view UI;
-- Focus Plans canonical model: third Life document, standalone entity, or Basic Leaf template;
-- Focus Plan lifecycle, phase/milestone authority, and review semantics;
-- Focus Plan relationship cardinality with Life nodes, one-off Tasks, and recurring series;
 - final score and hidden mappings;
 - final prediction;
 - backlinks;
@@ -80,7 +65,7 @@ The immutable source is authoritative. This registry makes operational status vi
 - Graph;
 - whole-tree or multi-document interchange;
 - custom export profiles;
-- preserve-vs-strip original asset metadata policy beyond the privacy-safe default;
+- preserve-vs-strip original asset metadata beyond the privacy-safe default;
 - branch node content semantics;
 - shortcut map;
 - global application/branch appearance beyond the four locked Narrative Canvas worlds;
@@ -89,31 +74,23 @@ The immutable source is authoritative. This registry makes operational status vi
 
 ## DEFERRED
 
+- Task 36 standalone Focus Plans Core implementation pending explicit Product Owner activation;
+- Task 37 Focus Plan ↔ Task integration and review workflow pending accepted Task 36 authority and separate activation;
 - prediction and opaque ML;
 - Deadline Semantics implementation after the Task 34 Product Owner modification;
-- custom user-authored Narrative templates;
-- custom user-authored Visual Worlds or arbitrary palettes;
-- cross-scene block drag;
-- scene-level independent layout/atmosphere/motion;
-- Graph;
-- generalized knowledge features;
+- custom user-authored Narrative templates and Visual Worlds;
+- cross-scene block drag and scene-level independent presentation;
+- Graph and generalized knowledge features;
 - public updater/store distribution;
 - advanced full palette customization;
 - sound design.
 
 ## REMOVED
 
-- account/login/server;
-- default cloud sync;
-- collaboration/sharing/presence/comments;
-- subscription/paywall;
-- reminder/notification/sound/snooze;
-- task cards;
-- dashboard startup;
-- month calendar fixed beside timeline;
-- full tree in Browse;
-- anime characters/fanart/gacha;
-- video background;
+- account/login/server; default cloud sync; collaboration/sharing/presence/comments;
+- subscription/paywall; reminder/notification/sound/snooze;
+- task cards; dashboard startup; month calendar fixed beside timeline;
+- full tree in Browse; anime characters/fanart/gacha; video background;
 - default freeform pixel canvas.
 
 ## Change process
@@ -123,5 +100,5 @@ The immutable source is authoritative. This registry makes operational status vi
 3. State concrete alternatives and consequences.
 4. Prototype if gated.
 5. Record accepted result in ADR.
-6. Update registry/spec/tests in the same or linked PR.
-7. Obtain Product Owner acceptance.
+6. Update registry/spec/tests in the same or linked change.
+7. Obtain Product Owner acceptance before implementation activation.

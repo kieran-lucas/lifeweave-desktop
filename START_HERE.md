@@ -9,54 +9,41 @@
 5. [Decision Registry](docs/DECISION_REGISTRY.md)
 6. [Status](docs/STATUS.md) and [Roadmap](docs/ROADMAP.md)
 7. [Architecture](docs/ARCHITECTURE.md)
-8. Active specification, only when `PROJECT_STATE.active_spec` is non-null
 
 ## Current state
 
-- Latest closed task: **34/60**
-- Latest closed slice: **024 — Post-Unified-Tags Expansion Decision**
+- Latest closed task: **35/60**
+- Latest closed slice: **025 — Focus Plans Architecture Prototype**
 - Latest product feature: **Task 33 — Unified Tags Core + Cross-Pillar Retrieval**
 - Latest feature checkpoint: `4d1b65c816312a9e6ae8aa39f4a565555af9feb9`
 - Database schema: **19**
-- Active implementation specification: **Slice 025 — Focus Plans Architecture Prototype**
-- Next action: **Implement active spec**
-- Task 35 status: **active prototype/decision analysis**
-- Tasks 36–37 status: **prohibited pending Task 35 closure and Product Owner gate**
+- Active implementation specification: **none**
+- Next action: **Product Owner gate**
+- Canonical Focus Plans model: **standalone entity**
+- Task 36: **not started; separate activation required**
+- Task 37: **not started**
 
-## Task 35 objective
+## Task 35 result
 
-Compare three models for medium-term Focus Plans:
-
-```text
-A — third Life document type
-B — standalone Focus Plan entity
-C — Basic Leaf template with metadata
-```
-
-No production behavior, migration, route, dependency, IPC, capability, or
-generated binding is authorized.
+Option B was selected after a common 30-operation prototype, 100,000 applied
+operations per option, 3 × 18 hard filters, nine benchmark rows, six canonical
+and three stress profiles at 200,000 samples/profile, and ten review rounds.
 
 ## Core invariants
 
 - Windows-first and local-first; core use requires no account, server, network, or default cloud service.
-- Today is the default destination; Task is an independent row/timeline entity, never a card.
-- Life Browse shows the selected node and direct children; full-tree editing stays in Life Edit.
+- Today remains the startup/default destination; Task is a row/timeline entity, never a card.
+- Life remains durable structure; Focus Plans do not create synthetic Life nodes.
 - SQLite through Rust is persistent/domain authority; React owns rendering and ephemeral interaction state.
 - Backup, restore, and interchange remain distinct authorities.
 
-## First verification commands
+## Verification entry points
 
 ```powershell
-python -m unittest scripts.tests.test_check_project_state
-python -m unittest discover specs/025-focus-plans-architecture -p "*_test.py"
 python specs/025-focus-plans-architecture/prototype.py --check
+python -m unittest specs/025-focus-plans-architecture/prototype_test.py
 python specs/025-focus-plans-architecture/analysis.py --check
-pnpm source:verify
-pnpm governance:check
-pnpm verify
+python -m unittest specs/025-focus-plans-architecture/analysis_test.py
 ```
 
-## Freshness rule
-
-Repository code, accepted ADRs, `PROJECT_STATE.json`, `STATUS.md`, and Git
-history override historical bundle task counts and implementation snapshots.
+No Task 36 work begins without explicit Product Owner approval.

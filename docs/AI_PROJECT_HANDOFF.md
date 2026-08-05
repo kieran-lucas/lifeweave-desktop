@@ -4,53 +4,41 @@
 
 - repository: `kieran-lucas/lifeweave-desktop`
 - branch: `main`
-- Task 35 starting HEAD: `321da59282098a2f83b6530421c53b09704dddd7`
-- latest product checkpoint: `4d1b65c816312a9e6ae8aa39f4a565555af9feb9`
+- latest closed task/slice: 35 / 025
+- latest product task/checkpoint: 33 / `4d1b65c816312a9e6ae8aa39f4a565555af9feb9`
 - schema: 19
-- latest closed task/slice: 34 / 024
-- active specification: `specs/025-focus-plans-architecture`
-- next action: implement active spec
-- Tasks 36–37: prohibited
+- active specification: none
+- next action: Product Owner gate
+- recommended candidate: `standalone_focus_plan_core`
+- Task 36: not started
+- Task 37: not started
 
-## Task 35 mission
+## Task 35 decision
 
-Determine the canonical representation for medium-term Focus Plans.
+ADR 0030 selects a standalone Focus Plan entity. The architecture locks stable
+Plan identity, explicit lifecycle, optional zero-or-one Life context,
+first-class variants/phases, revisions/recovery, shared tags, a distinct Search
+kind, and database backup authority. No automatic progress percentage is
+allowed.
 
-Required options:
+## Evidence checkpoints
 
-1. third Life document type;
-2. standalone Focus Plan entity;
-3. Basic Leaf template with metadata.
+```text
+prototype exact-byte checkpoint: 5f0aaeb918c1736f8d4cb04dd72a098f45f96792
+analysis semantic checkpoint: a7427eee3b5f6f8cd7bbae756325c15c3c489606
+```
 
-Product Owner preference: option 2. Treat it as a hypothesis, not authority.
+Ten review rounds passed; P0/P1 are none. Product code and schema did not change.
 
-## Required phases
+## Task 36 boundary
 
-1. repository and source reconstruction;
-2. current official workflow research;
-3. complete option models;
-4. isolated interaction prototypes;
-5. common 30-operation executable adapter;
-6. simulation and benchmarks;
-7. hard filters and weighted scoring;
-8. sensitivity analysis;
-9. ADR and Task 36 activation packet;
-10. ten independent review rounds;
-11. closure and Product Owner gate.
+A future separately activated Task 36 may implement Plan core, lifecycle,
+variants/phases, revisions/recovery, tags, Search, backup, and a lazy Plans
+workspace. It must not add Task/series links, review workflow, automatic
+progress, reminders, cloud, or collaboration.
 
-## Non-negotiable boundaries
+## Prohibition
 
-- no production frontend or Rust code;
-- no migration 20;
-- no route/sidebar destination;
-- no IPC, dependency, capability, generated binding, or E2E runner change;
-- no Task 36 or Task 37 implementation;
-- Task remains a row/timeline entity;
-- Life tree remains durable and may not be fragmented by temporary plans;
-- no fabricated completion percentage;
-- reminders/notifications/sound remain removed;
-- no cloud/account/collaboration.
-
-## Exact next action
-
-Implement and verify Slice 025. Do not close until all ten review rounds pass.
+Do not create a Task 36 spec, migration 20, production code, route, IPC,
+dependency, capability, generated binding, or E2E phase before explicit Product
+Owner approval. Task 37 remains separately prohibited.

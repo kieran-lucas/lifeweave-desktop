@@ -1,24 +1,33 @@
 # Task 35 Audit — Focus Plans Architecture Prototype
 
-## Scope
+## Verdict
 
-Task 35 is a prototype/decision slice. It adds no product behavior, migration,
-dependency, IPC, capability, route, generated binding, or native E2E phase.
+```text
+Task 35: ACCEPTED
+Slice 025: CLOSED
+P0: none
+P1: none
+P2 blocking closure: none
+canonical model: B — standalone Focus Plan entity
+Task 36: not started
+Task 37: not started
+```
 
-## Baseline
+## Baseline and scope
 
 ```text
 starting HEAD: 321da59282098a2f83b6530421c53b09704dddd7
+prototype checkpoint: 5f0aaeb918c1736f8d4cb04dd72a098f45f96792
+analysis checkpoint: a7427eee3b5f6f8cd7bbae756325c15c3c489606
 latest product checkpoint: 4d1b65c816312a9e6ae8aa39f4a565555af9feb9
 schema: 19
 issue: #1
 ```
 
-## Options
-
-- A — third Life document type;
-- B — standalone Focus Plan entity;
-- C — Basic Leaf template with metadata.
+The baseline diff is limited to `START_HERE.md`, `docs/**`, and
+`specs/025-focus-plans-architecture/**`. Task 35 adds no product behavior,
+migration, dependency, IPC, capability, route, generated binding, or native E2E
+phase.
 
 ## Prototype evidence
 
@@ -28,17 +37,15 @@ applied operations: 100,000 per option
 uncaught errors: 0
 invariant errors: 0
 semantic final hash equality: PASS
-unit tests: 23 passed
+prototype tests: 6 passed
 fixtures: 1 / 100 / 1,000 Plans
+benchmark rows: 9
 ```
 
 At 1,000 Plans, A and C each require 1,000 Life nodes; B requires none. B has no
 synthetic unassigned branch and no ambiguity with existing Task→Life authority.
-
-Wall-clock benchmark numbers are prototype environment evidence only. The
-`--check` contract compares deterministic semantic/structural evidence and
-validates the benchmark record shape rather than requiring byte-identical
-wall-clock timings.
+Wall-clock values are prototype-environment observations, not production
+performance evidence.
 
 ## Decision evidence
 
@@ -55,46 +62,79 @@ C base score: 5.685
 canonical profiles: 6
 stress profiles: 3
 samples/profile: 200,000
+analysis tests: 8 passed
 seed: 20260805
 selected: B_standalone_entity
 stability: ROBUST
 ```
 
-The extreme editor-reuse stress profile produced B 51.9370% and C 48.0600%
-top-1, preserving a genuine reversal scenario instead of hardcoding B.
+The extreme editor-reuse stress profile produced B 52.209% and C 47.787%
+top-1. This preserves a genuine counter-case instead of hardcoding B. Monte
+Carlo output expresses model sensitivity, not product-success probability.
 
-Monte Carlo output is model sensitivity, not product-success probability.
+## Verification
 
-## Canonical decision
-
-ADR 0030 selects the standalone entity. Task 36 is bounded to Plan core,
-lifecycle, variants/phases, revisions/recovery, tags, Search, backup, and a lazy
-Plans workspace. Task/series links and review workflow remain Task 37.
-
-## Verification performed in prototype environment
+Prototype exact checked set:
 
 ```text
-python prototype.py
 python prototype.py --check
-python analysis.py
-python analysis.py --check
-python -m unittest discover . -p "*_test.py"
-python -m py_compile prototype.py analysis.py prototype_test.py analysis.test.py
+python -m unittest prototype_test.py
+python -m py_compile prototype.py prototype_test.py
 python -m json.tool prototype-results.json
+```
+
+Analysis canonical checked set:
+
+```text
+python analysis.py --check
+python -m unittest analysis_test.py
+python -m py_compile analysis.py analysis_data.py analysis_test.py
 python -m json.tool analysis-results.json
 ```
 
-Result: 23 tests passed; deterministic checks passed; JSON and Python syntax
-passed.
+Result: 14 tests passed in total; deterministic checks, Python compile, and JSON
+parse passed. The analysis check compares semantic JSON, avoiding false failure
+from harmless formatting differences while still recomputing deterministic
+expected evidence.
 
-Repository wrapper and product gates must be classified truthfully at closure.
-No production/build input changed, so accepted Task 33 product evidence may be
-reused under the governance-only policy.
+No production/build input changed. Product, release, and native evidence from
+the accepted Task 33 product checkpoint remains the latest product evidence and
+is not falsely relabeled as rerun for Task 35.
 
-## Pending before closure
+## Canonical decision
 
-- ten-round self-review;
-- Project State closure validation;
-- authority file updates;
-- issue #1 disposition;
-- final Git diff/ref verification.
+ADR 0030 selects a standalone Focus Plan entity with:
+
+- stable identity;
+- explicit `draft | active | paused | completed` lifecycle;
+- archive orthogonal to lifecycle;
+- zero-or-one optional Life area;
+- first-class variants and ordered phases;
+- Plan-owned revisions and recovery draft;
+- shared tags and distinct Search kind;
+- database backup as initial portability authority;
+- no automatic progress percentage.
+
+Task 36 is bounded to Plan core and remains subject to a separate Product Owner
+activation. Task/series links and review workflow remain Task 37.
+
+## Ten-round closure review
+
+All ten rounds in `self-review.md` passed. Two material evidence issues were
+found and corrected before closure: prototype exact bytes and analysis exact
+semantic evidence. Governance mismatches in Decision Registry and the
+preliminary test count are corrected in the closure commit.
+
+## Final state
+
+```text
+latest_closed_task = 35
+latest_closed_slice = 25
+latest_feature_task = 33
+database_schema_version = 19
+active_spec = null
+next_action = product_owner_gate
+recommended_next_candidate = standalone_focus_plan_core
+Task 36 = not started
+Task 37 = not started
+```
