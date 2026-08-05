@@ -46,7 +46,29 @@ const detail = {
   archived: false,
 };
 
+const conflictDetail = {
+  ...detail,
+  revision: 2,
+  recovery_draft: {
+    base_revision: 1,
+    conflict: true,
+    updated_at: "2026-08-05T00:01:00Z",
+    draft_json: JSON.stringify({
+      action: "update_plan",
+      title: "Recovered AI Core",
+      lifecycle: "paused",
+      life_node_id: null,
+      start_date: "2026-08-10",
+      target_date: "2026-12-20",
+      outcome: "Recovered outcome",
+      success_criteria: ["Recovered criterion"],
+      tag_ids: [],
+    }),
+  },
+};
+
 beforeEach(() => {
+  vi.clearAllMocks();
   vi.mocked(commands.listTaskLifeTargets).mockResolvedValue([]);
   vi.mocked(commands.listTags).mockResolvedValue([]);
   vi.mocked(api.listFocusPlans).mockResolvedValue([summary]);
@@ -58,7 +80,7 @@ beforeEach(() => {
 });
 
 describe("FocusPlansScreen", () => {
-  it("creates, edits, and preserves the form after a rejected save", async () => {
+  it("creates, edits, retains rejected input, and loads the conflict recovery draft", async () => {
     render(<FocusPlansScreen entryRequest={null} onEntryRequestSettled={vi.fn()} />);
 
     await screen.findByRole("button", { name: /AI Foundations/ });
@@ -68,10 +90,19 @@ describe("FocusPlansScreen", () => {
     const title = screen.getByLabelText("Title");
     fireEvent.change(title, { target: { value: "AI Core" } });
     vi.mocked(api.mutateFocusPlan).mockRejectedValueOnce({ message: "Stale revision" });
+    vi.mocked(api.getFocusPlan).mockResolvedValueOnce(conflictDetail);
     fireEvent.click(screen.getByRole("button", { name: "Save plan" }));
 
     await screen.findByRole("alert");
     expect(title).toHaveValue("AI Core");
+
+    fireEvent.click(await screen.findByRole("button", { name: "Load recovery draft" }));
+    expect(screen.getByLabelText("Title")).toHaveValue("Recovered AI Core");
+    expect(screen.getByLabelText("Lifecycle")).toHaveValue("paused");
+    expect(screen.getByLabelText("Start date")).toHaveValue("2026-08-10");
+    expect(screen.getByLabelText("Target date")).toHaveValue("2026-12-20");
+    expect(screen.getByLabelText("Outcome")).toHaveValue("Recovered outcome");
+    expect(screen.getByLabelText("Success criteria, one per line")).toHaveValue("Recovered criterion");
 
     fireEvent.change(screen.getByLabelText("New plan title"), { target: { value: "Interview Plan" } });
     fireEvent.click(screen.getByRole("button", { name: "Create" }));
