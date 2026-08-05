@@ -5,7 +5,7 @@
 - generated_at: `2026-08-05T05:00:00.0000000+07:00`
 - repository: `kieran-lucas/lifeweave-desktop`
 - branch: `main`
-- Task 33 Remediation 003 implementation checkpoint: `4d1b65c`
+- Task 33 Remediation 003 implementation checkpoint: `4d1b65c816312a9e6ae8aa39f4a565555af9feb9`
 - current handoff-containing HEAD: resolve at read time with `git rev-parse HEAD`
 - tracked working tree status at generation: authorized implementation was clean and matched `origin/main`; only closure/evidence files committed with this handoff were then changed
 
@@ -21,7 +21,7 @@
 
 - macro milestone: Post-Core Expansion, Product Owner gate
 - latest closed task: Task 33 — Unified Tags Core + Cross-Pillar Retrieval (Remediation 003)
-- latest feature task/checkpoint: Task 33 / `4d1b65c`
+- latest feature task/checkpoint: Task 33 / `4d1b65c816312a9e6ae8aa39f4a565555af9feb9`
 - database schema: 19
 - active spec: none
 - next allowed action: Product Owner gate
@@ -78,14 +78,22 @@
 
 ## Test and release evidence
 
+- `python -m unittest scripts.tests.test_check_project_state`: 14 passed, 0 failed.
+- `pnpm source:verify`: passed.
+- `pnpm governance:check`: passed.
+- `pnpm index:check`: passed.
+- `pnpm verify`: passed (source, governance, index, security, hardening).
 - `pnpm typecheck`: passed.
-- `pnpm test` (frontend): 36 files, 561 passed, 0 failed.
-- `cargo test --locked`: 505 passed, 0 failed, 4 ignored evidence tests (unchanged; no Rust files modified in Remediation 003).
-- `cargo fmt --check`: passed (unchanged).
-- `cargo clippy -D warnings`: passed (unchanged).
-- `pnpm verify`: source/governance/index/security/hardening passed (unchanged).
-- `pnpm build`: passed.
-- `pnpm e2e:windows`: 9 specs — phase1-lifecycle, phase2-backup-restore, phase3-restart, phase4-portable-roundtrip, phase4-portable-restart, phase6-planning, phase6-planning-restart, phase7-unified-tags, phase7-unified-tags-restart — all passed.
+- `pnpm --dir frontend exec vitest run --maxWorkers=4`: 36 files, 561 passed, 0 failed.
+- `pnpm build`: main JS `index-VO7KV59P.js` 526,418 bytes; total JS 1,134,505 bytes (+8,458 / +17,843 vs Task 32).
+- `pnpm hardening:performance`: passed.
+- `cargo check --locked --all-targets`: passed.
+- `cargo fmt --all -- --check`: passed.
+- `cargo clippy --locked --all-targets -- -D warnings`: passed.
+- `cargo test --locked`: 505 passed, 0 failed, 4 ignored.
+- `pnpm tauri build`: NSIS `src-tauri/target/release/bundle/nsis/Lifeweave_0.0.0_x64-setup.exe`, 4,866,691 bytes, SHA-256 `8edbd85fb8b4fd4d625a26586072b87374c90adc6b9146746ee44a7c2796c7a8`; release binary `src-tauri/target/release/lifeweave-desktop.exe` 13,294,592 bytes.
+- `pnpm hardening:rc`: RC candidate `core-rc-72f34d9`, run ID `core-rc-ccf5b351940543f3bad229abf3775b97`, passed (2 sessions, 25-second liveness each).
+- `pnpm e2e:windows`: 9/9 specs passed — phase1-lifecycle, phase2-backup-restore, phase3-restart, phase4-portable-roundtrip, phase4-portable-restart, phase6-planning, phase6-planning-restart, phase7-unified-tags, phase7-unified-tags-restart.
 
 ## Decisions
 
@@ -103,7 +111,7 @@
 
 ## Recent commits
 
-- `4d1b65c` — complete unified tags verification contract (Remediation 003 implementation)
+- `4d1b65c816312a9e6ae8aa39f4a565555af9feb9` — complete unified tags verification contract (Remediation 003 implementation)
 - `f08eb34885776e1df6b66ab60779bbebe57d558d` — record task 33 remediation 002 evidence
 - `5d7b004e6769a6859ba1fa6d626281555b4f80e3` — finish unified tags product and release contract
 - `723bb875ad47d097b7fb17aef026c0c2a998df1a` — complete task 33 remediation 001

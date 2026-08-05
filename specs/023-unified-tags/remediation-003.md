@@ -1,6 +1,6 @@
 # Spec 023 — Unified Tags: Remediation 003
 
-> Status: **verified** — implementation checkpoint `4d1b65c`; evidence commit follows.
+> Status: **verified** — implementation checkpoint `4d1b65c816312a9e6ae8aa39f4a565555af9feb9`; evidence commit follows.
 
 ## Purpose
 

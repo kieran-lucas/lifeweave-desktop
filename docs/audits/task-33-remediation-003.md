@@ -3,8 +3,10 @@
 ## Scope
 
 Starting HEAD: `f08eb34885776e1df6b66ab60779bbebe57d558d` (Task 33 Remediation 002).
+Implementation checkpoint: `4d1b65c816312a9e6ae8aa39f4a565555af9feb9`.
+Prior evidence HEAD: `72f34d9ac4e56c59efc6ad0a4bbe03ae2c48f156`.
 Schema remains 19. No migration, dependency, or capability changes.
-Two commits: Commit A (implementation + verification contract) + Commit B (evidence only).
+Three commits: Commit A (implementation), Commit B (initial evidence), Commit C (full evidence correction).
 
 ## Verified behavior
 
@@ -65,7 +67,24 @@ Two commits: Commit A (implementation + verification contract) + Commit B (evide
 
 ## Test evidence
 
-- Rust: 505 passed, 0 failed, 4 ignored (unchanged from Remediation 002; no Rust files modified).
-- Frontend: 561 passed across 36 files.
+- `python -m unittest scripts.tests.test_check_project_state`: 14 passed, 0 failed.
+- `pnpm source:verify`: passed (165,171 bytes, 4,637 lines, SHA-256 `9c422927c09e26431d71b1ef5ab6306891a3e7c15ece0fc808bedf6f6689540a`).
+- `pnpm governance:check`: passed.
+- `pnpm index:check`: passed (402 headings, full coverage matrix current).
+- `pnpm verify`: passed (source, governance, index, no remote assets, security, hardening).
 - `pnpm typecheck`: passed.
+- `pnpm --dir frontend exec vitest run --maxWorkers=4`: 36 files, 561 passed, 0 failed.
+- `pnpm build`: main JS `index-VO7KV59P.js` 526,418 bytes; total JS 1,134,505 bytes (+8,458 / +17,843 vs Task 32).
+- `pnpm hardening:performance`: passed.
+- `cargo check --locked --all-targets`: passed.
+- `cargo fmt --all -- --check`: passed.
+- `cargo clippy --locked --all-targets -- -D warnings`: passed.
+- `cargo test --locked`: 505 passed, 0 failed, 4 ignored.
+- `pnpm tauri build`: NSIS `src-tauri/target/release/bundle/nsis/Lifeweave_0.0.0_x64-setup.exe`, 4,866,691 bytes, SHA-256 `8edbd85fb8b4fd4d625a26586072b87374c90adc6b9146746ee44a7c2796c7a8`; release binary 13,294,592 bytes.
+- `pnpm hardening:rc`: RC candidate `core-rc-72f34d9`, run ID `core-rc-ccf5b351940543f3bad229abf3775b97`, passed (2 sessions, 25-second liveness each).
 - Windows E2E (`pnpm e2e:windows`): 9 specs all passed — phase1-lifecycle, phase2-backup-restore, phase3-restart, phase4-portable-roundtrip, phase4-portable-restart, phase6-planning, phase6-planning-restart, phase7-unified-tags, phase7-unified-tags-restart.
+
+## Ancillary corrections
+
+- `scripts/verify_security.py`: regex negative lookbehind `(?<![.\w])fetch\(` replaces substring `fetch(` check, excluding method calls like `.refetch()`. False positive introduced by Remediation 003's use of `tagsQuery.refetch()` in TagPicker/TagSettings.
+- `src-tauri/src/ipc/tag.rs`: rustfmt brace-style correction — single-field struct literal `IpcError::Validation { message: msg }` on one line. Cosmetic formatting only; no behavior change.

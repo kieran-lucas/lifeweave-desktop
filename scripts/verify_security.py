@@ -69,9 +69,13 @@ def main() -> None:
         for p in (ROOT / "frontend/src").rglob("*")
         if p.suffix in {".ts", ".tsx", ".css"} and "ipc/generated" not in p.as_posix()
     )
-    for token in ("dangerouslySetInnerHTML", "innerHTML", "eval(", "new Function", "<iframe", "fetch(", "WebSocket", "style={{"):
+    simple_tokens = ("dangerouslySetInnerHTML", "innerHTML", "eval(", "new Function", "<iframe", "WebSocket", "style={{")
+    for token in simple_tokens:
         if token in frontend:
             fail(f"forbidden frontend API or inline style: {token}")
+    # Match bare fetch( but not method calls like .refetch() or prefetch()
+    if re.search(r"(?<![.\w])fetch\(", frontend):
+        fail("forbidden frontend API or inline style: fetch(")
     for p in (ROOT / "frontend/src").rglob("*.ts"):
         if p.as_posix().endswith("frontend/src/ipc/commands.ts"):
             continue

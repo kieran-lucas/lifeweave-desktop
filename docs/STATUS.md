@@ -12,7 +12,7 @@
 - `phase7-unified-tags.e2e.ts`: full product UI lifecycle — tag creation, task and life-node assignment, Browse/Reader/Pinned/Search verification, archive, restore, restored-state verification (Reader chip fix confirmed).
 - `phase7-unified-tags-restart.e2e.ts`: fresh-process persistence.
 - `scripts/run_windows_e2e.ps1`: includes phase7 restart spec.
-- Evidence: 505 Rust tests (4 ignored, no Rust files changed), 561 frontend tests (36 files), typecheck, `pnpm e2e:windows` 9/9 specs passed.
+- Evidence: 14 project state tests, source/governance/index/security/hardening passed, typecheck passed, 505 Rust tests (4 ignored), 561 frontend tests (36 files), `cargo check`/`fmt`/`clippy` passed. `pnpm build`: main JS 526,418 bytes, total 1,134,505 bytes. `pnpm tauri build`: NSIS 4,866,691 bytes SHA-256 `8edbd85fb8b4fd4d625a26586072b87374c90adc6b9146746ee44a7c2796c7a8`. `pnpm hardening:rc`: RC `core-rc-72f34d9` / run `core-rc-ccf5b351940543f3bad229abf3775b97` passed. `pnpm e2e:windows` 9/9 specs passed.
 
 ### Remediation 002
 
