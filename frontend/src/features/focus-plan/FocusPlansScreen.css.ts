@@ -29,6 +29,7 @@ export const muted = style({ color: "var(--text-muted, #666)", fontSize: "0.9rem
 export const emptyState = style({ color: "var(--text-muted, #666)", textAlign: "center", padding: "80px 20px" });
 export const draftNote = style({ color: "var(--text-muted, #666)", fontSize: "0.85rem", margin: 0 });
 export const variantTabs = style({ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "12px" });
+export const variantControl = style({ display: "inline-flex", gap: "3px", alignItems: "center" });
 export const variantEditor = style({ display: "grid", gap: "12px", paddingTop: "12px" });
 export const inlineForm = style({ display: "flex", gap: "8px", alignItems: "center", margin: "10px 0", flexWrap: "wrap" });
 export const phaseList = style({ display: "grid", gap: "8px", paddingLeft: "24px" });
