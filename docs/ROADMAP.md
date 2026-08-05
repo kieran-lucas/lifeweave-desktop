@@ -1,5 +1,9 @@
 # Roadmap
 
+## Slice 024 — Post-Unified-Tags Expansion Decision
+
+Task 34 is an active governance-only decision slice. It reconstructs the accepted post-Task-33 product, evaluates eleven remaining expansion/hardening candidates under a complete hard-filter matrix and disclosed uncertainty model, and produces one bounded Task 35 recommendation for Product Owner approval. It adds no product behavior, migration, dependency, IPC, capability, route, or UI. Task 35 remains prohibited.
+
 ## Slice 023 — Unified Tags Core + Cross-Pillar Retrieval
 
 Task 33 adds a flat globally-shared tag vocabulary applicable to Life nodes and Tasks. Tags have display names, normalized names, archive states, and merge semantics. Merge reassigns all join-table rows to the surviving tag; superseded normalized names are indexed as aliases so searches for a merged name continue to surface tagged entities. No hierarchy, filter views, scoring, or prediction is added.
@@ -168,7 +172,7 @@ Task 21 activates the first production Narrative Canvas vertical slice (ADR 0010
 
 - Migration 11: narrative tables, mutual exclusion triggers, search dirty triggers
 - Migration 12: `template_id`/`template_version` columns, unique partial index (one-canvas-per-leaf), revision uniqueness, INSERT/UPDATE guard triggers, restore guard triggers
-- Migration 13: BEFORE UPDATE move guard (life_node_id immutability on active rows) and restore guards (node active + uniqueness) for both document types
+- Migration 13: BEFORE UPDATE move guard (active rows) and restore guards (node active + uniqueness) for both document types
 - Migration 14: life_node_id immutable for ALL rows (active and archived); comprehensive restore guards (root, no-children, mutual exclusion) consolidating Migration 13 guards
 - Schema validation: document identity chain (JSON `documentId` == DB `id` == IPC input), unknown block lossless preservation (`canonical` field), strict parse (rejects wrong preset values/scene count/templateVersion)
 - `serializeNarrative`: single exit point for canonical JSON; known blocks emit V1 fields only; unknown blocks re-emit `canonical` verbatim
