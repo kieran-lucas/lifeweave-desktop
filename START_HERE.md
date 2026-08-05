@@ -18,39 +18,23 @@
 - Latest product feature: **Task 33 — Unified Tags Core + Cross-Pillar Retrieval**
 - Latest feature checkpoint: `4d1b65c816312a9e6ae8aa39f4a565555af9feb9`
 - Database schema: **19**
-- Active implementation specification: **none**
-- Product Owner disposition on the Task 34 recommendation: **MODIFY**
-- Recommended next candidate: **Focus Plans Architecture Prototype**
-- Roadmap envelope: **60 tasks total**
-- Reserved positions: **Task 35–37**
-- Next action: **Product Owner gate for Task 35 activation**
-- Task 35 status: **not started; no active specification**
+- Active implementation specification: **Slice 025 — Focus Plans Architecture Prototype**
+- Next action: **Implement active spec**
+- Task 35 status: **active prototype/decision analysis**
+- Tasks 36–37 status: **prohibited pending Task 35 closure and Product Owner gate**
 
-## Product Owner roadmap allocation
+## Task 35 objective
 
-- **Task 35:** Focus Plans A/B Prototype + Canonical Model Decision
-- **Task 36:** Focus Plans Core + Draft/Active Lifecycle
-- **Task 37:** Focus Plan ↔ Task Integration + Review Workflow
-- **Tasks 38–60:** remain available for later roadmap decisions.
-- Deadline Semantics remains an eligible deferred candidate; it is no longer the recommended Task 35.
-
-## Focus Plans intent
-
-Focus Plans are a proposed medium-term coordination layer between Life and Task:
+Compare three models for medium-term Focus Plans:
 
 ```text
-Life = durable areas and direction
-Focus Plan = a strategy or concentration lasting weeks to months
-Task = concrete scheduled or actionable work
+A — third Life document type
+B — standalone Focus Plan entity
+C — Basic Leaf template with metadata
 ```
 
-Task 35 must compare:
-
-1. a third Life document type;
-2. a standalone Focus Plan entity;
-3. a Basic Leaf template with metadata.
-
-The current Product Owner preference is a standalone entity, but Task 35 must earn that decision through prototype and architecture evidence.
+No production behavior, migration, route, dependency, IPC, capability, or
+generated binding is authorized.
 
 ## Core invariants
 
@@ -59,13 +43,14 @@ The current Product Owner preference is a standalone entity, but Task 35 must ea
 - Life Browse shows the selected node and direct children; full-tree editing stays in Life Edit.
 - SQLite through Rust is persistent/domain authority; React owns rendering and ephemeral interaction state.
 - Backup, restore, and interchange remain distinct authorities.
-- Focus Plans must not fragment the Life tree or silently become oversized Tasks.
 
 ## First verification commands
 
 ```powershell
 python -m unittest scripts.tests.test_check_project_state
-python specs/024-post-unified-tags-expansion-decision/analysis.py --check
+python -m unittest discover specs/025-focus-plans-architecture -p "*_test.py"
+python specs/025-focus-plans-architecture/prototype.py --check
+python specs/025-focus-plans-architecture/analysis.py --check
 pnpm source:verify
 pnpm governance:check
 pnpm verify
@@ -73,4 +58,5 @@ pnpm verify
 
 ## Freshness rule
 
-Repository code, accepted ADRs, `PROJECT_STATE.json`, `STATUS.md`, and Git history override historical bundle task counts and implementation snapshots.
+Repository code, accepted ADRs, `PROJECT_STATE.json`, `STATUS.md`, and Git
+history override historical bundle task counts and implementation snapshots.
