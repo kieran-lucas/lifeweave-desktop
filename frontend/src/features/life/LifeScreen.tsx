@@ -196,7 +196,9 @@ export function LifeScreen({
         setReader(undefined);
         setMode("browse");
       }
-      settleEntryRequest(requestId);
+      // Defer settlement when data is stale so the second effect can overwrite
+      // the reader with fresh tag data once the background refetch completes.
+      if (!browse.isFetching) settleEntryRequest(requestId);
       return;
     }
     if (entryRequest.mode === "reader" && directChild?.is_leaf) {

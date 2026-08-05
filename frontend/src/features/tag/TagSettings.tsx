@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   archiveTag,
@@ -30,6 +30,7 @@ export function TagSettings() {
   } | null>(null);
   const [mergeError, setMergeError] = useState<string | null>(null);
   const [mergeAnnouncement, setMergeAnnouncement] = useState("");
+  const [focusTargetId, setFocusTargetId] = useState<string | null>(null);
   const targetRowRef = useRef<Map<string, HTMLTableRowElement>>(new Map());
   const queryClient = useQueryClient();
 
@@ -54,19 +55,21 @@ export function TagSettings() {
     mutationFn: ({ id, revision }: { id: string; revision: number }) =>
       renameTag({ tag_id: id, name: renameValue, expected_revision: revision }),
     onSuccess: () => { setRenamingId(null); setRenameValue(""); invalidateAll(); },
+    onError: async () => { await tagsQuery.refetch(); },
   });
 
   const archiveMutation = useMutation({
     mutationFn: ({ id, revision }: { id: string; revision: number }) =>
       archiveTag({ tag_id: id, expected_revision: revision }),
     onSuccess: invalidateAll,
+    onError: async () => { await tagsQuery.refetch(); },
   });
 
   const restoreMutation = useMutation({
     mutationFn: ({ id, revision }: { id: string; revision: number }) =>
       restoreTag({ tag_id: id, expected_revision: revision }),
     onSuccess: invalidateAll,
-    onError: () => invalidateAll(),
+    onError: async () => { await tagsQuery.refetch(); },
   });
 
   const mergeMutation = useMutation({
@@ -86,13 +89,11 @@ export function TagSettings() {
       setMergeTargetId("");
       invalidateAll();
       setMergeAnnouncement("Tags merged successfully.");
-      setTimeout(() => {
-        targetRowRef.current.get(vars.targetId)?.focus();
-      }, 100);
+      setFocusTargetId(vars.targetId);
     },
     onError: (e: unknown) => {
       setMergeError(e instanceof Error ? e.message : "Merge failed. Try again.");
-      invalidateAll();
+      void tagsQuery.refetch();
     },
   });
 
@@ -100,6 +101,14 @@ export function TagSettings() {
   const activeTags = tags.filter((t) => !t.archived && !t.merged_into);
   const archivedTags = tags.filter((t) => t.archived && !t.merged_into);
   const mergedTags = tags.filter((t) => !!t.merged_into);
+
+  useEffect(() => {
+    if (!focusTargetId) return;
+    const target = targetRowRef.current.get(focusTargetId);
+    if (!target) return;
+    target.focus();
+    setFocusTargetId(null);
+  }, [focusTargetId, tags]);
 
   const beginMerge = () => {
     const source = tags.find((t) => t.id === mergeSourceId);
@@ -129,6 +138,7 @@ export function TagSettings() {
     <div className={styles.root}>
       <h2>Tags</h2>
 
+      <section aria-label="Create tag">
       <div className={styles.createRow}>
         <input
           className={styles.input}
@@ -150,6 +160,7 @@ export function TagSettings() {
       {createMutation.isError && (
         <p className={styles.warning} role="alert">{String(createMutation.error)}</p>
       )}
+      </section>
 
       {tagsQuery.isLoading && <p>Loading tags…</p>}
       {tagsQuery.isError && (
@@ -157,15 +168,14 @@ export function TagSettings() {
           <p className={styles.warning}>Failed to load tags.</p>
           <button
             type="button"
-            onClick={() => void queryClient.invalidateQueries({ queryKey: ["tags", true] })}
+            onClick={() => void tagsQuery.refetch()}
           >
             Retry
           </button>
         </div>
       )}
 
-      {activeTags.length > 0 && (
-        <section aria-label="Active tags">
+      <section aria-label="Active tags">
           <h3 className={styles.mergeHeading}>Active tags</h3>
           <table className={styles.table}>
             <thead>
@@ -191,8 +201,9 @@ export function TagSettings() {
                   onArchive={() => archiveMutation.mutate({ id: tag.id, revision: tag.revision })}
                   onRestore={() => restoreMutation.mutate({ id: tag.id, revision: tag.revision })}
                   isPending={archiveMutation.isPending || restoreMutation.isPending || renameMutation.isPending}
-                  archiveError={archiveMutation.isError ? String(archiveMutation.error) : null}
-                  restoreError={restoreMutation.isError ? String(restoreMutation.error) : null}
+                  archiveError={archiveMutation.isError && archiveMutation.variables?.id === tag.id ? String(archiveMutation.error) : null}
+                  restoreError={restoreMutation.isError && restoreMutation.variables?.id === tag.id ? String(restoreMutation.error) : null}
+                  renameError={renameMutation.isError && renameMutation.variables?.id === tag.id ? String(renameMutation.error) : null}
                   rowRef={(el) => {
                     if (el) targetRowRef.current.set(tag.id, el);
                     else targetRowRef.current.delete(tag.id);
@@ -202,10 +213,8 @@ export function TagSettings() {
             </tbody>
           </table>
         </section>
-      )}
 
-      {archivedTags.length > 0 && (
-        <section aria-label="Archived tags">
+      <section aria-label="Archived tags">
           <h3 className={styles.mergeHeading}>Archived tags</h3>
           <table className={styles.table}>
             <thead>
@@ -231,8 +240,9 @@ export function TagSettings() {
                   onArchive={() => archiveMutation.mutate({ id: tag.id, revision: tag.revision })}
                   onRestore={() => restoreMutation.mutate({ id: tag.id, revision: tag.revision })}
                   isPending={archiveMutation.isPending || restoreMutation.isPending || renameMutation.isPending}
-                  archiveError={archiveMutation.isError ? String(archiveMutation.error) : null}
-                  restoreError={restoreMutation.isError ? String(restoreMutation.error) : null}
+                  archiveError={archiveMutation.isError && archiveMutation.variables?.id === tag.id ? String(archiveMutation.error) : null}
+                  restoreError={restoreMutation.isError && restoreMutation.variables?.id === tag.id ? String(restoreMutation.error) : null}
+                  renameError={renameMutation.isError && renameMutation.variables?.id === tag.id ? String(renameMutation.error) : null}
                   rowRef={(el) => {
                     if (el) targetRowRef.current.set(tag.id, el);
                     else targetRowRef.current.delete(tag.id);
@@ -242,10 +252,8 @@ export function TagSettings() {
             </tbody>
           </table>
         </section>
-      )}
 
-      {mergedTags.length > 0 && (
-        <section aria-label="Merged aliases">
+      <section aria-label="Merged aliases">
           <h3 className={styles.mergeHeading}>Merged aliases</h3>
           <table className={styles.table}>
             <thead>
@@ -267,17 +275,15 @@ export function TagSettings() {
             </tbody>
           </table>
         </section>
-      )}
 
       <span aria-live="polite" className={styles.srOnly}>{mergeAnnouncement}</span>
 
-      {activeTags.length >= 2 && (
-        <div className={styles.mergePanel}>
+      <section aria-label="Merge tags" className={styles.mergePanel}>
           <h3 className={styles.mergeHeading}>Merge tags</h3>
           <p className={styles.mergeDescription}>
             All assignments move to the target. The source becomes a permanent alias.
           </p>
-          <div className={styles.mergeRow}>
+          {activeTags.length >= 2 ? <div className={styles.mergeRow}>
             <select
               className={styles.select}
               value={mergeSourceId}
@@ -308,7 +314,7 @@ export function TagSettings() {
             >
               Merge
             </button>
-          </div>
+          </div> : <p className={styles.mergeDescription}>At least two active tags are required.</p>}
 
           {mergePending && (
             <div
@@ -332,7 +338,7 @@ export function TagSettings() {
                   onClick={confirmMerge}
                   disabled={mergeMutation.isPending}
                 >
-                  Confirm merge
+                  {mergeError ? "Retry" : "Confirm merge"}
                 </button>
                 <button
                   type="button"
@@ -344,8 +350,7 @@ export function TagSettings() {
               </div>
             </div>
           )}
-        </div>
-      )}
+        </section>
     </div>
   );
 }
@@ -353,7 +358,7 @@ export function TagSettings() {
 function TagRow({
   tag, renamingId, renameValue,
   onStartRename, onRenameChange, onRenameConfirm, onRenameCancel,
-  onArchive, onRestore, isPending, archiveError, restoreError, rowRef,
+  onArchive, onRestore, isPending, archiveError, restoreError, renameError, rowRef,
 }: {
   tag: TagView;
   renamingId: string | null;
@@ -367,6 +372,7 @@ function TagRow({
   isPending: boolean;
   archiveError: string | null;
   restoreError: string | null;
+  renameError: string | null;
   rowRef: (el: HTMLTableRowElement | null) => void;
 }) {
   const isRenaming = renamingId === tag.id;
@@ -408,6 +414,7 @@ function TagRow({
             <>
               <button type="button" onClick={onRenameConfirm} disabled={!renameValue.trim()}>Save</button>
               <button type="button" onClick={onRenameCancel}>Cancel</button>
+              {renameError && <span className={styles.warning} role="alert">{renameError}</span>}
             </>
           ) : !isArchived && !isMerged ? (
             <>

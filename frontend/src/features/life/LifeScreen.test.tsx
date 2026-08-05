@@ -42,7 +42,7 @@ const node = (id: string, title: string, children = 0, pinned = false) => ({
   is_leaf: children === 0,
   is_pinned: pinned,
   revision: 0,
-  tags: [],
+  tags: [] as Array<{ id: string; name: string }>,
 });
 const root = node("life-root", "Life", 2);
 const branch = node("00000000-0000-7000-8000-000000000001", "Branch", 1);
@@ -196,6 +196,21 @@ describe("Life Browse", () => {
       await screen.findByRole("heading", { name: "Life" }),
     ).toBeInTheDocument();
   });
+  it("renders all twelve visible Reader tags and remains axe clean", async () => {
+    const tags = Array.from({ length: 12 }, (_, index) => ({
+      id: `tag-${index + 1}`,
+      name: `Tag ${index + 1}`,
+    }));
+    const taggedLeaf = { ...leaf, tags };
+    api.browse.mockResolvedValue(projection(root, [branch, taggedLeaf]));
+    const { container } = renderLife();
+    fireEvent.click((await screen.findByText("Leaf")).closest("button")!);
+    await screen.findByRole("heading", { name: "Reader" });
+    for (const tag of tags) expect(screen.getByText(`#${tag.name}`)).toBeInTheDocument();
+    expect((await axe.run(container, {
+      rules: { "color-contrast": { enabled: false } },
+    })).violations).toEqual([]);
+  });
   it("pins and unpins without nesting interactive controls", async () => {
     renderLife();
     fireEvent.click(await screen.findByRole("button", { name: "Pin Leaf" }));
@@ -253,6 +268,44 @@ describe("Life Browse", () => {
     await waitFor(() =>
       expect(api.unpin).toHaveBeenCalledWith({ node_id: leaf.id }),
     );
+  });
+  it("shows tags only on available Pinned cards and remains axe clean", async () => {
+    api.pins.mockResolvedValue([
+      {
+        node_id: branch.id,
+        title: "Available Branch",
+        short_description: "About",
+        icon_key: "life-branch",
+        branch_theme_id: "neutral",
+        child_count: 1,
+        is_leaf: false,
+        available: true,
+        revision: 0,
+        tags: [{ id: "research", name: "Research" }],
+      },
+      {
+        node_id: leaf.id,
+        title: "Archived Leaf",
+        short_description: "",
+        icon_key: "life-leaf",
+        branch_theme_id: "neutral",
+        child_count: 0,
+        is_leaf: true,
+        available: false,
+        revision: 1,
+        tags: [{ id: "private", name: "Archived Secret" }],
+      },
+    ]);
+    const { container } = renderLife();
+    fireEvent.click(await screen.findByRole("button", { name: "Pinned" }));
+    const list = await screen.findByRole("list", { name: "Pinned Life nodes" });
+    const availableCard = within(list).getByText("Available Branch").closest("button")!;
+    const unavailableCard = within(list).getByText("Archived Leaf").closest("button")!;
+    expect(within(availableCard).getByText("#Research")).toBeInTheDocument();
+    expect(within(unavailableCard).queryByText("#Archived Secret")).not.toBeInTheDocument();
+    expect((await axe.run(container, {
+      rules: { "color-contrast": { enabled: false } },
+    })).violations).toEqual([]);
   });
   it("bounds child paging and announces the page relationship", async () => {
     api.browse.mockResolvedValue(

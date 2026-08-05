@@ -1,5 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import axe from "axe-core";
+import { StrictMode, useState } from "react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { TagPicker } from "./TagPicker";
 import type { TagSummaryView } from "../../ipc/generated/TagSummaryView";
@@ -33,6 +35,7 @@ function renderPicker(
 
 describe("TagPicker", () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     commands.listTags.mockResolvedValue([
       tag("a", "Alpha"),
       tag("b", "Beta"),
@@ -95,6 +98,62 @@ describe("TagPicker", () => {
     expect(screen.queryByRole("checkbox", { name: "Gamma" })).toBeNull();
   });
 
+  it('matches accented "Học" with the normalized "hoc" query', async () => {
+    commands.listTags.mockResolvedValue([tag("study", "Học")]);
+    renderPicker();
+    fireEvent.click(screen.getByRole("button", { name: "Add tags" }));
+    const search = await screen.findByRole("searchbox");
+    fireEvent.change(search, { target: { value: "hoc" } });
+    expect(await screen.findByRole("checkbox", { name: "Học" })).toBeInTheDocument();
+  });
+
+  it("shows a load alert, omits the empty state, and explicitly retries listTags", async () => {
+    commands.listTags
+      .mockRejectedValueOnce(new Error("offline"))
+      .mockResolvedValueOnce([tag("a", "Alpha")]);
+    renderPicker();
+    fireEvent.click(screen.getByRole("button", { name: "Add tags" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Could not load tags");
+    expect(screen.queryByText("No tags yet.")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    expect(await screen.findByRole("checkbox", { name: "Alpha" })).toBeInTheDocument();
+    expect(commands.listTags).toHaveBeenCalledTimes(2);
+  });
+
+  it("prevents Enter in search from submitting a parent form", async () => {
+    const submit = vi.fn((event: React.FormEvent) => event.preventDefault());
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <form onSubmit={submit}>
+          <TagPicker selectedTags={[]} onChange={vi.fn()} />
+        </form>
+      </QueryClientProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Add tags" }));
+    const search = await screen.findByRole("searchbox");
+    expect(fireEvent.keyDown(search, { key: "Enter" })).toBe(false);
+    expect(submit).not.toHaveBeenCalled();
+  });
+
+  it("stops Escape before it reaches the parent while the picker is open", async () => {
+    const parentKeyDown = vi.fn();
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <div onKeyDown={parentKeyDown}>
+          <TagPicker selectedTags={[]} onChange={vi.fn()} />
+        </div>
+      </QueryClientProvider>,
+    );
+    const toggle = screen.getByRole("button", { name: "Add tags" });
+    fireEvent.click(toggle);
+    fireEvent.keyDown(await screen.findByRole("searchbox"), { key: "Escape" });
+    expect(parentKeyDown).not.toHaveBeenCalled();
+    expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
+    expect(toggle).toHaveFocus();
+  });
+
   it("disables unchecked checkboxes at 12-tag limit and shows limit message", async () => {
     const selectedTags = Array.from({ length: 12 }, (_, i) =>
       tag(`x${i}`, `X${i}`),
@@ -144,6 +203,40 @@ describe("TagPicker", () => {
     );
   });
 
+  it("focuses the controlled new checkbox after create and refresh", async () => {
+    commands.createTag.mockResolvedValue({ id: "new", name: "NewTag" });
+    commands.listTags
+      .mockResolvedValueOnce([tag("a", "Alpha")])
+      .mockResolvedValue([tag("a", "Alpha"), tag("new", "NewTag")]);
+    function Harness() {
+      const [selected, setSelected] = useState<TagSummaryView[]>([]);
+      return <TagPicker selectedTags={selected} onChange={setSelected} allowCreate />;
+    }
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<QueryClientProvider client={client}><Harness /></QueryClientProvider>);
+    fireEvent.click(screen.getByRole("button", { name: "Add tags" }));
+    fireEvent.change(await screen.findByRole("searchbox"), { target: { value: "NewTag" } });
+    fireEvent.click(screen.getByRole("button", { name: /Create and select/ }));
+    expect(await screen.findByRole("checkbox", { name: "NewTag" })).toHaveFocus();
+  });
+
+  it("falls back to search focus when the created checkbox is missing after refresh", async () => {
+    commands.createTag.mockResolvedValue({ id: "new", name: "NewTag" });
+    commands.listTags.mockResolvedValue([tag("a", "Alpha")]);
+    function Harness() {
+      const [selected, setSelected] = useState<TagSummaryView[]>([]);
+      return <TagPicker selectedTags={selected} onChange={setSelected} allowCreate />;
+    }
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<QueryClientProvider client={client}><Harness /></QueryClientProvider>);
+    fireEvent.click(screen.getByRole("button", { name: "Add tags" }));
+    const search = await screen.findByRole("searchbox");
+    fireEvent.change(search, { target: { value: "NewTag" } });
+    fireEvent.click(screen.getByRole("button", { name: /Create and select/ }));
+    await waitFor(() => expect(search).toHaveFocus());
+    expect(screen.queryByRole("checkbox", { name: "NewTag" })).not.toBeInTheDocument();
+  });
+
   it("shows create error on failure", async () => {
     commands.createTag.mockRejectedValue(new Error("Name collision"));
     renderPicker({ allowCreate: true });
@@ -155,6 +248,31 @@ describe("TagPicker", () => {
     await waitFor(() =>
       expect(screen.getByRole("alert")).toHaveTextContent("Name collision"),
     );
+    expect(screen.getByRole("searchbox")).toHaveValue("Foo");
+  });
+
+  it("does not duplicate create or onChange in StrictMode", async () => {
+    commands.createTag.mockResolvedValue({ id: "new", name: "NewTag" });
+    commands.listTags.mockResolvedValue([tag("new", "NewTag")]);
+    const changed = vi.fn();
+    function Harness() {
+      const [selected, setSelected] = useState<TagSummaryView[]>([]);
+      return <TagPicker selectedTags={selected} onChange={(next) => { changed(next); setSelected(next); }} allowCreate />;
+    }
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<StrictMode><QueryClientProvider client={client}><Harness /></QueryClientProvider></StrictMode>);
+    fireEvent.click(screen.getByRole("button", { name: "Add tags" }));
+    fireEvent.change(await screen.findByRole("searchbox"), { target: { value: "NewTag" } });
+    fireEvent.click(screen.getByRole("button", { name: /Create and select/ }));
+    await waitFor(() => expect(changed).toHaveBeenCalledTimes(1));
+    expect(commands.createTag).toHaveBeenCalledTimes(1);
+  });
+
+  it("is axe clean when open with selectable tags", async () => {
+    const { container } = renderPicker({ allowCreate: true });
+    fireEvent.click(screen.getByRole("button", { name: "Add tags" }));
+    await screen.findByRole("checkbox", { name: "Alpha" });
+    expect((await axe.run(container)).violations).toEqual([]);
   });
 
   it("renders legend text", () => {

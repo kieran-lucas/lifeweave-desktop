@@ -39,6 +39,10 @@ export function TagPicker({
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [createError, setCreateError] = useState<string | null>(null);
+  const [pendingFocus, setPendingFocus] = useState<{
+    id: string;
+    refreshSettled: boolean;
+  } | null>(null);
   const fieldsetRef = useRef<HTMLFieldSetElement>(null);
   const toggleBtnRef = useRef<HTMLButtonElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -52,22 +56,45 @@ export function TagPicker({
 
   const createMutation = useMutation({
     mutationFn: (name: string) => createTag({ name }),
-    onSuccess: (tag) => {
-      void queryClient.invalidateQueries({ queryKey: ["tags"] });
+    onSuccess: async (tag) => {
+      setPendingFocus({ id: tag.id, refreshSettled: false });
       setQuery("");
       setCreateError(null);
       const next = selectedTags.some((t) => t.id === tag.id)
         ? selectedTags
         : [...selectedTags, { id: tag.id, name: tag.name }];
-      void onChange(next);
-      setTimeout(() => {
-        document.getElementById(`${uid}-check-${tag.id}`)?.focus();
-      }, 50);
+      await onChange(next);
+      await tagsQuery.refetch();
+      setPendingFocus((current) =>
+        current?.id === tag.id
+          ? { ...current, refreshSettled: true }
+          : current,
+      );
     },
     onError: (e: unknown) => {
       setCreateError(e instanceof Error ? e.message : "Could not create tag.");
     },
   });
+
+  useEffect(() => {
+    if (!pendingFocus) return;
+    const selected = selectedTags.some((tag) => tag.id === pendingFocus.id);
+    const listed = tagsQuery.data?.some((tag) => tag.id === pendingFocus.id);
+    if (selected && listed) {
+      const checkbox = document.getElementById(
+        `${uid}-check-${pendingFocus.id}`,
+      );
+      if (checkbox) {
+        checkbox.focus();
+        setPendingFocus(null);
+        return;
+      }
+    }
+    if (pendingFocus.refreshSettled) {
+      searchRef.current?.focus();
+      setPendingFocus(null);
+    }
+  }, [pendingFocus, selectedTags, tagsQuery.data, uid]);
 
   const openPanel = () => {
     setOpen(true);
@@ -205,7 +232,7 @@ export function TagPicker({
                   <button
                     type="button"
                     className={styles.retryButton}
-                    onClick={() => void queryClient.invalidateQueries({ queryKey: ["tags"] })}
+                    onClick={() => void tagsQuery.refetch()}
                   >
                     Retry
                   </button>

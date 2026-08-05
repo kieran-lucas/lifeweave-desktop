@@ -47,6 +47,8 @@ const commands = vi.hoisted(() => ({
   evaluateTask: vi.fn(),
   undoTaskEvaluation: vi.fn(),
   listTaskLifeTargets: vi.fn(),
+  listTags: vi.fn(),
+  createTag: vi.fn(),
   getTaskPlanningProjection: vi.fn(),
 }));
 vi.mock("../../../ipc/commands", () => commands);
@@ -89,6 +91,8 @@ describe("Today recurrence contract", () => {
       { id: "study", title: "Study", breadcrumb: "Study" },
       { id: "university", title: "University", breadcrumb: "Study › University" },
     ]);
+    commands.listTags.mockResolvedValue([]);
+    commands.createTag.mockResolvedValue({ id: "tag-new", name: "New tag" });
     commands.listCompletionStates.mockResolvedValue([
       {
         id: "completion-none",
@@ -646,6 +650,25 @@ describe("Today recurrence contract", () => {
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
     await waitFor(() => expect(settled).toHaveBeenCalledWith("modal"));
     expect(scroll).toHaveBeenCalledTimes(1);
+  });
+  it("closes TagPicker on first Escape and the Task dialog on second Escape", async () => {
+    commands.listTags.mockResolvedValue([{ id: "research", name: "Research" }]);
+    renderToday();
+    await screen.findByText("Focus");
+    fireEvent.doubleClick(screen.getByRole("listitem"));
+    const dialog = screen.getByRole("dialog");
+    const toggle = screen.getByRole("button", { name: "Add tags" });
+    fireEvent.click(toggle);
+    const search = await screen.findByRole("searchbox");
+
+    fireEvent.keyDown(search, { key: "Escape" });
+
+    expect(screen.getByRole("dialog")).toBe(dialog);
+    expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
+    expect(toggle).toHaveFocus();
+
+    fireEvent.keyDown(dialog, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
   it("lets a workspace tab or Week Strip supersede a loading request", async () => {
     let resolveItems!: (items: typeof oneOff[]) => void;
