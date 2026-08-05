@@ -40,6 +40,18 @@ def _next_action_label(value: str) -> str:
     }.get(value, value)
 
 
+def _released_migration_versions(root: Path) -> list[int]:
+    primary = (root / "src-tauri/src/infrastructure/sqlite/migrations.rs").read_text(encoding="utf-8")
+    versions = [int(value) for value in re.findall(r"Migration\s*\{\s*version:\s*(\d+)", primary)]
+    extension = root / "src-tauri/src/infrastructure/sqlite/task36_migration.rs"
+    if extension.is_file():
+        text = extension.read_text(encoding="utf-8")
+        match = re.search(r"pub const TASK36_SCHEMA_VERSION:\s*u32\s*=\s*(\d+)\s*;", text)
+        if match:
+            versions.append(int(match.group(1)))
+    return versions
+
+
 def validate(root: Path) -> list[str]:
     errors: list[str] = []
     try:
@@ -111,13 +123,14 @@ def validate(root: Path) -> list[str]:
             errors.append("set source_sha256 to SOURCE_MANIFEST.json sha256")
 
     try:
-        migrations = (root / "src-tauri/src/infrastructure/sqlite/migrations.rs").read_text(encoding="utf-8")
-        versions = [int(value) for value in re.findall(r"Migration\s*\{\s*version:\s*(\d+)", migrations)]
+        versions = _released_migration_versions(root)
     except OSError as exc:
-        errors.append(f"make migrations.rs readable: {exc}")
+        errors.append(f"make released migration sources readable: {exc}")
     else:
         if not versions:
-            errors.append("declare at least one released Migration version in migrations.rs")
+            errors.append("declare at least one released Migration version")
+        elif len(versions) != len(set(versions)):
+            errors.append("make released migration versions unique")
         elif max(versions) != ledger["database_schema_version"]:
             errors.append(f"set database_schema_version to highest released migration {max(versions)}")
 
