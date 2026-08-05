@@ -15,6 +15,12 @@ import { CalendarScreen } from "../features/calendar/CalendarScreen";
 import { AnalyticsScreen } from "../features/analytics/AnalyticsScreen";
 import { CategoryGoals } from "../features/analytics/CategoryGoals";
 import { LifeScreen } from "../features/life/LifeScreen";
+import type { FocusPlanEntryRequest } from "../features/focus-plan/FocusPlansScreen";
+const FocusPlansScreen = lazy(() =>
+  import("../features/focus-plan/FocusPlansScreen").then((module) => ({
+    default: module.FocusPlansScreen,
+  })),
+);
 const TagSettings = lazy(() =>
   import("../features/tag/TagSettings").then((m) => ({ default: m.TagSettings }))
 );
@@ -28,7 +34,7 @@ const GlobalSearchDialog = lazy(
   () => import("../features/search/GlobalSearchDialog"),
 );
 
-type Destination = "today" | "calendar" | "analytics" | "life" | "settings";
+type Destination = "today" | "calendar" | "analytics" | "plans" | "life" | "settings";
 type SidebarMode = "expanded" | "collapsed";
 type SearchNavRequest = {
   requestId: string;
@@ -56,6 +62,7 @@ const destinations: Array<{ id: Destination; label: string }> = [
   { id: "today", label: "Today" },
   { id: "calendar", label: "Calendar" },
   { id: "analytics", label: "Analytics" },
+  { id: "plans", label: "Plans" },
   { id: "life", label: "Life System" },
   { id: "settings", label: "Settings" },
 ];
@@ -107,6 +114,13 @@ export function App() {
       mode: pendingNav.target.kind === "life_reader" ? "reader" : "browse",
     };
   }, [pendingNav]);
+  const focusPlanEntryRequest = useMemo<FocusPlanEntryRequest | null>(() => {
+    if (!pendingNav || pendingNav.target.kind !== "focus_plan") return null;
+    return {
+      requestId: pendingNav.requestId,
+      planId: pendingNav.target.plan_id,
+    };
+  }, [pendingNav]);
   const settleNavigationRequest = useCallback((requestId: string) => {
     setPendingNav((current) => settleNavigationEnvelope(current, requestId));
   }, []);
@@ -151,6 +165,8 @@ export function App() {
     if (target.kind === "today") {
       setSelectedDate(target.local_date);
       setDestination("today");
+    } else if (target.kind === "focus_plan") {
+      setDestination("plans");
     } else {
       setDestination("life");
     }
@@ -203,7 +219,7 @@ export function App() {
       <nav className={styles.sidebar} aria-label="Primary navigation">
         <div className={styles.brand}>Lifeweave</div>
         <div className={styles.navGroup}>
-          {destinations.slice(0, 3).map((item) => (
+          {destinations.slice(0, 4).map((item) => (
             <button
               key={item.id}
               type="button"
@@ -353,6 +369,20 @@ export function App() {
                 }}
               >
                 <AnalyticsScreen />
+              </div>
+            )}
+            {destination === "plans" && (
+              <div
+                ref={(node) => {
+                  headingRef.current = node;
+                }}
+              >
+                <Suspense fallback={<p>Loading plans…</p>}>
+                  <FocusPlansScreen
+                    entryRequest={focusPlanEntryRequest}
+                    onEntryRequestSettled={settleNavigationRequest}
+                  />
+                </Suspense>
               </div>
             )}
             {destination === "life" && (

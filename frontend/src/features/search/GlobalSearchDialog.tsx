@@ -16,11 +16,24 @@ type Props = {
 
 type FlatResult = SearchResultView & { groupLabel: string; optionId: string; isFirstInGroup: boolean };
 
+function groupLabel(kind: GlobalSearchProjection["groups"][number]["kind"]): string {
+  if (kind === "tasks") return "Tasks";
+  if (kind === "life") return "Life";
+  if (kind === "plans") return "Plans";
+  return "Documents";
+}
+
+function groupNoun(kind: GlobalSearchProjection["groups"][number]["kind"]): string {
+  if (kind === "tasks") return "task";
+  if (kind === "life") return "life";
+  if (kind === "plans") return "plan";
+  return "document";
+}
+
 function flattenResults(proj: GlobalSearchProjection): FlatResult[] {
   const flat: FlatResult[] = [];
   for (const group of proj.groups) {
-    const label =
-      group.kind === "tasks" ? "Tasks" : group.kind === "life" ? "Life" : "Documents";
+    const label = groupLabel(group.kind);
     group.results.forEach((result, i) => {
       flat.push({
         ...result,
@@ -146,19 +159,14 @@ export default function GlobalSearchDialog({ onClose, onNavigate, invokerRef }: 
         }
       }}
     >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="Search"
-        className={styles.card}
-      >
+      <div role="dialog" aria-modal="true" aria-label="Search" className={styles.card}>
         <div className={styles.inputRow}>
           <span className={styles.searchIcon} aria-hidden="true">⌕</span>
           <input
             ref={inputRef}
             type="search"
             role="combobox"
-            aria-label="Search tasks, life nodes, and documents"
+            aria-label="Search tasks, life nodes, documents, and plans"
             aria-expanded={flat.length > 0}
             aria-controls={listboxId}
             aria-autocomplete="list"
@@ -184,12 +192,7 @@ export default function GlobalSearchDialog({ onClose, onNavigate, invokerRef }: 
           </button>
         </div>
 
-        <div
-          className={styles.results}
-          role="listbox"
-          id={listboxId}
-          aria-label="Search results"
-        >
+        <div className={styles.results} role="listbox" id={listboxId} aria-label="Search results">
           {resultCountText && (
             <p className={styles.statusLine} aria-live="polite" aria-atomic="true">
               {resultCountText}
@@ -234,12 +237,11 @@ export default function GlobalSearchDialog({ onClose, onNavigate, invokerRef }: 
             );
           })}
 
-          {projection?.groups.map((g) =>
-            g.total_count > g.results.length ? (
-              <p key={g.kind} className={styles.moreNote}>
-                {g.total_count - g.results.length} more{" "}
-                {g.kind === "tasks" ? "task" : g.kind === "life" ? "life" : "document"} result
-                {g.total_count - g.results.length === 1 ? "" : "s"} not shown.
+          {projection?.groups.map((group) =>
+            group.total_count > group.results.length ? (
+              <p key={group.kind} className={styles.moreNote}>
+                {group.total_count - group.results.length} more {groupNoun(group.kind)} result
+                {group.total_count - group.results.length === 1 ? "" : "s"} not shown.
               </p>
             ) : null,
           )}
