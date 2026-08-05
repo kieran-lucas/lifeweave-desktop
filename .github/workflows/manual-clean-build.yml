@@ -44,7 +44,10 @@ jobs:
         run: |
           python scripts/task36_remediation.py
           if ($LASTEXITCODE -ne 0) { throw 'Task 36 remediation script failed' }
+          python scripts/task36_revision_contract.py
+          if ($LASTEXITCODE -ne 0) { throw 'Task 36 revision contract correction failed' }
           Remove-Item -LiteralPath scripts/task36_remediation.py -Force
+          Remove-Item -LiteralPath scripts/task36_revision_contract.py -Force
 
       - name: Format Rust remediation
         run: cargo fmt --manifest-path src-tauri/Cargo.toml --all
@@ -113,8 +116,16 @@ jobs:
       - name: Lint Rust
         run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --locked -- -D warnings
 
-      - name: Test Rust
+      - name: Test Rust and regenerate bindings
         run: cargo test --manifest-path src-tauri/Cargo.toml --locked
+
+      - name: Verify generated Focus Plan bindings are stable
+        shell: powershell
+        run: |
+          git diff --exit-code -- frontend/src/ipc/generated
+          if ($LASTEXITCODE -ne 0) { throw 'Generated Focus Plan bindings drifted after Rust tests' }
+          pnpm --dir frontend build
+          if ($LASTEXITCODE -ne 0) { throw 'Frontend production build failed after binding generation' }
 
       - name: Install native Tauri driver
         run: cargo install tauri-driver --locked
