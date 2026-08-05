@@ -84,6 +84,12 @@
     "allow-archive-tag",
     "allow-restore-tag",
     "allow-merge-tags",
-    "allow-set-life-node-tags"
+    "allow-set-life-node-tags",
+    "allow-list-focus-plans",
+    "allow-get-focus-plan",
+    "allow-create-focus-plan",
+    "allow-mutate-focus-plan",
+    "allow-save-focus-plan-draft",
+    "allow-discard-focus-plan-draft"
   ]
 }
