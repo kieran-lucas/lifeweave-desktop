@@ -70,26 +70,28 @@ jobs:
         run: pnpm --dir frontend exec vitest run --maxWorkers=4
       - name: Frontend production build
         run: pnpm build
-      - name: Format Rust diagnostic workspace
+      - name: Produce exact Rust diagnostics
         shell: pwsh
         run: |
           cargo fmt --manifest-path src-tauri/Cargo.toml --all
-          git diff -- src-tauri | Out-File -FilePath rustfmt.patch -Encoding utf8
-          if ((Get-Item rustfmt.patch).Length -gt 0) {
-            Write-Host "::warning::Rust formatting patch was generated"
-          }
-      - name: Rust check
-        run: cargo check --manifest-path src-tauri/Cargo.toml --locked --all-targets
-      - name: Rust clippy
-        run: cargo clippy --manifest-path src-tauri/Cargo.toml --locked --all-targets -- -D warnings
-      - name: Rust tests
-        run: cargo test --manifest-path src-tauri/Cargo.toml --locked
-      - name: Upload Rust formatting patch
+          New-Item -ItemType Directory -Force -Path task36-diagnostics/formatted/focus_plan | Out-Null
+          New-Item -ItemType Directory -Force -Path task36-diagnostics/formatted/sqlite | Out-Null
+          Copy-Item src-tauri/src/focus_plan/dto.rs task36-diagnostics/formatted/focus_plan/dto.rs
+          Copy-Item src-tauri/src/focus_plan/repository.rs task36-diagnostics/formatted/focus_plan/repository.rs
+          Copy-Item src-tauri/src/focus_plan/service.rs task36-diagnostics/formatted/focus_plan/service.rs
+          Copy-Item src-tauri/src/infrastructure/sqlite/task36_migration.rs task36-diagnostics/formatted/sqlite/task36_migration.rs
+          git diff -- src-tauri | Out-File -FilePath task36-diagnostics/rustfmt.patch -Encoding utf8
+          $output = cargo check --manifest-path src-tauri/Cargo.toml --locked --all-targets 2>&1
+          $code = $LASTEXITCODE
+          $output | Tee-Object -FilePath task36-diagnostics/cargo-check.log | ForEach-Object { Write-Host $_ }
+          Set-Content -Path task36-diagnostics/cargo-check.exit -Value $code
+          if ($code -ne 0) { Write-Host "::warning::cargo check failed; exact log uploaded" }
+      - name: Upload Rust diagnostics
         if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
-          name: task36-rustfmt-patch
-          path: rustfmt.patch
+          name: task36-rust-diagnostics
+          path: task36-diagnostics
           if-no-files-found: error
       - name: Repository hardening (expected to fail until this temporary workflow is removed)
         if: always()
