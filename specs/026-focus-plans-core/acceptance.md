@@ -1,63 +1,49 @@
-# Task 36 Acceptance Contract
+# Task 36 Acceptance
 
-Task 36 may close only when every mandatory item is satisfied.
+Task 36 closes only when these five risk groups are satisfied.
 
-## Product and scope
+## 1. Migration and persistence
 
-- standalone Focus Plan is implemented as its own authority;
-- Today remains startup/default and Life Browse/Edit semantics are unchanged;
-- no Task/series relation, review workflow, progress percentage, reminder,
-  notification, AI generation, cloud, collaboration, score, or prediction;
-- Task 37 remains not started.
+- schema 19 upgrades to 20 without modifying migrations 1–19;
+- reopening an upgraded database is idempotent;
+- Focus Plan data survives application restart.
 
-## Persistence and safety
+## 2. Focus Plan core
 
-- schema is exactly 20 and migrations 1–19 are byte-unchanged;
-- migration 19→20, reopen, idempotent startup, and failed-migration recovery pass;
-- only active non-root Life nodes may be assigned;
-- lifecycle/date/variant/phase/tag/revision/restore guards pass at DB and service;
-- selected/last active variant protections pass;
-- phase order survives archive/restore and restart;
-- stale revisions are rejected with typed conflict;
-- operation retry is idempotent;
-- recovery draft survives conflict, restart, Plan archive, and backup/restore;
-- full backup/restore preserves exact canonical semantics.
+- create, read, update, lifecycle, archive, and restore work;
+- stale revision is rejected without losing form or recovery-draft input;
+- repeated `operation_id` is idempotent;
+- variant and phase limits, selected/last-active guards, and ordering hold.
 
-## Variants and phases
+## 3. Backup and restore
 
-- 1–5 variants and exactly one selected active variant;
-- 0–20 phases per variant with stable IDs and explicit ordering;
-- rich-text body uses accepted canonical value schema without reader rows;
-- immutable revision history retains the latest 50 revisions.
+- full backup/restore preserves Plan, variants, phases, tags, revisions, and
+  recovery draft;
+- Search/FTS remains valid after restore.
 
-## Tags and Search
+## 4. Tags and Search
 
-- global tag vocabulary and 20-tag assignment cap apply;
-- archived/merged tags cannot be assigned at DB or service level;
-- tag merge reassigns Plan joins and aliases remain searchable;
-- `focus_plan` Search kind returns bounded, correct visible context;
-- archived Plans are absent from ordinary Search;
-- no N+1 SQL or IPC.
+- active tags can be assigned within the 20-tag cap;
+- archived/merged tags are rejected and merge reassigns Plan joins;
+- ordinary Search returns active Focus Plans and excludes archived Plans;
+- selecting a Plan result opens that exact Plan.
 
-## Frontend and accessibility
+## 5. User path
 
-- lazy Plans route and five lifecycle projections work;
-- all Task 36 edit workflows retain input on validation/conflict errors;
-- keyboard-only workflows are complete;
-- semantic headings, landmarks, fieldsets/radio groups, ordered phases,
-  announcements, focus restoration, non-drag controls, and Reduced Motion pass;
-- narrow-width sequential layout passes;
-- Today startup and prior feature tests remain green.
+- one focused frontend test covers create/edit and input retention after a
+  rejected save;
+- one native scenario covers create → edit → fresh process → persisted data;
+- Today remains startup/default and all Task 37 features remain absent.
 
-## Verification
+## Final repository condition
 
-- source/governance/index/verify gates pass;
-- TypeScript typecheck and all frontend tests pass;
-- Rust fmt, clippy `-D warnings`, check, and all tests pass;
-- production frontend build and Tauri release build pass;
-- official native runner passes all prior phases plus Task 36 create/edit,
-  restart, and backup/restore phases;
-- performance and bundle budgets pass;
-- release executable, NSIS SHA-256, and RC run evidence are recorded;
-- ten closure rounds pass with P0/P1 none;
-- final Git topology is fast-forward, `HEAD == origin/main`, tree clean.
+- TypeScript contract for the Focus Plans screen passes;
+- the relevant Rust migration/core/backup/tag/Search tests pass;
+- one final regression is run after implementation stabilizes;
+- no Task 36 patch script, temporary workflow, compiler artifact, placeholder,
+  dependency drift, or duplicated planning document remains;
+- `main` is fast-forward and Project State is internally consistent.
+
+Release packaging, NSIS hashing, broad performance simulation, repeated full
+suites, and duplicated multi-round test ceremonies are not Task 36 closure
+requirements unless a concrete defect makes one of them necessary.
