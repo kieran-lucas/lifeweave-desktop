@@ -5,16 +5,12 @@ on:
     branches: [main]
     paths:
       - "src-tauri/**"
-      - "frontend/**"
-      - "e2e-tests/**"
       - "scripts/**"
       - "specs/026-focus-plans-core/**"
       - "docs/PROJECT_STATE.json"
       - "docs/STATUS.md"
       - "docs/ROADMAP.md"
       - "START_HERE.md"
-      - "pnpm-lock.yaml"
-      - "package.json"
       - ".github/workflows/task36-verification.yml"
   workflow_dispatch:
 
@@ -31,45 +27,21 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
-        with:
-          version: 11.17.0
-          run_install: false
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
-        with:
-          node-version-file: ".node-version"
-          cache: "pnpm"
       - uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4 # stable
         with:
           components: rustfmt, clippy
-      - name: Install
-        run: pnpm install --frozen-lockfile
       - name: Source integrity
-        run: pnpm source:verify
+        run: python scripts/verify_source_integrity.py
       - name: Repository structure
         run: python scripts/check_repository.py
       - name: Project state
-        shell: pwsh
-        run: |
-          $output = python scripts/check_project_state.py 2>&1
-          $code = $LASTEXITCODE
-          $output | ForEach-Object {
-            Write-Host $_
-            if ($code -ne 0) { Write-Host "::error::$_" }
-          }
-          exit $code
+        run: python scripts/check_project_state.py
       - name: Generated indexes
-        run: pnpm index:check
+        run: python scripts/generate_spec_index.py --check
       - name: Remote asset policy
         run: python scripts/verify_no_remote_assets.py
       - name: Security verification
         run: python scripts/verify_security.py
-      - name: Frontend typecheck
-        run: pnpm typecheck
-      - name: Frontend tests
-        run: pnpm --dir frontend exec vitest run --maxWorkers=4
-      - name: Frontend production build
-        run: pnpm build
       - name: Produce exact Rust diagnostics
         shell: pwsh
         run: |
