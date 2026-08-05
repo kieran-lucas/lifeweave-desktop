@@ -1,4 +1,4 @@
-name: Task 36 exact Rust correction
+name: Task 36 Phase 3 integration
 
 on:
   push:
@@ -11,11 +11,11 @@ permissions:
   contents: write
 
 concurrency:
-  group: task36-rust-correction
+  group: task36-phase3-integration
   cancel-in-progress: false
 
 jobs:
-  correct-and-verify:
+  integrate-and-verify:
     runs-on: windows-latest
     timeout-minutes: 60
     steps:
@@ -30,138 +30,72 @@ jobs:
         run: |
           git fetch origin main
           if ((git rev-parse HEAD) -ne (git rev-parse origin/main)) {
-            throw "main advanced after this correction run started"
+            throw "main advanced after this Phase 3 run started"
           }
-      - name: Apply checked SQLite revision boundary
+      - name: Apply bounded Phase 3 patch
+        run: python scripts/task36_phase3_apply.py
+      - name: Enforce Task 37 prohibition
         shell: pwsh
         run: |
-          @'
-          from pathlib import Path
-          import re
-
-          repo = Path("src-tauri/src/focus_plan/repository.rs")
-          text = repo.read_text(encoding="utf-8")
-
-          def replace_exact(old: str, new: str, count: int = 1) -> None:
-              global text
-              actual = text.count(old)
-              if actual != count:
-                  raise SystemExit(f"expected {count} occurrence(s), found {actual}: {old[:90]!r}")
-              text = text.replace(old, new)
-
-          replace_exact("row.get::<_, u64>(11)?", "row.get::<_, u32>(11)?")
-          replace_exact("row.get::<_, u64>(10)?", "row.get::<_, u32>(10)?")
-          replace_exact(
-              "            revision,\n            updated_at,\n            archived: archived_at.is_some(),",
-              "            revision: u64::from(revision),\n            updated_at,\n            archived: archived_at.is_some(),",
-          )
-          replace_exact(
-              "                revision: row.get(0)?,\n                reason: row.get(1)?,",
-              "                revision: u64::from(row.get::<_, u32>(0)?),\n                reason: row.get(1)?,",
-          )
-          replace_exact(
-              "                    base_revision: row.get(0)?,\n                    draft_json: row.get(1)?,",
-              "                    base_revision: u64::from(row.get::<_, u32>(0)?),\n                    draft_json: row.get(1)?,",
-          )
-          replace_exact("        revision: plan.10,", "        revision: u64::from(plan.10),")
-          replace_exact(
-              "                    revision: row.get(1)?,\n                    created_id: None,",
-              "                    revision: u64::from(row.get::<_, u32>(1)?),\n                    created_id: None,",
-          )
-          replace_exact(
-              "    let tx = conn.transaction()?;\n    let current_revision: u64 = tx.query_row(\n",
-              "    let expected_revision = u32::try_from(input.expected_revision).map_err(|_| {\n        FocusPlanError::Validation(\"Focus Plan revision exceeds the supported range\".into())\n    })?;\n    let tx = conn.transaction()?;\n    let current_revision: u32 = tx.query_row(\n",
-          )
-          replace_exact(
-              "    if current_revision != input.expected_revision {",
-              "    if current_revision != expected_revision {",
-          )
-          replace_exact(
-              "                params![input.plan_id, input.expected_revision, attempted, now()],",
-              "                params![input.plan_id, expected_revision, attempted, now()],",
-          )
-          replace_exact(
-              "        params![input.plan_id, timestamp, input.expected_revision],",
-              "        params![input.plan_id, timestamp, expected_revision],",
-          )
-          replace_exact(
-              "    let revision = input.expected_revision + 1;",
-              "    let revision = expected_revision + 1;",
-          )
-          replace_exact(
-              "        plan_id: input.plan_id,\n        revision,\n        created_id,",
-              "        plan_id: input.plan_id,\n        revision: u64::from(revision),\n        created_id,",
-          )
-          replace_exact(
-              "    plan_exists(conn, &input.plan_id)?;\n    conn.execute(\n        \"INSERT INTO focus_plan_drafts",
-              "    plan_exists(conn, &input.plan_id)?;\n    let base_revision = u32::try_from(input.base_revision).map_err(|_| {\n        FocusPlanError::Validation(\"Focus Plan revision exceeds the supported range\".into())\n    })?;\n    conn.execute(\n        \"INSERT INTO focus_plan_drafts",
-          )
-          replace_exact(
-              "        params![input.plan_id, input.base_revision, input.draft_json, now()],",
-              "        params![input.plan_id, base_revision, input.draft_json, now()],",
-          )
-
-          if re.search(r"row\.get::<_,\s*u64>", text):
-              raise SystemExit("u64 remains at the SQLite FromSql boundary")
-          repo.write_text(text, encoding="utf-8", newline="\n")
-
-          migration = Path("src-tauri/src/infrastructure/sqlite/task36_migration.rs")
-          value = migration.read_text(encoding="utf-8")
-          old = "use rusqlite::{Connection, OptionalExtension, params};"
-          if value.count(old) != 1:
-              raise SystemExit("unexpected task36_migration import shape")
-          value = value.replace(old, "use rusqlite::{Connection, params};")
-          marker = "#[cfg(test)]\nmod tests {\n    use super::*;"
-          if value.count(marker) != 1:
-              raise SystemExit("unexpected task36_migration test module shape")
-          value = value.replace(marker, marker + "\n    use rusqlite::OptionalExtension;")
-          migration.write_text(value, encoding="utf-8", newline="\n")
-          '@ | python -
-      - name: Format exact corrected bytes
+          $leaks = git grep -n -E "focus_plan_id" -- src-tauri/src/task src-tauri/src/infrastructure/sqlite/migrations.rs
+          if ($LASTEXITCODE -eq 0) {
+            $leaks | ForEach-Object { Write-Host "::error::$_" }
+            throw "Task 37 relation leaked into Task 36"
+          }
+          $sql = Get-Content src-tauri/src/infrastructure/sqlite/task36_migration.rs -Raw
+          if ($sql -match "ALTER TABLE (tasks|task_series)" -or $sql -match "REFERENCES (tasks|task_series)") {
+            throw "Task 37 SQL leaked into migration 20"
+          }
+      - name: Format Rust
         run: cargo fmt --manifest-path src-tauri/Cargo.toml --all
       - name: Verify Rust formatting
         run: cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check
       - name: Compile all Rust targets
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force -Path task36-correction-evidence | Out-Null
+          New-Item -ItemType Directory -Force -Path task36-phase3-evidence | Out-Null
           $output = cargo check --manifest-path src-tauri/Cargo.toml --locked --all-targets 2>&1
           $code = $LASTEXITCODE
-          $output | Tee-Object -FilePath task36-correction-evidence/cargo-check.log | ForEach-Object { Write-Host $_ }
+          $output | Tee-Object -FilePath task36-phase3-evidence/cargo-check.log | ForEach-Object { Write-Host $_ }
           exit $code
       - name: Clippy with warnings denied
         shell: pwsh
         run: |
           $output = cargo clippy --manifest-path src-tauri/Cargo.toml --locked --all-targets -- -D warnings 2>&1
           $code = $LASTEXITCODE
-          $output | Tee-Object -FilePath task36-correction-evidence/cargo-clippy.log | ForEach-Object { Write-Host $_ }
+          $output | Tee-Object -FilePath task36-phase3-evidence/cargo-clippy.log | ForEach-Object { Write-Host $_ }
           exit $code
       - name: Run all Rust tests
         shell: pwsh
         run: |
           $output = cargo test --manifest-path src-tauri/Cargo.toml --locked 2>&1
           $code = $LASTEXITCODE
-          $output | Tee-Object -FilePath task36-correction-evidence/cargo-test.log | ForEach-Object { Write-Host $_ }
+          $output | Tee-Object -FilePath task36-phase3-evidence/cargo-test.log | ForEach-Object { Write-Host $_ }
           exit $code
-      - name: Record exact corrected diff
+      - name: Record bounded Phase 3 diff
         shell: pwsh
         run: |
           git diff --check
-          git diff -- src-tauri/src/focus_plan src-tauri/src/infrastructure/sqlite/task36_migration.rs | Out-File task36-correction-evidence/correction.patch -Encoding utf8
-          git status --short | Out-File task36-correction-evidence/status.txt -Encoding utf8
-      - name: Upload correction evidence
+          git diff -- src-tauri | Out-File task36-phase3-evidence/phase3.patch -Encoding utf8
+          git status --short | Out-File task36-phase3-evidence/status.txt -Encoding utf8
+      - name: Upload Phase 3 evidence
         if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
-          name: task36-rust-correction-evidence
-          path: task36-correction-evidence
+          name: task36-phase3-evidence
+          path: task36-phase3-evidence
           if-no-files-found: warn
-      - name: Commit only after every Rust gate passes
+      - name: Commit only after every Phase 3 gate passes
         shell: pwsh
         run: |
           git config user.name "Kieran Lucas"
           git config user.email "kieranlucas.work@gmail.com"
-          git add src-tauri/src/focus_plan src-tauri/src/infrastructure/sqlite/task36_migration.rs
-          if (git diff --cached --quiet) { throw "correction produced no staged changes" }
-          git commit -m "correct task 36 SQLite revision boundary [skip ci]"
+          git add src-tauri/src/focus_plan/repository.rs `
+                  src-tauri/src/infrastructure/backup/lifecycle.rs `
+                  src-tauri/src/infrastructure/backup/restore.rs `
+                  src-tauri/src/infrastructure/sqlite/task36_migration.rs `
+                  src-tauri/src/search `
+                  src-tauri/src/tag/repository.rs
+          if (git diff --cached --quiet) { throw "Phase 3 produced no staged changes" }
+          git commit -m "integrate task 36 tags search and backup [skip ci]"
           git push origin HEAD:main
