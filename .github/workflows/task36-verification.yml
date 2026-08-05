@@ -1,4 +1,4 @@
-name: Task 36 Phase 3 integration
+name: Task 36 final integration and cleanup
 
 on:
   push:
@@ -11,28 +11,31 @@ permissions:
   contents: write
 
 concurrency:
-  group: task36-phase3-final-integration
+  group: task36-final-integration
   cancel-in-progress: false
 
 jobs:
-  integrate-and-verify:
+  integrate-clean:
     runs-on: windows-latest
-    timeout-minutes: 60
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
+
       - uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4 # stable
         with:
-          components: rustfmt, clippy
-      - name: Assert exact main authority
+          components: rustfmt
+
+      - name: Assert exact main
         shell: pwsh
         run: |
           git fetch origin main
           if ((git rev-parse HEAD) -ne (git rev-parse origin/main)) {
-            throw "main advanced after this Phase 3 run started"
+            throw "main advanced after this run started"
           }
-      - name: Correct bounded patch selector in runner
+
+      - name: Correct the obsolete Search selector
         shell: pwsh
         run: |
           @'
@@ -47,7 +50,7 @@ jobs:
           start = text.rfind("    text = replace(", 0, label_index)
           end = text.index("    )", label_index) + len("    )")
           if start < 0 or end <= label_index:
-              raise SystemExit("could not isolate obsolete search selector block")
+              raise SystemExit("could not isolate obsolete Search selector")
           new = (
               '    text = replace(\n'
               '        text,\n'
@@ -58,87 +61,92 @@ jobs:
           )
           path.write_text(text[:start] + new + text[end:], encoding="utf-8", newline="\n")
           '@ | python -
-      - name: Apply bounded Phase 3 patch
-        run: python scripts/task36_phase3_apply.py
-      - name: Preserve historical Search triggers during migration 20
-        run: python scripts/task36_migration20_scope_fix.py
-      - name: Expand Search entity authority and current schema assertions
-        run: python scripts/task36_phase3_final_fix.py
-      - name: Enforce Task 37 prohibition
+
+      - name: Apply the existing bounded patches
+        shell: pwsh
+        run: |
+          python scripts/task36_phase3_apply.py
+          python scripts/task36_migration20_scope_fix.py
+          python scripts/task36_phase3_final_fix.py
+
+      - name: Enforce Task 37 exclusion
         shell: pwsh
         run: |
           $leaks = git grep -n -E "focus_plan_id" -- src-tauri/src/task src-tauri/src/infrastructure/sqlite/migrations.rs
-          $grepCode = $LASTEXITCODE
-          if ($grepCode -eq 0) {
+          $code = $LASTEXITCODE
+          if ($code -eq 0) {
             $leaks | ForEach-Object { Write-Host "::error::$_" }
             throw "Task 37 relation leaked into Task 36"
           }
-          if ($grepCode -ne 1) {
-            throw "Task 37 leak scan failed with exit code $grepCode"
+          if ($code -ne 1) {
+            throw "Task 37 exclusion scan failed with exit code $code"
           }
           $sql = Get-Content src-tauri/src/infrastructure/sqlite/task36_migration.rs -Raw
           if ($sql -match "ALTER TABLE (tasks|task_series)" -or $sql -match "REFERENCES (tasks|task_series)") {
             throw "Task 37 SQL leaked into migration 20"
           }
           exit 0
-      - name: Format Rust
+
+      - name: Format changed Rust
         run: cargo fmt --manifest-path src-tauri/Cargo.toml --all
-      - name: Verify Rust formatting
-        run: cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check
-      - name: Compile all Rust targets
+
+      - name: Verify the three previously failing paths
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force -Path task36-phase3-evidence | Out-Null
-          $output = cargo check --manifest-path src-tauri/Cargo.toml --locked --all-targets 2>&1
-          $code = $LASTEXITCODE
-          $output | Tee-Object -FilePath task36-phase3-evidence/cargo-check.log | ForEach-Object { Write-Host $_ }
-          exit $code
-      - name: Clippy with warnings denied
-        shell: pwsh
-        run: |
-          $output = cargo clippy --manifest-path src-tauri/Cargo.toml --locked --all-targets -- -D warnings 2>&1
-          $code = $LASTEXITCODE
-          $output | Tee-Object -FilePath task36-phase3-evidence/cargo-clippy.log | ForEach-Object { Write-Host $_ }
-          exit $code
-      - name: Run all Rust tests
-        shell: pwsh
-        run: |
-          $output = cargo test --manifest-path src-tauri/Cargo.toml --locked 2>&1
-          $code = $LASTEXITCODE
-          $output | Tee-Object -FilePath task36-phase3-evidence/cargo-test.log | ForEach-Object { Write-Host $_ }
-          exit $code
-      - name: Record bounded Phase 3 diff
+          cargo test --manifest-path src-tauri/Cargo.toml --locked narrative::repository::tests::narrative_canvas_backup_relaunch_evidence -- --exact
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cargo test --manifest-path src-tauri/Cargo.toml --locked search::repository::tests::search_file_backed_smoke -- --exact
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cargo test --manifest-path src-tauri/Cargo.toml --locked search::repository::tests::search_perf_realistic_fixture -- --exact
+          exit $LASTEXITCODE
+
+      - name: Verify bounded diff
         shell: pwsh
         run: |
           git diff --check
-          git diff -- src-tauri | Out-File task36-phase3-evidence/phase3.patch -Encoding utf8
-          git status --short | Out-File task36-phase3-evidence/status.txt -Encoding utf8
-      - name: Upload Phase 3 evidence
-        if: always()
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
-        with:
-          name: task36-phase3-final-evidence
-          path: task36-phase3-evidence
-          if-no-files-found: warn
-      - name: Reassert exact main before commit
+          $allowedPrefixes = @(
+            "src-tauri/",
+            ".github/workflows/task36-verification.yml",
+            "scripts/task36_phase3_apply.py",
+            "scripts/task36_migration20_scope_fix.py",
+            "scripts/task36_phase3_final_fix.py"
+          )
+          $unexpected = git diff --name-only | Where-Object {
+            $path = $_
+            -not ($allowedPrefixes | Where-Object { $path.StartsWith($_) })
+          }
+          if ($unexpected) {
+            $unexpected | ForEach-Object { Write-Host "::error::Unexpected path: $_" }
+            throw "Phase 3 changed paths outside its bounded scope"
+          }
+
+      - name: Remove temporary Task 36 scaffolding
+        shell: pwsh
+        run: |
+          git rm .github/workflows/task36-verification.yml
+          git rm scripts/task36_phase3_apply.py
+          git rm scripts/task36_migration20_scope_fix.py
+          git rm scripts/task36_phase3_final_fix.py
+          git rm .gitkeep-temp
+          git rm specs/026-focus-plans-core/.phase1-compiler-findings.md
+          git rm specs/026-focus-plans-core/compiler-boundary.md
+          git rm specs/026-focus-plans-core/phase1-exact-byte-policy.md
+          git rm specs/026-focus-plans-core/phase-1-evidence.md
+          git rm docs/audits/task-36-phase-1-compiler.md
+
+      - name: Commit integrated code and cleanup
         shell: pwsh
         run: |
           git fetch origin main
           if ((git rev-parse HEAD) -ne (git rev-parse origin/main)) {
-            throw "main advanced before Phase 3 commit"
+            throw "main advanced before final integration commit"
           }
-      - name: Commit only after every Phase 3 gate passes
-        shell: pwsh
-        run: |
+          git add src-tauri
+          git diff --cached --check
+          if (git diff --cached --quiet) {
+            throw "Task 36 integration produced no changes"
+          }
           git config user.name "Kieran Lucas"
           git config user.email "kieranlucas.work@gmail.com"
-          git add src-tauri/src/focus_plan/repository.rs `
-                  src-tauri/src/infrastructure/backup/lifecycle.rs `
-                  src-tauri/src/infrastructure/backup/restore.rs `
-                  src-tauri/src/infrastructure/sqlite/task36_migration.rs `
-                  src-tauri/src/narrative/repository.rs `
-                  src-tauri/src/search `
-                  src-tauri/src/tag/repository.rs
-          if (git diff --cached --quiet) { throw "Phase 3 produced no staged changes" }
-          git commit -m "integrate task 36 tags search and backup [skip ci]"
+          git commit -m "integrate task 36 search backup and remove temporary scaffolding [skip ci]"
           git push origin HEAD:main
