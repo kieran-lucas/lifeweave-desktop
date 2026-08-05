@@ -64,14 +64,20 @@ jobs:
         shell: pwsh
         run: |
           $leaks = git grep -n -E "focus_plan_id" -- src-tauri/src/task src-tauri/src/infrastructure/sqlite/migrations.rs
-          if ($LASTEXITCODE -eq 0) {
+          $grepCode = $LASTEXITCODE
+          if ($grepCode -eq 0) {
             $leaks | ForEach-Object { Write-Host "::error::$_" }
             throw "Task 37 relation leaked into Task 36"
           }
+          if ($grepCode -ne 1) {
+            throw "Task 37 leak scan failed with exit code $grepCode"
+          }
+
           $sql = Get-Content src-tauri/src/infrastructure/sqlite/task36_migration.rs -Raw
           if ($sql -match "ALTER TABLE (tasks|task_series)" -or $sql -match "REFERENCES (tasks|task_series)") {
             throw "Task 37 SQL leaked into migration 20"
           }
+          exit 0
       - name: Format Rust
         run: cargo fmt --manifest-path src-tauri/Cargo.toml --all
       - name: Verify Rust formatting
