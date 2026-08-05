@@ -42,7 +42,17 @@ def _next_action_label(value: str) -> str:
 
 def _released_migration_versions(root: Path) -> list[int]:
     primary = (root / "src-tauri/src/infrastructure/sqlite/migrations.rs").read_text(encoding="utf-8")
-    versions = [int(value) for value in re.findall(r"Migration\s*\{\s*version:\s*(\d+)", primary)]
+    released = re.search(
+        r"static\s+MIGRATIONS:\s*&\[Migration\]\s*=\s*&\[(.*?)\n\];\n\npub\s+fn",
+        primary,
+        re.DOTALL,
+    )
+    if released is None:
+        raise ValueError("released MIGRATIONS static could not be parsed")
+    versions = [
+        int(value)
+        for value in re.findall(r"Migration\s*\{\s*version:\s*(\d+)", released.group(1))
+    ]
     extension = root / "src-tauri/src/infrastructure/sqlite/task36_migration.rs"
     if extension.is_file():
         text = extension.read_text(encoding="utf-8")
@@ -124,13 +134,15 @@ def validate(root: Path) -> list[str]:
 
     try:
         versions = _released_migration_versions(root)
-    except OSError as exc:
-        errors.append(f"make released migration sources readable: {exc}")
+    except (OSError, ValueError) as exc:
+        errors.append(f"make released migration sources readable and parseable: {exc}")
     else:
         if not versions:
             errors.append("declare at least one released Migration version")
         elif len(versions) != len(set(versions)):
             errors.append("make released migration versions unique")
+        elif versions != sorted(versions):
+            errors.append("make released migration versions strictly ascending")
         elif max(versions) != ledger["database_schema_version"]:
             errors.append(f"set database_schema_version to highest released migration {max(versions)}")
 
