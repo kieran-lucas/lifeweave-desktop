@@ -1,15 +1,21 @@
-name: Manual clean Windows build
+name: Task 36 Windows validation
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: task-36-validation-main
+  cancel-in-progress: true
+
 jobs:
-  clean-build:
+  validate:
     runs-on: windows-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
 
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -28,16 +34,41 @@ jobs:
         with:
           components: rustfmt, clippy
 
-      - name: Install
+      - name: Install JavaScript dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build production installer
-        run: node frontend/node_modules/@tauri-apps/cli/tauri.js build
+      - name: Verify repository authority
+        run: pnpm verify
 
-      - name: Upload unsigned installer
+      - name: Typecheck frontend
+        run: pnpm typecheck
+
+      - name: Test frontend
+        run: pnpm test
+
+      - name: Check Rust formatting
+        run: cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check
+
+      - name: Lint Rust
+        run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --locked -- -D warnings
+
+      - name: Test Rust
+        run: cargo test --manifest-path src-tauri/Cargo.toml --locked
+
+      - name: Install native Tauri driver
+        run: cargo install tauri-driver --locked
+
+      - name: Run focused Task 36 native persistence
+        shell: powershell
+        run: |
+          powershell -ExecutionPolicy Bypass -File scripts/run_windows_e2e.ps1 `
+            -Phases phase8-focus-plans.e2e.ts,phase8-focus-plans-restart.e2e.ts
+
+      - name: Upload native failure evidence
+        if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: lifeweave-windows-unsigned-${{ github.sha }}
-          path: src-tauri/target/release/bundle/nsis/Lifeweave_0.0.0_x64-setup.exe
-          if-no-files-found: error
+          name: task-36-native-failure-${{ github.sha }}
+          path: target/e2e-artifacts/**
+          if-no-files-found: ignore
           retention-days: 3
