@@ -85,6 +85,10 @@ jobs:
               "        params![input.plan_id, timestamp, expected_revision],",
           )
           replace_exact(
+              "    let revision = input.expected_revision + 1;",
+              "    let revision = expected_revision + 1;",
+          )
+          replace_exact(
               "        plan_id: input.plan_id,\n        revision,\n        created_id,",
               "        plan_id: input.plan_id,\n        revision: u64::from(revision),\n        created_id,",
           )
