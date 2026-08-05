@@ -40,22 +40,23 @@ jobs:
 
           path = Path("scripts/task36_phase3_apply.py")
           text = path.read_text(encoding="utf-8")
-          old = '''    text = replace(
-              text,
-              "        run_migrations(&mut conn).unwrap();",
-              "        run_all_migrations(&mut conn).unwrap();",
-              count=1,
-              label="search test migration call",
-          )'''
-          new = '''    text = replace(
-              text,
-              "    fn setup() -> Connection {\\n        let mut conn = open_memory_connection().unwrap();\\n        run_migrations(&mut conn).unwrap();\\n        conn\\n    }",
-              "    fn setup() -> Connection {\\n        let mut conn = open_memory_connection().unwrap();\\n        run_all_migrations(&mut conn).unwrap();\\n        conn\\n    }",
-              label="search test setup migration authority",
-          )'''
-          if text.count(old) != 1:
-              raise SystemExit(f"expected one obsolete selector, found {text.count(old)}")
-          path.write_text(text.replace(old, new), encoding="utf-8", newline="\n")
+          label = '        label="search test migration call",'
+          if text.count(label) != 1:
+              raise SystemExit(f"expected one obsolete selector label, found {text.count(label)}")
+          label_index = text.index(label)
+          start = text.rfind("    text = replace(", 0, label_index)
+          end = text.index("    )", label_index) + len("    )")
+          if start < 0 or end <= label_index:
+              raise SystemExit("could not isolate obsolete search selector block")
+          new = (
+              '    text = replace(\n'
+              '        text,\n'
+              '        "    fn setup() -> Connection {\\\\n        let mut conn = open_memory_connection().unwrap();\\\\n        run_migrations(&mut conn).unwrap();\\\\n        conn\\\\n    }",\n'
+              '        "    fn setup() -> Connection {\\\\n        let mut conn = open_memory_connection().unwrap();\\\\n        run_all_migrations(&mut conn).unwrap();\\\\n        conn\\\\n    }",\n'
+              '        label="search test setup migration authority",\n'
+              '    )'
+          )
+          path.write_text(text[:start] + new + text[end:], encoding="utf-8", newline="\n")
           '@ | python -
       - name: Apply bounded Phase 3 patch
         run: python scripts/task36_phase3_apply.py
