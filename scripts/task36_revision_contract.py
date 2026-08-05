@@ -29,6 +29,7 @@ replace_exact(
     REPOSITORY,
     "revision: u64::from(row.get::<_, u32>(0)?),",
     "revision: row.get(0)?,",
+    expected=2,
 )
 replace_exact(
     REPOSITORY,
