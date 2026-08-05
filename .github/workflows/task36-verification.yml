@@ -64,8 +64,6 @@ jobs:
         run: python scripts/verify_no_remote_assets.py
       - name: Security verification
         run: python scripts/verify_security.py
-      - name: Hardening verification
-        run: python scripts/verify_hardening.py
       - name: Frontend typecheck
         run: pnpm typecheck
       - name: Frontend tests
@@ -80,3 +78,6 @@ jobs:
         run: cargo clippy --manifest-path src-tauri/Cargo.toml --locked --all-targets -- -D warnings
       - name: Rust tests
         run: cargo test --manifest-path src-tauri/Cargo.toml --locked
+      - name: Repository hardening (expected to fail until this temporary workflow is removed)
+        if: always()
+        run: python scripts/verify_hardening.py
