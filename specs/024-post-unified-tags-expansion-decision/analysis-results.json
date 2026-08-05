@@ -1,44 +1,7 @@
 {
-  "canonical_aggregate": {
-    "max_convergence_drift": 0.0013400000000000079,
-    "mean_rank": {
-      "actual_time": 5.220702500000001,
-      "backlinks": 4.692405333333333,
-      "deadline": 1.458842,
-      "hardening": 2.7299075,
-      "saved_views": 2.552325666666667,
-      "whole_tree_interchange": 4.345816999999999
-    },
-    "minimum_winner_profile_top1": 0.072618,
-    "pairwise_winner_vs_runner_up": 0.7018374999999999,
-    "profiles": ["base", "utility_workflow", "knowledge_interconnection", "task_execution", "safety_maintenance", "interoperability_longevity"],
-    "runner_up": "hardening",
-    "stability": "UNSTABLE",
-    "top1": {
-      "actual_time": 0.0001095,
-      "backlinks": 0.006421833333333334,
-      "deadline": 0.5928183333333333,
-      "hardening": 0.2934,
-      "saved_views": 0.10062966666666666,
-      "whole_tree_interchange": 0.006620666666666666
-    },
-    "winner": "deadline"
-  },
-  "canonical_product_only": {
-    "max_convergence_drift": 0.0012299999999999534,
-    "minimum_winner_profile_top1": 0.645078,
-    "pairwise_winner_vs_runner_up": 0.8740728333333333,
-    "runner_up": "saved_views",
-    "stability": "ROBUST",
-    "top1": {
-      "actual_time": 0.00015933333333333335,
-      "backlinks": 0.006543333333333335,
-      "deadline": 0.8567471666666667,
-      "saved_views": 0.12023933333333332,
-      "whole_tree_interchange": 0.016310833333333333
-    },
-    "winner": "deadline"
-  },
+  "base_eligible_runner_up": "saved_views",
+  "base_eligible_winner": "deadline",
+  "base_lead": 0.3249999999999993,
   "base_scores": {
     "actual_time": 7.405,
     "backlinks": 7.55,
@@ -52,12 +15,62 @@
     "score": 5.02,
     "whole_tree_interchange": 7.61
   },
-  "base_eligible_runner_up": "saved_views",
-  "base_eligible_winner": "deadline",
-  "base_lead": 0.3249999999999993,
-  "canonical_profiles": ["base", "utility_workflow", "knowledge_interconnection", "task_execution", "safety_maintenance", "interoperability_longevity"],
-  "conditional": ["generic_outline"],
-  "eligible": ["actual_time", "deadline", "saved_views", "backlinks", "whole_tree_interchange", "hardening"],
+  "canonical_aggregate": {
+    "max_convergence_drift": 0.0013400000000000079,
+    "minimum_winner_profile_top1": 0.072618,
+    "pairwise_winner_vs_runner_up": 0.7018374999999999,
+    "runner_up": "hardening",
+    "stability": "UNSTABLE",
+    "top1": {
+      "actual_time": 0.0001095,
+      "backlinks": 0.006421833333333334,
+      "deadline": 0.5928183333333333,
+      "hardening": 0.2934,
+      "saved_views": 0.10062966666666666,
+      "whole_tree_interchange": 0.006620666666666666
+    },
+    "winner": "deadline"
+  },
+  "canonical_product_only": {
+    "max_convergence_drift": null,
+    "minimum_winner_profile_top1": 0.645078,
+    "pairwise_winner_vs_runner_up": 0.8740728333333333,
+    "runner_up": "saved_views",
+    "stability": "ROBUST",
+    "top1": {
+      "actual_time": 0.00015933333333333335,
+      "backlinks": 0.006543333333333335,
+      "deadline": 0.8567471666666667,
+      "saved_views": 0.12023933333333332,
+      "whole_tree_interchange": 0.016310833333333333
+    },
+    "winner": "deadline"
+  },
+  "canonical_profiles": [
+    "base",
+    "utility_workflow",
+    "knowledge_interconnection",
+    "task_execution",
+    "safety_maintenance",
+    "interoperability_longevity"
+  ],
+  "conditional": [
+    "generic_outline"
+  ],
+  "conditional_diagnostic": {
+    "generic_outline": {
+      "direct_activation_eligible": false,
+      "outcome": "CONDITIONAL"
+    }
+  },
+  "eligible": [
+    "actual_time",
+    "deadline",
+    "saved_views",
+    "backlinks",
+    "whole_tree_interchange",
+    "hardening"
+  ],
   "format_version": 1,
   "hard_filter_outcomes": {
     "actual_time": "PASS",
@@ -80,6 +93,145 @@
     "weights": "Dirichlet positive normalized perturbation"
   },
   "model_version": "task34-v1.0",
+  "product_only_profile_top1": {
+    "accessibility_maintenance_stress": {
+      "actual_time": 0.000129,
+      "backlinks": 0.000207,
+      "deadline": 0.950598,
+      "saved_views": 0.047104,
+      "whole_tree_interchange": 0.001962
+    },
+    "base": {
+      "actual_time": 7e-05,
+      "backlinks": 0.001004,
+      "deadline": 0.898087,
+      "saved_views": 0.099782,
+      "whole_tree_interchange": 0.001057
+    },
+    "interoperability_longevity": {
+      "actual_time": 9.9e-05,
+      "backlinks": 0.000364,
+      "deadline": 0.87519,
+      "saved_views": 0.070428,
+      "whole_tree_interchange": 0.053919
+    },
+    "knowledge_interconnection": {
+      "actual_time": 0.000303,
+      "backlinks": 0.035603,
+      "deadline": 0.645078,
+      "saved_views": 0.287198,
+      "whole_tree_interchange": 0.031818
+    },
+    "minimal_complexity_local_stress": {
+      "actual_time": 4.4e-05,
+      "backlinks": 4.5e-05,
+      "deadline": 0.963418,
+      "saved_views": 0.035906,
+      "whole_tree_interchange": 0.000587
+    },
+    "product_identity_stress": {
+      "actual_time": 0.000365,
+      "backlinks": 0.046656,
+      "deadline": 0.627405,
+      "saved_views": 0.295184,
+      "whole_tree_interchange": 0.03039
+    },
+    "safety_maintenance": {
+      "actual_time": 0.000177,
+      "backlinks": 0.000207,
+      "deadline": 0.940937,
+      "saved_views": 0.047665,
+      "whole_tree_interchange": 0.011014
+    },
+    "task_execution": {
+      "actual_time": 0.000118,
+      "backlinks": 0.000578,
+      "deadline": 0.905231,
+      "saved_views": 0.094043,
+      "whole_tree_interchange": 3e-05
+    },
+    "utility_workflow": {
+      "actual_time": 0.000189,
+      "backlinks": 0.001504,
+      "deadline": 0.87596,
+      "saved_views": 0.12232,
+      "whole_tree_interchange": 2.7e-05
+    }
+  },
+  "profile_top1": {
+    "accessibility_maintenance_stress": {
+      "actual_time": 7e-06,
+      "backlinks": 6e-06,
+      "deadline": 0.208469,
+      "hardening": 0.787486,
+      "saved_views": 0.003991,
+      "whole_tree_interchange": 4.1e-05
+    },
+    "base": {
+      "actual_time": 5.7e-05,
+      "backlinks": 0.000867,
+      "deadline": 0.857176,
+      "hardening": 0.048882,
+      "saved_views": 0.092191,
+      "whole_tree_interchange": 0.000827
+    },
+    "interoperability_longevity": {
+      "actual_time": 6e-06,
+      "backlinks": 2.3e-05,
+      "deadline": 0.2119,
+      "hardening": 0.771613,
+      "saved_views": 0.009505,
+      "whole_tree_interchange": 0.006953
+    },
+    "knowledge_interconnection": {
+      "actual_time": 0.000303,
+      "backlinks": 0.035598,
+      "deadline": 0.645038,
+      "hardening": 7.5e-05,
+      "saved_views": 0.28718,
+      "whole_tree_interchange": 0.031806
+    },
+    "minimal_complexity_local_stress": {
+      "actual_time": 1e-06,
+      "backlinks": 1e-06,
+      "deadline": 0.166416,
+      "hardening": 0.83179,
+      "saved_views": 0.001786,
+      "whole_tree_interchange": 6e-06
+    },
+    "product_identity_stress": {
+      "actual_time": 0.000365,
+      "backlinks": 0.046655,
+      "deadline": 0.627384,
+      "hardening": 3.3e-05,
+      "saved_views": 0.295173,
+      "whole_tree_interchange": 0.03039
+    },
+    "safety_maintenance": {
+      "actual_time": 0.0,
+      "backlinks": 3e-06,
+      "deadline": 0.072618,
+      "hardening": 0.926362,
+      "saved_views": 0.000929,
+      "whole_tree_interchange": 8.8e-05
+    },
+    "task_execution": {
+      "actual_time": 0.000103,
+      "backlinks": 0.000542,
+      "deadline": 0.894938,
+      "hardening": 0.012549,
+      "saved_views": 0.091842,
+      "whole_tree_interchange": 2.6e-05
+    },
+    "utility_workflow": {
+      "actual_time": 0.000188,
+      "backlinks": 0.001498,
+      "deadline": 0.87524,
+      "hardening": 0.000919,
+      "saved_views": 0.122131,
+      "whole_tree_interchange": 2.4e-05
+    }
+  },
   "profile_winners": {
     "accessibility_maintenance_stress": "hardening",
     "base": "deadline",
@@ -93,6 +245,10 @@
   },
   "samples_per_profile": 1000000,
   "seed": 20260805,
-  "stress_profiles": ["accessibility_maintenance_stress", "product_identity_stress", "minimal_complexity_local_stress"],
+  "stress_profiles": [
+    "accessibility_maintenance_stress",
+    "product_identity_stress",
+    "minimal_complexity_local_stress"
+  ],
   "total_profile_samples": 9000000
 }

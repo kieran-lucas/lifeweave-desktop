@@ -1,63 +1,45 @@
 # Slice 024 — Post-Unified-Tags Expansion Decision
 
-## Task 34
-
-**Post-Unified-Tags Expansion Decision + Task 35 Activation Matrix**
-
 ## Status
 
-Authorized by the Product Owner for direct execution on `main` from release HEAD `09b1284f7e17a6e64feeb2bfe8ff6998e7a80bfd`.
+**Complete.** Task 34 is a governance-only decision slice. Task 35 remains unapproved and prohibited.
 
-This slice is a decision task, not a product-feature implementation. It introduces no migration, IPC command, dependency, capability, route, persistent domain object, production UI, or behavior change.
+## Recommendation
 
-## Purpose
+```text
+ACTIVATE_PRODUCT — Deadline Semantics + Deadline-Aware Planning Core
+Portfolio stability: UNSTABLE
+Product-only stability: ROBUST
+Product Owner decision required: APPROVE / REJECT / MODIFY
+```
 
-Task 33 closed Unified Tags and returned the repository to a Product Owner gate with no active recommendation. Task 34 reconstructs the current product, reassesses all remaining open/deferred candidates, applies hard filters and a disclosed uncertainty model, and recommends exactly one bounded Task 35 action or an explicit no-expansion result.
+## Decision evidence
 
-## Candidate set
-
-1. Actual-Time Tracking Core
-2. Deadline Semantics + Deadline-Aware Planning
-3. Saved Filters / Saved Views
-4. Explicit Links + Backlinks Core
-5. Generic Outline Beyond Basic Leaf Headings
-6. Noteboard
-7. Knowledge Graph
-8. Objective Score
-9. Prediction / Forecasting
-10. Whole-Tree + Multi-Document Interchange
-11. No Expansion / Hardening + Evidence
-
-## Required outputs
-
-- current-state implementation inventory;
-- source/ADR/repository traceability matrix;
-- prerequisite graph;
-- candidate minimum-slice definitions;
-- 11 × 16 hard-filter matrix;
-- 14-criterion weighted model;
-- deterministic six-profile sensitivity analysis;
-- reversal and kill criteria;
-- one Task 35 activation packet;
-- Product Owner approval block;
-- no product code.
+- 11 candidates × 16 hard filters;
+- 14 frozen weighted criteria;
+- seed `20260805`;
+- six canonical and three stress profiles;
+- 1,000,000 samples/profile;
+- deterministic `analysis.py --check`;
+- ten-round self-review;
+- no product/schema/dependency/capability change.
 
 ## Files
 
-- `spec.md` — authority, scope, candidate contract, decision methodology
-- `plan.md` — phased execution strategy and evidence workflow
-- `tasks.md` — atomic work breakdown with dependencies
-- `acceptance.md` — objective completion and repository gates
-- `risk-register.md` — analysis and activation risks
-- `candidate-evidence.md` — current-state, traceability, filters and scoring evidence
-- `analysis.py` — deterministic sensitivity analysis
-- `analysis-results.json` — accepted machine-readable output
+- `spec.md` — decision authority and methodology
+- `plan.md` — execution strategy
+- `tasks.md` — atomic work breakdown
+- `acceptance.md` — acceptance contract
+- `risk-register.md` — risk register
+- `candidate-evidence.md` — traceability, filters, scores, recommendation, Task 35 packet
+- `analysis.py` — deterministic sensitivity model
+- `analysis-results.json` — canonical machine-readable artifact
+- `results.md` — human-readable result summary
+- `self-review.md` — ten independent review rounds
 
-## Starting authority
+## Authority
 
-- Task 33: accepted
-- Slice 023: closed
-- latest feature checkpoint: `4d1b65c816312a9e6ae8aa39f4a565555af9feb9`
-- Task 34 execution baseline: `09b1284f7e17a6e64feeb2bfe8ff6998e7a80bfd`
+- Task 34 baseline: `09b1284f7e17a6e64feeb2bfe8ff6998e7a80bfd`
+- latest product checkpoint: `4d1b65c816312a9e6ae8aa39f4a565555af9feb9`
 - schema: 19
-- Task 35 implementation: prohibited pending Product Owner approval
+- next action: Product Owner gate
