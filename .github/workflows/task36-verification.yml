@@ -35,7 +35,7 @@ jobs:
             throw "main advanced after this run started"
           }
 
-      - name: Correct the obsolete Search selector
+      - name: Correct obsolete temporary selectors
         shell: pwsh
         run: |
           @'
@@ -60,6 +60,38 @@ jobs:
               '    )'
           )
           path.write_text(text[:start] + new + text[end:], encoding="utf-8", newline="\n")
+
+          final_path = Path("scripts/task36_phase3_final_fix.py")
+          final_text = final_path.read_text(encoding="utf-8")
+          old = "".join([
+              "    text = replace_once(\n",
+              "        text,\n",
+              "        '''            let mut c = open_file_connection(&path).unwrap();\n",
+              "            run_migrations(&mut c).unwrap();''',\n",
+              "        '''            let mut c = open_file_connection(&path).unwrap();\n",
+              "            crate::infrastructure::sqlite::task36_migration::run_all_migrations(&mut c)\n",
+              "                .unwrap();''',\n",
+              '        "narrative reopen migration authority",\n',
+              "    )",
+          ])
+          replacement = "".join([
+              "    text = replace_once(\n",
+              "        text,\n",
+              "        '''        // ── Session 3: verify restored state ─────────────────────────────────\n",
+              "        {\n",
+              "            let mut c = open_file_connection(&path).unwrap();\n",
+              "            run_migrations(&mut c).unwrap();''',\n",
+              "        '''        // ── Session 3: verify restored state ─────────────────────────────────\n",
+              "        {\n",
+              "            let mut c = open_file_connection(&path).unwrap();\n",
+              "            crate::infrastructure::sqlite::task36_migration::run_all_migrations(&mut c)\n",
+              "                .unwrap();''',\n",
+              '        "narrative reopen migration authority",\n',
+              "    )",
+          ])
+          if final_text.count(old) != 1:
+              raise SystemExit(f"expected one narrative selector block, found {final_text.count(old)}")
+          final_path.write_text(final_text.replace(old, replacement), encoding="utf-8", newline="\n")
           '@ | python -
 
       - name: Apply the existing bounded patches
