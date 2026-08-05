@@ -10,6 +10,6 @@
   "active_spec": null,
   "next_action": "product_owner_gate",
   "forbidden_feature_jump": true,
-  "recommended_next_candidate": "deadline_semantics",
+  "recommended_next_candidate": "focus_plans_architecture",
   "source_sha256": "9c422927c09e26431d71b1ef5ab6306891a3e7c15ece0fc808bedf6f6689540a"
 }

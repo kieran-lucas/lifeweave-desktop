@@ -34,6 +34,7 @@ The immutable source is authoritative. This registry makes operational status vi
 - Overdue is derived from the absence of any current evaluation; any current evaluation reviews the item, and undo may restore it.
 - Planning queue items open their exact displayed date and stable Task or recurring-series identity in Today; queue state is not persisted.
 - Tags are a flat, globally shared vocabulary applied to Life nodes and Tasks. Normalized name (lowercase, Vietnamese-decomposed, whitespace-collapsed) is the deduplication and search key. Merging reassigns all join-table entries to the surviving tag; superseded normalized names are indexed as aliases. Task tag assignment in the create/edit dialog defaults to no tags; a task-level picker is deferred.
+- The execution roadmap remains a 60-task envelope. Product Owner allocation may reuse unstarted positions without increasing the total.
 
 ## LOCKED — Technology direction
 
@@ -58,7 +59,8 @@ The immutable source is authoritative. This registry makes operational status vi
 - shared-element exact choreography;
 - large-tree virtualization;
 - visual-world asset intensity/performance;
-- narrow-window and DPI threshold decisions.
+- narrow-window and DPI threshold decisions;
+- Focus Plans canonical model, navigation placement, lifecycle, and relationship authority.
 
 ## OPEN — Product/UX
 
@@ -67,6 +69,9 @@ The immutable source is authoritative. This registry makes operational status vi
 - actual-time semantics;
 - deadline semantics beyond the existing scheduled date and time;
 - saved filter AST/view UI;
+- Focus Plans canonical model: third Life document, standalone entity, or Basic Leaf template;
+- Focus Plan lifecycle, phase/milestone authority, and review semantics;
+- Focus Plan relationship cardinality with Life nodes, one-off Tasks, and recurring series;
 - final score and hidden mappings;
 - final prediction;
 - backlinks;
@@ -85,6 +90,7 @@ The immutable source is authoritative. This registry makes operational status vi
 ## DEFERRED
 
 - prediction and opaque ML;
+- Deadline Semantics implementation after the Task 34 Product Owner modification;
 - custom user-authored Narrative templates;
 - custom user-authored Visual Worlds or arbitrary palettes;
 - cross-scene block drag;

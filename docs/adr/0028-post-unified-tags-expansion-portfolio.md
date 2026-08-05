@@ -2,7 +2,9 @@
 
 ## Status
 
-Accepted as the Task 34 recommendation record. Task 35 remains unapproved.
+Accepted as the Task 34 analytical recommendation record.
+
+The next-task recommendation was subsequently modified by the Product Owner in ADR 0029. The candidate scores, hard-filter outcomes, and sensitivity results in this ADR remain valid historical analysis.
 
 ## Context
 
@@ -10,11 +12,11 @@ Task 33 completed Unified Tags and changed earlier prerequisite assessments. Tas
 
 ## Decision
 
-Recommend `ACTIVATE_PRODUCT — Deadline Semantics + Deadline-Aware Planning Core`.
+Analytical recommendation: `ACTIVATE_PRODUCT — Deadline Semantics + Deadline-Aware Planning Core`.
 
 The result is UNSTABLE when Hardening participates because safety/interoperability profiles prefer Hardening. It is ROBUST among product candidates. No P0/P1 debt forces Hardening.
 
-Task 35 requires separate Product Owner approval and active specification.
+Task 35 required separate Product Owner approval. The Product Owner selected `MODIFY`; see ADR 0029.
 
 ## Disposition
 
@@ -25,14 +27,15 @@ Task 35 requires separate Product Owner approval and active specification.
 ## Consequences
 
 - schedule and deadline remain separate;
-- first deadline slice is one-off Tasks only;
+- first deadline slice was proposed as one-off Tasks only;
 - recurring deadline policy remains open;
 - reminders/notifications/sound remain removed;
-- no new sidebar destination is implied;
+- no new sidebar destination was implied;
 - Hardening remains explicit strategic runner-up;
 - Saved Views is product runner-up;
 - Graph cannot precede Links;
-- Score and Prediction remain blocked.
+- Score and Prediction remain blocked;
+- Deadline remains eligible but deferred after ADR 0029.
 
 ## Quantitative record
 
@@ -47,4 +50,6 @@ Task 35 requires separate Product Owner approval and active specification.
 
 ## Reversal conditions
 
-Modify the recommendation if Product Owner prioritizes physical accessibility/recovery evidence, user evidence favors Saved Views, recurring deadlines are mandatory in v1, deadline value depends on reminders, or P0/P1 debt appears before Task 35 activation.
+Modify the recommendation if Product Owner prioritizes physical accessibility/recovery evidence, user evidence favors Saved Views, recurring deadlines are mandatory in v1, deadline value depends on reminders, P0/P1 debt appears before activation, or a new Product Owner priority is introduced.
+
+ADR 0029 records the exercised Product Owner modification.

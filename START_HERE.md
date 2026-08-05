@@ -19,16 +19,38 @@
 - Latest feature checkpoint: `4d1b65c816312a9e6ae8aa39f4a565555af9feb9`
 - Database schema: **19**
 - Active implementation specification: **none**
-- Recommended next candidate: **Deadline Semantics**
-- Next action: **Product Owner gate**
-- Task 35 status: **not started; prohibited pending APPROVE / REJECT / MODIFY**
+- Product Owner disposition on the Task 34 recommendation: **MODIFY**
+- Recommended next candidate: **Focus Plans Architecture Prototype**
+- Roadmap envelope: **60 tasks total**
+- Reserved positions: **Task 35–37**
+- Next action: **Product Owner gate for Task 35 activation**
+- Task 35 status: **not started; no active specification**
 
-## Task 34 decision summary
+## Product Owner roadmap allocation
 
-- Full portfolio stability: **UNSTABLE** because Hardening wins safety/interoperability profiles.
-- Product-only stability: **ROBUST** for Deadline.
-- Recommendation: `Deadline Semantics + Deadline-Aware Planning Core`.
-- This recommendation is not Task 35 authorization.
+- **Task 35:** Focus Plans A/B Prototype + Canonical Model Decision
+- **Task 36:** Focus Plans Core + Draft/Active Lifecycle
+- **Task 37:** Focus Plan ↔ Task Integration + Review Workflow
+- **Tasks 38–60:** remain available for later roadmap decisions.
+- Deadline Semantics remains an eligible deferred candidate; it is no longer the recommended Task 35.
+
+## Focus Plans intent
+
+Focus Plans are a proposed medium-term coordination layer between Life and Task:
+
+```text
+Life = durable areas and direction
+Focus Plan = a strategy or concentration lasting weeks to months
+Task = concrete scheduled or actionable work
+```
+
+Task 35 must compare:
+
+1. a third Life document type;
+2. a standalone Focus Plan entity;
+3. a Basic Leaf template with metadata.
+
+The current Product Owner preference is a standalone entity, but Task 35 must earn that decision through prototype and architecture evidence.
 
 ## Core invariants
 
@@ -37,6 +59,7 @@
 - Life Browse shows the selected node and direct children; full-tree editing stays in Life Edit.
 - SQLite through Rust is persistent/domain authority; React owns rendering and ephemeral interaction state.
 - Backup, restore, and interchange remain distinct authorities.
+- Focus Plans must not fragment the Life tree or silently become oversized Tasks.
 
 ## First verification commands
 
