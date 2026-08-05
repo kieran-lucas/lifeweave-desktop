@@ -7,8 +7,8 @@
   "latest_feature_task": 33,
   "latest_feature_checkpoint": "4d1b65c816312a9e6ae8aa39f4a565555af9feb9",
   "database_schema_version": 19,
-  "active_spec": null,
-  "next_action": "product_owner_gate",
+  "active_spec": "specs/026-focus-plans-core",
+  "next_action": "implement_task_36_phase_1",
   "forbidden_feature_jump": true,
   "recommended_next_candidate": "standalone_focus_plan_core",
   "source_sha256": "9c422927c09e26431d71b1ef5ab6306891a3e7c15ece0fc808bedf6f6689540a"
