@@ -166,7 +166,8 @@ export default function GlobalSearchDialog({ onClose, onNavigate, invokerRef }: 
             ref={inputRef}
             type="search"
             role="combobox"
-            aria-label="Search tasks, life nodes, documents, and plans"
+            aria-label="Search tasks, life nodes, and documents"
+            aria-description="Plans are included in the results."
             aria-expanded={flat.length > 0}
             aria-controls={listboxId}
             aria-autocomplete="list"

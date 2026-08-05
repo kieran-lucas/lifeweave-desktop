@@ -12,9 +12,9 @@ describe("Task 36 — Focus Plan fresh-process persistence", () => {
     await expect(plan).toBeDisplayed();
     await plan.click();
 
-    await expect($("label=Title").$("input")).toHaveValue("E2E Focus Plan Persisted");
-    await expect($("label=Outcome").$("textarea")).toHaveValue("Persistent plan outcome");
-    await expect($("label=Lifecycle").$("select")).toHaveValue("active");
+    await expect($("//label[normalize-space()='Title']/input")).toHaveValue("E2E Focus Plan Persisted");
+    await expect($("//label[normalize-space()='Outcome']/textarea")).toHaveValue("Persistent plan outcome");
+    await expect($("//label[normalize-space()='Lifecycle']/select")).toHaveValue("active");
     await expect($("input[aria-label='Phase 1 title']")).toHaveValue("Foundation");
     await expect($("[role='alert']")).not.toExist();
   });
