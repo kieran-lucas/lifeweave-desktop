@@ -1,0 +1,1014 @@
+use std::collections::HashSet;
+
+use chrono::{NaiveDate, SecondsFormat, Utc};
+use rusqlite::{Connection, OptionalExtension, Transaction, params};
+use uuid::Uuid;
+
+use super::dto::{
+    CreateFocusPlanInput, FocusPlanDetailView, FocusPlanLifecycle, FocusPlanListInput,
+    FocusPlanMutationAction, FocusPlanMutationResult, FocusPlanPhaseView,
+    FocusPlanRecoveryDraftView, FocusPlanRevisionView, FocusPlanSummaryView, FocusPlanTagView,
+    FocusPlanVariantView, MutateFocusPlanInput, SaveFocusPlanDraftInput,
+};
+use crate::infrastructure::sqlite::DbError;
+
+#[derive(Debug)]
+pub enum FocusPlanError {
+    Validation(String),
+    NotFound,
+    StaleRevision,
+    Db(DbError),
+}
+
+impl From<rusqlite::Error> for FocusPlanError {
+    fn from(value: rusqlite::Error) -> Self {
+        Self::Db(DbError::from(value))
+    }
+}
+
+impl From<DbError> for FocusPlanError {
+    fn from(value: DbError) -> Self {
+        Self::Db(value)
+    }
+}
+
+type Result<T> = std::result::Result<T, FocusPlanError>;
+
+fn now() -> String {
+    Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true)
+}
+
+fn new_id() -> String {
+    Uuid::now_v7().to_string()
+}
+
+fn lifecycle_from_db(value: &str) -> Result<FocusPlanLifecycle> {
+    match value {
+        "draft" => Ok(FocusPlanLifecycle::Draft),
+        "active" => Ok(FocusPlanLifecycle::Active),
+        "paused" => Ok(FocusPlanLifecycle::Paused),
+        "completed" => Ok(FocusPlanLifecycle::Completed),
+        _ => Err(FocusPlanError::Validation(
+            "stored Focus Plan lifecycle is invalid".into(),
+        )),
+    }
+}
+
+fn validate_id(value: &str, label: &str) -> Result<()> {
+    if value.trim().is_empty() || value.len() > 200 {
+        return Err(FocusPlanError::Validation(format!(
+            "{label} is required and must be at most 200 characters"
+        )));
+    }
+    Ok(())
+}
+
+fn validate_title(value: &str, label: &str, max: usize) -> Result<String> {
+    let trimmed = value.trim();
+    if trimmed.is_empty() || trimmed.chars().count() > max {
+        return Err(FocusPlanError::Validation(format!(
+            "{label} is required and must be at most {max} characters"
+        )));
+    }
+    Ok(trimmed.to_string())
+}
+
+fn validate_dates(start: Option<&str>, target: Option<&str>) -> Result<()> {
+    let parse = |value: &str| {
+        NaiveDate::parse_from_str(value, "%Y-%m-%d").map_err(|_| {
+            FocusPlanError::Validation("Focus Plan dates must use YYYY-MM-DD".into())
+        })
+    };
+    let start = start.map(parse).transpose()?;
+    let target = target.map(parse).transpose()?;
+    if let (Some(start), Some(target)) = (start, target)
+        && start > target
+    {
+        return Err(FocusPlanError::Validation(
+            "Focus Plan start date cannot be after target date".into(),
+        ));
+    }
+    Ok(())
+}
+
+fn validate_criteria(values: &[String]) -> Result<Vec<String>> {
+    if values.len() > 50 {
+        return Err(FocusPlanError::Validation(
+            "A Focus Plan may have at most 50 success criteria".into(),
+        ));
+    }
+    let mut result = Vec::with_capacity(values.len());
+    for value in values {
+        let trimmed = value.trim();
+        if trimmed.is_empty() || trimmed.chars().count() > 300 {
+            return Err(FocusPlanError::Validation(
+                "Each success criterion must contain 1–300 characters".into(),
+            ));
+        }
+        result.push(trimmed.to_string());
+    }
+    let encoded = serde_json::to_string(&result)
+        .map_err(|_| FocusPlanError::Validation("Success criteria are invalid".into()))?;
+    if encoded.len() > 65_536 {
+        return Err(FocusPlanError::Validation(
+            "Success criteria exceed the Focus Plan limit".into(),
+        ));
+    }
+    Ok(result)
+}
+
+fn validate_body(canonical_json: &str, plain_text: &str) -> Result<()> {
+    if canonical_json.len() > 1_048_576 || plain_text.len() > 524_288 {
+        return Err(FocusPlanError::Validation(
+            "Focus Plan variant content exceeds its limit".into(),
+        ));
+    }
+    let value: serde_json::Value = serde_json::from_str(canonical_json)
+        .map_err(|_| FocusPlanError::Validation("Variant content must be valid JSON".into()))?;
+    if value.get("type").and_then(serde_json::Value::as_str) != Some("doc")
+        || !value
+            .get("content")
+            .is_some_and(serde_json::Value::is_array)
+    {
+        return Err(FocusPlanError::Validation(
+            "Variant content must use the canonical rich-text document schema".into(),
+        ));
+    }
+    Ok(())
+}
+
+fn validate_life_target(conn: &Connection, life_node_id: Option<&str>) -> Result<()> {
+    let Some(id) = life_node_id else {
+        return Ok(());
+    };
+    validate_id(id, "Life node ID")?;
+    let exists: bool = conn.query_row(
+        "SELECT EXISTS(SELECT 1 FROM life_nodes WHERE id=?1 AND archived_at IS NULL AND id!='life-root')",
+        [id],
+        |row| row.get(0),
+    )?;
+    if !exists {
+        return Err(FocusPlanError::Validation(
+            "Focus Plans may link only to an active non-root Life node".into(),
+        ));
+    }
+    Ok(())
+}
+
+fn validate_tags(conn: &Connection, tag_ids: &[String]) -> Result<Vec<String>> {
+    if tag_ids.len() > 20 {
+        return Err(FocusPlanError::Validation(
+            "A Focus Plan may have at most 20 tags".into(),
+        ));
+    }
+    let mut seen = HashSet::new();
+    let mut result = Vec::with_capacity(tag_ids.len());
+    for tag_id in tag_ids {
+        validate_id(tag_id, "Tag ID")?;
+        if !seen.insert(tag_id.as_str()) {
+            return Err(FocusPlanError::Validation(
+                "Focus Plan tags must be unique".into(),
+            ));
+        }
+        let valid: bool = conn.query_row(
+            "SELECT EXISTS(SELECT 1 FROM tags WHERE id=?1 AND archived_at IS NULL AND merged_into_tag_id IS NULL)",
+            [tag_id],
+            |row| row.get(0),
+        )?;
+        if !valid {
+            return Err(FocusPlanError::Validation(
+                "Archived or merged tags cannot be assigned to a Focus Plan".into(),
+            ));
+        }
+        result.push(tag_id.clone());
+    }
+    result.sort();
+    Ok(result)
+}
+
+fn plan_exists(conn: &Connection, plan_id: &str) -> Result<()> {
+    let exists: bool = conn.query_row(
+        "SELECT EXISTS(SELECT 1 FROM focus_plans WHERE id=?1)",
+        [plan_id],
+        |row| row.get(0),
+    )?;
+    if exists {
+        Ok(())
+    } else {
+        Err(FocusPlanError::NotFound)
+    }
+}
+
+fn ensure_variant(conn: &Connection, plan_id: &str, variant_id: &str) -> Result<bool> {
+    let archived: Option<Option<String>> = conn
+        .query_row(
+            "SELECT archived_at FROM focus_plan_variants WHERE id=?1 AND plan_id=?2",
+            params![variant_id, plan_id],
+            |row| row.get(0),
+        )
+        .optional()?;
+    archived
+        .map(|value| value.is_some())
+        .ok_or(FocusPlanError::NotFound)
+}
+
+fn ensure_phase(
+    conn: &Connection,
+    plan_id: &str,
+    variant_id: &str,
+    phase_id: &str,
+) -> Result<bool> {
+    let archived: Option<Option<String>> = conn
+        .query_row(
+            "SELECT p.archived_at FROM focus_plan_phases p JOIN focus_plan_variants v ON v.id=p.variant_id WHERE p.id=?1 AND p.variant_id=?2 AND v.plan_id=?3",
+            params![phase_id, variant_id, plan_id],
+            |row| row.get(0),
+        )
+        .optional()?;
+    archived
+        .map(|value| value.is_some())
+        .ok_or(FocusPlanError::NotFound)
+}
+
+pub fn list(conn: &Connection, input: &FocusPlanListInput) -> Result<Vec<FocusPlanSummaryView>> {
+    let filter = input.portfolio.as_str();
+    let limit = input.limit.unwrap_or(100).clamp(1, 200);
+    let offset = input.offset.unwrap_or(0);
+    let mut statement = conn.prepare(
+        "SELECT p.id,p.title,p.lifecycle,p.start_date,p.target_date,p.life_node_id,
+                ln.title,v.label,
+                (SELECT COUNT(*) FROM focus_plan_variants av WHERE av.plan_id=p.id AND av.archived_at IS NULL),
+                (SELECT COUNT(*) FROM focus_plan_phases ph JOIN focus_plan_variants pv ON pv.id=ph.variant_id WHERE pv.plan_id=p.id AND pv.archived_at IS NULL AND ph.archived_at IS NULL),
+                COALESCE((SELECT group_concat(t.name,char(31)) FROM focus_plan_tags fpt JOIN tags t ON t.id=fpt.tag_id WHERE fpt.plan_id=p.id AND t.archived_at IS NULL ORDER BY t.normalized_name),''),
+                p.revision,p.updated_at,p.archived_at
+         FROM focus_plans p
+         JOIN focus_plan_variants v ON v.id=p.selected_variant_id
+         LEFT JOIN life_nodes ln ON ln.id=p.life_node_id
+         WHERE ((?1='archived' AND p.archived_at IS NOT NULL)
+            OR (?1!='archived' AND p.archived_at IS NULL AND p.lifecycle=?1))
+         ORDER BY p.updated_at DESC,p.id
+         LIMIT ?2 OFFSET ?3",
+    )?;
+    let rows = statement.query_map(params![filter, limit, offset], |row| {
+        let lifecycle: String = row.get(2)?;
+        let tags: String = row.get(10)?;
+        Ok((
+            row.get::<_, String>(0)?,
+            row.get::<_, String>(1)?,
+            lifecycle,
+            row.get::<_, Option<String>>(3)?,
+            row.get::<_, Option<String>>(4)?,
+            row.get::<_, Option<String>>(5)?,
+            row.get::<_, Option<String>>(6)?,
+            row.get::<_, String>(7)?,
+            row.get::<_, u32>(8)?,
+            row.get::<_, u32>(9)?,
+            tags,
+            row.get::<_, u64>(11)?,
+            row.get::<_, String>(12)?,
+            row.get::<_, Option<String>>(13)?,
+        ))
+    })?;
+    rows.map(|row| {
+        let (
+            id,
+            title,
+            lifecycle,
+            start_date,
+            target_date,
+            life_node_id,
+            life_title,
+            selected_variant_label,
+            active_variant_count,
+            active_phase_count,
+            tags,
+            revision,
+            updated_at,
+            archived_at,
+        ) = row?;
+        Ok(FocusPlanSummaryView {
+            id,
+            title,
+            lifecycle: lifecycle_from_db(&lifecycle)?,
+            start_date,
+            target_date,
+            life_node_id,
+            life_title,
+            selected_variant_label,
+            active_variant_count,
+            active_phase_count,
+            tag_names: if tags.is_empty() {
+                Vec::new()
+            } else {
+                tags.split('\u{1f}').map(str::to_string).collect()
+            },
+            revision,
+            updated_at,
+            archived: archived_at.is_some(),
+        })
+    })
+    .collect()
+}
+
+pub fn get(conn: &Connection, plan_id: &str) -> Result<FocusPlanDetailView> {
+    validate_id(plan_id, "Focus Plan ID")?;
+    let plan = conn
+        .query_row(
+            "SELECT p.id,p.title,p.lifecycle,p.start_date,p.target_date,p.life_node_id,ln.title,p.outcome,p.success_criteria_json,p.selected_variant_id,p.revision,p.created_at,p.updated_at,p.archived_at
+             FROM focus_plans p LEFT JOIN life_nodes ln ON ln.id=p.life_node_id WHERE p.id=?1",
+            [plan_id],
+            |row| {
+                Ok((
+                    row.get::<_, String>(0)?, row.get::<_, String>(1)?, row.get::<_, String>(2)?,
+                    row.get::<_, Option<String>>(3)?, row.get::<_, Option<String>>(4)?, row.get::<_, Option<String>>(5)?,
+                    row.get::<_, Option<String>>(6)?, row.get::<_, String>(7)?, row.get::<_, String>(8)?,
+                    row.get::<_, String>(9)?, row.get::<_, u64>(10)?, row.get::<_, String>(11)?,
+                    row.get::<_, String>(12)?, row.get::<_, Option<String>>(13)?,
+                ))
+            },
+        )
+        .optional()?
+        .ok_or(FocusPlanError::NotFound)?;
+
+    let mut variant_statement = conn.prepare(
+        "SELECT id,label,canonical_json,plain_text,sort_key,archived_at FROM focus_plan_variants WHERE plan_id=?1 ORDER BY sort_key,id",
+    )?;
+    let variant_rows = variant_statement
+        .query_map([plan_id], |row| {
+            Ok((
+                row.get::<_, String>(0)?, row.get::<_, String>(1)?, row.get::<_, String>(2)?,
+                row.get::<_, String>(3)?, row.get::<_, u32>(4)?, row.get::<_, Option<String>>(5)?,
+            ))
+        })?
+        .collect::<std::result::Result<Vec<_>, _>>()?;
+    let mut variants = Vec::with_capacity(variant_rows.len());
+    for (id, label, canonical_json, plain_text, sort_key, archived_at) in variant_rows {
+        let mut phase_statement = conn.prepare(
+            "SELECT id,title,sort_key,archived_at FROM focus_plan_phases WHERE variant_id=?1 ORDER BY sort_key,id",
+        )?;
+        let phases = phase_statement
+            .query_map([&id], |row| {
+                Ok(FocusPlanPhaseView {
+                    id: row.get(0)?,
+                    title: row.get(1)?,
+                    sort_key: row.get(2)?,
+                    archived: row.get::<_, Option<String>>(3)?.is_some(),
+                })
+            })?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+        variants.push(FocusPlanVariantView {
+            id,
+            label,
+            canonical_json,
+            plain_text,
+            sort_key,
+            archived: archived_at.is_some(),
+            phases,
+        });
+    }
+
+    let mut tag_statement = conn.prepare(
+        "SELECT t.id,t.name FROM focus_plan_tags fpt JOIN tags t ON t.id=fpt.tag_id WHERE fpt.plan_id=?1 ORDER BY t.normalized_name,t.id",
+    )?;
+    let tags = tag_statement
+        .query_map([plan_id], |row| {
+            Ok(FocusPlanTagView {
+                id: row.get(0)?,
+                name: row.get(1)?,
+            })
+        })?
+        .collect::<std::result::Result<Vec<_>, _>>()?;
+
+    let mut revision_statement = conn.prepare(
+        "SELECT revision,reason,created_at FROM focus_plan_revisions WHERE plan_id=?1 ORDER BY revision DESC LIMIT 50",
+    )?;
+    let revisions = revision_statement
+        .query_map([plan_id], |row| {
+            Ok(FocusPlanRevisionView {
+                revision: row.get(0)?,
+                reason: row.get(1)?,
+                created_at: row.get(2)?,
+            })
+        })?
+        .collect::<std::result::Result<Vec<_>, _>>()?;
+
+    let recovery_draft = conn
+        .query_row(
+            "SELECT base_revision,draft_json,recovery_state,updated_at FROM focus_plan_drafts WHERE plan_id=?1",
+            [plan_id],
+            |row| {
+                Ok(FocusPlanRecoveryDraftView {
+                    base_revision: row.get(0)?,
+                    draft_json: row.get(1)?,
+                    conflict: row.get::<_, String>(2)? == "conflict",
+                    updated_at: row.get(3)?,
+                })
+            },
+        )
+        .optional()?;
+
+    let success_criteria = serde_json::from_str::<Vec<String>>(&plan.8)
+        .map_err(|_| FocusPlanError::Validation("Stored success criteria are invalid".into()))?;
+    Ok(FocusPlanDetailView {
+        id: plan.0,
+        title: plan.1,
+        lifecycle: lifecycle_from_db(&plan.2)?,
+        start_date: plan.3,
+        target_date: plan.4,
+        life_node_id: plan.5,
+        life_title: plan.6,
+        outcome: plan.7,
+        success_criteria,
+        selected_variant_id: plan.9,
+        variants,
+        tags,
+        revisions,
+        recovery_draft,
+        revision: plan.10,
+        created_at: plan.11,
+        updated_at: plan.12,
+        archived: plan.13.is_some(),
+    })
+}
+
+fn snapshot(conn: &Connection, plan_id: &str) -> Result<String> {
+    let detail = get(conn, plan_id)?;
+    let mut value = serde_json::to_value(detail)
+        .map_err(|_| FocusPlanError::Validation("Focus Plan snapshot failed".into()))?;
+    if let Some(object) = value.as_object_mut() {
+        object.remove("revisions");
+        object.remove("recovery_draft");
+    }
+    serde_json::to_string(&value)
+        .map_err(|_| FocusPlanError::Validation("Focus Plan snapshot failed".into()))
+}
+
+fn trim_revisions(tx: &Transaction<'_>, plan_id: &str) -> Result<()> {
+    tx.execute(
+        "DELETE FROM focus_plan_revisions WHERE plan_id=?1 AND revision NOT IN (SELECT revision FROM focus_plan_revisions WHERE plan_id=?1 ORDER BY revision DESC LIMIT 50)",
+        [plan_id],
+    )?;
+    Ok(())
+}
+
+fn existing_operation(
+    conn: &Connection,
+    operation_id: &str,
+) -> Result<Option<FocusPlanMutationResult>> {
+    let value = conn
+        .query_row(
+            "SELECT plan_id,result_revision FROM focus_plan_save_operations WHERE operation_id=?1",
+            [operation_id],
+            |row| {
+                Ok(FocusPlanMutationResult {
+                    plan_id: row.get(0)?,
+                    revision: row.get(1)?,
+                    created_id: None,
+                    replayed: true,
+                })
+            },
+        )
+        .optional()?;
+    Ok(value)
+}
+
+pub fn create(conn: &mut Connection, input: CreateFocusPlanInput) -> Result<FocusPlanDetailView> {
+    let title = validate_title(&input.title, "Focus Plan title", 200)?;
+    let label = validate_title(&input.initial_variant_label, "Variant label", 120)?;
+    if input.outcome.len() > 8192 {
+        return Err(FocusPlanError::Validation(
+            "Focus Plan outcome exceeds 8192 characters".into(),
+        ));
+    }
+    validate_dates(input.start_date.as_deref(), input.target_date.as_deref())?;
+    let criteria = validate_criteria(&input.success_criteria)?;
+    validate_id(&input.operation_id, "Operation ID")?;
+    validate_life_target(conn, input.life_node_id.as_deref())?;
+    if let Some(existing) = existing_operation(conn, &input.operation_id)? {
+        return get(conn, &existing.plan_id);
+    }
+
+    let plan_id = new_id();
+    let variant_id = new_id();
+    let timestamp = now();
+    let criteria_json = serde_json::to_string(&criteria)
+        .map_err(|_| FocusPlanError::Validation("Success criteria are invalid".into()))?;
+    let tx = conn.transaction()?;
+    tx.execute(
+        "INSERT INTO focus_plans(id,life_node_id,selected_variant_id,title,lifecycle,start_date,target_date,outcome,success_criteria_json,revision,created_at,updated_at) VALUES(?1,?2,?3,?4,'draft',?5,?6,?7,?8,0,?9,?9)",
+        params![plan_id, input.life_node_id, variant_id, title, input.start_date, input.target_date, input.outcome, criteria_json, timestamp],
+    )?;
+    tx.execute(
+        "INSERT INTO focus_plan_variants(id,plan_id,label,canonical_json,plain_text,sort_key,created_at,updated_at) VALUES(?1,?2,?3,'{\"type\":\"doc\",\"content\":[]}','',0,?4,?4)",
+        params![variant_id, plan_id, label, timestamp],
+    )?;
+    let canonical = snapshot(&tx, &plan_id)?;
+    tx.execute(
+        "INSERT INTO focus_plan_revisions(id,plan_id,revision,canonical_json,reason,created_at) VALUES(?1,?2,0,?3,'create_plan',?4)",
+        params![new_id(), plan_id, canonical, timestamp],
+    )?;
+    tx.execute(
+        "INSERT INTO focus_plan_save_operations(operation_id,plan_id,result_revision,created_at) VALUES(?1,?2,0,?3)",
+        params![input.operation_id, plan_id, timestamp],
+    )?;
+    tx.commit()?;
+    get(conn, &plan_id)
+}
+
+fn mutation_reason(action: &FocusPlanMutationAction) -> &'static str {
+    match action {
+        FocusPlanMutationAction::UpdatePlan { .. } => "update_plan",
+        FocusPlanMutationAction::AddVariant { .. } => "add_variant",
+        FocusPlanMutationAction::RenameVariant { .. } => "rename_variant",
+        FocusPlanMutationAction::SelectVariant { .. } => "select_variant",
+        FocusPlanMutationAction::UpdateVariantBody { .. } => "update_variant_body",
+        FocusPlanMutationAction::ArchiveVariant { .. } => "archive_variant",
+        FocusPlanMutationAction::RestoreVariant { .. } => "restore_variant",
+        FocusPlanMutationAction::AddPhase { .. } => "add_phase",
+        FocusPlanMutationAction::RenamePhase { .. } => "rename_phase",
+        FocusPlanMutationAction::MovePhase { .. } => "move_phase",
+        FocusPlanMutationAction::ArchivePhase { .. } => "archive_phase",
+        FocusPlanMutationAction::RestorePhase { .. } => "restore_phase",
+        FocusPlanMutationAction::ArchivePlan => "archive_plan",
+        FocusPlanMutationAction::RestorePlan => "restore_plan",
+    }
+}
+
+fn replace_tags(tx: &Transaction<'_>, plan_id: &str, tag_ids: &[String], timestamp: &str) -> Result<()> {
+    let tag_ids = validate_tags(tx, tag_ids)?;
+    tx.execute("DELETE FROM focus_plan_tags WHERE plan_id=?1", [plan_id])?;
+    for tag_id in tag_ids {
+        tx.execute(
+            "INSERT INTO focus_plan_tags(plan_id,tag_id,created_at) VALUES(?1,?2,?3)",
+            params![plan_id, tag_id, timestamp],
+        )?;
+    }
+    Ok(())
+}
+
+fn apply_mutation(
+    tx: &Transaction<'_>,
+    plan_id: &str,
+    action: &FocusPlanMutationAction,
+    timestamp: &str,
+) -> Result<Option<String>> {
+    let created_id = match action {
+        FocusPlanMutationAction::UpdatePlan {
+            title,
+            lifecycle,
+            life_node_id,
+            start_date,
+            target_date,
+            outcome,
+            success_criteria,
+            tag_ids,
+        } => {
+            let title = validate_title(title, "Focus Plan title", 200)?;
+            if outcome.len() > 8192 {
+                return Err(FocusPlanError::Validation(
+                    "Focus Plan outcome exceeds 8192 characters".into(),
+                ));
+            }
+            validate_dates(start_date.as_deref(), target_date.as_deref())?;
+            validate_life_target(tx, life_node_id.as_deref())?;
+            let criteria = validate_criteria(success_criteria)?;
+            let criteria_json = serde_json::to_string(&criteria).map_err(|_| {
+                FocusPlanError::Validation("Success criteria are invalid".into())
+            })?;
+            tx.execute(
+                "UPDATE focus_plans SET title=?2,lifecycle=?3,life_node_id=?4,start_date=?5,target_date=?6,outcome=?7,success_criteria_json=?8 WHERE id=?1",
+                params![plan_id, title, lifecycle.as_str(), life_node_id, start_date, target_date, outcome, criteria_json],
+            )?;
+            replace_tags(tx, plan_id, tag_ids, timestamp)?;
+            None
+        }
+        FocusPlanMutationAction::AddVariant { label } => {
+            let label = validate_title(label, "Variant label", 120)?;
+            let id = new_id();
+            let sort_key: u32 = tx.query_row(
+                "SELECT COALESCE(MAX(sort_key)+1,0) FROM focus_plan_variants WHERE plan_id=?1",
+                [plan_id],
+                |row| row.get(0),
+            )?;
+            tx.execute(
+                "INSERT INTO focus_plan_variants(id,plan_id,label,canonical_json,plain_text,sort_key,created_at,updated_at) VALUES(?1,?2,?3,'{\"type\":\"doc\",\"content\":[]}','',?4,?5,?5)",
+                params![id, plan_id, label, sort_key, timestamp],
+            )?;
+            Some(id)
+        }
+        FocusPlanMutationAction::RenameVariant { variant_id, label } => {
+            ensure_variant(tx, plan_id, variant_id)?;
+            let label = validate_title(label, "Variant label", 120)?;
+            tx.execute(
+                "UPDATE focus_plan_variants SET label=?3,updated_at=?4 WHERE id=?1 AND plan_id=?2",
+                params![variant_id, plan_id, label, timestamp],
+            )?;
+            None
+        }
+        FocusPlanMutationAction::SelectVariant { variant_id } => {
+            if ensure_variant(tx, plan_id, variant_id)? {
+                return Err(FocusPlanError::Validation(
+                    "Archived variants cannot be selected".into(),
+                ));
+            }
+            tx.execute(
+                "UPDATE focus_plans SET selected_variant_id=?2 WHERE id=?1",
+                params![plan_id, variant_id],
+            )?;
+            None
+        }
+        FocusPlanMutationAction::UpdateVariantBody {
+            variant_id,
+            canonical_json,
+            plain_text,
+        } => {
+            ensure_variant(tx, plan_id, variant_id)?;
+            validate_body(canonical_json, plain_text)?;
+            tx.execute(
+                "UPDATE focus_plan_variants SET canonical_json=?3,plain_text=?4,updated_at=?5 WHERE id=?1 AND plan_id=?2",
+                params![variant_id, plan_id, canonical_json, plain_text, timestamp],
+            )?;
+            None
+        }
+        FocusPlanMutationAction::ArchiveVariant { variant_id } => {
+            if ensure_variant(tx, plan_id, variant_id)? {
+                return Err(FocusPlanError::Validation(
+                    "Variant is already archived".into(),
+                ));
+            }
+            tx.execute(
+                "UPDATE focus_plan_variants SET archived_at=?3,updated_at=?3 WHERE id=?1 AND plan_id=?2",
+                params![variant_id, plan_id, timestamp],
+            )?;
+            None
+        }
+        FocusPlanMutationAction::RestoreVariant { variant_id } => {
+            if !ensure_variant(tx, plan_id, variant_id)? {
+                return Err(FocusPlanError::Validation(
+                    "Variant is not archived".into(),
+                ));
+            }
+            tx.execute(
+                "UPDATE focus_plan_variants SET archived_at=NULL,updated_at=?3 WHERE id=?1 AND plan_id=?2",
+                params![variant_id, plan_id, timestamp],
+            )?;
+            None
+        }
+        FocusPlanMutationAction::AddPhase { variant_id, title } => {
+            ensure_variant(tx, plan_id, variant_id)?;
+            let title = validate_title(title, "Phase title", 160)?;
+            let id = new_id();
+            let sort_key: u32 = tx.query_row(
+                "SELECT COALESCE(MAX(sort_key)+1,0) FROM focus_plan_phases WHERE variant_id=?1",
+                [variant_id],
+                |row| row.get(0),
+            )?;
+            tx.execute(
+                "INSERT INTO focus_plan_phases(id,variant_id,title,sort_key,created_at,updated_at) VALUES(?1,?2,?3,?4,?5,?5)",
+                params![id, variant_id, title, sort_key, timestamp],
+            )?;
+            Some(id)
+        }
+        FocusPlanMutationAction::RenamePhase {
+            variant_id,
+            phase_id,
+            title,
+        } => {
+            ensure_phase(tx, plan_id, variant_id, phase_id)?;
+            let title = validate_title(title, "Phase title", 160)?;
+            tx.execute(
+                "UPDATE focus_plan_phases SET title=?4,updated_at=?5 WHERE id=?1 AND variant_id=?2 AND EXISTS(SELECT 1 FROM focus_plan_variants WHERE id=?2 AND plan_id=?3)",
+                params![phase_id, variant_id, plan_id, title, timestamp],
+            )?;
+            None
+        }
+        FocusPlanMutationAction::MovePhase {
+            variant_id,
+            phase_id,
+            new_index,
+        } => {
+            if ensure_phase(tx, plan_id, variant_id, phase_id)? {
+                return Err(FocusPlanError::Validation(
+                    "Archived phases cannot be reordered".into(),
+                ));
+            }
+            let mut statement = tx.prepare(
+                "SELECT id FROM focus_plan_phases WHERE variant_id=?1 AND archived_at IS NULL ORDER BY sort_key,id",
+            )?;
+            let mut ids = statement
+                .query_map([variant_id], |row| row.get::<_, String>(0))?
+                .collect::<std::result::Result<Vec<_>, _>>()?;
+            let old_index = ids
+                .iter()
+                .position(|id| id == phase_id)
+                .ok_or(FocusPlanError::NotFound)?;
+            let item = ids.remove(old_index);
+            let target = (*new_index as usize).min(ids.len());
+            ids.insert(target, item);
+            for (index, id) in ids.iter().enumerate() {
+                tx.execute(
+                    "UPDATE focus_plan_phases SET sort_key=?2,updated_at=?3 WHERE id=?1",
+                    params![id, index as u32, timestamp],
+                )?;
+            }
+            None
+        }
+        FocusPlanMutationAction::ArchivePhase {
+            variant_id,
+            phase_id,
+        } => {
+            if ensure_phase(tx, plan_id, variant_id, phase_id)? {
+                return Err(FocusPlanError::Validation(
+                    "Phase is already archived".into(),
+                ));
+            }
+            tx.execute(
+                "UPDATE focus_plan_phases SET archived_at=?3,updated_at=?3 WHERE id=?1 AND variant_id=?2",
+                params![phase_id, variant_id, timestamp],
+            )?;
+            None
+        }
+        FocusPlanMutationAction::RestorePhase {
+            variant_id,
+            phase_id,
+        } => {
+            if !ensure_phase(tx, plan_id, variant_id, phase_id)? {
+                return Err(FocusPlanError::Validation(
+                    "Phase is not archived".into(),
+                ));
+            }
+            tx.execute(
+                "UPDATE focus_plan_phases SET archived_at=NULL,updated_at=?3 WHERE id=?1 AND variant_id=?2",
+                params![phase_id, variant_id, timestamp],
+            )?;
+            None
+        }
+        FocusPlanMutationAction::ArchivePlan => {
+            let archived: Option<String> = tx.query_row(
+                "SELECT archived_at FROM focus_plans WHERE id=?1",
+                [plan_id],
+                |row| row.get(0),
+            )?;
+            if archived.is_some() {
+                return Err(FocusPlanError::Validation(
+                    "Focus Plan is already archived".into(),
+                ));
+            }
+            tx.execute(
+                "UPDATE focus_plans SET archived_at=?2 WHERE id=?1",
+                params![plan_id, timestamp],
+            )?;
+            None
+        }
+        FocusPlanMutationAction::RestorePlan => {
+            let archived: Option<String> = tx.query_row(
+                "SELECT archived_at FROM focus_plans WHERE id=?1",
+                [plan_id],
+                |row| row.get(0),
+            )?;
+            if archived.is_none() {
+                return Err(FocusPlanError::Validation(
+                    "Focus Plan is not archived".into(),
+                ));
+            }
+            tx.execute(
+                "UPDATE focus_plans SET archived_at=NULL WHERE id=?1",
+                [plan_id],
+            )?;
+            None
+        }
+    };
+    Ok(created_id)
+}
+
+pub fn mutate(conn: &mut Connection, input: MutateFocusPlanInput) -> Result<FocusPlanMutationResult> {
+    validate_id(&input.plan_id, "Focus Plan ID")?;
+    validate_id(&input.operation_id, "Operation ID")?;
+    if let Some(existing) = existing_operation(conn, &input.operation_id)? {
+        if existing.plan_id != input.plan_id {
+            return Err(FocusPlanError::Validation(
+                "Operation ID was already used for another Focus Plan".into(),
+            ));
+        }
+        return Ok(existing);
+    }
+    plan_exists(conn, &input.plan_id)?;
+
+    let tx = conn.transaction()?;
+    let current_revision: u64 = tx.query_row(
+        "SELECT revision FROM focus_plans WHERE id=?1",
+        [&input.plan_id],
+        |row| row.get(0),
+    )?;
+    if current_revision != input.expected_revision {
+        let attempted = serde_json::to_string(&input.mutation).map_err(|_| {
+            FocusPlanError::Validation("Focus Plan recovery draft could not be encoded".into())
+        })?;
+        if attempted.len() <= 2_097_152 {
+            tx.execute(
+                "INSERT INTO focus_plan_drafts(plan_id,base_revision,draft_json,recovery_state,updated_at) VALUES(?1,?2,?3,'conflict',?4) ON CONFLICT(plan_id) DO UPDATE SET base_revision=excluded.base_revision,draft_json=excluded.draft_json,recovery_state='conflict',updated_at=excluded.updated_at",
+                params![input.plan_id, input.expected_revision, attempted, now()],
+            )?;
+            tx.commit()?;
+        }
+        return Err(FocusPlanError::StaleRevision);
+    }
+
+    let timestamp = now();
+    let created_id = apply_mutation(&tx, &input.plan_id, &input.mutation, &timestamp)?;
+    let changed = tx.execute(
+        "UPDATE focus_plans SET revision=revision+1,updated_at=?2 WHERE id=?1 AND revision=?3",
+        params![input.plan_id, timestamp, input.expected_revision],
+    )?;
+    if changed != 1 {
+        return Err(FocusPlanError::StaleRevision);
+    }
+    let revision = input.expected_revision + 1;
+    let canonical = snapshot(&tx, &input.plan_id)?;
+    tx.execute(
+        "INSERT INTO focus_plan_revisions(id,plan_id,revision,canonical_json,reason,created_at) VALUES(?1,?2,?3,?4,?5,?6)",
+        params![new_id(), input.plan_id, revision, canonical, mutation_reason(&input.mutation), timestamp],
+    )?;
+    trim_revisions(&tx, &input.plan_id)?;
+    tx.execute(
+        "INSERT INTO focus_plan_save_operations(operation_id,plan_id,result_revision,created_at) VALUES(?1,?2,?3,?4)",
+        params![input.operation_id, input.plan_id, revision, timestamp],
+    )?;
+    tx.commit()?;
+    Ok(FocusPlanMutationResult {
+        plan_id: input.plan_id,
+        revision,
+        created_id,
+        replayed: false,
+    })
+}
+
+pub fn save_draft(conn: &mut Connection, input: SaveFocusPlanDraftInput) -> Result<()> {
+    validate_id(&input.plan_id, "Focus Plan ID")?;
+    if input.draft_json.len() > 2_097_152 || serde_json::from_str::<serde_json::Value>(&input.draft_json).is_err() {
+        return Err(FocusPlanError::Validation(
+            "Recovery draft must be valid JSON within the 2 MiB limit".into(),
+        ));
+    }
+    plan_exists(conn, &input.plan_id)?;
+    conn.execute(
+        "INSERT INTO focus_plan_drafts(plan_id,base_revision,draft_json,recovery_state,updated_at) VALUES(?1,?2,?3,'available',?4) ON CONFLICT(plan_id) DO UPDATE SET base_revision=excluded.base_revision,draft_json=excluded.draft_json,recovery_state='available',updated_at=excluded.updated_at",
+        params![input.plan_id, input.base_revision, input.draft_json, now()],
+    )?;
+    Ok(())
+}
+
+pub fn discard_draft(conn: &mut Connection, plan_id: &str) -> Result<()> {
+    validate_id(plan_id, "Focus Plan ID")?;
+    plan_exists(conn, plan_id)?;
+    conn.execute("DELETE FROM focus_plan_drafts WHERE plan_id=?1", [plan_id])?;
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::infrastructure::sqlite::{
+        connection::open_memory_connection, task36_migration::run_all_migrations,
+    };
+
+    fn connection() -> Connection {
+        let mut conn = open_memory_connection().unwrap();
+        run_all_migrations(&mut conn).unwrap();
+        conn
+    }
+
+    fn create_input(operation_id: &str) -> CreateFocusPlanInput {
+        CreateFocusPlanInput {
+            title: "AI Foundations".into(),
+            life_node_id: None,
+            start_date: Some("2026-08-15".into()),
+            target_date: Some("2026-12-20".into()),
+            outcome: "Build foundations".into(),
+            success_criteria: vec!["Finish the core sequence".into()],
+            initial_variant_label: "Textbook first".into(),
+            operation_id: operation_id.into(),
+        }
+    }
+
+    #[test]
+    fn create_is_idempotent_and_has_one_variant() {
+        let mut conn = connection();
+        let first = create(&mut conn, create_input("op-create")).unwrap();
+        let replay = create(&mut conn, create_input("op-create")).unwrap();
+        assert_eq!(first.id, replay.id);
+        assert_eq!(first.revision, 0);
+        assert_eq!(first.variants.len(), 1);
+        assert_eq!(first.selected_variant_id, first.variants[0].id);
+    }
+
+    #[test]
+    fn mutation_advances_once_and_replay_does_not_advance() {
+        let mut conn = connection();
+        let plan = create(&mut conn, create_input("op-create")).unwrap();
+        let input = MutateFocusPlanInput {
+            plan_id: plan.id.clone(),
+            expected_revision: 0,
+            operation_id: "op-add".into(),
+            mutation: FocusPlanMutationAction::AddVariant {
+                label: "Course first".into(),
+            },
+        };
+        let result = mutate(&mut conn, input.clone()).unwrap();
+        let replay = mutate(&mut conn, input).unwrap();
+        assert_eq!(result.revision, 1);
+        assert_eq!(replay.revision, 1);
+        assert!(replay.replayed);
+        assert_eq!(get(&conn, &plan.id).unwrap().variants.len(), 2);
+    }
+
+    #[test]
+    fn stale_mutation_preserves_conflict_draft() {
+        let mut conn = connection();
+        let plan = create(&mut conn, create_input("op-create")).unwrap();
+        let err = mutate(
+            &mut conn,
+            MutateFocusPlanInput {
+                plan_id: plan.id.clone(),
+                expected_revision: 9,
+                operation_id: "op-stale".into(),
+                mutation: FocusPlanMutationAction::AddVariant { label: "B".into() },
+            },
+        )
+        .unwrap_err();
+        assert!(matches!(err, FocusPlanError::StaleRevision));
+        let detail = get(&conn, &plan.id).unwrap();
+        assert!(detail.recovery_draft.unwrap().conflict);
+        assert_eq!(detail.revision, 0);
+    }
+
+    #[test]
+    fn selected_variant_and_last_variant_guards_surface_as_errors() {
+        let mut conn = connection();
+        let plan = create(&mut conn, create_input("op-create")).unwrap();
+        let err = mutate(
+            &mut conn,
+            MutateFocusPlanInput {
+                plan_id: plan.id.clone(),
+                expected_revision: 0,
+                operation_id: "op-archive-selected".into(),
+                mutation: FocusPlanMutationAction::ArchiveVariant {
+                    variant_id: plan.selected_variant_id,
+                },
+            },
+        )
+        .unwrap_err();
+        assert!(matches!(err, FocusPlanError::Db(_)));
+        assert_eq!(get(&conn, &plan.id).unwrap().revision, 0);
+    }
+
+    #[test]
+    fn variant_body_never_creates_reader_document() {
+        let mut conn = connection();
+        let plan = create(&mut conn, create_input("op-create")).unwrap();
+        mutate(
+            &mut conn,
+            MutateFocusPlanInput {
+                plan_id: plan.id.clone(),
+                expected_revision: 0,
+                operation_id: "op-body".into(),
+                mutation: FocusPlanMutationAction::UpdateVariantBody {
+                    variant_id: plan.selected_variant_id,
+                    canonical_json: "{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\"}]}".into(),
+                    plain_text: "Plan".into(),
+                },
+            },
+        )
+        .unwrap();
+        let count: i64 = conn
+            .query_row("SELECT COUNT(*) FROM reader_documents", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(count, 0);
+    }
+
+    #[test]
+    fn archive_restore_preserves_nested_state() {
+        let mut conn = connection();
+        let plan = create(&mut conn, create_input("op-create")).unwrap();
+        let before = get(&conn, &plan.id).unwrap();
+        mutate(
+            &mut conn,
+            MutateFocusPlanInput {
+                plan_id: plan.id.clone(), expected_revision: 0, operation_id: "op-archive".into(),
+                mutation: FocusPlanMutationAction::ArchivePlan,
+            },
+        ).unwrap();
+        mutate(
+            &mut conn,
+            MutateFocusPlanInput {
+                plan_id: plan.id.clone(), expected_revision: 1, operation_id: "op-restore".into(),
+                mutation: FocusPlanMutationAction::RestorePlan,
+            },
+        ).unwrap();
+        let after = get(&conn, &plan.id).unwrap();
+        assert_eq!(before.selected_variant_id, after.selected_variant_id);
+        assert_eq!(before.variants[0].canonical_json, after.variants[0].canonical_json);
+        assert!(!after.archived);
+        assert_eq!(after.revision, 2);
+    }
+}
