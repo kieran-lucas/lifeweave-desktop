@@ -17,9 +17,10 @@
 - Latest product feature: **Task 33 — Unified Tags Core + Cross-Pillar Retrieval**
 - Latest feature checkpoint: `4d1b65c816312a9e6ae8aa39f4a565555af9feb9`
 - Database schema: **19**
-- Active implementation specification: **none**
-- Next action: **Product Owner gate**
-- Task 34 status: **not selected or authorized**
+- Active implementation specification: **Slice 024 — Post-Unified-Tags Expansion Decision**
+- Next action: **Implement active spec**
+- Task 34 status: **active decision analysis**
+- Task 35 status: **prohibited pending Product Owner approval**
 
 ## Core invariants
 
@@ -32,6 +33,8 @@
 ## First verification commands
 
 ```powershell
+python -m unittest scripts.tests.test_check_project_state
+python specs/024-post-unified-tags-expansion-decision/analysis.py --check
 pnpm source:verify
 pnpm governance:check
 pnpm verify
