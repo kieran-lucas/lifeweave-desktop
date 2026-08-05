@@ -14,36 +14,39 @@
 
 - Latest closed task: **35/60**
 - Latest closed slice: **025 — Focus Plans Architecture Prototype**
+- Active task: **36 — Focus Plans Core + Draft/Active Lifecycle**
+- Active implementation specification: **specs/026-focus-plans-core**
 - Latest product feature: **Task 33 — Unified Tags Core + Cross-Pillar Retrieval**
 - Latest feature checkpoint: `4d1b65c816312a9e6ae8aa39f4a565555af9feb9`
-- Database schema: **19**
-- Active implementation specification: **none**
-- Next action: **Product Owner gate**
+- Database schema: **20**
+- Next action: **Implement active spec**
 - Canonical Focus Plans model: **standalone entity**
-- Task 36: **not started; separate activation required**
-- Task 37: **not started**
+- Task 37: **not started and prohibited**
 
-## Task 35 result
+## Task 36 boundary
 
-Option B was selected after a common 30-operation prototype, 100,000 applied
-operations per option, 3 × 18 hard filters, nine benchmark rows, six canonical
-and three stress profiles at 200,000 samples/profile, and ten review rounds.
+Task 36 implements Plan-owned persistence, lifecycle, variants/phases,
+revisions/recovery, shared tags, Search, full-database backup authority, and a
+lazy Plans workspace. It does not add Task/series links, review workflow,
+automatic progress, reminders, cloud, collaboration, score, or prediction.
 
 ## Core invariants
 
 - Windows-first and local-first; core use requires no account, server, network, or default cloud service.
-- Today remains the startup/default destination; Task is a row/timeline entity, never a card.
-- Life remains durable structure; Focus Plans do not create synthetic Life nodes.
-- SQLite through Rust is persistent/domain authority; React owns rendering and ephemeral interaction state.
+- Today remains startup/default; Task is a row/timeline entity, never a card.
+- Life remains durable structure; Focus Plans never create synthetic Life nodes.
+- SQLite through Rust is persistence/domain authority; React owns rendering and ephemeral interaction state.
 - Backup, restore, and interchange remain distinct authorities.
 
 ## Verification entry points
 
 ```powershell
-python specs/025-focus-plans-architecture/prototype.py --check
-python -m unittest specs/025-focus-plans-architecture/prototype_test.py
-python specs/025-focus-plans-architecture/analysis.py --check
-python -m unittest specs/025-focus-plans-architecture/analysis_test.py
+pnpm source:verify
+pnpm governance:check
+pnpm index:check
+pnpm verify
+pnpm typecheck
+cargo test --manifest-path src-tauri/Cargo.toml --locked
 ```
 
-No Task 36 work begins without explicit Product Owner approval.
+Task 37 work requires a separate Product Owner activation.
