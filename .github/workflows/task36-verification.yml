@@ -46,8 +46,10 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Source integrity
         run: pnpm source:verify
-      - name: Repository governance
-        run: pnpm governance:check
+      - name: Repository structure
+        run: python scripts/check_repository.py
+      - name: Project state
+        run: python scripts/check_project_state.py
       - name: Generated indexes
         run: pnpm index:check
       - name: Security and hardening
