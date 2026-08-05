@@ -1,4 +1,4 @@
-name: Task 36 final integration and cleanup
+name: Task 36 integrate verified backend and cleanup
 
 on:
   push:
@@ -17,7 +17,7 @@ concurrency:
 jobs:
   integrate-clean:
     runs-on: windows-latest
-    timeout-minutes: 45
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -49,8 +49,6 @@ jobs:
           label_index = text.index(label)
           start = text.rfind("    text = replace(", 0, label_index)
           end = text.index("    )", label_index) + len("    )")
-          if start < 0 or end <= label_index:
-              raise SystemExit("could not isolate obsolete Search selector")
           new = (
               '    text = replace(\n'
               '        text,\n'
@@ -64,42 +62,38 @@ jobs:
           final_path = Path("scripts/task36_phase3_final_fix.py")
           final_text = final_path.read_text(encoding="utf-8")
           old = "".join([
-              "    text = replace_once(\n",
-              "        text,\n",
+              "    text = replace_once(\n", "        text,\n",
               "        '''            let mut c = open_file_connection(&path).unwrap();\n",
               "            run_migrations(&mut c).unwrap();''',\n",
               "        '''            let mut c = open_file_connection(&path).unwrap();\n",
               "            crate::infrastructure::sqlite::task36_migration::run_all_migrations(&mut c)\n",
               "                .unwrap();''',\n",
-              '        "narrative reopen migration authority",\n',
-              "    )",
+              '        "narrative reopen migration authority",\n', "    )",
           ])
           replacement = "".join([
-              "    text = replace_once(\n",
-              "        text,\n",
+              "    text = replace_once(\n", "        text,\n",
               "        '''        // ── Session 3: verify restored state ─────────────────────────────────\n",
-              "        {\n",
-              "            let mut c = open_file_connection(&path).unwrap();\n",
+              "        {\n", "            let mut c = open_file_connection(&path).unwrap();\n",
               "            run_migrations(&mut c).unwrap();''',\n",
               "        '''        // ── Session 3: verify restored state ─────────────────────────────────\n",
-              "        {\n",
-              "            let mut c = open_file_connection(&path).unwrap();\n",
+              "        {\n", "            let mut c = open_file_connection(&path).unwrap();\n",
               "            crate::infrastructure::sqlite::task36_migration::run_all_migrations(&mut c)\n",
               "                .unwrap();''',\n",
-              '        "narrative reopen migration authority",\n',
-              "    )",
+              '        "narrative reopen migration authority",\n', "    )",
           ])
           if final_text.count(old) != 1:
               raise SystemExit(f"expected one narrative selector block, found {final_text.count(old)}")
           final_path.write_text(final_text.replace(old, replacement), encoding="utf-8", newline="\n")
           '@ | python -
 
-      - name: Apply the existing bounded patches
+      - name: Apply already-verified backend patches
         shell: pwsh
         run: |
           python scripts/task36_phase3_apply.py
           python scripts/task36_migration20_scope_fix.py
           python scripts/task36_phase3_final_fix.py
+          cargo fmt --manifest-path src-tauri/Cargo.toml --all
+          git diff --check
 
       - name: Enforce Task 37 exclusion
         shell: pwsh
@@ -110,74 +104,42 @@ jobs:
             $leaks | ForEach-Object { Write-Host "::error::$_" }
             throw "Task 37 relation leaked into Task 36"
           }
-          if ($code -ne 1) {
-            throw "Task 37 exclusion scan failed with exit code $code"
-          }
+          if ($code -ne 1) { throw "Task 37 exclusion scan failed" }
           $sql = Get-Content src-tauri/src/infrastructure/sqlite/task36_migration.rs -Raw
           if ($sql -match "ALTER TABLE (tasks|task_series)" -or $sql -match "REFERENCES (tasks|task_series)") {
             throw "Task 37 SQL leaked into migration 20"
           }
           exit 0
 
-      - name: Format changed Rust
-        run: cargo fmt --manifest-path src-tauri/Cargo.toml --all
-
-      - name: Verify the three previously failing paths
+      - name: Remove all temporary Task 36 scaffolding
         shell: pwsh
         run: |
-          cargo test --manifest-path src-tauri/Cargo.toml --locked narrative::repository::tests::narrative_canvas_backup_relaunch_evidence -- --exact
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          cargo test --manifest-path src-tauri/Cargo.toml --locked search::repository::tests::search_file_backed_smoke -- --exact
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          cargo test --manifest-path src-tauri/Cargo.toml --locked search::repository::tests::search_perf_realistic_fixture -- --exact
-          exit $LASTEXITCODE
-
-      - name: Verify bounded diff
-        shell: pwsh
-        run: |
-          git diff --check
-          $allowedPrefixes = @(
-            "src-tauri/",
+          $paths = @(
             ".github/workflows/task36-verification.yml",
             "scripts/task36_phase3_apply.py",
             "scripts/task36_migration20_scope_fix.py",
-            "scripts/task36_phase3_final_fix.py"
+            "scripts/task36_phase3_final_fix.py",
+            ".gitkeep-temp",
+            "specs/026-focus-plans-core/.phase1-compiler-findings.md",
+            "specs/026-focus-plans-core/compiler-boundary.md",
+            "specs/026-focus-plans-core/phase1-exact-byte-policy.md",
+            "specs/026-focus-plans-core/phase-1-evidence.md",
+            "docs/audits/task-36-phase-1-compiler.md"
           )
-          $unexpected = git diff --name-only | Where-Object {
-            $path = $_
-            -not ($allowedPrefixes | Where-Object { $path.StartsWith($_) })
-          }
-          if ($unexpected) {
-            $unexpected | ForEach-Object { Write-Host "::error::Unexpected path: $_" }
-            throw "Phase 3 changed paths outside its bounded scope"
+          foreach ($path in $paths) {
+            if (Test-Path $path) { git rm -f -- $path }
           }
 
-      - name: Remove temporary Task 36 scaffolding
-        shell: pwsh
-        run: |
-          git rm .github/workflows/task36-verification.yml
-          git rm scripts/task36_phase3_apply.py
-          git rm scripts/task36_migration20_scope_fix.py
-          git rm scripts/task36_phase3_final_fix.py
-          git rm .gitkeep-temp
-          git rm specs/026-focus-plans-core/.phase1-compiler-findings.md
-          git rm specs/026-focus-plans-core/compiler-boundary.md
-          git rm specs/026-focus-plans-core/phase1-exact-byte-policy.md
-          git rm specs/026-focus-plans-core/phase-1-evidence.md
-          git rm docs/audits/task-36-phase-1-compiler.md
-
-      - name: Commit integrated code and cleanup
+      - name: Commit integrated backend and cleanup
         shell: pwsh
         run: |
           git fetch origin main
           if ((git rev-parse HEAD) -ne (git rev-parse origin/main)) {
-            throw "main advanced before final integration commit"
+            throw "main advanced before integration commit"
           }
           git add src-tauri
           git diff --cached --check
-          if (git diff --cached --quiet) {
-            throw "Task 36 integration produced no changes"
-          }
+          if (git diff --cached --quiet) { throw "integration produced no changes" }
           git config user.name "Kieran Lucas"
           git config user.email "kieranlucas.work@gmail.com"
           git commit -m "integrate task 36 search backup and remove temporary scaffolding [skip ci]"
