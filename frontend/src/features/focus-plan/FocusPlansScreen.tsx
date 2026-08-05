@@ -81,6 +81,32 @@ function canonicalBody(plainText: string): string {
   });
 }
 
+function recoveryForm(raw: string, fallback: PlanForm): PlanForm {
+  const value: unknown = JSON.parse(raw);
+  if (!value || typeof value !== "object") throw new Error("Invalid recovery draft");
+  const draft = value as Partial<PlanForm>;
+  const lifecycle =
+    draft.lifecycle === "draft" ||
+    draft.lifecycle === "active" ||
+    draft.lifecycle === "paused" ||
+    draft.lifecycle === "completed"
+      ? draft.lifecycle
+      : fallback.lifecycle;
+  return {
+    title: typeof draft.title === "string" ? draft.title : fallback.title,
+    lifecycle,
+    lifeNodeId: typeof draft.lifeNodeId === "string" ? draft.lifeNodeId : fallback.lifeNodeId,
+    startDate: typeof draft.startDate === "string" ? draft.startDate : fallback.startDate,
+    targetDate: typeof draft.targetDate === "string" ? draft.targetDate : fallback.targetDate,
+    outcome: typeof draft.outcome === "string" ? draft.outcome : fallback.outcome,
+    criteriaText:
+      typeof draft.criteriaText === "string" ? draft.criteriaText : fallback.criteriaText,
+    tagIds: Array.isArray(draft.tagIds)
+      ? draft.tagIds.filter((value): value is string => typeof value === "string")
+      : fallback.tagIds,
+  };
+}
+
 export function FocusPlansScreen({ entryRequest, onEntryRequestSettled }: Props) {
   const [portfolio, setPortfolio] = useState<FocusPlanPortfolio>("active");
   const [plans, setPlans] = useState<FocusPlanSummaryView[]>([]);
@@ -113,7 +139,7 @@ export function FocusPlansScreen({ entryRequest, onEntryRequestSettled }: Props)
     setStatus("loading");
     setError(null);
     try {
-      const result = await listFocusPlans({ portfolio: nextPortfolio, limit: 200, offset: 0 });
+      const result = await listFocusPlans({ portfolio nextPortfolio, limit: 200, offset: 0 });
       setPlans(result);
       setStatus("ready");
     } catch (cause) {
@@ -185,7 +211,7 @@ export function FocusPlansScreen({ entryRequest, onEntryRequestSettled }: Props)
     setStatus("saving");
     setError(null);
     try {
-      const plan = await createFocusPlan({
+      const plan = await createFocusPlan(
         title,
         life_node_id: null,
         start_date: null,
@@ -195,151 +221,6 @@ export function FocusPlansScreen({ entryRequest, onEntryRequestSettled }: Props)
         initial_variant_label: "Primary approach",
         operation_id: globalThis.crypto.randomUUID(),
       });
-      setCreateTitle("");
-      setPortfolio("draft");
-      syncDetail(plan);
-      await loadPortfolio("draft");
-    } catch (cause) {
-      setError(messageFromError(cause));
-      setStatus("ready");
-    }
-  }
-
-  function updateForm<K extends keyof PlanForm>(key: K, value: PlanForm[K]) {
-    setForm((current) => (current ? { ...current, [key]: value } : current));
-  }
-
-  function savePlan() {
-    if (!form) return;
-    void runMutation({
-      action: "update_plan",
-      title: form.title,
-      lifecycle: form.lifecycle,
-      life_node_id: form.lifeNodeId || null,
-      start_date: form.startDate || null,
-      target_date: form.targetDate || null,
-      outcome: form.outcome,
-      success_criteria: form.criteriaText.split("\n").map((value) => value.trim()).filter(Boolean),
-      tag_ids: form.tagIds,
-    });
-  }
-
-  async function saveRecoveryDraft() {
-    if (!selected || !form) return;
-    setStatus("saving");
-    setError(null);
-    try {
-      await saveFocusPlanDraft({
-        plan_id: selected.id,
-        base_revision: selected.revision,
-        draft_json: JSON.stringify(form),
-      });
-      await refreshSelected();
-    } catch (cause) {
-      setError(messageFromError(cause));
-      setStatus("ready");
-    }
-  }
-
-  async function discardRecoveryDraft() {
-    if (!selected) return;
-    setStatus("saving");
-    setError(null);
-    try {
-      await discardFocusPlanDraft({ plan_id: selected.id });
-      await refreshSelected();
-    } catch (cause) {
-      setError(messageFromError(cause));
-      setStatus("ready");
-    }
-  }
-
-  return (
-    <section className={styles.screen} aria-labelledby="plans-heading">
-      <header className={styles.header}>
-        <div>
-          <h1 id="plans-heading" tabIndex={-1} className={styles.heading}>Plans</h1>
-          <p className={styles.lede}>Medium-term strategies without fragmenting your Life tree.</p>
-        </div>
-        <form className={styles.createForm} onSubmit={handleCreate}>
-          <label className={styles.srOnly} htmlFor="new-plan-title">New plan title</label>
-          <input id="new-plan-title" className={styles.input} value={createTitle} onChange={(event) => setCreateTitle(event.target.value)} placeholder="New focus plan" />
-          <button className={styles.primaryButton} disabled={status === "saving" || !createTitle.trim()}>Create</button>
-        </form>
-      </header>
-
-      {error && <p className={styles.error} role="alert">{error}</p>}
-      <div className={styles.portfolios} role="tablist" aria-label="Plan portfolios">
-        {portfolios.map((item) => (
-          <button key={item.id} type="button" role="tab" aria-selected={portfolio === item.id} className={styles.tab} onClick={() => setPortfolio(item.id)}>{item.label}</button>
-        ))}
-      </div>
-
-      <div className={styles.workspace}>
-        <aside className={styles.listPanel} aria-label={`${portfolio} plans`}>
-          {status === "loading" && plans.length === 0 ? <p className={styles.muted}>Loading plans…</p> : null}
-          {status !== "loading" && plans.length === 0 ? <p className={styles.muted}>No plans in this portfolio.</p> : null}
-          <ul className={styles.planList}>
-            {plans.map((plan) => (
-              <li key={plan.id}>
-                <button type="button" className={styles.planButton} aria-current={selected?.id === plan.id ? "true" : undefined} onClick={() => void openPlan(plan.id)}>
-                  <strong>{plan.title}</strong>
-                  <span>{plan.selected_variant_label}</span>
-                  <span>{plan.life_title ?? "No Life area"} · {plan.active_phase_count} phases</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </aside>
-
-        <div className={styles.detailPanel}>
-          {!selected || !form ? (
-            <p className={styles.emptyState}>Select a plan or create a new one.</p>
-          ) : (
-            <>
-              <div className={styles.detailHeader}>
-                <div>
-                  <h2>{selected.title}</h2>
-                  <p className={styles.muted}>Revision {selected.revision} · Updated {selected.updated_at}</p>
-                </div>
-                <button type="button" className={styles.dangerButton} disabled={status === "saving"} onClick={() => void runMutation({ action: selected.archived ? "restore_plan" : "archive_plan" })}>{selected.archived ? "Restore plan" : "Archive plan"}</button>
-              </div>
-
-              <fieldset className={styles.fieldset} disabled={status === "saving" || selected.archived}>
-                <legend>Plan details</legend>
-                <label>Title<input className={styles.input} value={form.title} onChange={(event) => updateForm("title", event.target.value)} /></label>
-                <div className={styles.twoColumns}>
-                  <label>Lifecycle<select className={styles.input} value={form.lifecycle} onChange={(event) => updateForm("lifecycle", event.target.value as FocusPlanLifecycle)}><option value="draft">Draft</option><option value="active">Active</option><option value="paused">Paused</option><option value="completed">Completed</option></select></label>
-                  <label>Life area<select className={styles.input} value={form.lifeNodeId} onChange={(event) => updateForm("lifeNodeId", event.target.value)}><option value="">Unlinked</option>{lifeTargets.map((target) => <option key={target.id} value={target.id}>{target.breadcrumb}</option>)}</select></label>
-                  <label>Start date<input className={styles.input} type="date" value={form.startDate} onChange={(event) => updateForm("startDate", event.target.value)} /></label>
-                  <label>Target date<input className={styles.input} type="date" value={form.targetDate} onChange={(event) => updateForm("targetDate", event.target.value)} /></label>
-                </div>
-                <label>Outcome<textarea className={styles.textarea} value={form.outcome} onChange={(event) => updateForm("outcome", event.target.value)} /></label>
-                <label>Success criteria, one per line<textarea className={styles.textarea} value={form.criteriaText} onChange={(event) => updateForm("criteriaText", event.target.value)} /></label>
-                <fieldset className={styles.tagFieldset}><legend>Tags</legend>{tags.map((tag) => <label key={tag.id} className={styles.checkLabel}><input type="checkbox" checked={form.tagIds.includes(tag.id)} onChange={(event) => updateForm("tagIds", event.target.checked ? [...form.tagIds, tag.id] : form.tagIds.filter((id) => id !== tag.id))} />{tag.name}</label>)}</fieldset>
-                <div className={styles.actions}><button type="button" className={styles.primaryButton} onClick={savePlan}>Save plan</button><button type="button" className={styles.secondaryButton} onClick={() => void saveRecoveryDraft()}>Save recovery draft</button>{selected.recovery_draft && <button type="button" className={styles.secondaryButton} onClick={() => void discardRecoveryDraft()}>Discard recovery draft</button>}</div>
-                {selected.recovery_draft && <p className={styles.draftNote}>Recovery draft saved at {selected.recovery_draft.updated_at}{selected.recovery_draft.conflict ? " · revision conflict" : ""}.</p>}
-              </fieldset>
-
-              <section aria-labelledby="variants-heading">
-                <h3 id="variants-heading">Approaches</h3>
-                <div className={styles.variantTabs}>{selected.variants.map((variant) => <span key={variant.id} className={styles.variantControl}><button type="button" className={styles.tab} aria-pressed={variant.id === selected.selected_variant_id} disabled={variant.archived || status === "saving"} onClick={() => void runMutation({ action: "select_variant", variant_id: variant.id })}>{variant.label}{variant.archived ? " (archived)" : ""}</button>{variant.id !== selected.selected_variant_id && <button type="button" className={styles.iconButton} aria-label={`${variant.archived ? "Restore" : "Archive"} ${variant.label}`} onClick={() => void runMutation({ action: variant.archived ? "restore_variant" : "archive_variant", variant_id: variant.id })}>{variant.archived ? "↺" : "×"}</button>}</span>)}</div>
-                <form className={styles.inlineForm} onSubmit={(event) => { event.preventDefault(); if (newVariantLabel.trim()) { void runMutation({ action: "add_variant", label: newVariantLabel.trim() }); setNewVariantLabel(""); } }}><input className={styles.input} value={newVariantLabel} onChange={(event) => setNewVariantLabel(event.target.value)} placeholder="Alternative approach" /><button className={styles.secondaryButton} disabled={!newVariantLabel.trim() || status === "saving"}>Add approach</button></form>
-                {selectedVariant && <div className={styles.variantEditor}>
-                  <div className={styles.inlineForm}><input className={styles.input} value={variantLabel} onChange={(event) => setVariantLabel(event.target.value)} /><button type="button" className={styles.secondaryButton} disabled={!variantLabel.trim()} onClick={() => void runMutation({ action: "rename_variant", variant_id: selectedVariant.id, label: variantLabel.trim() })}>Rename</button></div>
-                  <label>Approach notes<textarea className={styles.textarea} value={variantBody} onChange={(event) => setVariantBody(event.target.value)} /></label>
-                  <button type="button" className={styles.secondaryButton} onClick={() => void runMutation({ action: "update_variant_body", variant_id: selectedVariant.id, canonical_json: canonicalBody(variantBody), plain_text: variantBody })}>Save approach notes</button>
-
-                  <h4>Phases</h4>
-                  <ol className={styles.phaseList}>{[...selectedVariant.phases].sort((a, b) => a.sort_key - b.sort_key).map((phase, index, phases) => <li key={phase.id} className={styles.phaseRow}><input className={styles.input} defaultValue={phase.title} aria-label={`Phase ${index + 1} title`} onBlur={(event) => { const title = event.target.value.trim(); if (title && title !== phase.title) void runMutation({ action: "rename_phase", variant_id: selectedVariant.id, phase_id: phase.id, title }); }} /><button type="button" className={styles.iconButton} aria-label={`Move ${phase.title} up`} disabled={index === 0 || phase.archived} onClick={() => void runMutation({ action: "move_phase", variant_id: selectedVariant.id, phase_id: phase.id, new_index: index - 1 })}>↑</button><button type="button" className={styles.iconButton} aria-label={`Move ${phase.title} down`} disabled={index === phases.length - 1 || phase.archived} onClick={() => void runMutation({ action: "move_phase", variant_id: selectedVariant.id, phase_id: phase.id, new_index: index + 1 })}>↓</button><button type="button" className={styles.secondaryButton} onClick={() => void runMutation({ action: phase.archived ? "restore_phase" : "archive_phase", variant_id: selectedVariant.id, phase_id: phase.id })}>{phase.archived ? "Restore" : "Archive"}</button></li>)}</ol>
-                  <form className={styles.inlineForm} onSubmit={(event) => { event.preventDefault(); if (newPhaseTitle.trim()) { void runMutation({ action: "add_phase", variant_id: selectedVariant.id, title: newPhaseTitle.trim() }); setNewPhaseTitle(""); } }}><input className={styles.input} value={newPhaseTitle} onChange={(event) => setNewPhaseTitle(event.target.value)} placeholder="New phase" /><button className={styles.secondaryButton} disabled={!newPhaseTitle.trim() || status === "saving"}>Add phase</button></form>
-                </div>}
-              </section>
-            </>
-          )}
-        </div>
-      </div>
-      <p className={styles.srOnly} aria-live="polite">{status === "saving" ? "Saving plan." : ""}</p>
-    </section>
-  );
-}
+    setCountTitle("");
+    setPortfolio("draft");
+    syncDetail(plan-�ۭ��춻�q�^
