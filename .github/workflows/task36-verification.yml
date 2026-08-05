@@ -51,8 +51,8 @@ jobs:
           new = (
               '    text = replace(\n'
               '        text,\n'
-              '        "    fn setup() -> Connection {\\\\n        let mut conn = open_memory_connection().unwrap();\\\\n        run_migrations(&mut conn).unwrap();\\\\n        conn\\\\n    }",\n'
-              '        "    fn setup() -> Connection {\\\\n        let mut conn = open_memory_connection().unwrap();\\\\n        run_all_migrations(&mut conn).unwrap();\\\\n        conn\\\\n    }",\n'
+              '        "    fn setup() -> Connection {\\n        let mut conn = open_memory_connection().unwrap();\\n        run_migrations(&mut conn).unwrap();\\n        conn\\n    }",\n'
+              '        "    fn setup() -> Connection {\\n        let mut conn = open_memory_connection().unwrap();\\n        run_all_migrations(&mut conn).unwrap();\\n        conn\\n    }",\n'
               '        label="search test setup migration authority",\n'
               '    )'
           )
