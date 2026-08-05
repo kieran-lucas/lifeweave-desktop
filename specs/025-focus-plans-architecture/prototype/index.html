@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Task 35 Focus Plans Architecture Prototype</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <p class="eyebrow">Task 35 isolated prototype</p>
+    <h1>Focus Plans architecture comparison</h1>
+    <p>No production behavior. Shared fixture: AI Foundations.</p>
+  </header>
+  <nav aria-label="Architecture options">
+    <div role="tablist" aria-label="Focus Plan architecture">
+      <button role="tab" aria-selected="true" aria-controls="option-a" id="tab-a" data-target="option-a" tabindex="0">A — Life document</button>
+      <button role="tab" aria-selected="false" aria-controls="option-b" id="tab-b" data-target="option-b" tabindex="-1">B — Standalone entity</button>
+      <button role="tab" aria-selected="false" aria-controls="option-c" id="tab-c" data-target="option-c" tabindex="-1">C — Basic Leaf template</button>
+    </div>
+  </nav>
+  <main>
+    <section id="option-a" role="tabpanel" aria-labelledby="tab-a">
+      <h2>Option A — Third Life document type</h2>
+      <div class="layout">
+        <article>
+          <h3>Life tree impact</h3>
+          <ul>
+            <li>Computer Science / AI</li>
+            <li class="indent">AI Foundations — temporary Life leaf</li>
+            <li class="indent">Interview Preparation — temporary Life leaf</li>
+            <li class="indent">Research Sprint — temporary Life leaf</li>
+          </ul>
+        </article>
+        <article>
+          <h3>Plan overview</h3>
+          <p><strong>Lifecycle:</strong> Active</p>
+          <p><strong>Dates:</strong> Aug 15 — Dec 20</p>
+          <p class="warning">Cost: every Plan consumes durable Life-tree structure.</p>
+        </article>
+      </div>
+    </section>
+    <section id="option-b" role="tabpanel" aria-labelledby="tab-b" hidden>
+      <h2>Option B — Standalone Focus Plan entity</h2>
+      <div class="layout">
+        <article>
+          <h3>Plans portfolio</h3>
+          <button class="plan-row">
+            <span>AI Foundations</span>
+            <span>Active · Aug 15 — Dec 20</span>
+          </button>
+          <p>Life area is optional context; Today remains the default destination.</p>
+        </article>
+        <article>
+          <h3>AI Foundations</h3>
+          <dl>
+            <div><dt>Lifecycle</dt><dd>Active</dd></div>
+            <div><dt>Life area</dt><dd>Computer Science / AI</dd></div>
+            <div><dt>Current phase</dt><dd>Mathematics foundation</dd></div>
+          </dl>
+          <fieldset>
+            <legend>Plan variants</legend>
+            <label><input type="radio" name="variant" checked> Textbook-first</label>
+            <label><input type="radio" name="variant"> Course-first</label>
+            <label><input type="radio" name="variant"> Project-first</label>
+          </fieldset>
+          <h4>Phases</h4>
+          <ol>
+            <li>Mathematics foundation</li>
+            <li>Classical machine learning</li>
+            <li>Neural networks</li>
+            <li>Capstone</li>
+          </ol>
+          <p>No automatic progress percentage.</p>
+        </article>
+      </div>
+    </section>
+    <section id="option-c" role="tabpanel" aria-labelledby="tab-c" hidden>
+      <h2>Option C — Basic Leaf template with metadata</h2>
+      <div class="layout">
+        <article>
+          <h3>Document</h3>
+          <p>AI Foundations is stored as a Basic Leaf document on a dedicated Life leaf.</p>
+          <h4>Plan body</h4>
+          <p>Outcome, draft approaches, notes, and phases appear in rich text.</p>
+        </article>
+        <article>
+          <h3>Hidden workflow metadata</h3>
+          <dl>
+            <div><dt>template_id</dt><dd>focus_plan</dd></div>
+            <div><dt>lifecycle</dt><dd>active</dd></div>
+            <div><dt>selected variant</dt><dd>textbook-first</dd></div>
+          </dl>
+          <p class="warning">Cost: document and workflow identity are split.</p>
+        </article>
+      </div>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
