@@ -90,9 +90,44 @@ def generate(samples: int = SAMPLES_PER_PROFILE) -> dict[str, Any]:
     }
 
 
+def compact_results(results: dict[str, Any]) -> dict[str, Any]:
+    def compact_profile(row: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "name": row["name"],
+            "means": row["means"],
+            "top1_all_options": row["top1_all_options"],
+            "pairwise_b_over_c": row["pairwise_b_over_c"],
+            "pairwise_b_over_a": row["pairwise_b_over_a"],
+            "final_checkpoint": row["checkpoints"][-1],
+        }
+    return {
+        "format_version": results["format_version"],
+        "model": results["model"],
+        "seed": results["seed"],
+        "samples_per_profile": results["samples_per_profile"],
+        "canonical_profile_count": results["canonical_profile_count"],
+        "stress_profile_count": results["stress_profile_count"],
+        "criteria": results["criteria"],
+        "base_weights": results["base_weights"],
+        "hard_filter_classification": results["hard_filter_classification"],
+        "base_scores": results["base_scores"],
+        "base_ranking": results["base_ranking"],
+        "base_lead_b_over_runner_up": results["base_lead_b_over_runner_up"],
+        "canonical_profiles": [compact_profile(row) for row in results["canonical_profiles"]],
+        "stress_profiles": [compact_profile(row) for row in results["stress_profiles"]],
+        "selected_option": results["selected_option"],
+        "selected_option_stability": results["selected_option_stability"],
+        "minimum_canonical_b_top1": results["minimum_canonical_b_top1"],
+        "maximum_convergence_drift": results["maximum_convergence_drift"],
+        "decision": results["decision"],
+        "task36_candidate": results["task36_candidate"],
+        "warning": results["warning"],
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(); parser.add_argument("--check", action="store_true"); parser.add_argument("--samples", type=int, default=SAMPLES_PER_PROFILE); args = parser.parse_args()
-    text = json.dumps(generate(args.samples), ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+    text = json.dumps(compact_results(generate(args.samples)), ensure_ascii=False, indent=2, sort_keys=True) + "\n"
     if args.check:
         if not RESULT_PATH.exists() or RESULT_PATH.read_text(encoding="utf-8") != text:
             print("analysis-results.json is stale"); return 1
