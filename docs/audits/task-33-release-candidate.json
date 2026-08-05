@@ -22,8 +22,10 @@
     "main_js_filename": "index-VO7KV59P.js",
     "main": 526418,
     "total_javascript": 1134505,
-    "delta_main_vs_task32": 8458,
-    "delta_total_vs_task32": 17843
+    "task32_main_baseline": 519815,
+    "task32_total_baseline": 1118517,
+    "delta_main_vs_task32": 6603,
+    "delta_total_vs_task32": 15988
   },
   "native_e2e": {
     "command": "pnpm e2e:windows",
@@ -63,10 +65,11 @@
   },
   "dependency_changes": 0,
   "migration_changes": 0,
-  "ci": { "status": "not_run", "reason": "manual-dispatch workflow not required by accepted policy" },
+  "ci": { "status": "not_applicable", "reason": "manual-dispatch workflow is not required by accepted policy" },
   "ancillary_corrections": [
-    "scripts/verify_security.py: regex negative lookbehind for bare fetch( to exclude method calls like .refetch() — false positive introduced by Remediation 003 TagPicker/TagSettings use of tagsQuery.refetch()",
-    "src-tauri/src/ipc/tag.rs: rustfmt brace-style correction (single-field struct literal on one line) — cosmetic formatting only, no behavior change"
+    "scripts/verify_security.py (ca093c5): initial false-positive fix used (?<![.\\w])fetch\\( which still allowed window.fetch(; hardened in finalize commit to (?<!\\w)fetch\\( which rejects bare fetch(, window.fetch(, and globalThis.fetch( while allowing refetch( and prefetch(; 5-case focused test added in scripts/tests/test_verify_security_fetch.py",
+    "src-tauri/src/ipc/tag.rs (ca093c5): rustfmt brace-style correction (single-field struct literal on one line) — cosmetic formatting only, no behavior change",
+    "docs/audits/task-33-release-candidate.json: bundle deltas corrected to authoritative Task 32 baseline (519815 main, 1118517 total); ci status changed from not_run to not_applicable"
   ],
   "external_manual_debt": [
     "physical screen-reader verification",

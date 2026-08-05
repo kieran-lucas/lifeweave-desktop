@@ -74,7 +74,7 @@ Three commits: Commit A (implementation), Commit B (initial evidence), Commit C 
 - `pnpm verify`: passed (source, governance, index, no remote assets, security, hardening).
 - `pnpm typecheck`: passed.
 - `pnpm --dir frontend exec vitest run --maxWorkers=4`: 36 files, 561 passed, 0 failed.
-- `pnpm build`: main JS `index-VO7KV59P.js` 526,418 bytes; total JS 1,134,505 bytes (+8,458 / +17,843 vs Task 32).
+- `pnpm build`: main JS `index-VO7KV59P.js` 526,418 bytes; total JS 1,134,505 bytes (+6,603 main / +15,988 total vs Task 32 baselines 519,815 / 1,118,517).
 - `pnpm hardening:performance`: passed.
 - `cargo check --locked --all-targets`: passed.
 - `cargo fmt --all -- --check`: passed.
@@ -86,5 +86,8 @@ Three commits: Commit A (implementation), Commit B (initial evidence), Commit C 
 
 ## Ancillary corrections
 
-- `scripts/verify_security.py`: regex negative lookbehind `(?<![.\w])fetch\(` replaces substring `fetch(` check, excluding method calls like `.refetch()`. False positive introduced by Remediation 003's use of `tagsQuery.refetch()` in TagPicker/TagSettings.
-- `src-tauri/src/ipc/tag.rs`: rustfmt brace-style correction — single-field struct literal `IpcError::Validation { message: msg }` on one line. Cosmetic formatting only; no behavior change.
+- `scripts/verify_security.py` (ca093c5 — evidence-only commit): initial fix used `(?<![.\w])fetch\(` which incorrectly allowed `window.fetch(` (`.` excluded from lookbehind). Hardened in finalize commit (`finalize task 33 closure integrity`) to `(?<!\w)fetch\(`, which rejects bare `fetch(`, `window.fetch(`, and `globalThis.fetch(` while allowing `refetch(` and `prefetch(`. Five-case focused test added in `scripts/tests/test_verify_security_fetch.py`. No history rewrite.
+- `src-tauri/src/ipc/tag.rs` (ca093c5): rustfmt brace-style correction — single-field struct literal `IpcError::Validation { message: msg }` on one line. Cosmetic formatting only; no behavior change. No history rewrite.
+- Bundle deltas corrected: Task 32 authoritative baselines are 519,815 bytes (main) and 1,118,517 bytes (total); deltas are +6,603 and +15,988 respectively. Prior evidence recorded incorrect Task 32 baseline values (+8,458 / +17,843 were wrong).
+- `ci` field corrected from `"not_run"` to `"not_applicable"` — manual-dispatch workflow is not required by accepted policy, so "not run" was misleading.
+- P0: none. P1: none after this correction. P2: physical screen-reader and alternate-DPI verification remain external manual debt.

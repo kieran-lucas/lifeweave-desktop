@@ -73,8 +73,9 @@ def main() -> None:
     for token in simple_tokens:
         if token in frontend:
             fail(f"forbidden frontend API or inline style: {token}")
-    # Match bare fetch( but not method calls like .refetch() or prefetch()
-    if re.search(r"(?<![.\w])fetch\(", frontend):
+    # Match bare fetch( and member-access fetch( (window.fetch, globalThis.fetch)
+    # but not suffix matches like refetch( or prefetch(
+    if re.search(r"(?<!\w)fetch\(", frontend):
         fail("forbidden frontend API or inline style: fetch(")
     for p in (ROOT / "frontend/src").rglob("*.ts"):
         if p.as_posix().endswith("frontend/src/ipc/commands.ts"):

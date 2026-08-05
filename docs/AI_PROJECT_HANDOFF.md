@@ -85,7 +85,7 @@
 - `pnpm verify`: passed (source, governance, index, security, hardening).
 - `pnpm typecheck`: passed.
 - `pnpm --dir frontend exec vitest run --maxWorkers=4`: 36 files, 561 passed, 0 failed.
-- `pnpm build`: main JS `index-VO7KV59P.js` 526,418 bytes; total JS 1,134,505 bytes (+8,458 / +17,843 vs Task 32).
+- `pnpm build`: main JS `index-VO7KV59P.js` 526,418 bytes; total JS 1,134,505 bytes (+6,603 main / +15,988 total vs Task 32 baselines 519,815 / 1,118,517).
 - `pnpm hardening:performance`: passed.
 - `cargo check --locked --all-targets`: passed.
 - `cargo fmt --all -- --check`: passed.
@@ -111,10 +111,10 @@
 
 ## Recent commits
 
+- `ca093c5032d37bba97286a0eb8318ecad2d89bde` — correct task 33 closure evidence (checkpoint expansion, RC JSON, full release gate evidence; ancillary: security verifier false-positive fix, rustfmt correction)
+- `72f34d9ac4e56c59efc6ad0a4bbe03ae2c48f156` — record task 33 remediation 003 evidence
 - `4d1b65c816312a9e6ae8aa39f4a565555af9feb9` — complete unified tags verification contract (Remediation 003 implementation)
 - `f08eb34885776e1df6b66ab60779bbebe57d558d` — record task 33 remediation 002 evidence
-- `5d7b004e6769a6859ba1fa6d626281555b4f80e3` — finish unified tags product and release contract
-- `723bb875ad47d097b7fb17aef026c0c2a998df1a` — complete task 33 remediation 001
 
 ## Exact next action
 
