@@ -27,7 +27,7 @@ Run `python scripts/verify_source_integrity.py` before any governance or impleme
 
 ## Repository state
 
-Task 38 / Slice 028 — One-Off Task Deadline Semantics + Deadline Queue is complete at feature checkpoint `cace17bd4225cb8e3d89795c0e833e68ed588ba2`. Database schema 22 is current. No implementation spec is active; the next feature requires a separate Product Owner gate.
+Task 39 / Slice 029 — Task Saved Views + Bounded Typed Filter Core is active from baseline `eed299d950bb43c54540a0466901f651aa60ce4a`. Task 38 remains closed, database schema 22 is the activation baseline, and migration 23 is the active target. Task 40 is prohibited and unrecommended.
 
 GitHub Actions contains one sealed, manual, read-only Windows installer build. Feature tasks must not modify workflow infrastructure without explicit Product Owner authorization.
 

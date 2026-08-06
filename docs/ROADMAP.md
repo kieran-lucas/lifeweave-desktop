@@ -1,5 +1,17 @@
 # Roadmap
 
+## Slice 029 — Task Saved Views + Bounded Typed Filter Core (active)
+
+Task 39 implements the Saved Views product runner-up recorded by ADR 0028 using the explicit
+Product Owner model in ADR 0033. A Saved View filters exactly one existing bounded Today,
+Upcoming, Overdue, or Deadlines projection through Rust-owned typed predicate v1, then applies
+one stable sort and group mode. It is managed in a fifth internal Today tab; Today remains the
+startup/default tab.
+
+Schema 23 is the target and adds only standalone `task_saved_views`. No query language, generic
+saved-query framework, unbounded/custom horizon, Search entity, sidebar route, dashboard/card,
+sharing/sync, recurring deadline, analytics expansion, or Task 40 work is authorised.
+
 ## Slice 028 — One-Off Task Deadline Semantics + Deadline Queue (complete)
 
 Task 38 activates the deferred Deadline Semantics candidate from ADR 0028 as the one-off-only
@@ -64,7 +76,9 @@ Task 35 selected the standalone Focus Plan entity. ADR 0030 is canonical.
 - **Task 36:** complete and hard-closed.
 - **Task 37:** complete and closed. The reserved Focus Plans program is finished.
 - **Task 38:** complete and closed.
-- **Tasks 39–60:** available for later decisions; none is activated or recommended.
+- **Task 39:** active through Slice 029.
+- **Tasks 40–60:** available for later decisions; none is activated or recommended. Task 40 is
+  explicitly prohibited during Slice 029.
 - **Recurring deadline policy:** open; deliberately excluded from Slice 028.
 
 ## Closure policy

@@ -1,5 +1,16 @@
 # Project Status
 
+## Task 39/60 — Task Saved Views + Bounded Typed Filter Core (active)
+
+Active through Slice `029-task-saved-views` from baseline
+`eed299d950bb43c54540a0466901f651aa60ce4a`. The Product Owner has fixed a bounded Task-only
+model: four existing source scopes, a versioned typed AND predicate, stable sort/group modes,
+local lifecycle and order, and a fifth Views tab inside Today. Migration 23 is the target.
+
+No query language, raw SQL/expression path, custom range, route/sidebar/default change, sharing,
+Task card/dashboard, recurring deadline, analytics expansion, dependency, or workflow change is
+authorised. Task 40 is prohibited, unstarted, unallocated, and unrecommended.
+
 ## Task 38/60 — One-Off Task Deadline Semantics + Deadline Queue (complete)
 
 - Closed slice: `028-one-off-deadline-semantics`.
@@ -55,10 +66,6 @@ Task 37 is closed. Reopen only for a reproducible product defect, migration/data
 - No Task 37 relation, review workflow, or automatic progress behavior entered schema 20.
 
 Task 36 is hard-closed. Reopen only for a reproducible product defect, migration/data-loss risk, violated invariant, or explicit Product Owner decision.
-
-## Task 39/60
-
-Not started. Requires a separate Product Owner activation.
 
 ## Historical status
 
