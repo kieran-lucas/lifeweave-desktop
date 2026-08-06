@@ -1,6 +1,6 @@
 # Roadmap
 
-## Slice 028 — One-Off Task Deadline Semantics + Deadline Queue (active)
+## Slice 028 — One-Off Task Deadline Semantics + Deadline Queue (complete)
 
 Task 38 activates the deferred Deadline Semantics candidate from ADR 0028 as the one-off-only
 first slice that decision already framed.
@@ -17,9 +17,14 @@ Schema moves from 21 to 22 through an append-only migration. The slice adds an o
 deadline to the existing Task editor, deadline context on Today/Upcoming/Overdue/Search, and a
 bounded Deadlines tab covering anchor -30 through anchor +14 inside the Today workspace.
 
-Hard boundary: existing Overdue keeps its schedule-based meaning, recurring deadline policy
-stays open, and no reminders, notifications, scheduling, deadline analytics, prediction, Saved
-Views, or new destination enter the slice. Task 39 is not activated.
+Hard boundary preserved: existing Overdue kept its schedule-based meaning, recurring deadline
+policy stays open, and no reminders, notifications, scheduling, deadline analytics, prediction,
+Saved Views, or new destination entered migration 22, the DTOs, or the UI. Task 39 was not
+activated.
+
+Closure is based on deterministic migration, mutation, deadline-state, queue, Search, and
+backup/restore evidence, generated-binding stability, production build success, and a full diff
+audit against the activation baseline.
 
 ## Slice 027 — Focus Plan ↔ Task Integration + Manual Review History (complete)
 
@@ -58,7 +63,7 @@ Task 35 selected the standalone Focus Plan entity. ADR 0030 is canonical.
 
 - **Task 36:** complete and hard-closed.
 - **Task 37:** complete and closed. The reserved Focus Plans program is finished.
-- **Task 38 — One-Off Task Deadline Semantics + Deadline Queue:** active under Slice 028.
+- **Task 38:** complete and closed.
 - **Tasks 39–60:** available for later decisions; none is activated or recommended.
 - **Recurring deadline policy:** open; deliberately excluded from Slice 028.
 

@@ -27,7 +27,7 @@ Run `python scripts/verify_source_integrity.py` before any governance or impleme
 
 ## Repository state
 
-Task 37 / Slice 027 — Focus Plan ↔ Task Integration + Manual Review History is complete at feature checkpoint `09c393737fd6f096780408a803aea9b6e1355bb8`. Database schema 21 is current. No implementation spec is active; the next feature requires a separate Product Owner gate.
+Task 38 / Slice 028 — One-Off Task Deadline Semantics + Deadline Queue is complete at feature checkpoint `cace17bd4225cb8e3d89795c0e833e68ed588ba2`. Database schema 22 is current. No implementation spec is active; the next feature requires a separate Product Owner gate.
 
 GitHub Actions contains one sealed, manual, read-only Windows installer build. Feature tasks must not modify workflow infrastructure without explicit Product Owner authorization.
 

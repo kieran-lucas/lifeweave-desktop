@@ -1,17 +1,23 @@
 # Project Status
 
-## Task 38/60 — One-Off Task Deadline Semantics + Deadline Queue (active)
+## Task 38/60 — One-Off Task Deadline Semantics + Deadline Queue (complete)
 
-- Activation baseline: `954b596677c34dd20ce3d0807d36b20676114f2b`.
-- Active spec: `specs/028-one-off-deadline-semantics`.
-- Decision basis: ADR 0028 scored Deadline Semantics highest and framed a one-off-only first slice; ADR 0029 deferred it behind Focus Plans, which are now complete.
-- Scope: optional date-only deadline on one-off Tasks, plus a bounded Deadlines tab in the Today workspace.
-- Schema moves from 21 to 22 through an append-only migration; migrations 1–21 remain unchanged.
-- Deadline authority is `tasks.deadline_local_date` only; recurring series, occurrences, overrides, and evaluations own no deadline.
-- Schedule and deadline stay independent; scheduling after a deadline is surfaced, never repaired.
-- Existing Overdue keeps its schedule-based meaning and is not renamed; Today remains startup/default and Task rows remain non-card.
-- Task 39 is prohibited: no reminders, notifications, scheduling, deadline analytics, prediction, Saved Views, or new destination.
-- Closure requires deterministic migration, mutation, state, queue, Search, and backup evidence, a full diff audit, and a primary structured review with no confirmed P0/P1 defect.
+- Closed slice: `028-one-off-deadline-semantics`.
+- Feature checkpoint: `cace17bd4225cb8e3d89795c0e833e68ed588ba2`.
+- Canonical decision: ADR 0032, taking up the candidate ADR 0028 scored highest and ADR 0029 deferred.
+- Schema 22 is active through an append-only migration; migrations 1–21 remain unchanged.
+- Deadline authority is `tasks.deadline_local_date` only. Recurring series, occurrences, overrides, and evaluations own no deadline, and no future-ready recurring column was added.
+- Schedule and deadline are independent in both directions; `scheduled_date <= deadline_date` is not an invariant and scheduling after a deadline is surfaced as `scheduled_after_deadline`, never repaired.
+- Deadline state is computed from an explicitly supplied observed local date, so `list_today_items` and `list_tasks_for_date` gained that parameter rather than mislabelling a Task inspected on a future day.
+- The Deadlines tab covers anchor -30 through anchor +14 inclusive, excludes null deadlines, evaluated Tasks, and recurring work, and returns a deterministic error instead of truncating at the 5,000 item cap.
+- Existing Overdue keeps its schedule-based meaning and is not renamed; a Task may legitimately appear in both views.
+- Search composes deadline context at query time from the observed date, so state can never go stale; no index, `algorithm_version`, or rebuild change was needed.
+- Calendar required no change: its month grid delegates day activation to the Today list, and `has_missed`, scheduled minutes, and load ratios remain schedule and evaluation based.
+- Rust format/clippy/tests (572 serial), frontend typecheck/tests (585), production frontend build, generated-binding stability, and repository governance passed.
+- Migration, close/reopen, and full backup/restore evidence covers deadlines.
+- No workflow, seal, dependency, lockfile, or capability-scope drift entered the change.
+
+Task 38 is closed. Reopen only for a reproducible product defect, migration/data-loss risk, violated invariant, or explicit Product Owner decision.
 
 ## Task 37/60 — Focus Plan ↔ Task Integration + Manual Review History (complete)
 

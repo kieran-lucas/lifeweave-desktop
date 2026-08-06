@@ -4,12 +4,12 @@
 
 - repository: `kieran-lucas/lifeweave-desktop`
 - branch: `main`
-- latest closed task/slice: 37 / 027
-- active task/slice: 38 / 028
-- schema: 21 (moving to 22 under Slice 028)
-- active specification: `specs/028-one-off-deadline-semantics`
-- latest feature checkpoint: `09c393737fd6f096780408a803aea9b6e1355bb8`
-- next action: implement the active spec
+- latest closed task/slice: 38 / 028
+- active task/slice: none
+- schema: 22
+- active specification: none
+- latest feature checkpoint: `cace17bd4225cb8e3d89795c0e833e68ed588ba2`
+- next action: Product Owner gate
 - Task 39: not started; separate activation required
 
 ## Task 36 final state
@@ -36,4 +36,4 @@ Task 37 remains closed and is not reopened by this activation.
 
 ## Next action
 
-Implement `specs/028-one-off-deadline-semantics`. Task 39 must not start automatically merely because Task 38 is active.
+Stop. Await a Product Owner decision for the next active spec. Task 39 must not start automatically merely because Task 38 is closed.

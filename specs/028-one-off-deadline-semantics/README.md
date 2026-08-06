@@ -3,11 +3,12 @@
 ## Status
 
 ```text
-Task 38: ACTIVE
-Slice 028: ACTIVE
+Task 38: COMPLETE
+Slice 028: COMPLETE
 activation baseline: 954b596677c34dd20ce3d0807d36b20676114f2b
-schema: 21 → 22
-active spec: specs/028-one-off-deadline-semantics
+feature checkpoint: cace17bd4225cb8e3d89795c0e833e68ed588ba2
+schema: 22
+active spec: none
 Task 39: not started
 ```
 
@@ -51,6 +52,14 @@ notifications, sound, snooze, and background scheduling; automatic deadline crea
 rescheduling; natural-language date parsing; Search deadline operators; deadline or lateness
 analytics, scoring, and prediction; Focus Plan progress; Saved Views; new sidebar destinations;
 Portable Package changes; and every Task 39 candidate.
+
+## Closure basis
+
+Task 38 closed with deterministic migration, one-off mutation, schedule/deadline independence,
+deadline-state, queue window and ordering, recurring-exclusion, Search, close/reopen, and
+backup/restore evidence; generated-binding stability; Rust format, clippy, and test success;
+frontend typecheck, tests, and production build success; repository governance; and a full diff
+audit against the activation baseline. A primary structured review was performed directly.
 
 ## Authority
 

@@ -29,6 +29,9 @@ The immutable source is authoritative. This registry makes operational status vi
 - Focus Plans have no automatic progress percentage and no reminder/notification dependency.
 - Task 36 / Slice 026 is complete at feature checkpoint `57bd42d8eed5643d2fee3b04f74bd3c44e738da2`.
 - Each one-off Task or recurring Task series links to zero or one Focus Plan. Authority is stored on `tasks` and `task_series`; occurrences, overrides, and evaluations inherit and do not store it. Task/Life and Task/Focus Plan are independent. A new or changed target must be an active non-archived Plan; an existing link survives later Plan archive and projects explicitly as archived.
+- A one-off Task links to zero or one date-only deadline stored on `tasks`. Schedule and deadline are independent; `scheduled_date <= deadline_date` is not an invariant and scheduling after a deadline is surfaced, never repaired. Recurring series, occurrences, overrides, and evaluations own no deadline.
+- Deadline state is computed against an explicitly supplied observed local date. The deadline date itself is `due_today`, not overdue. An evaluated Task leaves the active deadline queue but keeps its stored deadline.
+- Deadlines is a fourth manual tab inside the Today workspace covering anchor -30 through anchor +14 inclusive. Existing Overdue keeps its schedule-based meaning and is not renamed.
 - Focus Plan reviews are user-authored history with a review date, required reflection, optional next focus, and idempotent creation. Creating a review changes no Plan state. Task 37 authorises creation and reading only; edit, delete, archive, scheduling, and Search indexing remain out of scope.
 - The execution roadmap remains a 60-task envelope. Product Owner allocation may reuse unstarted positions without increasing the total.
 
@@ -59,7 +62,6 @@ The immutable source is authoritative. This registry makes operational status vi
 - final brand/name/logo;
 - final FAB icon and placement;
 - actual-time semantics;
-- deadline semantics beyond scheduled date/time;
 - saved filter AST/view UI;
 - final score and hidden mappings;
 - final prediction;
@@ -79,9 +81,9 @@ The immutable source is authoritative. This registry makes operational status vi
 ## DEFERRED
 
 - Focus Plan review edit, delete, archive, scheduling, reminders, and Search indexing remain prohibited pending a separate Product Owner decision;
+- recurring, occurrence, and override deadlines, deadline time-of-day, deadline reminders and scheduling, and deadline or lateness analytics remain prohibited pending a separate Product Owner decision;
 - automatic Plan progress, phase-to-Task relationships, and Plan analytics expansion remain prohibited;
 - prediction and opaque ML;
-- Deadline Semantics implementation after the Task 34 Product Owner modification;
 - custom user-authored Narrative templates and Visual Worlds;
 - cross-scene block drag and scene-level independent presentation;
 - Graph and generalized knowledge features;

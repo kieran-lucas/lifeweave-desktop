@@ -12,13 +12,13 @@
 
 ## Current state
 
-- Latest closed task: **37/60**
-- Latest closed slice: **027 — Focus Plan ↔ Task Integration + Manual Review History**
-- Active task: **38 — One-Off Task Deadline Semantics + Deadline Queue**
-- Active implementation specification: **Slice 028 — `specs/028-one-off-deadline-semantics`**
-- Latest feature checkpoint: **Task 37 — Focus Plan ↔ Task Integration** (`09c393737fd6f096780408a803aea9b6e1355bb8`)
+- Latest closed task: **38/60**
+- Latest closed slice: **028 — One-Off Task Deadline Semantics + Deadline Queue**
+- Active task: **none**
+- Active implementation specification: **none**
+- Latest feature checkpoint: **Task 38 — One-Off Task Deadline Semantics** (`cace17bd4225cb8e3d89795c0e833e68ed588ba2`)
 - Database schema: **22**
-- Next action: **Implement active spec**
+- Next action: **Product Owner gate**
 - Task 39: **not started; requires separate activation**
 
 ## Task 36 closure
