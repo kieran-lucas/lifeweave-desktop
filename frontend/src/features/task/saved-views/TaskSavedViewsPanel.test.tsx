@@ -183,4 +183,102 @@ describe("TaskSavedViewsPanel", () => {
     expect(await screen.findByText("Reference warnings")).toBeInTheDocument();
     expect(screen.getByText("No tasks match this view.")).toBeInTheDocument();
   });
+
+  it("shows a merged tag alias as its canonical target and cancels without persisting", async () => {
+    api.getTaskSavedView.mockResolvedValue({
+      ...detail(),
+      predicate: { type: "all", clauses: [{ kind: "tag_id_any", ids: ["tag-old"] }] },
+    });
+    api.getTaskSavedViewEditorOptions.mockResolvedValue({
+      ...options,
+      tags: [{ id: "tag-new", label: "Study", archived: false, merged_from_id: "tag-old", missing: false }],
+    });
+    const mounted = mount();
+
+    fireEvent.click((await screen.findAllByRole("button", { name: "Edit" }))[0]!);
+    const dialog = await screen.findByRole("dialog", { name: "Edit Saved View" });
+    const canonical = await within(dialog).findByRole("option", { name: "Study — merged target" }) as HTMLOptionElement;
+    expect(canonical.selected).toBe(true);
+    expect(within(dialog).getByText("Selected: Study")).toBeInTheDocument();
+    expect(within(dialog).queryByText(/tag-old/)).not.toBeInTheDocument();
+    expect((await axe.run(dialog)).violations).toEqual([]);
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    expect(api.updateTaskSavedView).not.toHaveBeenCalled();
+    await waitFor(() => expect(screen.getAllByRole("button", { name: "Edit" })[0]).toHaveFocus());
+    expect(mounted.container).not.toHaveTextContent("tag-old");
+  });
+
+  it("writes deduplicated canonical tag IDs only on explicit save", async () => {
+    api.getTaskSavedView.mockResolvedValue({
+      view: { ...view("view-1", "Study"), base_scope: "deadlines" as const },
+      predicate: {
+        type: "all",
+        clauses: [
+          { kind: "tag_id_any", ids: ["tag-old", "tag-older"] },
+          { kind: "has_deadline_is", value: true },
+        ],
+      },
+      unsupported_reason: null,
+    });
+    api.getTaskSavedViewEditorOptions.mockResolvedValue({
+      ...options,
+      tags: [
+        { id: "tag-new", label: "Study", archived: false, merged_from_id: "tag-old", missing: false },
+        { id: "tag-new", label: "Study", archived: false, merged_from_id: "tag-older", missing: false },
+      ],
+    });
+    mount();
+
+    fireEvent.click((await screen.findAllByRole("button", { name: "Edit" }))[0]!);
+    const dialog = await screen.findByRole("dialog", { name: "Edit Saved View" });
+    await within(dialog).findByRole("option", { name: "Study — merged target" });
+    expect(within(dialog).getAllByRole("option", { name: "Study — merged target" })).toHaveLength(1);
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save view" }));
+
+    await waitFor(() => expect(api.updateTaskSavedView).toHaveBeenCalledWith(expect.objectContaining({
+      id: "view-1",
+      name: "Study",
+      base_scope: "deadlines",
+      sort_mode: "title_ascending",
+      group_mode: "none",
+      predicate: {
+        type: "all",
+        clauses: [
+          { kind: "tag_id_any", ids: ["tag-new"] },
+          { kind: "has_deadline_is", value: true },
+        ],
+      },
+    })));
+  });
+
+  it("preserves a genuinely missing tag until the user removes it explicitly", async () => {
+    api.getTaskSavedView.mockResolvedValue({
+      ...detail(),
+      predicate: { type: "all", clauses: [{ kind: "tag_id_any", ids: ["tag-missing"] }] },
+    });
+    api.getTaskSavedViewEditorOptions.mockResolvedValue({
+      ...options,
+      tags: [{
+        id: "tag-missing",
+        label: "Missing reference (tag-missing)",
+        archived: false,
+        merged_from_id: null,
+        missing: true,
+      }],
+    });
+    mount();
+
+    fireEvent.click((await screen.findAllByRole("button", { name: "Edit" }))[0]!);
+    const dialog = await screen.findByRole("dialog", { name: "Edit Saved View" });
+    const missing = await within(dialog).findByRole("option", { name: "Missing reference (tag-missing) — missing" }) as HTMLOptionElement;
+    expect(missing.selected).toBe(true);
+    expect(within(dialog).getByText("Selected: Missing reference (tag-missing)")).toBeInTheDocument();
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "Remove Any tag" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save view" }));
+    await waitFor(() => expect(api.updateTaskSavedView).toHaveBeenCalledWith(expect.objectContaining({
+      predicate: { type: "all", clauses: [] },
+    })));
+  });
 });

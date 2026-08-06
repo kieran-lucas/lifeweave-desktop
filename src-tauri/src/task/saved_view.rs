@@ -156,7 +156,7 @@ impl TaskSavedViewPriority {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[cfg_attr(test, derive(ts_rs::TS))]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum TaskSavedViewClause {
@@ -169,6 +169,49 @@ pub enum TaskSavedViewClause {
     HasDeadlineIs { value: bool },
     DeadlineStateIn { values: Vec<DeadlineState> },
     ScheduledAfterDeadlineIs { value: bool },
+}
+
+#[derive(Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+enum StrictTaskSavedViewClause {
+    TaskKindIn { values: Vec<TaskSavedViewTaskKind> },
+    PriorityIn { values: Vec<TaskSavedViewPriority> },
+    CategoryIdIn { ids: Vec<String> },
+    TagIdAny { ids: Vec<String> },
+    LifeAreaIdIn { ids: Vec<String> },
+    FocusPlanIdIn { ids: Vec<String> },
+    HasDeadlineIs { value: bool },
+    DeadlineStateIn { values: Vec<DeadlineState> },
+    ScheduledAfterDeadlineIs { value: bool },
+}
+
+impl From<StrictTaskSavedViewClause> for TaskSavedViewClause {
+    fn from(value: StrictTaskSavedViewClause) -> Self {
+        match value {
+            StrictTaskSavedViewClause::TaskKindIn { values } => Self::TaskKindIn { values },
+            StrictTaskSavedViewClause::PriorityIn { values } => Self::PriorityIn { values },
+            StrictTaskSavedViewClause::CategoryIdIn { ids } => Self::CategoryIdIn { ids },
+            StrictTaskSavedViewClause::TagIdAny { ids } => Self::TagIdAny { ids },
+            StrictTaskSavedViewClause::LifeAreaIdIn { ids } => Self::LifeAreaIdIn { ids },
+            StrictTaskSavedViewClause::FocusPlanIdIn { ids } => Self::FocusPlanIdIn { ids },
+            StrictTaskSavedViewClause::HasDeadlineIs { value } => Self::HasDeadlineIs { value },
+            StrictTaskSavedViewClause::DeadlineStateIn { values } => {
+                Self::DeadlineStateIn { values }
+            }
+            StrictTaskSavedViewClause::ScheduledAfterDeadlineIs { value } => {
+                Self::ScheduledAfterDeadlineIs { value }
+            }
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for TaskSavedViewClause {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        StrictTaskSavedViewClause::deserialize(deserializer).map(Into::into)
+    }
 }
 
 impl TaskSavedViewClause {
@@ -197,11 +240,28 @@ impl TaskSavedViewClause {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[cfg_attr(test, derive(ts_rs::TS))]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum TaskSavedViewPredicate {
     All { clauses: Vec<TaskSavedViewClause> },
+}
+
+#[derive(Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
+enum StrictTaskSavedViewPredicate {
+    All { clauses: Vec<TaskSavedViewClause> },
+}
+
+impl<'de> Deserialize<'de> for TaskSavedViewPredicate {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        match StrictTaskSavedViewPredicate::deserialize(deserializer)? {
+            StrictTaskSavedViewPredicate::All { clauses } => Ok(Self::All { clauses }),
+        }
+    }
 }
 
 impl TaskSavedViewPredicate {
@@ -643,10 +703,11 @@ fn canonicalize_predicate(
                     }
                     canonical.push(target);
                 }
-                if canonical.iter().collect::<HashSet<_>>().len() != canonical.len() {
-                    return Err(repository::TaskError::Validation(INVALID_PREDICATE));
-                }
                 canonical.sort();
+                // Distinct historical aliases may later converge on one canonical tag. Literal
+                // duplicate input was rejected above; collapse only resolution-introduced
+                // duplicates so projection and the next explicit save remain truthful.
+                canonical.dedup();
                 *ids = canonical;
             }
             TaskSavedViewClause::HasDeadlineIs { .. }
@@ -1102,20 +1163,39 @@ pub fn editor_options(
     for original in tag_refs {
         match catalog.canonical_tag(&original) {
             Some(canonical) => {
-                if !tags.iter().any(|option| option.id == canonical) {
-                    if let Some(value) = catalog.tags.get(&canonical) {
-                        tags.push(TaskSavedViewReferenceOption {
-                            id: canonical.clone(),
-                            label: value.label.clone(),
-                            archived: value.archived,
-                            merged_from_id: (canonical != original).then_some(original),
-                            missing: false,
-                        });
+                if canonical == original {
+                    if !tags.iter().any(|option| option.id == canonical) {
+                        if let Some(value) = catalog.tags.get(&canonical) {
+                            tags.push(TaskSavedViewReferenceOption {
+                                id: canonical,
+                                label: value.label.clone(),
+                                archived: value.archived,
+                                merged_from_id: None,
+                                missing: false,
+                            });
+                        }
                     }
-                } else if canonical != original {
-                    if let Some(option) = tags.iter_mut().find(|option| option.id == canonical) {
-                        option.merged_from_id = Some(original);
-                    }
+                    continue;
+                }
+                if let Some(option) = tags
+                    .iter_mut()
+                    .find(|option| option.id == canonical && option.merged_from_id.is_none())
+                {
+                    option.merged_from_id = Some(original);
+                } else if !tags.iter().any(|option| {
+                    option.id == canonical && option.merged_from_id.as_deref() == Some(&original)
+                }) && let Some(value) = catalog.tags.get(&canonical)
+                {
+                    // The DTO deliberately stays singular. Multiple rows with the same canonical
+                    // ID retain every alias mapping; React collapses them to one visible option
+                    // after normalizing the draft.
+                    tags.push(TaskSavedViewReferenceOption {
+                        id: canonical,
+                        label: value.label.clone(),
+                        archived: value.archived,
+                        merged_from_id: Some(original),
+                        missing: false,
+                    });
                 }
             }
             None => tags.push(TaskSavedViewReferenceOption {
@@ -2082,6 +2162,138 @@ mod tests {
     }
 
     #[test]
+    fn unknown_root_fields_are_malformed_recoverable_and_never_execute() {
+        let mut conn = db();
+        let view = create(&mut conn, create_input("Strict root", vec![])).unwrap();
+        conn.execute(
+            "UPDATE task_saved_views SET predicate_json=?2 WHERE id=?1",
+            params![
+                view.view.id,
+                r#"{"type":"all","operator":"or","clauses":[]}"#
+            ],
+        )
+        .unwrap();
+
+        let malformed = get(&conn, &view.view.id).unwrap();
+        assert_eq!(
+            malformed.view.support_state,
+            TaskSavedViewSupportState::MalformedPredicate
+        );
+        assert!(malformed.predicate.is_none());
+        assert!(
+            malformed
+                .unsupported_reason
+                .as_deref()
+                .is_some_and(|reason| reason.contains("was not executed"))
+        );
+        assert_eq!(
+            list_active(&conn)
+                .unwrap()
+                .into_iter()
+                .find(|candidate| candidate.id == view.view.id)
+                .unwrap()
+                .support_state,
+            TaskSavedViewSupportState::MalformedPredicate
+        );
+        let projection = execute(&conn, &view.view.id);
+        assert_eq!(projection.total_source_count, 0);
+        assert!(projection.groups.is_empty());
+        assert!(projection.unsupported_reason.is_some());
+
+        let archived = archive(
+            &mut conn,
+            MutateTaskSavedViewInput {
+                id: view.view.id,
+                expected_revision: malformed.view.revision,
+            },
+        )
+        .unwrap();
+        assert!(archived.view.archived);
+    }
+
+    #[test]
+    fn unknown_clause_fields_cannot_partially_execute_a_matching_clause() {
+        let mut conn = db();
+        repository::create(&conn, task("Alpha", "high", vec![])).unwrap();
+        let view = create(
+            &mut conn,
+            create_input(
+                "Strict clause",
+                vec![TaskSavedViewClause::PriorityIn {
+                    values: vec![TaskSavedViewPriority::High],
+                }],
+            ),
+        )
+        .unwrap();
+        conn.execute(
+            "UPDATE task_saved_views SET predicate_json=?2 WHERE id=?1",
+            params![
+                view.view.id,
+                r#"{"type":"all","clauses":[{"kind":"priority_in","values":["high"],"negated":true}]}"#
+            ],
+        )
+        .unwrap();
+
+        let malformed = get(&conn, &view.view.id).unwrap();
+        assert_eq!(
+            malformed.view.support_state,
+            TaskSavedViewSupportState::MalformedPredicate
+        );
+        assert!(malformed.predicate.is_none());
+        let projection = execute(&conn, &view.view.id);
+        assert_eq!(projection.total_source_count, 0);
+        assert_eq!(projection.total_visible_count, 0);
+        assert!(projection.groups.is_empty());
+    }
+
+    #[test]
+    fn application_canonical_json_remains_supported_and_executable() {
+        let mut conn = db();
+        repository::create(&conn, task("Alpha", "high", vec![])).unwrap();
+        let view = create(
+            &mut conn,
+            create_input(
+                "Canonical round trip",
+                vec![TaskSavedViewClause::PriorityIn {
+                    values: vec![TaskSavedViewPriority::High],
+                }],
+            ),
+        )
+        .unwrap();
+        let stored: String = conn
+            .query_row(
+                "SELECT predicate_json FROM task_saved_views WHERE id=?1",
+                params![view.view.id],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(
+            stored,
+            r#"{"type":"all","clauses":[{"kind":"priority_in","values":["high"]}]}"#
+        );
+        assert!(serde_json::from_str::<TaskSavedViewPredicate>(&stored).is_ok());
+        assert!(
+            serde_json::from_str::<TaskSavedViewPredicate>(
+                r#"{ "clauses": [ { "value": true, "kind": "has_deadline_is" } ], "type": "all" }"#
+            )
+            .is_ok()
+        );
+        assert!(
+            serde_json::from_str::<TaskSavedViewPredicate>(
+                r#"{"type":"all","clauses":[{"kind":"has_deadline_is","value":true,"future_mode":"inherited"}]}"#
+            )
+            .is_err()
+        );
+        let detail = get(&conn, &view.view.id).unwrap();
+        assert_eq!(
+            detail.view.support_state,
+            TaskSavedViewSupportState::Supported
+        );
+        assert!(detail.predicate.is_some());
+        assert_eq!(execute(&conn, &view.view.id).total_visible_count, 1);
+    }
+
+    #[test]
     fn predicates_apply_and_or_semantics_to_one_off_and_recurring_tags() {
         let mut conn = db();
         let tag = crate::tag::repository::create(
@@ -2641,6 +2853,13 @@ mod tests {
             },
         )
         .unwrap();
+        let source_two = crate::tag::repository::create(
+            &conn,
+            crate::tag::dto::CreateTagInput {
+                name: "Second alias".into(),
+            },
+        )
+        .unwrap();
         let target = crate::tag::repository::create(
             &conn,
             crate::tag::dto::CreateTagInput {
@@ -2657,12 +2876,12 @@ mod tests {
             create_input(
                 "Alias view",
                 vec![TaskSavedViewClause::TagIdAny {
-                    ids: vec![source.id.clone()],
+                    ids: vec![source.id.clone(), source_two.id.clone()],
                 }],
             ),
         )
         .unwrap();
-        crate::tag::repository::merge(
+        let first_merge = crate::tag::repository::merge(
             &conn,
             MergeTagsInput {
                 source_tag_id: source.id.clone(),
@@ -2672,7 +2891,32 @@ mod tests {
             },
         )
         .unwrap();
+        crate::tag::repository::merge(
+            &conn,
+            MergeTagsInput {
+                source_tag_id: source_two.id.clone(),
+                target_tag_id: target.id.clone(),
+                source_expected_revision: source_two.revision,
+                target_expected_revision: first_merge.target.revision,
+            },
+        )
+        .unwrap();
+        let stored_before_projection: String = conn
+            .query_row(
+                "SELECT predicate_json FROM task_saved_views WHERE id=?1",
+                params![alias_view.view.id],
+                |row| row.get(0),
+            )
+            .unwrap();
         assert_eq!(execute(&conn, &alias_view.view.id).total_visible_count, 1);
+        let stored_after_projection: String = conn
+            .query_row(
+                "SELECT predicate_json FROM task_saved_views WHERE id=?1",
+                params![alias_view.view.id],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(stored_after_projection, stored_before_projection);
         let alias_options = editor_options(
             &conn,
             GetTaskSavedViewEditorOptionsInput {
@@ -2680,15 +2924,11 @@ mod tests {
             },
         )
         .unwrap();
-        let canonical = alias_options
-            .tags
-            .iter()
-            .find(|option| option.id == target.id)
-            .unwrap();
-        assert_eq!(
-            canonical.merged_from_id.as_deref(),
-            Some(source.id.as_str())
-        );
+        for alias in [&source.id, &source_two.id] {
+            assert!(alias_options.tags.iter().any(|option| {
+                option.id == target.id && option.merged_from_id.as_deref() == Some(alias.as_str())
+            }));
+        }
 
         let refs = create(
             &mut conn,

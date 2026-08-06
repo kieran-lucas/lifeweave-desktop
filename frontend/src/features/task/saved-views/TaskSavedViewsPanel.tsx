@@ -78,6 +78,31 @@ function draftFrom(detail: TaskSavedViewDetail): Draft {
   };
 }
 
+function normalizeMergedTagAliases(
+  draft: Draft,
+  options: TaskSavedViewReferenceOption[],
+): Draft {
+  let changed = false;
+  const clauses = draft.predicate.clauses.map((clause) => {
+    if (clause.kind !== "tag_id_any") return clause;
+    const seen = new Set<string>();
+    const ids = clause.ids.flatMap((id) => {
+      const direct = options.find((option) => option.id === id);
+      const canonical = direct ?? options.find((option) => option.merged_from_id === id);
+      const resolved = canonical?.id ?? id;
+      if (seen.has(resolved)) {
+        changed = true;
+        return [];
+      }
+      seen.add(resolved);
+      if (resolved !== id) changed = true;
+      return [resolved];
+    });
+    return changed ? { ...clause, ids } : clause;
+  });
+  return changed ? { ...draft, predicate: { ...draft.predicate, clauses } } : draft;
+}
+
 function newClause(kind: ClauseKind, options?: TaskSavedViewEditorOptions): TaskSavedViewClause {
   switch (kind) {
     case "task_kind_in": return { kind, values: ["one_off"] };
@@ -111,7 +136,10 @@ function ReferenceSelect({
   options: TaskSavedViewReferenceOption[];
   onChange: (ids: string[]) => void;
 }) {
-  const labels = clause.ids.map((id) => options.find((option) => option.id === id)?.label ?? id);
+  const visibleOptions = options.filter(
+    (option, index) => options.findIndex((candidate) => candidate.id === option.id) === index,
+  );
+  const labels = clause.ids.map((id) => visibleOptions.find((option) => option.id === id)?.label ?? id);
   return (
     <>
       <select
@@ -121,7 +149,7 @@ function ReferenceSelect({
         value={clause.ids}
         onChange={(event) => onChange(Array.from(event.currentTarget.selectedOptions, (option) => option.value))}
       >
-        {options.map((option) => (
+        {visibleOptions.map((option) => (
           <option key={`${option.id}-${option.merged_from_id ?? ""}`} value={option.id}>
             {option.label}{option.archived ? " — archived" : ""}{option.missing ? " — missing" : ""}
             {option.merged_from_id ? " — merged target" : ""}
@@ -326,8 +354,14 @@ export default function TaskSavedViewsPanel({
 
   const beginEdit = async (view: TaskSavedViewView, trigger: HTMLElement) => {
     returnFocus.current = trigger;
-    const detail = await client.fetchQuery({ queryKey: taskSavedViewKeys.detail(view.id), queryFn: () => getTaskSavedView(view.id) });
-    setDraft(draftFrom(detail));
+    const [detail, editorOptions] = await Promise.all([
+      client.fetchQuery({ queryKey: taskSavedViewKeys.detail(view.id), queryFn: () => getTaskSavedView(view.id) }),
+      client.fetchQuery({
+        queryKey: taskSavedViewKeys.options(view.id),
+        queryFn: () => getTaskSavedViewEditorOptions({ view_id: view.id }),
+      }),
+    ]);
+    setDraft(normalizeMergedTagAliases(draftFrom(detail), editorOptions.tags));
     setEditor({ mode: "edit", viewId: view.id, revision: view.revision, unsupported: detail.predicate === null });
     setSaveError(null);
   };
