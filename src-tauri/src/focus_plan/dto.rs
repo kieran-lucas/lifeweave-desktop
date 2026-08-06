@@ -69,7 +69,7 @@ pub struct CreateFocusPlanInput {
 #[cfg_attr(test, derive(ts_rs::TS))]
 pub struct SaveFocusPlanDraftInput {
     pub plan_id: String,
-    pub base_revision: u64,
+    pub base_revision: u32,
     pub draft_json: String,
 }
 
@@ -144,7 +144,7 @@ pub enum FocusPlanMutationAction {
 #[cfg_attr(test, derive(ts_rs::TS))]
 pub struct MutateFocusPlanInput {
     pub plan_id: String,
-    pub expected_revision: u64,
+    pub expected_revision: u32,
     pub operation_id: String,
     pub mutation: FocusPlanMutationAction,
 }
@@ -153,7 +153,7 @@ pub struct MutateFocusPlanInput {
 #[cfg_attr(test, derive(ts_rs::TS))]
 pub struct FocusPlanMutationResult {
     pub plan_id: String,
-    pub revision: u64,
+    pub revision: u32,
     pub created_id: Option<String>,
     pub replayed: bool,
 }
@@ -172,7 +172,7 @@ pub struct FocusPlanSummaryView {
     pub active_variant_count: u32,
     pub active_phase_count: u32,
     pub tag_names: Vec<String>,
-    pub revision: u64,
+    pub revision: u32,
     pub updated_at: String,
     pub archived: bool,
 }
@@ -208,7 +208,7 @@ pub struct FocusPlanTagView {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[cfg_attr(test, derive(ts_rs::TS))]
 pub struct FocusPlanRevisionView {
-    pub revision: u64,
+    pub revision: u32,
     pub reason: String,
     pub created_at: String,
 }
@@ -216,7 +216,7 @@ pub struct FocusPlanRevisionView {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[cfg_attr(test, derive(ts_rs::TS))]
 pub struct FocusPlanRecoveryDraftView {
-    pub base_revision: u64,
+    pub base_revision: u32,
     pub draft_json: String,
     pub conflict: bool,
     pub updated_at: String,
@@ -239,7 +239,7 @@ pub struct FocusPlanDetailView {
     pub tags: Vec<FocusPlanTagView>,
     pub revisions: Vec<FocusPlanRevisionView>,
     pub recovery_draft: Option<FocusPlanRecoveryDraftView>,
-    pub revision: u64,
+    pub revision: u32,
     pub created_at: String,
     pub updated_at: String,
     pub archived: bool,
