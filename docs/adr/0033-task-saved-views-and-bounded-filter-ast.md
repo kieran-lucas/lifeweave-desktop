@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted for Task 39 / Slice 029 implementation by explicit Product Owner authorization.
+Accepted and implemented by Task 39 / Slice 029 at product checkpoint
+`374abcbae263be18fa785a56d656678f9bfd9c29`.
 
 ## Context
 
@@ -50,6 +51,7 @@ Reopen only if source scopes must change, predicates require nesting/text/custom
 Views become shared or route-level objects, reference lifecycle changes, or a reproducible
 P0/P1 migration/data-loss/security defect appears. Each requires a new Product Owner decision.
 
-## Next action
+## Closure
 
-Implement active Slice 029. Task 40 remains prohibited and unrecommended.
+Task 39 is closed with schema 23 active. Await the Product Owner gate; Task 40 remains
+prohibited, unstarted, unallocated, and unrecommended.

@@ -1,5 +1,9 @@
 # Task 39 Acceptance Mapping
-baseline diff review finds no confirmed P0/P1 issue. Task 40 stays absent and unrecommended.
+
+Status: ACCEPTED by deterministic implementation evidence at product checkpoint
+`374abcbae263be18fa785a56d656678f9bfd9c29`. The baseline diff review found no remaining P0/P1
+issue. Task 40 stays absent and unrecommended.
+
 ## Migration and lifecycle
 
 - Migration tests: fresh schema 23 once, schema 22 upgrade, idempotence, enum/check/index shape,
@@ -37,6 +41,10 @@ baseline diff review finds no confirmed P0/P1 issue. Task 40 stays absent and un
 
 ## Final gates
 
-All canonical governance/integrity, typecheck, frontend tests/build, Rust fmt/clippy/tests,
-generated-artifact, diff, workflow-seal, lockfile, and released-migration checks pass. One full
-baseline diff review finds no confirmed P0/P1 issue. Task 40 stays absent and unrecommended.
+Canonical governance/integrity, typecheck, 596 frontend tests, production frontend build, Rust
+fmt/clippy and full serial tests (587 passed, 4 designated ignored), generated-artifact, diff,
+workflow-seal, lockfile, and released-migration checks pass. The optional historical aggregate
+JavaScript budget check remains a non-blocking pre-existing tooling debt: even removing the
+entire 16,063-byte Saved View chunk leaves the prior bundle above its 1,150,000-byte threshold.
+One full baseline diff review found a backup equality-test coverage gap, corrected before the
+checkpoint; no confirmed P0/P1 issue remains. Task 40 stays absent and unrecommended.

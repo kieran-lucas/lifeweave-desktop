@@ -12,13 +12,13 @@
 
 ## Current state
 
-- Latest closed task: **38/60**
-- Latest closed slice: **028 — One-Off Task Deadline Semantics + Deadline Queue**
-- Active task: **39 — Task Saved Views + Bounded Typed Filter Core**
-- Active implementation specification: **`specs/029-task-saved-views`**
-- Latest feature checkpoint: **Task 38 — One-Off Task Deadline Semantics** (`cace17bd4225cb8e3d89795c0e833e68ed588ba2`)
+- Latest closed task: **39/60**
+- Latest closed slice: **029 — Task Saved Views + Bounded Typed Filter Core**
+- Active task: **none**
+- Active implementation specification: **none**
+- Latest feature checkpoint: **Task 39 — Task Saved Views + Bounded Typed Filter Core** (`374abcbae263be18fa785a56d656678f9bfd9c29`)
 - Database schema: **23**
-- Next action: **Implement active spec**
+- Next action: **Product Owner gate**
 - Task 40: **prohibited, unstarted, unallocated, and unrecommended**
 
 ## Task 36 closure

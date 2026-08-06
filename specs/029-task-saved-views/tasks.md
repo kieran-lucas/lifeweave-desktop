@@ -49,7 +49,7 @@ Unchecked entries are unfinished work and this file is the resumable execution l
 ## F. Closure
 
 - [x] T39-F01 perform one full baseline diff review;
-- [ ] T39-F02 create Task 39 product checkpoint commit;
-- [ ] T39-F03 close Project State and all authority surfaces;
-- [ ] T39-F04 run final governance and diff checks;
-- [ ] T39-F05 commit closure, push main, and confirm remote parity.
+- [x] T39-F02 create Task 39 product checkpoint commit;
+- [x] T39-F03 close Project State and all authority surfaces;
+- [x] T39-F04 run final governance and diff checks;
+- [x] T39-F05 commit closure, push main, and confirm remote parity.

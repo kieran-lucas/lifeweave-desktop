@@ -1,16 +1,25 @@
 # Project Status
 
-## Task 39/60 — Task Saved Views + Bounded Typed Filter Core (active)
+## Task 39/60 — Task Saved Views + Bounded Typed Filter Core (complete)
 
-Active through Slice `029-task-saved-views` from baseline
-`eed299d950bb43c54540a0466901f651aa60ce4a`. The Product Owner has fixed a bounded Task-only
-model: four existing source scopes, a versioned typed AND predicate, stable sort/group modes,
-local lifecycle and order, and a fifth Views tab inside Today. Migration 23 is implemented while
-the slice remains active through verification and review.
+Closed through Slice `029-task-saved-views` from baseline
+`eed299d950bb43c54540a0466901f651aa60ce4a` at product checkpoint
+`374abcbae263be18fa785a56d656678f9bfd9c29`. The bounded Task-only model reuses four canonical
+source scopes, applies a versioned Rust-owned typed AND predicate, stable sort/group modes,
+local lifecycle and order, and adds a fifth Views tab inside Today. Schema 23 adds only the
+standalone `task_saved_views` table and active-order index.
+
+Lifecycle, AST bounds, unsupported persistence, archived/missing/merged references, source
+preservation, exact recurring navigation, bulk loading, 5,000-item errors, generated bindings,
+full backup/restore/reopen, keyboard behavior, and axe checks have deterministic coverage. The
+full baseline diff review found one test-evidence gap in the backup equality tuple; it was fixed
+before the checkpoint and the focused test passed. Canonical governance, typecheck, frontend
+tests (596), production build, Rust fmt/clippy/tests (587 passed plus 4 designated ignored),
+generated drift, and diff checks passed.
 
 No query language, raw SQL/expression path, custom range, route/sidebar/default change, sharing,
 Task card/dashboard, recurring deadline, analytics expansion, dependency, or workflow change is
-authorised. Task 40 is prohibited, unstarted, unallocated, and unrecommended.
+authorised. Task 39 is closed; Task 40 is prohibited, unstarted, unallocated, and unrecommended.
 
 ## Task 38/60 — One-Off Task Deadline Semantics + Deadline Queue (complete)
 

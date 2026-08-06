@@ -4,12 +4,12 @@
 
 - repository: `kieran-lucas/lifeweave-desktop`
 - branch: `main`
-- latest closed task/slice: 38 / 028
-- active task/slice: 39 / 029
-- schema: 22
-- active specification: `specs/029-task-saved-views`
-- latest feature checkpoint: `cace17bd4225cb8e3d89795c0e833e68ed588ba2`
-- next action: implement active specification
+- latest closed task/slice: 39 / 029
+- active task/slice: none
+- schema: 23
+- active specification: none
+- latest feature checkpoint: `374abcbae263be18fa785a56d656678f9bfd9c29`
+- next action: Product Owner gate
 - Task 40: prohibited, unstarted, unallocated, and unrecommended
 
 ## Task 36 final state
@@ -34,16 +34,18 @@ The Product Owner activated Task 38 / Slice 028 from baseline `954b596677c34dd20
 
 Task 37 remains closed and is not reopened by this activation.
 
-## Task 39 activation
+## Task 39 closure
 
 The Product Owner activated Task 39 / Slice 029 from baseline
 `eed299d950bb43c54540a0466901f651aa60ce4a` after Task 38 and its Today cache remediation.
 Scope is the bounded Task Saved View model in ADR 0033 and the Slice 029 package: four existing
 sources, typed predicate v1, stable sort/group, local lifecycle/order, and a fifth internal Today
-tab. Schema 23 is implemented from the schema 22 activation baseline. Task 40 remains prohibited
-and unrecommended.
+tab. Schema 23 is active from the schema 22 activation baseline. The product checkpoint is
+`374abcbae263be18fa785a56d656678f9bfd9c29`; deterministic migration, lifecycle, predicate,
+source, reference, navigation, query-shape, backup/reopen, accessibility, regression, and build
+evidence passed. Task 40 remains prohibited and unrecommended.
 
 ## Next action
 
-Implement the active Slice 029 in dependency order, verify it deterministically, perform one
-full baseline diff review, then close and synchronize authority. Do not allocate Task 40.
+Await the Product Owner gate. No specification is active, no next candidate is recommended, and
+Task 40 must not be allocated or started.
