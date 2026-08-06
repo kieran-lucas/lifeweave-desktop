@@ -4,12 +4,12 @@
 
 - repository: `kieran-lucas/lifeweave-desktop`
 - branch: `main`
-- latest closed task/slice: 36 / 026
-- active task/slice: 37 / 027
-- schema: 20 (moving to 21 under Slice 027)
-- active specification: `specs/027-focus-plan-task-review`
-- latest feature checkpoint: `57bd42d8eed5643d2fee3b04f74bd3c44e738da2`
-- next action: implement the active spec
+- latest closed task/slice: 37 / 027
+- active task/slice: none
+- schema: 21
+- active specification: none
+- latest feature checkpoint: `09c393737fd6f096780408a803aea9b6e1355bb8`
+- next action: Product Owner gate
 - Task 38: not started; separate activation required
 
 ## Task 36 final state

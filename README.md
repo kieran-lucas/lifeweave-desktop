@@ -27,7 +27,7 @@ Run `python scripts/verify_source_integrity.py` before any governance or impleme
 
 ## Repository state
 
-Task 36 / Slice 026 — Focus Plans Core is complete at feature checkpoint `57bd42d8eed5643d2fee3b04f74bd3c44e738da2`. Database schema 20 is current. No implementation spec is active; the next feature requires a separate Product Owner gate.
+Task 37 / Slice 027 — Focus Plan ↔ Task Integration + Manual Review History is complete at feature checkpoint `09c393737fd6f096780408a803aea9b6e1355bb8`. Database schema 21 is current. No implementation spec is active; the next feature requires a separate Product Owner gate.
 
 GitHub Actions contains one sealed, manual, read-only Windows installer build. Feature tasks must not modify workflow infrastructure without explicit Product Owner authorization.
 

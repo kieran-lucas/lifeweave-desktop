@@ -1,6 +1,6 @@
 # Roadmap
 
-## Slice 027 — Focus Plan ↔ Task Integration + Manual Review History (active)
+## Slice 027 — Focus Plan ↔ Task Integration + Manual Review History (complete)
 
 Task 37 connects the existing product layers and completes the reserved Focus Plans program.
 
@@ -15,8 +15,13 @@ association in the existing Task editor, Plan context and navigation on Today/Up
 rows, bounded Linked work and Reviews regions on Focus Plan detail, and create-and-read manual
 review history.
 
-Hard boundary: no automatic progress, lifecycle automation, review scheduling, analytics
-expansion, deadline semantics, or new destination. Task 38 is not activated.
+Hard boundary preserved: no automatic progress, lifecycle automation, review scheduling,
+analytics expansion, deadline semantics, or new destination entered migration 21, the DTOs,
+or the UI. Task 38 was not activated.
+
+Closure is based on deterministic migration, recurrence-authority, projection, review, and
+backup/restore evidence, generated-binding stability, production build success, and a full
+diff audit against the activation baseline.
 
 Task 36 implemented ADR 0030 as a standalone local entity with schema 20, lifecycle, variants/phases, revisions/recovery, shared tags, Search, full-database backup authority, generated IPC bindings, and a lazy Plans workspace.
 
@@ -31,7 +36,7 @@ Task 35 selected the standalone Focus Plan entity. ADR 0030 is canonical.
 ## Reserved positions within the 60-task roadmap
 
 - **Task 36:** complete and hard-closed.
-- **Task 37 — Focus Plan ↔ Task Integration + Manual Review History:** active under Slice 027.
+- **Task 37:** complete and closed. The reserved Focus Plans program is finished.
 - **Tasks 38–60:** available for later decisions; none is activated or recommended.
 - **Deadline Semantics:** eligible deferred candidate.
 

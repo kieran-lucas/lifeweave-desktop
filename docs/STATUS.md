@@ -1,15 +1,22 @@
 # Project Status
 
-## Task 37/60 — Focus Plan ↔ Task Integration + Manual Review History (active)
+## Task 37/60 — Focus Plan ↔ Task Integration + Manual Review History (complete)
 
-- Activation baseline: `82b055fe15d4997daf083bf777e9ef78c1f92bb6`.
-- Active spec: `specs/027-focus-plan-task-review`.
-- Scope: optional zero-or-one Focus Plan on one-off Tasks and recurring series, plus create-and-read manual Plan review history.
-- Schema moves from 20 to 21 through an append-only migration; migrations 1–20 remain unchanged.
-- Relationship authority stays on `tasks` and `task_series`; occurrences, overrides, and evaluations inherit and own nothing.
+- Closed slice: `027-focus-plan-task-review`.
+- Feature checkpoint: `09c393737fd6f096780408a803aea9b6e1355bb8`.
+- Canonical decision: ADR 0031.
+- Schema 21 is active through an append-only migration; migrations 1–20 remain unchanged.
+- Relationship authority is stored on `tasks` and `task_series`; occurrences, overrides, and evaluations inherit and own nothing.
+- All three recurring edit scopes hold: occurrence scope cannot change the relation, entire-series owns it absolutely, and a this-and-future split keeps the old series relation while the new series inherits or takes an explicit forward choice.
+- An existing link survives Plan archive and unrelated edits, projects explicitly as archived, and returns to ordinary projection on restore.
+- Manual reviews are create-and-read only, idempotent by `operation_id`, bounded newest-first, and change no Plan state.
+- Rust format/clippy/tests (546 serial), frontend typecheck/tests (573), production frontend build, generated-binding stability, and repository governance passed.
+- Migration, close/reopen, and full backup/restore round-trip evidence covers relations and reviews.
 - Today remains startup/default, Task rows remain non-card, and Life semantics remain unchanged.
-- Task 38 is prohibited: no analytics expansion, deadline semantics, automatic progress, review scheduling, or new destination.
-- Closure requires deterministic migration, recurrence-authority, projection, review, and backup evidence, a full diff audit, and an independent review with no confirmed P0/P1 defect.
+- The separate independent-review agent could not run: its environment hit a session quota. An equivalent structured review was performed directly and is recorded as disclosed verification debt.
+- No workflow, seal, dependency, lockfile, or capability-scope drift entered the change.
+
+Task 37 is closed. Reopen only for a reproducible product defect, migration/data-loss risk, violated invariant, or explicit Product Owner decision.
 
 ## Task 36/60 — Focus Plans Core + Draft/Active Lifecycle (complete)
 

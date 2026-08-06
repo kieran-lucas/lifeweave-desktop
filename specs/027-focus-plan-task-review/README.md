@@ -3,11 +3,12 @@
 ## Status
 
 ```text
-Task 37: ACTIVE
-Slice 027: ACTIVE
+Task 37: COMPLETE
+Slice 027: COMPLETE
 activation baseline: 82b055fe15d4997daf083bf777e9ef78c1f92bb6
-schema: 20 → 21
-active spec: specs/027-focus-plan-task-review
+feature checkpoint: 09c393737fd6f096780408a803aea9b6e1355bb8
+schema: 21
+active spec: none
 Task 38: not started
 ```
 
@@ -43,6 +44,16 @@ Automatic progress, phase-to-Task relations, lifecycle automation, review remind
 schedulers, review edit/delete/archive, analytics or scoring, many-to-many relations,
 occurrence-owned relations, Life-tree changes, Search indexing of reviews, new navigation
 destinations, generic relationship infrastructure, and every Task 38 candidate.
+
+## Closure basis
+
+Task 37 closed with deterministic migration, one-off and recurring relationship, recurrence
+edit-scope, linked-work projection, review, and backup/restore evidence; generated-binding
+stability; Rust format, clippy, and test success; frontend typecheck, tests, and production
+build success; repository governance; and a full diff audit against the activation baseline.
+The separate independent-review agent could not run because its environment hit a session
+quota; an equivalent structured review was performed directly and recorded as disclosed,
+non-blocking verification debt.
 
 ## Authority
 

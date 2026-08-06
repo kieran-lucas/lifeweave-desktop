@@ -88,4 +88,5 @@ Reopen only if every Plan must be a Life leaf, Life-independent Basic Leaf autho
 
 ## Next action
 
-No active spec. Task 37 requires a separate Product Owner gate.
+No active spec. The Task 37 relationship reserved above was delivered by Slice 027 and is
+recorded in ADR 0031.

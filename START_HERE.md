@@ -12,13 +12,13 @@
 
 ## Current state
 
-- Latest closed task: **36/60**
-- Latest closed slice: **026 — Focus Plans Core**
-- Active task: **37 — Focus Plan ↔ Task Integration + Manual Review History**
-- Active implementation specification: **Slice 027 — `specs/027-focus-plan-task-review`**
-- Latest feature checkpoint: **Task 36 — Focus Plans Core** (`57bd42d8eed5643d2fee3b04f74bd3c44e738da2`)
+- Latest closed task: **37/60**
+- Latest closed slice: **027 — Focus Plan ↔ Task Integration + Manual Review History**
+- Active task: **none**
+- Active implementation specification: **none**
+- Latest feature checkpoint: **Task 37 — Focus Plan ↔ Task Integration** (`09c393737fd6f096780408a803aea9b6e1355bb8`)
 - Database schema: **21**
-- Next action: **Implement active spec**
+- Next action: **Product Owner gate**
 - Task 38: **not started; requires separate activation**
 
 ## Task 36 closure
