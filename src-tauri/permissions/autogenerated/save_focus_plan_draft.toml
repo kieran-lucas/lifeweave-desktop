@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-save-focus-plan-draft"
+description = "Enables the save_focus_plan_draft command without any pre-configured scope."
+commands.allow = ["save_focus_plan_draft"]
+
+[[permission]]
+identifier = "deny-save-focus-plan-draft"
+description = "Denies the save_focus_plan_draft command without any pre-configured scope."
+commands.deny = ["save_focus_plan_draft"]

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-discard-focus-plan-draft"
+description = "Enables the discard_focus_plan_draft command without any pre-configured scope."
+commands.allow = ["discard_focus_plan_draft"]
+
+[[permission]]
+identifier = "deny-discard-focus-plan-draft"
+description = "Denies the discard_focus_plan_draft command without any pre-configured scope."
+commands.deny = ["discard_focus_plan_draft"]

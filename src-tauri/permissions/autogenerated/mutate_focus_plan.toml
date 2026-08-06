@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-mutate-focus-plan"
+description = "Enables the mutate_focus_plan command without any pre-configured scope."
+commands.allow = ["mutate_focus_plan"]
+
+[[permission]]
+identifier = "deny-mutate-focus-plan"
+description = "Denies the mutate_focus_plan command without any pre-configured scope."
+commands.deny = ["mutate_focus_plan"]
