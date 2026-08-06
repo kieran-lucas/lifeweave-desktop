@@ -88,6 +88,15 @@ An agent may not say “done”, “fixed”, or “all tests pass” without re
 - independent reviewer findings;
 - unresolved risks.
 
+Closure is risk-based, not command-based:
+
+- A named test or environment is not an absolute gate when equivalent deterministic evidence covers the same product risk.
+- Infrastructure, driver, timing, or harness failures are not product defects unless they reproduce a product invariant violation.
+- After two failed reruns without new diagnostic evidence, stop retrying. Record the harness issue as non-blocking verification debt and use the smallest deterministic substitute.
+- A task may close with disclosed residual verification debt when core behavior, persistence, migration, and safety invariants have deterministic evidence and no confirmed P0/P1 product defect remains.
+- A flaky or nondiagnostic end-to-end test must never hold the roadmap indefinitely or trigger speculative product changes.
+- Reopen a closed task only for a reproducible product defect, violated invariant, migration/data-loss risk, or explicit Product Owner decision—not merely because an optional smoke test is red.
+
 ## 8. Git behavior
 
 This is a solo-owner private repository. The Product Owner has authorized agents to commit and push directly to `main`. This is the permanent repository workflow, not an agent-inferred exception or temporary shortcut.
