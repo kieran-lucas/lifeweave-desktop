@@ -23,4 +23,10 @@ fn export_focus_plan_bindings() {
     FocusPlanRevisionView::export_all_to(&out).unwrap();
     FocusPlanRecoveryDraftView::export_all_to(&out).unwrap();
     FocusPlanDetailView::export_all_to(&out).unwrap();
+    FocusPlanReviewView::export_all_to(&out).unwrap();
+    CreateFocusPlanReviewInput::export_all_to(&out).unwrap();
+    FocusPlanReviewListInput::export_all_to(&out).unwrap();
+    FocusPlanReviewHistoryView::export_all_to(&out).unwrap();
+    FocusPlanLinkedWorkView::export_all_to(&out).unwrap();
+    FocusPlanLinkedWorkInput::export_all_to(&out).unwrap();
 }

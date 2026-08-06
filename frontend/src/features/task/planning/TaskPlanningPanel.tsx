@@ -35,10 +35,12 @@ export default function TaskPlanningPanel({
   mode,
   anchorLocalDate,
   onOpenItem,
+  onFocusPlanNavigate,
 }: {
   mode: PlanningMode;
   anchorLocalDate: string;
   onOpenItem: (request: { localDate: string; taskId: string | null; seriesId: string | null }) => void;
+  onFocusPlanNavigate?: ((planId: string) => void) | undefined;
 }) {
   const query = useQuery({
     queryKey: ["task-planning", mode, anchorLocalDate],
@@ -74,7 +76,7 @@ export default function TaskPlanningPanel({
             <h2 id={headingId}>{dateLabel(group.local_date, anchorLocalDate)}</h2>
             <ul className={styles.list}>
               {group.items.map((item) => (
-                <PlanningRow key={item.id} item={item} mode={mode} onOpenItem={onOpenItem} />
+                <PlanningRow key={item.id} item={item} mode={mode} onOpenItem={onOpenItem} onFocusPlanNavigate={onFocusPlanNavigate} />
               ))}
             </ul>
           </section>
@@ -84,10 +86,11 @@ export default function TaskPlanningPanel({
   );
 }
 
-function PlanningRow({ item, mode, onOpenItem }: {
+function PlanningRow({ item, mode, onOpenItem, onFocusPlanNavigate }: {
   item: TaskPlanningItemView;
   mode: PlanningMode;
   onOpenItem: (request: { localDate: string; taskId: string | null; seriesId: string | null }) => void;
+  onFocusPlanNavigate?: ((planId: string) => void) | undefined;
 }) {
   const action = mode === "upcoming" ? "Open day" : "Review";
   const labelDate = new Intl.DateTimeFormat(undefined, { dateStyle: "long" }).format(new Date(`${item.local_date}T12:00:00`));
@@ -100,6 +103,15 @@ function PlanningRow({ item, mode, onOpenItem }: {
         <span><CategoryIcon iconKey={item.category_icon_key} label={`Category ${item.category_name}`} /> {item.category_name}</span>
         <span>Priority {item.priority}</span>
         {item.life_area && <span>{item.life_area.archived ? "Archived life area: " : "Life area: "}{item.life_area.breadcrumb}</span>}
+        {item.focus_plan && (item.focus_plan.archived ? (
+          <span>Archived Focus Plan: {item.focus_plan.title}</span>
+        ) : (
+          <button
+            type="button"
+            aria-label={`Focus Plan: ${item.focus_plan.title}`}
+            onClick={() => onFocusPlanNavigate?.(item.focus_plan!.id)}
+          >Focus Plan: {item.focus_plan.title}</button>
+        ))}
         {item.kind === "recurring" && <span>Recurring</span>}
         {mode === "overdue" && <span className={styles.needsReview}>Needs review</span>}
         <TagChipList tags={item.tags} />

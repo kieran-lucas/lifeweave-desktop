@@ -117,6 +117,7 @@ pub struct TaskView {
     pub created_at: String,
     pub updated_at: String,
     pub life_area: Option<TaskLifeAreaView>,
+    pub focus_plan: Option<TaskFocusPlanView>,
     pub tags: Vec<TagSummaryView>,
 }
 #[derive(Debug, Clone, Serialize)]
@@ -126,6 +127,23 @@ pub struct TaskLifeAreaView {
     pub title: String,
     pub breadcrumb: String,
     pub archived: bool,
+}
+/// Inherited or direct Focus Plan context for a Task row. Occurrences project this from
+/// their authoritative series and never own the relation themselves.
+#[derive(Debug, Clone, Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct TaskFocusPlanView {
+    pub id: String,
+    pub title: String,
+    pub archived: bool,
+}
+/// A Focus Plan that may be newly assigned to a Task or series. Archived Plans are excluded.
+#[derive(Debug, Clone, Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct TaskFocusPlanTargetView {
+    pub id: String,
+    pub title: String,
+    pub lifecycle: String,
 }
 #[derive(Debug, Clone, Serialize)]
 #[cfg_attr(test, derive(ts_rs::TS))]
@@ -156,6 +174,7 @@ pub struct CreateTaskInput {
     pub category_id: String,
     pub priority: String,
     pub life_node_id: Option<String>,
+    pub focus_plan_id: Option<String>,
     pub tag_ids: Vec<String>,
 }
 #[derive(Debug, Deserialize)]
@@ -170,6 +189,7 @@ pub struct UpdateTaskInput {
     pub category_id: String,
     pub priority: String,
     pub life_node_id: Option<String>,
+    pub focus_plan_id: Option<String>,
     pub tag_ids: Vec<String>,
 }
 #[derive(Debug, Clone, Serialize)]
@@ -188,6 +208,8 @@ pub struct RecurringOccurrenceView {
     pub is_recurring: bool,
     pub is_override: bool,
     pub life_area: Option<TaskLifeAreaView>,
+    /// Inherited from the authoritative series; occurrences own no relation.
+    pub focus_plan: Option<TaskFocusPlanView>,
     pub tags: Vec<TagSummaryView>,
 }
 #[derive(Debug, Deserialize)]
@@ -206,6 +228,7 @@ pub struct CreateRecurringTaskInput {
     pub until: Option<String>,
     pub count: Option<i32>,
     pub life_node_id: Option<String>,
+    pub focus_plan_id: Option<String>,
     pub tag_ids: Vec<String>,
 }
 #[derive(Debug, Deserialize, Clone, PartialEq)]
@@ -236,6 +259,9 @@ pub struct UpdateRecurringOccurrenceInput {
     pub until: Option<String>,
     pub count: Option<i32>,
     pub life_node_id: Option<String>,
+    /// Series-owned Focus Plan relation. Rejected at OnlyThisOccurrence scope when it
+    /// differs from the series value; applied to the new series on a ThisAndFuture split.
+    pub focus_plan_id: Option<String>,
     /// Only used for EntireSeries scope. Must be None for OnlyThisOccurrence
     /// and ThisAndFuture scopes.
     pub series_tag_ids: Option<Vec<String>>,
@@ -270,6 +296,7 @@ pub struct TodayItemView {
     pub is_override: bool,
     pub evaluation: Option<TaskEvaluationView>,
     pub life_area: Option<TaskLifeAreaView>,
+    pub focus_plan: Option<TaskFocusPlanView>,
     pub tags: Vec<TagSummaryView>,
 }
 
@@ -308,6 +335,7 @@ pub struct TaskPlanningItemView {
     pub priority: String,
     pub is_override: bool,
     pub life_area: Option<TaskLifeAreaView>,
+    pub focus_plan: Option<TaskFocusPlanView>,
     pub tags: Vec<TagSummaryView>,
 }
 

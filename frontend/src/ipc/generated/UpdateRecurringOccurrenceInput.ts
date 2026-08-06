@@ -3,6 +3,11 @@ import type { OccurrenceEditScope } from "./OccurrenceEditScope";
 
 export type UpdateRecurringOccurrenceInput = { series_id: string, original_local_date: string, replacement_local_date: string | null, title: string | null, description: string | null, category_id: string | null, priority: string | null, start_minute: number | null, end_minute: number | null, scope: OccurrenceEditScope, cancelled: boolean, frequency: string | null, interval: number | null, weekdays: Array<number> | null, until: string | null, count: number | null, life_node_id: string | null, 
 /**
+ * Series-owned Focus Plan relation. Rejected at OnlyThisOccurrence scope when it
+ * differs from the series value; applied to the new series on a ThisAndFuture split.
+ */
+focus_plan_id: string | null, 
+/**
  * Only used for EntireSeries scope. Must be None for OnlyThisOccurrence
  * and ThisAndFuture scopes.
  */

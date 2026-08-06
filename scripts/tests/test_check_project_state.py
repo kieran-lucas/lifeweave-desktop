@@ -30,10 +30,21 @@ class ProjectStateValidatorTests(unittest.TestCase):
     def tearDown(self) -> None:
         self.temp.cleanup()
 
+    @staticmethod
+    def migrations_source(version: int) -> str:
+        """Reproduce the markers _released_migration_versions parses."""
+        return (
+            "static MIGRATIONS: &[Migration] = &[\n"
+            f'    Migration {{ version: {version}, sql: "" }},\n'
+            "];\n\n"
+            "pub fn run_migrations() {}\n"
+        )
+
     def write_fixture(self) -> None:
         (self.root / "docs/PROJECT_STATE.json").write_text(json.dumps(self.ledger), encoding="utf-8")
         (self.root / "docs/source-of-truth/SOURCE_MANIFEST.json").write_text('{"sha256":"abc"}', encoding="utf-8")
-        (self.root / "src-tauri/src/infrastructure/sqlite/migrations.rs").write_text('Migration { version: 16, sql: "" }', encoding="utf-8")
+        (self.root / "src-tauri/src/infrastructure/sqlite/migrations.rs").write_text(
+            self.migrations_source(16), encoding="utf-8")
         task = self.ledger["latest_closed_task"] + (1 if self.ledger["active_spec"] else 0)
         (self.root / "docs/STATUS.md").write_text(f"# Status\n\n## Task {task}/60 — State\n", encoding="utf-8")
         slices = [self.ledger["latest_closed_slice"]]
@@ -111,8 +122,20 @@ class ProjectStateValidatorTests(unittest.TestCase):
 
     def test_migration_mismatch(self) -> None:
         self.write_fixture()
-        (self.root / "src-tauri/src/infrastructure/sqlite/migrations.rs").write_text('Migration { version: 15, sql: "" }', encoding="utf-8")
+        (self.root / "src-tauri/src/infrastructure/sqlite/migrations.rs").write_text(
+            self.migrations_source(15), encoding="utf-8")
         self.assertTrue(any("highest released migration 15" in error for error in validate(self.root)))
+
+    def test_extension_migration_modules_raise_the_expected_schema(self) -> None:
+        sqlite_dir = self.root / "src-tauri/src/infrastructure/sqlite"
+        (sqlite_dir / "task36_migration.rs").write_text(
+            "pub const TASK36_SCHEMA_VERSION: u32 = 17;", encoding="utf-8")
+        (sqlite_dir / "task37_migration.rs").write_text(
+            "pub const TASK37_SCHEMA_VERSION: u32 = 18;", encoding="utf-8")
+        self.assert_error("highest released migration 18")
+        self.ledger["database_schema_version"] = 18
+        self.write_fixture()
+        self.assertEqual(validate(self.root), [])
 
     def test_source_hash_mismatch(self) -> None:
         self.ledger["source_sha256"] = "wrong"

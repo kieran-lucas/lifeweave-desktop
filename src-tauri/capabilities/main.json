@@ -20,6 +20,7 @@
     "allow-list-backups",
     "allow-restore-database",
     "allow-list-task-categories",
+    "allow-list-focus-plan-targets",
     "allow-get-related-tasks-for-life-node",
     "allow-list-tasks-for-date",
     "allow-create-task",
@@ -90,6 +91,9 @@
     "allow-create-focus-plan",
     "allow-mutate-focus-plan",
     "allow-save-focus-plan-draft",
-    "allow-discard-focus-plan-draft"
+    "allow-discard-focus-plan-draft",
+    "allow-get-focus-plan-linked-work",
+    "allow-list-focus-plan-reviews",
+    "allow-create-focus-plan-review"
   ]
 }

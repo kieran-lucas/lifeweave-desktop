@@ -20,8 +20,9 @@ use document::service::{
     save_reader_document, save_reader_draft,
 };
 use focus_plan::service::{
-    create_focus_plan, discard_focus_plan_draft, get_focus_plan, list_focus_plans,
-    mutate_focus_plan, save_focus_plan_draft,
+    create_focus_plan, create_focus_plan_review, discard_focus_plan_draft, get_focus_plan,
+    get_focus_plan_linked_work, list_focus_plan_reviews, list_focus_plans, mutate_focus_plan,
+    save_focus_plan_draft,
 };
 use infrastructure::backup::lifecycle::{
     StartupDisposition, preflight_startup_check, recover_if_interrupted,
@@ -29,7 +30,7 @@ use infrastructure::backup::lifecycle::{
 use infrastructure::sqlite::{
     connection::{open_existing_file_connection, open_file_connection},
     runtime::DatabaseRuntime,
-    task36_migration::run_all_migrations,
+    task37_migration::run_all_migrations,
     worker::DbWorkerHandle,
 };
 use ipc::backup::{backup_database, list_backups, restore_database};
@@ -44,9 +45,9 @@ use ipc::tag::{
 use ipc::task::{
     create_recurring_task, create_task, delete_task, evaluate_task, get_analytics_projection,
     get_month_projection, get_related_tasks_for_life_node, get_task_planning_projection,
-    list_completion_states, list_recurring_occurrences, list_task_categories, list_tasks_for_date,
-    list_today_items, undo_task_evaluation, update_category_goals, update_recurring_occurrence,
-    update_task,
+    list_completion_states, list_focus_plan_targets, list_recurring_occurrences,
+    list_task_categories, list_tasks_for_date, list_today_items, undo_task_evaluation,
+    update_category_goals, update_recurring_occurrence, update_task,
 };
 use life::service::{
     archive_life_node, create_life_node, get_life_browse_projection, get_life_edit_projection,
@@ -158,6 +159,7 @@ pub fn run() {
             list_backups,
             restore_database,
             list_task_categories,
+            list_focus_plan_targets,
             get_related_tasks_for_life_node,
             list_tasks_for_date,
             create_task,
@@ -229,6 +231,9 @@ pub fn run() {
             mutate_focus_plan,
             save_focus_plan_draft,
             discard_focus_plan_draft,
+            get_focus_plan_linked_work,
+            list_focus_plan_reviews,
+            create_focus_plan_review,
         ])
         .run(tauri::generate_context!())
         .expect("failed to run Lifeweave");

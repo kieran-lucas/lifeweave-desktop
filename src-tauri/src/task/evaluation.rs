@@ -427,7 +427,10 @@ fn operation_subject(
 mod tests {
     use super::*;
     use crate::{
-        infrastructure::sqlite::{connection::open_memory_connection, migrations::run_migrations},
+        infrastructure::sqlite::{
+            connection::open_memory_connection,
+            task37_migration::run_all_migrations as run_migrations,
+        },
         task::dto::{
             CreateRecurringTaskInput, CreateTaskInput, OccurrenceEditScope,
             UpdateRecurringOccurrenceInput,
@@ -451,6 +454,7 @@ mod tests {
                 category_id: "general".into(),
                 priority: "medium".into(),
                 life_node_id: None,
+                focus_plan_id: None,
                 tag_ids: vec![],
             },
         )
@@ -629,6 +633,7 @@ mod tests {
                 until: None,
                 count: Some(3),
                 life_node_id: None,
+                focus_plan_id: None,
                 tag_ids: vec![],
             },
         )
@@ -651,6 +656,7 @@ mod tests {
             until: None,
             count: None,
             life_node_id: None,
+            focus_plan_id: None,
             series_tag_ids: None,
         };
         repository::update_recurring(&mut connection, moved).unwrap();
@@ -693,6 +699,7 @@ mod tests {
             until: None,
             count: None,
             life_node_id: None,
+            focus_plan_id: None,
             series_tag_ids: None,
         };
         repository::update_recurring(&mut connection, cancel).unwrap();

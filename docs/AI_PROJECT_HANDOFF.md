@@ -5,12 +5,12 @@
 - repository: `kieran-lucas/lifeweave-desktop`
 - branch: `main`
 - latest closed task/slice: 36 / 026
-- active task/slice: none
-- schema: 20
-- active specification: none
+- active task/slice: 37 / 027
+- schema: 20 (moving to 21 under Slice 027)
+- active specification: `specs/027-focus-plan-task-review`
 - latest feature checkpoint: `57bd42d8eed5643d2fee3b04f74bd3c44e738da2`
-- next action: Product Owner gate
-- Task 37: not started; separate activation required
+- next action: implement the active spec
+- Task 38: not started; separate activation required
 
 ## Task 36 final state
 
@@ -22,6 +22,12 @@ The repeated Windows native harness failures were tooling/infrastructure failure
 
 Repository cleanup is complete: only the sealed manual installer workflow remains; no Task 36 patch script, temporary workflow, compiler artifact, placeholder, or duplicate planning/test document remains.
 
+## Task 37 activation
+
+The Product Owner activated Task 37 / Slice 027 from baseline `82b055fe15d4997daf083bf777e9ef78c1f92bb6`. Scope is exactly two capabilities: optional zero-or-one Focus Plan association for one-off Tasks and recurring series, and create-and-read manual Focus Plan review history.
+
+Task 36 remains hard-closed and is not reopened by this activation.
+
 ## Next action
 
-Stop. Await a Product Owner decision for the next active spec. Task 37 must not start automatically merely because Task 36 is closed.
+Implement `specs/027-focus-plan-task-review`. Task 38 must not start automatically merely because Task 37 is active.

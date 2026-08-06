@@ -17,6 +17,8 @@ import {
   saveFocusPlanDraft,
 } from "./ipc";
 import * as styles from "./FocusPlansScreen.css";
+import { LinkedWorkPanel, type TaskNavigate } from "./LinkedWorkPanel";
+import { ReviewsPanel } from "./ReviewsPanel";
 
 export type FocusPlanEntryRequest = {
   requestId: string;
@@ -26,6 +28,8 @@ export type FocusPlanEntryRequest = {
 type Props = {
   entryRequest: FocusPlanEntryRequest | null;
   onEntryRequestSettled: (requestId: string) => void;
+  anchorLocalDate: string;
+  onTaskNavigate?: TaskNavigate | undefined;
 };
 
 type PlanForm = {
@@ -139,7 +143,12 @@ function recoveryForm(raw: string, fallback: PlanForm): PlanForm {
   };
 }
 
-export function FocusPlansScreen({ entryRequest, onEntryRequestSettled }: Props) {
+export function FocusPlansScreen({
+  entryRequest,
+  onEntryRequestSettled,
+  anchorLocalDate,
+  onTaskNavigate,
+}: Props) {
   const [portfolio, setPortfolio] = useState<FocusPlanPortfolio>("active");
   const [plans, setPlans] = useState<FocusPlanSummaryView[]>([]);
   const [selected, setSelected] = useState<FocusPlanDetailView | null>(null);
@@ -451,6 +460,16 @@ export function FocusPlansScreen({ entryRequest, onEntryRequestSettled }: Props)
                   <form className={styles.inlineForm} onSubmit={(event) => { event.preventDefault(); void addPhase(); }}><input className={styles.input} value={newPhaseTitle} onChange={(event) => setNewPhaseTitle(event.target.value)} placeholder="New phase" /><button className={styles.secondaryButton} disabled={!newPhaseTitle.trim() || status === "saving"}>Add phase</button></form>
                 </div>}
               </section>
+              <LinkedWorkPanel
+                planId={selected.id}
+                anchorLocalDate={anchorLocalDate}
+                onTaskNavigate={onTaskNavigate}
+              />
+              <ReviewsPanel
+                planId={selected.id}
+                anchorLocalDate={anchorLocalDate}
+                disabled={selected.archived}
+              />
             </>
           )}
         </div>

@@ -46,6 +46,7 @@ vi.mock("../ipc/commands", () => ({
   listTodayItems: appApi.listTodayItems,
   listTaskCategories: vi.fn().mockResolvedValue([]),
   listTaskLifeTargets: vi.fn().mockResolvedValue([]),
+  listFocusPlanTargets: vi.fn().mockResolvedValue([]),
   getMonthProjection: vi
     .fn()
     .mockResolvedValue({ month: "2026-08", algorithm_version: 1, days: [] }),

@@ -72,6 +72,16 @@ pub fn list_task_categories(
         .map_err(map_task)
 }
 #[tauri::command]
+#[tracing::instrument(skip(state))]
+pub fn list_focus_plan_targets(
+    state: State<'_, DatabaseRuntime>,
+) -> Result<Vec<crate::task::dto::TaskFocusPlanTargetView>, IpcError> {
+    state
+        .execute(|conn| Ok(repository::focus_plan_targets(conn)))
+        .map_err(map_db)?
+        .map_err(map_task)
+}
+#[tauri::command]
 pub fn get_related_tasks_for_life_node(
     state: State<'_, DatabaseRuntime>,
     node_id: String,

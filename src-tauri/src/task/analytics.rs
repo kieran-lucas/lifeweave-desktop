@@ -798,7 +798,7 @@ mod tests {
     use crate::{
         infrastructure::sqlite::{
             connection::{open_file_connection, open_memory_connection},
-            migrations::run_migrations,
+            task37_migration::run_all_migrations as run_migrations,
         },
         task::{
             dto::{
@@ -912,6 +912,7 @@ mod tests {
                     category_id: "general".into(),
                     priority: "medium".into(),
                     life_node_id: None,
+                    focus_plan_id: None,
                     tag_ids: vec![],
                 },
             )
@@ -971,6 +972,7 @@ mod tests {
                 until: None,
                 count: Some(3),
                 life_node_id: None,
+                focus_plan_id: None,
                 tag_ids: vec![],
             },
         )
@@ -996,6 +998,7 @@ mod tests {
                 until: None,
                 count: None,
                 life_node_id: None,
+                focus_plan_id: None,
                 series_tag_ids: None,
             },
         )
@@ -1020,6 +1023,7 @@ mod tests {
                 until: None,
                 count: None,
                 life_node_id: None,
+                focus_plan_id: None,
                 series_tag_ids: None,
             },
         )
@@ -1045,6 +1049,7 @@ mod tests {
                 category_id: "general".into(),
                 priority: "medium".into(),
                 life_node_id: None,
+                focus_plan_id: None,
                 tag_ids: vec![],
             },
         )
@@ -1090,6 +1095,7 @@ mod tests {
                     category_id: "general".into(),
                     priority: "medium".into(),
                     life_node_id: None,
+                    focus_plan_id: None,
                     tag_ids: vec![],
                 },
             )
@@ -1124,6 +1130,7 @@ mod tests {
                 category_id: "general".into(),
                 priority: "medium".into(),
                 life_node_id: None,
+                focus_plan_id: None,
                 tag_ids: vec![],
             },
         )
@@ -1245,6 +1252,7 @@ mod tests {
                 category_id: "general".into(),
                 priority: "medium".into(),
                 life_node_id: None,
+                focus_plan_id: None,
                 tag_ids: vec![],
             },
         )
@@ -1263,6 +1271,7 @@ mod tests {
                 category_id: "general".into(),
                 priority: "medium".into(),
                 life_node_id: None,
+                focus_plan_id: None,
                 tag_ids: vec![],
             },
         )
@@ -1312,6 +1321,7 @@ mod tests {
                 until: None,
                 count: Some(3),
                 life_node_id: None,
+                focus_plan_id: None,
                 tag_ids: vec![],
             },
         )
@@ -1338,6 +1348,7 @@ mod tests {
                 until: None,
                 count: None,
                 life_node_id: None,
+                focus_plan_id: None,
                 series_tag_ids: None,
             },
         )
@@ -1365,6 +1376,7 @@ mod tests {
                 until: None,
                 count: Some(2),
                 life_node_id: None,
+                focus_plan_id: None,
                 tag_ids: vec![],
             },
         )
@@ -1400,6 +1412,7 @@ mod tests {
                 category_id: "general".into(),
                 priority: "medium".into(),
                 life_node_id: None,
+                focus_plan_id: None,
                 tag_ids: vec![],
             },
         )
@@ -1446,6 +1459,7 @@ mod tests {
                 category_id: "general".into(),
                 priority: "medium".into(),
                 life_node_id: None,
+                focus_plan_id: None,
                 tag_ids: vec![],
             },
         )

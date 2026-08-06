@@ -56,11 +56,13 @@ def _released_migration_versions(root: Path) -> list[int]:
         for value in re.findall(r"Migration\s*\{\s*version:\s*(\d+)", released)
     ]
 
-    extension = root / "src-tauri/src/infrastructure/sqlite/task36_migration.rs"
-    if extension.is_file():
+    # Post-release schema steps live in their own `taskNN_migration.rs` module rather than the
+    # released MIGRATIONS static, so discover every declared extension version.
+    sqlite_dir = root / "src-tauri/src/infrastructure/sqlite"
+    for extension in sorted(sqlite_dir.glob("task*_migration.rs")):
         text = extension.read_text(encoding="utf-8")
         match = re.search(
-            r"pub const TASK36_SCHEMA_VERSION:\s*u32\s*=\s*(\d+)\s*;", text
+            r"pub const TASK\d+_SCHEMA_VERSION:\s*u32\s*=\s*(\d+)\s*;", text
         )
         if match:
             versions.append(int(match.group(1)))

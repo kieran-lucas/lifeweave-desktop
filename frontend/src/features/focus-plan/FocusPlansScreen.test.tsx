@@ -77,11 +77,27 @@ beforeEach(() => {
   vi.mocked(api.mutateFocusPlan).mockResolvedValue({ plan_id: detail.id, revision: 2, created_id: null, replayed: false });
   vi.mocked(api.saveFocusPlanDraft).mockResolvedValue(undefined);
   vi.mocked(api.discardFocusPlanDraft).mockResolvedValue(undefined);
+  vi.mocked(commands.getFocusPlanLinkedWork).mockResolvedValue({
+    one_off_count: 0,
+    series_count: 0,
+    items: [],
+  });
+  vi.mocked(commands.listFocusPlanReviews).mockResolvedValue({
+    review_count: 0,
+    latest_reviewed_local_date: null,
+    reviews: [],
+  });
 });
 
 describe("FocusPlansScreen", () => {
   it("creates, edits, retains rejected input, and loads the conflict recovery draft", async () => {
-    render(<FocusPlansScreen entryRequest={null} onEntryRequestSettled={vi.fn()} />);
+    render(
+      <FocusPlansScreen
+        entryRequest={null}
+        onEntryRequestSettled={vi.fn()}
+        anchorLocalDate="2026-08-06"
+      />,
+    );
 
     await screen.findByRole("button", { name: /AI Foundations/ });
     fireEvent.click(screen.getByRole("button", { name: /AI Foundations/ }));

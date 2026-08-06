@@ -18,7 +18,7 @@ use crate::infrastructure::sqlite::{
     DbError,
     connection::{open_existing_file_connection, open_file_connection, open_readonly_connection},
     runtime::DatabaseRuntime,
-    task36_migration::{current_schema_version, max_supported_schema_version, run_all_migrations},
+    task37_migration::{current_schema_version, max_supported_schema_version, run_all_migrations},
     worker::DbWorkerHandle,
 };
 
@@ -863,8 +863,8 @@ mod tests {
         sqlite::{
             connection::{open_existing_file_connection, open_file_connection},
             foundation_record_repo as repo,
-            migrations::run_migrations,
             runtime::DatabaseRuntime,
+            task37_migration::run_all_migrations as run_migrations,
             worker::DbWorkerHandle,
         },
     };
@@ -993,12 +993,12 @@ mod tests {
         let result = restore_db(&runtime, package).unwrap();
         assert_eq!(
             result.schema_version,
-            crate::infrastructure::sqlite::task36_migration::TASK36_SCHEMA_VERSION
+            crate::infrastructure::sqlite::task37_migration::TASK37_SCHEMA_VERSION
         );
         let reopened = open_existing_file_connection(&db).unwrap();
         assert_eq!(
             current_schema_version(&reopened).unwrap(),
-            crate::infrastructure::sqlite::task36_migration::TASK36_SCHEMA_VERSION
+            crate::infrastructure::sqlite::task37_migration::TASK37_SCHEMA_VERSION
         );
         assert_eq!(
             reopened
@@ -1170,7 +1170,7 @@ mod tests {
         let restore_result = restore_db(&rt, &backup_dir).unwrap();
         assert_eq!(
             restore_result.schema_version,
-            crate::infrastructure::sqlite::task36_migration::TASK36_SCHEMA_VERSION
+            crate::infrastructure::sqlite::task37_migration::TASK37_SCHEMA_VERSION
         );
 
         let active = rt.execute(|conn| repo::list_active(conn)).unwrap();
@@ -1399,6 +1399,7 @@ mod tests {
                         category_id: "general".into(),
                         priority: "medium".into(),
                         life_node_id: None,
+                        focus_plan_id: None,
                         tag_ids: vec![],
                     },
                 )
@@ -1480,7 +1481,7 @@ mod tests {
         let backups = temp_backups_dir();
         let task_id = rt.execute(|conn| {
             conn.execute("INSERT INTO life_nodes(id,parent_id,title,short_description,icon_key,branch_theme_id,sort_key,archived_at,created_at,updated_at,revision) VALUES('backup-life','life-root','Backup Life','','life-leaf','neutral',1,NULL,'0','0',0)", [])?;
-            Ok(task_repository::create(conn, CreateTaskInput { title:"Linked backup task".into(), description:"".into(), local_date:"2026-08-04".into(), start_minute:600, end_minute:660, category_id:"general".into(), priority:"medium".into(), life_node_id:Some("backup-life".into()), tag_ids:vec![] }).map_err(|_| DbError::InvalidMigrationList)?.id)
+            Ok(task_repository::create(conn, CreateTaskInput { title:"Linked backup task".into(), description:"".into(), local_date:"2026-08-04".into(), start_minute:600, end_minute:660, category_id:"general".into(), priority:"medium".into(), life_node_id:Some("backup-life".into()), focus_plan_id:None, tag_ids:vec![] }).map_err(|_| DbError::InvalidMigrationList)?.id)
         }).unwrap();
         let backup_dir = PathBuf::from(backup_db(&rt, &backups).unwrap().backup_dir);
         let mutated_id = task_id.clone();
@@ -1503,6 +1504,112 @@ mod tests {
             )
             .unwrap();
         assert_eq!(restored.as_deref(), Some("backup-life"));
+    }
+
+    #[test]
+    fn focus_plan_relations_and_reviews_survive_backup_restore_reopen() {
+        use crate::focus_plan::dto::{
+            CreateFocusPlanInput, CreateFocusPlanReviewInput, FocusPlanReviewListInput,
+        };
+        use crate::focus_plan::repository as plan_repository;
+
+        let (rt, db) = make_file_runtime();
+        let backups = temp_backups_dir();
+        let (plan_id, task_id) = rt
+            .execute(|conn| {
+                let plan = plan_repository::create(
+                    conn,
+                    CreateFocusPlanInput {
+                        title: "AI Foundations".into(),
+                        life_node_id: None,
+                        start_date: None,
+                        target_date: None,
+                        outcome: String::new(),
+                        success_criteria: vec![],
+                        initial_variant_label: "Course first".into(),
+                        operation_id: "backup-plan-create".into(),
+                    },
+                )
+                .map_err(|_| DbError::InvalidMigrationList)?
+                .id;
+                plan_repository::create_review(
+                    conn,
+                    CreateFocusPlanReviewInput {
+                        plan_id: plan.clone(),
+                        operation_id: "backup-review-create".into(),
+                        reviewed_local_date: "2026-08-04".into(),
+                        reflection: "Held the weekly cadence.".into(),
+                        next_focus: Some("Start module three".into()),
+                    },
+                )
+                .map_err(|_| DbError::InvalidMigrationList)?;
+                let task = task_repository::create(
+                    conn,
+                    CreateTaskInput {
+                        title: "Linked plan task".into(),
+                        description: String::new(),
+                        local_date: "2026-08-04".into(),
+                        start_minute: 600,
+                        end_minute: 660,
+                        category_id: "general".into(),
+                        priority: "medium".into(),
+                        life_node_id: None,
+                        focus_plan_id: Some(plan.clone()),
+                        tag_ids: vec![],
+                    },
+                )
+                .map_err(|_| DbError::InvalidMigrationList)?
+                .id;
+                Ok((plan, task))
+            })
+            .unwrap();
+
+        let backup_dir = PathBuf::from(backup_db(&rt, &backups).unwrap().backup_dir);
+
+        // Destroy both the relation and the review before restoring.
+        let mutated_task = task_id.clone();
+        rt.execute(move |conn| {
+            conn.execute(
+                "UPDATE tasks SET focus_plan_id=NULL WHERE id=?1",
+                [mutated_task],
+            )?;
+            conn.execute("DELETE FROM focus_plan_reviews", [])?;
+            Ok(())
+        })
+        .unwrap();
+
+        restore_db(&rt, &backup_dir).unwrap();
+        drop(rt);
+
+        let mut reopened = open_existing_file_connection(&db).unwrap();
+        run_migrations(&mut reopened).unwrap();
+        let restored_link: Option<String> = reopened
+            .query_row(
+                "SELECT focus_plan_id FROM tasks WHERE id=?1",
+                [task_id],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(restored_link.as_deref(), Some(plan_id.as_str()));
+
+        let history = plan_repository::list_reviews(
+            &reopened,
+            &FocusPlanReviewListInput {
+                plan_id: plan_id.clone(),
+                limit: None,
+            },
+        )
+        .unwrap();
+        assert_eq!(history.review_count, 1);
+        assert_eq!(history.reviews[0].reflection, "Held the weekly cadence.");
+        assert_eq!(
+            history.reviews[0].next_focus.as_deref(),
+            Some("Start module three")
+        );
+        assert_eq!(
+            history.latest_reviewed_local_date.as_deref(),
+            Some("2026-08-04")
+        );
     }
 
     #[test]
@@ -3363,7 +3470,7 @@ mod tests {
         use crate::infrastructure::backup::lifecycle::{
             preflight_startup_check, recover_if_interrupted,
         };
-        use crate::infrastructure::sqlite::migrations::run_migrations;
+        use crate::infrastructure::sqlite::task37_migration::run_all_migrations as run_migrations;
         use crate::infrastructure::sqlite::{
             connection::open_existing_file_connection, runtime::DatabaseRuntime,
             worker::DbWorkerHandle,
@@ -3429,7 +3536,7 @@ mod tests {
         use crate::infrastructure::backup::lifecycle::{
             preflight_startup_check, recover_if_interrupted,
         };
-        use crate::infrastructure::sqlite::migrations::run_migrations;
+        use crate::infrastructure::sqlite::task37_migration::run_all_migrations as run_migrations;
         use crate::infrastructure::sqlite::{
             connection::open_existing_file_connection, runtime::DatabaseRuntime,
             worker::DbWorkerHandle,

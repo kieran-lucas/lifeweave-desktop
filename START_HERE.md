@@ -14,12 +14,12 @@
 
 - Latest closed task: **36/60**
 - Latest closed slice: **026 — Focus Plans Core**
-- Active task: **none**
-- Active implementation specification: **none**
+- Active task: **37 — Focus Plan ↔ Task Integration + Manual Review History**
+- Active implementation specification: **Slice 027 — `specs/027-focus-plan-task-review`**
 - Latest feature checkpoint: **Task 36 — Focus Plans Core** (`57bd42d8eed5643d2fee3b04f74bd3c44e738da2`)
-- Database schema: **20**
-- Next action: **Product Owner gate**
-- Task 37: **not started; requires separate activation**
+- Database schema: **21**
+- Next action: **Implement active spec**
+- Task 38: **not started; requires separate activation**
 
 ## Task 36 closure
 

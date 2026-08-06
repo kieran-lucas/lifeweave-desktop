@@ -25,6 +25,7 @@ const oneOff = {
   evaluation: null,
   tags: [],
   life_area: null,
+  focus_plan: null,
 };
 const recurring = {
   ...oneOff,
@@ -47,6 +48,7 @@ const commands = vi.hoisted(() => ({
   evaluateTask: vi.fn(),
   undoTaskEvaluation: vi.fn(),
   listTaskLifeTargets: vi.fn(),
+  listFocusPlanTargets: vi.fn(),
   listTags: vi.fn(),
   createTag: vi.fn(),
   getTaskPlanningProjection: vi.fn(),
@@ -90,6 +92,10 @@ describe("Today recurrence contract", () => {
     commands.listTaskLifeTargets.mockResolvedValue([
       { id: "study", title: "Study", breadcrumb: "Study" },
       { id: "university", title: "University", breadcrumb: "Study › University" },
+    ]);
+    commands.listFocusPlanTargets.mockResolvedValue([
+      { id: "plan-a", title: "AI Foundations", lifecycle: "active" },
+      { id: "plan-b", title: "Fitness", lifecycle: "draft" },
     ]);
     commands.listTags.mockResolvedValue([]);
     commands.createTag.mockResolvedValue({ id: "tag-new", name: "New tag" });
@@ -390,6 +396,122 @@ describe("Today recurrence contract", () => {
       }),
     ).toBeDisabled();
   });
+  it("selects and clears a Focus Plan in the atomic create payload", async () => {
+    renderToday();
+    await screen.findByText("Focus");
+    fireEvent.click(screen.getByRole("button", { name: "Create task" }));
+    fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Linked" } });
+    const chooser = screen.getByRole("combobox", { name: "Focus Plan" });
+    fireEvent.change(chooser, { target: { value: "AI Found" } });
+    await screen.findByRole("option", { name: /AI Foundations/ });
+    fireEvent.keyDown(chooser, { key: "Enter" });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(commands.createTask).toHaveBeenCalledWith(
+        expect.objectContaining({ focus_plan_id: "plan-a" }),
+      ),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Create task" }));
+    expect(screen.getByRole("combobox", { name: "Focus Plan" })).toHaveValue("");
+  });
+
+  it("navigates an active Focus Plan chip without opening the editor and clears the link", async () => {
+    const navigate = vi.fn();
+    commands.listTodayItems.mockResolvedValue([
+      { ...oneOff, focus_plan: { id: "plan-a", title: "AI Foundations", archived: false } },
+    ]);
+    const view = renderToday(undefined, { onFocusPlanNavigate: navigate });
+    const chip = await screen.findByRole("button", { name: /Focus Plan: AI Foundations/ });
+    fireEvent.click(chip);
+    expect(navigate).toHaveBeenCalledWith("plan-a");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    fireEvent.doubleClick(screen.getByRole("listitem"));
+    fireEvent.click(screen.getByRole("button", { name: "Clear Focus Plan" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(commands.updateTask).toHaveBeenCalledWith(
+        expect.objectContaining({ focus_plan_id: null }),
+      ),
+    );
+    view.unmount();
+
+    commands.listTodayItems.mockResolvedValue([
+      { ...oneOff, focus_plan: { id: "gone", title: "Retired", archived: true } },
+    ]);
+    renderToday();
+    // An archived target is stated in text and offers no navigation control.
+    expect(await screen.findByText("Archived Focus Plan: Retired")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Focus Plan: Retired/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("keeps the Focus Plan on the series across recurring edit scopes", async () => {
+    commands.listTodayItems.mockResolvedValue([
+      { ...recurring, focus_plan: { id: "plan-a", title: "AI Foundations", archived: false } },
+    ]);
+    renderToday();
+    fireEvent.doubleClick(await screen.findByRole("listitem"));
+
+    // At occurrence scope the relation belongs to the series and cannot be edited.
+    const chooser = screen.getByRole("combobox", { name: "Focus Plan" });
+    expect(chooser).toBeDisabled();
+    expect(
+      screen.getByText(
+        "This Focus Plan belongs to the series. Change scope to Entire series to edit it.",
+      ),
+    ).toBeInTheDocument();
+
+    // The inherited value still round-trips, so an occurrence save changes nothing.
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(commands.updateRecurringOccurrence).toHaveBeenCalledWith(
+        expect.objectContaining({
+          scope: "only_this_occurrence",
+          focus_plan_id: "plan-a",
+        }),
+      ),
+    );
+
+    // A successful save closes the dialog; reopen it to change scope.
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+    fireEvent.doubleClick(screen.getByRole("listitem"));
+
+    // Entire series enables the control and carries the new choice.
+    fireEvent.click(screen.getByLabelText("Entire series"));
+    const enabled = screen.getByRole("combobox", { name: "Focus Plan" });
+    await waitFor(() => expect(enabled).not.toBeDisabled());
+    fireEvent.change(enabled, { target: { value: "Fitness" } });
+    await screen.findByRole("option", { name: /Fitness/ });
+    fireEvent.keyDown(enabled, { key: "Enter" });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(commands.updateRecurringOccurrence).toHaveBeenCalledWith(
+        expect.objectContaining({ scope: "entire_series", focus_plan_id: "plan-b" }),
+      ),
+    );
+  });
+
+  it("retains the Focus Plan draft after a rejected save", async () => {
+    renderToday();
+    await screen.findByText("Focus");
+    fireEvent.click(screen.getByRole("button", { name: "Create task" }));
+    fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Linked" } });
+    const chooser = screen.getByRole("combobox", { name: "Focus Plan" });
+    fireEvent.change(chooser, { target: { value: "AI Found" } });
+    await screen.findByRole("option", { name: /AI Foundations/ });
+    fireEvent.keyDown(chooser, { key: "Enter" });
+    commands.createTask.mockRejectedValueOnce(new Error("Choose an active Focus Plan."));
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await screen.findByRole("alert");
+    expect(screen.getByLabelText("Title")).toHaveValue("Linked");
+    expect(screen.getByRole("combobox", { name: "Focus Plan" })).toHaveValue(
+      "AI Foundations",
+    );
+  });
+
   it("selects and clears a Life area in the atomic create payload", async () => {
     renderToday();
     await screen.findByText("Focus");

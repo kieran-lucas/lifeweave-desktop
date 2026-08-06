@@ -245,6 +245,61 @@ pub struct FocusPlanDetailView {
     pub archived: bool,
 }
 
+/// A user-authored manual review. Task 37 authorises creation and reading only: reviews carry
+/// no lifecycle, revision, or archive state and never mutate the Plan they belong to.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct FocusPlanReviewView {
+    pub id: String,
+    pub reviewed_local_date: String,
+    pub reflection: String,
+    pub next_focus: Option<String>,
+    pub created_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct CreateFocusPlanReviewInput {
+    pub plan_id: String,
+    pub operation_id: String,
+    pub reviewed_local_date: String,
+    pub reflection: String,
+    pub next_focus: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct FocusPlanReviewListInput {
+    pub plan_id: String,
+    pub limit: Option<u32>,
+}
+
+/// Newest-first history plus the factual metadata the detail region displays.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct FocusPlanReviewHistoryView {
+    pub review_count: u32,
+    pub latest_reviewed_local_date: Option<String>,
+    pub reviews: Vec<FocusPlanReviewView>,
+}
+
+/// Linked work for one Focus Plan. `items` reuses the Related Tasks navigation projection so a
+/// recurring series resolves to its appropriate occurrence date.
+#[derive(Debug, Clone, Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct FocusPlanLinkedWorkView {
+    pub one_off_count: u32,
+    pub series_count: u32,
+    pub items: Vec<crate::task::dto::RelatedTaskView>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct FocusPlanLinkedWorkInput {
+    pub plan_id: String,
+    pub anchor_local_date: String,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -355,7 +355,7 @@ fn restore_search_index(
     Ok(())
 }
 
-fn schema_version_if_present(conn: &Connection) -> Result<u32, DbError> {
+pub(crate) fn schema_version_if_present(conn: &Connection) -> Result<u32, DbError> {
     let exists: i64 = conn.query_row(
         "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type='table' AND name='schema_migrations')",
         [],

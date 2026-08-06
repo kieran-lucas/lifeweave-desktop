@@ -24,6 +24,7 @@ import { CategoryIcon } from "../categoryIcons";
 import { AssessmentControl } from "../../completion/AssessmentControl";
 import * as styles from "./TodayScreen.css";
 import { LifeAreaCombobox } from "../LifeAreaCombobox";
+import { FocusPlanCombobox } from "../FocusPlanCombobox";
 import { TaskWorkspaceTabs, type TaskWorkspaceMode } from "../planning/TaskWorkspaceTabs";
 import { TagChipList } from "../../tag/TagChipList";
 import { TagPicker } from "../../tag/TagPicker";
@@ -57,6 +58,7 @@ type Draft = {
   category_id: string;
   priority: string;
   life_node_id: string | null;
+  focus_plan_id: string | null;
   tag_ids: string[];
   selectedTags: TagSummaryView[];
 };
@@ -196,6 +198,7 @@ export function TodayScreen({
   focusRequest,
   onFocusRequestSettled,
   onLifeNavigate,
+  onFocusPlanNavigate,
   anchorLocalDate,
 }: {
   selectedDate?: string;
@@ -203,6 +206,7 @@ export function TodayScreen({
   focusRequest?: FocusRequest;
   onFocusRequestSettled?: (requestId: string) => void;
   onLifeNavigate?: (nodeId: string) => void;
+  onFocusPlanNavigate?: ((planId: string) => void) | undefined;
   anchorLocalDate?: string;
 } = {}) {
   const today = anchorLocalDate ?? localToday(),
@@ -243,6 +247,7 @@ export function TodayScreen({
     category_id: "general",
     priority: "medium",
     life_node_id: null,
+    focus_plan_id: null,
     tag_ids: [],
     selectedTags: [],
   });
@@ -329,6 +334,8 @@ export function TodayScreen({
           until: null,
           count: null,
           life_node_id: editing.life_area?.id ?? null,
+          // Cancelling never changes the relation; echo the inherited value.
+          focus_plan_id: editing.focus_plan?.id ?? null,
           series_tag_ids: null,
         });
       return deleteTask(editing.id);
@@ -472,6 +479,9 @@ export function TodayScreen({
             category_id: item.category_id,
             priority: item.priority,
             life_node_id: item.life_area?.id ?? null,
+            // Occurrences inherit the series relation; seeding it keeps an occurrence-scope
+            // save unchanged and pre-fills the value a this-and-future split carries forward.
+            focus_plan_id: item.focus_plan?.id ?? null,
             tag_ids: item.tags.map((t) => t.id),
             selectedTags: item.tags,
           }
@@ -484,6 +494,7 @@ export function TodayScreen({
             category_id: categories.data?.[0]?.id ?? "general",
             priority: "medium",
             life_node_id: null,
+            focus_plan_id: null,
             tag_ids: [],
             selectedTags: [],
           },
@@ -773,6 +784,24 @@ export function TodayScreen({
                                   Life area: {item.life_area.title}
                                 </button>
                               ))}
+                            {item.focus_plan &&
+                              (item.focus_plan.archived ? (
+                                <span>
+                                  Archived Focus Plan: {item.focus_plan.title}
+                                </span>
+                              ) : (
+                                <button
+                                  type="button"
+                                  aria-label={`Focus Plan: ${item.focus_plan.title}`}
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    onFocusPlanNavigate?.(item.focus_plan!.id);
+                                  }}
+                                  onDoubleClick={(event) => event.stopPropagation()}
+                                >
+                                  Focus Plan: {item.focus_plan.title}
+                                </button>
+                              ))}
                             {item.kind === "recurring" && (
                               <span aria-label="Recurring task"> ↻</span>
                             )}
@@ -815,7 +844,7 @@ export function TodayScreen({
       ) : (
         <div role="tabpanel" id={`task-panel-${workspaceMode}`} aria-labelledby={`task-tab-${workspaceMode}`}>
           <Suspense fallback={<p role="status">Loading {workspaceMode} tasks…</p>}>
-            <TaskPlanningPanel mode={workspaceMode} anchorLocalDate={planningAnchor} onOpenItem={openPlanningItem} />
+            <TaskPlanningPanel mode={workspaceMode} anchorLocalDate={planningAnchor} onOpenItem={openPlanningItem} onFocusPlanNavigate={onFocusPlanNavigate} />
           </Suspense>
         </div>
       )}
@@ -947,6 +976,18 @@ export function TodayScreen({
                 setDraft({ ...draft, life_node_id });
                 if (editing?.kind === "recurring") setScope("entire_series");
               }}
+            />
+            <FocusPlanCombobox
+              value={draft.focus_plan_id}
+              current={editing?.focus_plan}
+              disabled={
+                editing?.kind === "recurring" &&
+                scope === "only_this_occurrence"
+              }
+              disabledReason="This Focus Plan belongs to the series. Change scope to Entire series to edit it."
+              onChange={(focus_plan_id) =>
+                setDraft({ ...draft, focus_plan_id })
+              }
             />
             {editing?.kind === "recurring" &&
             scope !== "entire_series" ? (

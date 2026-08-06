@@ -9,6 +9,13 @@ import type { CreateFoundationRecordInput } from "./generated/CreateFoundationRe
 import type { UpdateFoundationRecordInput } from "./generated/UpdateFoundationRecordInput";
 import type { MutateFoundationRecordInput } from "./generated/MutateFoundationRecordInput";
 import type { TaskCategoryView } from "./generated/TaskCategoryView";
+import type { TaskFocusPlanTargetView } from "./generated/TaskFocusPlanTargetView";
+import type { FocusPlanLinkedWorkInput } from "./generated/FocusPlanLinkedWorkInput";
+import type { FocusPlanLinkedWorkView } from "./generated/FocusPlanLinkedWorkView";
+import type { FocusPlanReviewListInput } from "./generated/FocusPlanReviewListInput";
+import type { FocusPlanReviewHistoryView } from "./generated/FocusPlanReviewHistoryView";
+import type { CreateFocusPlanReviewInput } from "./generated/CreateFocusPlanReviewInput";
+import type { FocusPlanReviewView } from "./generated/FocusPlanReviewView";
 import type { TaskView } from "./generated/TaskView";
 import type { RelatedTaskView } from "./generated/RelatedTaskView";
 import type { CreateTaskInput } from "./generated/CreateTaskInput";
@@ -139,6 +146,14 @@ export function restoreDatabase(backupId: string): Promise<RestoreResult> {
 export type { BackupProgress };
 
 export const listTaskCategories = () => invoke<TaskCategoryView[]>("list_task_categories");
+export const listFocusPlanTargets = () =>
+  invoke<TaskFocusPlanTargetView[]>("list_focus_plan_targets");
+export const getFocusPlanLinkedWork = (input: FocusPlanLinkedWorkInput) =>
+  invoke<FocusPlanLinkedWorkView>("get_focus_plan_linked_work", { input });
+export const listFocusPlanReviews = (input: FocusPlanReviewListInput) =>
+  invoke<FocusPlanReviewHistoryView>("list_focus_plan_reviews", { input });
+export const createFocusPlanReview = (input: CreateFocusPlanReviewInput) =>
+  invoke<FocusPlanReviewView>("create_focus_plan_review", { input });
 export const getRelatedTasksForLifeNode = (nodeId: string, anchorLocalDate: string) =>
   invoke<RelatedTaskView[]>("get_related_tasks_for_life_node", { nodeId, anchorLocalDate });
 export const listTasksForDate = (localDate: string) => invoke<TaskView[]>("list_tasks_for_date", { localDate });

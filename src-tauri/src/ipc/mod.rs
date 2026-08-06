@@ -56,12 +56,15 @@ mod tests {
         MutateFoundationRecordInput::export_all_to(&out)
             .expect("ts binding export failed for MutateFoundationRecordInput");
         use crate::task::dto::{
-            CreateTaskInput, RelatedTaskKind, RelatedTaskView, TaskCategoryView, TaskLifeAreaView,
-            TaskView, UpdateTaskInput,
+            CreateTaskInput, RelatedTaskKind, RelatedTaskView, TaskCategoryView,
+            TaskFocusPlanTargetView, TaskFocusPlanView, TaskLifeAreaView, TaskView,
+            UpdateTaskInput,
         };
         TaskCategoryView::export_all_to(&out).unwrap();
         TaskView::export_all_to(&out).unwrap();
         TaskLifeAreaView::export_all_to(&out).unwrap();
+        TaskFocusPlanView::export_all_to(&out).unwrap();
+        TaskFocusPlanTargetView::export_all_to(&out).unwrap();
         RelatedTaskKind::export_all_to(&out).unwrap();
         RelatedTaskView::export_all_to(&out).unwrap();
         CreateTaskInput::export_all_to(&out).unwrap();

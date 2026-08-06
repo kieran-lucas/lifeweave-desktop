@@ -6,6 +6,7 @@ pub mod foundation_record_repo;
 pub mod migrations;
 pub mod runtime;
 pub mod task36_migration;
+pub mod task37_migration;
 pub mod worker;
 
 pub use runtime::DatabaseRuntime;

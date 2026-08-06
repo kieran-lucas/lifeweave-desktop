@@ -2,9 +2,10 @@ use tauri::State;
 
 use super::{
     dto::{
-        CreateFocusPlanInput, FocusPlanDetailView, FocusPlanIdInput, FocusPlanListInput,
-        FocusPlanMutationResult, FocusPlanSummaryView, MutateFocusPlanInput,
-        SaveFocusPlanDraftInput,
+        CreateFocusPlanInput, CreateFocusPlanReviewInput, FocusPlanDetailView, FocusPlanIdInput,
+        FocusPlanLinkedWorkInput, FocusPlanLinkedWorkView, FocusPlanListInput,
+        FocusPlanMutationResult, FocusPlanReviewHistoryView, FocusPlanReviewListInput,
+        FocusPlanReviewView, FocusPlanSummaryView, MutateFocusPlanInput, SaveFocusPlanDraftInput,
     },
     repository::{self, FocusPlanError},
 };
@@ -102,6 +103,42 @@ pub fn discard_focus_plan_draft(
 ) -> Result<(), IpcError> {
     state
         .execute(move |conn| Ok(repository::discard_draft(conn, &input.plan_id)))
+        .map_err(map_db)?
+        .map_err(map)
+}
+
+#[tauri::command]
+#[tracing::instrument(skip(state, input))]
+pub fn get_focus_plan_linked_work(
+    state: State<'_, DatabaseRuntime>,
+    input: FocusPlanLinkedWorkInput,
+) -> Result<FocusPlanLinkedWorkView, IpcError> {
+    state
+        .execute(move |conn| Ok(repository::linked_work(conn, &input)))
+        .map_err(map_db)?
+        .map_err(map)
+}
+
+#[tauri::command]
+#[tracing::instrument(skip(state, input))]
+pub fn list_focus_plan_reviews(
+    state: State<'_, DatabaseRuntime>,
+    input: FocusPlanReviewListInput,
+) -> Result<FocusPlanReviewHistoryView, IpcError> {
+    state
+        .execute(move |conn| Ok(repository::list_reviews(conn, &input)))
+        .map_err(map_db)?
+        .map_err(map)
+}
+
+#[tauri::command]
+#[tracing::instrument(skip(state, input))]
+pub fn create_focus_plan_review(
+    state: State<'_, DatabaseRuntime>,
+    input: CreateFocusPlanReviewInput,
+) -> Result<FocusPlanReviewView, IpcError> {
+    state
+        .execute(move |conn| Ok(repository::create_review(conn, input)))
         .map_err(map_db)?
         .map_err(map)
 }

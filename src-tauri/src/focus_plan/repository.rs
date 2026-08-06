@@ -5,10 +5,12 @@ use rusqlite::{Connection, OptionalExtension, Transaction, params};
 use uuid::Uuid;
 
 use super::dto::{
-    CreateFocusPlanInput, FocusPlanDetailView, FocusPlanLifecycle, FocusPlanListInput,
-    FocusPlanMutationAction, FocusPlanMutationResult, FocusPlanPhaseView,
-    FocusPlanRecoveryDraftView, FocusPlanRevisionView, FocusPlanSummaryView, FocusPlanTagView,
-    FocusPlanVariantView, MutateFocusPlanInput, SaveFocusPlanDraftInput,
+    CreateFocusPlanInput, CreateFocusPlanReviewInput, FocusPlanDetailView, FocusPlanLifecycle,
+    FocusPlanLinkedWorkInput, FocusPlanLinkedWorkView, FocusPlanListInput, FocusPlanMutationAction,
+    FocusPlanMutationResult, FocusPlanPhaseView, FocusPlanRecoveryDraftView,
+    FocusPlanReviewHistoryView, FocusPlanReviewListInput, FocusPlanReviewView,
+    FocusPlanRevisionView, FocusPlanSummaryView, FocusPlanTagView, FocusPlanVariantView,
+    MutateFocusPlanInput, SaveFocusPlanDraftInput,
 };
 use crate::infrastructure::sqlite::DbError;
 
@@ -910,11 +912,212 @@ pub fn discard_draft(conn: &mut Connection, plan_id: &str) -> Result<()> {
     Ok(())
 }
 
+pub const MAX_REVIEW_REFLECTION: usize = 4_000;
+pub const MAX_REVIEW_NEXT_FOCUS: usize = 2_000;
+pub const DEFAULT_REVIEW_PAGE: u32 = 50;
+pub const MAX_REVIEW_PAGE: u32 = 200;
+
+fn review_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<FocusPlanReviewView> {
+    Ok(FocusPlanReviewView {
+        id: row.get(0)?,
+        reviewed_local_date: row.get(1)?,
+        reflection: row.get(2)?,
+        next_focus: row.get(3)?,
+        created_at: row.get(4)?,
+    })
+}
+
+/// Creates one manual review. This deliberately does not route through `mutate`: a review is
+/// history about the Plan, so it must not advance `focus_plans.revision` or write a revision
+/// snapshot. Idempotency comes from the UNIQUE `operation_id` instead.
+pub fn create_review(
+    conn: &mut Connection,
+    input: CreateFocusPlanReviewInput,
+) -> Result<FocusPlanReviewView> {
+    validate_id(&input.plan_id, "Focus Plan ID")?;
+    validate_id(&input.operation_id, "Operation ID")?;
+
+    if let Some(existing) = existing_review(conn, &input.operation_id)? {
+        if existing.0 != input.plan_id {
+            return Err(FocusPlanError::Validation(
+                "Operation ID was already used for another Focus Plan".into(),
+            ));
+        }
+        return Ok(existing.1);
+    }
+
+    let reflection = input.reflection.trim();
+    if reflection.is_empty() {
+        return Err(FocusPlanError::Validation(
+            "Write a reflection before saving the review".into(),
+        ));
+    }
+    if reflection.chars().count() > MAX_REVIEW_REFLECTION {
+        return Err(FocusPlanError::Validation(format!(
+            "Reflection must be at most {MAX_REVIEW_REFLECTION} characters"
+        )));
+    }
+    let next_focus = input
+        .next_focus
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(str::to_string);
+    if let Some(value) = next_focus.as_deref() {
+        if value.chars().count() > MAX_REVIEW_NEXT_FOCUS {
+            return Err(FocusPlanError::Validation(format!(
+                "Next focus must be at most {MAX_REVIEW_NEXT_FOCUS} characters"
+            )));
+        }
+    }
+    if NaiveDate::parse_from_str(&input.reviewed_local_date, "%Y-%m-%d").is_err() {
+        return Err(FocusPlanError::Validation(
+            "Focus Plan review dates must use YYYY-MM-DD".into(),
+        ));
+    }
+
+    let archived: bool = conn
+        .query_row(
+            "SELECT archived_at IS NOT NULL FROM focus_plans WHERE id=?1",
+            params![input.plan_id],
+            |row| row.get(0),
+        )
+        .optional()?
+        .ok_or(FocusPlanError::NotFound)?;
+    if archived {
+        return Err(FocusPlanError::Validation(
+            "Restore the Focus Plan before adding a review".into(),
+        ));
+    }
+
+    let review = FocusPlanReviewView {
+        id: new_id(),
+        reviewed_local_date: input.reviewed_local_date,
+        reflection: reflection.to_string(),
+        next_focus,
+        created_at: now(),
+    };
+    let tx = conn.transaction()?;
+    tx.execute(
+        "INSERT INTO focus_plan_reviews(id,plan_id,operation_id,reviewed_local_date,reflection,next_focus,created_at)
+         VALUES(?1,?2,?3,?4,?5,?6,?7)",
+        params![
+            review.id,
+            input.plan_id,
+            input.operation_id,
+            review.reviewed_local_date,
+            review.reflection,
+            review.next_focus,
+            review.created_at
+        ],
+    )?;
+    tx.commit()?;
+    Ok(review)
+}
+
+fn existing_review(
+    conn: &Connection,
+    operation_id: &str,
+) -> Result<Option<(String, FocusPlanReviewView)>> {
+    Ok(conn
+        .query_row(
+            "SELECT plan_id,id,reviewed_local_date,reflection,next_focus,created_at
+             FROM focus_plan_reviews WHERE operation_id=?1",
+            params![operation_id],
+            |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    FocusPlanReviewView {
+                        id: row.get(1)?,
+                        reviewed_local_date: row.get(2)?,
+                        reflection: row.get(3)?,
+                        next_focus: row.get(4)?,
+                        created_at: row.get(5)?,
+                    },
+                ))
+            },
+        )
+        .optional()?)
+}
+
+/// Bounded newest-first history. `created_at` then `id` break ties so two reviews sharing a
+/// review date always come back in the same order.
+pub fn list_reviews(
+    conn: &Connection,
+    input: &FocusPlanReviewListInput,
+) -> Result<FocusPlanReviewHistoryView> {
+    validate_id(&input.plan_id, "Focus Plan ID")?;
+    plan_exists(conn, &input.plan_id)?;
+    let limit = input
+        .limit
+        .unwrap_or(DEFAULT_REVIEW_PAGE)
+        .clamp(1, MAX_REVIEW_PAGE);
+    let mut statement = conn.prepare(
+        "SELECT id,reviewed_local_date,reflection,next_focus,created_at
+         FROM focus_plan_reviews WHERE plan_id=?1
+         ORDER BY reviewed_local_date DESC,created_at DESC,id DESC
+         LIMIT ?2",
+    )?;
+    let reviews = statement
+        .query_map(params![input.plan_id, limit], review_row)?
+        .collect::<std::result::Result<Vec<_>, _>>()?;
+    let review_count: u32 = conn.query_row(
+        "SELECT COUNT(*) FROM focus_plan_reviews WHERE plan_id=?1",
+        params![input.plan_id],
+        |row| row.get(0),
+    )?;
+    let latest_reviewed_local_date = conn
+        .query_row(
+            "SELECT MAX(reviewed_local_date) FROM focus_plan_reviews WHERE plan_id=?1",
+            params![input.plan_id],
+            |row| row.get::<_, Option<String>>(0),
+        )
+        .optional()?
+        .flatten();
+    Ok(FocusPlanReviewHistoryView {
+        review_count,
+        latest_reviewed_local_date,
+        reviews,
+    })
+}
+
+/// Linked work for a Focus Plan detail. Counts are factual and never turned into progress.
+pub fn linked_work(
+    conn: &Connection,
+    input: &FocusPlanLinkedWorkInput,
+) -> Result<FocusPlanLinkedWorkView> {
+    validate_id(&input.plan_id, "Focus Plan ID")?;
+    let items = crate::task::repository::related_for_focus_plan(
+        conn,
+        &input.plan_id,
+        &input.anchor_local_date,
+    )
+    .map_err(|error| match error {
+        crate::task::repository::TaskError::NotFound => FocusPlanError::NotFound,
+        crate::task::repository::TaskError::Validation(message) => {
+            FocusPlanError::Validation(message.into())
+        }
+        crate::task::repository::TaskError::Conflict => {
+            FocusPlanError::Validation("Linked work could not be projected".into())
+        }
+        crate::task::repository::TaskError::Db(error) => FocusPlanError::Db(DbError::from(error)),
+    })?;
+    let one_off_count = items
+        .iter()
+        .filter(|item| matches!(item.kind, crate::task::dto::RelatedTaskKind::OneOff))
+        .count() as u32;
+    Ok(FocusPlanLinkedWorkView {
+        series_count: items.len() as u32 - one_off_count,
+        one_off_count,
+        items,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::infrastructure::sqlite::{
-        connection::open_memory_connection, task36_migration::run_all_migrations,
+        connection::open_memory_connection, task37_migration::run_all_migrations,
     };
 
     fn connection() -> Connection {
@@ -1234,5 +1437,320 @@ mod tests {
             get(&conn, &plan.id).unwrap().title,
             "AI Foundations Updated"
         );
+    }
+
+    // ---- Task 37: linked work and manual reviews ----
+
+    fn review_input(plan_id: &str, operation: &str, date: &str) -> CreateFocusPlanReviewInput {
+        CreateFocusPlanReviewInput {
+            plan_id: plan_id.into(),
+            operation_id: operation.into(),
+            reviewed_local_date: date.into(),
+            reflection: "Momentum held through the week.".into(),
+            next_focus: None,
+        }
+    }
+
+    fn seeded_plan(conn: &mut Connection) -> String {
+        create(conn, create_input("create-1")).unwrap().id
+    }
+
+    #[test]
+    fn review_creation_is_validated_and_idempotent() {
+        let mut conn = connection();
+        let plan = seeded_plan(&mut conn);
+
+        let first = create_review(&mut conn, review_input(&plan, "op-1", "2026-08-06")).unwrap();
+        assert_eq!(first.reviewed_local_date, "2026-08-06");
+        assert!(first.next_focus.is_none());
+
+        // Retrying the same operation returns the stored review instead of duplicating.
+        let replay = create_review(&mut conn, review_input(&plan, "op-1", "2026-08-07")).unwrap();
+        assert_eq!(replay.id, first.id);
+        assert_eq!(replay.reviewed_local_date, "2026-08-06");
+
+        // A distinct operation on the same date is a distinct review.
+        let same_date =
+            create_review(&mut conn, review_input(&plan, "op-2", "2026-08-06")).unwrap();
+        assert_ne!(same_date.id, first.id);
+
+        let mut blank = review_input(&plan, "op-3", "2026-08-06");
+        blank.reflection = "   \n\t ".into();
+        assert!(matches!(
+            create_review(&mut conn, blank),
+            Err(FocusPlanError::Validation(_))
+        ));
+
+        let mut bad_date = review_input(&plan, "op-4", "06-08-2026");
+        bad_date.next_focus = Some("Keep going".into());
+        assert!(matches!(
+            create_review(&mut conn, bad_date),
+            Err(FocusPlanError::Validation(_))
+        ));
+
+        let mut too_long = review_input(&plan, "op-5", "2026-08-06");
+        too_long.reflection = "x".repeat(MAX_REVIEW_REFLECTION + 1);
+        assert!(matches!(
+            create_review(&mut conn, too_long),
+            Err(FocusPlanError::Validation(_))
+        ));
+
+        let mut with_focus = review_input(&plan, "op-6", "2026-08-08");
+        with_focus.next_focus = Some("  Ship the migration  ".into());
+        let saved = create_review(&mut conn, with_focus).unwrap();
+        assert_eq!(saved.next_focus.as_deref(), Some("Ship the migration"));
+
+        // Only op-1, op-2, and op-6 were committed.
+        let history = list_reviews(
+            &conn,
+            &FocusPlanReviewListInput {
+                plan_id: plan.clone(),
+                limit: None,
+            },
+        )
+        .unwrap();
+        assert_eq!(history.review_count, 3);
+    }
+
+    #[test]
+    fn review_history_is_newest_first_stable_and_bounded() {
+        let mut conn = connection();
+        let plan = seeded_plan(&mut conn);
+        for (index, date) in ["2026-08-01", "2026-08-09", "2026-08-05", "2026-08-09"]
+            .iter()
+            .enumerate()
+        {
+            create_review(&mut conn, review_input(&plan, &format!("op-{index}"), date)).unwrap();
+        }
+        let history = list_reviews(
+            &conn,
+            &FocusPlanReviewListInput {
+                plan_id: plan.clone(),
+                limit: None,
+            },
+        )
+        .unwrap();
+        assert_eq!(history.review_count, 4);
+        assert_eq!(
+            history.latest_reviewed_local_date.as_deref(),
+            Some("2026-08-09")
+        );
+        let dates: Vec<&str> = history
+            .reviews
+            .iter()
+            .map(|review| review.reviewed_local_date.as_str())
+            .collect();
+        assert_eq!(
+            dates,
+            ["2026-08-09", "2026-08-09", "2026-08-05", "2026-08-01"]
+        );
+        // Same-date ordering is stable across repeated reads.
+        let again = list_reviews(
+            &conn,
+            &FocusPlanReviewListInput {
+                plan_id: plan.clone(),
+                limit: None,
+            },
+        )
+        .unwrap();
+        let ids: Vec<&str> = history.reviews.iter().map(|r| r.id.as_str()).collect();
+        let ids_again: Vec<&str> = again.reviews.iter().map(|r| r.id.as_str()).collect();
+        assert_eq!(ids, ids_again);
+
+        let bounded = list_reviews(
+            &conn,
+            &FocusPlanReviewListInput {
+                plan_id: plan.clone(),
+                limit: Some(2),
+            },
+        )
+        .unwrap();
+        assert_eq!(bounded.reviews.len(), 2);
+        assert_eq!(bounded.review_count, 4, "count reports the whole history");
+
+        // An out-of-range limit is clamped rather than trusted.
+        let clamped = list_reviews(
+            &conn,
+            &FocusPlanReviewListInput {
+                plan_id: plan,
+                limit: Some(u32::MAX),
+            },
+        )
+        .unwrap();
+        assert_eq!(clamped.reviews.len(), 4);
+    }
+
+    #[test]
+    fn creating_a_review_leaves_the_plan_untouched() {
+        let mut conn = connection();
+        let plan = seeded_plan(&mut conn);
+        let before = get(&conn, &plan).unwrap();
+        let revisions_before: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM focus_plan_revisions WHERE plan_id=?1",
+                params![plan],
+                |row| row.get(0),
+            )
+            .unwrap();
+
+        create_review(&mut conn, review_input(&plan, "op-1", "2026-08-06")).unwrap();
+
+        let after = get(&conn, &plan).unwrap();
+        assert_eq!(before.revision, after.revision);
+        assert_eq!(before.updated_at, after.updated_at);
+        assert_eq!(before.lifecycle, after.lifecycle);
+        assert_eq!(before.variants.len(), after.variants.len());
+        assert_eq!(before.tags, after.tags);
+        assert_eq!(before.recovery_draft, after.recovery_draft);
+        let revisions_after: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM focus_plan_revisions WHERE plan_id=?1",
+                params![plan],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(revisions_before, revisions_after);
+    }
+
+    #[test]
+    fn reviews_reject_unknown_and_archived_plans() {
+        let mut conn = connection();
+        let plan = seeded_plan(&mut conn);
+        assert!(matches!(
+            create_review(
+                &mut conn,
+                review_input("missing-plan", "op-x", "2026-08-06")
+            ),
+            Err(FocusPlanError::NotFound)
+        ));
+        conn.execute(
+            "UPDATE focus_plans SET archived_at='now' WHERE id=?1",
+            params![plan],
+        )
+        .unwrap();
+        assert!(matches!(
+            create_review(&mut conn, review_input(&plan, "op-y", "2026-08-06")),
+            Err(FocusPlanError::Validation(_))
+        ));
+    }
+
+    #[test]
+    fn reviews_and_links_survive_close_and_reopen() {
+        let path = std::env::temp_dir().join(format!(
+            "lw_task37_reviews_{}_{}.db",
+            std::process::id(),
+            uuid::Uuid::now_v7()
+        ));
+        let plan_id;
+        {
+            let mut conn =
+                crate::infrastructure::sqlite::connection::open_file_connection(&path).unwrap();
+            run_all_migrations(&mut conn).unwrap();
+            plan_id = create(&mut conn, create_input("create-1")).unwrap().id;
+            create_review(&mut conn, review_input(&plan_id, "op-1", "2026-08-06")).unwrap();
+            conn.execute(
+                "INSERT INTO tasks(id,local_date,start_minute,end_minute,title,description,category_id,priority,created_at,updated_at,focus_plan_id) VALUES('task-1','2026-08-06',600,660,'Linked','','general','medium','1','1',?1)",
+                params![plan_id],
+            )
+            .unwrap();
+        }
+        {
+            let mut conn =
+                crate::infrastructure::sqlite::connection::open_file_connection(&path).unwrap();
+            run_all_migrations(&mut conn).unwrap();
+            let history = list_reviews(
+                &conn,
+                &FocusPlanReviewListInput {
+                    plan_id: plan_id.clone(),
+                    limit: None,
+                },
+            )
+            .unwrap();
+            assert_eq!(history.review_count, 1);
+            assert_eq!(
+                history.reviews[0].reflection,
+                "Momentum held through the week."
+            );
+            let linked: Option<String> = conn
+                .query_row(
+                    "SELECT focus_plan_id FROM tasks WHERE id='task-1'",
+                    [],
+                    |r| r.get(0),
+                )
+                .unwrap();
+            assert_eq!(linked.as_deref(), Some(plan_id.as_str()));
+        }
+        for suffix in ["", "-wal", "-shm"] {
+            let _ = std::fs::remove_file(format!("{}{suffix}", path.display()));
+        }
+    }
+
+    #[test]
+    fn linked_work_projects_counts_and_survives_plan_archive() {
+        let mut conn = connection();
+        let plan = seeded_plan(&mut conn);
+        conn.execute(
+            "INSERT INTO tasks(id,local_date,start_minute,end_minute,title,description,category_id,priority,created_at,updated_at,focus_plan_id) VALUES('task-1','2026-08-10',600,660,'Essay','','general','medium','1','1',?1)",
+            params![plan],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO task_series(id,title,description,category_id,priority,start_minute,end_minute,dtstart_local_date,timezone_id,rrule,created_at,updated_at,focus_plan_id) VALUES('series-1','Weekly review','','general','medium',700,760,'2026-08-06','local','FREQ=WEEKLY;INTERVAL=1','1','1',?1)",
+            params![plan],
+        )
+        .unwrap();
+
+        let input = FocusPlanLinkedWorkInput {
+            plan_id: plan.clone(),
+            anchor_local_date: "2026-08-06".into(),
+        };
+        let work = linked_work(&conn, &input).unwrap();
+        assert_eq!((work.one_off_count, work.series_count), (1, 1));
+        assert_eq!(work.items.len(), 2);
+        let series_item = work
+            .items
+            .iter()
+            .find(|item| item.series_id.is_some())
+            .expect("series is linked");
+        assert_eq!(
+            series_item.navigation_local_date, "2026-08-06",
+            "a series navigates to its appropriate occurrence"
+        );
+        let one_off_item = work
+            .items
+            .iter()
+            .find(|item| item.series_id.is_none())
+            .expect("one-off is linked");
+        assert_eq!(one_off_item.navigation_local_date, "2026-08-10");
+
+        // Archiving the Plan must not unlink or hide the work.
+        conn.execute(
+            "UPDATE focus_plans SET archived_at='now' WHERE id=?1",
+            params![plan],
+        )
+        .unwrap();
+        let archived = linked_work(&conn, &input).unwrap();
+        assert_eq!((archived.one_off_count, archived.series_count), (1, 1));
+
+        assert!(matches!(
+            linked_work(
+                &conn,
+                &FocusPlanLinkedWorkInput {
+                    plan_id: "missing".into(),
+                    anchor_local_date: "2026-08-06".into(),
+                },
+            ),
+            Err(FocusPlanError::NotFound)
+        ));
+        assert!(matches!(
+            linked_work(
+                &conn,
+                &FocusPlanLinkedWorkInput {
+                    plan_id: plan,
+                    anchor_local_date: "not-a-date".into(),
+                },
+            ),
+            Err(FocusPlanError::Validation(_))
+        ));
     }
 }

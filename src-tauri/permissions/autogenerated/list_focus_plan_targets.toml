@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-list-focus-plan-targets"
+description = "Enables the list_focus_plan_targets command without any pre-configured scope."
+commands.allow = ["list_focus_plan_targets"]
+
+[[permission]]
+identifier = "deny-list-focus-plan-targets"
+description = "Denies the list_focus_plan_targets command without any pre-configured scope."
+commands.deny = ["list_focus_plan_targets"]

@@ -12,6 +12,7 @@ fn main() {
             "list_backups",
             "restore_database",
             "list_task_categories",
+            "list_focus_plan_targets",
             "get_related_tasks_for_life_node",
             "list_tasks_for_date",
             "create_task",
@@ -83,6 +84,9 @@ fn main() {
             "mutate_focus_plan",
             "save_focus_plan_draft",
             "discard_focus_plan_draft",
+            "get_focus_plan_linked_work",
+            "list_focus_plan_reviews",
+            "create_focus_plan_review",
         ]),
     ))
     .expect("failed to generate Tauri ACL manifest");

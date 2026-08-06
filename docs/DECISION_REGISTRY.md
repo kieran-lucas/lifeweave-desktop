@@ -28,7 +28,8 @@ The immutable source is authoritative. This registry makes operational status vi
 - Focus Plans use shared tags, a distinct `focus_plan` Search entity kind, and full-database backup authority.
 - Focus Plans have no automatic progress percentage and no reminder/notification dependency.
 - Task 36 / Slice 026 is complete at feature checkpoint `57bd42d8eed5643d2fee3b04f74bd3c44e738da2`.
-- Future Task 37 relationship target is zero-or-one Focus Plan per one-off Task or recurring series; occurrences inherit and do not own the relation.
+- Each one-off Task or recurring Task series links to zero or one Focus Plan. Authority is stored on `tasks` and `task_series`; occurrences, overrides, and evaluations inherit and do not store it. Task/Life and Task/Focus Plan are independent. A new or changed target must be an active non-archived Plan; an existing link survives later Plan archive and projects explicitly as archived.
+- Focus Plan reviews are user-authored history with a review date, required reflection, optional next focus, and idempotent creation. Creating a review changes no Plan state. Task 37 authorises creation and reading only; edit, delete, archive, scheduling, and Search indexing remain out of scope.
 - The execution roadmap remains a 60-task envelope. Product Owner allocation may reuse unstarted positions without increasing the total.
 
 ## LOCKED — Technology direction
@@ -77,7 +78,8 @@ The immutable source is authoritative. This registry makes operational status vi
 
 ## DEFERRED
 
-- Task 37 Focus Plan ↔ Task integration and review workflow remains prohibited pending separate Product Owner activation;
+- Focus Plan review edit, delete, archive, scheduling, reminders, and Search indexing remain prohibited pending a separate Product Owner decision;
+- automatic Plan progress, phase-to-Task relationships, and Plan analytics expansion remain prohibited;
 - prediction and opaque ML;
 - Deadline Semantics implementation after the Task 34 Product Owner modification;
 - custom user-authored Narrative templates and Visual Worlds;

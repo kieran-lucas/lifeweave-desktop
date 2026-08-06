@@ -25,6 +25,7 @@ const item = {
   priority: "high",
   is_override: true,
   life_area: { id: "study", title: "Study", breadcrumb: "Study", archived: false },
+  focus_plan: { id: "plan-a", title: "AI Foundations", archived: false },
 };
 const projection = {
   mode: "upcoming" as const,
@@ -36,11 +37,20 @@ const projection = {
   scheduled_minutes: 90,
   groups: [{ local_date: "2026-08-05", scheduled_minutes: 90, items: [item] }],
 };
-function renderPanel(mode: "upcoming" | "overdue" = "upcoming", open = vi.fn()) {
+function renderPanel(
+  mode: "upcoming" | "overdue" = "upcoming",
+  open = vi.fn(),
+  onFocusPlanNavigate = vi.fn(),
+) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return { open, ...render(
+  return { open, onFocusPlanNavigate, ...render(
     <QueryClientProvider client={client}>
-      <TaskPlanningPanel mode={mode} anchorLocalDate="2026-08-04" onOpenItem={open} />
+      <TaskPlanningPanel
+        mode={mode}
+        anchorLocalDate="2026-08-04"
+        onOpenItem={open}
+        onFocusPlanNavigate={onFocusPlanNavigate}
+      />
     </QueryClientProvider>,
   ) };
 }
@@ -77,6 +87,26 @@ describe("TaskPlanningPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: "Retry" }));
     await screen.findByText("Weekly review");
     expect(commands.getTaskPlanningProjection).toHaveBeenCalledTimes(2);
+  });
+
+  it("navigates to the exact Focus Plan and states an archived target in text", async () => {
+    const { onFocusPlanNavigate } = renderPanel();
+    fireEvent.click(await screen.findByRole("button", { name: "Focus Plan: AI Foundations" }));
+    expect(onFocusPlanNavigate).toHaveBeenCalledWith("plan-a");
+
+    commands.getTaskPlanningProjection.mockResolvedValue({
+      ...projection,
+      groups: [{
+        local_date: "2026-08-05",
+        scheduled_minutes: 90,
+        items: [{ ...item, focus_plan: { id: "gone", title: "Retired", archived: true } }],
+      }],
+    });
+    renderPanel();
+    expect(await screen.findByText("Archived Focus Plan: Retired")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Focus Plan: Retired/ }),
+    ).not.toBeInTheDocument();
   });
 
   it("is axe clean", async () => {

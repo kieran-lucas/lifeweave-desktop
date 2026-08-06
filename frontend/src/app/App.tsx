@@ -179,6 +179,13 @@ export function App() {
       target: { kind: "life_browse", node_id: nodeId },
     });
   };
+  const navigateToFocusPlan = (planId: string) => {
+    setDestination("plans");
+    setPendingNav({
+      requestId: globalThis.crypto.randomUUID(),
+      target: { kind: "focus_plan", plan_id: planId },
+    });
+  };
   const navigateToTask = (
     localDate: string,
     taskId: string | null,
@@ -344,6 +351,7 @@ export function App() {
                   anchorLocalDate={anchorLocalDate}
                   onSelectedDateChange={setSelectedDate}
                   onLifeNavigate={navigateToLifeNode}
+                  onFocusPlanNavigate={navigateToFocusPlan}
                   focusRequest={todayFocusRequest}
                   onFocusRequestSettled={settleNavigationRequest}
                 />
@@ -381,6 +389,8 @@ export function App() {
                   <FocusPlansScreen
                     entryRequest={focusPlanEntryRequest}
                     onEntryRequestSettled={settleNavigationRequest}
+                    anchorLocalDate={anchorLocalDate}
+                    onTaskNavigate={navigateToTask}
                   />
                 </Suspense>
               </div>

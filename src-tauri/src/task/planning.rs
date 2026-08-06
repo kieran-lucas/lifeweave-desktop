@@ -6,11 +6,11 @@ use rusqlite::{Connection, params};
 use super::{
     domain::validate_date,
     dto::{
-        GetTaskPlanningProjectionInput, TaskLifeAreaView, TaskPlanningDayGroup,
+        GetTaskPlanningProjectionInput, TaskFocusPlanView, TaskLifeAreaView, TaskPlanningDayGroup,
         TaskPlanningItemView, TaskPlanningMode, TaskPlanningProjection, TodayItemKind,
     },
     recurrence::{MAX_EXPANSION_OCCURRENCES, occurrences_between},
-    repository::{TaskError, life_area_map},
+    repository::{TaskError, focus_plan_map, life_area_map},
 };
 
 pub const UPCOMING_DAYS: i64 = 14;
@@ -39,6 +39,7 @@ struct Series {
     dtstart: String,
     rule: String,
     life_node_id: Option<String>,
+    focus_plan_id: Option<String>,
 }
 
 #[derive(Clone)]
@@ -89,6 +90,7 @@ pub fn projection(
     let mode = input.mode;
     let (range_start, range_end) = range_for(mode, &input.anchor_local_date)?;
     let life_areas = life_area_map(conn)?;
+    let focus_plans = focus_plan_map(conn)?;
     let categories = load_categories(conn)?;
     let mut items = load_one_offs(
         conn,
@@ -97,6 +99,7 @@ pub fn projection(
         &range_end,
         &categories,
         &life_areas,
+        &focus_plans,
     )?;
     if items.len() > MAX_PLANNING_ITEMS {
         return Err(TaskError::Validation(TOO_MANY));
@@ -193,6 +196,10 @@ pub fn projection(
                     .life_node_id
                     .as_ref()
                     .and_then(|id| life_areas.get(id).cloned()),
+                focus_plan: source
+                    .focus_plan_id
+                    .as_ref()
+                    .and_then(|id| focus_plans.get(id).cloned()),
                 tags: vec![],
             });
             if items.len() > MAX_PLANNING_ITEMS {
@@ -263,9 +270,10 @@ fn load_one_offs(
     end: &str,
     categories: &HashMap<String, Category>,
     life_areas: &HashMap<String, TaskLifeAreaView>,
+    focus_plans: &HashMap<String, TaskFocusPlanView>,
 ) -> Result<Vec<TaskPlanningItemView>, TaskError> {
     let mut statement = conn.prepare(
-        "SELECT t.id,t.local_date,t.start_minute,t.end_minute,t.title,t.description,t.category_id,t.priority,t.life_node_id,
+        "SELECT t.id,t.local_date,t.start_minute,t.end_minute,t.title,t.description,t.category_id,t.priority,t.life_node_id,t.focus_plan_id,
                 EXISTS(SELECT 1 FROM task_evaluations e WHERE e.subject_kind='one_off' AND e.task_id=t.id AND e.is_current=1)
          FROM tasks t WHERE t.local_date BETWEEN ?1 AND ?2",
     )?;
@@ -280,7 +288,8 @@ fn load_one_offs(
             row.get::<_, String>(6)?,
             row.get::<_, String>(7)?,
             row.get::<_, Option<String>>(8)?,
-            row.get::<_, bool>(9)?,
+            row.get::<_, Option<String>>(9)?,
+            row.get::<_, bool>(10)?,
         ))
     })?;
     let mut items = Vec::new();
@@ -295,6 +304,7 @@ fn load_one_offs(
             category_id,
             priority,
             life_node_id,
+            focus_plan_id,
             evaluated,
         ) = row?;
         if mode == TaskPlanningMode::Overdue && evaluated {
@@ -323,6 +333,9 @@ fn load_one_offs(
             life_area: life_node_id
                 .as_ref()
                 .and_then(|id| life_areas.get(id).cloned()),
+            focus_plan: focus_plan_id
+                .as_ref()
+                .and_then(|id| focus_plans.get(id).cloned()),
             tags: vec![],
         });
     }
@@ -331,7 +344,7 @@ fn load_one_offs(
 
 fn load_series(conn: &Connection, range_end: &str) -> Result<Vec<Series>, TaskError> {
     let mut statement = conn.prepare(
-        "SELECT id,title,description,category_id,priority,start_minute,end_minute,dtstart_local_date,rrule,life_node_id
+        "SELECT id,title,description,category_id,priority,start_minute,end_minute,dtstart_local_date,rrule,life_node_id,focus_plan_id
          FROM task_series WHERE archived_at IS NULL AND dtstart_local_date<=?1",
     )?;
     Ok(statement
@@ -347,6 +360,7 @@ fn load_series(conn: &Connection, range_end: &str) -> Result<Vec<Series>, TaskEr
                 dtstart: row.get(7)?,
                 rule: row.get(8)?,
                 life_node_id: row.get(9)?,
+                focus_plan_id: row.get(10)?,
             })
         })?
         .collect::<Result<Vec<_>, _>>()?)
@@ -433,7 +447,7 @@ fn compare_items(left: &TaskPlanningItemView, right: &TaskPlanningItemView) -> s
 mod tests {
     use super::*;
     use crate::infrastructure::sqlite::{
-        connection::open_memory_connection, migrations::run_migrations,
+        connection::open_memory_connection, task37_migration::run_all_migrations as run_migrations,
     };
 
     fn db() -> Connection {
