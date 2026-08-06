@@ -1,5 +1,7 @@
 # Task 41 Specification — Explicit Life Links + Backlinks Core
 
+Status: CLOSED at product checkpoint `e1fe3675315c04590aabe9c9ca87ede344dafa40`.
+
 This file records the Product Owner's activated Task 41 contract. Everything not required here is
 out of scope.
 
@@ -89,4 +91,3 @@ No inline/Tiptap/wiki/title-parsed links, headings/blocks/anchors, embeds, URLs,
 Tasks, Plans, tags, branches, link labels/types/weights, inferred links, unlinked mentions, Graph,
 analytics, Search link entities, whole-tree interchange, package/Markdown payload expansion, route,
 sidebar item, dependency, workflow/seal change, generic relationship framework, or Task 42 work.
-

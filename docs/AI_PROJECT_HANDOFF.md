@@ -4,17 +4,17 @@
 
 - repository: `kieran-lucas/lifeweave-desktop`
 - branch: `main`
-- latest closed task/slice: 40 / 030
-- active task/slice: 41 / 031
+- latest closed task/slice: 41 / 031
+- active task/slice: none
 - schema: 24
-- active specification: `specs/031-explicit-life-links`
-- latest feature checkpoint: `374abcbae263be18fa785a56d656678f9bfd9c29`
-- next action: Implement active spec
+- active specification: none
+- latest feature checkpoint: `e1fe3675315c04590aabe9c9ca87ede344dafa40`
+- next action: Product Owner gate
 - Task 42: prohibited, unstarted, unallocated, and unrecommended
 
-## Task 41 activation
+## Task 41 closure
 
-The Product Owner activated Task 41 / Slice 031 from the clean Task 40 remediation baseline
+The Product Owner activated and Codex completed Task 41 / Slice 031 from the clean Task 40 remediation baseline
 `6bcffe751458ee37a4cde663e21336a1f484a613`. ADR 0035 fixes a bounded directed link model between
 committed supported Life leaves using stable Life node IDs. Schema 24 adds only `life_links`;
 backlinks are derived, archive/document unavailability preserves edges, and restore re-enables
@@ -25,7 +25,9 @@ No inline/title-parsed/inferred links, anchors, labels/types, branch/Task/Plan/t
 Graph, global Search entity, Portable Package/Markdown change, whole-tree interchange, route,
 dependency, workflow/seal change, or Task 42 work is authorized. Task 40 remains closed and its
 performance evidence stays historical unless Task 41's measured bundle transition requires a new
-versioned file under the locked envelope.
+versioned file under the locked envelope. Task 41 is closed at product checkpoint
+`e1fe3675315c04590aabe9c9ca87ede344dafa40`; executable evidence is recorded in
+`docs/audits/task-41-explicit-life-links.md`.
 
 ## Task 36 final state
 
@@ -74,8 +76,7 @@ backup/restore; and expanded machine-verifiable accessibility coverage plus an e
 Narrator/DPI protocol.
 
 Product behavior, schema 23, and all released migrations are unchanged. Task 40 is **not** a
-feature checkpoint — `latest_feature_task` remains 39 — and Task 41 must not be allocated,
-started, or recommended.
+feature checkpoint — `latest_feature_task` remained 39 until Task 41 closed.
 
 Task 39 remains closed and was not reopened by this activation.
 
@@ -98,4 +99,4 @@ Disclosed residual debt, none of it a P0/P1 product defect:
 ## Next action
 
 Await the Product Owner gate. No specification is active, no next candidate is recommended, and
-Task 41 must not be allocated or started.
+Task 42 remains prohibited, unstarted, unallocated, and unrecommended.

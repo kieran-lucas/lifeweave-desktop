@@ -44,15 +44,15 @@ Unchecked entries are unfinished work and this file is the resumable execution l
 
 - [x] T41-E01 add phase 11 workflow and restart phases;
 - [x] T41-E02 add phase 12 backup/restore and restart phases;
-- [ ] T41-E03 prove every new phase load-bearing by deliberate break and restore;
-- [ ] T41-E04 record final inventory and locked envelope decision;
-- [ ] T41-E05 preserve Task 40 budget evidence or create truthful Task 41 versioned evidence.
+- [x] T41-E03 prove every new phase load-bearing by deliberate break and restore;
+- [x] T41-E04 record final inventory and locked envelope decision;
+- [x] T41-E05 preserve Task 40 budget evidence or create truthful Task 41 versioned evidence.
 
 ## F. Gates and closure
 
 - [x] T41-F01 run focused Rust/frontend/native checks;
-- [ ] T41-F02 run all broad governance/build/Rust/release/native/RC gates;
-- [ ] T41-F03 perform one full baseline diff review and fix confirmed findings;
-- [ ] T41-F04 create Task 41 product checkpoint commit;
-- [ ] T41-F05 close all authority/evidence surfaces without allocating Task 42;
-- [ ] T41-F06 run final governance/diff checks, commit closure, push, and confirm parity.
+- [x] T41-F02 run all broad governance/build/Rust/release/native/RC gates;
+- [x] T41-F03 perform one full baseline diff review and fix confirmed findings;
+- [x] T41-F04 create Task 41 product checkpoint commit;
+- [x] T41-F05 close all authority/evidence surfaces without allocating Task 42;
+- [x] T41-F06 run final governance/diff checks, commit closure, push, and confirm parity.

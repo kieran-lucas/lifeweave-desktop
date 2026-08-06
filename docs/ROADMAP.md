@@ -1,6 +1,6 @@
 # Roadmap
 
-## Slice 031 — Explicit Life Links + Backlinks Core (active)
+## Slice 031 — Explicit Life Links + Backlinks Core (complete)
 
 Task 41 activates the bounded Links/Backlinks candidate from ADR 0028 through the explicit Product
 Owner decision in ADR 0035. The historical 0.060 score lead for Whole-tree Interchange is not
@@ -19,6 +19,11 @@ Hard boundary: no inline/title-parsed/inferred links, anchors, labels/types, bra
 endpoints, Graph, Search entity, Portable Package/Markdown expansion, whole-tree interchange, new
 route/dependency/workflow/seal change, or Task 42 work.
 
+Task 41 closed at product checkpoint `e1fe3675315c04590aabe9c9ca87ede344dafa40` with schema 24,
+all 19 native phases, release-candidate hardening, and the versioned Task 41 performance budget
+green. Closure evidence is in `docs/audits/task-41-explicit-life-links.md`. No next candidate is
+allocated or recommended.
+
 ## Slice 030 — Release-Candidate Hardening + Evidence Baseline v2 (complete)
 
 Task 40 activates the Hardening candidate ADR 0028 scored at 8.055 — the highest-ranked remaining
@@ -36,8 +41,7 @@ that never reports an unobserved manual result as PASS.
 Hard boundary held: product behavior unchanged, schema stays 23, no migration, no route/destination/
 sidebar/card/dashboard/startup change, no dependency or lockfile churn, no workflow or seal change,
 no lint suppression, test weakening, source-map removal, or arbitrary budget inflation. Task 40 is
-not a feature checkpoint — the latest feature task remains 39 — and Task 41 is neither allocated
-nor recommended.
+not a feature checkpoint — the latest feature task remained 39 until Task 41 closed.
 
 Closure evidence is in `docs/audits/task-40-release-candidate-hardening.md`. Residual debt is
 disclosed rather than implied: physical Narrator/DPI execution was not performed, native phases 6

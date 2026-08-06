@@ -1,0 +1,65 @@
+{
+  "task": 41,
+  "slice": "031-explicit-life-links",
+  "measured_at_commit": "e1fe3675315c04590aabe9c9ca87ede344dafa40",
+  "activation_baseline_commit": "6bcffe751458ee37a4cde663e21336a1f484a613",
+  "method": {
+    "builds": 3,
+    "between_runs": "independent production builds, including restored-code native E2E builds",
+    "identical_normalized_inventories": true,
+    "gzip": "gzip level 9 with mtime=0 through scripts/check_performance_budgets.py",
+    "chunk_identity": "emitted file name with only the terminal content hash stripped",
+    "attribution": "lazy import boundary and per-chunk sourcemap ownership"
+  },
+  "starting_baseline": {
+    "chunk_count": 16,
+    "total_js_bytes": 1181334,
+    "total_js_gzip_bytes": 361595,
+    "startup_js_bytes": 542728,
+    "main_js_bytes": 512586
+  },
+  "final_totals": {
+    "chunk_count": 17,
+    "total_js_bytes": 1190378,
+    "total_js_gzip_bytes": 364685,
+    "startup_js_bytes": 544394,
+    "main_js_bytes": 514252
+  },
+  "task_41_delta": {
+    "chunk_count": 1,
+    "total_js_bytes": 9044,
+    "total_js_gzip_bytes": 3090,
+    "startup_js_bytes": 1666,
+    "main_js_bytes": 1666,
+    "authorized_total_raw_ceiling": 24000,
+    "authorized_total_gzip_ceiling": 8000,
+    "authorized_startup_raw_ceiling": 2048,
+    "decision": "within all Task 41 ceilings; version the aggregate budget because the prior expected chunk count and total-raw maximum are intentionally exceeded"
+  },
+  "lazy_boundary": {
+    "chunk": "LifeLinksPanel.js",
+    "file": "LifeLinksPanel-ddwrAJio.js",
+    "raw_bytes": 7383,
+    "gzip_bytes": 2607,
+    "startup": false
+  },
+  "final_inventory": [
+    {"chunk":"BasicLeafEditor.js","file":"BasicLeafEditor-BxnOcm4n.js","raw_bytes":52355,"gzip_bytes":17091,"class":"lazy","owner":"Basic Leaf editor"},
+    {"chunk":"DeadlineQueuePanel.js","file":"DeadlineQueuePanel-B_jBNo0a.js","raw_bytes":3096,"gzip_bytes":1235,"class":"lazy","owner":"Deadline queue"},
+    {"chunk":"FocusPlansScreen.js","file":"FocusPlansScreen-1Wqr1KMs.js","raw_bytes":18396,"gzip_bytes":5099,"class":"lazy","owner":"Focus Plans"},
+    {"chunk":"GlobalSearchDialog.js","file":"GlobalSearchDialog-s2_eWx0-.js","raw_bytes":4142,"gzip_bytes":1773,"class":"lazy","owner":"Global Search"},
+    {"chunk":"LifeLinksPanel.js","file":"LifeLinksPanel-ddwrAJio.js","raw_bytes":7383,"gzip_bytes":2607,"class":"lazy","owner":"Explicit Life Links (Task 41)"},
+    {"chunk":"NarrativeCanvasStudio.js","file":"NarrativeCanvasStudio-4nXtHSXj.js","raw_bytes":20066,"gzip_bytes":5930,"class":"lazy","owner":"Narrative Canvas studio"},
+    {"chunk":"PortablePackageImportDialog.js","file":"PortablePackageImportDialog-BOlfZNKW.js","raw_bytes":2728,"gzip_bytes":1149,"class":"lazy","owner":"Portable Package import"},
+    {"chunk":"QueryClientProvider.js","file":"QueryClientProvider-C6Yb6_UZ.js","raw_bytes":481,"gzip_bytes":335,"class":"startup","owner":"TanStack Query provider"},
+    {"chunk":"TagSettings.js","file":"TagSettings-BVRe0x2b.js","raw_bytes":9450,"gzip_bytes":2517,"class":"lazy","owner":"Unified tags settings"},
+    {"chunk":"TaskPlanningPanel.js","file":"TaskPlanningPanel-l5oZYQTa.js","raw_bytes":4450,"gzip_bytes":1703,"class":"lazy","owner":"Upcoming/Overdue planning"},
+    {"chunk":"TaskSavedViewsPanel.js","file":"TaskSavedViewsPanel-BVpeJFG0.js","raw_bytes":16544,"gzip_bytes":4955,"class":"lazy","owner":"Task Saved Views"},
+    {"chunk":"dist.js","file":"dist-BMGEDlKA.js","raw_bytes":390833,"gzip_bytes":120574,"class":"lazy","owner":"Basic Leaf editor vendor core"},
+    {"chunk":"index.js","file":"index-BAMoih9U.js","raw_bytes":514252,"gzip_bytes":156345,"class":"startup","owner":"application shell and eager screens"},
+    {"chunk":"jsx-runtime.js","file":"jsx-runtime-BhxXKzgZ.js","raw_bytes":7948,"gzip_bytes":3045,"class":"startup","owner":"React JSX runtime"},
+    {"chunk":"markdown.js","file":"markdown-C2y7R8us.js","raw_bytes":116541,"gzip_bytes":32939,"class":"lazy","owner":"Markdown interoperability pipeline"},
+    {"chunk":"rolldown-runtime.js","file":"rolldown-runtime-CNC7AqOf.js","raw_bytes":879,"gzip_bytes":505,"class":"startup","owner":"Rolldown module runtime"},
+    {"chunk":"useQuery.js","file":"useQuery-D8999TPb.js","raw_bytes":20834,"gzip_bytes":6883,"class":"startup","owner":"TanStack Query projection cache"}
+  ]
+}

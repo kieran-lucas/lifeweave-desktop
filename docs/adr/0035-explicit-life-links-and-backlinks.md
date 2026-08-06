@@ -2,8 +2,10 @@
 
 ## Status
 
-Accepted for Task 41 / Slice 031 by explicit Product Owner activation from baseline
-`6bcffe751458ee37a4cde663e21336a1f484a613`.
+Accepted and completed for Task 41 / Slice 031 at product checkpoint
+`e1fe3675315c04590aabe9c9ca87ede344dafa40` from explicit Product Owner activation baseline
+`6bcffe751458ee37a4cde663e21336a1f484a613`. Closure evidence is in
+`docs/audits/task-41-explicit-life-links.md`.
 
 ## Context
 
@@ -54,4 +56,3 @@ authorized.
 Reopen only for a reproducible migration/data-loss/referential-integrity/security defect, a Product
 Owner change to endpoint or deletion authority, or a future separately activated portability or
 Graph decision. Those decisions do not retroactively broaden Task 41.
-

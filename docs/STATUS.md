@@ -1,11 +1,10 @@
 # Project Status
 
-## Task 41/60 — Explicit Life Links + Backlinks Core (active)
+## Task 41/60 — Explicit Life Links + Backlinks Core (complete)
 
-- Active slice: `031-explicit-life-links`.
+- Closed slice: `031-explicit-life-links`.
 - Activation baseline and Task 40 remediation SHA: `6bcffe751458ee37a4cde663e21336a1f484a613`.
-- Latest feature checkpoint remains Task 39 at `374abcbae263be18fa785a56d656678f9bfd9c29`
-  until Task 41 creates its product checkpoint.
+- Product checkpoint: `e1fe3675315c04590aabe9c9ca87ede344dafa40`.
 - Starting schema 23; target schema 24 through one append-only `life_links` migration.
 - Endpoint contract: active non-root document-backed Basic Leaf/Narrative Canvas Life leaf to
   another eligible leaf, directed and untyped, with stable node IDs as authority.
@@ -13,8 +12,14 @@
   navigation/history, archive/unavailable projection, and full backup/reopen durability.
 - Portable Package, Markdown, global Search semantics, Graph, whole-tree interchange, routes,
   dependencies, workflows/seal, and Task 42 remain unchanged and prohibited.
-- Next action: implement the active specification and acceptance ledger; documentation activation
-  alone is not completion.
+- Schema 24 migration, Rust authority, generated IPC, lazy Reader UI, cache invalidation,
+  backup/reopen, accessibility, and 19 native phases are complete. Full evidence is in
+  `docs/audits/task-41-explicit-life-links.md`.
+- Performance transition: 17 chunks, 1,190,378 raw, 364,685 deterministic gzip, and 544,394
+  startup raw; deltas from Task 40 are +9,044 / +3,090 / +1,666 bytes, within the 24/8/2 KiB
+  ceilings. Task 40 evidence remains byte-identical and Task 41 owns the active versioned budget.
+- Next action: Product Owner gate. Task 42 remains prohibited, unstarted, unallocated, and
+  unrecommended.
 
 ## Task 40/60 — Release-Candidate Hardening + Evidence Baseline v2 (complete)
 
@@ -51,8 +56,8 @@
 - One P2 product defect was recorded and deliberately not fixed within the slice: creating or
   restoring a Saved View drops the result selection, because the panel clears a selected id that is
   absent from the still-stale active list. It was fixed post-closure — see the entry below.
-- Task 40 is **not** a feature checkpoint. The latest feature task remains 39 at
-  `374abcbae263be18fa785a56d656678f9bfd9c29`. Task 41 is neither allocated nor recommended.
+- Task 40 is **not** a feature checkpoint. At Task 40 closure the latest feature task remained 39 at
+  `374abcbae263be18fa785a56d656678f9bfd9c29`; Task 41 subsequently closed as the next feature.
 - Canonical decision: ADR 0034, taking up the Hardening candidate ADR 0028 scored at 8.055.
 - Schema stays 23; no migration was added and no released migration was touched.
 - Four debts were reproduced from the clean baseline before any edit: the aggregate JavaScript

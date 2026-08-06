@@ -1,5 +1,7 @@
 # Task 41 Execution Plan
 
+Status: COMPLETE. All stages passed; see `docs/audits/task-41-explicit-life-links.md`.
+
 ## Stage 0 — Activation and baseline
 
 Confirm clean `main` and remote parity at `6bcffe751458ee37a4cde663e21336a1f484a613`, record the Task
@@ -38,4 +40,3 @@ findings, create the product checkpoint, close governance, commit, push, and con
 Stop before broadening scope if a permanent Life-node delete conflicts with FK protection; minimum
 usefulness requires branch/anchor/package-remap authority; a dependency/workflow/broader schema or
 Task 42 is required; or bundle growth exceeds 2 KiB startup, 24 KiB raw, or 8 KiB gzip.
-

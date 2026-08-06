@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check the production JavaScript bundle against the Task 40 performance budget v2.
+"""Check the production JavaScript bundle against the Task 41 performance budget v2.
 
 The Task 16 budget tracked four metrics against sixteen emitted chunks and could be satisfied
 while most shipped JavaScript went unmeasured. Budget v2 tracks every chunk of consequence under
@@ -19,7 +19,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_BUDGET = ROOT / "docs" / "audits" / "task-40-performance-budgets.json"
+DEFAULT_BUDGET = ROOT / "docs" / "audits" / "task-41-performance-budgets.json"
 DEFAULT_ASSETS = ROOT / "frontend" / "dist" / "assets"
 
 BUDGET_VERSION = 2

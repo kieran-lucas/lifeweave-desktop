@@ -7,6 +7,7 @@ from pathlib import Path
 
 from scripts.check_performance_budgets import (
     BudgetError,
+    DEFAULT_BUDGET,
     gzip_size,
     normalize_chunk_name,
     run,
@@ -22,6 +23,12 @@ class PerformanceBudgetCheckerTests(unittest.TestCase):
         self.assets = self.root / "assets"
         self.assets.mkdir(parents=True)
         self.budget_path = self.root / "budget.json"
+
+    def test_default_budget_advances_to_task_41_without_rewriting_task_40(self) -> None:
+        self.assertEqual(DEFAULT_BUDGET.name, "task-41-performance-budgets.json")
+        self.assertTrue(DEFAULT_BUDGET.is_file())
+        historical = DEFAULT_BUDGET.with_name("task-40-performance-budgets.json")
+        self.assertTrue(historical.is_file())
 
     def tearDown(self) -> None:
         self.temp.cleanup()

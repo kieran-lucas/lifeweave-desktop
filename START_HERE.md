@@ -12,23 +12,24 @@
 
 ## Current state
 
-- Latest closed task: **40/60**
-- Latest closed slice: **030 — Release-Candidate Hardening + Evidence Baseline v2**
-- Active task: **41/60 — Explicit Life Links + Backlinks Core**
-- Active implementation specification: **Slice 031 — `specs/031-explicit-life-links`**
-- Latest feature checkpoint: **Task 39 — Task Saved Views + Bounded Typed Filter Core** (`374abcbae263be18fa785a56d656678f9bfd9c29`)
+- Latest closed task: **41/60**
+- Latest closed slice: **031 — Explicit Life Links + Backlinks Core**
+- Active task: **none**
+- Active implementation specification: **none**
+- Latest feature checkpoint: **Task 41 — Explicit Life Links + Backlinks Core** (`e1fe3675315c04590aabe9c9ca87ede344dafa40`)
 - Database schema: **24**
-- Next action: **Implement active spec**
+- Next action: **Product Owner gate**
 - Task 42: **prohibited, unstarted, unallocated, and unrecommended**
 
-Task 41 is explicitly activated by the Product Owner from baseline `6bcffe751458ee37a4cde663e21336a1f484a613`.
-It adds directed stable-ID links between committed Basic Leaf and Narrative Canvas Life leaves,
+Task 41 is closed at product checkpoint `e1fe3675315c04590aabe9c9ca87ede344dafa40` from baseline
+`6bcffe751458ee37a4cde663e21336a1f484a613`. It adds directed stable-ID links between committed Basic Leaf and Narrative Canvas Life leaves,
 derived backlinks, exact Reader navigation, archive/restore preservation, and full backup authority.
 Schema 24 is active through the append-only migration. Graph, whole-tree
 interchange, inline/title-parsed links, package changes, dependencies, and Task 42 remain prohibited.
+Closure evidence is in `docs/audits/task-41-explicit-life-links.md`.
 
 Task 40 was a hardening and evidence slice. It changed no product behavior, added no migration, and
-is **not** a feature checkpoint: the latest feature task remains 39.
+was **not** a feature checkpoint: the latest feature task remained 39 until Task 41 closed.
 
 ## Task 36 closure
 
