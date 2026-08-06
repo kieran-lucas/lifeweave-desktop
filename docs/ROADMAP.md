@@ -1,5 +1,25 @@
 # Roadmap
 
+## Slice 030 — Release-Candidate Hardening + Evidence Baseline v2 (active)
+
+Task 40 activates the Hardening candidate ADR 0028 scored at 8.055 — the highest-ranked remaining
+eligible candidate now that Deadline (8.420) and Saved Views (8.095) have shipped as Tasks 38 and
+39. Unlike the remaining product candidates it is backed by reproduced debt rather than a product
+hypothesis, and it is explicitly a release-quality investment rather than a feature.
+
+Four bounded workstreams: a truthful versioned performance budget v2 that replaces the obsolete
+aggregate JavaScript gate while preserving Task 16 history byte-identically; a green
+all-target/all-feature Rust Clippy gate achieved by correction rather than suppression; native
+Windows E2E evidence for Deadline and Saved Views including restart and full backup/restore; and
+expanded machine-verifiable accessibility coverage plus an executable Windows Narrator/DPI protocol
+that never reports an unobserved manual result as PASS.
+
+Hard boundary: product behavior unchanged, schema stays 23, no migration, no route/destination/
+sidebar/card/dashboard/startup change, no dependency or lockfile churn, no workflow or seal change,
+no lint suppression, test weakening, source-map removal, or arbitrary budget inflation. Task 40 is
+not a feature checkpoint — the latest feature task remains 39 — and Task 41 is neither allocated
+nor recommended.
+
 ## Slice 029 — Task Saved Views + Bounded Typed Filter Core (complete)
 
 Task 39 implements the Saved Views product runner-up recorded by ADR 0028 using the explicit

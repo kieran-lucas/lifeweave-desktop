@@ -1,5 +1,31 @@
 # Project Status
 
+## Task 40/60 — Release-Candidate Hardening + Evidence Baseline v2 (active)
+
+- Active slice: `030-release-candidate-hardening`.
+- Execution baseline: `fb2a240920414c05e7fd4235357b952a15611e8f`.
+- Canonical decision: ADR 0034, activating the Hardening candidate ADR 0028 scored at 8.055.
+- Schema stays 23; no migration is added and no released migration is touched.
+- Task 40 is **not** a feature checkpoint. The latest feature task remains 39 at
+  `374abcbae263be18fa785a56d656678f9bfd9c29`.
+- Four reproduced debts drive the slice: the aggregate JavaScript budget fails at
+  `total_js_bytes=1181334` against a `1150000` maximum while tracking four of sixteen chunks; the
+  exact all-target/all-feature Clippy command fails on two `type_complexity` findings in backup
+  test code; native Windows E2E ends at Focus Plans and covers neither Deadline nor Saved Views;
+  and Task 30 physical Narrator/DPI evidence debt is still open.
+- Budget v2 is a new versioned file. `docs/audits/task-16-performance-budgets.json` is preserved
+  byte-identically as history rather than edited.
+- Lint debt is corrected, never suppressed: no `#[allow]`, no lint-level reduction, no test
+  exclusion.
+- Native phases drive real workflows through accessible selectors only — no raw IPC, no direct
+  database writes, no production test backdoor.
+- Machine-verifiable accessibility closure and physical Narrator/DPI observation are recorded as
+  separate evidence classes. An unobserved manual result is recorded as `NOT RUN`, never PASS.
+- Out of scope: product features, schema 24, recurring deadlines, actual time, backlinks,
+  interchange, Graph, Noteboard, score, prediction, reminders, notifications, sync, sharing,
+  telemetry, updater, signing, store distribution, new dependencies, workflow or seal changes, and
+  Task 41.
+
 ## Task 39/60 — Task Saved Views + Bounded Typed Filter Core (complete)
 
 Closed through Slice `029-task-saved-views` from baseline

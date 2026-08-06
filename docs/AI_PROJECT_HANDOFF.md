@@ -5,12 +5,12 @@
 - repository: `kieran-lucas/lifeweave-desktop`
 - branch: `main`
 - latest closed task/slice: 39 / 029
-- active task/slice: none
+- active task/slice: 40 / 030
 - schema: 23
-- active specification: none
+- active specification: `specs/030-release-candidate-hardening`
 - latest feature checkpoint: `374abcbae263be18fa785a56d656678f9bfd9c29`
-- next action: Product Owner gate
-- Task 40: prohibited, unstarted, unallocated, and unrecommended
+- next action: implement active spec
+- Task 41: prohibited, unstarted, unallocated, and unrecommended
 
 ## Task 36 final state
 
@@ -43,9 +43,28 @@ sources, typed predicate v1, stable sort/group, local lifecycle/order, and a fif
 tab. Schema 23 is active from the schema 22 activation baseline. The product checkpoint is
 `374abcbae263be18fa785a56d656678f9bfd9c29`; deterministic migration, lifecycle, predicate,
 source, reference, navigation, query-shape, backup/reopen, accessibility, regression, and build
-evidence passed. Task 40 remains prohibited and unrecommended.
+evidence passed.
+
+## Task 40 activation
+
+The Product Owner activated Task 40 / Slice 030 from baseline
+`fb2a240920414c05e7fd4235357b952a15611e8f`, taking up the Hardening candidate ADR 0028 scored at
+8.055 — the highest-ranked remaining eligible candidate after Deadline and Saved Views shipped.
+
+Task 40 is a hardening and evidence slice, not a feature. Four bounded workstreams: performance
+budget v2 replacing the obsolete aggregate JavaScript gate while preserving Task 16 history
+byte-identically; a green all-target/all-feature Clippy gate reached by correction rather than
+suppression; native Windows E2E for Deadline and Saved Views including restart and full
+backup/restore; and expanded machine-verifiable accessibility coverage plus an executable
+Narrator/DPI protocol.
+
+Product behavior, schema 23, and all released migrations are unchanged. Task 40 is **not** a
+feature checkpoint — `latest_feature_task` remains 39 — and Task 41 must not be allocated,
+started, or recommended.
+
+Task 39 remains closed and is not reopened by this activation.
 
 ## Next action
 
-Await the Product Owner gate. No specification is active, no next candidate is recommended, and
-Task 40 must not be allocated or started.
+Implement `specs/030-release-candidate-hardening`. Use `specs/030-release-candidate-hardening/tasks.md`
+as the resumable ledger.
