@@ -29,12 +29,56 @@ if (-not $Phases -or $Phases.Count -eq 0) { $Phases = $allPhases }
 foreach ($phase in $Phases) {
   if ($phase -notin $allPhases) { throw "unknown native E2E phase: $phase" }
 }
+
+function Test-DriverPortOpen {
+  try {
+    $socket = New-Object Net.Sockets.TcpClient
+    $connect = $socket.BeginConnect('127.0.0.1', 4444, $null, $null)
+    $connected = $connect.AsyncWaitHandle.WaitOne(250, $false) -and $socket.Connected
+    $socket.Close()
+    return $connected
+  } catch {
+    return $false
+  }
+}
+
+function Stop-NativeE2EProcesses {
+  param([System.Diagnostics.Process]$DriverProcess)
+
+  if ($DriverProcess -and -not $DriverProcess.HasExited) {
+    & taskkill.exe /PID $DriverProcess.Id /T /F 2>$null | Out-Null
+  }
+
+  foreach ($name in @('lifeweave-desktop', 'tauri-driver', 'msedgedriver')) {
+    Get-Process -Name $name -ErrorAction SilentlyContinue |
+      Stop-Process -Force -ErrorAction SilentlyContinue
+  }
+
+  $deadline = (Get-Date).AddSeconds(20)
+  do {
+    $remaining = @(
+      Get-Process -Name 'lifeweave-desktop', 'tauri-driver', 'msedgedriver' -ErrorAction SilentlyContinue
+    )
+    if ($remaining.Count -eq 0 -and -not (Test-DriverPortOpen)) {
+      return
+    }
+    Start-Sleep -Milliseconds 250
+  } while ((Get-Date) -lt $deadline)
+
+  $names = @(
+    Get-Process -Name 'lifeweave-desktop', 'tauri-driver', 'msedgedriver' -ErrorAction SilentlyContinue |
+      ForEach-Object { "$($_.ProcessName):$($_.Id)" }
+  )
+  throw "native E2E cleanup timed out; remaining processes: $($names -join ', '); port 4444 open: $(Test-DriverPortOpen)"
+}
+
 New-Item -ItemType Directory -Force -Path $dataRoot | Out-Null
 if (Test-Path $lock) { throw "another native E2E run owns $lock" }
 New-Item -ItemType File -Path $lock -Force | Out-Null
 New-Item -ItemType Directory -Force -Path $run | Out-Null
 New-Item -ItemType File -Path (Join-Path $run '.lifeweave-e2e-sentinel') | Out-Null
 try {
+  Stop-NativeE2EProcesses -DriverProcess $null
   if (-not (Get-Command tauri-driver -ErrorAction SilentlyContinue)) { throw 'tauri-driver is required' }
   if ([Environment]::Is64BitOperatingSystem -eq $false) { throw 'only 64-bit Windows is supported' }
   $webViewKey = 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}'
@@ -74,23 +118,41 @@ try {
   pnpm tauri build --debug --features e2e-test
   if ($LASTEXITCODE -ne 0) { throw 'E2E binary build failed' }
   $env:LIFEWEAVE_E2E_BINARY = (Resolve-Path 'src-tauri\target\debug\lifeweave-desktop.exe').Path
+
   foreach ($phase in $Phases) {
-    $out = Join-Path $run "$phase.out.log"; $err = Join-Path $run "$phase.err.log"
-    $driver = Start-Process -FilePath 'tauri-driver.exe' -ArgumentList '--native-driver', $nativeDriver, '--port','4444' -RedirectStandardOutput $out -RedirectStandardError $err -PassThru
-    $ready = $false
-    for ($i = 0; $i -lt 40; $i++) {
-      if ($driver.HasExited) { throw "tauri-driver exited during $phase" }
-      try { $socket = New-Object Net.Sockets.TcpClient('127.0.0.1',4444); $socket.Dispose(); $ready = $true; break } catch { Start-Sleep -Milliseconds 250 }
+    $out = Join-Path $run "$phase.out.log"
+    $err = Join-Path $run "$phase.err.log"
+    $phaseExitCode = $null
+    try {
+      Stop-NativeE2EProcesses -DriverProcess $null
+      $driver = Start-Process -FilePath 'tauri-driver.exe' -ArgumentList '--native-driver', $nativeDriver, '--port', '4444' -RedirectStandardOutput $out -RedirectStandardError $err -PassThru
+      $ready = $false
+      for ($i = 0; $i -lt 80; $i++) {
+        if ($driver.HasExited) { throw "tauri-driver exited during $phase" }
+        if (Test-DriverPortOpen) { $ready = $true; break }
+        Start-Sleep -Milliseconds 250
+      }
+      if (-not $ready) { throw "tauri-driver did not become ready for $phase" }
+
+      pnpm --dir e2e-tests exec wdio run wdio.conf.ts --spec "specs/$phase"
+      $phaseExitCode = $LASTEXITCODE
+    } finally {
+      Stop-NativeE2EProcesses -DriverProcess $driver
+      $driver = $null
     }
-    if (-not $ready) { throw "tauri-driver did not become ready for $phase" }
-    pnpm --dir e2e-tests exec wdio run wdio.conf.ts --spec "specs/$phase"
-    if ($LASTEXITCODE -ne 0) { throw "$phase failed with exit code $LASTEXITCODE" }
-    if ($driver -and -not $driver.HasExited) { Stop-Process -Id $driver.Id -Force -ErrorAction SilentlyContinue }
-    $driver = $null
+
+    if ($phaseExitCode -ne 0) {
+      throw "$phase failed with exit code $phaseExitCode"
+    }
   }
   $success = $true
 } finally {
-  if ($driver -and -not $driver.HasExited) { Stop-Process -Id $driver.Id -Force -ErrorAction SilentlyContinue }
+  try {
+    Stop-NativeE2EProcesses -DriverProcess $driver
+  } catch {
+    if ($success) { throw }
+    Write-Warning $_.Exception.Message
+  }
   Remove-Item Env:LIFEWEAVE_E2E_APP_DATA_DIR -ErrorAction SilentlyContinue
   Remove-Item Env:LIFEWEAVE_E2E_ROOT -ErrorAction SilentlyContinue
   Remove-Item -LiteralPath $lock -Force -ErrorAction SilentlyContinue
