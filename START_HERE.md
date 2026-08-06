@@ -18,8 +18,8 @@
 - Active implementation specification: **specs/026-focus-plans-core**
 - Latest closed product checkpoint: **Task 33 — Unified Tags Core + Cross-Pillar Retrieval**
 - Database schema: **20**
-- Next action: **Implement active spec**
-- Task 36 implementation: **complete; focused native phase-8 execution pending**
+- Next action: **Complete and verify the active spec**
+- Task 36 implementation: **present but unclosed; remediation integration and focused native verification remain**
 - Task 37: **not started and prohibited**
 
 ## Task 36 boundary
@@ -39,3 +39,11 @@ powershell -ExecutionPolicy Bypass -File scripts/run_windows_e2e.ps1 `
 
 Run broad suites only when a concrete cross-domain defect requires them. Task
 37 work requires a separate Product Owner activation.
+
+## Sealed workflow
+
+GitHub Actions contains one manual, read-only Windows installer build. Normal
+feature, fix, refactor, test, documentation, and maintenance tasks must not
+modify `.github/workflows/` or `.github/WORKFLOW_SEAL.sha256`. Workflow changes
+require explicit Product Owner authorization and must pass
+`python scripts/check_repository.py`.
