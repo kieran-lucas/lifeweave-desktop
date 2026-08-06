@@ -39,6 +39,14 @@ The immutable source is authoritative. This registry makes operational status vi
 - Quality-gate findings are corrected, never suppressed. `#[allow]`, lint-level reduction, and test exclusion are not accepted responses to a failing lint gate.
 - Machine-verifiable accessibility coverage and physical Narrator/DPI observation are distinct evidence classes. Automated DOM tests never substitute for spoken screen-reader output or physical Windows scaling, and an unobserved manual result is recorded as `NOT RUN`, never PASS.
 - The execution roadmap remains a 60-task envelope. Product Owner allocation may reuse unstarted positions without increasing the total.
+- Task 41 / Slice 031 activates Explicit Life Links + Backlinks Core under ADR 0035. A link is one
+  directed, untyped relation from an active non-root committed supported Life leaf to another such
+  leaf, with Life node IDs as sole authority. Backlinks are derived. Rename/reparent never rewrite
+  edges; archive/document unavailability preserves and disables them; restore re-enables them.
+  Schema 24 adds only `life_links` with restrictive endpoint FKs and 100 outgoing / 500 incoming
+  caps. Portable Package/Markdown/global Search remain unchanged and Graph, whole-tree interchange,
+  inferred/inline/title-parsed links, branches, non-Life endpoints, dependencies, and Task 42 remain
+  prohibited.
 
 ## LOCKED — Technology direction
 

@@ -7,8 +7,8 @@
   "latest_feature_task": 39,
   "latest_feature_checkpoint": "374abcbae263be18fa785a56d656678f9bfd9c29",
   "database_schema_version": 23,
-  "active_spec": null,
-  "next_action": "product_owner_gate",
+  "active_spec": "specs/031-explicit-life-links",
+  "next_action": "implement_active_spec",
   "forbidden_feature_jump": true,
   "recommended_next_candidate": null,
   "source_sha256": "9c422927c09e26431d71b1ef5ab6306891a3e7c15ece0fc808bedf6f6689540a"

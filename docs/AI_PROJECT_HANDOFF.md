@@ -5,12 +5,27 @@
 - repository: `kieran-lucas/lifeweave-desktop`
 - branch: `main`
 - latest closed task/slice: 40 / 030
-- active task/slice: none
+- active task/slice: 41 / 031
 - schema: 23
-- active specification: none
+- active specification: `specs/031-explicit-life-links`
 - latest feature checkpoint: `374abcbae263be18fa785a56d656678f9bfd9c29`
-- next action: Product Owner gate
-- Task 41: prohibited, unstarted, unallocated, and unrecommended
+- next action: Implement active spec
+- Task 42: prohibited, unstarted, unallocated, and unrecommended
+
+## Task 41 activation
+
+The Product Owner activated Task 41 / Slice 031 from the clean Task 40 remediation baseline
+`6bcffe751458ee37a4cde663e21336a1f484a613`. ADR 0035 fixes a bounded directed link model between
+committed supported Life leaves using stable Life node IDs. Schema 24 adds only `life_links`;
+backlinks are derived, archive/document unavailability preserves edges, and restore re-enables
+navigation. Reader gains a lazy Links panel with explicit target discovery, add/remove, backlinks,
+and exact-ID history navigation. Full database backup owns the edge rows.
+
+No inline/title-parsed/inferred links, anchors, labels/types, branch/Task/Plan/tag/URL endpoints,
+Graph, global Search entity, Portable Package/Markdown change, whole-tree interchange, route,
+dependency, workflow/seal change, or Task 42 work is authorized. Task 40 remains closed and its
+performance evidence stays historical unless Task 41's measured bundle transition requires a new
+versioned file under the locked envelope.
 
 ## Task 36 final state
 

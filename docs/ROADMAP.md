@@ -1,5 +1,24 @@
 # Roadmap
 
+## Slice 031 — Explicit Life Links + Backlinks Core (active)
+
+Task 41 activates the bounded Links/Backlinks candidate from ADR 0028 through the explicit Product
+Owner decision in ADR 0035. The historical 0.060 score lead for Whole-tree Interchange is not
+permanent allocation authority: stable Life IDs, committed Basic/Narrative documents, Reader
+navigation, Vietnamese Search normalization, archive/restore, and full backup now make explicit
+links the smaller composable slice, while workspace interchange still requires broader identity
+collision/remap policy.
+
+Schema 24 adds exactly one directed `life_links` table. Both endpoints are active non-root Life
+leaves with exactly one supported committed document at creation; IDs, not titles or content, are
+authority. Backlinks are derived, archive preserves edges, restore re-enables navigation, and full
+backup/restore preserves exact identity and direction. A lazy Reader panel provides explicit
+add/outgoing/backlink/remove workflows and exact-ID history-preserving navigation.
+
+Hard boundary: no inline/title-parsed/inferred links, anchors, labels/types, branch or non-Life
+endpoints, Graph, Search entity, Portable Package/Markdown expansion, whole-tree interchange, new
+route/dependency/workflow/seal change, or Task 42 work.
+
 ## Slice 030 — Release-Candidate Hardening + Evidence Baseline v2 (complete)
 
 Task 40 activates the Hardening candidate ADR 0028 scored at 8.055 — the highest-ranked remaining

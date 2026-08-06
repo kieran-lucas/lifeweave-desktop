@@ -1,5 +1,21 @@
 # Project Status
 
+## Task 41/60 — Explicit Life Links + Backlinks Core (active)
+
+- Active slice: `031-explicit-life-links`.
+- Activation baseline and Task 40 remediation SHA: `6bcffe751458ee37a4cde663e21336a1f484a613`.
+- Latest feature checkpoint remains Task 39 at `374abcbae263be18fa785a56d656678f9bfd9c29`
+  until Task 41 creates its product checkpoint.
+- Starting schema 23; target schema 24 through one append-only `life_links` migration.
+- Endpoint contract: active non-root document-backed Basic Leaf/Narrative Canvas Life leaf to
+  another eligible leaf, directed and untyped, with stable node IDs as authority.
+- Reader scope: lazy Links panel, explicit bounded search/add/remove, derived backlinks, exact-ID
+  navigation/history, archive/unavailable projection, and full backup/reopen durability.
+- Portable Package, Markdown, global Search semantics, Graph, whole-tree interchange, routes,
+  dependencies, workflows/seal, and Task 42 remain unchanged and prohibited.
+- Next action: implement the active specification and acceptance ledger; documentation activation
+  alone is not completion.
+
 ## Task 40/60 — Release-Candidate Hardening + Evidence Baseline v2 (complete)
 
 - Closed slice: `030-release-candidate-hardening`.
