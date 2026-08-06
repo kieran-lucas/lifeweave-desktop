@@ -1,26 +1,21 @@
-name: Task 36 verified remediation
+name: Manual Windows installer
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
-  contents: write
-
-concurrency:
-  group: task-36-remediation-main
-  cancel-in-progress: true
+  contents: read
 
 jobs:
-  remediate-and-verify:
+  build:
     runs-on: windows-2022
-    timeout-minutes: 120
+    timeout-minutes: 60
 
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-        with:
-          fetch-depth: 0
+
+      - name: Verify repository governance
+        run: python scripts/check_repository.py
 
       - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
         with:
@@ -29,140 +24,21 @@ jobs:
 
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
-          node-version-file: ".node-version"
-          cache: "pnpm"
+          node-version-file: .node-version
+          cache: pnpm
 
       - uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4 # stable
-        with:
-          components: rustfmt, clippy
 
-      - name: Install JavaScript dependencies
+      - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Apply bounded remediation
-        shell: powershell
-        run: |
-          python scripts/task36_remediation.py
-          if ($LASTEXITCODE -ne 0) { throw 'Task 36 remediation script failed' }
-          python scripts/task36_revision_contract.py
-          if ($LASTEXITCODE -ne 0) { throw 'Task 36 revision contract correction failed' }
-          Remove-Item -LiteralPath scripts/task36_remediation.py -Force
-          Remove-Item -LiteralPath scripts/task36_revision_contract.py -Force
+      - name: Build installer
+        run: pnpm tauri build
 
-      - name: Format Rust remediation
-        run: cargo fmt --manifest-path src-tauri/Cargo.toml --all
-
-      - name: Project final manual-only workflow authority
-        shell: powershell
-        run: |
-          @'
-          name: Manual clean Windows build
-
-          on:
-            workflow_dispatch:
-
-          permissions:
-            contents: read
-
-          jobs:
-            clean-build:
-              runs-on: windows-latest
-              timeout-minutes: 60
-
-              steps:
-                - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-
-                - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
-                  with:
-                    version: 11.17.0
-                    run_install: false
-
-                - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
-                  with:
-                    node-version-file: ".node-version"
-                    cache: "pnpm"
-
-                - uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4 # stable
-                  with:
-                    components: rustfmt, clippy
-
-                - name: Install
-                  run: pnpm install --frozen-lockfile
-
-                - name: Build production installer
-                  run: node frontend/node_modules/@tauri-apps/cli/tauri.js build
-
-                - name: Upload unsigned installer
-                  uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-                  with:
-                    name: lifeweave-windows-unsigned-${{ github.sha }}
-                    path: src-tauri/target/release/bundle/nsis/Lifeweave_0.0.0_x64-setup.exe
-                    if-no-files-found: error
-                    retention-days: 3
-          '@ | Set-Content -LiteralPath .github/workflows/manual-clean-build.yml -Encoding utf8
-
-      - name: Verify repository authority
-        run: pnpm verify
-
-      - name: Typecheck frontend
-        run: pnpm typecheck
-
-      - name: Test frontend
-        run: pnpm test
-
-      - name: Check Rust formatting
-        run: cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check
-
-      - name: Lint Rust
-        run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --locked -- -D warnings
-
-      - name: Test Rust and regenerate bindings
-        run: cargo test --manifest-path src-tauri/Cargo.toml --locked
-
-      - name: Verify generated Focus Plan bindings are stable
-        shell: powershell
-        run: |
-          git diff --exit-code -- frontend/src/ipc/generated
-          if ($LASTEXITCODE -ne 0) { throw 'Generated Focus Plan bindings drifted after Rust tests' }
-          pnpm --dir frontend build
-          if ($LASTEXITCODE -ne 0) { throw 'Frontend production build failed after binding generation' }
-
-      - name: Install native Tauri driver
-        run: cargo install tauri-driver --locked
-
-      - name: Run focused Task 36 native persistence
-        shell: powershell
-        run: |
-          & .\scripts\run_windows_e2e.ps1 -Phases @(
-            'phase8-focus-plans.e2e.ts',
-            'phase8-focus-plans-restart.e2e.ts'
-          )
-
-      - name: Audit final diff
-        shell: powershell
-        run: |
-          git diff --check
-          if ($LASTEXITCODE -ne 0) { throw 'git diff --check failed' }
-          git status --short
-          git diff --stat
-
-      - name: Commit verified remediation
-        shell: powershell
-        run: |
-          git config user.name "Kieran Lucas"
-          git config user.email "kieranlucas.work@gmail.com"
-          git add -A
-          $staged = git diff --cached --name-only
-          if (-not $staged) { throw 'No verified remediation changes to commit' }
-          Write-Host "Staged files:`n$staged"
-          git commit -m "complete task 36 verified remediation"
-          git push origin HEAD:main
-
-      - name: Upload native failure evidence
-        if: failure()
+      - name: Upload unsigned installer
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: task-36-remediation-failure-${{ github.sha }}
-          path: target/e2e-artifacts/**
-          if-no-files-found: ignore
+          name: lifeweave-windows-unsigned-${{ github.sha }}
+          path: src-tauri/target/release/bundle/nsis/*-setup.exe
+          if-no-files-found: error
           retention-days: 3
