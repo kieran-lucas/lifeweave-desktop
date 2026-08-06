@@ -12,42 +12,21 @@
 
 ## Current state
 
-- Latest closed task: **35/60**
-- Latest closed slice: **025 — Focus Plans Architecture Prototype**
-- Active task: **36 — Focus Plans Core + Draft/Active Lifecycle**
-- Active implementation specification: **specs/026-focus-plans-core**
-- Latest closed product checkpoint: **Task 33 — Unified Tags Core + Cross-Pillar Retrieval**
+- Latest closed task: **36/60**
+- Latest closed slice: **026 — Focus Plans Core**
+- Active task: **none**
+- Active implementation specification: **none**
+- Latest feature checkpoint: **Task 36 — Focus Plans Core** (`57bd42d8eed5643d2fee3b04f74bd3c44e738da2`)
 - Database schema: **20**
-- Next action: **Implement active spec**
-- Remaining implementation gate: **Complete focused native verification for the active spec**
-- Task 36 implementation: **remediation integrated directly into source; task remains unclosed pending focused native persistence evidence**
-- Task 37: **not started and prohibited**
+- Next action: **Product Owner gate**
+- Task 37: **not started; requires separate activation**
 
-## Task 36 boundary
+## Task 36 closure
 
-Task 36 owns Plan persistence, lifecycle, variants/phases, revisions/recovery,
-shared tags, Search, full-database backup authority, generated bindings, and the
-lazy Plans workspace. It does not add Task/series links, review workflow,
-automatic progress, reminders, cloud, collaboration, score, or prediction.
+Task 36 is closed and must not be reopened merely because a native E2E smoke test or Windows driver harness is red. Closure is supported by implemented schema/domain/UI behavior, focused frontend coverage, Rust migration/core/backup/tag/Search tests, generated-binding stability, production frontend build, inspected persisted SQLite artifacts, and explicit Product Owner acceptance.
 
-## Focused verification
-
-```powershell
-# Windows native persistence only; does not rerun historical phases.
-powershell -ExecutionPolicy Bypass -File scripts/run_windows_e2e.ps1 `
-  -Phases phase8-focus-plans.e2e.ts,phase8-focus-plans-restart.e2e.ts
-```
-
-Frontend typecheck/tests, Rust tests, binding stability, diff checks, and final
-repository governance passed in one-time staging run `31074176655`. Task 36 is
-not closed until the focused two-process native persistence check passes. Run
-broad suites only when a concrete cross-domain defect requires them. Task 37
-work requires a separate Product Owner activation.
+A future reproducible product defect, migration/data-loss risk, violated invariant, or explicit Product Owner decision may reopen the task. Tooling-only failures remain non-blocking verification debt.
 
 ## Sealed workflow
 
-GitHub Actions contains one manual, read-only Windows installer build. Normal
-feature, fix, refactor, test, documentation, and maintenance tasks must not
-modify `.github/workflows/` or `.github/WORKFLOW_SEAL.sha256`. Workflow changes
-require explicit Product Owner authorization and must pass
-`python scripts/check_repository.py`.
+GitHub Actions contains one manual, read-only Windows installer build. Normal feature, fix, refactor, test, documentation, and maintenance tasks must not modify `.github/workflows/` or `.github/WORKFLOW_SEAL.sha256`. Workflow changes require explicit Product Owner authorization and must pass `python scripts/check_repository.py`.
