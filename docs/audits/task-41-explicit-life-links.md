@@ -177,3 +177,111 @@ Task 42 work changed. Final review order was specification, migration/data integ
 security/privacy, accessibility/keyboard behavior, performance, interaction fidelity, and scope.
 The broad gates exposed the two regressions above; both received the smallest safe correction and
 regression evidence. No P0/P1 or actionable `BLOCKER`, `HIGH`, `MEDIUM`, or `LOW` finding remains.
+
+## Post-closure remediation — stale linked-Reader navigation
+
+### Finding, reproduction, and correction
+
+Post-closure review confirmed a `MEDIUM` / P2 navigation race in
+`frontend/src/features/life/LifeScreen.tsx`. From Reader A, activating A -> B started an awaited
+target projection without invalidating it when Back or another explicit navigation ran. The stale
+completion could therefore reopen B and append A after the user had already returned to Browse.
+The same missing ownership rule allowed the old request's `finally` path to retain or release busy
+state without knowing whether it still owned that state.
+
+A controlled deferred-promise regression reproduced the original implementation. Before the fix,
+Back reached Browse but Browse controls remained disabled while B was pending. With the central
+post-await guard deliberately disabled after implementation, resolving B then replaced Browse with
+the `Remote Leaf` Reader, proving that the test is load-bearing. The deliberate break was restored
+before any commit and a tracked-code search confirmed zero residue.
+
+Commit `04aa2c9dda6f30ba87672cbb71b6e69ef51e995b` adds a component-local monotonic
+generation, linked-navigation busy owner, and current Reader identity ref. Every explicit
+navigation boundary calls one named invalidation helper before changing destination: external
+entry requests; Browse/Pinned card navigation; breadcrumb navigation; Back; Browse, Edit, and
+Pinned mode changes; the Edit workspace's return to Browse; and previous/next child paging.
+Invalidation releases only the linked request's busy ownership immediately. A successful request
+may commit only while its generation and initiating Reader remain current; stale success and stale
+failure return silently. `finally` clears busy only when that request still owns it, so an old
+completion cannot disturb a newer attempt. Valid navigation retains exact stable-node-ID
+validation, source history, target-heading focus, and sequential A -> B -> C -> Back -> B -> Back
+-> A behavior.
+
+Three deterministic tests now cover Back over stale success, a newer Browse destination over stale
+success, and silent stale rejection. They use no sleeps, fake timers, backend delay command, or
+production test hook. The existing sequential Reader history and external Search-to-Reader tests
+remain passing.
+
+### Remediation verification
+
+Focused and frontend evidence:
+
+```text
+pnpm test -- src/features/life/LifeScreen.test.tsx -t "keeps Back authoritative when a linked Reader projection resolves late"
+  before fix: failed 1/1 because invalidated busy ownership was not released
+  deliberate central guard break: failed 1/1 because stale B reopened Remote Leaf
+  restored guard: passed
+pnpm test -- src/features/life/LifeScreen.test.tsx
+  26 passed in 1 file; no React act warning or unhandled rejection
+pnpm typecheck
+  passed
+pnpm test
+  618 passed in 43 files
+pnpm build
+  passed; 851 modules transformed
+pnpm hardening:performance
+  17 chunks; main/startup raw 514,710; total raw 1,190,836; deterministic gzip 364,842;
+  violations []
+```
+
+The remediation delta against the Task 41 closure inventory is +458 main/startup raw bytes, +458
+total raw bytes, and +157 deterministic gzip bytes. The existing Task 41 budget remains green and
+unchanged.
+
+Repository, Rust, native, and release evidence:
+
+```text
+pnpm source:verify
+pnpm governance:check
+pnpm index:check
+  402 indexed headings; full coverage
+pnpm verify
+cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
+cargo clippy --manifest-path src-tauri/Cargo.toml --locked --all-targets --all-features -- -D warnings
+  passed
+cargo test --manifest-path src-tauri/Cargo.toml --locked -- --test-threads=1
+  606 passed, 4 ignored
+pnpm tauri build
+  passed; release installer built
+pnpm e2e:windows -- phase11-life-links.e2e.ts
+  1/1 passed in 72.7 seconds
+pnpm e2e:windows
+  19/19 phases passed in 262.4 seconds
+$env:RUST_TEST_THREADS='1'; pnpm hardening:rc
+  passed in 136.5 seconds as core-rc-04aa2c9; two 25-second schema-reopen sessions;
+  installer 5,115,829 bytes; SHA-256
+  5b2d06a42b548d8b6fd38ad53e19a0444e2e3c1dc6a1ddf9bfec7284ad31bb09
+git diff --check
+  passed
+```
+
+One default-parallel `pnpm hardening:rc` capture failed because four unrelated backup
+failure-injection tests collided inside the selector; a preceding detached attempt left the same
+sentinel-marked RC-profile class. Both exact generated profiles were containment- and
+sentinel-validated, then removed. The full single-thread Rust suite had already passed, and the
+smallest deterministic substitute above passed without changing code, assertions, or the RC
+script. No native race backdoor was added; the controlled frontend deferred promise remains the
+authoritative interleaving proof.
+
+### Scope and project state
+
+This remediation consumes zero numbered tasks. Task 41 remains the latest closed task and feature,
+Slice 031 remains closed, schema remains 24, `active_spec` remains null, `next_action` remains
+`product_owner_gate`, and `recommended_next_candidate` remains null. Task 42 remains prohibited,
+unstarted, unallocated, and unrecommended.
+
+Schema, migrations 1-24, dependencies, lockfiles, generated bindings, IPC, workflows,
+`.github/WORKFLOW_SEAL.sha256`, Portable Package, Markdown interchange, Graph, whole-tree
+interchange, and all excluded product semantics are unchanged. Production scope is confined to
+`LifeScreen.tsx`; regression scope is confined to `LifeScreen.test.tsx`; this chronological audit
+addendum is the only evidence-file change.
