@@ -18,8 +18,8 @@
 - Active implementation specification: **specs/026-focus-plans-core**
 - Latest closed product checkpoint: **Task 33 — Unified Tags Core + Cross-Pillar Retrieval**
 - Database schema: **20**
-- Next action: **Complete and verify the active spec**
-- Task 36 implementation: **present but unclosed; remediation integration and focused native verification remain**
+- Next action: **Complete focused native verification for the active spec**
+- Task 36 implementation: **remediation integrated directly into source; task remains unclosed pending focused native persistence evidence**
 - Task 37: **not started and prohibited**
 
 ## Task 36 boundary
@@ -37,8 +37,11 @@ powershell -ExecutionPolicy Bypass -File scripts/run_windows_e2e.ps1 `
   -Phases phase8-focus-plans.e2e.ts,phase8-focus-plans-restart.e2e.ts
 ```
 
-Run broad suites only when a concrete cross-domain defect requires them. Task
-37 work requires a separate Product Owner activation.
+Frontend typecheck/tests, Rust tests, binding stability, diff checks, and final
+repository governance passed in one-time staging run `31074176655`. Task 36 is
+not closed until the focused two-process native persistence check passes. Run
+broad suites only when a concrete cross-domain defect requires them. Task 37
+work requires a separate Product Owner activation.
 
 ## Sealed workflow
 
