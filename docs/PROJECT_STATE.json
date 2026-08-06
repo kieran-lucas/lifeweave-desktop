@@ -6,9 +6,9 @@
   "latest_closed_slice": 27,
   "latest_feature_task": 37,
   "latest_feature_checkpoint": "09c393737fd6f096780408a803aea9b6e1355bb8",
-  "database_schema_version": 21,
-  "active_spec": null,
-  "next_action": "product_owner_gate",
+  "database_schema_version": 22,
+  "active_spec": "specs/028-one-off-deadline-semantics",
+  "next_action": "implement_active_spec",
   "forbidden_feature_jump": true,
   "recommended_next_candidate": null,
   "source_sha256": "9c422927c09e26431d71b1ef5ab6306891a3e7c15ece0fc808bedf6f6689540a"

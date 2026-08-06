@@ -798,7 +798,7 @@ mod tests {
     use crate::{
         infrastructure::sqlite::{
             connection::{open_file_connection, open_memory_connection},
-            task37_migration::run_all_migrations as run_migrations,
+            task38_migration::run_all_migrations as run_migrations,
         },
         task::{
             dto::{
@@ -913,12 +913,15 @@ mod tests {
                     priority: "medium".into(),
                     life_node_id: None,
                     focus_plan_id: None,
+                    deadline_local_date: None,
                     tag_ids: vec![],
                 },
             )
             .unwrap();
         }
-        let id = repository::list(&c, "2026-08-03").unwrap()[0].id.clone();
+        let id = repository::list(&c, "2026-08-03", "2026-08-03").unwrap()[0]
+            .id
+            .clone();
         evaluation::evaluate_at(
             &mut c,
             EvaluateTaskInput {
@@ -1050,6 +1053,7 @@ mod tests {
                 priority: "medium".into(),
                 life_node_id: None,
                 focus_plan_id: None,
+                deadline_local_date: None,
                 tag_ids: vec![],
             },
         )
@@ -1096,6 +1100,7 @@ mod tests {
                     priority: "medium".into(),
                     life_node_id: None,
                     focus_plan_id: None,
+                    deadline_local_date: None,
                     tag_ids: vec![],
                 },
             )
@@ -1131,6 +1136,7 @@ mod tests {
                 priority: "medium".into(),
                 life_node_id: None,
                 focus_plan_id: None,
+                deadline_local_date: None,
                 tag_ids: vec![],
             },
         )
@@ -1143,7 +1149,12 @@ mod tests {
             )
             .is_err()
         );
-        assert_eq!(repository::list(&c, "2026-08-03").unwrap().len(), 1);
+        assert_eq!(
+            repository::list(&c, "2026-08-03", "2026-08-03")
+                .unwrap()
+                .len(),
+            1
+        );
     }
 
     #[test]
@@ -1253,6 +1264,7 @@ mod tests {
                 priority: "medium".into(),
                 life_node_id: None,
                 focus_plan_id: None,
+                deadline_local_date: None,
                 tag_ids: vec![],
             },
         )
@@ -1272,6 +1284,7 @@ mod tests {
                 priority: "medium".into(),
                 life_node_id: None,
                 focus_plan_id: None,
+                deadline_local_date: None,
                 tag_ids: vec![],
             },
         )
@@ -1413,6 +1426,7 @@ mod tests {
                 priority: "medium".into(),
                 life_node_id: None,
                 focus_plan_id: None,
+                deadline_local_date: None,
                 tag_ids: vec![],
             },
         )
@@ -1460,6 +1474,7 @@ mod tests {
                 priority: "medium".into(),
                 life_node_id: None,
                 focus_plan_id: None,
+                deadline_local_date: None,
                 tag_ids: vec![],
             },
         )

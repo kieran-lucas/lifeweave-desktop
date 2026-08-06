@@ -63,6 +63,12 @@ mod tests {
         TaskCategoryView::export_all_to(&out).unwrap();
         TaskView::export_all_to(&out).unwrap();
         TaskLifeAreaView::export_all_to(&out).unwrap();
+        crate::task::dto::TaskDeadlineView::export_all_to(&out).unwrap();
+        crate::task::domain::DeadlineState::export_all_to(&out).unwrap();
+        crate::task::deadline::GetDeadlineQueueInput::export_all_to(&out).unwrap();
+        crate::task::deadline::DeadlineQueueItemView::export_all_to(&out).unwrap();
+        crate::task::deadline::DeadlineQueueGroup::export_all_to(&out).unwrap();
+        crate::task::deadline::DeadlineQueueProjection::export_all_to(&out).unwrap();
         TaskFocusPlanView::export_all_to(&out).unwrap();
         TaskFocusPlanTargetView::export_all_to(&out).unwrap();
         RelatedTaskKind::export_all_to(&out).unwrap();

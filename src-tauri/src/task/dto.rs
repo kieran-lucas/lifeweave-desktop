@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::tag::dto::TagSummaryView;
+use crate::task::domain::DeadlineState;
 
 #[derive(Debug, Clone, Serialize)]
 #[cfg_attr(test, derive(ts_rs::TS))]
@@ -118,6 +119,7 @@ pub struct TaskView {
     pub updated_at: String,
     pub life_area: Option<TaskLifeAreaView>,
     pub focus_plan: Option<TaskFocusPlanView>,
+    pub deadline: Option<TaskDeadlineView>,
     pub tags: Vec<TagSummaryView>,
 }
 #[derive(Debug, Clone, Serialize)]
@@ -136,6 +138,15 @@ pub struct TaskFocusPlanView {
     pub id: String,
     pub title: String,
     pub archived: bool,
+}
+/// Deadline context for a one-off Task row. `state` is relative to the observed local date the
+/// caller supplied; recurring items never carry this because they own no deadline.
+#[derive(Debug, Clone, Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct TaskDeadlineView {
+    pub deadline_local_date: String,
+    pub state: DeadlineState,
+    pub scheduled_after_deadline: bool,
 }
 /// A Focus Plan that may be newly assigned to a Task or series. Archived Plans are excluded.
 #[derive(Debug, Clone, Serialize)]
@@ -175,6 +186,7 @@ pub struct CreateTaskInput {
     pub priority: String,
     pub life_node_id: Option<String>,
     pub focus_plan_id: Option<String>,
+    pub deadline_local_date: Option<String>,
     pub tag_ids: Vec<String>,
 }
 #[derive(Debug, Deserialize)]
@@ -190,6 +202,7 @@ pub struct UpdateTaskInput {
     pub priority: String,
     pub life_node_id: Option<String>,
     pub focus_plan_id: Option<String>,
+    pub deadline_local_date: Option<String>,
     pub tag_ids: Vec<String>,
 }
 #[derive(Debug, Clone, Serialize)]
@@ -297,6 +310,7 @@ pub struct TodayItemView {
     pub evaluation: Option<TaskEvaluationView>,
     pub life_area: Option<TaskLifeAreaView>,
     pub focus_plan: Option<TaskFocusPlanView>,
+    pub deadline: Option<TaskDeadlineView>,
     pub tags: Vec<TagSummaryView>,
 }
 
@@ -336,6 +350,7 @@ pub struct TaskPlanningItemView {
     pub is_override: bool,
     pub life_area: Option<TaskLifeAreaView>,
     pub focus_plan: Option<TaskFocusPlanView>,
+    pub deadline: Option<TaskDeadlineView>,
     pub tags: Vec<TagSummaryView>,
 }
 

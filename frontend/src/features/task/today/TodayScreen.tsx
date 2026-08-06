@@ -31,6 +31,7 @@ import { TagPicker } from "../../tag/TagPicker";
 import type { TagSummaryView } from "../../../ipc/generated/TagSummaryView";
 
 const TaskPlanningPanel = lazy(() => import("../planning/TaskPlanningPanel"));
+const DeadlineQueuePanel = lazy(() => import("../planning/DeadlineQueuePanel"));
 
 type CommonItem = Omit<
   TodayItemView,
@@ -59,6 +60,7 @@ type Draft = {
   priority: string;
   life_node_id: string | null;
   focus_plan_id: string | null;
+  deadline_local_date: string | null;
   tag_ids: string[];
   selectedTags: TagSummaryView[];
 };
@@ -238,6 +240,8 @@ export function TodayScreen({
     [count, setCount] = useState(5),
     [until, setUntil] = useState(date),
     [scope, setScope] = useState<OccurrenceEditScope>("only_this_occurrence");
+  // True whenever the open editor is producing recurring work, in either direction.
+  const isRecurringDraft = editing?.kind === "recurring" || recurring;
   const [draft, setDraft] = useState<Draft>({
     title: "",
     description: "",
@@ -248,6 +252,7 @@ export function TodayScreen({
     priority: "medium",
     life_node_id: null,
     focus_plan_id: null,
+    deadline_local_date: null,
     tag_ids: [],
     selectedTags: [],
   });
@@ -259,8 +264,8 @@ export function TodayScreen({
       operationId: string;
     } | null>(null);
   const items = useQuery({
-      queryKey: ["today-items", date],
-      queryFn: async () => (await listTodayItems(date)).map(normalize),
+      queryKey: ["today-items", date, today],
+      queryFn: async () => (await listTodayItems(date, today)).map(normalize),
     }),
     categories = useQuery({
       queryKey: ["task-categories"],
@@ -283,18 +288,22 @@ export function TodayScreen({
       client.invalidateQueries({ queryKey: ["month-projection"] }),
       client.invalidateQueries({ queryKey: ["analytics"] }),
       client.invalidateQueries({ queryKey: ["task-planning"] }),
+      client.invalidateQueries({ queryKey: ["deadline-queue"] }),
       client.invalidateQueries({ queryKey: ["life"] }),
       client.invalidateQueries({ queryKey: ["tags"] }),
     ]);
   };
   const save = useMutation({
     mutationFn: async () => {
+      // Recurring work owns no deadline in Task 38. Stripping it here means a one-off draft
+      // can never leak a deadline onto a series when the editor switches modes.
+      const { deadline_local_date: _recurringHasNoDeadline, ...recurringDraft } = draft;
       if (editing?.kind === "recurring")
         return updateRecurringOccurrence({
           series_id: editing.series_id,
           original_local_date: editing.original_local_date,
           replacement_local_date: draft.local_date,
-          ...draft,
+          ...recurringDraft,
           scope,
           cancelled: false,
           series_tag_ids: scope === "entire_series" ? draft.tag_ids : null,
@@ -302,7 +311,7 @@ export function TodayScreen({
         });
       if (editing) return updateTask({ id: editing.id, ...draft });
       if (recurring)
-        return createRecurringTask({ ...draft, ...recurrenceInput });
+        return createRecurringTask({ ...recurringDraft, ...recurrenceInput });
       return createTask(draft);
     },
     onSuccess: async () => {
@@ -482,6 +491,7 @@ export function TodayScreen({
             // Occurrences inherit the series relation; seeding it keeps an occurrence-scope
             // save unchanged and pre-fills the value a this-and-future split carries forward.
             focus_plan_id: item.focus_plan?.id ?? null,
+            deadline_local_date: item.deadline?.deadline_local_date ?? null,
             tag_ids: item.tags.map((t) => t.id),
             selectedTags: item.tags,
           }
@@ -495,6 +505,7 @@ export function TodayScreen({
             priority: "medium",
             life_node_id: null,
             focus_plan_id: null,
+            deadline_local_date: null,
             tag_ids: [],
             selectedTags: [],
           },
@@ -802,6 +813,20 @@ export function TodayScreen({
                                   Focus Plan: {item.focus_plan.title}
                                 </button>
                               ))}
+                            {item.deadline && (
+                              <span>
+                                {item.deadline.state === "due_today"
+                                  ? "Due today"
+                                  : item.deadline.state === "overdue"
+                                    ? "Deadline overdue"
+                                    : "Deadline"}{" "}
+                                <time dateTime={item.deadline.deadline_local_date}>
+                                  {item.deadline.deadline_local_date}
+                                </time>
+                                {item.deadline.scheduled_after_deadline &&
+                                  " · Scheduled after deadline"}
+                              </span>
+                            )}
                             {item.kind === "recurring" && (
                               <span aria-label="Recurring task"> ↻</span>
                             )}
@@ -844,7 +869,13 @@ export function TodayScreen({
       ) : (
         <div role="tabpanel" id={`task-panel-${workspaceMode}`} aria-labelledby={`task-tab-${workspaceMode}`}>
           <Suspense fallback={<p role="status">Loading {workspaceMode} tasks…</p>}>
-            <TaskPlanningPanel mode={workspaceMode} anchorLocalDate={planningAnchor} onOpenItem={openPlanningItem} onFocusPlanNavigate={onFocusPlanNavigate} />
+            {workspaceMode === "deadlines" ? (
+              // Deadlines is a distinct projection; it must never be routed through the
+              // schedule-based planning modes.
+              <DeadlineQueuePanel anchorLocalDate={planningAnchor} onOpenItem={openPlanningItem} onFocusPlanNavigate={onFocusPlanNavigate} />
+            ) : (
+              <TaskPlanningPanel mode={workspaceMode} anchorLocalDate={planningAnchor} onOpenItem={openPlanningItem} onFocusPlanNavigate={onFocusPlanNavigate} />
+            )}
           </Suspense>
         </div>
       )}
@@ -989,6 +1020,37 @@ export function TodayScreen({
                 setDraft({ ...draft, focus_plan_id })
               }
             />
+            <div>
+              <label htmlFor="task-deadline">Deadline</label>
+              <p id="task-deadline-help">
+                {isRecurringDraft
+                  ? "Recurring tasks cannot carry a deadline yet."
+                  : "Schedule is when you plan to work. Deadline is when it must be finished."}
+              </p>
+              <input
+                id="task-deadline"
+                type="date"
+                aria-describedby="task-deadline-help"
+                disabled={isRecurringDraft}
+                value={draft.deadline_local_date ?? ""}
+                onChange={(event) =>
+                  setDraft({
+                    ...draft,
+                    deadline_local_date: event.target.value || null,
+                  })
+                }
+              />
+              {draft.deadline_local_date && !isRecurringDraft && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setDraft({ ...draft, deadline_local_date: null })
+                  }
+                >
+                  Clear deadline
+                </button>
+              )}
+            </div>
             {editing?.kind === "recurring" &&
             scope !== "entire_series" ? (
               <div>

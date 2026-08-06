@@ -103,9 +103,10 @@ pub fn get_related_tasks_for_life_node(
 pub fn list_tasks_for_date(
     state: State<'_, DatabaseRuntime>,
     local_date: String,
+    observed_local_date: String,
 ) -> Result<Vec<TaskView>, IpcError> {
     state
-        .execute(move |conn| Ok(repository::list(conn, &local_date)))
+        .execute(move |conn| Ok(repository::list(conn, &local_date, &observed_local_date)))
         .map_err(map_db)?
         .map_err(map_task)
 }
@@ -164,9 +165,16 @@ pub fn list_recurring_occurrences(
 pub fn list_today_items(
     state: State<'_, DatabaseRuntime>,
     local_date: String,
+    observed_local_date: String,
 ) -> Result<Vec<crate::task::dto::TodayItemView>, IpcError> {
     state
-        .execute(move |conn| Ok(repository::today_items(conn, &local_date)))
+        .execute(move |conn| {
+            Ok(repository::today_items(
+                conn,
+                &local_date,
+                &observed_local_date,
+            ))
+        })
         .map_err(map_db)?
         .map_err(map_task)
 }
@@ -179,6 +187,18 @@ pub fn get_task_planning_projection(
 ) -> Result<TaskPlanningProjection, IpcError> {
     state
         .execute(move |conn| Ok(planning::projection(conn, input)))
+        .map_err(map_db)?
+        .map_err(map_task)
+}
+
+#[tauri::command]
+#[tracing::instrument(skip(state, input))]
+pub fn get_deadline_queue(
+    state: State<'_, DatabaseRuntime>,
+    input: crate::task::deadline::GetDeadlineQueueInput,
+) -> Result<crate::task::deadline::DeadlineQueueProjection, IpcError> {
+    state
+        .execute(move |conn| Ok(crate::task::deadline::projection(conn, input)))
         .map_err(map_db)?
         .map_err(map_task)
 }

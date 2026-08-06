@@ -30,7 +30,7 @@ use infrastructure::backup::lifecycle::{
 use infrastructure::sqlite::{
     connection::{open_existing_file_connection, open_file_connection},
     runtime::DatabaseRuntime,
-    task37_migration::run_all_migrations,
+    task38_migration::run_all_migrations,
     worker::DbWorkerHandle,
 };
 use ipc::backup::{backup_database, list_backups, restore_database};
@@ -44,10 +44,10 @@ use ipc::tag::{
 };
 use ipc::task::{
     create_recurring_task, create_task, delete_task, evaluate_task, get_analytics_projection,
-    get_month_projection, get_related_tasks_for_life_node, get_task_planning_projection,
-    list_completion_states, list_focus_plan_targets, list_recurring_occurrences,
-    list_task_categories, list_tasks_for_date, list_today_items, undo_task_evaluation,
-    update_category_goals, update_recurring_occurrence, update_task,
+    get_deadline_queue, get_month_projection, get_related_tasks_for_life_node,
+    get_task_planning_projection, list_completion_states, list_focus_plan_targets,
+    list_recurring_occurrences, list_task_categories, list_tasks_for_date, list_today_items,
+    undo_task_evaluation, update_category_goals, update_recurring_occurrence, update_task,
 };
 use life::service::{
     archive_life_node, create_life_node, get_life_browse_projection, get_life_edit_projection,
@@ -170,6 +170,7 @@ pub fn run() {
             update_recurring_occurrence,
             list_today_items,
             get_task_planning_projection,
+            get_deadline_queue,
             get_month_projection,
             list_completion_states,
             evaluate_task,

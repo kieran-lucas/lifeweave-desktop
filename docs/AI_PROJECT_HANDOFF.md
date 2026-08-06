@@ -5,12 +5,12 @@
 - repository: `kieran-lucas/lifeweave-desktop`
 - branch: `main`
 - latest closed task/slice: 37 / 027
-- active task/slice: none
-- schema: 21
-- active specification: none
+- active task/slice: 38 / 028
+- schema: 21 (moving to 22 under Slice 028)
+- active specification: `specs/028-one-off-deadline-semantics`
 - latest feature checkpoint: `09c393737fd6f096780408a803aea9b6e1355bb8`
-- next action: Product Owner gate
-- Task 38: not started; separate activation required
+- next action: implement the active spec
+- Task 39: not started; separate activation required
 
 ## Task 36 final state
 
@@ -28,6 +28,12 @@ The Product Owner activated Task 37 / Slice 027 from baseline `82b055fe15d4997da
 
 Task 36 remains hard-closed and is not reopened by this activation.
 
+## Task 38 activation
+
+The Product Owner activated Task 38 / Slice 028 from baseline `954b596677c34dd20ce3d0807d36b20676114f2b`, taking up the Deadline Semantics candidate that ADR 0028 scored highest and ADR 0029 deferred. Scope is the one-off-only first slice: an optional date-only deadline on one-off Tasks plus a bounded Deadlines queue. Recurring deadline policy stays open.
+
+Task 37 remains closed and is not reopened by this activation.
+
 ## Next action
 
-Implement `specs/027-focus-plan-task-review`. Task 38 must not start automatically merely because Task 37 is active.
+Implement `specs/028-one-off-deadline-semantics`. Task 39 must not start automatically merely because Task 38 is active.

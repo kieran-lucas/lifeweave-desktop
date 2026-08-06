@@ -10,7 +10,7 @@ use super::{
         TaskPlanningItemView, TaskPlanningMode, TaskPlanningProjection, TodayItemKind,
     },
     recurrence::{MAX_EXPANSION_OCCURRENCES, occurrences_between},
-    repository::{TaskError, focus_plan_map, life_area_map},
+    repository::{TaskError, deadline_view, focus_plan_map, life_area_map},
 };
 
 pub const UPCOMING_DAYS: i64 = 14;
@@ -21,10 +21,10 @@ const TOO_MANY: &str =
     "This planning range contains too many tasks. Use Calendar to review a narrower period.";
 
 #[derive(Clone)]
-struct Category {
-    name: String,
-    icon: String,
-    color: String,
+pub(crate) struct Category {
+    pub name: String,
+    pub icon: String,
+    pub color: String,
 }
 
 #[derive(Clone)]
@@ -92,15 +92,13 @@ pub fn projection(
     let life_areas = life_area_map(conn)?;
     let focus_plans = focus_plan_map(conn)?;
     let categories = load_categories(conn)?;
-    let mut items = load_one_offs(
-        conn,
-        mode,
-        &range_start,
-        &range_end,
-        &categories,
-        &life_areas,
-        &focus_plans,
-    )?;
+    let row_context = RowContext {
+        categories: &categories,
+        life_areas: &life_areas,
+        focus_plans: &focus_plans,
+        observed_local_date: &input.anchor_local_date,
+    };
+    let mut items = load_one_offs(conn, mode, &range_start, &range_end, &row_context)?;
     if items.len() > MAX_PLANNING_ITEMS {
         return Err(TaskError::Validation(TOO_MANY));
     }
@@ -200,6 +198,8 @@ pub fn projection(
                     .focus_plan_id
                     .as_ref()
                     .and_then(|id| focus_plans.get(id).cloned()),
+                // Recurring work owns no deadline in Task 38.
+                deadline: None,
                 tags: vec![],
             });
             if items.len() > MAX_PLANNING_ITEMS {
@@ -244,7 +244,7 @@ pub fn projection(
     })
 }
 
-fn load_categories(conn: &Connection) -> Result<HashMap<String, Category>, TaskError> {
+pub(crate) fn load_categories(conn: &Connection) -> Result<HashMap<String, Category>, TaskError> {
     let mut statement = conn.prepare("SELECT id,name,icon_key,color_key FROM task_categories")?;
     let mut categories = HashMap::new();
     for row in statement.query_map([], |row| {
@@ -263,17 +263,29 @@ fn load_categories(conn: &Connection) -> Result<HashMap<String, Category>, TaskE
     Ok(categories)
 }
 
+/// Batched lookups plus the observed date, shared by every row this projection decorates.
+struct RowContext<'a> {
+    categories: &'a HashMap<String, Category>,
+    life_areas: &'a HashMap<String, TaskLifeAreaView>,
+    focus_plans: &'a HashMap<String, TaskFocusPlanView>,
+    observed_local_date: &'a str,
+}
+
 fn load_one_offs(
     conn: &Connection,
     mode: TaskPlanningMode,
     start: &str,
     end: &str,
-    categories: &HashMap<String, Category>,
-    life_areas: &HashMap<String, TaskLifeAreaView>,
-    focus_plans: &HashMap<String, TaskFocusPlanView>,
+    context: &RowContext<'_>,
 ) -> Result<Vec<TaskPlanningItemView>, TaskError> {
+    let RowContext {
+        categories,
+        life_areas,
+        focus_plans,
+        observed_local_date,
+    } = *context;
     let mut statement = conn.prepare(
-        "SELECT t.id,t.local_date,t.start_minute,t.end_minute,t.title,t.description,t.category_id,t.priority,t.life_node_id,t.focus_plan_id,
+        "SELECT t.id,t.local_date,t.start_minute,t.end_minute,t.title,t.description,t.category_id,t.priority,t.life_node_id,t.focus_plan_id,t.deadline_local_date,
                 EXISTS(SELECT 1 FROM task_evaluations e WHERE e.subject_kind='one_off' AND e.task_id=t.id AND e.is_current=1)
          FROM tasks t WHERE t.local_date BETWEEN ?1 AND ?2",
     )?;
@@ -289,7 +301,8 @@ fn load_one_offs(
             row.get::<_, String>(7)?,
             row.get::<_, Option<String>>(8)?,
             row.get::<_, Option<String>>(9)?,
-            row.get::<_, bool>(10)?,
+            row.get::<_, Option<String>>(10)?,
+            row.get::<_, bool>(11)?,
         ))
     })?;
     let mut items = Vec::new();
@@ -305,6 +318,7 @@ fn load_one_offs(
             priority,
             life_node_id,
             focus_plan_id,
+            deadline_local_date,
             evaluated,
         ) = row?;
         if mode == TaskPlanningMode::Overdue && evaluated {
@@ -313,6 +327,7 @@ fn load_one_offs(
         let category = categories.get(&category_id).ok_or(TaskError::Validation(
             "Task category metadata is unavailable.",
         ))?;
+        let deadline = deadline_view(deadline_local_date, &local_date, observed_local_date);
         items.push(TaskPlanningItemView {
             kind: TodayItemKind::OneOff,
             id,
@@ -336,6 +351,7 @@ fn load_one_offs(
             focus_plan: focus_plan_id
                 .as_ref()
                 .and_then(|id| focus_plans.get(id).cloned()),
+            deadline,
             tags: vec![],
         });
     }
@@ -447,7 +463,7 @@ fn compare_items(left: &TaskPlanningItemView, right: &TaskPlanningItemView) -> s
 mod tests {
     use super::*;
     use crate::infrastructure::sqlite::{
-        connection::open_memory_connection, task37_migration::run_all_migrations as run_migrations,
+        connection::open_memory_connection, task38_migration::run_all_migrations as run_migrations,
     };
 
     fn db() -> Connection {

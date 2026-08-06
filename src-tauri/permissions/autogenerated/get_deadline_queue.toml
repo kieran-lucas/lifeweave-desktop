@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-get-deadline-queue"
+description = "Enables the get_deadline_queue command without any pre-configured scope."
+commands.allow = ["get_deadline_queue"]
+
+[[permission]]
+identifier = "deny-get-deadline-queue"
+description = "Denies the get_deadline_queue command without any pre-configured scope."
+commands.deny = ["get_deadline_queue"]

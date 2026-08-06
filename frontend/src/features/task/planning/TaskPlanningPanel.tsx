@@ -6,7 +6,9 @@ import type { TaskWorkspaceMode } from "./TaskWorkspaceTabs";
 import * as styles from "./TaskPlanning.css";
 import { TagChipList } from "../../tag/TagChipList";
 
-type PlanningMode = Exclude<TaskWorkspaceMode, "today">;
+// Deadlines has its own projection and DTOs; excluding it here makes routing it through
+// the schedule-based planning modes a compile error rather than a silent semantic collapse.
+type PlanningMode = Exclude<TaskWorkspaceMode, "today" | "deadlines">;
 const formatMinute = (value: number) =>
   `${String(Math.floor(value / 60)).padStart(2, "0")}:${String(value % 60).padStart(2, "0")}`;
 
@@ -112,6 +114,28 @@ function PlanningRow({ item, mode, onOpenItem, onFocusPlanNavigate }: {
             onClick={() => onFocusPlanNavigate?.(item.focus_plan!.id)}
           >Focus Plan: {item.focus_plan.title}</button>
         ))}
+        {item.deadline && (
+          <span>
+            {item.deadline.state === "due_today"
+              ? "Due today"
+              : item.deadline.state === "overdue"
+                ? "Deadline overdue"
+                : "Deadline"}{" "}
+            <time dateTime={item.deadline.deadline_local_date}>{item.deadline.deadline_local_date}</time>
+            {item.deadline.scheduled_after_deadline && " · Scheduled after deadline"}
+          </span>
+        )}
+        {item.deadline && (
+          <span>
+            {item.deadline.state === "due_today"
+              ? "Due today"
+              : item.deadline.state === "overdue"
+                ? "Deadline overdue"
+                : "Deadline"}{" "}
+            <time dateTime={item.deadline.deadline_local_date}>{item.deadline.deadline_local_date}</time>
+            {item.deadline.scheduled_after_deadline && " · Scheduled after deadline"}
+          </span>
+        )}
         {item.kind === "recurring" && <span>Recurring</span>}
         {mode === "overdue" && <span className={styles.needsReview}>Needs review</span>}
         <TagChipList tags={item.tags} />

@@ -18,7 +18,7 @@ use crate::infrastructure::sqlite::{
     DbError,
     connection::{open_existing_file_connection, open_file_connection, open_readonly_connection},
     runtime::DatabaseRuntime,
-    task37_migration::{current_schema_version, max_supported_schema_version, run_all_migrations},
+    task38_migration::{current_schema_version, max_supported_schema_version, run_all_migrations},
     worker::DbWorkerHandle,
 };
 
@@ -864,7 +864,7 @@ mod tests {
             connection::{open_existing_file_connection, open_file_connection},
             foundation_record_repo as repo,
             runtime::DatabaseRuntime,
-            task37_migration::run_all_migrations as run_migrations,
+            task38_migration::run_all_migrations as run_migrations,
             worker::DbWorkerHandle,
         },
     };
@@ -993,12 +993,12 @@ mod tests {
         let result = restore_db(&runtime, package).unwrap();
         assert_eq!(
             result.schema_version,
-            crate::infrastructure::sqlite::task37_migration::TASK37_SCHEMA_VERSION
+            crate::infrastructure::sqlite::task38_migration::TASK38_SCHEMA_VERSION
         );
         let reopened = open_existing_file_connection(&db).unwrap();
         assert_eq!(
             current_schema_version(&reopened).unwrap(),
-            crate::infrastructure::sqlite::task37_migration::TASK37_SCHEMA_VERSION
+            crate::infrastructure::sqlite::task38_migration::TASK38_SCHEMA_VERSION
         );
         assert_eq!(
             reopened
@@ -1170,7 +1170,7 @@ mod tests {
         let restore_result = restore_db(&rt, &backup_dir).unwrap();
         assert_eq!(
             restore_result.schema_version,
-            crate::infrastructure::sqlite::task37_migration::TASK37_SCHEMA_VERSION
+            crate::infrastructure::sqlite::task38_migration::TASK38_SCHEMA_VERSION
         );
 
         let active = rt.execute(|conn| repo::list_active(conn)).unwrap();
@@ -1400,6 +1400,7 @@ mod tests {
                         priority: "medium".into(),
                         life_node_id: None,
                         focus_plan_id: None,
+                        deadline_local_date: None,
                         tag_ids: vec![],
                     },
                 )
@@ -1481,7 +1482,7 @@ mod tests {
         let backups = temp_backups_dir();
         let task_id = rt.execute(|conn| {
             conn.execute("INSERT INTO life_nodes(id,parent_id,title,short_description,icon_key,branch_theme_id,sort_key,archived_at,created_at,updated_at,revision) VALUES('backup-life','life-root','Backup Life','','life-leaf','neutral',1,NULL,'0','0',0)", [])?;
-            Ok(task_repository::create(conn, CreateTaskInput { title:"Linked backup task".into(), description:"".into(), local_date:"2026-08-04".into(), start_minute:600, end_minute:660, category_id:"general".into(), priority:"medium".into(), life_node_id:Some("backup-life".into()), focus_plan_id:None, tag_ids:vec![] }).map_err(|_| DbError::InvalidMigrationList)?.id)
+            Ok(task_repository::create(conn, CreateTaskInput { title:"Linked backup task".into(), description:"".into(), local_date:"2026-08-04".into(), start_minute:600, end_minute:660, category_id:"general".into(), priority:"medium".into(), life_node_id:Some("backup-life".into()), focus_plan_id:None, deadline_local_date:None, tag_ids:vec![] }).map_err(|_| DbError::InvalidMigrationList)?.id)
         }).unwrap();
         let backup_dir = PathBuf::from(backup_db(&rt, &backups).unwrap().backup_dir);
         let mutated_id = task_id.clone();
@@ -1555,6 +1556,7 @@ mod tests {
                         priority: "medium".into(),
                         life_node_id: None,
                         focus_plan_id: Some(plan.clone()),
+                        deadline_local_date: None,
                         tag_ids: vec![],
                     },
                 )
@@ -1609,6 +1611,65 @@ mod tests {
         assert_eq!(
             history.latest_reviewed_local_date.as_deref(),
             Some("2026-08-04")
+        );
+    }
+
+    #[test]
+    fn one_off_deadlines_survive_backup_restore_reopen() {
+        let (rt, db) = make_file_runtime();
+        let backups = temp_backups_dir();
+        let task_id = rt
+            .execute(|conn| {
+                Ok(task_repository::create(
+                    conn,
+                    CreateTaskInput {
+                        title: "Dissertation".into(),
+                        description: String::new(),
+                        local_date: "2026-08-09".into(),
+                        start_minute: 600,
+                        end_minute: 660,
+                        category_id: "general".into(),
+                        priority: "medium".into(),
+                        life_node_id: None,
+                        focus_plan_id: None,
+                        deadline_local_date: Some("2026-08-12".into()),
+                        tag_ids: vec![],
+                    },
+                )
+                .map_err(|_| DbError::InvalidMigrationList)?
+                .id)
+            })
+            .unwrap();
+
+        let backup_dir = PathBuf::from(backup_db(&rt, &backups).unwrap().backup_dir);
+
+        // Destroy the deadline and move the schedule before restoring.
+        let mutated = task_id.clone();
+        rt.execute(move |conn| {
+            conn.execute(
+                "UPDATE tasks SET deadline_local_date=NULL, local_date='2026-09-01' WHERE id=?1",
+                [mutated],
+            )?;
+            Ok(())
+        })
+        .unwrap();
+
+        restore_db(&rt, &backup_dir).unwrap();
+        drop(rt);
+
+        let mut reopened = open_existing_file_connection(&db).unwrap();
+        run_migrations(&mut reopened).unwrap();
+        let restored: (String, Option<String>) = reopened
+            .query_row(
+                "SELECT local_date,deadline_local_date FROM tasks WHERE id=?1",
+                [task_id],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            )
+            .unwrap();
+        assert_eq!(
+            restored,
+            ("2026-08-09".to_string(), Some("2026-08-12".to_string())),
+            "restore must reinstate the exact schedule and deadline"
         );
     }
 
@@ -3470,7 +3531,7 @@ mod tests {
         use crate::infrastructure::backup::lifecycle::{
             preflight_startup_check, recover_if_interrupted,
         };
-        use crate::infrastructure::sqlite::task37_migration::run_all_migrations as run_migrations;
+        use crate::infrastructure::sqlite::task38_migration::run_all_migrations as run_migrations;
         use crate::infrastructure::sqlite::{
             connection::open_existing_file_connection, runtime::DatabaseRuntime,
             worker::DbWorkerHandle,
@@ -3536,7 +3597,7 @@ mod tests {
         use crate::infrastructure::backup::lifecycle::{
             preflight_startup_check, recover_if_interrupted,
         };
-        use crate::infrastructure::sqlite::task37_migration::run_all_migrations as run_migrations;
+        use crate::infrastructure::sqlite::task38_migration::run_all_migrations as run_migrations;
         use crate::infrastructure::sqlite::{
             connection::open_existing_file_connection, runtime::DatabaseRuntime,
             worker::DbWorkerHandle,

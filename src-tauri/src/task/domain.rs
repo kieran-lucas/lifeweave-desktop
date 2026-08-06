@@ -48,6 +48,44 @@ fn days_in_month(year: u32, month: u32) -> u32 {
         _ => 31,
     }
 }
+/// Active deadline state for a one-off Task, relative to an explicitly observed local date.
+/// Only meaningful while the Task has no current evaluation.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+#[serde(rename_all = "snake_case")]
+pub enum DeadlineState {
+    Overdue,
+    DueToday,
+    Upcoming,
+}
+
+impl DeadlineState {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Overdue => "overdue",
+            Self::DueToday => "due_today",
+            Self::Upcoming => "upcoming",
+        }
+    }
+}
+
+/// Date-only comparison against the observed local date. On the deadline date itself the state
+/// is `DueToday`, never overdue. Both values are `YYYY-MM-DD`, so lexicographic ordering is
+/// calendar ordering.
+pub fn deadline_state(deadline: &str, observed_local_date: &str) -> DeadlineState {
+    match deadline.cmp(observed_local_date) {
+        std::cmp::Ordering::Less => DeadlineState::Overdue,
+        std::cmp::Ordering::Equal => DeadlineState::DueToday,
+        std::cmp::Ordering::Greater => DeadlineState::Upcoming,
+    }
+}
+
+/// A user may knowingly schedule work after its own deadline. This reports that condition so
+/// the product can surface it; it is never an error and never repairs either date.
+pub fn scheduled_after_deadline(scheduled_local_date: &str, deadline: &str) -> bool {
+    scheduled_local_date > deadline
+}
+
 pub fn validate_range(start: i32, end: i32) -> bool {
     (240..=1439).contains(&start) && (241..=1440).contains(&end) && start < end
 }
@@ -74,5 +112,41 @@ mod tests {
     fn title_validation() {
         assert!(!validate_title("   "));
         assert!(validate_title("Task"));
+    }
+    #[test]
+    fn deadline_state_is_date_only_and_inclusive_of_the_deadline_day() {
+        assert_eq!(
+            deadline_state("2026-08-05", "2026-08-06"),
+            DeadlineState::Overdue
+        );
+        assert_eq!(
+            deadline_state("2026-08-06", "2026-08-06"),
+            DeadlineState::DueToday
+        );
+        assert_eq!(
+            deadline_state("2026-08-07", "2026-08-06"),
+            DeadlineState::Upcoming
+        );
+        // Month, year, and leap-day boundaries stay ordinary date comparisons.
+        assert_eq!(
+            deadline_state("2026-07-31", "2026-08-01"),
+            DeadlineState::Overdue
+        );
+        assert_eq!(
+            deadline_state("2027-01-01", "2026-12-31"),
+            DeadlineState::Upcoming
+        );
+        assert_eq!(
+            deadline_state("2028-02-29", "2028-02-29"),
+            DeadlineState::DueToday
+        );
+        assert!(validate_date("2028-02-29"));
+        assert!(!validate_date("2027-02-29"));
+    }
+    #[test]
+    fn scheduling_on_the_deadline_is_not_a_conflict() {
+        assert!(scheduled_after_deadline("2026-08-13", "2026-08-12"));
+        assert!(!scheduled_after_deadline("2026-08-12", "2026-08-12"));
+        assert!(!scheduled_after_deadline("2026-08-11", "2026-08-12"));
     }
 }

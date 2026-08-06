@@ -1,6 +1,7 @@
 pub mod analytics;
 pub mod calendar;
 pub mod conflict;
+pub mod deadline;
 pub mod domain;
 pub mod dto;
 pub mod evaluation;

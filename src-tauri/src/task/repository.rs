@@ -1,9 +1,12 @@
 use super::{
     conflict::overlaps,
-    domain::{Priority, validate_date, validate_description, validate_range, validate_title},
+    domain::{
+        Priority, deadline_state, scheduled_after_deadline, validate_date, validate_description,
+        validate_range, validate_title,
+    },
     dto::{
-        CreateTaskInput, TaskCategoryView, TaskFocusPlanView, TaskLifeAreaView, TaskView,
-        UpdateTaskInput,
+        CreateTaskInput, TaskCategoryView, TaskDeadlineView, TaskFocusPlanView, TaskLifeAreaView,
+        TaskView, UpdateTaskInput,
     },
 };
 use crate::tag::repository as tag_repo;
@@ -99,6 +102,30 @@ fn validate_focus_plan_target(conn: &Connection, id: Option<&str>) -> Result<(),
         Ok(())
     } else {
         Err(TaskError::Validation("Choose an active Focus Plan."))
+    }
+}
+/// Builds the row-level deadline projection. `observed_local_date` is supplied by the caller
+/// rather than read from a clock, so viewing a future day never mislabels a Task as overdue.
+pub(crate) fn deadline_view(
+    deadline_local_date: Option<String>,
+    scheduled_local_date: &str,
+    observed_local_date: &str,
+) -> Option<TaskDeadlineView> {
+    let deadline = deadline_local_date?;
+    Some(TaskDeadlineView {
+        state: deadline_state(&deadline, observed_local_date),
+        scheduled_after_deadline: scheduled_after_deadline(scheduled_local_date, &deadline),
+        deadline_local_date: deadline,
+    })
+}
+/// A deadline is date-only and independent of the schedule, so this validates shape alone.
+/// No cross-field rule against `local_date` exists: scheduling after a deadline is legal.
+fn validate_deadline(value: Option<&str>) -> Result<(), TaskError> {
+    match value {
+        Some(date) if !validate_date(date) => {
+            Err(TaskError::Validation("Enter a valid deadline date."))
+        }
+        _ => Ok(()),
     }
 }
 fn focus_plan(
@@ -240,6 +267,7 @@ fn row(r: &rusqlite::Row<'_>) -> rusqlite::Result<TaskView> {
         updated_at: r.get(9)?,
         life_area: None,
         focus_plan: None,
+        deadline: None,
         tags: vec![],
     })
 }
@@ -504,24 +532,30 @@ pub(crate) fn related_for_owner(
     }
     Ok(result)
 }
-pub fn list(conn: &Connection, date: &str) -> Result<Vec<TaskView>, TaskError> {
-    if !validate_date(date) {
+pub fn list(
+    conn: &Connection,
+    date: &str,
+    observed_local_date: &str,
+) -> Result<Vec<TaskView>, TaskError> {
+    if !validate_date(date) || !validate_date(observed_local_date) {
         return Err(TaskError::Validation("Enter a valid date."));
     }
     let areas = life_area_map(conn)?;
     let plans = focus_plan_map(conn)?;
-    let mut st=conn.prepare("SELECT id,local_date,start_minute,end_minute,title,description,category_id,priority,created_at,updated_at,life_node_id,focus_plan_id FROM tasks WHERE local_date=?1 ORDER BY start_minute,end_minute,CASE priority WHEN 'high' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END,created_at,id")?;
+    let mut st=conn.prepare("SELECT id,local_date,start_minute,end_minute,title,description,category_id,priority,created_at,updated_at,life_node_id,focus_plan_id,deadline_local_date FROM tasks WHERE local_date=?1 ORDER BY start_minute,end_minute,CASE priority WHEN 'high' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END,created_at,id")?;
     let mut out = Vec::new();
     for item in st.query_map(params![date], |r| {
         Ok((
             row(r)?,
             r.get::<_, Option<String>>(10)?,
             r.get::<_, Option<String>>(11)?,
+            r.get::<_, Option<String>>(12)?,
         ))
     })? {
-        let (mut task, life, plan) = item?;
+        let (mut task, life, plan, deadline) = item?;
         task.life_area = life.and_then(|id| areas.get(&id).cloned());
         task.focus_plan = plan.and_then(|id| plans.get(&id).cloned());
+        task.deadline = deadline_view(deadline, &task.local_date, observed_local_date);
         out.push(task);
     }
     let ids: Vec<String> = out.iter().map(|t| t.id.clone()).collect();
@@ -540,6 +574,7 @@ pub fn create(conn: &Connection, input: CreateTaskInput) -> Result<TaskView, Tas
     }
     validate_life_target(conn, input.life_node_id.as_deref())?;
     validate_focus_plan_target(conn, input.focus_plan_id.as_deref())?;
+    validate_deadline(input.deadline_local_date.as_deref())?;
     check_conflict(
         conn,
         &input.local_date,
@@ -552,7 +587,7 @@ pub fn create(conn: &Connection, input: CreateTaskInput) -> Result<TaskView, Tas
     let t = now();
     let tx = conn.unchecked_transaction()?;
     tx.execute(
-        "INSERT INTO tasks(id,local_date,start_minute,end_minute,title,description,category_id,priority,created_at,updated_at,life_node_id,focus_plan_id) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?9,?10,?11)",
+        "INSERT INTO tasks(id,local_date,start_minute,end_minute,title,description,category_id,priority,created_at,updated_at,life_node_id,focus_plan_id,deadline_local_date) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?9,?10,?11,?12)",
         params![
             id,
             input.local_date,
@@ -562,13 +597,18 @@ pub fn create(conn: &Connection, input: CreateTaskInput) -> Result<TaskView, Tas
             input.description,
             input.category_id,
             p.as_str(),
-            t,input.life_node_id,input.focus_plan_id
+            t,input.life_node_id,input.focus_plan_id,input.deadline_local_date
         ],
     )?;
     tag_repo::replace_active_task_tags(&tx, &id, &input.tag_ids, &t)?;
     let mut result=tx.query_row("SELECT id,local_date,start_minute,end_minute,title,description,category_id,priority,created_at,updated_at FROM tasks WHERE id=?1",params![id],row)?;
     result.life_area = life_area(&tx, input.life_node_id)?;
     result.focus_plan = focus_plan(&tx, input.focus_plan_id)?;
+    result.deadline = deadline_view(
+        input.deadline_local_date.clone(),
+        &result.local_date,
+        &result.local_date,
+    );
     let tag_map =
         tag_repo::batch_load_task_tags(&tx, std::slice::from_ref(&id)).map_err(TaskError::Db)?;
     result.tags = tag_map.get(&id).cloned().unwrap_or_default();
@@ -587,9 +627,11 @@ pub fn update(conn: &Connection, input: UpdateTaskInput) -> Result<TaskView, Tas
         priority: input.priority.clone(),
         life_node_id: input.life_node_id.clone(),
         focus_plan_id: input.focus_plan_id.clone(),
+        deadline_local_date: input.deadline_local_date.clone(),
         tag_ids: vec![],
     };
     let p = validate(&create)?;
+    validate_deadline(input.deadline_local_date.as_deref())?;
     if !category_exists(conn, &input.category_id)? {
         return Err(TaskError::Validation("Choose an active category."));
     }
@@ -617,11 +659,16 @@ pub fn update(conn: &Connection, input: UpdateTaskInput) -> Result<TaskView, Tas
     tag_repo::validate_active_tag_ids(conn, &input.tag_ids).map_err(map_tag_err)?;
     let t = now();
     let tx = conn.unchecked_transaction()?;
-    if tx.execute("UPDATE tasks SET local_date=?2,start_minute=?3,end_minute=?4,title=?5,description=?6,category_id=?7,priority=?8,updated_at=?9,life_node_id=?10,focus_plan_id=?11 WHERE id=?1",params![input.id,input.local_date,input.start_minute,input.end_minute,input.title.trim(),input.description,input.category_id,p.as_str(),t,input.life_node_id,input.focus_plan_id])?==0{return Err(TaskError::NotFound)}
+    if tx.execute("UPDATE tasks SET local_date=?2,start_minute=?3,end_minute=?4,title=?5,description=?6,category_id=?7,priority=?8,updated_at=?9,life_node_id=?10,focus_plan_id=?11,deadline_local_date=?12 WHERE id=?1",params![input.id,input.local_date,input.start_minute,input.end_minute,input.title.trim(),input.description,input.category_id,p.as_str(),t,input.life_node_id,input.focus_plan_id,input.deadline_local_date])?==0{return Err(TaskError::NotFound)}
     tag_repo::replace_active_task_tags(&tx, &input.id, &input.tag_ids, &t)?;
     let mut result=tx.query_row("SELECT id,local_date,start_minute,end_minute,title,description,category_id,priority,created_at,updated_at FROM tasks WHERE id=?1",params![input.id],row)?;
     result.life_area = life_area(&tx, input.life_node_id)?;
     result.focus_plan = focus_plan(&tx, input.focus_plan_id)?;
+    result.deadline = deadline_view(
+        input.deadline_local_date.clone(),
+        &result.local_date,
+        &result.local_date,
+    );
     let tag_map = tag_repo::batch_load_task_tags(&tx, std::slice::from_ref(&input.id))
         .map_err(TaskError::Db)?;
     result.tags = tag_map.get(&input.id).cloned().unwrap_or_default();
@@ -681,6 +728,8 @@ pub fn create_recurring(
         title: input.title.clone(),
         description: input.description.clone(),
         local_date: input.local_date.clone(),
+        // Recurring series own no deadline; this base exists only to reuse field validation.
+        deadline_local_date: None,
         start_minute: input.start_minute,
         end_minute: input.end_minute,
         category_id: input.category_id.clone(),
@@ -947,13 +996,17 @@ pub fn recurring_for_date(
 pub fn today_items(
     conn: &Connection,
     date: &str,
+    observed_local_date: &str,
 ) -> Result<Vec<crate::task::dto::TodayItemView>, TaskError> {
+    if !validate_date(date) || !validate_date(observed_local_date) {
+        return Err(TaskError::Validation("Enter a valid date."));
+    }
     let mut out = Vec::new();
     let (one_off_evaluations, recurring_evaluations) =
         crate::task::evaluation::current_for_date(conn, date)?;
     let areas = life_area_map(conn)?;
     let plans = focus_plan_map(conn)?;
-    let mut stmt=conn.prepare("SELECT t.id,t.local_date,t.start_minute,t.end_minute,t.title,t.description,t.category_id,c.name,c.icon_key,c.color_key,t.priority,t.life_node_id,t.focus_plan_id FROM tasks t JOIN task_categories c ON c.id=t.category_id WHERE t.local_date=?1")?;
+    let mut stmt=conn.prepare("SELECT t.id,t.local_date,t.start_minute,t.end_minute,t.title,t.description,t.category_id,c.name,c.icon_key,c.color_key,t.priority,t.life_node_id,t.focus_plan_id,t.deadline_local_date FROM tasks t JOIN task_categories c ON c.id=t.category_id WHERE t.local_date=?1")?;
     for row in stmt.query_map(params![date], |r| {
         Ok((
             crate::task::dto::TodayItemView {
@@ -976,16 +1029,19 @@ pub fn today_items(
                 evaluation: None,
                 life_area: None,
                 focus_plan: None,
+                deadline: None,
                 tags: vec![],
             },
             r.get::<_, Option<String>>(11)?,
             r.get::<_, Option<String>>(12)?,
+            r.get::<_, Option<String>>(13)?,
         ))
     })? {
-        let (mut item, life_node_id, focus_plan_id) = row?;
+        let (mut item, life_node_id, focus_plan_id, deadline) = row?;
         item.evaluation = one_off_evaluations.get(&item.id).cloned();
         item.life_area = life_node_id.and_then(|id| areas.get(&id).cloned());
         item.focus_plan = focus_plan_id.and_then(|id| plans.get(&id).cloned());
+        item.deadline = deadline_view(deadline, &item.local_date, observed_local_date);
         out.push(item);
     }
     for occurrence in recurring_for_date(conn, date)? {
@@ -1020,6 +1076,8 @@ pub fn today_items(
             evaluation,
             life_area: occurrence.life_area,
             focus_plan: occurrence.focus_plan,
+            // Recurring work owns no deadline in Task 38.
+            deadline: None,
             tags: occurrence.tags,
         });
     }
@@ -1231,7 +1289,7 @@ fn validate_series_conflicts(
     let mut date = dtstart.to_string();
     for _ in 0..=CONFLICT_HORIZON_DAYS {
         if occurrence_matches(dtstart, &date, rule)? {
-            for task in list(conn, &date)? {
+            for task in list(conn, &date, &date)? {
                 if overlaps(start, end, task.start_minute, task.end_minute)
                     && !(start == task.start_minute && end == task.end_minute)
                 {
@@ -1261,7 +1319,7 @@ fn ensure_no_conflict(
     end: i32,
     exclude: Option<(&str, &str)>,
 ) -> Result<(), TaskError> {
-    for task in list(conn, date)? {
+    for task in list(conn, date, date)? {
         if overlaps(start, end, task.start_minute, task.end_minute)
             && !(start == task.start_minute && end == task.end_minute)
         {
@@ -1335,7 +1393,7 @@ fn ymd(s: &str) -> (i32, i32, i32) {
 mod recurrence_tests {
     use super::*;
     use crate::infrastructure::sqlite::{
-        connection::open_memory_connection, task37_migration::run_all_migrations as run_migrations,
+        connection::open_memory_connection, task38_migration::run_all_migrations as run_migrations,
     };
     use crate::task::dto::{
         CreateRecurringTaskInput, OccurrenceEditScope, UpdateRecurringOccurrenceInput,
@@ -1524,6 +1582,7 @@ mod recurrence_tests {
                 priority: "low".into(),
                 life_node_id: None,
                 focus_plan_id: None,
+                deadline_local_date: None,
                 tag_ids: vec![],
             },
         )
@@ -1563,6 +1622,7 @@ mod recurrence_tests {
                 priority: "low".into(),
                 life_node_id: None,
                 focus_plan_id: None,
+                deadline_local_date: None,
                 tag_ids: vec![],
             },
         )
@@ -1571,7 +1631,7 @@ mod recurrence_tests {
             create_recurring(&mut c, recurring("2026-08-01")),
             Err(TaskError::Conflict)
         ));
-        delete(&c, &list(&c, "2026-08-01").unwrap()[0].id).unwrap();
+        delete(&c, &list(&c, "2026-08-01", "2026-08-01").unwrap()[0].id).unwrap();
         create_recurring(&mut c, recurring("2026-08-01")).unwrap();
         assert!(matches!(
             create(
@@ -1586,6 +1646,7 @@ mod recurrence_tests {
                     priority: "low".into(),
                     life_node_id: None,
                     focus_plan_id: None,
+                    deadline_local_date: None,
                     tag_ids: vec![],
                 },
             ),
@@ -1616,6 +1677,7 @@ mod recurrence_tests {
                 priority: "low".into(),
                 life_node_id: None,
                 focus_plan_id: None,
+                deadline_local_date: None,
                 tag_ids: vec![],
             },
         )
@@ -1682,6 +1744,7 @@ mod recurrence_tests {
                 priority: "low".into(),
                 life_node_id: None,
                 focus_plan_id: None,
+                deadline_local_date: None,
                 tag_ids: vec![],
             },
         )
@@ -1783,6 +1846,7 @@ mod recurrence_tests {
                 priority: "medium".into(),
                 life_node_id: Some("university".into()),
                 focus_plan_id: None,
+                deadline_local_date: None,
                 tag_ids: vec![],
             },
         )
@@ -1804,6 +1868,7 @@ mod recurrence_tests {
                     priority: "medium".into(),
                     life_node_id: Some("life-root".into()),
                     focus_plan_id: None,
+                    deadline_local_date: None,
                     tag_ids: vec![],
                 }
             ),
@@ -1822,6 +1887,7 @@ mod recurrence_tests {
                     priority: "medium".into(),
                     life_node_id: Some("missing".into()),
                     focus_plan_id: None,
+                    deadline_local_date: None,
                     tag_ids: vec![],
                 }
             ),
@@ -1840,6 +1906,7 @@ mod recurrence_tests {
                     priority: "medium".into(),
                     life_node_id: Some("archived-area".into()),
                     focus_plan_id: None,
+                    deadline_local_date: None,
                     tag_ids: vec![],
                 }
             ),
@@ -1863,6 +1930,7 @@ mod recurrence_tests {
                 priority: "medium".into(),
                 life_node_id: Some("university".into()),
                 focus_plan_id: None,
+                deadline_local_date: None,
                 tag_ids: vec![],
             },
         )
@@ -1881,6 +1949,7 @@ mod recurrence_tests {
                 priority: "medium".into(),
                 life_node_id: None,
                 focus_plan_id: None,
+                deadline_local_date: None,
                 tag_ids: vec![],
             },
         )
@@ -1986,6 +2055,7 @@ mod recurrence_tests {
                 priority: "medium".into(),
                 life_node_id: Some("related-area".into()),
                 focus_plan_id: None,
+                deadline_local_date: None,
                 tag_ids: vec![],
             },
         )
@@ -2002,6 +2072,7 @@ mod recurrence_tests {
                 priority: "medium".into(),
                 life_node_id: Some("related-area".into()),
                 focus_plan_id: None,
+                deadline_local_date: None,
                 tag_ids: vec![],
             },
         )
@@ -2199,8 +2270,16 @@ mod recurrence_tests {
             )
             .unwrap();
         assert_eq!(occurrence_columns, 0);
+        let occurrence_deadline_columns: i64 = c
+            .query_row(
+                "SELECT COUNT(*) FROM pragma_table_info('task_occurrence_overrides') WHERE name='deadline_local_date'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
         assert_eq!(occurrence_plan_columns, 0);
-        assert_eq!(schema, 21);
+        assert_eq!(occurrence_deadline_columns, 0);
+        assert_eq!(schema, 22);
     }
 
     #[test]
@@ -2305,6 +2384,7 @@ mod recurrence_tests {
             priority: "medium".into(),
             life_node_id: None,
             focus_plan_id: plan.map(str::to_string),
+            deadline_local_date: None,
             tag_ids: vec![],
         }
     }
@@ -2325,6 +2405,7 @@ mod recurrence_tests {
             priority: task.priority.clone(),
             life_node_id: life.map(str::to_string),
             focus_plan_id: plan.map(str::to_string),
+            deadline_local_date: None,
             tag_ids: vec![],
         }
     }
@@ -2352,7 +2433,7 @@ mod recurrence_tests {
         assert!(cleared.focus_plan.is_none());
 
         // The projection reads the stored relation back.
-        let projected = list(&c, "2026-08-04").unwrap();
+        let projected = list(&c, "2026-08-04", "2026-08-04").unwrap();
         assert!(projected.iter().all(|task| task.focus_plan.is_none()));
     }
 
@@ -2388,7 +2469,7 @@ mod recurrence_tests {
         assert_eq!(plan.id, "plan-a");
 
         restore_plan(&c, "plan-a");
-        let restored = list(&c, "2026-08-04").unwrap();
+        let restored = list(&c, "2026-08-04", "2026-08-04").unwrap();
         let projected = restored[0].focus_plan.as_ref().unwrap();
         assert!(!projected.archived);
         assert_eq!(projected.id, "plan-a");

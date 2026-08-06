@@ -1,5 +1,18 @@
 # Project Status
 
+## Task 38/60 — One-Off Task Deadline Semantics + Deadline Queue (active)
+
+- Activation baseline: `954b596677c34dd20ce3d0807d36b20676114f2b`.
+- Active spec: `specs/028-one-off-deadline-semantics`.
+- Decision basis: ADR 0028 scored Deadline Semantics highest and framed a one-off-only first slice; ADR 0029 deferred it behind Focus Plans, which are now complete.
+- Scope: optional date-only deadline on one-off Tasks, plus a bounded Deadlines tab in the Today workspace.
+- Schema moves from 21 to 22 through an append-only migration; migrations 1–21 remain unchanged.
+- Deadline authority is `tasks.deadline_local_date` only; recurring series, occurrences, overrides, and evaluations own no deadline.
+- Schedule and deadline stay independent; scheduling after a deadline is surfaced, never repaired.
+- Existing Overdue keeps its schedule-based meaning and is not renamed; Today remains startup/default and Task rows remain non-card.
+- Task 39 is prohibited: no reminders, notifications, scheduling, deadline analytics, prediction, Saved Views, or new destination.
+- Closure requires deterministic migration, mutation, state, queue, Search, and backup evidence, a full diff audit, and a primary structured review with no confirmed P0/P1 defect.
+
 ## Task 37/60 — Focus Plan ↔ Task Integration + Manual Review History (complete)
 
 - Closed slice: `027-focus-plan-task-review`.
@@ -35,7 +48,7 @@ Task 37 is closed. Reopen only for a reproducible product defect, migration/data
 
 Task 36 is hard-closed. Reopen only for a reproducible product defect, migration/data-loss risk, violated invariant, or explicit Product Owner decision.
 
-## Task 38/60
+## Task 39/60
 
 Not started. Requires a separate Product Owner activation.
 

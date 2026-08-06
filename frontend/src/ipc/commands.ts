@@ -9,6 +9,8 @@ import type { CreateFoundationRecordInput } from "./generated/CreateFoundationRe
 import type { UpdateFoundationRecordInput } from "./generated/UpdateFoundationRecordInput";
 import type { MutateFoundationRecordInput } from "./generated/MutateFoundationRecordInput";
 import type { TaskCategoryView } from "./generated/TaskCategoryView";
+import type { GetDeadlineQueueInput } from "./generated/GetDeadlineQueueInput";
+import type { DeadlineQueueProjection } from "./generated/DeadlineQueueProjection";
 import type { TaskFocusPlanTargetView } from "./generated/TaskFocusPlanTargetView";
 import type { FocusPlanLinkedWorkInput } from "./generated/FocusPlanLinkedWorkInput";
 import type { FocusPlanLinkedWorkView } from "./generated/FocusPlanLinkedWorkView";
@@ -156,14 +158,18 @@ export const createFocusPlanReview = (input: CreateFocusPlanReviewInput) =>
   invoke<FocusPlanReviewView>("create_focus_plan_review", { input });
 export const getRelatedTasksForLifeNode = (nodeId: string, anchorLocalDate: string) =>
   invoke<RelatedTaskView[]>("get_related_tasks_for_life_node", { nodeId, anchorLocalDate });
-export const listTasksForDate = (localDate: string) => invoke<TaskView[]>("list_tasks_for_date", { localDate });
+export const listTasksForDate = (localDate: string, observedLocalDate: string) =>
+  invoke<TaskView[]>("list_tasks_for_date", { localDate, observedLocalDate });
 export const createTask = (input: CreateTaskInput) => invoke<TaskView>("create_task", { input });
 export const updateTask = (input: UpdateTaskInput) => invoke<TaskView>("update_task", { input });
 export const deleteTask = (id: string) => invoke<void>("delete_task", { id });
 export const createRecurringTask = (input: CreateRecurringTaskInput) => invoke<string>("create_recurring_task", { input });
 export const listRecurringOccurrences = (localDate: string) => invoke<RecurringOccurrenceView[]>("list_recurring_occurrences", { localDate });
 export const updateRecurringOccurrence = (input: UpdateRecurringOccurrenceInput) => invoke<void>("update_recurring_occurrence", { input });
-export const listTodayItems = (localDate: string) => invoke<TodayItemView[]>("list_today_items", { localDate });
+export const listTodayItems = (localDate: string, observedLocalDate: string) =>
+  invoke<TodayItemView[]>("list_today_items", { localDate, observedLocalDate });
+export const getDeadlineQueue = (input: GetDeadlineQueueInput) =>
+  invoke<DeadlineQueueProjection>("get_deadline_queue", { input });
 export const getTaskPlanningProjection = (input: GetTaskPlanningProjectionInput) =>
   invoke<TaskPlanningProjection>("get_task_planning_projection", { input });
 export const getMonthProjection = (year: number, month: number, selectedDate: string, today: string) =>

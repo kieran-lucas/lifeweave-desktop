@@ -1,8 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import * as styles from "./TaskPlanning.css";
 
-export type TaskWorkspaceMode = "today" | "upcoming" | "overdue";
-const modes: TaskWorkspaceMode[] = ["today", "upcoming", "overdue"];
+export type TaskWorkspaceMode = "today" | "upcoming" | "overdue" | "deadlines";
+const modes: TaskWorkspaceMode[] = ["today", "upcoming", "overdue", "deadlines"];
+const labels: Record<TaskWorkspaceMode, string> = {
+  today: "Today",
+  upcoming: "Upcoming",
+  overdue: "Overdue",
+  deadlines: "Deadlines",
+};
 
 export function TaskWorkspaceTabs({
   active,
@@ -18,6 +24,7 @@ export function TaskWorkspaceTabs({
     today: null,
     upcoming: null,
     overdue: null,
+    deadlines: null,
   });
   useEffect(() => setFocused(active), [active]);
   const move = (next: TaskWorkspaceMode) => {
@@ -55,7 +62,7 @@ export function TaskWorkspaceTabs({
             }
           }}
         >
-          {mode === "today" ? "Today" : mode === "upcoming" ? "Upcoming" : "Overdue"}
+          {labels[mode]}
         </button>
       ))}
     </div>

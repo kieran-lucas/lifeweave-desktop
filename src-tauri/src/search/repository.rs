@@ -742,6 +742,36 @@ fn rebuild_documents_scope_inner(
     Ok(())
 }
 
+/// Appends deadline context to a stored result context line.
+///
+/// Deadline *state* depends on the observed local date, so it is composed here at query time.
+/// Freezing it into the indexed context would go stale the moment the local day rolled over,
+/// because nothing re-indexes on a date change.
+fn compose_context(
+    stored: &str,
+    deadline_local_date: Option<&str>,
+    scheduled_local_date: Option<&str>,
+    observed_local_date: &str,
+) -> String {
+    let Some(deadline) = deadline_local_date else {
+        return stored.to_string();
+    };
+    let state = crate::task::domain::deadline_state(deadline, observed_local_date);
+    let conflicted = scheduled_local_date.is_some_and(|scheduled| {
+        crate::task::domain::scheduled_after_deadline(scheduled, deadline)
+    });
+    let label = if conflicted {
+        "scheduled after deadline"
+    } else {
+        match state {
+            crate::task::domain::DeadlineState::Overdue => "deadline overdue",
+            crate::task::domain::DeadlineState::DueToday => "due today",
+            crate::task::domain::DeadlineState::Upcoming => "upcoming",
+        }
+    };
+    format!("{stored} · deadline {deadline} · {label}")
+}
+
 fn run_fts_query(
     conn: &Connection,
     fts_expr: &str,
@@ -753,9 +783,12 @@ fn run_fts_query(
                 sd.context_text, sd.local_date, sd.original_local_date,
                 highlight(search_fts, 0, X'02', X'03') as hl_title,
                 snippet(search_fts, 2, X'02', X'03', '...', {MAX_SNIPPET_TOKENS}) as snip_body,
-                bm25(search_fts, 10, 3, 1) as rank
+                bm25(search_fts, 10, 3, 1) as rank,
+                t.deadline_local_date
          FROM search_fts
          JOIN search_documents sd ON sd.rowid = search_fts.rowid
+         LEFT JOIN tasks t
+                ON sd.entity_kind = 'task_one_off' AND t.id = sd.entity_id
          WHERE search_fts MATCH ?1
          ORDER BY rank
          LIMIT {MAX_FTS_RESULTS}"
@@ -774,6 +807,7 @@ fn run_fts_query(
         hl_title: String,
         snip_body: String,
         rank: f64,
+        deadline_local_date: Option<String>,
     }
 
     let raw_rows: Vec<RawRow> = stmt
@@ -789,6 +823,7 @@ fn run_fts_query(
                 hl_title: row.get::<_, Option<String>>(7)?.unwrap_or_default(),
                 snip_body: row.get::<_, Option<String>>(8)?.unwrap_or_default(),
                 rank: row.get(9)?,
+                deadline_local_date: row.get(10)?,
             })
         })
         .map_err(|_| SearchError::Storage)?
@@ -876,7 +911,12 @@ fn run_fts_query(
             entity_kind: entity_kind.clone(),
             title: row.title.clone(),
             title_fragments,
-            context_text: row.context_text.clone(),
+            context_text: compose_context(
+                &row.context_text,
+                row.deadline_local_date.as_deref(),
+                row.local_date.as_deref(),
+                observed_local_date,
+            ),
             snippet_fragments,
             navigation_target,
             rank: row.rank,
@@ -1010,7 +1050,7 @@ fn parse_fragments(marked: &str) -> Vec<SearchTextFragment> {
 mod tests {
     use super::*;
     use crate::infrastructure::sqlite::{
-        connection::open_memory_connection, task37_migration::run_all_migrations,
+        connection::open_memory_connection, task38_migration::run_all_migrations,
     };
 
     fn setup() -> Connection {
@@ -1696,7 +1736,7 @@ mod tests {
     #[test]
     fn search_file_backed_smoke() {
         use crate::infrastructure::sqlite::{
-            connection::open_file_connection, task37_migration::run_all_migrations,
+            connection::open_file_connection, task38_migration::run_all_migrations,
         };
 
         let tag = std::time::SystemTime::now()
@@ -1720,7 +1760,7 @@ mod tests {
                 .unwrap();
             assert_eq!(
                 ver,
-                i64::from(crate::infrastructure::sqlite::task37_migration::TASK37_SCHEMA_VERSION),
+                i64::from(crate::infrastructure::sqlite::task38_migration::TASK38_SCHEMA_VERSION),
                 "schema must be current"
             );
 
@@ -1806,7 +1846,7 @@ mod tests {
     #[test]
     fn search_perf_realistic_fixture() {
         use crate::infrastructure::sqlite::{
-            connection::open_file_connection, task37_migration::run_all_migrations,
+            connection::open_file_connection, task38_migration::run_all_migrations,
         };
         use std::time::Instant;
 
@@ -2032,5 +2072,126 @@ mod tests {
             max_ms <= 100,
             "warm query hard ceiling: max must be ≤100ms; got {max_ms}ms (p50={p50}ms p95={p95}ms)"
         );
+    }
+
+    // ── Task 38: deadline context ─────────────────────────────────────────────
+
+    fn seed_deadline_task(
+        conn: &Connection,
+        id: &str,
+        title: &str,
+        scheduled: &str,
+        deadline: Option<&str>,
+    ) {
+        conn.execute(
+            "INSERT INTO tasks(id,local_date,start_minute,end_minute,title,description,category_id,priority,created_at,updated_at,deadline_local_date) VALUES(?1,?2,600,660,?3,'','general','medium','1','1',?4)",
+            rusqlite::params![id, scheduled, title, deadline],
+        )
+        .unwrap();
+    }
+
+    fn one_off_context(conn: &Connection, query: &str, observed: &str) -> String {
+        let projection = refresh_dirty_and_query(
+            conn,
+            SearchGlobalInput {
+                query: query.into(),
+                observed_local_date: observed.into(),
+            },
+        )
+        .unwrap();
+        projection
+            .groups
+            .iter()
+            .flat_map(|group| group.results.iter())
+            .find(|result| matches!(result.entity_kind, SearchEntityKind::TaskOneOff))
+            .expect("a one-off task result")
+            .context_text
+            .clone()
+    }
+
+    #[test]
+    fn task_result_context_reports_deadline_state_from_the_observed_date() {
+        let conn = setup();
+        seed_deadline_task(
+            &conn,
+            "t1",
+            "Dissertation",
+            "2026-08-10",
+            Some("2026-08-12"),
+        );
+
+        // The same stored row yields a different state per observed date, proving the state is
+        // composed at query time rather than frozen into the index.
+        assert!(
+            one_off_context(&conn, "Dissertation", "2026-08-06")
+                .ends_with("· deadline 2026-08-12 · upcoming")
+        );
+        assert!(
+            one_off_context(&conn, "Dissertation", "2026-08-12")
+                .ends_with("· deadline 2026-08-12 · due today")
+        );
+        assert!(
+            one_off_context(&conn, "Dissertation", "2026-08-13")
+                .ends_with("· deadline 2026-08-12 · deadline overdue")
+        );
+    }
+
+    #[test]
+    fn task_result_context_reports_a_schedule_conflict() {
+        let conn = setup();
+        seed_deadline_task(
+            &conn,
+            "t1",
+            "Dissertation",
+            "2026-08-15",
+            Some("2026-08-12"),
+        );
+        assert!(
+            one_off_context(&conn, "Dissertation", "2026-08-06")
+                .ends_with("· deadline 2026-08-12 · scheduled after deadline")
+        );
+    }
+
+    #[test]
+    fn task_result_context_is_unchanged_without_a_deadline() {
+        let conn = setup();
+        seed_deadline_task(&conn, "t1", "Dissertation", "2026-08-10", None);
+        let context = one_off_context(&conn, "Dissertation", "2026-08-06");
+        assert!(
+            !context.contains("deadline"),
+            "an undeadlined Task must keep its existing context: {context}"
+        );
+    }
+
+    #[test]
+    fn deadline_edits_are_reflected_without_a_stale_projection() {
+        let conn = setup();
+        seed_deadline_task(
+            &conn,
+            "t1",
+            "Dissertation",
+            "2026-08-10",
+            Some("2026-08-12"),
+        );
+        assert!(one_off_context(&conn, "Dissertation", "2026-08-06").contains("2026-08-12"));
+
+        conn.execute(
+            "UPDATE tasks SET deadline_local_date='2026-08-30' WHERE id='t1'",
+            [],
+        )
+        .unwrap();
+        let context = one_off_context(&conn, "Dissertation", "2026-08-06");
+        assert!(
+            context.contains("2026-08-30"),
+            "context was stale: {context}"
+        );
+        assert!(!context.contains("2026-08-12"));
+
+        conn.execute(
+            "UPDATE tasks SET deadline_local_date=NULL WHERE id='t1'",
+            [],
+        )
+        .unwrap();
+        assert!(!one_off_context(&conn, "Dissertation", "2026-08-06").contains("deadline"));
     }
 }

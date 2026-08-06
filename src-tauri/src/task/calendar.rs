@@ -341,7 +341,7 @@ mod tests {
     use crate::{
         infrastructure::sqlite::{
             connection::open_memory_connection,
-            task37_migration::run_all_migrations as run_migrations,
+            task38_migration::run_all_migrations as run_migrations,
         },
         task::{
             dto::{
@@ -397,6 +397,7 @@ mod tests {
                     priority: "high".into(),
                     life_node_id: None,
                     focus_plan_id: None,
+                    deadline_local_date: None,
                     tag_ids: vec![],
                 },
             )
@@ -426,6 +427,7 @@ mod tests {
                 priority: "medium".into(),
                 life_node_id: None,
                 focus_plan_id: None,
+                deadline_local_date: None,
                 tag_ids: vec![],
             },
         )

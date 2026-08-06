@@ -37,6 +37,12 @@ pub fn search_global(
             message: "Query too long.".into(),
         });
     }
+    // Deadline state is derived from this date, so Rust validates it rather than trusting it.
+    if !crate::task::domain::validate_date(&input.observed_local_date) {
+        return Err(IpcError::Validation {
+            message: "Enter a valid observed date.".into(),
+        });
+    }
     // Short-circuit before hitting the DB if the normalized query is too short.
     let norm_check = normalize(&input.query);
     let non_ws_count = norm_check.chars().filter(|c| !c.is_whitespace()).count();

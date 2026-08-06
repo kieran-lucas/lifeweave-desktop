@@ -22,7 +22,7 @@ use serde::{Deserialize, Serialize};
 use super::BackupError;
 use crate::infrastructure::durability;
 use crate::infrastructure::sqlite::connection::open_readonly_connection;
-use crate::infrastructure::sqlite::task37_migration::max_supported_schema_version;
+use crate::infrastructure::sqlite::task38_migration::max_supported_schema_version;
 
 /// Format version for the restore marker JSON. Increment when the schema changes
 /// in a backwards-incompatible way so recovery code can detect mismatches.

@@ -31,6 +31,7 @@
     "allow-update-recurring-occurrence",
     "allow-list-today-items",
     "allow-get-task-planning-projection",
+    "allow-get-deadline-queue",
     "allow-get-month-projection",
     "allow-list-completion-states",
     "allow-evaluate-task",

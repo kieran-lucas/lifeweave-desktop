@@ -23,6 +23,7 @@ fn main() {
             "update_recurring_occurrence",
             "list_today_items",
             "get_task_planning_projection",
+            "get_deadline_queue",
             "get_month_projection",
             "list_completion_states",
             "evaluate_task",

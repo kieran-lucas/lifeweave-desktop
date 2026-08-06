@@ -26,6 +26,7 @@ const oneOff = {
   tags: [],
   life_area: null,
   focus_plan: null,
+  deadline: null,
 };
 const recurring = {
   ...oneOff,
@@ -509,6 +510,129 @@ describe("Today recurrence contract", () => {
     expect(screen.getByLabelText("Title")).toHaveValue("Linked");
     expect(screen.getByRole("combobox", { name: "Focus Plan" })).toHaveValue(
       "AI Foundations",
+    );
+  });
+
+  it("creates a one-off task with a deadline and clears it without moving the schedule", async () => {
+    renderToday();
+    await screen.findByText("Focus");
+    fireEvent.click(screen.getByRole("button", { name: "Create task" }));
+    fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Essay" } });
+    fireEvent.change(screen.getByLabelText("Deadline"), {
+      target: { value: "2026-08-12" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(commands.createTask).toHaveBeenCalledWith(
+        expect.objectContaining({ deadline_local_date: "2026-08-12" }),
+      ),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Create task" }));
+    fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Essay 2" } });
+    fireEvent.change(screen.getByLabelText("Deadline"), {
+      target: { value: "2026-08-12" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Clear deadline" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(commands.createTask).toHaveBeenLastCalledWith(
+        expect.objectContaining({ deadline_local_date: null }),
+      ),
+    );
+  });
+
+  it("never sends a deadline to recurring creation or recurring edits", async () => {
+    renderToday();
+    await screen.findByText("Focus");
+    fireEvent.click(screen.getByRole("button", { name: "Create task" }));
+    fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Standup" } });
+    fireEvent.change(screen.getByLabelText("Deadline"), {
+      target: { value: "2026-08-12" },
+    });
+    // Switching the same draft to recurring must not carry the deadline across.
+    fireEvent.click(screen.getByLabelText("Repeat task"));
+    expect(screen.getByLabelText("Deadline")).toBeDisabled();
+    expect(
+      screen.getByText("Recurring tasks cannot carry a deadline yet."),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(commands.createRecurringTask).toHaveBeenCalled());
+    expect(commands.createRecurringTask.mock.calls[0]![0]).not.toHaveProperty(
+      "deadline_local_date",
+    );
+
+  });
+
+  it("never sends a deadline when editing a recurring occurrence", async () => {
+    commands.listTodayItems.mockResolvedValue([recurring]);
+    renderToday();
+    fireEvent.doubleClick(await screen.findByRole("listitem"));
+    expect(screen.getByLabelText("Deadline")).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(commands.updateRecurringOccurrence).toHaveBeenCalled(),
+    );
+    expect(
+      commands.updateRecurringOccurrence.mock.calls.at(-1)![0],
+    ).not.toHaveProperty("deadline_local_date");
+  });
+
+  it("shows deadline state and a schedule conflict as text on one-off rows", async () => {
+    commands.listTodayItems.mockResolvedValue([
+      {
+        ...oneOff,
+        deadline: {
+          deadline_local_date: "2026-08-04",
+          state: "overdue",
+          scheduled_after_deadline: true,
+        },
+      },
+    ]);
+    const view = renderToday();
+    expect(await screen.findByText(/Deadline overdue/)).toBeInTheDocument();
+    expect(screen.getByText(/Scheduled after deadline/)).toBeInTheDocument();
+    expect(
+      view.container.querySelector('time[datetime="2026-08-04"]'),
+    ).toBeInTheDocument();
+    view.unmount();
+
+    commands.listTodayItems.mockResolvedValue([
+      {
+        ...oneOff,
+        deadline: {
+          deadline_local_date: "2026-08-02",
+          state: "due_today",
+          scheduled_after_deadline: false,
+        },
+      },
+    ]);
+    renderToday();
+    expect(await screen.findByText(/Due today/)).toBeInTheDocument();
+    expect(screen.queryByText(/Scheduled after deadline/)).not.toBeInTheDocument();
+  });
+
+  it("retains the deadline draft after a rejected save", async () => {
+    renderToday();
+    await screen.findByText("Focus");
+    fireEvent.click(screen.getByRole("button", { name: "Create task" }));
+    fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Essay" } });
+    fireEvent.change(screen.getByLabelText("Deadline"), {
+      target: { value: "2026-08-12" },
+    });
+    commands.createTask.mockRejectedValueOnce(new Error("Enter a valid deadline date."));
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await screen.findByRole("alert");
+    expect(screen.getByLabelText("Deadline")).toHaveValue("2026-08-12");
+    expect(screen.getByLabelText("Title")).toHaveValue("Essay");
+  });
+
+  it("passes the observed anchor alongside the viewed day", async () => {
+    renderToday();
+    await screen.findByText("Focus");
+    expect(commands.listTodayItems).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(String),
     );
   });
 
