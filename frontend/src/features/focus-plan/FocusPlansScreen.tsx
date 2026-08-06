@@ -226,8 +226,8 @@ export function FocusPlansScreen({ entryRequest, onEntryRequestSettled }: Props)
     await loadPortfolio(portfolio);
   }
 
-  async function runMutation(mutation: FocusPlanMutationAction) {
-    if (!selected) return;
+  async function runMutation(mutation: FocusPlanMutationAction): Promise<boolean> {
+    if (!selected) return false;
     setStatus("saving");
     setError(null);
     try {
@@ -238,6 +238,7 @@ export function FocusPlansScreen({ entryRequest, onEntryRequestSettled }: Props)
         mutation,
       });
       await refreshSelected();
+      return true;
     } catch (cause) {
       setError(messageFromError(cause));
       try {
@@ -246,6 +247,29 @@ export function FocusPlansScreen({ entryRequest, onEntryRequestSettled }: Props)
         // Preserve the original mutation error and the local form.
       }
       setStatus("ready");
+      return false;
+    }
+  }
+
+  async function addVariant() {
+    const label = newVariantLabel.trim();
+    if (!label) return;
+    if (await runMutation({ action: "add_variant", label })) {
+      setNewVariantLabel("");
+    }
+  }
+
+  async function addPhase() {
+    const title = newPhaseTitle.trim();
+    if (!selectedVariant || !title) return;
+    if (
+      await runMutation({
+        action: "add_phase",
+        variant_id: selectedVariant.id,
+        title,
+      })
+    ) {
+      setNewPhaseTitle("");
     }
   }
 
@@ -413,7 +437,7 @@ export function FocusPlansScreen({ entryRequest, onEntryRequestSettled }: Props)
               <section aria-labelledby="variants-heading">
                 <h3 id="variants-heading">Approaches</h3>
                 <div className={styles.variantTabs}>{selected.variants.map((variant) => <span key={variant.id} className={styles.variantControl}><button type="button" className={styles.tab} aria-pressed={variant.id === selected.selected_variant_id} disabled={variant.archived || status === "saving"} onClick={() => void runMutation({ action: "select_variant", variant_id: variant.id })}>{variant.label}{variant.archived ? " (archived)" : ""}</button>{variant.id !== selected.selected_variant_id && <button type="button" className={styles.iconButton} aria-label={`${variant.archived ? "Restore" : "Archive"} ${variant.label}`} onClick={() => void runMutation({ action: variant.archived ? "restore_variant" : "archive_variant", variant_id: variant.id })}>{variant.archived ? "↺" : "×"}</button>}</span>)}</div>
-                <form className={styles.inlineForm} onSubmit={(event) => { event.preventDefault(); if (newVariantLabel.trim()) { void runMutation({ action: "add_variant", label: newVariantLabel.trim() }); setNewVariantLabel(""); } }}><input className={styles.input} value={newVariantLabel} onChange={(event) => setNewVariantLabel(event.target.value)} placeholder="Alternative approach" /><button className={styles.secondaryButton} disabled={!newVariantLabel.trim() || status === "saving"}>Add approach</button></form>
+                <form className={styles.inlineForm} onSubmit={(event) => { event.preventDefault(); void addVariant(); }}><input className={styles.input} value={newVariantLabel} onChange={(event) => setNewVariantLabel(event.target.value)} placeholder="Alternative approach" /><button className={styles.secondaryButton} disabled={!newVariantLabel.trim() || status === "saving"}>Add approach</button></form>
                 {selectedVariant && <div className={styles.variantEditor}>
                   <div className={styles.inlineForm}><input className={styles.input} value={variantLabel} onChange={(event) => setVariantLabel(event.target.value)} /><button type="button" className={styles.secondaryButton} disabled={!variantLabel.trim()} onClick={() => void runMutation({ action: "rename_variant", variant_id: selectedVariant.id, label: variantLabel.trim() })}>Rename</button></div>
                   <label>Approach notes<textarea className={styles.textarea} value={variantBody} onChange={(event) => setVariantBody(event.target.value)} /></label>
@@ -424,7 +448,7 @@ export function FocusPlansScreen({ entryRequest, onEntryRequestSettled }: Props)
                     const activeIndex = activePhaseIds.indexOf(phase.id);
                     return <li key={phase.id} className={styles.phaseRow}><input key={`${phase.id}:${phase.title}`} className={styles.input} defaultValue={phase.title} disabled={phase.archived} aria-label={`Phase ${index + 1} title`} onBlur={(event) => { const title = event.target.value.trim(); if (title && title !== phase.title) void runMutation({ action: "rename_phase", variant_id: selectedVariant.id, phase_id: phase.id, title }); }} /><button type="button" className={styles.iconButton} aria-label={`Move ${phase.title} up`} disabled={phase.archived || activeIndex <= 0} onClick={() => void runMutation({ action: "move_phase", variant_id: selectedVariant.id, phase_id: phase.id, new_index: activeIndex - 1 })}>↑</button><button type="button" className={styles.iconButton} aria-label={`Move ${phase.title} down`} disabled={phase.archived || activeIndex < 0 || activeIndex >= activePhaseIds.length - 1} onClick={() => void runMutation({ action: "move_phase", variant_id: selectedVariant.id, phase_id: phase.id, new_index: activeIndex + 1 })}>↓</button><button type="button" className={styles.secondaryButton} onClick={() => void runMutation({ action: phase.archived ? "restore_phase" : "archive_phase", variant_id: selectedVariant.id, phase_id: phase.id })}>{phase.archived ? "Restore" : "Archive"}</button></li>;
                   })}</ol>
-                  <form className={styles.inlineForm} onSubmit={(event) => { event.preventDefault(); if (newPhaseTitle.trim()) { void runMutation({ action: "add_phase", variant_id: selectedVariant.id, title: newPhaseTitle.trim() }); setNewPhaseTitle(""); } }}><input className={styles.input} value={newPhaseTitle} onChange={(event) => setNewPhaseTitle(event.target.value)} placeholder="New phase" /><button className={styles.secondaryButton} disabled={!newPhaseTitle.trim() || status === "saving"}>Add phase</button></form>
+                  <form className={styles.inlineForm} onSubmit={(event) => { event.preventDefault(); void addPhase(); }}><input className={styles.input} value={newPhaseTitle} onChange={(event) => setNewPhaseTitle(event.target.value)} placeholder="New phase" /><button className={styles.secondaryButton} disabled={!newPhaseTitle.trim() || status === "saving"}>Add phase</button></form>
                 </div>}
               </section>
             </>
