@@ -7,8 +7,8 @@
   "latest_feature_task": 41,
   "latest_feature_checkpoint": "e1fe3675315c04590aabe9c9ca87ede344dafa40",
   "database_schema_version": 24,
-  "active_spec": null,
-  "next_action": "product_owner_gate",
+  "active_spec": "specs/032-bounded-life-branch-interchange",
+  "next_action": "implement_active_spec",
   "forbidden_feature_jump": true,
   "recommended_next_candidate": null,
   "source_sha256": "9c422927c09e26431d71b1ef5ab6306891a3e7c15ece0fc808bedf6f6689540a"

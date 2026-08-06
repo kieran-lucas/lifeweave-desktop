@@ -19,6 +19,7 @@ The immutable source is authoritative. This registry makes operational status vi
 - Task/Life relationships are navigation-only; each one-off Task or recurring Task series links to zero or one Life node. Authority is stored on `tasks` and `task_series`; occurrences/evaluations inherit and do not store it.
 - Narrative Canvas supports 1–20 ordered scenes, three immutable built-in template IDs, and four static document-level Visual World IDs. Visual Worlds are presentation only.
 - Portable Package v1 represents one committed Basic Leaf or Narrative Canvas leaf document. Import creates a new document on a selected empty active Life leaf and excludes tree, Task, draft, history, analytics, and settings state.
+- Life Branch Package v1 (`format: lifeweave_branch_package`, `.lifeweave-branch.zip`) represents exactly one active connected non-root Life branch: hierarchy and sibling order, node metadata, committed Basic Leaf and Narrative Canvas documents, privacy-sanitized image assets, active canonical tags, and explicit links with both endpoints inside the branch. Import appends a fresh subtree as the last active child of a chosen active documentless node, assigns fresh local IDs to everything, never merges or overwrites by title/path/content/source ID, and is atomic with one tree-revision increment and one non-undoable operation. Whole-tree and multi-branch interchange and custom export profiles remain OPEN. See ADR 0036.
 - Today, Upcoming, and Overdue are manual-activation tabs within Today. Upcoming is +1 through +14 local days; Overdue is -30 through -1 and is derived from absence of current evaluation.
 - Tags are a flat global vocabulary for Life nodes and Tasks. Normalized name is the deduplication/search key; merges retain aliases.
 - **Focus Plan is a standalone entity**, not a Life document or Basic Leaf template.
@@ -80,7 +81,7 @@ The immutable source is authoritative. This registry makes operational status vi
 - Generic Outline role beyond the Basic Leaf heading navigator;
 - Noteboard role;
 - Graph;
-- whole-tree or multi-document interchange;
+- whole-tree or multi-branch interchange (the single-branch case is now DECIDED — see ADR 0036);
 - custom export profiles;
 - preserve-vs-strip original asset metadata beyond the privacy-safe default;
 - branch node content semantics;

@@ -14,12 +14,31 @@
 
 - Latest closed task: **41/60**
 - Latest closed slice: **031 — Explicit Life Links + Backlinks Core**
-- Active task: **none**
-- Active implementation specification: **none**
+- Active task: **42 — Bounded Life Branch Interchange**
+- Active implementation specification: **`specs/032-bounded-life-branch-interchange`**
 - Latest feature checkpoint: **Task 41 — Explicit Life Links + Backlinks Core** (`e1fe3675315c04590aabe9c9ca87ede344dafa40`)
 - Database schema: **24**
-- Next action: **Product Owner gate**
-- Task 42: **prohibited, unstarted, unallocated, and unrecommended**
+- Target schema: **25** (one migration rebuilding only `life_operations`; see ADR 0036)
+- Next action: **Implement active spec**
+- Task 43: **prohibited, unstarted, unallocated, and unrecommended**
+
+## Task 42 activation
+
+Task 42 is active from baseline `08a76c2827c1d49556c1f255631cbe2b1a4a2437`. It adds a distinct
+**Life Branch Package v1** (`.lifeweave-branch.zip`) that exports and imports exactly one active
+connected non-root Life branch — hierarchy and sibling order, committed Basic Leaf and Narrative
+Canvas documents, privacy-sanitized image assets, active canonical tags, and the explicit links
+whose endpoints both lie inside the branch. Imported data receives fresh local IDs, nothing is
+merged or overwritten, and import is atomic with exactly one tree-revision increment and one
+non-undoable operation.
+
+Two live-schema conflicts were surfaced during activation and resolved by explicit Product Owner
+decision in [ADR 0036](docs/adr/0036-bounded-life-branch-interchange.md): schema advances to **25**
+so the Life operation ledger can store `import_branch`, and an imported tag whose normalized name is
+held by an unmerged archived tag has that single assignment omitted and warned.
+
+Portable Package v1, database backup/restore semantics, whole-tree interchange, Graph, routes,
+dependencies, workflows/seal, and Task 43 remain unchanged and prohibited.
 
 Task 41 is closed at product checkpoint `e1fe3675315c04590aabe9c9ca87ede344dafa40` from baseline
 `6bcffe751458ee37a4cde663e21336a1f484a613`. It adds directed stable-ID links between committed Basic Leaf and Narrative Canvas Life leaves,

@@ -1,5 +1,41 @@
 # Project Status
 
+## Task 42/60 — Bounded Life Branch Interchange (active)
+
+- Active slice: `032-bounded-life-branch-interchange`.
+- Activation baseline: `08a76c2827c1d49556c1f255631cbe2b1a4a2437`.
+- Starting schema 24; target schema 25 through one migration that rebuilds only `life_operations`.
+- Scope: a distinct Life Branch Package v1 (`format: lifeweave_branch_package`,
+  `format_version: 1`, `.lifeweave-branch.zip`) that exports exactly one active connected non-root
+  Life branch and imports it as a fresh subtree under a chosen active documentless parent.
+- Included: hierarchy and sibling order, node metadata, committed Basic Leaf and Narrative Canvas
+  documents, privacy-sanitized image assets, active canonical tags, and explicit links with both
+  endpoints inside the branch. Everything else — archived nodes, drafts, history, pins, Tasks,
+  Plans, Saved Views, analytics, settings, Search rows, cross-boundary links — is excluded and
+  counted in safe omission warnings.
+- Identity: fresh local IDs for every imported node, document, asset, link, and newly created tag.
+  Source IDs are provenance only. Nothing is merged or overwritten by title, path, breadcrumb,
+  description, content, or source ID; duplicate titles are valid.
+- Atomicity: one SQLite transaction, exactly one tree-revision increment, one non-undoable
+  idempotent `import_branch` operation, durable asset receipts with attempt-only file rollback, and
+  zero database or file residue on any failure.
+- Two live-schema conflicts were surfaced before implementation and resolved by explicit Product
+  Owner decision in ADR 0036. First, `life_operations.operation_kind` has carried a fixed nine-value
+  CHECK since migration 8 and SQLite cannot ALTER a CHECK, so storing the contract's
+  `import_branch` kind requires a table rebuild; the Product Owner chose the migration over the
+  zero-migration alternative, which overrides the activation contract's schema-24 expectation.
+  Second, `tags.normalized_name` is globally UNIQUE, so an imported tag whose name is held by an
+  unmerged archived tag has that single assignment omitted and warned rather than reviving the tag
+  or failing the import.
+- Starting bundle inventory measured before any product change: 17 chunks, 1,190,836 raw,
+  364,842 deterministic gzip, 514,710 startup `index.js`, 544,852 total startup raw. Authorized
+  Task 42 deltas against the accepted Task 41 inventory are 2 KiB startup raw, 24 KiB total raw,
+  and 8 KiB deterministic gzip.
+- Portable Package v1, database backup/restore semantics, whole-tree interchange, custom export
+  profiles, Graph, routes, dependencies, and workflows/seal remain unchanged and prohibited.
+- Next action: implement the active spec. Task 43 remains prohibited, unstarted, unallocated, and
+  unrecommended.
+
 ## Task 41/60 — Explicit Life Links + Backlinks Core (complete)
 
 - Closed slice: `031-explicit-life-links`.

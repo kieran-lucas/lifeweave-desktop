@@ -1,5 +1,32 @@
 # Roadmap
 
+## Slice 032 — Bounded Life Branch Interchange (active)
+
+Task 42 activates the Interchange candidate ADR 0028 scored at 7.610, narrowed by the explicit
+Product Owner decision in ADR 0036 to exactly one branch. Lifeweave already moves the whole
+workspace (database backup/restore) and one document (Portable Package v1). The remaining gap is the
+unit users actually think in: one connected Life branch with its structure, documents, images, tags,
+and the links its own leaves make to each other.
+
+A distinct **Life Branch Package v1** (`format: lifeweave_branch_package`, `format_version: 1`,
+`.lifeweave-branch.zip`) exports one active connected non-root branch and imports it as a fresh
+subtree under a chosen active documentless parent. Every imported node, document, asset, link, and
+newly created tag receives a fresh local ID; nothing is merged or overwritten by title, path, or
+source ID. Import is atomic — one transaction, exactly one tree-revision increment, one non-undoable
+idempotent operation — and any failure leaves zero rows and zero new files with the source
+unchanged.
+
+Schema advances 24 to 25 through one migration that rebuilds only `life_operations` so the ledger
+can store the truthful `import_branch` kind. This deviates from the activation contract's
+no-migration expectation and was decided explicitly by the Product Owner after the conflict was
+surfaced; ADR 0036 records it, together with the decision to omit and warn a tag assignment whose
+normalized name is held by an unmerged archived tag.
+
+Hard boundary: Portable Package v1 and database backup semantics are unchanged, and no whole-tree or
+multi-branch interchange, custom export profile, cross-boundary link transfer, archived-node
+transfer, Graph, prediction, Noteboard, tags or backlink expansion, new route, sidebar item,
+dependency, workflow/seal change, generic interchange framework, or Task 43 work is authorized.
+
 ## Slice 031 — Explicit Life Links + Backlinks Core (complete)
 
 Task 41 activates the bounded Links/Backlinks candidate from ADR 0028 through the explicit Product
