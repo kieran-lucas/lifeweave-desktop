@@ -27,11 +27,9 @@ Run `python scripts/verify_source_integrity.py` before any governance or impleme
 
 ## Repository state
 
-The active Foundation Proof slice now has a compiled and tested Rust/SQLite path, typed frontend bindings, a Windows Tauri production build, and an automated native launch smoke. Task 1 is an implementation candidate ready for Task 2 independent backup/restore audit; this does **not** claim Stage E, Foundation, restore production safety, or the product itself is complete.
+Task 36 / Slice 026 — Focus Plans Core is complete at feature checkpoint `57bd42d8eed5643d2fee3b04f74bd3c44e738da2`. Database schema 20 is current. No implementation spec is active; the next feature requires a separate Product Owner gate.
 
-Current active slice:
-
-- `specs/000-foundation-proof`
+GitHub Actions contains one sealed, manual, read-only Windows installer build. Feature tasks must not modify workflow infrastructure without explicit Product Owner authorization.
 
 ## Technology direction
 
@@ -43,7 +41,6 @@ Current active slice:
 - SQLite through a Rust-owned persistence layer
 - React UI + Rust application core
 - pnpm workspace
-- GitHub Issues, pull requests, Actions, and releases
 
 See [`docs/TECHNOLOGY_BASELINE.md`](docs/TECHNOLOGY_BASELINE.md) for the dated verification and the TypeScript 7 discrepancy.
 
@@ -56,7 +53,7 @@ See [`docs/TECHNOLOGY_BASELINE.md`](docs/TECHNOLOGY_BASELINE.md) for the dated v
 - SQLite/Rust is authoritative for persistent domain state.
 - Backup and restore are first-class.
 - OPEN and DEFERRED items are not implementation permission.
-- A feature is not done without test/build evidence and Product Owner UX acceptance.
+- Completion evidence is risk-based: deterministic evidence may replace a flaky or nondiagnostic harness, while reproducible product defects remain blocking.
 
 ## Development entry points
 
