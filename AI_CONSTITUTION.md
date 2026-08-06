@@ -107,7 +107,17 @@ Prohibited in all cases:
 - Commit real user databases, backups, logs, secrets, certificates, or personal assets.
 - Merge from another branch without Product Owner direction.
 
-## 9. Required response to ambiguity
+## 9. Workflow seal
+
+`.github/workflows/` and `.github/WORKFLOW_SEAL.sha256` are sealed infrastructure.
+
+- Feature, bug-fix, refactor, test, documentation, and routine maintenance tasks MUST NOT modify, replace, add, rename, or delete workflow files or update the seal.
+- A workflow change is allowed only when the Product Owner explicitly authorizes workflow maintenance, or when evidence shows the sealed workflow cannot perform its sole build function because of a platform or toolchain break.
+- An authorized workflow change must be isolated from product changes, remain manual-only and read-only unless the Product Owner explicitly decides otherwise, update the seal, and pass `python scripts/check_repository.py`.
+- Agents must not add automatic push, pull-request, schedule, or recursive triggers; repository write permissions; source mutation; generated-code mutation; commits; pushes; or self-rewriting behavior to a workflow without a new explicit Product Owner decision.
+- Never update the seal merely to bypass a governance failure.
+
+## 10. Required response to ambiguity
 
 When a decision is materially OPEN:
 1. identify the exact missing decision;
