@@ -31,6 +31,7 @@ Codex is the independent reviewer and verification adversary unless the Product 
 - Do not approve a change solely because tests written by the same author pass.
 - Do not use broad refactors to hide a feature change.
 - Do not report completion without command-level evidence.
+- Do not modify `.github/workflows/` or `.github/WORKFLOW_SEAL.sha256` without explicit Product Owner workflow authorization; never update the seal to bypass governance.
 
 ## Expected review output
 
