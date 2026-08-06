@@ -16,7 +16,7 @@ describe("Task 36 — Focus Plan create and edit", () => {
     await expect(title).toHaveValue("E2E Focus Plan");
     await title.setValue("E2E Focus Plan Persisted");
     await $("//label[normalize-space()='Outcome']/textarea").setValue("Persistent plan outcome");
-    await $("//label[normalize-space()='Lifecycle']/select").selectByAttribute("value", "active");
+    await $("//label[normalize-space(text())='Lifecycle']/select").selectByAttribute("value", "active");
     await $("button=Save plan").click();
 
     const newPhase = $("input[placeholder='New phase']");
