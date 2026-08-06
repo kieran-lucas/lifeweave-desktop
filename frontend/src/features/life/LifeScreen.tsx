@@ -168,14 +168,12 @@ export function LifeScreen({
     if (entryRequest) settleEntryRequest(entryRequest.requestId);
   };
   const pushEntryHistory = (focusId?: string) => {
-    const readerId = reader && ("id" in reader ? reader.id : reader.node_id);
     setHistory((value) => [
       ...value,
       {
-        nodeId: mode === "reader" && readerId ? readerId : browse.data?.selected.id ?? entryRequest?.nodeId ?? "life-root",
+        nodeId: browse.data?.selected.id ?? entryRequest?.nodeId ?? "life-root",
         page,
-        mode: mode === "reader" && reader ? "reader" : mode === "pinned" ? "pinned" : "browse",
-        ...(mode === "reader" && reader ? { reader } : {}),
+        mode: mode === "pinned" ? "pinned" : "browse",
         ...(focusId ? { focusId } : {}),
       },
     ]);

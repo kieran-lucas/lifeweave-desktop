@@ -692,4 +692,21 @@ describe("Life Browse", () => {
     await screen.findByRole("heading", { name: "Reader" });
     expect(strictSettled).toHaveBeenCalledTimes(1);
   });
+  it("returns an external Reader request to Browse even when Reader was the saved mode", async () => {
+    api.browse.mockResolvedValue({
+      ...projection(leaf, []),
+      preferred_mode: "reader",
+    });
+    renderLife(undefined, {
+      entryRequest: {
+        requestId: "saved-reader-external-entry",
+        nodeId: leaf.id,
+        mode: "reader",
+      },
+      onEntryRequestSettled: vi.fn(),
+    });
+    await screen.findByRole("heading", { name: "Reader" });
+    fireEvent.click(screen.getByRole("button", { name: /Back to Life Browse/ }));
+    expect(await screen.findByRole("button", { name: "Pinned" })).toBeInTheDocument();
+  });
 });
