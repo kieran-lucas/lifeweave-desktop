@@ -18,7 +18,8 @@
 - Active implementation specification: **specs/026-focus-plans-core**
 - Latest closed product checkpoint: **Task 33 — Unified Tags Core + Cross-Pillar Retrieval**
 - Database schema: **20**
-- Next action: **Complete focused native verification for the active spec**
+- Next action: **Implement active spec**
+- Remaining implementation gate: **Complete focused native verification for the active spec**
 - Task 36 implementation: **remediation integrated directly into source; task remains unclosed pending focused native persistence evidence**
 - Task 37: **not started and prohibited**
 
