@@ -3,7 +3,7 @@ import {
   BRANCH_BASIC, BRANCH_CANVAS, BRANCH_DESTINATION, BRANCH_EMPTY, BRANCH_INNER,
   BRANCH_OUTSIDE, BRANCH_ROOT, branchControls, capturedBranchDownload, chooseBranchFile,
   establishBranchFixture, importDialog, installBranchDownloadCapture, openLifeEdit,
-  readImportedState, selectNode,
+  readBranchState, selectNode,
 } from "../support/lifeBranch.js";
 
 describe("Phase 13 — bounded Life branch interchange", () => {
@@ -56,10 +56,11 @@ describe("Phase 13 — bounded Life branch interchange", () => {
     );
 
     // ── The imported subtree is complete, and the source copy is untouched.
-    const state = await readImportedState(BRANCH_DESTINATION);
+    const state = await readBranchState(BRANCH_DESTINATION, BRANCH_ROOT);
+    const source = await readBranchState(null, BRANCH_ROOT);
     expect(state.found).toBe(true);
-    expect(state.importedTitle).toBe(BRANCH_ROOT);
-    expect(state.importedId).not.toBe("");
+    expect(source.found).toBe(true);
+    expect(state.branchTitle).toBe(BRANCH_ROOT);
     expect(state.childTitles).toEqual([BRANCH_INNER, BRANCH_EMPTY]);
     expect(state.innerTitles).toEqual([BRANCH_BASIC, BRANCH_CANVAS]);
 
@@ -67,9 +68,11 @@ describe("Phase 13 — bounded Life branch interchange", () => {
     expect(state.outgoing).toEqual([BRANCH_CANVAS]);
     expect(state.outgoing).not.toContain(BRANCH_OUTSIDE);
 
-    // Fresh identity: the imported Basic Leaf is a different node from the source.
-    const source = await readImportedState(BRANCH_ROOT);
+    // Fresh identity: both copies resolve, and every compared node is a distinct row.
+    expect(state.branchId).not.toBe(source.branchId);
     expect(state.basicId).not.toBe(source.basicId);
+    expect(source.childTitles).toEqual([BRANCH_INNER, BRANCH_EMPTY]);
+    expect(source.outgoing).toEqual([BRANCH_CANVAS, BRANCH_OUTSIDE]);
 
     // The source branch still exists in Life Edit exactly as before.
     await selectNode(BRANCH_ROOT);

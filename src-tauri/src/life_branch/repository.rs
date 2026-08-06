@@ -1104,16 +1104,24 @@ pub fn confirm_import(
         let mut reused = BTreeSet::new();
         for node in &tree.tree.nodes {
             let local = &node_map[&node.key];
+            // Two packaged tags with distinct normalized names can legitimately resolve to one
+            // local tag — for example when both were merged into the same survivor here — so the
+            // resolved set is deduplicated before it reaches the (node, tag) primary key.
+            let mut resolved = BTreeSet::new();
             for tag_key in &node.tag_keys {
-                let local_tag = match tag_plan.get(tag_key) {
+                match tag_plan.get(tag_key) {
                     Some(TagPlan::Reuse(id)) => {
                         reused.insert(id.clone());
-                        id.clone()
+                        resolved.insert(id.clone());
                     }
-                    Some(TagPlan::Create { id, .. }) => id.clone(),
+                    Some(TagPlan::Create { id, .. }) => {
+                        resolved.insert(id.clone());
+                    }
                     Some(TagPlan::OmitArchived) => continue,
                     None => return Err(invalid("A branch tag has no resolved plan.")),
-                };
+                }
+            }
+            for local_tag in resolved {
                 tx.execute(
                     "INSERT INTO life_node_tags(life_node_id,tag_id,created_at) VALUES(?1,?2,?3)",
                     params![local, local_tag, timestamp],
@@ -2152,6 +2160,65 @@ mod import_tests {
             "the merged tag itself is never assigned"
         );
         assert_eq!(assigned.len(), 3);
+
+        std::fs::remove_dir_all(source_dir).unwrap();
+        std::fs::remove_dir_all(target_dir).unwrap();
+    }
+
+    #[test]
+    fn two_packaged_tags_collapsing_onto_one_local_survivor_import_cleanly() {
+        let source_dir = temp_root("import-tag-collapse-source");
+        let target_dir = temp_root("import-tag-collapse-target");
+
+        // The source assigns two distinct tags to one node.
+        let conn = db();
+        let source = scenario(&conn);
+        let first = add_tag(&conn, "Alpha");
+        let second = add_tag(&conn, "Beta");
+        assign_tag(&conn, &source.basic_leaf, &first);
+        assign_tag(&conn, &source.basic_leaf, &second);
+        let bytes = package_of(&conn, &source_dir, &source.root);
+
+        // The target has merged both of those names into one surviving tag.
+        let mut target = db();
+        let survivor = add_tag(&target, "Survivor");
+        for name in ["Alpha", "Beta"] {
+            let alias = add_tag(&target, name);
+            target
+                .execute(
+                    "UPDATE tags SET archived_at='merged',merged_into_tag_id=?1 WHERE id=?2",
+                    params![survivor, alias],
+                )
+                .unwrap();
+        }
+        let destination = add_node(&target, crate::life::domain::ROOT_ID, "Destination", 0);
+
+        let result = confirm(
+            &mut target,
+            &target_dir,
+            &bytes,
+            &destination,
+            "op-collapse",
+        )
+        .unwrap();
+        assert_eq!(result.node_count, 5);
+        assert_eq!(result.created_tag_count, 0);
+        assert_eq!(
+            result.reused_tag_count, 1,
+            "both aliases resolve to one survivor"
+        );
+        assert_eq!(
+            count_of(&target, "SELECT COUNT(*) FROM life_node_tags"),
+            1,
+            "the collapsed assignment must be written exactly once"
+        );
+        assert_eq!(
+            count_of(
+                &target,
+                &format!("SELECT COUNT(*) FROM life_node_tags WHERE tag_id='{survivor}'")
+            ),
+            1
+        );
 
         std::fs::remove_dir_all(source_dir).unwrap();
         std::fs::remove_dir_all(target_dir).unwrap();

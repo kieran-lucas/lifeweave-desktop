@@ -228,8 +228,15 @@ export async function chooseBranchFile(bytes: number[]) {
   }, bytes);
 }
 
-export async function readImportedState(rootTitle: string) {
-  return browser.execute(async (title: string) => {
+/**
+ * Reads one branch by its exact position: the branch titled `rootTitle` directly under
+ * `parentTitle`, or directly under the Life root when `parentTitle` is null.
+ *
+ * Both the source copy and the imported copy are read through the same shape, so a fresh-identity
+ * assertion compares two genuinely resolved nodes rather than one node and an empty string.
+ */
+export async function readBranchState(parentTitle: string | null, rootTitle: string) {
+  return browser.execute(async (parent: string | null, title: string) => {
     const invoke = (window as unknown as { __TAURI_INTERNALS__: { invoke: Invoke } })
       .__TAURI_INTERNALS__.invoke;
     type Node = { id: string; title: string };
@@ -237,28 +244,44 @@ export async function readImportedState(rootTitle: string) {
     const browse = (nodeId: string) =>
       invoke<Browse>("get_life_browse_projection", { input: { node_id: nodeId, child_page: 0 } });
 
-    const root = await browse("life-root");
-    const destination = root.children.find((child) => child.title === title);
-    if (!destination) return { found: false };
-    const under = await browse(destination.id);
-    const imported = under.children[0];
-    if (!imported) return { found: false };
-    const inner = (await browse(imported.id)).children;
-    const innerChildren = inner.length > 0 ? (await browse(inner[0]!.id)).children : [];
+    const missing = {
+      found: false,
+      branchId: "",
+      branchTitle: "",
+      childTitles: [] as string[],
+      innerTitles: [] as string[],
+      basicId: "",
+      outgoing: [] as string[],
+    };
+
+    let containerId = "life-root";
+    if (parent) {
+      const root = await browse("life-root");
+      const holder = root.children.find((child) => child.title === parent);
+      if (!holder) return missing;
+      containerId = holder.id;
+    }
+    const container = await browse(containerId);
+    const branch = container.children.find((child) => child.title === title);
+    if (!branch) return missing;
+
+    const children = (await browse(branch.id)).children;
+    const inner = children.find((child) => child.title.includes("Inner"));
+    const innerChildren = inner ? (await browse(inner.id)).children : [];
     const basic = innerChildren.find((child) => child.title.includes("Basic"));
     const panel = basic
       ? await invoke<{ outgoing: Array<{ title: string }> }>("get_life_link_panel", {
           input: { source_node_id: basic.id },
         })
-      : { outgoing: [] };
+      : { outgoing: [] as Array<{ title: string }> };
     return {
       found: true,
-      importedId: imported.id,
-      importedTitle: imported.title,
-      childTitles: inner.map((child) => child.title),
+      branchId: branch.id,
+      branchTitle: branch.title,
+      childTitles: children.map((child) => child.title),
       innerTitles: innerChildren.map((child) => child.title),
       basicId: basic?.id ?? "",
       outgoing: panel.outgoing.map((row) => row.title),
     };
-  }, rootTitle);
+  }, parentTitle, rootTitle);
 }
