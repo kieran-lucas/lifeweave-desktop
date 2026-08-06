@@ -27,6 +27,7 @@ The immutable source is authoritative. This registry makes operational status vi
 - Focus Plan owns first-class variants, ordered phases, committed revisions, and one recovery draft. Rich-text bodies reuse the accepted Basic Leaf canonical value schema by value, not `reader_documents` rows.
 - Focus Plans use shared tags, a distinct `focus_plan` Search entity kind, and full-database backup authority.
 - Focus Plans have no automatic progress percentage and no reminder/notification dependency.
+- Task 36 / Slice 026 is complete at feature checkpoint `57bd42d8eed5643d2fee3b04f74bd3c44e738da2`.
 - Future Task 37 relationship target is zero-or-one Focus Plan per one-off Task or recurring series; occurrences inherit and do not own the relation.
 - The execution roadmap remains a 60-task envelope. Product Owner allocation may reuse unstarted positions without increasing the total.
 
@@ -39,6 +40,7 @@ The immutable source is authoritative. This registry makes operational status vi
 - Tiptap/ProseMirror direction for editor work when the relevant slice activates.
 - FTS5/rrule/testing/release foundations as specified; dependencies install only when activated.
 - GitHub Actions is limited to the sealed manual, read-only Windows installer build in `.github/workflows/manual-clean-build.yml`. Routine tasks may not modify the workflow or `.github/WORKFLOW_SEAL.sha256`; a change requires explicit Product Owner workflow authorization or evidence of a platform/toolchain break.
+- Task closure is risk-based. Equivalent deterministic evidence may replace a named flaky or nondiagnostic test environment. Tooling failures do not block roadmap progression unless they reproduce a product invariant violation.
 
 ## PROTOTYPE-GATED
 
@@ -75,8 +77,7 @@ The immutable source is authoritative. This registry makes operational status vi
 
 ## DEFERRED
 
-- Task 36 standalone Focus Plans Core is active but remains unclosed pending completion and verification evidence;
-- Task 37 Focus Plan ↔ Task integration and review workflow remains prohibited pending accepted Task 36 authority and separate Product Owner activation;
+- Task 37 Focus Plan ↔ Task integration and review workflow remains prohibited pending separate Product Owner activation;
 - prediction and opaque ML;
 - Deadline Semantics implementation after the Task 34 Product Owner modification;
 - custom user-authored Narrative templates and Visual Worlds;
