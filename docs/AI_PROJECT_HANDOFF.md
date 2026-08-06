@@ -4,42 +4,24 @@
 
 - repository: `kieran-lucas/lifeweave-desktop`
 - branch: `main`
-- latest closed task/slice: 35 / 025
-- active task/slice: 36 / 026
+- latest closed task/slice: 36 / 026
+- active task/slice: none
 - schema: 20
-- active specification: `specs/026-focus-plans-core`
-- next action: implement active spec
-- Task 37: not started and prohibited
+- active specification: none
+- latest feature checkpoint: `57bd42d8eed5643d2fee3b04f74bd3c44e738da2`
+- next action: Product Owner gate
+- Task 37: not started; separate activation required
 
-## Task 36 implementation state
+## Task 36 final state
 
-The standalone Focus Plan core is implemented across migration 20, Rust domain
-and IPC, tags, Search/FTS, backup/restore, generated TypeScript bindings, lazy
-Plans UI, recovery-draft loading, and a two-process native persistence scenario.
+The standalone Focus Plan core is complete across migration 20, Rust domain and IPC, tags, Search/FTS, backup/restore, generated TypeScript bindings, lazy Plans UI, recovery-draft loading, and native smoke scenarios.
 
-Root-cause corrections completed during implementation:
+Verified product evidence includes focused frontend typecheck/tests, Rust migration/core/backup/tag/Search tests, generated-binding stability, production frontend build, repository governance, and persisted SQLite artifacts showing committed Plan state across the tested operations.
 
-- widened `search_dirty_scopes` while preserving historical triggers;
-- widened `search_documents.entity_kind` while preserving/rebuilding FTS5;
-- aligned backup/reopen paths to schema 20;
-- removed the invalid selected-variant archive UI path;
-- retained the historical Search selector while exposing Plan scope through an
-  accessible description;
-- made the existing Windows E2E runner selectable by phase.
+The repeated Windows native harness failures were tooling/infrastructure failures and did not demonstrate data loss or another reproducible product defect. They are not a closure gate. Do not rerun or modify product code for this harness without new diagnostic evidence of an actual product invariant violation.
 
-Repository cleanup is complete: one legitimate manual workflow remains; no
-Task 36 patch script, compiler artifact, temporary placeholder, duplicate
-planning/test document, or dependency drift remains.
+Repository cleanup is complete: only the sealed manual installer workflow remains; no Task 36 patch script, temporary workflow, compiler artifact, placeholder, or duplicate planning/test document remains.
 
-## Remaining closure gate
+## Next action
 
-Execute only the focused phase-8 Windows path:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/run_windows_e2e.ps1 `
-  -Phases phase8-focus-plans.e2e.ts,phase8-focus-plans-restart.e2e.ts
-```
-
-Do not run broad suites unless this path exposes a concrete cross-domain defect.
-Do not activate Task 37 before Task 36 closes and Product Owner grants a new
-gate.
+Stop. Await a Product Owner decision for the next active spec. Task 37 must not start automatically merely because Task 36 is closed.
