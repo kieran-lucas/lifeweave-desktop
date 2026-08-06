@@ -104,6 +104,20 @@ describe("FocusPlansScreen", () => {
     expect(screen.getByLabelText("Outcome")).toHaveValue("Recovered outcome");
     expect(screen.getByLabelText("Success criteria, one per line")).toHaveValue("Recovered criterion");
 
+    const alternative = screen.getByPlaceholderText("Alternative approach");
+    fireEvent.change(alternative, { target: { value: "Keep this approach" } });
+    vi.mocked(api.mutateFocusPlan).mockRejectedValueOnce({ message: "Approach rejected" });
+    fireEvent.click(screen.getByRole("button", { name: "Add approach" }));
+    await screen.findByText("Approach rejected");
+    expect(alternative).toHaveValue("Keep this approach");
+
+    const phase = screen.getByPlaceholderText("New phase");
+    fireEvent.change(phase, { target: { value: "Keep this phase" } });
+    vi.mocked(api.mutateFocusPlan).mockRejectedValueOnce({ message: "Phase rejected" });
+    fireEvent.click(screen.getByRole("button", { name: "Add phase" }));
+    await screen.findByText("Phase rejected");
+    expect(phase).toHaveValue("Keep this phase");
+
     fireEvent.change(screen.getByLabelText("New plan title"), { target: { value: "Interview Plan" } });
     fireEvent.click(screen.getByRole("button", { name: "Create" }));
     await waitFor(() => expect(api.createFocusPlan).toHaveBeenCalledWith(expect.objectContaining({ title: "Interview Plan" })));
