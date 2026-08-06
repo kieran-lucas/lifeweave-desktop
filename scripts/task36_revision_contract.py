@@ -42,6 +42,11 @@ replace_exact(
 )
 replace_exact(
     REPOSITORY,
+    "                         revision: u64,",
+    "                         revision: u32,",
+)
+replace_exact(
+    REPOSITORY,
     """    let expected_revision = u32::try_from(input.expected_revision).map_err(|_| {
         FocusPlanError::Validation("Focus Plan revision exceeds the supported range".into())
     })?;
@@ -56,3 +61,11 @@ replace_exact(
 """,
     "    let base_revision = input.base_revision;\n",
 )
+
+remaining_u64 = [
+    line.strip()
+    for line in (ROOT / REPOSITORY).read_text(encoding="utf-8").splitlines()
+    if "u64" in line and "FocusPlan" in line
+]
+if remaining_u64:
+    raise SystemExit(f"{REPOSITORY}: unexpected Focus Plan u64 references: {remaining_u64}")
