@@ -251,8 +251,14 @@ select. The identical latent selector in `phase8-focus-plans.e2e.ts` was correct
 **phase 6** — the fixture `E2E Today Fan` is scheduled today at 04:00–05:00, and assessment
 eligibility is `local_date < today || (local_date === today && end_minute <= clockMinute)`. The phase
 therefore cannot pass before 05:00 local time. `validate_range` requires `start >= 240`, so 04:00 is
-the earliest legal window and **no today-scheduled Task can be assessable before then** — the
-fixture is already optimal and no bounded fix exists. Left unchanged.
+the earliest legal window and **no today-scheduled Task can be assessable before then**. Left
+unchanged in this session.
+
+> **Superseded — see §11.2.** The conclusion drawn here, that no bounded fix existed, was wrong. It
+> reasoned only about making a *today*-scheduled fixture assessable. The phase already created an
+> overdue Task and already navigated Overdue → Review, so the fan lifecycle could simply be driven
+> from a subject that satisfies the `local_date < today` branch — the identical correction this same
+> section describes for phase 9 one paragraph below. Fixed post-closure.
 
 This same latent flaw was present in the first draft of the new phase 9 and was corrected there: its
 evaluated Task is now scheduled *yesterday* and reached through Overdue → Review, which satisfies the
@@ -386,6 +392,10 @@ constraint of a pre-existing phase, not a product defect and not a Task 40 regre
 **Residual verification debt:** phases 6 and 6-restart were not executed in this session. They
 should pass unchanged when the suite is run after 05:00 local time.
 
+> **Superseded — see §11.2 and §11.3.** This debt is closed. The complete 15-phase
+> `pnpm e2e:windows` now exits **0** with all 15 phases PASS, executed at 01:19–01:26 local time —
+> inside the window that previously made phase 6 un-runnable.
+
 ### 6.3 RC dogfood
 
 ```text
@@ -423,6 +433,9 @@ product behaviour change Task 40 does not authorize, so phase 9 asserts what the
 does and clicks the view explicitly, with a comment pointing here. **Recommended for a future
 Product Owner decision.**
 
+> **Superseded — see §11.1.** The decision was taken and the defect is fixed post-closure. Phase 9
+> no longer contains the explicit click and now asserts the selection directly.
+
 ## 8. Safety and scope
 
 | Check | Result |
@@ -457,6 +470,7 @@ cargo clippy --all-targets --all-features -D warnings   PASS
 cargo test --locked -- --test-threads=1   590 passed, 0 failed, 4 ignored
 pnpm tauri build                          PASS
 pnpm e2e:windows                          13/15 phases PASS; phases 6 and 6-restart NOT RUN (§6.2)
+                                          — superseded: 15/15 PASS after §11.2
 pnpm hardening:rc                         PASS
 git diff --check                          clean
 ```
@@ -465,11 +479,151 @@ git diff --check                          clean
 
 1. **P2 manual physical Narrator/DPI execution remains external evidence debt. The protocol and
    machine-verifiable coverage are complete.**
-2. Native phases 6 and 6-restart were not executed in this session; they are structurally
-   un-runnable before 05:00 local time and were run at 00:26. No product defect is implicated.
+2. ~~Native phases 6 and 6-restart were not executed in this session~~ — **closed by §11.2**; both
+   now run and pass at any local time, and the full 15-phase suite exits 0.
 3. Reduced-motion and forced-colors contracts are not machine-asserted (jsdom cannot evaluate
    `@media`); they remain physically verifiable through the manual protocol.
 4. The rejected startup-size trade-off in §2.2 awaits a Product Owner decision.
-5. The P2 Saved View selection defect in §7 awaits a Product Owner decision.
+5. ~~The P2 Saved View selection defect in §7 awaits a Product Owner decision~~ — **closed by
+   §11.1**; the decision was taken and the defect is fixed.
 
 No confirmed P0/P1 product defect remains.
+
+## 11. Post-closure remediation
+
+```text
+authorized: Task 40 post-closure remediation (two bounded findings only)
+baseline:   2cad1c874015c0f60b63dac14ea0c58994d62b98
+schema:     23 (unchanged)
+scope:      TaskSavedViewsPanel.tsx + its test, phase 6 spec, phase 9 spec, this audit, STATUS.md
+```
+
+Task 40 stays closed. Sections 4.4, 6.2, 7 and 10 above record the state at closure and are left as
+written; the block quotes added there mark exactly what this section supersedes. No Slice 031 was
+created and no Task 41 work was started.
+
+### 11.1 Saved View selection race — §7 P2 fixed
+
+**The race.** `TaskSavedViewsPanel` set `selectedId` *before* awaiting the lifecycle invalidation:
+
+```ts
+onSuccess: async (detail) => {
+  setSelectedId(detail.view.id);   // active.data is still the pre-mutation list
+  ...
+  await refreshLifecycle();
+}
+```
+
+The panel also clears any selected id that is absent from `active.data`. Between those two
+statements React re-rendered with the new id and the old list, so the cleanup effect fired and reset
+the selection to `null` before the refetch could land. The user saw "Select or create a Saved View."
+immediately after creating or restoring one.
+
+**The correction — ordering only.** No cache surgery, no timers, no suppression flag:
+
+- create/update `onSuccess` closes the editor, clears the save error, `await refreshLifecycle()`,
+  and *then* selects the returned view;
+- lifecycle `onSuccess` still clears an archived view's selection *before* the refetch — that view
+  is leaving, so clearing it early is correct — and selects a restored view only *after* it.
+
+`await invalidateQueries` resolves once the active observers have refetched, so the list provably
+contains the id by the time the selection is set. The stale-selection effect is untouched.
+
+**Frontend evidence** — `TaskSavedViewsPanel.test.tsx`, three tests added, file now 11 tests:
+
+| Test | Baseline | Fixed |
+|---|---|---|
+| create stays selected, projects, no second click | **FAIL** — nothing selected, `aria-pressed="false"` | PASS |
+| restore stays selected, projects, no second click | **FAIL** — nothing selected, `aria-pressed="false"` | PASS |
+| a selection whose view leaves the refreshed list is still cleared | PASS | PASS |
+
+The two new tests hold the active-list refetch open on a hand-resolved promise. That is what makes
+them fail on the baseline: with an instantly resolved mock the refetch wins the race and the bug is
+invisible, which is precisely why unit coverage missed it originally. The third test is the guard
+that the repair did not simply disable legitimate cleanup — it passes both before and after, and it
+fails if the effect is removed.
+
+One latent test-isolation defect was fixed alongside: `beforeEach` used `vi.clearAllMocks()`, which
+leaves an unconsumed `mockResolvedValueOnce` queued. A one-shot left over from the rejected-draft
+test outranked a later test's own mock. Now `vi.resetAllMocks()`.
+
+**Native evidence.** `phase9-deadline-saved-views.e2e.ts` no longer clicks the view it just created
+or restored; it asserts `aria-pressed='true'` and the projected result directly. Run against the
+baseline panel with the workaround removed:
+
+```text
+$ pnpm e2e:windows -Phases phase9-deadline-saved-views.e2e.ts   # baseline panel
+Error in "Phase 9 — deadline semantics and Saved Views"
+Expected: "displayed"   Received: "not displayed"
+  at phase9-deadline-saved-views.e2e.ts:170     # the create-selection assertion
+Spec Files: 0 passed, 1 failed
+```
+
+With the fix the phase passes as part of the full suite below. No assertion was weakened and the
+phase was not made to tolerate either behaviour.
+
+### 11.2 Phase 6 clock dependency — fixed
+
+**The old dependency.** Phase 6 opened the assessment fan on `E2E Today Fan`, scheduled *today*
+04:00–05:00, so `button[aria-label^='Assess task']` does not exist before 05:00 local. Reproduced
+live at 01:00 local from the untouched baseline spec:
+
+```text
+$ pnpm e2e:windows -Phases phase6-planning.e2e.ts       # baseline spec, 01:00 local
+Error: Can't call click on element with selector "button[aria-label^='Assess task']"
+       because element wasn't found
+  at phase6-planning.e2e.ts:26
+Spec Files: 0 passed, 1 failed
+```
+
+**The new path.** The fan lifecycle now runs on `E2E Past Review`, the overdue fixture the phase
+already created, reached through the Overdue → Review navigation the phase already exercised. That
+subject satisfies the `local_date < today` branch of the eligibility rule unconditionally, so the
+phase is independent of the wall clock. The now-unused `E2E Today Fan` fixture was removed; its only
+purpose was the fan.
+
+Nothing was weakened to achieve this. `validate_range` is unchanged, the eligibility rule is
+unchanged, no clock was faked, no phase is skipped or conditional, and no raw database write was
+added — the fixture still uses the phase's existing test-only IPC setup. Phase 6 retains every
+assertion it had: Upcoming one-off, Upcoming recurring occurrence, moved occurrence, cancelled
+occurrence exclusion, exact recurring navigation, sidebar collapse/expand, Calendar round-trip,
+fan-closes-on-tab-switch, overdue evaluation removal, and the restart persistence expectation.
+
+**Time-independence proof.** No branch in the spec reads a clock; the only date arithmetic is the
+fixture's `shift()` helper, anchored at midday. The assessment subject is `shift(-1)`, strictly
+earlier than today. Both phases were executed inside the previously fatal 00:00–05:00 window:
+
+```text
+$ pnpm e2e:windows -Phases phase6-planning.e2e.ts phase6-planning-restart.e2e.ts   # 01:13–01:15
+phase6-planning.e2e.ts           PASSED
+phase6-planning-restart.e2e.ts   PASSED
+exit 0
+```
+
+### 11.3 Remediation gate results
+
+```text
+pnpm test                                 607 passed, 42 files (604 + 3 new)
+pnpm test src/features/task/saved-views    11 passed
+pnpm typecheck                            PASS
+pnpm build                                PASS
+pnpm verify                               PASS
+python -m unittest scripts.tests.test_check_project_state   15 tests OK
+pnpm hardening:performance                PASS, violations []
+cargo fmt --check                         PASS
+cargo clippy --all-targets --all-features -D warnings   PASS
+cargo test --locked -- --test-threads=1   590 passed, 0 failed, 4 ignored
+pnpm e2e:windows                          15/15 phases PASS, exit 0, run at 01:19–01:26 local
+git diff --check                          clean
+```
+
+`pnpm tauri build` and `pnpm hardening:rc` were **not** re-run. This remediation changed no Rust,
+no schema, no migration, no dependency, and no IPC or DTO surface; the release installer and RC
+dogfood evidence in §6.1 and §6.3 are unaffected by a React ordering change and two test specs. The
+`--debug --features e2e-test` binary was rebuilt and exercised by all 15 native phases.
+
+**Safety.** Schema stays 23. No migration, Rust production code, backend Saved View semantics,
+dependency, lockfile, generated binding, workflow, or workflow seal was touched. Performance budget
+v2 is unchanged and still passes. Project State is unchanged: `latest_closed_task` 40,
+`latest_closed_slice` 30, `latest_feature_task` 39, schema 23, `next_action` `product_owner_gate`.
+Task 41 remains absent, unallocated, and unrecommended.

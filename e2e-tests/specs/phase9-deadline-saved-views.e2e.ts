@@ -164,12 +164,10 @@ describe("Phase 9 — deadline semantics and Saved Views", () => {
     await expect(editor).not.toExist();
 
     // --- Saved View results -------------------------------------------------------------------
+    // A create leaves its own view selected and projected, with no second click: the panel selects
+    // only once the refreshed active list has landed.
     await expect($(sel.savedViewItem(VIEW_NAME))).toBeDisplayed();
-    // Selecting explicitly. A save sets the new view as selected, but the panel also clears the
-    // selection whenever the selected id is absent from the still-stale active list, so the
-    // selection is dropped before the refetch lands. Pre-existing Task 39 behaviour, recorded as a
-    // P2 finding in the Task 40 audit; this phase asserts what the product actually does.
-    await $(sel.savedViewItem(VIEW_NAME)).$(`button=${VIEW_NAME}`).click();
+    await expect($(sel.savedViewItem(VIEW_NAME)).$("button[aria-pressed='true']")).toBeDisplayed();
     await expect($(sel.title(MATCHING_TASK))).toBeDisplayed();
     // Both clauses must bite: the control task is in the same Upcoming source and must not appear.
     await expect($(sel.title(CONTROL_TASK))).not.toExist();
@@ -213,11 +211,10 @@ describe("Phase 9 — deadline semantics and Saved Views", () => {
     await expect(archivedRow).toBeDisplayed();
     await archivedRow.$("button=Restore").click();
 
-    // Restore appends, so the restored view returns to the active list alongside the survivor and
-    // the manager stays selectable rather than losing its selection.
+    // Restore appends, so the restored view returns to the active list alongside the survivor —
+    // and, like create, it stays selected and projected without a second click.
     await expect($(sel.savedViewItem(RENAMED_VIEW))).toBeDisplayed();
     await expect($(sel.savedViewItem(SECOND_VIEW))).toBeDisplayed();
-    await $(sel.savedViewItem(RENAMED_VIEW)).$(`button=${RENAMED_VIEW}`).click();
     await expect($(sel.savedViewItem(RENAMED_VIEW)).$("button[aria-pressed='true']")).toBeDisplayed();
     await expect($(sel.title(MATCHING_TASK))).toBeDisplayed();
 

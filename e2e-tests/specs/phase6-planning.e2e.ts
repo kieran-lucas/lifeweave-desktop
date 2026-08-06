@@ -8,8 +8,7 @@ describe("Phase 6 — Upcoming and Overdue planning", () => {
       const invoke = (window as unknown as { __TAURI_INTERNALS__: { invoke: <T>(command: string, payload?: unknown) => Promise<T> } }).__TAURI_INTERNALS__.invoke;
       const iso = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
       const shift = (days: number) => { const date = new Date(); date.setHours(12, 0, 0, 0); date.setDate(date.getDate() + days); return iso(date); };
-      const today = shift(0), yesterday = shift(-1), tomorrow = shift(1), afterTomorrow = shift(2);
-      await invoke("create_task", { input: { title: "E2E Today Fan", description: "fan lifecycle", local_date: today, start_minute: 240, end_minute: 300, category_id: "general", priority: "medium", life_node_id: null, tag_ids: [] } });
+      const yesterday = shift(-1), tomorrow = shift(1), afterTomorrow = shift(2);
       await invoke("create_task", { input: { title: "E2E Past Review", description: "needs review", local_date: yesterday, start_minute: 360, end_minute: 420, category_id: "general", priority: "high", life_node_id: null, tag_ids: [] } });
       await invoke("create_task", { input: { title: "E2E Future One-off", description: "upcoming", local_date: tomorrow, start_minute: 480, end_minute: 540, category_id: "general", priority: "medium", life_node_id: null, tag_ids: [] } });
       const futureSeries = await invoke<string>("create_recurring_task", { input: { title: "E2E Future Recurring", description: "upcoming series", local_date: tomorrow, start_minute: 600, end_minute: 660, category_id: "general", priority: "medium", frequency: "daily", interval: 1, weekdays: [], until: null, count: 3, life_node_id: null, tag_ids: [] } });
@@ -21,7 +20,15 @@ describe("Phase 6 — Upcoming and Overdue planning", () => {
     });
     await browser.refresh();
     await expect($("h1=Today")).toBeDisplayed();
-    const fanRow = $("//div[@role='listitem'][.//strong[normalize-space()='E2E Today Fan']]");
+    // Assessment-fan lifecycle, driven from an *overdue* Task. Eligibility is
+    // `local_date < today || (local_date === today && end_minute <= clockMinute)`, and
+    // `validate_range` forbids a start before 04:00, so no today-scheduled fixture is assessable
+    // before 05:00 local time. A yesterday-scheduled Task satisfies the first branch at any hour,
+    // which is what makes this phase runnable whenever the suite happens to start.
+    await $("button=Overdue").click();
+    await expect($("//strong[normalize-space()='E2E Past Review']")).toBeDisplayed();
+    await $("button[aria-label^='Review for E2E Past Review']").click();
+    const fanRow = $("//div[@role='listitem'][.//strong[normalize-space()='E2E Past Review']]");
     await expect(fanRow).toBeDisplayed();
     await fanRow.$("button[aria-label^='Assess task']").click();
     await expect($("[role='listbox'][aria-label='Completion assessment']")).toBeDisplayed();

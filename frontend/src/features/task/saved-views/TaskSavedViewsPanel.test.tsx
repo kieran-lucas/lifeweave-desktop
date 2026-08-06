@@ -50,6 +50,19 @@ const projection = {
   }] }],
 };
 
+/**
+ * A promise the test resolves by hand.
+ *
+ * The selection race only reproduces when the active-list refetch lands *after* the panel has
+ * re-rendered, which is what a real IPC round trip does and what an instantly resolved mock does
+ * not. Holding the refetch open makes that ordering deterministic instead of accidental.
+ */
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((settle) => { resolve = settle; });
+  return { promise, resolve };
+}
+
 function mount(onOpenItem = vi.fn()) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   const result = render(<QueryClientProvider client={client}><TaskSavedViewsPanel anchorLocalDate="2026-08-06" onOpenItem={onOpenItem} /></QueryClientProvider>);
@@ -57,7 +70,9 @@ function mount(onOpenItem = vi.fn()) {
 }
 
 beforeEach(() => {
-  vi.clearAllMocks();
+  // Reset rather than clear: `mockClear` leaves an unconsumed `mockResolvedValueOnce` queued, and a
+  // one-shot left over from an earlier test would silently outrank the next test's own mock.
+  vi.resetAllMocks();
   api.listTaskSavedViews.mockResolvedValue([view("view-1", "Study")]);
   api.listArchivedTaskSavedViews.mockResolvedValue([]);
   api.getTaskSavedView.mockResolvedValue(detail());
@@ -144,6 +159,71 @@ describe("TaskSavedViewsPanel", () => {
     fireEvent.click(screen.getByText(/Archived views/));
     fireEvent.click(screen.getByRole("button", { name: "Restore" }));
     await waitFor(() => expect(api.restoreTaskSavedView).toHaveBeenCalledWith({ id: "view-3", expected_revision: 2 }));
+  });
+
+  it("keeps a newly created view selected and projects it without a second click", async () => {
+    const created = view("view-2", "Deadlines soon", 1);
+    const refetch = deferred<ReturnType<typeof view>[]>();
+    api.listTaskSavedViews.mockResolvedValueOnce([view("view-1", "Study")]).mockReturnValue(refetch.promise);
+    api.createTaskSavedView.mockResolvedValue(detail(created));
+    api.getTaskSavedViewProjection.mockResolvedValue({ ...projection, view: created });
+    mount();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Create view" }));
+    const dialog = await screen.findByRole("dialog", { name: "Create Saved View" });
+    fireEvent.change(within(dialog).getByLabelText("Name"), { target: { value: "Deadlines soon" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save view" }));
+
+    // The save has settled and the panel has re-rendered while the active list is still the old
+    // one — the exact window in which the stale-selection effect used to fire.
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    await waitFor(() => expect(api.listTaskSavedViews).toHaveBeenCalledTimes(2));
+    refetch.resolve([view("view-1", "Study"), created]);
+
+    await waitFor(() => expect(screen.getByRole("button", { name: "Deadlines soon" })).toHaveAttribute("aria-pressed", "true"));
+    await waitFor(() => expect(api.getTaskSavedViewProjection).toHaveBeenCalledWith({
+      view_id: "view-2",
+      anchor_local_date: "2026-08-06",
+    }));
+    expect(await screen.findByText("Moved review")).toBeInTheDocument();
+    expect(screen.queryByText("Select or create a Saved View.")).not.toBeInTheDocument();
+  });
+
+  it("keeps a restored view selected and projects it without a second click", async () => {
+    const restored = view("view-3", "Old", 2);
+    const refetch = deferred<ReturnType<typeof view>[]>();
+    api.listTaskSavedViews.mockResolvedValueOnce([view("view-1", "Study")]).mockReturnValue(refetch.promise);
+    api.listArchivedTaskSavedViews
+      .mockResolvedValueOnce([view("view-3", "Old", 2, true)])
+      .mockResolvedValue([]);
+    api.restoreTaskSavedView.mockResolvedValue(detail(restored));
+    api.getTaskSavedViewProjection.mockResolvedValue({ ...projection, view: restored });
+    mount();
+
+    fireEvent.click(await screen.findByText(/Archived views/));
+    fireEvent.click(await screen.findByRole("button", { name: "Restore" }));
+    await waitFor(() => expect(api.restoreTaskSavedView).toHaveBeenCalledWith({ id: "view-3", expected_revision: 2 }));
+    await waitFor(() => expect(api.listTaskSavedViews).toHaveBeenCalledTimes(2));
+    refetch.resolve([view("view-1", "Study"), restored]);
+
+    await waitFor(() => expect(screen.getByRole("button", { name: "Old" })).toHaveAttribute("aria-pressed", "true"));
+    await waitFor(() => expect(api.getTaskSavedViewProjection).toHaveBeenCalledWith({
+      view_id: "view-3",
+      anchor_local_date: "2026-08-06",
+    }));
+    expect(await screen.findByText("Moved review")).toBeInTheDocument();
+    expect(screen.queryByText("Select or create a Saved View.")).not.toBeInTheDocument();
+  });
+
+  it("still clears a selection whose view leaves the refreshed active list", async () => {
+    const mounted = mount();
+    fireEvent.click(await screen.findByRole("button", { name: "Study" }));
+    expect(await screen.findByText("Moved review")).toBeInTheDocument();
+
+    api.listTaskSavedViews.mockResolvedValue([]);
+    await mounted.client.invalidateQueries({ queryKey: ["task-saved-views"] });
+
+    await waitFor(() => expect(screen.getByText("Select or create a Saved View.")).toBeInTheDocument());
   });
 
   it("renames through edit and shows unsupported and unresolved states explicitly", async () => {

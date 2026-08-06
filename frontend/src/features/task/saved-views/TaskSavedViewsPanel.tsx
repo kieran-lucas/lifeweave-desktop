@@ -326,10 +326,13 @@ export default function TaskSavedViewsPanel({
       return createTaskSavedView(input);
     },
     onSuccess: async (detail) => {
-      setSelectedId(detail.view.id);
       closeEditor();
       setSaveError(null);
+      // Select only after the active list has been refetched. Selecting first would hand the
+      // stale-selection effect an id that the still-stale list cannot contain, and it would clear
+      // the selection before the new view ever arrives.
       await refreshLifecycle();
+      setSelectedId(detail.view.id);
     },
     onError: (error) => setSaveError(errorText(error)),
   });
@@ -339,9 +342,11 @@ export default function TaskSavedViewsPanel({
         ? archiveTaskSavedView({ id: view.id, expected_revision: view.revision })
         : restoreTaskSavedView({ id: view.id, expected_revision: view.revision }),
     onSuccess: async (detail, variables) => {
+      // Archiving removes the view, so clearing its selection is correct before the refetch.
       if (variables.action === "archive" && selectedId === detail.view.id) setSelectedId(null);
-      if (variables.action === "restore") setSelectedId(detail.view.id);
       await refreshLifecycle();
+      // Restoring adds it back, so the selection has to wait for the refreshed active list.
+      if (variables.action === "restore") setSelectedId(detail.view.id);
     },
   });
   const reorder = useMutation({

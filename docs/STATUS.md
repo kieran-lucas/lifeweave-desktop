@@ -23,8 +23,8 @@
 - Two pre-existing native test-determinism defects were found by the mandated release run: a
   `normalize-space()` label selector in phase 8 restart that stops matching once a textarea holds
   persisted text (corrected), and a structural time-of-day dependency in phase 6 that cannot pass
-  before 05:00 local because `validate_range` starts the day at 04:00 (left unchanged; no bounded
-  fix exists).
+  before 05:00 local because `validate_range` starts the day at 04:00. Both are now corrected — see
+  the post-closure remediation entry below.
 - Accessibility: 604 frontend tests pass, including five new cross-cutting contracts covering modal
   keyboard containment, focused error announcement, Deadline queue naming and reachability with zero
   axe violations, colour-independent status, and roving tablist state. Native UIA inspection through
@@ -32,9 +32,9 @@
   and no priority-1 findings.
 - P2 manual physical Narrator/DPI execution remains external evidence debt. The protocol and
   machine-verifiable coverage are complete.
-- One P2 product defect was recorded and deliberately not fixed: creating or restoring a Saved View
-  drops the result selection, because the panel clears a selected id that is absent from the
-  still-stale active list. It awaits a Product Owner decision.
+- One P2 product defect was recorded and deliberately not fixed within the slice: creating or
+  restoring a Saved View drops the result selection, because the panel clears a selected id that is
+  absent from the still-stale active list. It was fixed post-closure — see the entry below.
 - Task 40 is **not** a feature checkpoint. The latest feature task remains 39 at
   `374abcbae263be18fa785a56d656678f9bfd9c29`. Task 41 is neither allocated nor recommended.
 - Canonical decision: ADR 0034, taking up the Hardening candidate ADR 0028 scored at 8.055.
@@ -52,14 +52,39 @@
 - Installer `Lifeweave_0.0.0_x64-setup.exe`, 5,087,854 bytes, sha256
   `fc7745d596c5684d6100f61d3b985ab67942ac52ac0a2de7d9c693a45f77193c`, release mode, schema 23, with
   the `e2e-test` capability confirmed absent from the release binary.
-- Residual debt: physical Narrator/DPI execution; native phases 6 and 6-restart unrun in this
-  session for the structural time-of-day reason above; reduced-motion and forced-colors contracts
-  not machine-assertable in jsdom; and two recorded Product Owner decisions (the startup-size
-  trade-off and the P2 Saved View selection defect).
+- Residual debt: physical Narrator/DPI execution; reduced-motion and forced-colors contracts not
+  machine-assertable in jsdom; and the recorded startup-size trade-off decision. The phase 6 and
+  Saved View selection debts are closed by the remediation below.
 - Out of scope and unchanged: product features, schema 24, recurring deadlines, actual time,
   backlinks, interchange, Graph, Noteboard, score, prediction, reminders, notifications, sync,
   sharing, telemetry, updater, signing, store distribution, dependencies, lockfile, workflows, and
   the workflow seal.
+
+### Task 40 post-closure remediation
+
+Task 40 stays closed; two bounded findings it recorded as open were fixed afterwards from baseline
+`2cad1c874015c0f60b63dac14ea0c58994d62b98`. Full evidence in §11 of the Task 40 audit.
+
+- **Saved View selection race (P2, fixed).** `TaskSavedViewsPanel` set `selectedId` before awaiting
+  the lifecycle refetch, so the stale-selection effect saw the new id against the old active list
+  and cleared it. Both mutations now select only after `refreshLifecycle()` resolves; archiving
+  still clears its selection before the refetch, because that view is leaving. Three frontend tests
+  added — create and restore both fail on the baseline with nothing selected, and a third proves
+  legitimate stale-selection cleanup still works. Phase 9 no longer clicks the view it just created
+  or restored and asserts `aria-pressed` directly.
+- **Phase 6 time-of-day dependency (fixed).** The assessment-fan lifecycle moved from the
+  today-scheduled `E2E Today Fan` to the overdue `E2E Past Review`, reached through the Overdue →
+  Review navigation the phase already used. An overdue Task is assessable at any hour, so the phase
+  no longer depends on the clock. No eligibility rule, `validate_range`, or assertion was weakened;
+  every existing assertion is retained.
+- Gates: 607 frontend tests (42 files), typecheck, build, verify, governance unit tests, performance
+  v2 (violations `[]`), `cargo fmt`, full-target clippy, 590 Rust tests serial (4 ignored), and
+  **15/15 native phases** run at 01:19–01:26 local — inside the window that previously made phase 6
+  un-runnable. `pnpm tauri build` and `pnpm hardening:rc` were not re-run: no Rust, schema,
+  migration, dependency, or IPC surface changed.
+- Schema stays 23. No migration, Rust production code, dependency, lockfile, generated binding,
+  workflow, or seal change. Performance budget v2 unchanged. Project State unchanged. No Slice 031
+  and no Task 41 work.
 
 ## Task 39/60 — Task Saved Views + Bounded Typed Filter Core (complete)
 
