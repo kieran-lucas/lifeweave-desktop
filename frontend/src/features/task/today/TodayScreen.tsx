@@ -74,6 +74,11 @@ export const localToday = getLocalToday;
 export const formatMinute = (n: number) =>
   `${String(Math.floor(n / 60)).padStart(2, "0")}:${String(n % 60).padStart(2, "0")}`;
 const newOperationId = () => globalThis.crypto.randomUUID();
+// The Today cache entry is identified by BOTH the viewed day and the observed anchor, because
+// deadline state is derived from the anchor. Every read and write must use this exact key or a
+// mutation will update a different entry than the one Today renders.
+const todayItemsKey = (localDate: string, observedLocalDate: string) =>
+  ["today-items", localDate, observedLocalDate] as const;
 function normalize(value: TodayItemView): TodayItem {
   if (
     value.kind === "recurring" &&
@@ -261,10 +266,11 @@ export function TodayScreen({
     [lastOperation, setLastOperation] = useState<{
       itemId: string;
       localDate: string;
+      observedLocalDate: string;
       operationId: string;
     } | null>(null);
   const items = useQuery({
-      queryKey: ["today-items", date, today],
+      queryKey: todayItemsKey(date, today),
       queryFn: async () => (await listTodayItems(date, today)).map(normalize),
     }),
     categories = useQuery({
@@ -382,15 +388,11 @@ export function TodayScreen({
     onMutate: async (variables) => {
       setAssessmentError("");
       setOpenFan(null);
-      await client.cancelQueries({
-        queryKey: ["today-items", variables.item.local_date],
-      });
-      const previous = client.getQueryData<TodayItem[]>([
-        "today-items",
-        variables.item.local_date,
-      ]);
+      const key = todayItemsKey(variables.item.local_date, today);
+      await client.cancelQueries({ queryKey: key });
+      const previous = client.getQueryData<TodayItem[]>(key);
       client.setQueryData<TodayItem[]>(
-        ["today-items", variables.item.local_date],
+        key,
         (current) =>
           current?.map((item) =>
             item.id === variables.item.id
@@ -407,20 +409,25 @@ export function TodayScreen({
               : item,
           ),
       );
-      return { previous, localDate: variables.item.local_date };
+      return {
+        previous,
+        localDate: variables.item.local_date,
+        observedLocalDate: today,
+      };
     },
     onError: (value, _variables, context) => {
-      client.setQueryData(
-        ["today-items", context?.localDate],
-        context?.previous,
-      );
+      if (context)
+        client.setQueryData(
+          todayItemsKey(context.localDate, context.observedLocalDate),
+          context.previous,
+        );
       setAssessmentError(
         value instanceof Error ? value.message : "Unable to save assessment.",
       );
     },
     onSuccess: async (value, variables) => {
       client.setQueryData<TodayItem[]>(
-        ["today-items", variables.item.local_date],
+        todayItemsKey(variables.item.local_date, today),
         (current) =>
           current?.map((item) =>
             item.id === variables.item.id
@@ -431,12 +438,15 @@ export function TodayScreen({
       setLastOperation({
         itemId: variables.item.id,
         localDate: variables.item.local_date,
+        observedLocalDate: today,
         operationId: value.operation_id,
       });
       await Promise.allSettled([
         client.invalidateQueries({ queryKey: ["month-projection"] }),
         client.invalidateQueries({ queryKey: ["analytics"] }),
         client.invalidateQueries({ queryKey: ["task-planning"] }),
+        // A current evaluation controls active Deadline queue membership.
+        client.invalidateQueries({ queryKey: ["deadline-queue"] }),
       ]);
     },
   });
@@ -446,7 +456,7 @@ export function TodayScreen({
     onSuccess: async (value) => {
       if (lastOperation)
         client.setQueryData<TodayItem[]>(
-          ["today-items", lastOperation.localDate],
+          todayItemsKey(lastOperation.localDate, lastOperation.observedLocalDate),
           (current) =>
             current?.map((item) =>
               item.id === lastOperation.itemId
@@ -459,6 +469,7 @@ export function TodayScreen({
         client.invalidateQueries({ queryKey: ["month-projection"] }),
         client.invalidateQueries({ queryKey: ["analytics"] }),
         client.invalidateQueries({ queryKey: ["task-planning"] }),
+        client.invalidateQueries({ queryKey: ["deadline-queue"] }),
       ]);
     },
     onError: (value) =>

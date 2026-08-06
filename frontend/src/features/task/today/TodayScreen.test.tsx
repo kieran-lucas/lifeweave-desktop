@@ -320,6 +320,146 @@ describe("Today recurrence contract", () => {
     );
     expect(commands.updateRecurringOccurrence).not.toHaveBeenCalled();
   });
+  // ── Task 38 remediation: Today evaluation cache identity ──────────────────
+  // The Today query is keyed by BOTH the viewed day and the observed anchor. These prove the
+  // mutation paths write to the entry Today actually renders, not a stale two-part key.
+
+  const renderTodayOnItsOwnDay = () =>
+    renderToday(undefined, {
+      selectedDate: oneOff.local_date,
+      anchorLocalDate: oneOff.local_date,
+    });
+
+  const todayEntries = (client: QueryClient) =>
+    client.getQueryCache().findAll({ queryKey: ["today-items"] });
+
+  const renderedItems = (client: QueryClient) =>
+    client.getQueryData<Array<{ id: string; evaluation: unknown }>>([
+      "today-items",
+      oneOff.local_date,
+      oneOff.local_date,
+    ]);
+
+  it("evaluation updates the rendered Today cache entry, not a stale key", async () => {
+    const { client } = renderTodayOnItsOwnDay();
+    const trigger = await screen.findByRole("button", {
+      name: "Assess task. Current state: Unevaluated",
+    });
+
+    fireEvent.click(trigger);
+    fireEvent.click(
+      await screen.findByRole("option", { name: "Met expectation" }),
+    );
+
+    // The rendered row itself must transition, not merely the backend call.
+    expect(
+      await screen.findByRole("button", {
+        name: "Assess task. Current state: Met expectation",
+      }),
+    ).toBeInTheDocument();
+
+    await waitFor(() =>
+      expect(renderedItems(client)?.[0]?.evaluation).toMatchObject({
+        state_id: "completion-met",
+        operation_id: "operation",
+      }),
+    );
+
+    // No two-part Today entry may exist or be relied upon.
+    const keys = todayEntries(client).map((entry) => entry.queryKey);
+    expect(keys.length).toBeGreaterThan(0);
+    for (const key of keys) expect(key).toHaveLength(3);
+  });
+
+  it("undo reverts the same rendered Today cache entry", async () => {
+    const { client } = renderTodayOnItsOwnDay();
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: "Assess task. Current state: Unevaluated",
+      }),
+    );
+    fireEvent.click(
+      await screen.findByRole("option", { name: "Met expectation" }),
+    );
+    await screen.findByRole("button", {
+      name: "Assess task. Current state: Met expectation",
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Undo assessment" }));
+    await waitFor(() =>
+      expect(commands.undoTaskEvaluation).toHaveBeenCalledWith({
+        operation_id: "operation",
+      }),
+    );
+
+    expect(
+      await screen.findByRole("button", {
+        name: "Assess task. Current state: Unevaluated",
+      }),
+    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(renderedItems(client)?.[0]?.evaluation).toBeNull(),
+    );
+    for (const entry of todayEntries(client))
+      expect(entry.queryKey).toHaveLength(3);
+  });
+
+  it("rollback after a rejected evaluation restores the rendered entry", async () => {
+    commands.evaluateTask.mockRejectedValueOnce(new Error("Assessment rejected"));
+    const { client } = renderTodayOnItsOwnDay();
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: "Assess task. Current state: Unevaluated",
+      }),
+    );
+    fireEvent.click(
+      await screen.findByRole("option", { name: "Met expectation" }),
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Assessment rejected",
+    );
+    // Rollback must land on the three-part key, so the rendered row reverts.
+    expect(
+      await screen.findByRole("button", {
+        name: "Assess task. Current state: Unevaluated",
+      }),
+    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(renderedItems(client)?.[0]?.evaluation).toBeNull(),
+    );
+    for (const entry of todayEntries(client))
+      expect(entry.queryKey).toHaveLength(3);
+  });
+
+  it("evaluation and undo invalidate the deadline queue", async () => {
+    const { client } = renderTodayOnItsOwnDay();
+    const invalidate = vi.spyOn(client, "invalidateQueries");
+    const deadlineInvalidations = () =>
+      invalidate.mock.calls.filter(
+        ([options]) =>
+          Array.isArray(options?.queryKey) &&
+          options.queryKey[0] === "deadline-queue",
+      ).length;
+
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: "Assess task. Current state: Unevaluated",
+      }),
+    );
+    fireEvent.click(
+      await screen.findByRole("option", { name: "Met expectation" }),
+    );
+    // A current evaluation removes the Task from the active deadline queue.
+    await waitFor(() => expect(deadlineInvalidations()).toBeGreaterThan(0));
+
+    const afterEvaluate = deadlineInvalidations();
+    fireEvent.click(screen.getByRole("button", { name: "Undo assessment" }));
+    await waitFor(() =>
+      expect(deadlineInvalidations()).toBeGreaterThan(afterEvaluate),
+    );
+  });
+
   it("optimistically evaluates an eligible one-off and exposes backend Undo", async () => {
     renderToday();
     await screen.findByText("Focus");

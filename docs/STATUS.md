@@ -19,6 +19,8 @@
 
 Task 38 is closed. Reopen only for a reproducible product defect, migration/data-loss risk, violated invariant, or explicit Product Owner decision.
 
+Post-closure remediation: Task 38 widened the Today query key to `["today-items", localDate, observedLocalDate]` but left the evaluation and undo optimistic-cache paths on the old two-part key, so a successful evaluation could update a different cache entry than the one Today rendered. Repaired with a single canonical `todayItemsKey` helper used by the query, cancel, read, optimistic write, rollback, success, and undo paths, plus `deadline-queue` invalidation on evaluation and undo since a current evaluation controls active queue membership. Frontend-only; no schema, Rust, IPC signature, binding, dependency, or workflow change. Regression coverage proves the rendered row transitions and reverts, and three of the four new tests fail against the pre-fix implementation. Verified with focused Today tests, frontend typecheck, 589 frontend tests, and the production build.
+
 ## Task 37/60 — Focus Plan ↔ Task Integration + Manual Review History (complete)
 
 - Closed slice: `027-focus-plan-task-review`.
