@@ -1,6 +1,6 @@
 # Roadmap
 
-## Slice 030 — Release-Candidate Hardening + Evidence Baseline v2 (active)
+## Slice 030 — Release-Candidate Hardening + Evidence Baseline v2 (complete)
 
 Task 40 activates the Hardening candidate ADR 0028 scored at 8.055 — the highest-ranked remaining
 eligible candidate now that Deadline (8.420) and Saved Views (8.095) have shipped as Tasks 38 and
@@ -14,11 +14,18 @@ Windows E2E evidence for Deadline and Saved Views including restart and full bac
 expanded machine-verifiable accessibility coverage plus an executable Windows Narrator/DPI protocol
 that never reports an unobserved manual result as PASS.
 
-Hard boundary: product behavior unchanged, schema stays 23, no migration, no route/destination/
+Hard boundary held: product behavior unchanged, schema stays 23, no migration, no route/destination/
 sidebar/card/dashboard/startup change, no dependency or lockfile churn, no workflow or seal change,
 no lint suppression, test weakening, source-map removal, or arbitrary budget inflation. Task 40 is
 not a feature checkpoint — the latest feature task remains 39 — and Task 41 is neither allocated
 nor recommended.
+
+Closure evidence is in `docs/audits/task-40-release-candidate-hardening.md`. Residual debt is
+disclosed rather than implied: physical Narrator/DPI execution was not performed, native phases 6
+and 6-restart are structurally un-runnable before 05:00 local time and were not executed, and two
+findings — a rejected startup-size trade-off worth 65,218 startup bytes, and a P2 Saved View
+selection defect surfaced by the new native evidence — are recorded for a Product Owner decision
+rather than actioned inside this slice.
 
 ## Slice 029 — Task Saved Views + Bounded Typed Filter Core (complete)
 

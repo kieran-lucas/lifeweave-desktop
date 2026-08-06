@@ -13,7 +13,10 @@ describe("Task 36 — Focus Plan fresh-process persistence", () => {
     await plan.click();
 
     await expect($("//label[normalize-space()='Title']/input")).toHaveValue("E2E Focus Plan Persisted");
-    await expect($("//label[normalize-space()='Outcome']/textarea")).toHaveValue("Persistent plan outcome");
+    // `text()`, not the element string-value: after a restart the textarea carries its persisted
+    // content, so `normalize-space()` on the wrapping label reads "OutcomePersistent plan outcome"
+    // and never matches. The Lifecycle selector below already avoids this for the same reason.
+    await expect($("//label[normalize-space(text())='Outcome']/textarea")).toHaveValue("Persistent plan outcome");
     await expect($("//label[normalize-space(text())='Lifecycle']/select")).toHaveValue("active");
     await expect($("input[aria-label='Phase 1 title']")).toHaveValue("Foundation");
     await expect($("[role='alert']")).not.toExist();

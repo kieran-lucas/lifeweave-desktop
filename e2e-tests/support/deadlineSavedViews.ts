@@ -34,6 +34,15 @@ export const dateKeystrokes = (isoDate: string) => {
 };
 
 export const TODAY = shift(0);
+/**
+ * The Task evaluated by phase 9 is scheduled yesterday on purpose.
+ *
+ * Assessment eligibility is `local_date < today || (local_date === today && end_minute <=
+ * clockMinute)`. A Task scheduled *today* is therefore only assessable after its window ends, which
+ * makes any such fixture fail when the suite runs earlier in the day than the window. A past date
+ * satisfies the first branch unconditionally, so this phase is independent of the wall clock.
+ */
+export const EVALUATED_SCHEDULED = shift(-1);
 /** Inside the 14-day Upcoming horizon. */
 export const SCHEDULED = shift(2);
 /** Inside the anchor+14 Deadlines window. */
@@ -64,6 +73,7 @@ export const sel = {
   labelledSelect: (label: string) => `//label[normalize-space(text())='${label}']/select`,
   clauseLegend: (label: string) => `//legend[normalize-space()='${label}']`,
   openItem: (title: string) => `button[aria-label^='Open ${title}, scheduled ']`,
+  reviewItem: (title: string) => `button[aria-label^='Review for ${title}']`,
   archivedSummary: "//summary[starts-with(normalize-space(), 'Archived views')]",
   savedViewEditor: "//div[@role='dialog'][@aria-labelledby='saved-view-editor-heading']",
   selectedDay: (date: string) => `//p[normalize-space()='Selected day · ${date}']`,

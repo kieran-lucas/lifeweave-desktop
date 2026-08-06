@@ -3,12 +3,12 @@ import { $, browser, expect } from "@wdio/globals";
 import {
   CONTROL_TASK,
   DEADLINE,
+  EVALUATED_SCHEDULED,
   EVALUATED_TASK,
   MATCHING_TASK,
   RENAMED_VIEW,
   SCHEDULED,
   SECOND_VIEW,
-  TODAY,
   TODAY_DEADLINE,
   VIEW_NAME,
   dateKeystrokes,
@@ -88,7 +88,7 @@ describe("Phase 9 — deadline semantics and Saved Views", () => {
     });
     await createTask({
       title: EVALUATED_TASK,
-      localDate: TODAY,
+      localDate: EVALUATED_SCHEDULED,
       deadline: TODAY_DEADLINE,
       priority: "High",
       startHour: "13",
@@ -110,10 +110,13 @@ describe("Phase 9 — deadline semantics and Saved Views", () => {
     await expect(queued).toHaveText(expect.stringContaining("Priority high"));
 
     // --- evaluation removes a Task from the active queue; undo restores it ---------------------
-    // This runs before any deadline navigation, while the selected day is still today: opening a
-    // deadline result deliberately moves the selection to the scheduled day.
-    await $("button=Today").click();
-    await expect($(sel.todayDay(TODAY))).toBeDisplayed();
+    // Reached through Overdue rather than Today: the evaluated Task is scheduled yesterday, which
+    // makes it assessable regardless of the time of day the suite happens to run.
+    await $("button=Overdue").click();
+    await expect($(sel.title(EVALUATED_TASK))).toBeDisplayed();
+    await $(sel.reviewItem(EVALUATED_TASK)).click();
+    await expect($(sel.selectedTab("Today"))).toBeDisplayed();
+    await expect($(sel.selectedDay(EVALUATED_SCHEDULED))).toBeDisplayed();
     const evaluated = $(sel.taskRow(EVALUATED_TASK));
     await expect(evaluated).toBeDisplayed();
     await evaluated.$("button[aria-label^='Assess task']").click();

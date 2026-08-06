@@ -3,13 +3,13 @@
 ## Status
 
 ```text
-Task 40: ACTIVE
-Slice 030: ACTIVE
+Task 40: COMPLETE
+Slice 030: COMPLETE
 activation baseline: fb2a240920414c05e7fd4235357b952a15611e8f
 Task 39 feature checkpoint: 374abcbae263be18fa785a56d656678f9bfd9c29
 Task 39 remediation: fb2a240920414c05e7fd4235357b952a15611e8f
 schema: 23 (unchanged)
-active spec: specs/030-release-candidate-hardening
+active spec: none
 Task 41: prohibited, unstarted, unallocated, and unrecommended
 ```
 
@@ -46,4 +46,10 @@ tree-shaking, or arbitrary budget inflation. Task 41 is not allocated or recomme
 - `plan.md` — dependency-aware execution order;
 - `tasks.md` — resumable completion ledger;
 - `acceptance.md` — deterministic acceptance mapping;
-- ADR 0034 — release-candidate hardening and performance budget v2 decision.
+- ADR 0034 — release-candidate hardening and performance budget v2 decision;
+- `docs/audits/task-40-release-candidate-hardening.md` — measured closure evidence.
+
+Closure rests on reproduced debt, a deterministic three-build performance baseline, isolated checker
+tests, a green all-target Clippy gate with no suppression, four native phases each proven to fail on
+a deliberate break, native UIA inspection, and full broad gates. Residual debt is disclosed in the
+audit rather than implied. No confirmed P0/P1 product defect remains.

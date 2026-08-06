@@ -12,16 +12,16 @@
 
 ## Current state
 
-- Latest closed task: **39/60**
-- Latest closed slice: **029 — Task Saved Views + Bounded Typed Filter Core**
-- Active task: **40 — Release-Candidate Hardening + Evidence Baseline v2**
-- Active implementation specification: **`specs/030-release-candidate-hardening`**
+- Latest closed task: **40/60**
+- Latest closed slice: **030 — Release-Candidate Hardening + Evidence Baseline v2**
+- Active task: **none**
+- Active implementation specification: **none**
 - Latest feature checkpoint: **Task 39 — Task Saved Views + Bounded Typed Filter Core** (`374abcbae263be18fa785a56d656678f9bfd9c29`)
 - Database schema: **23**
-- Next action: **Implement active spec**
+- Next action: **Product Owner gate**
 - Task 41: **prohibited, unstarted, unallocated, and unrecommended**
 
-Task 40 is a hardening and evidence slice. It changes no product behavior, adds no migration, and
+Task 40 was a hardening and evidence slice. It changed no product behavior, added no migration, and
 is **not** a feature checkpoint: the latest feature task remains 39.
 
 ## Task 36 closure

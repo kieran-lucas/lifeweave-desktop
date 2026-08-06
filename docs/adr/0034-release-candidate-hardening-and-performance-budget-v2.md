@@ -2,8 +2,10 @@
 
 ## Status
 
-Accepted and activated by Task 40 / Slice 030 from execution baseline
-`fb2a240920414c05e7fd4235357b952a15611e8f`.
+Accepted and implemented by Task 40 / Slice 030 from execution baseline
+`fb2a240920414c05e7fd4235357b952a15611e8f`. Task 40 is a hardening slice and therefore not a feature
+checkpoint; the latest feature task remains 39. Measured evidence:
+`docs/audits/task-40-release-candidate-hardening.md`.
 
 ## Context
 

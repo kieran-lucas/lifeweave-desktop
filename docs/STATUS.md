@@ -1,30 +1,65 @@
 # Project Status
 
-## Task 40/60 — Release-Candidate Hardening + Evidence Baseline v2 (active)
+## Task 40/60 — Release-Candidate Hardening + Evidence Baseline v2 (complete)
 
-- Active slice: `030-release-candidate-hardening`.
+- Closed slice: `030-release-candidate-hardening`.
 - Execution baseline: `fb2a240920414c05e7fd4235357b952a15611e8f`.
-- Canonical decision: ADR 0034, activating the Hardening candidate ADR 0028 scored at 8.055.
-- Schema stays 23; no migration is added and no released migration is touched.
+- Full evidence: `docs/audits/task-40-release-candidate-hardening.md`.
+- Budget v2 froze against a deterministic build: three production builds from the clean baseline
+  produced byte-identical normalized inventories (16 chunks, 1,181,334 raw, 361,595 deterministic
+  gzip). Maxima are derived by documented `ceil` formulas and clamped by the locked ceilings; the
+  derived per-chunk limit is binding everywhere.
+- No safe bundle reduction was admissible. Zero duplicated modules; the one eager-import candidate
+  (`LifeEditWorkspace`, sole importer of `d3-hierarchy` and the sortable layer) removes 65,218 bytes
+  from the startup chunk but raises total raw by 879 and gzip by 1,898, which the locked baseline
+  rule forbids. It is recorded as a measured, rejected candidate and left as an explicit Product
+  Owner trade-off.
+- Both `clippy::type_complexity` findings were corrected with a named row alias and one shared
+  reader. No suppression, no lint-level change, no test exclusion; backup coverage is equivalent.
+- Four native phases now cover Task 38 deadlines and Task 39 Saved Views through accessible
+  selectors only, including restart persistence and full backup/restore with a restart companion.
+  Each was proven to fail on a deliberate break of its central behaviour, and every break was
+  reverted.
+- Two pre-existing native test-determinism defects were found by the mandated release run: a
+  `normalize-space()` label selector in phase 8 restart that stops matching once a textarea holds
+  persisted text (corrected), and a structural time-of-day dependency in phase 6 that cannot pass
+  before 05:00 local because `validate_range` starts the day at 04:00 (left unchanged; no bounded
+  fix exists).
+- Accessibility: 604 frontend tests pass, including five new cross-cutting contracts covering modal
+  keyboard containment, focused error announcement, Deadline queue naming and reachability with zero
+  axe violations, colour-independent status, and roving tablist state. Native UIA inspection through
+  the Windows SDK client API found zero unnamed focusable elements inside the app document subtree
+  and no priority-1 findings.
+- P2 manual physical Narrator/DPI execution remains external evidence debt. The protocol and
+  machine-verifiable coverage are complete.
+- One P2 product defect was recorded and deliberately not fixed: creating or restoring a Saved View
+  drops the result selection, because the panel clears a selected id that is absent from the
+  still-stale active list. It awaits a Product Owner decision.
 - Task 40 is **not** a feature checkpoint. The latest feature task remains 39 at
-  `374abcbae263be18fa785a56d656678f9bfd9c29`.
-- Four reproduced debts drive the slice: the aggregate JavaScript budget fails at
-  `total_js_bytes=1181334` against a `1150000` maximum while tracking four of sixteen chunks; the
-  exact all-target/all-feature Clippy command fails on two `type_complexity` findings in backup
-  test code; native Windows E2E ends at Focus Plans and covers neither Deadline nor Saved Views;
-  and Task 30 physical Narrator/DPI evidence debt is still open.
+  `374abcbae263be18fa785a56d656678f9bfd9c29`. Task 41 is neither allocated nor recommended.
+- Canonical decision: ADR 0034, taking up the Hardening candidate ADR 0028 scored at 8.055.
+- Schema stays 23; no migration was added and no released migration was touched.
+- Four debts were reproduced from the clean baseline before any edit: the aggregate JavaScript
+  budget failed at `total_js_bytes=1181334` against a `1150000` maximum while tracking four of
+  sixteen chunks; the exact all-target/all-feature Clippy command failed on two `type_complexity`
+  findings in backup test code; native Windows E2E ended at Focus Plans and covered neither Deadline
+  nor Saved Views; and Task 30 physical Narrator/DPI evidence debt was still open.
 - Budget v2 is a new versioned file. `docs/audits/task-16-performance-budgets.json` is preserved
-  byte-identically as history rather than edited.
-- Lint debt is corrected, never suppressed: no `#[allow]`, no lint-level reduction, no test
-  exclusion.
-- Native phases drive real workflows through accessible selectors only — no raw IPC, no direct
-  database writes, no production test backdoor.
-- Machine-verifiable accessibility closure and physical Narrator/DPI observation are recorded as
-  separate evidence classes. An unobserved manual result is recorded as `NOT RUN`, never PASS.
-- Out of scope: product features, schema 24, recurring deadlines, actual time, backlinks,
-  interchange, Graph, Noteboard, score, prediction, reminders, notifications, sync, sharing,
-  telemetry, updater, signing, store distribution, new dependencies, workflow or seal changes, and
-  Task 41.
+  byte-identically as history rather than edited, and no longer feeds the gate.
+- Gates: governance, source integrity, index, typecheck, 604 frontend tests, production build,
+  performance v2, `cargo fmt`, exact all-target/all-feature clippy, 590 Rust tests serial (4
+  ignored), production installer, 13 of 15 native phases, and RC dogfood all pass.
+- Installer `Lifeweave_0.0.0_x64-setup.exe`, 5,087,854 bytes, sha256
+  `fc7745d596c5684d6100f61d3b985ab67942ac52ac0a2de7d9c693a45f77193c`, release mode, schema 23, with
+  the `e2e-test` capability confirmed absent from the release binary.
+- Residual debt: physical Narrator/DPI execution; native phases 6 and 6-restart unrun in this
+  session for the structural time-of-day reason above; reduced-motion and forced-colors contracts
+  not machine-assertable in jsdom; and two recorded Product Owner decisions (the startup-size
+  trade-off and the P2 Saved View selection defect).
+- Out of scope and unchanged: product features, schema 24, recurring deadlines, actual time,
+  backlinks, interchange, Graph, Noteboard, score, prediction, reminders, notifications, sync,
+  sharing, telemetry, updater, signing, store distribution, dependencies, lockfile, workflows, and
+  the workflow seal.
 
 ## Task 39/60 — Task Saved Views + Bounded Typed Filter Core (complete)
 

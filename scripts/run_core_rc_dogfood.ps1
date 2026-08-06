@@ -64,8 +64,10 @@ try {
   if ($LASTEXITCODE -ne 0) { throw "Narrative dogfood fixture failed." }
   cargo test --manifest-path src-tauri/Cargo.toml --locked portable::service::tests::
   if ($LASTEXITCODE -ne 0) { throw "Portable Basic Leaf/Narrative round-trip dogfood fixtures failed." }
+  # `task::` covers evaluation, Upcoming/Overdue planning, Task 38 deadline semantics, and the
+  # Task 39 Saved View domain in one selector.
   cargo test --manifest-path src-tauri/Cargo.toml --locked task::
-  if ($LASTEXITCODE -ne 0) { throw "Upcoming/Overdue planning and evaluation dogfood fixtures failed." }
+  if ($LASTEXITCODE -ne 0) { throw "Task planning, deadline, evaluation, and Saved View dogfood fixtures failed." }
 
   $installer = Join-Path $repo "src-tauri\target\release\bundle\nsis\Lifeweave_0.0.0_x64-setup.exe"
   if (-not (Test-Path $installer)) { throw "Run the normal production Tauri build before RC dogfood." }

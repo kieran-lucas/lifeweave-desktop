@@ -4,12 +4,12 @@
 
 - repository: `kieran-lucas/lifeweave-desktop`
 - branch: `main`
-- latest closed task/slice: 39 / 029
-- active task/slice: 40 / 030
+- latest closed task/slice: 40 / 030
+- active task/slice: none
 - schema: 23
-- active specification: `specs/030-release-candidate-hardening`
+- active specification: none
 - latest feature checkpoint: `374abcbae263be18fa785a56d656678f9bfd9c29`
-- next action: implement active spec
+- next action: Product Owner gate
 - Task 41: prohibited, unstarted, unallocated, and unrecommended
 
 ## Task 36 final state
@@ -45,7 +45,7 @@ tab. Schema 23 is active from the schema 22 activation baseline. The product che
 source, reference, navigation, query-shape, backup/reopen, accessibility, regression, and build
 evidence passed.
 
-## Task 40 activation
+## Task 40 closure
 
 The Product Owner activated Task 40 / Slice 030 from baseline
 `fb2a240920414c05e7fd4235357b952a15611e8f`, taking up the Hardening candidate ADR 0028 scored at
@@ -62,9 +62,25 @@ Product behavior, schema 23, and all released migrations are unchanged. Task 40 
 feature checkpoint — `latest_feature_task` remains 39 — and Task 41 must not be allocated,
 started, or recommended.
 
-Task 39 remains closed and is not reopened by this activation.
+Task 39 remains closed and was not reopened by this activation.
+
+Task 40 is closed. Evidence is in `docs/audits/task-40-release-candidate-hardening.md`. Budget v2
+replaced the obsolete aggregate gate while preserving Task 16 history byte-identically, the exact
+all-target/all-feature Clippy command is green without suppression, four native phases cover Task 38
+deadlines and Task 39 Saved Views including restart and full backup/restore, and machine-verifiable
+accessibility coverage plus an executable Narrator/DPI protocol are in place.
+
+Disclosed residual debt, none of it a P0/P1 product defect:
+
+- P2 manual physical Narrator/DPI execution remains external evidence debt;
+- native phases 6 and 6-restart were not executed this session — phase 6 is structurally
+  un-runnable before 05:00 local time because `validate_range` starts the product day at 04:00;
+- reduced-motion and forced-colors contracts are not machine-assertable under jsdom;
+- two findings await a Product Owner decision: a rejected trade-off that would move 65,218 bytes off
+  the startup chunk at the cost of 879 raw / 1,898 gzip on the aggregate, and a P2 defect where
+  creating or restoring a Saved View drops the result selection.
 
 ## Next action
 
-Implement `specs/030-release-candidate-hardening`. Use `specs/030-release-candidate-hardening/tasks.md`
-as the resumable ledger.
+Await the Product Owner gate. No specification is active, no next candidate is recommended, and
+Task 41 must not be allocated or started.
