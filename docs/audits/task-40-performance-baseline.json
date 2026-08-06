@@ -1,0 +1,176 @@
+{
+  "task": 40,
+  "slice": "030-release-candidate-hardening",
+  "measured_at_commit": "9910fd19b4cf134e9e3ec36c597f4933e8682704",
+  "activation_baseline_commit": "fb2a240920414c05e7fd4235357b952a15611e8f",
+  "method": {
+    "builds": 3,
+    "between_runs": "deleted generated frontend/dist only",
+    "identical_normalized_inventories": true,
+    "gzip": "gzip level 9 with mtime=0, so the measurement does not depend on build time",
+    "chunk_identity": "emitted file name with only the terminal content hash stripped",
+    "attribution": "per-chunk sourcemap `sources` package ownership, not name heuristics"
+  },
+  "starting_baseline": {
+    "chunk_count": 16,
+    "total_js_bytes": 1181334,
+    "total_js_gzip_bytes": 361595
+  },
+  "optimization_findings": [
+    {
+      "candidate": "duplicated modules across chunks",
+      "result": "none found",
+      "evidence": "0 source paths appear in more than one chunk sourcemap",
+      "applied": false
+    },
+    {
+      "candidate": "lazy boundary for LifeEditWorkspace (sole importer of d3-hierarchy and the sortable layer)",
+      "result": "rejected",
+      "evidence": "startup index.js 512586 -> 447368 (-65218), but total raw 1181334 -> 1182213 (+879) and total gzip 361595 -> 363493 (+1898)",
+      "reason": "spec 5.1 locks the final observed total raw and gzip at or below the measured starting baseline; module-split overhead raises both totals",
+      "applied": false
+    },
+    {
+      "candidate": "accidental eager imports elsewhere",
+      "result": "none found",
+      "evidence": "every other route, mode, dialog, and panel already sits behind an approved lazy() boundary",
+      "applied": false
+    },
+    {
+      "candidate": "unused feature imports",
+      "result": "none found",
+      "evidence": "every emitted chunk maps to a live route, mode, or panel",
+      "applied": false
+    }
+  ],
+  "final_inventory": [
+    {
+      "chunk": "BasicLeafEditor.js",
+      "file": "BasicLeafEditor-BfnLSDyF.js",
+      "raw_bytes": 52355,
+      "gzip_bytes": 17088,
+      "class": "lazy",
+      "owner": "Basic Leaf editor (Task 15/19) including table and image extensions"
+    },
+    {
+      "chunk": "DeadlineQueuePanel.js",
+      "file": "DeadlineQueuePanel-Ch8BEIE0.js",
+      "raw_bytes": 3096,
+      "gzip_bytes": 1236,
+      "class": "lazy",
+      "owner": "Deadline queue (Task 38)"
+    },
+    {
+      "chunk": "FocusPlansScreen.js",
+      "file": "FocusPlansScreen-D5muthpM.js",
+      "raw_bytes": 18396,
+      "gzip_bytes": 5087,
+      "class": "lazy",
+      "owner": "Focus Plans (Tasks 35-37)"
+    },
+    {
+      "chunk": "GlobalSearchDialog.js",
+      "file": "GlobalSearchDialog-CHtDWAFJ.js",
+      "raw_bytes": 4142,
+      "gzip_bytes": 1776,
+      "class": "lazy",
+      "owner": "Global Search (Task 18)"
+    },
+    {
+      "chunk": "NarrativeCanvasStudio.js",
+      "file": "NarrativeCanvasStudio-Bi9fNvbS.js",
+      "raw_bytes": 20071,
+      "gzip_bytes": 5931,
+      "class": "lazy",
+      "owner": "Narrative Canvas studio (Tasks 21/24/27/28)"
+    },
+    {
+      "chunk": "PortablePackageImportDialog.js",
+      "file": "PortablePackageImportDialog-BzvJfcE0.js",
+      "raw_bytes": 2728,
+      "gzip_bytes": 1149,
+      "class": "lazy",
+      "owner": "Lossless portable package import (Task 31)"
+    },
+    {
+      "chunk": "QueryClientProvider.js",
+      "file": "QueryClientProvider-C6Yb6_UZ.js",
+      "raw_bytes": 481,
+      "gzip_bytes": 335,
+      "class": "startup",
+      "owner": "TanStack Query client provider"
+    },
+    {
+      "chunk": "TagSettings.js",
+      "file": "TagSettings-Crgj0RuZ.js",
+      "raw_bytes": 9450,
+      "gzip_bytes": 2517,
+      "class": "lazy",
+      "owner": "Unified tags settings (Task 33)"
+    },
+    {
+      "chunk": "TaskPlanningPanel.js",
+      "file": "TaskPlanningPanel-B5jWIaDe.js",
+      "raw_bytes": 4450,
+      "gzip_bytes": 1705,
+      "class": "lazy",
+      "owner": "Upcoming/Overdue planning (Task 32)"
+    },
+    {
+      "chunk": "TaskSavedViewsPanel.js",
+      "file": "TaskSavedViewsPanel-CbSGRMvJ.js",
+      "raw_bytes": 16544,
+      "gzip_bytes": 4953,
+      "class": "lazy",
+      "owner": "Task Saved Views (Task 39)"
+    },
+    {
+      "chunk": "dist.js",
+      "file": "dist-Najve_IV.js",
+      "raw_bytes": 390833,
+      "gzip_bytes": 120572,
+      "class": "lazy",
+      "owner": "Basic Leaf editor vendor core (ProseMirror, @tiptap/core, use-sync-external-store)"
+    },
+    {
+      "chunk": "index.js",
+      "file": "index-vNoPa-NR.js",
+      "raw_bytes": 512586,
+      "gzip_bytes": 155874,
+      "class": "startup",
+      "owner": "app shell, Today/Calendar/Analytics/Life screens, motion choreography (framer-motion/motion-dom/motion-utils), d3-hierarchy, @internationalized/date"
+    },
+    {
+      "chunk": "jsx-runtime.js",
+      "file": "jsx-runtime-BhxXKzgZ.js",
+      "raw_bytes": 7948,
+      "gzip_bytes": 3045,
+      "class": "startup",
+      "owner": "React JSX runtime"
+    },
+    {
+      "chunk": "markdown.js",
+      "file": "markdown-C2y7R8us.js",
+      "raw_bytes": 116541,
+      "gzip_bytes": 32939,
+      "class": "lazy",
+      "owner": "Basic Leaf / Narrative Markdown interoperability pipeline (mdast, micromark, unified)"
+    },
+    {
+      "chunk": "rolldown-runtime.js",
+      "file": "rolldown-runtime-CNC7AqOf.js",
+      "raw_bytes": 879,
+      "gzip_bytes": 505,
+      "class": "startup",
+      "owner": "Rolldown module runtime"
+    },
+    {
+      "chunk": "useQuery.js",
+      "file": "useQuery-D8999TPb.js",
+      "raw_bytes": 20834,
+      "gzip_bytes": 6883,
+      "class": "startup",
+      "owner": "TanStack Query projection cache (@tanstack/query-core, @tanstack/react-query)"
+    }
+  ]
+}

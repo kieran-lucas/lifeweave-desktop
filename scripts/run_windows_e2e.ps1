@@ -23,7 +23,11 @@ $allPhases = @(
   'phase7-unified-tags.e2e.ts',
   'phase7-unified-tags-restart.e2e.ts',
   'phase8-focus-plans.e2e.ts',
-  'phase8-focus-plans-restart.e2e.ts'
+  'phase8-focus-plans-restart.e2e.ts',
+  'phase9-deadline-saved-views.e2e.ts',
+  'phase9-deadline-saved-views-restart.e2e.ts',
+  'phase10-saved-views-backup-restore.e2e.ts',
+  'phase10-saved-views-backup-restore-restart.e2e.ts'
 )
 if (-not $Phases -or $Phases.Count -eq 0) { $Phases = $allPhases }
 foreach ($phase in $Phases) {

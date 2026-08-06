@@ -21,26 +21,26 @@ Unchecked entries are unfinished work and this file is the resumable execution l
 
 - [x] T40-C01 run three baseline builds and prove inventory determinism;
 - [x] T40-C02 attribute every chunk to an owning package/feature;
-- [ ] T40-C03 inspect eager imports and duplicated modules for safe reductions;
-- [ ] T40-C04 apply or reject each candidate on measured evidence;
-- [ ] T40-C05 rewrite the checker against the v2 schema;
-- [ ] T40-C06 add isolated checker tests for every required fail-to-pass case;
-- [ ] T40-C07 freeze baseline and budget files against the final build;
-- [ ] T40-C08 confirm the Task 16 budget file is byte-identical.
+- [x] T40-C03 inspect eager imports and duplicated modules for safe reductions;
+- [x] T40-C04 apply or reject each candidate on measured evidence;
+- [x] T40-C05 rewrite the checker against the v2 schema;
+- [x] T40-C06 add isolated checker tests for every required fail-to-pass case;
+- [x] T40-C07 freeze baseline and budget files against the final build;
+- [x] T40-C08 confirm the Task 16 budget file is byte-identical.
 
 ## D. Full-target Rust lint
 
-- [ ] T40-D01 introduce the named row type and shared helper;
-- [ ] T40-D02 prove backup assertions and fault coverage are equivalent;
-- [ ] T40-D03 pass fmt, the exact Clippy command, and focused backup tests.
+- [x] T40-D01 introduce the named row type and shared helper;
+- [x] T40-D02 prove backup assertions and fault coverage are equivalent;
+- [x] T40-D03 pass fmt, the exact Clippy command, and focused backup tests.
 
 ## E. Native Deadline and Saved Views evidence
 
-- [ ] T40-E01 add the Deadline + Saved Views workflow phase;
-- [ ] T40-E02 add the restart persistence phase;
-- [ ] T40-E03 add the full backup/restore phase;
-- [ ] T40-E04 register phases in the harness allowlist;
-- [ ] T40-E05 prove each phase fails on a deliberate break, then restore.
+- [x] T40-E01 add the Deadline + Saved Views workflow phase;
+- [x] T40-E02 add the restart persistence phase;
+- [x] T40-E03 add the full backup/restore phase and its restart companion;
+- [x] T40-E04 register phases in the harness allowlist;
+- [x] T40-E05 prove each phase fails on a deliberate break, then restore.
 
 ## F. Accessibility and DPI evidence
 

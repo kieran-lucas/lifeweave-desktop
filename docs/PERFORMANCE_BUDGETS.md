@@ -45,6 +45,42 @@ SQLite:
 - virtualize selectively after profiling;
 - no premature blanket `memo`.
 
+## JavaScript bundle budget
+
+The bundle gate is versioned. `docs/audits/task-40-performance-budgets.json` (budget v2) is the
+authority; `docs/audits/task-16-performance-budgets.json` is preserved as history and is no longer
+read.
+
+Run it with:
+
+```text
+pnpm build
+pnpm hardening:performance
+```
+
+Budget v2 tracks `main_js_bytes`, `total_js_bytes`, `total_js_gzip_bytes`, `expected_chunk_count`,
+and every emitted chunk of at least 10,000 raw bytes, keyed by an identity that strips only the
+terminal content hash so a rebuild never reads as a new chunk. Sizes are raw bytes plus gzip
+measured with `mtime=0`, which keeps the number independent of when the build ran.
+
+The gate fails on a missing expected chunk, a new unbudgeted chunk at or above 10,000 bytes, a
+duplicate normalized identity, a chunk-count mismatch, a malformed budget, or any tracked metric
+over its maximum. Chunks below the threshold are reported as `untracked_small_chunks` and do not
+fail.
+
+Maxima are derived from the measured build, never chosen:
+
+```text
+total_raw_maximum   = final + max(8192, ceil(final * 0.0075))
+total_gzip_maximum  = final + max(4096, ceil(final * 0.0100))
+chunk_maximum       = final + max(1024, ceil(final * 0.0200))
+```
+
+each additionally clamped by its locked ceiling (`index.js` 535,000; `BasicLeafEditor.js` 490,000;
+`markdown.js` 129,000). Raising a maximum is a Product Owner decision supported by measurement, not
+a response to a red gate. `docs/audits/task-40-performance-baseline.json` records the inventory and
+the optimization findings the budget was frozen against.
+
 ## Performance gate
 
 A critical PR includes:

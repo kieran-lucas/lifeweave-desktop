@@ -888,6 +888,47 @@ mod tests {
 
     static COUNTER: AtomicU32 = AtomicU32::new(0);
 
+    /// Exact stored `task_saved_views` row, in declaration order: id, name, base_scope,
+    /// predicate_version, predicate_json, sort_mode, group_mode, position, revision, archived_at.
+    /// Backup equality compares the whole row, so every persisted column stays in the tuple.
+    type SavedViewRow = (
+        String,
+        String,
+        String,
+        i32,
+        String,
+        String,
+        String,
+        i32,
+        i32,
+        Option<String>,
+    );
+
+    /// Reads every stored Saved View row in a stable order. Both the pre-backup snapshot and the
+    /// post-restore comparison must issue the identical statement, or the equality assertion could
+    /// pass on a column the restore never actually reinstated.
+    fn saved_view_rows(conn: &Connection) -> rusqlite::Result<Vec<SavedViewRow>> {
+        let mut statement = conn.prepare(
+            "SELECT id,name,base_scope,predicate_version,predicate_json,sort_mode,group_mode,position,revision,archived_at FROM task_saved_views ORDER BY id",
+        )?;
+        statement
+            .query_map([], |row| {
+                Ok((
+                    row.get(0)?,
+                    row.get(1)?,
+                    row.get(2)?,
+                    row.get(3)?,
+                    row.get(4)?,
+                    row.get(5)?,
+                    row.get(6)?,
+                    row.get(7)?,
+                    row.get(8)?,
+                    row.get(9)?,
+                ))
+            })?
+            .collect()
+    }
+
     fn next_id() -> String {
         reset_test_failpoints();
         let n = COUNTER.fetch_add(1, Ordering::Relaxed);
@@ -1699,38 +1740,7 @@ mod tests {
                     },
                 )
                 .map_err(|_| DbError::InvalidMigrationList)?;
-                let snapshot: Vec<(
-                    String,
-                    String,
-                    String,
-                    i32,
-                    String,
-                    String,
-                    String,
-                    i32,
-                    i32,
-                    Option<String>,
-                )> = {
-                    let mut statement = conn.prepare(
-                        "SELECT id,name,base_scope,predicate_version,predicate_json,sort_mode,group_mode,position,revision,archived_at FROM task_saved_views ORDER BY id",
-                    )?;
-                    statement
-                        .query_map([], |row| {
-                            Ok((
-                                row.get(0)?,
-                                row.get(1)?,
-                                row.get(2)?,
-                                row.get(3)?,
-                                row.get(4)?,
-                                row.get(5)?,
-                                row.get(6)?,
-                                row.get(7)?,
-                                row.get(8)?,
-                                row.get(9)?,
-                            ))
-                        })?
-                        .collect::<Result<Vec<_>, _>>()?
-                };
+                let snapshot: Vec<SavedViewRow> = saved_view_rows(conn)?;
                 Ok((active.view.id, archived.view.id, snapshot))
             })
             .unwrap();
@@ -1746,40 +1756,7 @@ mod tests {
 
         let mut reopened = open_existing_file_connection(&db).unwrap();
         run_migrations(&mut reopened).unwrap();
-        let after: Vec<(
-            String,
-            String,
-            String,
-            i32,
-            String,
-            String,
-            String,
-            i32,
-            i32,
-            Option<String>,
-        )> = {
-            let mut statement = reopened.prepare(
-                "SELECT id,name,base_scope,predicate_version,predicate_json,sort_mode,group_mode,position,revision,archived_at FROM task_saved_views ORDER BY id",
-            ).unwrap();
-            statement
-                .query_map([], |row| {
-                    Ok((
-                        row.get(0)?,
-                        row.get(1)?,
-                        row.get(2)?,
-                        row.get(3)?,
-                        row.get(4)?,
-                        row.get(5)?,
-                        row.get(6)?,
-                        row.get(7)?,
-                        row.get(8)?,
-                        row.get(9)?,
-                    ))
-                })
-                .unwrap()
-                .collect::<Result<Vec<_>, _>>()
-                .unwrap()
-        };
+        let after: Vec<SavedViewRow> = saved_view_rows(&reopened).unwrap();
         assert_eq!(after, before);
         assert!(
             !saved_view::get(&reopened, &active_id)

@@ -1,0 +1,115 @@
+{
+  "budget_version": 2,
+  "task": 40,
+  "supersedes": "docs/audits/task-16-performance-budgets.json",
+  "supersedes_note": "The Task 16 file is preserved byte-identically as history and is no longer read by the gate.",
+  "measured_at_commit": "9910fd19b4cf134e9e3ec36c597f4933e8682704",
+  "baseline_evidence": "docs/audits/task-40-performance-baseline.json",
+  "main_chunk": "index.js",
+  "unknown_chunk_raw_bytes_threshold": 10000,
+  "rules": {
+    "chunk_identity": "emitted file name with only the terminal content hash stripped, so a rebuild never reads as a new chunk",
+    "missing_expected_chunk": "fails",
+    "unknown_chunk_at_or_above_threshold": "fails",
+    "unknown_chunk_below_threshold": "reported as untracked_small_chunks, does not fail",
+    "duplicate_normalized_identity": "fails",
+    "chunk_count_mismatch": "fails"
+  },
+  "formulas": {
+    "total_raw_maximum": "final + max(8192, ceil(final * 0.0075))",
+    "total_gzip_maximum": "final + max(4096, ceil(final * 0.0100))",
+    "chunk_maximum": "final + max(1024, ceil(final * 0.0200))",
+    "clamp": "each maximum is additionally clamped by its locked ceiling where one exists",
+    "arithmetic": "integer ceil, so every maximum is reproducible on any platform"
+  },
+  "locked_ceilings": {
+    "index.js": 535000,
+    "BasicLeafEditor.js": 490000,
+    "markdown.js": 129000,
+    "note": "The derived per-chunk formula is the binding constraint for all three; the ceilings are upper bounds that the derivation must never exceed."
+  },
+  "aggregates": {
+    "main_js_bytes": {
+      "observed": 512586,
+      "maximum": 522838,
+      "derivation": "min(512586 + max(1024, ceil(512586 * 0.0200)), 535000)"
+    },
+    "total_js_bytes": {
+      "observed": 1181334,
+      "maximum": 1190195,
+      "derivation": "1181334 + max(8192, ceil(1181334 * 0.0075))"
+    },
+    "total_js_gzip_bytes": {
+      "observed": 361595,
+      "maximum": 365691,
+      "derivation": "361595 + max(4096, ceil(361595 * 0.0100))"
+    },
+    "expected_chunk_count": 16
+  },
+  "chunks": {
+    "BasicLeafEditor.js": {
+      "observed_raw_bytes": 52355,
+      "observed_gzip_bytes": 17088,
+      "maximum_raw_bytes": 53403,
+      "class": "lazy",
+      "owner": "Basic Leaf editor (Task 15/19) including table and image extensions",
+      "derivation": "min(52355 + max(1024, ceil(52355 * 0.0200)), 490000)"
+    },
+    "FocusPlansScreen.js": {
+      "observed_raw_bytes": 18396,
+      "observed_gzip_bytes": 5087,
+      "maximum_raw_bytes": 19420,
+      "class": "lazy",
+      "owner": "Focus Plans (Tasks 35-37)",
+      "derivation": "18396 + max(1024, ceil(18396 * 0.0200))"
+    },
+    "NarrativeCanvasStudio.js": {
+      "observed_raw_bytes": 20071,
+      "observed_gzip_bytes": 5931,
+      "maximum_raw_bytes": 21095,
+      "class": "lazy",
+      "owner": "Narrative Canvas studio (Tasks 21/24/27/28)",
+      "derivation": "20071 + max(1024, ceil(20071 * 0.0200))"
+    },
+    "TaskSavedViewsPanel.js": {
+      "observed_raw_bytes": 16544,
+      "observed_gzip_bytes": 4953,
+      "maximum_raw_bytes": 17568,
+      "class": "lazy",
+      "owner": "Task Saved Views (Task 39)",
+      "derivation": "16544 + max(1024, ceil(16544 * 0.0200))"
+    },
+    "dist.js": {
+      "observed_raw_bytes": 390833,
+      "observed_gzip_bytes": 120572,
+      "maximum_raw_bytes": 398650,
+      "class": "lazy",
+      "owner": "Basic Leaf editor vendor core (ProseMirror, @tiptap/core, use-sync-external-store)",
+      "derivation": "390833 + max(1024, ceil(390833 * 0.0200))"
+    },
+    "index.js": {
+      "observed_raw_bytes": 512586,
+      "observed_gzip_bytes": 155874,
+      "maximum_raw_bytes": 522838,
+      "class": "startup",
+      "owner": "app shell, Today/Calendar/Analytics/Life screens, motion choreography (framer-motion/motion-dom/motion-utils), d3-hierarchy, @internationalized/date",
+      "derivation": "min(512586 + max(1024, ceil(512586 * 0.0200)), 535000)"
+    },
+    "markdown.js": {
+      "observed_raw_bytes": 116541,
+      "observed_gzip_bytes": 32939,
+      "maximum_raw_bytes": 118872,
+      "class": "lazy",
+      "owner": "Basic Leaf / Narrative Markdown interoperability pipeline (mdast, micromark, unified)",
+      "derivation": "min(116541 + max(1024, ceil(116541 * 0.0200)), 129000)"
+    },
+    "useQuery.js": {
+      "observed_raw_bytes": 20834,
+      "observed_gzip_bytes": 6883,
+      "maximum_raw_bytes": 21858,
+      "class": "startup",
+      "owner": "TanStack Query projection cache (@tanstack/query-core, @tanstack/react-query)",
+      "derivation": "20834 + max(1024, ceil(20834 * 0.0200))"
+    }
+  }
+}
