@@ -79,13 +79,7 @@ New-Item -ItemType Directory -Force -Path $run | Out-Null
 New-Item -ItemType File -Path (Join-Path $run '.lifeweave-e2e-sentinel') | Out-Null
 try {
   Stop-NativeE2EProcesses -DriverProcess $null
-  $tauriDriverCommand = Get-Command tauri-driver -ErrorAction SilentlyContinue
-  if (-not $tauriDriverCommand) { throw 'tauri-driver is required' }
-  $tauriDriverPath = $tauriDriverCommand.Path
-  if (-not $tauriDriverPath) { $tauriDriverPath = $tauriDriverCommand.Source }
-  if (-not $tauriDriverPath -or -not (Test-Path -LiteralPath $tauriDriverPath)) {
-    throw "tauri-driver executable path could not be resolved from $($tauriDriverCommand.Name)"
-  }
+  if (-not (Get-Command tauri-driver -ErrorAction SilentlyContinue)) { throw 'tauri-driver is required' }
   if ([Environment]::Is64BitOperatingSystem -eq $false) { throw 'only 64-bit Windows is supported' }
   $webViewKey = 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}'
   $runtime = (Get-ItemProperty -Path $webViewKey -Name pv -ErrorAction SilentlyContinue).pv
@@ -131,7 +125,7 @@ try {
     $phaseExitCode = $null
     try {
       Stop-NativeE2EProcesses -DriverProcess $null
-      $driver = Start-Process -FilePath $tauriDriverPath -ArgumentList '--native-driver', $nativeDriver, '--port', '4444' -RedirectStandardOutput $out -RedirectStandardError $err -PassThru
+      $driver = Start-Process -FilePath 'tauri-driver.exe' -ArgumentList '--native-driver', $nativeDriver, '--port', '4444' -RedirectStandardOutput $out -RedirectStandardError $err -PassThru
       $ready = $false
       for ($i = 0; $i -lt 80; $i++) {
         if ($driver.HasExited) { throw "tauri-driver exited during $phase" }
