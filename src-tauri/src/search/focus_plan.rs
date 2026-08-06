@@ -232,7 +232,7 @@ mod tests {
     use crate::{
         focus_plan::{dto::CreateFocusPlanInput, repository as focus_plan_repository},
         infrastructure::sqlite::{
-            connection::open_memory_connection, task38_migration::run_all_migrations,
+            connection::open_memory_connection, task39_migration::run_all_migrations,
         },
     };
 

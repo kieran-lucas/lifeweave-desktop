@@ -8,4 +8,5 @@ pub mod evaluation;
 pub mod planning;
 pub mod recurrence;
 pub mod repository;
+pub mod saved_view;
 pub mod service;

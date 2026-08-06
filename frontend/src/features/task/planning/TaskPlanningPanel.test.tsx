@@ -64,7 +64,12 @@ describe("TaskPlanningPanel", () => {
     expect(commands.getTaskPlanningProjection).toHaveBeenCalledWith({ mode: "upcoming", anchor_local_date: "2026-08-04" });
     expect(screen.getByText("1 tasks · 1 h 30 min")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Open day for Weekly review/ }));
-    expect(open).toHaveBeenCalledWith({ localDate: "2026-08-05", taskId: null, seriesId: "series" });
+    expect(open).toHaveBeenCalledWith({
+      localDate: "2026-08-05",
+      taskId: null,
+      seriesId: "series",
+      originalLocalDate: "2026-08-01",
+    });
   });
 
   it("shows visible needs-review text and an item-specific Review action", async () => {

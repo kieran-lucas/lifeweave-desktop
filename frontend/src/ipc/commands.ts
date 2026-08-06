@@ -28,6 +28,16 @@ import type { UpdateRecurringOccurrenceInput } from "./generated/UpdateRecurring
 import type { TodayItemView } from "./generated/TodayItemView";
 import type { GetTaskPlanningProjectionInput } from "./generated/GetTaskPlanningProjectionInput";
 import type { TaskPlanningProjection } from "./generated/TaskPlanningProjection";
+import type { CreateTaskSavedViewInput } from "./generated/CreateTaskSavedViewInput";
+import type { UpdateTaskSavedViewInput } from "./generated/UpdateTaskSavedViewInput";
+import type { MutateTaskSavedViewInput } from "./generated/MutateTaskSavedViewInput";
+import type { ReorderTaskSavedViewsInput } from "./generated/ReorderTaskSavedViewsInput";
+import type { GetTaskSavedViewProjectionInput } from "./generated/GetTaskSavedViewProjectionInput";
+import type { GetTaskSavedViewEditorOptionsInput } from "./generated/GetTaskSavedViewEditorOptionsInput";
+import type { TaskSavedViewView } from "./generated/TaskSavedViewView";
+import type { TaskSavedViewDetail } from "./generated/TaskSavedViewDetail";
+import type { TaskSavedViewProjection } from "./generated/TaskSavedViewProjection";
+import type { TaskSavedViewEditorOptions } from "./generated/TaskSavedViewEditorOptions";
 import type { MonthProjection } from "./generated/MonthProjection";
 import type { CompletionStateView } from "./generated/CompletionStateView";
 import type { EvaluateTaskInput } from "./generated/EvaluateTaskInput";
@@ -172,6 +182,26 @@ export const getDeadlineQueue = (input: GetDeadlineQueueInput) =>
   invoke<DeadlineQueueProjection>("get_deadline_queue", { input });
 export const getTaskPlanningProjection = (input: GetTaskPlanningProjectionInput) =>
   invoke<TaskPlanningProjection>("get_task_planning_projection", { input });
+export const listTaskSavedViews = () =>
+  invoke<TaskSavedViewView[]>("list_task_saved_views");
+export const listArchivedTaskSavedViews = () =>
+  invoke<TaskSavedViewView[]>("list_archived_task_saved_views");
+export const getTaskSavedView = (id: string) =>
+  invoke<TaskSavedViewDetail>("get_task_saved_view", { id });
+export const createTaskSavedView = (input: CreateTaskSavedViewInput) =>
+  invoke<TaskSavedViewDetail>("create_task_saved_view", { input });
+export const updateTaskSavedView = (input: UpdateTaskSavedViewInput) =>
+  invoke<TaskSavedViewDetail>("update_task_saved_view", { input });
+export const archiveTaskSavedView = (input: MutateTaskSavedViewInput) =>
+  invoke<TaskSavedViewDetail>("archive_task_saved_view", { input });
+export const restoreTaskSavedView = (input: MutateTaskSavedViewInput) =>
+  invoke<TaskSavedViewDetail>("restore_task_saved_view", { input });
+export const reorderTaskSavedViews = (input: ReorderTaskSavedViewsInput) =>
+  invoke<TaskSavedViewView[]>("reorder_task_saved_views", { input });
+export const getTaskSavedViewEditorOptions = (input: GetTaskSavedViewEditorOptionsInput) =>
+  invoke<TaskSavedViewEditorOptions>("get_task_saved_view_editor_options", { input });
+export const getTaskSavedViewProjection = (input: GetTaskSavedViewProjectionInput) =>
+  invoke<TaskSavedViewProjection>("get_task_saved_view_projection", { input });
 export const getMonthProjection = (year: number, month: number, selectedDate: string, today: string) =>
   invoke<MonthProjection>("get_month_projection", { year, month, selectedDate, today });
 export const listCompletionStates = () => invoke<CompletionStateView[]>("list_completion_states");

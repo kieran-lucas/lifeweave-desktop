@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import * as commands from "../../ipc/commands";
@@ -91,12 +92,16 @@ beforeEach(() => {
 
 describe("FocusPlansScreen", () => {
   it("creates, edits, retains rejected input, and loads the conflict recovery draft", async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+    const invalidate = vi.spyOn(client, "invalidateQueries");
     render(
-      <FocusPlansScreen
-        entryRequest={null}
-        onEntryRequestSettled={vi.fn()}
-        anchorLocalDate="2026-08-06"
-      />,
+      <QueryClientProvider client={client}>
+        <FocusPlansScreen
+          entryRequest={null}
+          onEntryRequestSettled={vi.fn()}
+          anchorLocalDate="2026-08-06"
+        />
+      </QueryClientProvider>,
     );
 
     await screen.findByRole("button", { name: /AI Foundations/ });
@@ -137,5 +142,7 @@ describe("FocusPlansScreen", () => {
     fireEvent.change(screen.getByLabelText("New plan title"), { target: { value: "Interview Plan" } });
     fireEvent.click(screen.getByRole("button", { name: "Create" }));
     await waitFor(() => expect(api.createFocusPlan).toHaveBeenCalledWith(expect.objectContaining({ title: "Interview Plan" })));
+    await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: ["task-saved-view-projection"] }));
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["task-saved-view-options"] });
   });
 });

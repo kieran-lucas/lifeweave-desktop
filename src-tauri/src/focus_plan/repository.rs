@@ -1117,7 +1117,7 @@ pub fn linked_work(
 mod tests {
     use super::*;
     use crate::infrastructure::sqlite::{
-        connection::open_memory_connection, task38_migration::run_all_migrations,
+        connection::open_memory_connection, task39_migration::run_all_migrations,
     };
 
     fn connection() -> Connection {

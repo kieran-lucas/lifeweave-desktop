@@ -10,6 +10,7 @@ use crate::task::{
     },
     evaluation, planning,
     repository::{self, TaskError},
+    saved_view,
 };
 use tauri::State;
 
@@ -199,6 +200,114 @@ pub fn get_deadline_queue(
 ) -> Result<crate::task::deadline::DeadlineQueueProjection, IpcError> {
     state
         .execute(move |conn| Ok(crate::task::deadline::projection(conn, input)))
+        .map_err(map_db)?
+        .map_err(map_task)
+}
+
+#[tauri::command]
+pub fn list_task_saved_views(
+    state: State<'_, DatabaseRuntime>,
+) -> Result<Vec<saved_view::TaskSavedViewView>, IpcError> {
+    state
+        .execute(|conn| Ok(saved_view::list_active(conn)))
+        .map_err(map_db)?
+        .map_err(map_task)
+}
+
+#[tauri::command]
+pub fn list_archived_task_saved_views(
+    state: State<'_, DatabaseRuntime>,
+) -> Result<Vec<saved_view::TaskSavedViewView>, IpcError> {
+    state
+        .execute(|conn| Ok(saved_view::list_archived(conn)))
+        .map_err(map_db)?
+        .map_err(map_task)
+}
+
+#[tauri::command]
+pub fn get_task_saved_view(
+    state: State<'_, DatabaseRuntime>,
+    id: String,
+) -> Result<saved_view::TaskSavedViewDetail, IpcError> {
+    state
+        .execute(move |conn| Ok(saved_view::get(conn, &id)))
+        .map_err(map_db)?
+        .map_err(map_task)
+}
+
+#[tauri::command]
+pub fn create_task_saved_view(
+    state: State<'_, DatabaseRuntime>,
+    input: saved_view::CreateTaskSavedViewInput,
+) -> Result<saved_view::TaskSavedViewDetail, IpcError> {
+    state
+        .execute(move |conn| Ok(saved_view::create(conn, input)))
+        .map_err(map_db)?
+        .map_err(map_task)
+}
+
+#[tauri::command]
+pub fn update_task_saved_view(
+    state: State<'_, DatabaseRuntime>,
+    input: saved_view::UpdateTaskSavedViewInput,
+) -> Result<saved_view::TaskSavedViewDetail, IpcError> {
+    state
+        .execute(move |conn| Ok(saved_view::update(conn, input)))
+        .map_err(map_db)?
+        .map_err(map_task)
+}
+
+#[tauri::command]
+pub fn archive_task_saved_view(
+    state: State<'_, DatabaseRuntime>,
+    input: saved_view::MutateTaskSavedViewInput,
+) -> Result<saved_view::TaskSavedViewDetail, IpcError> {
+    state
+        .execute(move |conn| Ok(saved_view::archive(conn, input)))
+        .map_err(map_db)?
+        .map_err(map_task)
+}
+
+#[tauri::command]
+pub fn restore_task_saved_view(
+    state: State<'_, DatabaseRuntime>,
+    input: saved_view::MutateTaskSavedViewInput,
+) -> Result<saved_view::TaskSavedViewDetail, IpcError> {
+    state
+        .execute(move |conn| Ok(saved_view::restore(conn, input)))
+        .map_err(map_db)?
+        .map_err(map_task)
+}
+
+#[tauri::command]
+pub fn reorder_task_saved_views(
+    state: State<'_, DatabaseRuntime>,
+    input: saved_view::ReorderTaskSavedViewsInput,
+) -> Result<Vec<saved_view::TaskSavedViewView>, IpcError> {
+    state
+        .execute(move |conn| Ok(saved_view::reorder(conn, input)))
+        .map_err(map_db)?
+        .map_err(map_task)
+}
+
+#[tauri::command]
+pub fn get_task_saved_view_editor_options(
+    state: State<'_, DatabaseRuntime>,
+    input: saved_view::GetTaskSavedViewEditorOptionsInput,
+) -> Result<saved_view::TaskSavedViewEditorOptions, IpcError> {
+    state
+        .execute(move |conn| Ok(saved_view::editor_options(conn, input)))
+        .map_err(map_db)?
+        .map_err(map_task)
+}
+
+#[tauri::command]
+pub fn get_task_saved_view_projection(
+    state: State<'_, DatabaseRuntime>,
+    input: saved_view::GetTaskSavedViewProjectionInput,
+) -> Result<saved_view::TaskSavedViewProjection, IpcError> {
+    state
+        .execute(move |conn| Ok(saved_view::projection(conn, input)))
         .map_err(map_db)?
         .map_err(map_task)
 }

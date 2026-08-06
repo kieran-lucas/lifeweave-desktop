@@ -5,7 +5,8 @@
 Active through Slice `029-task-saved-views` from baseline
 `eed299d950bb43c54540a0466901f651aa60ce4a`. The Product Owner has fixed a bounded Task-only
 model: four existing source scopes, a versioned typed AND predicate, stable sort/group modes,
-local lifecycle and order, and a fifth Views tab inside Today. Migration 23 is the target.
+local lifecycle and order, and a fifth Views tab inside Today. Migration 23 is implemented while
+the slice remains active through verification and review.
 
 No query language, raw SQL/expression path, custom range, route/sidebar/default change, sharing,
 Task card/dashboard, recurring deadline, analytics expansion, dependency, or workflow change is

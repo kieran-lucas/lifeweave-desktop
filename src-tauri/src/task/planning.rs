@@ -463,7 +463,7 @@ fn compare_items(left: &TaskPlanningItemView, right: &TaskPlanningItemView) -> s
 mod tests {
     use super::*;
     use crate::infrastructure::sqlite::{
-        connection::open_memory_connection, task38_migration::run_all_migrations as run_migrations,
+        connection::open_memory_connection, task39_migration::run_all_migrations as run_migrations,
     };
 
     fn db() -> Connection {

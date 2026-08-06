@@ -17,7 +17,7 @@
 - Active task: **39 — Task Saved Views + Bounded Typed Filter Core**
 - Active implementation specification: **`specs/029-task-saved-views`**
 - Latest feature checkpoint: **Task 38 — One-Off Task Deadline Semantics** (`cace17bd4225cb8e3d89795c0e833e68ed588ba2`)
-- Database schema: **22**
+- Database schema: **23**
 - Next action: **Implement active spec**
 - Task 40: **prohibited, unstarted, unallocated, and unrecommended**
 

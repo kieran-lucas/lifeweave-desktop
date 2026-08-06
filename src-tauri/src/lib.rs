@@ -30,7 +30,7 @@ use infrastructure::backup::lifecycle::{
 use infrastructure::sqlite::{
     connection::{open_existing_file_connection, open_file_connection},
     runtime::DatabaseRuntime,
-    task38_migration::run_all_migrations,
+    task39_migration::run_all_migrations,
     worker::DbWorkerHandle,
 };
 use ipc::backup::{backup_database, list_backups, restore_database};
@@ -43,11 +43,14 @@ use ipc::tag::{
     archive_tag, create_tag, list_tags, merge_tags, rename_tag, restore_tag, set_life_node_tags,
 };
 use ipc::task::{
-    create_recurring_task, create_task, delete_task, evaluate_task, get_analytics_projection,
-    get_deadline_queue, get_month_projection, get_related_tasks_for_life_node,
-    get_task_planning_projection, list_completion_states, list_focus_plan_targets,
-    list_recurring_occurrences, list_task_categories, list_tasks_for_date, list_today_items,
-    undo_task_evaluation, update_category_goals, update_recurring_occurrence, update_task,
+    archive_task_saved_view, create_recurring_task, create_task, create_task_saved_view,
+    delete_task, evaluate_task, get_analytics_projection, get_deadline_queue, get_month_projection,
+    get_related_tasks_for_life_node, get_task_planning_projection, get_task_saved_view,
+    get_task_saved_view_editor_options, get_task_saved_view_projection,
+    list_archived_task_saved_views, list_completion_states, list_focus_plan_targets,
+    list_recurring_occurrences, list_task_categories, list_task_saved_views, list_tasks_for_date,
+    list_today_items, reorder_task_saved_views, restore_task_saved_view, undo_task_evaluation,
+    update_category_goals, update_recurring_occurrence, update_task, update_task_saved_view,
 };
 use life::service::{
     archive_life_node, create_life_node, get_life_browse_projection, get_life_edit_projection,
@@ -171,6 +174,16 @@ pub fn run() {
             list_today_items,
             get_task_planning_projection,
             get_deadline_queue,
+            list_task_saved_views,
+            list_archived_task_saved_views,
+            get_task_saved_view,
+            create_task_saved_view,
+            update_task_saved_view,
+            archive_task_saved_view,
+            restore_task_saved_view,
+            reorder_task_saved_views,
+            get_task_saved_view_editor_options,
+            get_task_saved_view_projection,
             get_month_projection,
             list_completion_states,
             evaluate_task,

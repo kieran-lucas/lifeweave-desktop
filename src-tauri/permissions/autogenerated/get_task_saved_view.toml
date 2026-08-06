@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-get-task-saved-view"
+description = "Enables the get_task_saved_view command without any pre-configured scope."
+commands.allow = ["get_task_saved_view"]
+
+[[permission]]
+identifier = "deny-get-task-saved-view"
+description = "Denies the get_task_saved_view command without any pre-configured scope."
+commands.deny = ["get_task_saved_view"]

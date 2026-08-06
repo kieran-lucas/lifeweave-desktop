@@ -29,9 +29,11 @@ import { TaskWorkspaceTabs, type TaskWorkspaceMode } from "../planning/TaskWorks
 import { TagChipList } from "../../tag/TagChipList";
 import { TagPicker } from "../../tag/TagPicker";
 import type { TagSummaryView } from "../../../ipc/generated/TagSummaryView";
+import { invalidateTaskSavedViewProjections } from "../saved-views/savedViewQueries";
 
 const TaskPlanningPanel = lazy(() => import("../planning/TaskPlanningPanel"));
 const DeadlineQueuePanel = lazy(() => import("../planning/DeadlineQueuePanel"));
+const TaskSavedViewsPanel = lazy(() => import("../saved-views/TaskSavedViewsPanel"));
 
 type CommonItem = Omit<
   TodayItemView,
@@ -186,16 +188,21 @@ type FocusRequest = {
   requestId: string;
   taskId: string | null;
   seriesId: string | null;
+  originalLocalDate?: string | null;
 } | null;
 function findTodayTarget(
   taskId: string | null,
   seriesId: string | null,
+  originalLocalDate?: string | null,
 ): HTMLElement | null {
   return (
     [...document.querySelectorAll<HTMLElement>("[data-task-id],[data-series-id]")].find(
       (element) =>
         (taskId !== null && element.dataset.taskId === taskId) ||
-        (seriesId !== null && element.dataset.seriesId === seriesId),
+        (seriesId !== null &&
+          element.dataset.seriesId === seriesId &&
+          (originalLocalDate == null ||
+            element.dataset.originalLocalDate === originalLocalDate)),
     ) ?? null
   );
 }
@@ -295,6 +302,7 @@ export function TodayScreen({
       client.invalidateQueries({ queryKey: ["analytics"] }),
       client.invalidateQueries({ queryKey: ["task-planning"] }),
       client.invalidateQueries({ queryKey: ["deadline-queue"] }),
+      invalidateTaskSavedViewProjections(client),
       client.invalidateQueries({ queryKey: ["life"] }),
       client.invalidateQueries({ queryKey: ["tags"] }),
     ]);
@@ -447,6 +455,7 @@ export function TodayScreen({
         client.invalidateQueries({ queryKey: ["task-planning"] }),
         // A current evaluation controls active Deadline queue membership.
         client.invalidateQueries({ queryKey: ["deadline-queue"] }),
+        invalidateTaskSavedViewProjections(client),
       ]);
     },
   });
@@ -470,6 +479,7 @@ export function TodayScreen({
         client.invalidateQueries({ queryKey: ["analytics"] }),
         client.invalidateQueries({ queryKey: ["task-planning"] }),
         client.invalidateQueries({ queryKey: ["deadline-queue"] }),
+        invalidateTaskSavedViewProjections(client),
       ]);
     },
     onError: (value) =>
@@ -568,7 +578,11 @@ export function TodayScreen({
         ? handledInternalFocusRequest
         : handledExternalFocusRequest;
     if (handled.current === request.requestId) return;
-    const target = findTodayTarget(request.taskId, request.seriesId);
+    const target = findTodayTarget(
+      request.taskId,
+      request.seriesId,
+      request.originalLocalDate,
+    );
     if (target) {
       target.scrollIntoView({ block: "nearest" });
       target.focus({ preventScroll: true });
@@ -668,6 +682,7 @@ export function TodayScreen({
     localDate: string;
     taskId: string | null;
     seriesId: string | null;
+    originalLocalDate?: string | null;
   }) => {
     cancelPendingFocusRequests();
     setOpenFan(null);
@@ -676,6 +691,7 @@ export function TodayScreen({
       requestId: globalThis.crypto.randomUUID(),
       taskId: request.taskId,
       seriesId: request.seriesId,
+      originalLocalDate: request.originalLocalDate ?? null,
     });
     setWorkspaceMode("today");
   };
@@ -772,6 +788,7 @@ export function TodayScreen({
                           tabIndex={0}
                           data-task-id={item.kind === "one_off" ? item.id : undefined}
                           data-series-id={item.kind === "recurring" ? item.series_id : undefined}
+                          data-original-local-date={item.kind === "recurring" ? item.original_local_date : undefined}
                           onClick={() => setSelected(item.id)}
                           onDoubleClick={(e) => begin(item, e.currentTarget)}
                           onKeyDown={(e) => {
@@ -880,7 +897,9 @@ export function TodayScreen({
       ) : (
         <div role="tabpanel" id={`task-panel-${workspaceMode}`} aria-labelledby={`task-tab-${workspaceMode}`}>
           <Suspense fallback={<p role="status">Loading {workspaceMode} tasks…</p>}>
-            {workspaceMode === "deadlines" ? (
+            {workspaceMode === "views" ? (
+              <TaskSavedViewsPanel anchorLocalDate={planningAnchor} onOpenItem={openPlanningItem} onFocusPlanNavigate={onFocusPlanNavigate} />
+            ) : workspaceMode === "deadlines" ? (
               // Deadlines is a distinct projection; it must never be routed through the
               // schedule-based planning modes.
               <DeadlineQueuePanel anchorLocalDate={planningAnchor} onOpenItem={openPlanningItem} onFocusPlanNavigate={onFocusPlanNavigate} />

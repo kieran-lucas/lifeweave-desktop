@@ -18,7 +18,7 @@ use crate::infrastructure::sqlite::{
     DbError,
     connection::{open_existing_file_connection, open_file_connection, open_readonly_connection},
     runtime::DatabaseRuntime,
-    task38_migration::{current_schema_version, max_supported_schema_version, run_all_migrations},
+    task39_migration::{current_schema_version, max_supported_schema_version, run_all_migrations},
     worker::DbWorkerHandle,
 };
 
@@ -864,7 +864,7 @@ mod tests {
             connection::{open_existing_file_connection, open_file_connection},
             foundation_record_repo as repo,
             runtime::DatabaseRuntime,
-            task38_migration::run_all_migrations as run_migrations,
+            task39_migration::run_all_migrations as run_migrations,
             worker::DbWorkerHandle,
         },
     };
@@ -876,6 +876,7 @@ mod tests {
         },
         evaluation::{self, ObservedLocalTime},
         repository as task_repository,
+        saved_view::{self, *},
     };
     use chrono::{Datelike, Local, Timelike};
     use std::path::PathBuf;
@@ -993,12 +994,12 @@ mod tests {
         let result = restore_db(&runtime, package).unwrap();
         assert_eq!(
             result.schema_version,
-            crate::infrastructure::sqlite::task38_migration::TASK38_SCHEMA_VERSION
+            crate::infrastructure::sqlite::task39_migration::TASK39_SCHEMA_VERSION
         );
         let reopened = open_existing_file_connection(&db).unwrap();
         assert_eq!(
             current_schema_version(&reopened).unwrap(),
-            crate::infrastructure::sqlite::task38_migration::TASK38_SCHEMA_VERSION
+            crate::infrastructure::sqlite::task39_migration::TASK39_SCHEMA_VERSION
         );
         assert_eq!(
             reopened
@@ -1170,7 +1171,7 @@ mod tests {
         let restore_result = restore_db(&rt, &backup_dir).unwrap();
         assert_eq!(
             restore_result.schema_version,
-            crate::infrastructure::sqlite::task38_migration::TASK38_SCHEMA_VERSION
+            crate::infrastructure::sqlite::task39_migration::TASK39_SCHEMA_VERSION
         );
 
         let active = rt.execute(|conn| repo::list_active(conn)).unwrap();
@@ -1671,6 +1672,136 @@ mod tests {
             ("2026-08-09".to_string(), Some("2026-08-12".to_string())),
             "restore must reinstate the exact schedule and deadline"
         );
+    }
+
+    #[test]
+    fn active_and_archived_saved_views_survive_backup_restore_reopen_exactly() {
+        let (rt, db) = make_file_runtime();
+        let backups = temp_backups_dir();
+        let (active_id, archived_id, before) = rt
+            .execute(|conn| {
+                let draft = |name: &str| CreateTaskSavedViewInput {
+                    name: name.into(),
+                    base_scope: TaskSavedViewBaseScope::Today,
+                    predicate: TaskSavedViewPredicate::All { clauses: vec![] },
+                    sort_mode: TaskSavedViewSortMode::TitleAscending,
+                    group_mode: TaskSavedViewGroupMode::None,
+                };
+                let active = saved_view::create(conn, draft("Reading queue"))
+                    .map_err(|_| DbError::InvalidMigrationList)?;
+                let archived = saved_view::create(conn, draft("Archived queue"))
+                    .map_err(|_| DbError::InvalidMigrationList)?;
+                let archived = saved_view::archive(
+                    conn,
+                    MutateTaskSavedViewInput {
+                        id: archived.view.id,
+                        expected_revision: archived.view.revision,
+                    },
+                )
+                .map_err(|_| DbError::InvalidMigrationList)?;
+                let snapshot: Vec<(
+                    String,
+                    String,
+                    String,
+                    i32,
+                    String,
+                    String,
+                    String,
+                    i32,
+                    i32,
+                    Option<String>,
+                )> = {
+                    let mut statement = conn.prepare(
+                        "SELECT id,name,base_scope,predicate_version,predicate_json,sort_mode,group_mode,position,revision,archived_at FROM task_saved_views ORDER BY id",
+                    )?;
+                    statement
+                        .query_map([], |row| {
+                            Ok((
+                                row.get(0)?,
+                                row.get(1)?,
+                                row.get(2)?,
+                                row.get(3)?,
+                                row.get(4)?,
+                                row.get(5)?,
+                                row.get(6)?,
+                                row.get(7)?,
+                                row.get(8)?,
+                                row.get(9)?,
+                            ))
+                        })?
+                        .collect::<Result<Vec<_>, _>>()?
+                };
+                Ok((active.view.id, archived.view.id, snapshot))
+            })
+            .unwrap();
+
+        let backup_dir = PathBuf::from(backup_db(&rt, &backups).unwrap().backup_dir);
+        rt.execute(|conn| {
+            conn.execute("UPDATE task_saved_views SET name='Mutated',predicate_json='{}',revision=99,archived_at=NULL,position=position+10", [])?;
+            Ok(())
+        })
+        .unwrap();
+        restore_db(&rt, &backup_dir).unwrap();
+        drop(rt);
+
+        let mut reopened = open_existing_file_connection(&db).unwrap();
+        run_migrations(&mut reopened).unwrap();
+        let after: Vec<(
+            String,
+            String,
+            String,
+            i32,
+            String,
+            String,
+            String,
+            i32,
+            i32,
+            Option<String>,
+        )> = {
+            let mut statement = reopened.prepare(
+                "SELECT id,name,base_scope,predicate_version,predicate_json,sort_mode,group_mode,position,revision,archived_at FROM task_saved_views ORDER BY id",
+            ).unwrap();
+            statement
+                .query_map([], |row| {
+                    Ok((
+                        row.get(0)?,
+                        row.get(1)?,
+                        row.get(2)?,
+                        row.get(3)?,
+                        row.get(4)?,
+                        row.get(5)?,
+                        row.get(6)?,
+                        row.get(7)?,
+                        row.get(8)?,
+                        row.get(9)?,
+                    ))
+                })
+                .unwrap()
+                .collect::<Result<Vec<_>, _>>()
+                .unwrap()
+        };
+        assert_eq!(after, before);
+        assert!(
+            !saved_view::get(&reopened, &active_id)
+                .unwrap()
+                .view
+                .archived
+        );
+        assert!(
+            saved_view::get(&reopened, &archived_id)
+                .unwrap()
+                .view
+                .archived
+        );
+        let executable = saved_view::projection(
+            &reopened,
+            GetTaskSavedViewProjectionInput {
+                view_id: active_id,
+                anchor_local_date: "2026-08-06".into(),
+            },
+        )
+        .unwrap();
+        assert!(executable.unsupported_reason.is_none());
     }
 
     #[test]
@@ -3531,7 +3662,7 @@ mod tests {
         use crate::infrastructure::backup::lifecycle::{
             preflight_startup_check, recover_if_interrupted,
         };
-        use crate::infrastructure::sqlite::task38_migration::run_all_migrations as run_migrations;
+        use crate::infrastructure::sqlite::task39_migration::run_all_migrations as run_migrations;
         use crate::infrastructure::sqlite::{
             connection::open_existing_file_connection, runtime::DatabaseRuntime,
             worker::DbWorkerHandle,
@@ -3597,7 +3728,7 @@ mod tests {
         use crate::infrastructure::backup::lifecycle::{
             preflight_startup_check, recover_if_interrupted,
         };
-        use crate::infrastructure::sqlite::task38_migration::run_all_migrations as run_migrations;
+        use crate::infrastructure::sqlite::task39_migration::run_all_migrations as run_migrations;
         use crate::infrastructure::sqlite::{
             connection::open_existing_file_connection, runtime::DatabaseRuntime,
             worker::DbWorkerHandle,

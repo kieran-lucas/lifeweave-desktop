@@ -40,7 +40,8 @@ The Product Owner activated Task 39 / Slice 029 from baseline
 `eed299d950bb43c54540a0466901f651aa60ce4a` after Task 38 and its Today cache remediation.
 Scope is the bounded Task Saved View model in ADR 0033 and the Slice 029 package: four existing
 sources, typed predicate v1, stable sort/group, local lifecycle/order, and a fifth internal Today
-tab. Schema moves from 22 to 23. Task 40 remains prohibited and unrecommended.
+tab. Schema 23 is implemented from the schema 22 activation baseline. Task 40 remains prohibited
+and unrecommended.
 
 ## Next action
 

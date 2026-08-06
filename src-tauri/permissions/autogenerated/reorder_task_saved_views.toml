@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-reorder-task-saved-views"
+description = "Enables the reorder_task_saved_views command without any pre-configured scope."
+commands.allow = ["reorder_task_saved_views"]
+
+[[permission]]
+identifier = "deny-reorder-task-saved-views"
+description = "Denies the reorder_task_saved_views command without any pre-configured scope."
+commands.deny = ["reorder_task_saved_views"]

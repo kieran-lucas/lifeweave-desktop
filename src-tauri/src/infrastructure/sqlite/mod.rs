@@ -8,6 +8,7 @@ pub mod runtime;
 pub mod task36_migration;
 pub mod task37_migration;
 pub mod task38_migration;
+pub mod task39_migration;
 pub mod worker;
 
 pub use runtime::DatabaseRuntime;

@@ -31,13 +31,14 @@ function renderSettings() {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
-  return render(
+  const view = render(
     <QueryClientProvider client={client}>
       <Suspense fallback={<p>Loading…</p>}>
         <TagSettings />
       </Suspense>
     </QueryClientProvider>,
   );
+  return { ...view, client };
 }
 
 const archivedTag = (id: string, name: string, extra = {}) => ({
@@ -119,12 +120,15 @@ describe("TagSettings", () => {
         activeTag("b", "Beta"),
         activeTag("c", "Gamma"),
       ]);
-    renderSettings();
+    const { client } = renderSettings();
+    const invalidate = vi.spyOn(client, "invalidateQueries");
     await waitFor(() => screen.getAllByText("Alpha"));
     const input = screen.getByRole("textbox", { name: "New tag name" });
     fireEvent.change(input, { target: { value: "Gamma" } });
     fireEvent.keyDown(input, { key: "Enter" });
     await waitFor(() => expect(commands.createTag).toHaveBeenCalledWith({ name: "Gamma" }));
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["task-saved-view-projection"] });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["task-saved-view-options"] });
   });
 
   it("starts rename inline on Rename click", async () => {

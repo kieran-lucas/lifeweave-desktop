@@ -1050,7 +1050,7 @@ fn parse_fragments(marked: &str) -> Vec<SearchTextFragment> {
 mod tests {
     use super::*;
     use crate::infrastructure::sqlite::{
-        connection::open_memory_connection, task38_migration::run_all_migrations,
+        connection::open_memory_connection, task39_migration::run_all_migrations,
     };
 
     fn setup() -> Connection {
@@ -1736,7 +1736,7 @@ mod tests {
     #[test]
     fn search_file_backed_smoke() {
         use crate::infrastructure::sqlite::{
-            connection::open_file_connection, task38_migration::run_all_migrations,
+            connection::open_file_connection, task39_migration::run_all_migrations,
         };
 
         let tag = std::time::SystemTime::now()
@@ -1760,7 +1760,7 @@ mod tests {
                 .unwrap();
             assert_eq!(
                 ver,
-                i64::from(crate::infrastructure::sqlite::task38_migration::TASK38_SCHEMA_VERSION),
+                i64::from(crate::infrastructure::sqlite::task39_migration::TASK39_SCHEMA_VERSION),
                 "schema must be current"
             );
 
@@ -1846,7 +1846,7 @@ mod tests {
     #[test]
     fn search_perf_realistic_fixture() {
         use crate::infrastructure::sqlite::{
-            connection::open_file_connection, task38_migration::run_all_migrations,
+            connection::open_file_connection, task39_migration::run_all_migrations,
         };
         use std::time::Instant;
 

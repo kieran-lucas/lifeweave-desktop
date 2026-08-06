@@ -271,7 +271,7 @@ pub(crate) fn eligible_ids(
 mod tests {
     use super::*;
     use crate::infrastructure::sqlite::{
-        connection::open_memory_connection, task38_migration::run_all_migrations,
+        connection::open_memory_connection, task39_migration::run_all_migrations,
     };
     use crate::task::dto::{CreateTaskInput, UpdateTaskInput};
     use crate::task::repository as task_repository;

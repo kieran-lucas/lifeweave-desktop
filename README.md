@@ -27,7 +27,7 @@ Run `python scripts/verify_source_integrity.py` before any governance or impleme
 
 ## Repository state
 
-Task 39 / Slice 029 — Task Saved Views + Bounded Typed Filter Core is active from baseline `eed299d950bb43c54540a0466901f651aa60ce4a`. Task 38 remains closed, database schema 22 is the activation baseline, and migration 23 is the active target. Task 40 is prohibited and unrecommended.
+Task 39 / Slice 029 — Task Saved Views + Bounded Typed Filter Core is active from baseline `eed299d950bb43c54540a0466901f651aa60ce4a`. Task 38 remains closed, database schema 22 is the activation baseline, and migration 23 is implemented under the active slice. Task 40 is prohibited and unrecommended.
 
 GitHub Actions contains one sealed, manual, read-only Windows installer build. Feature tasks must not modify workflow infrastructure without explicit Product Owner authorization.
 

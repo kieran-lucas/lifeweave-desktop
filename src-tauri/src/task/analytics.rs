@@ -798,7 +798,7 @@ mod tests {
     use crate::{
         infrastructure::sqlite::{
             connection::{open_file_connection, open_memory_connection},
-            task38_migration::run_all_migrations as run_migrations,
+            task39_migration::run_all_migrations as run_migrations,
         },
         task::{
             dto::{

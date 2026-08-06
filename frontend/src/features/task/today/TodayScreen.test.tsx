@@ -53,6 +53,16 @@ const commands = vi.hoisted(() => ({
   listTags: vi.fn(),
   createTag: vi.fn(),
   getTaskPlanningProjection: vi.fn(),
+  listTaskSavedViews: vi.fn(),
+  listArchivedTaskSavedViews: vi.fn(),
+  getTaskSavedViewProjection: vi.fn(),
+  getTaskSavedView: vi.fn(),
+  getTaskSavedViewEditorOptions: vi.fn(),
+  createTaskSavedView: vi.fn(),
+  updateTaskSavedView: vi.fn(),
+  archiveTaskSavedView: vi.fn(),
+  restoreTaskSavedView: vi.fn(),
+  reorderTaskSavedViews: vi.fn(),
 }));
 vi.mock("../../../ipc/commands", () => commands);
 const renderToday = (
@@ -151,6 +161,8 @@ describe("Today recurrence contract", () => {
         ...oneOff, id: "future", local_date: "2026-08-03", start_minute: 600, end_minute: 660,
       }] }],
     });
+    commands.listTaskSavedViews.mockResolvedValue([]);
+    commands.listArchivedTaskSavedViews.mockResolvedValue([]);
   });
   afterEach(() => {
     vi.useRealTimers();
@@ -432,7 +444,7 @@ describe("Today recurrence contract", () => {
       expect(entry.queryKey).toHaveLength(3);
   });
 
-  it("evaluation and undo invalidate the deadline queue", async () => {
+  it("evaluation and undo invalidate deadline and Saved View projections", async () => {
     const { client } = renderTodayOnItsOwnDay();
     const invalidate = vi.spyOn(client, "invalidateQueries");
     const deadlineInvalidations = () =>
@@ -440,6 +452,12 @@ describe("Today recurrence contract", () => {
         ([options]) =>
           Array.isArray(options?.queryKey) &&
           options.queryKey[0] === "deadline-queue",
+      ).length;
+    const savedViewInvalidations = () =>
+      invalidate.mock.calls.filter(
+        ([options]) =>
+          Array.isArray(options?.queryKey) &&
+          options.queryKey[0] === "task-saved-view-projection",
       ).length;
 
     fireEvent.click(
@@ -452,12 +470,15 @@ describe("Today recurrence contract", () => {
     );
     // A current evaluation removes the Task from the active deadline queue.
     await waitFor(() => expect(deadlineInvalidations()).toBeGreaterThan(0));
+    expect(savedViewInvalidations()).toBeGreaterThan(0);
 
     const afterEvaluate = deadlineInvalidations();
+    const savedAfterEvaluate = savedViewInvalidations();
     fireEvent.click(screen.getByRole("button", { name: "Undo assessment" }));
     await waitFor(() =>
       expect(deadlineInvalidations()).toBeGreaterThan(afterEvaluate),
     );
+    expect(savedViewInvalidations()).toBeGreaterThan(savedAfterEvaluate);
   });
 
   it("optimistically evaluates an eligible one-off and exposes backend Undo", async () => {
@@ -817,6 +838,32 @@ describe("Today recurrence contract", () => {
     fireEvent.click(await screen.findByRole("button", { name: /Open day for Focus/ }));
     await waitFor(() => expect(document.activeElement).toHaveAttribute("data-task-id", "future"));
     expect(screen.getByRole("tab", { name: "Today" })).toHaveAttribute("aria-selected", "true");
+  });
+  it("focuses the exact moved occurrence when one series has two displayed rows", async () => {
+    Object.defineProperty(HTMLElement.prototype, "scrollIntoView", { configurable: true, value: vi.fn() });
+    commands.listTodayItems.mockResolvedValue([
+      { ...recurring, id: "series:2026-08-01", occurrence_id: "series:2026-08-01", original_local_date: "2026-08-01", is_override: true },
+      { ...recurring, id: "series:2026-08-02", occurrence_id: "series:2026-08-02", original_local_date: "2026-08-02" },
+    ]);
+    renderToday(undefined, {
+      focusRequest: {
+        requestId: "moved-exact",
+        taskId: null,
+        seriesId: "series",
+        originalLocalDate: "2026-08-01",
+      },
+    });
+    await waitFor(() => expect(document.activeElement).toHaveAttribute("data-original-local-date", "2026-08-01"));
+  });
+  it("opens the fifth Views tab without changing the Today default", async () => {
+    const { container } = renderToday();
+    await screen.findByText("Focus");
+    expect(screen.getByRole("tab", { name: "Today" })).toHaveAttribute("aria-selected", "true");
+    fireEvent.click(screen.getByRole("tab", { name: "Views" }));
+    expect(await screen.findByRole("heading", { name: "Saved Views" })).toBeInTheDocument();
+    expect(await screen.findByText("No active Saved Views.")).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Views" })).toHaveAttribute("aria-selected", "true");
+    expect((await axe.run(container)).violations).toEqual([]);
   });
   it("closes an assessment fan across both tab round trips and stays axe clean", async () => {
     const { container } = renderToday();

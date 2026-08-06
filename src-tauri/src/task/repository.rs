@@ -1006,6 +1006,7 @@ pub fn today_items(
         crate::task::evaluation::current_for_date(conn, date)?;
     let areas = life_area_map(conn)?;
     let plans = focus_plan_map(conn)?;
+    let categories = crate::task::planning::load_categories(conn)?;
     let mut stmt=conn.prepare("SELECT t.id,t.local_date,t.start_minute,t.end_minute,t.title,t.description,t.category_id,c.name,c.icon_key,c.color_key,t.priority,t.life_node_id,t.focus_plan_id,t.deadline_local_date FROM tasks t JOIN task_categories c ON c.id=t.category_id WHERE t.local_date=?1")?;
     for row in stmt.query_map(params![date], |r| {
         Ok((
@@ -1045,11 +1046,11 @@ pub fn today_items(
         out.push(item);
     }
     for occurrence in recurring_for_date(conn, date)? {
-        let (name, icon, color): (String, String, String) = conn.query_row(
-            "SELECT name,icon_key,color_key FROM task_categories WHERE id=?1",
-            params![occurrence.category_id],
-            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
-        )?;
+        let category = categories
+            .get(&occurrence.category_id)
+            .ok_or(TaskError::Validation(
+                "Task category metadata is unavailable.",
+            ))?;
         let evaluation = recurring_evaluations
             .get(&(
                 occurrence.series_id.clone(),
@@ -1068,9 +1069,9 @@ pub fn today_items(
             title: occurrence.title,
             description: occurrence.description,
             category_id: occurrence.category_id,
-            category_name: name,
-            category_icon_key: icon,
-            category_color_key: color,
+            category_name: category.name.clone(),
+            category_icon_key: category.icon.clone(),
+            category_color_key: category.color.clone(),
             priority: occurrence.priority,
             is_override: occurrence.is_override,
             evaluation,
@@ -1393,7 +1394,7 @@ fn ymd(s: &str) -> (i32, i32, i32) {
 mod recurrence_tests {
     use super::*;
     use crate::infrastructure::sqlite::{
-        connection::open_memory_connection, task38_migration::run_all_migrations as run_migrations,
+        connection::open_memory_connection, task39_migration::run_all_migrations as run_migrations,
     };
     use crate::task::dto::{
         CreateRecurringTaskInput, OccurrenceEditScope, UpdateRecurringOccurrenceInput,
@@ -2279,7 +2280,7 @@ mod recurrence_tests {
             .unwrap();
         assert_eq!(occurrence_plan_columns, 0);
         assert_eq!(occurrence_deadline_columns, 0);
-        assert_eq!(schema, 22);
+        assert_eq!(schema, 23);
     }
 
     #[test]

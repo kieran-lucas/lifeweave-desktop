@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-restore-task-saved-view"
+description = "Enables the restore_task_saved_view command without any pre-configured scope."
+commands.allow = ["restore_task_saved_view"]
+
+[[permission]]
+identifier = "deny-restore-task-saved-view"
+description = "Denies the restore_task_saved_view command without any pre-configured scope."
+commands.deny = ["restore_task_saved_view"]

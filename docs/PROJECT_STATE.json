@@ -6,7 +6,7 @@
   "latest_closed_slice": 28,
   "latest_feature_task": 38,
   "latest_feature_checkpoint": "cace17bd4225cb8e3d89795c0e833e68ed588ba2",
-  "database_schema_version": 22,
+  "database_schema_version": 23,
   "active_spec": "specs/029-task-saved-views",
   "next_action": "implement_active_spec",
   "forbidden_feature_jump": true,

@@ -19,6 +19,8 @@ import {
 import * as styles from "./FocusPlansScreen.css";
 import { LinkedWorkPanel, type TaskNavigate } from "./LinkedWorkPanel";
 import { ReviewsPanel } from "./ReviewsPanel";
+import { useQueryClient } from "@tanstack/react-query";
+import { invalidateTaskSavedViewReferenceData } from "../task/saved-views/savedViewQueries";
 
 export type FocusPlanEntryRequest = {
   requestId: string;
@@ -149,6 +151,7 @@ export function FocusPlansScreen({
   anchorLocalDate,
   onTaskNavigate,
 }: Props) {
+  const queryClient = useQueryClient();
   const [portfolio, setPortfolio] = useState<FocusPlanPortfolio>("active");
   const [plans, setPlans] = useState<FocusPlanSummaryView[]>([]);
   const [selected, setSelected] = useState<FocusPlanDetailView | null>(null);
@@ -246,6 +249,7 @@ export function FocusPlansScreen({
         operation_id: globalThis.crypto.randomUUID(),
         mutation,
       });
+      await invalidateTaskSavedViewReferenceData(queryClient);
       await refreshSelected();
       return true;
     } catch (cause) {
@@ -302,6 +306,7 @@ export function FocusPlansScreen({
       setCreateTitle("");
       setPortfolio("draft");
       syncDetail(plan);
+      await invalidateTaskSavedViewReferenceData(queryClient);
       await loadPortfolio("draft");
     } catch (cause) {
       setError(messageFromError(cause));

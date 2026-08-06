@@ -10,6 +10,7 @@ import {
 } from "../../ipc/commands";
 import type { TagView } from "../../ipc/generated/TagView";
 import * as styles from "./TagSettings.css";
+import { invalidateTaskSavedViewReferenceData } from "../task/saved-views/savedViewQueries";
 
 export function TagSettings() {
   const [createName, setCreateName] = useState("");
@@ -39,6 +40,7 @@ export function TagSettings() {
     void queryClient.invalidateQueries({ queryKey: ["today-items"] });
     void queryClient.invalidateQueries({ queryKey: ["task-planning"] });
     void queryClient.invalidateQueries({ queryKey: ["life"] });
+    void invalidateTaskSavedViewReferenceData(queryClient);
   };
 
   const tagsQuery = useQuery({

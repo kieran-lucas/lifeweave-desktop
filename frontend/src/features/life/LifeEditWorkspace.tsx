@@ -20,6 +20,7 @@ import type { TagSummaryView } from "../../ipc/generated/TagSummaryView";
 import * as styles from "./LifeEditWorkspace.css";
 import { TagChipList } from "../tag/TagChipList";
 import { TagPicker } from "../tag/TagPicker";
+import { invalidateTaskSavedViewReferenceData } from "../task/saved-views/savedViewQueries";
 
 type Point={x:number;y:number};
 type Layout={points:Map<string,Point>;links:Array<{id:string;d:string}>;width:number;height:number};
@@ -76,7 +77,7 @@ export function LifeEditWorkspace({initialNodeId,onBrowse}:{initialNodeId:string
  useEffect(()=>{const el=canvasRef.current;if(el){el.style.width=`${layout.width}px`;el.style.height=`${layout.height}px`;}},[layout]);
  useEffect(()=>{if(!selected)return;setSelectedId(selected.id);setTitle(selected.title);setDescription(selected.short_description);setIcon(selected.icon_key);setTheme(selected.theme_variant);setMoveParent(selected.parent_id??"");},[selected?.id,selected?.revision]);
  useEffect(()=>{const id=focusAfter.current;if(!id)return;requestAnimationFrame(()=>document.querySelector<HTMLElement>(`[data-life-edit-id="${id}"]`)?.focus({preventScroll:true}));focusAfter.current=undefined;},[projection?.tree_revision]);
- const mutation=useMutation({mutationFn:(work:()=>Promise<unknown>)=>work(),onSuccess:async()=>{setMessage("Life tree updated.");await client.invalidateQueries({queryKey:["life"]});},onError:(error)=>setMessage(error instanceof Error?error.message:"Life tree update failed; authoritative geometry was restored.")});
+ const mutation=useMutation({mutationFn:(work:()=>Promise<unknown>)=>work(),onSuccess:async()=>{setMessage("Life tree updated.");await Promise.all([client.invalidateQueries({queryKey:["life"]}),invalidateTaskSavedViewReferenceData(client)]);},onError:(error)=>setMessage(error instanceof Error?error.message:"Life tree update failed; authoritative geometry was restored.")});
  const [tagError,setTagError]=useState<string|null>(null);
  const tagMutation=useMutation({mutationFn:({nodeId,revision,tagIds}:{nodeId:string;revision:number;tagIds:string[]})=>setLifeNodeTags({node_id:nodeId,expected_node_revision:revision,tag_ids:tagIds}),onSuccess:async()=>{setTagError(null);await client.invalidateQueries({queryKey:["life"]});},onError:(e)=>setTagError(e instanceof Error?e.message:"Could not save tags.")});
  const handleTagChange=(node:LifeEditNodeView,next:TagSummaryView[])=>{tagMutation.mutate({nodeId:node.id,revision:node.revision,tagIds:next.map(t=>t.id)});};

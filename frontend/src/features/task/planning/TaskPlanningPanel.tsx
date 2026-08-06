@@ -8,7 +8,7 @@ import { TagChipList } from "../../tag/TagChipList";
 
 // Deadlines has its own projection and DTOs; excluding it here makes routing it through
 // the schedule-based planning modes a compile error rather than a silent semantic collapse.
-type PlanningMode = Exclude<TaskWorkspaceMode, "today" | "deadlines">;
+type PlanningMode = Exclude<TaskWorkspaceMode, "today" | "deadlines" | "views">;
 const formatMinute = (value: number) =>
   `${String(Math.floor(value / 60)).padStart(2, "0")}:${String(value % 60).padStart(2, "0")}`;
 
@@ -41,7 +41,7 @@ export default function TaskPlanningPanel({
 }: {
   mode: PlanningMode;
   anchorLocalDate: string;
-  onOpenItem: (request: { localDate: string; taskId: string | null; seriesId: string | null }) => void;
+  onOpenItem: (request: { localDate: string; taskId: string | null; seriesId: string | null; originalLocalDate?: string | null }) => void;
   onFocusPlanNavigate?: ((planId: string) => void) | undefined;
 }) {
   const query = useQuery({
@@ -91,7 +91,7 @@ export default function TaskPlanningPanel({
 function PlanningRow({ item, mode, onOpenItem, onFocusPlanNavigate }: {
   item: TaskPlanningItemView;
   mode: PlanningMode;
-  onOpenItem: (request: { localDate: string; taskId: string | null; seriesId: string | null }) => void;
+  onOpenItem: (request: { localDate: string; taskId: string | null; seriesId: string | null; originalLocalDate?: string | null }) => void;
   onFocusPlanNavigate?: ((planId: string) => void) | undefined;
 }) {
   const action = mode === "upcoming" ? "Open day" : "Review";
@@ -146,6 +146,7 @@ function PlanningRow({ item, mode, onOpenItem, onFocusPlanNavigate }: {
           localDate: item.local_date,
           taskId: item.kind === "one_off" ? item.id : null,
           seriesId: item.kind === "recurring" ? item.series_id : null,
+          originalLocalDate: item.kind === "recurring" ? item.original_local_date : null,
         })}
         aria-label={`${action} for ${item.title}, ${labelDate}`}
       >{action}</button>
