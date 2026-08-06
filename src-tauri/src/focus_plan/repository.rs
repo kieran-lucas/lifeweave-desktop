@@ -301,7 +301,7 @@ pub fn list(conn: &Connection, input: &FocusPlanListInput) -> Result<Vec<FocusPl
             } else {
                 tags.split('\u{1f}').map(str::to_string).collect()
             },
-            revision: u64::from(revision),
+            revision,
             updated_at,
             archived: archived_at.is_some(),
         })
@@ -371,7 +371,7 @@ pub fn get(conn: &Connection, plan_id: &str) -> Result<FocusPlanDetailView> {
     }
 
     let mut tag_statement = conn.prepare(
-        "SELECT t.id,t.name FROM focus_plan_tags fpt JOIN tags t ON t.id=fpt.tag_id WHERE fpt.plan_id=?1 ORDER BY t.normalized_name,t.id",
+        "SELECT t.id,t.name FROM focus_plan_tags fpt JOIN tags t ON t.id=fpt.tag_id WHERE fpt.plan_id=?1 AND t.archived_at IS NULL AND t.merged_into_tag_id IS NULL ORDER BY t.normalized_name,t.id",
     )?;
     let tags = tag_statement
         .query_map([plan_id], |row| {
@@ -388,7 +388,7 @@ pub fn get(conn: &Connection, plan_id: &str) -> Result<FocusPlanDetailView> {
     let revisions = revision_statement
         .query_map([plan_id], |row| {
             Ok(FocusPlanRevisionView {
-                revision: u64::from(row.get::<_, u32>(0)?),
+                revision: row.get(0)?,
                 reason: row.get(1)?,
                 created_at: row.get(2)?,
             })
@@ -401,7 +401,7 @@ pub fn get(conn: &Connection, plan_id: &str) -> Result<FocusPlanDetailView> {
             [plan_id],
             |row| {
                 Ok(FocusPlanRecoveryDraftView {
-                    base_revision: u64::from(row.get::<_, u32>(0)?),
+                    base_revision: row.get(0)?,
                     draft_json: row.get(1)?,
                     conflict: row.get::<_, String>(2)? == "conflict",
                     updated_at: row.get(3)?,
@@ -427,7 +427,7 @@ pub fn get(conn: &Connection, plan_id: &str) -> Result<FocusPlanDetailView> {
         tags,
         revisions,
         recovery_draft,
-        revision: u64::from(plan.10),
+        revision: plan.10,
         created_at: plan.11,
         updated_at: plan.12,
         archived: plan.13.is_some(),
@@ -465,7 +465,7 @@ fn existing_operation(
             |row| {
                 Ok(FocusPlanMutationResult {
                     plan_id: row.get(0)?,
-                    revision: u64::from(row.get::<_, u32>(1)?),
+                    revision: row.get(1)?,
                     created_id: None,
                     replayed: true,
                 })
@@ -702,19 +702,50 @@ fn apply_mutation(
                 ));
             }
             let mut statement = tx.prepare(
-                "SELECT id FROM focus_plan_phases WHERE variant_id=?1 AND archived_at IS NULL ORDER BY sort_key,id",
+                "SELECT id,archived_at FROM focus_plan_phases WHERE variant_id=?1 ORDER BY sort_key,id",
             )?;
-            let mut ids = statement
-                .query_map([variant_id], |row| row.get::<_, String>(0))?
+            let ordered = statement
+                .query_map([variant_id], |row| {
+                    Ok((
+                        row.get::<_, String>(0)?,
+                        row.get::<_, Option<String>>(1)?.is_some(),
+                    ))
+                })?
                 .collect::<std::result::Result<Vec<_>, _>>()?;
-            let old_index = ids
+            let mut active_ids = ordered
+                .iter()
+                .filter(|(_, archived)| !archived)
+                .map(|(id, _)| id.clone())
+                .collect::<Vec<_>>();
+            let old_index = active_ids
                 .iter()
                 .position(|id| id == phase_id)
                 .ok_or(FocusPlanError::NotFound)?;
-            let item = ids.remove(old_index);
-            let target = (*new_index as usize).min(ids.len());
-            ids.insert(target, item);
-            for (index, id) in ids.iter().enumerate() {
+            let item = active_ids.remove(old_index);
+            let target = (*new_index as usize).min(active_ids.len());
+            active_ids.insert(target, item);
+
+            let mut active = active_ids.into_iter();
+            let reordered = ordered
+                .into_iter()
+                .map(|(id, archived)| {
+                    if archived {
+                        Ok(id)
+                    } else {
+                        active.next().ok_or_else(|| {
+                            FocusPlanError::Validation(
+                                "Focus Plan phase ordering is inconsistent".into(),
+                            )
+                        })
+                    }
+                })
+                .collect::<Result<Vec<_>>>()?;
+            if active.next().is_some() {
+                return Err(FocusPlanError::Validation(
+                    "Focus Plan phase ordering is inconsistent".into(),
+                ));
+            }
+            for (index, id) in reordered.iter().enumerate() {
                 tx.execute(
                     "UPDATE focus_plan_phases SET sort_key=?2,updated_at=?3 WHERE id=?1",
                     params![id, index as u32, timestamp],
@@ -804,9 +835,7 @@ pub fn mutate(
     }
     plan_exists(conn, &input.plan_id)?;
 
-    let expected_revision = u32::try_from(input.expected_revision).map_err(|_| {
-        FocusPlanError::Validation("Focus Plan revision exceeds the supported range".into())
-    })?;
+    let expected_revision = input.expected_revision;
     let tx = conn.transaction()?;
     let current_revision: u32 = tx.query_row(
         "SELECT revision FROM focus_plans WHERE id=?1",
@@ -850,7 +879,7 @@ pub fn mutate(
     tx.commit()?;
     Ok(FocusPlanMutationResult {
         plan_id: input.plan_id,
-        revision: u64::from(revision),
+        revision,
         created_id,
         replayed: false,
     })
@@ -866,9 +895,7 @@ pub fn save_draft(conn: &mut Connection, input: SaveFocusPlanDraftInput) -> Resu
         ));
     }
     plan_exists(conn, &input.plan_id)?;
-    let base_revision = u32::try_from(input.base_revision).map_err(|_| {
-        FocusPlanError::Validation("Focus Plan revision exceeds the supported range".into())
-    })?;
+    let base_revision = input.base_revision;
     conn.execute(
         "INSERT INTO focus_plan_drafts(plan_id,base_revision,draft_json,recovery_state,updated_at) VALUES(?1,?2,?3,'available',?4) ON CONFLICT(plan_id) DO UPDATE SET base_revision=excluded.base_revision,draft_json=excluded.draft_json,recovery_state='available',updated_at=excluded.updated_at",
         params![input.plan_id, base_revision, input.draft_json, now()],
@@ -1040,5 +1067,172 @@ mod tests {
         );
         assert!(!after.archived);
         assert_eq!(after.revision, 2);
+    }
+
+    #[test]
+    fn phase_reorder_preserves_archived_slot_and_contiguous_restore_order() {
+        let mut conn = connection();
+        let plan = create(&mut conn, create_input("op-create")).unwrap();
+        let variant_id = plan.selected_variant_id.clone();
+
+        let add_phase =
+            |conn: &mut Connection, revision: u32, operation_id: &str, title: &str| -> String {
+                mutate(
+                    conn,
+                    MutateFocusPlanInput {
+                        plan_id: plan.id.clone(),
+                        expected_revision: revision,
+                        operation_id: operation_id.into(),
+                        mutation: FocusPlanMutationAction::AddPhase {
+                            variant_id: variant_id.clone(),
+                            title: title.into(),
+                        },
+                    },
+                )
+                .unwrap()
+                .created_id
+                .unwrap()
+            };
+
+        let phase_a = add_phase(&mut conn, 0, "op-phase-a", "A");
+        let phase_b = add_phase(&mut conn, 1, "op-phase-b", "B");
+        let phase_c = add_phase(&mut conn, 2, "op-phase-c", "C");
+
+        mutate(
+            &mut conn,
+            MutateFocusPlanInput {
+                plan_id: plan.id.clone(),
+                expected_revision: 3,
+                operation_id: "op-archive-b".into(),
+                mutation: FocusPlanMutationAction::ArchivePhase {
+                    variant_id: variant_id.clone(),
+                    phase_id: phase_b.clone(),
+                },
+            },
+        )
+        .unwrap();
+        mutate(
+            &mut conn,
+            MutateFocusPlanInput {
+                plan_id: plan.id.clone(),
+                expected_revision: 4,
+                operation_id: "op-move-c".into(),
+                mutation: FocusPlanMutationAction::MovePhase {
+                    variant_id: variant_id.clone(),
+                    phase_id: phase_c.clone(),
+                    new_index: 0,
+                },
+            },
+        )
+        .unwrap();
+        mutate(
+            &mut conn,
+            MutateFocusPlanInput {
+                plan_id: plan.id.clone(),
+                expected_revision: 5,
+                operation_id: "op-restore-b".into(),
+                mutation: FocusPlanMutationAction::RestorePhase {
+                    variant_id,
+                    phase_id: phase_b.clone(),
+                },
+            },
+        )
+        .unwrap();
+
+        let detail = get(&conn, &plan.id).unwrap();
+        let phases = &detail.variants[0].phases;
+        assert_eq!(
+            phases
+                .iter()
+                .map(|phase| phase.id.as_str())
+                .collect::<Vec<_>>(),
+            vec![phase_c.as_str(), phase_b.as_str(), phase_a.as_str()]
+        );
+        assert_eq!(
+            phases
+                .iter()
+                .map(|phase| phase.sort_key)
+                .collect::<Vec<_>>(),
+            vec![0, 1, 2]
+        );
+        assert!(phases.iter().all(|phase| !phase.archived));
+    }
+
+    #[test]
+    fn archived_tag_joins_are_hidden_and_do_not_block_plan_updates() {
+        let mut conn = connection();
+        let plan = create(&mut conn, create_input("op-create")).unwrap();
+        let tag = crate::tag::repository::create(
+            &conn,
+            crate::tag::dto::CreateTagInput {
+                name: "Foundations".into(),
+            },
+        )
+        .unwrap();
+
+        mutate(
+            &mut conn,
+            MutateFocusPlanInput {
+                plan_id: plan.id.clone(),
+                expected_revision: 0,
+                operation_id: "op-assign-tag".into(),
+                mutation: FocusPlanMutationAction::UpdatePlan {
+                    title: plan.title.clone(),
+                    lifecycle: plan.lifecycle,
+                    life_node_id: plan.life_node_id.clone(),
+                    start_date: plan.start_date.clone(),
+                    target_date: plan.target_date.clone(),
+                    outcome: plan.outcome.clone(),
+                    success_criteria: plan.success_criteria.clone(),
+                    tag_ids: vec![tag.id.clone()],
+                },
+            },
+        )
+        .unwrap();
+        assert_eq!(get(&conn, &plan.id).unwrap().tags.len(), 1);
+
+        crate::tag::repository::archive(
+            &conn,
+            crate::tag::dto::MutateTagInput {
+                tag_id: tag.id.clone(),
+                expected_revision: tag.revision,
+            },
+        )
+        .unwrap();
+
+        let hidden = get(&conn, &plan.id).unwrap();
+        assert!(hidden.tags.is_empty());
+        mutate(
+            &mut conn,
+            MutateFocusPlanInput {
+                plan_id: plan.id.clone(),
+                expected_revision: hidden.revision,
+                operation_id: "op-update-after-tag-archive".into(),
+                mutation: FocusPlanMutationAction::UpdatePlan {
+                    title: "AI Foundations Updated".into(),
+                    lifecycle: hidden.lifecycle,
+                    life_node_id: hidden.life_node_id,
+                    start_date: hidden.start_date,
+                    target_date: hidden.target_date,
+                    outcome: hidden.outcome,
+                    success_criteria: hidden.success_criteria,
+                    tag_ids: Vec::new(),
+                },
+            },
+        )
+        .unwrap();
+
+        let preserved_join_count: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM focus_plan_tags WHERE plan_id=?1 AND tag_id=?2",
+                params![plan.id, tag.id],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(preserved_join_count, 1);
+        assert_eq!(
+            get(&conn, &plan.id).unwrap().title,
+            "AI Foundations Updated"
+        );
     }
 }
