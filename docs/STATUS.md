@@ -1,6 +1,6 @@
 # Project Status
 
-## Task 36/60 — Focus Plans Core + Draft/Active Lifecycle (implementation complete; final native check pending)
+## Task 36/60 — Focus Plans Core + Draft/Active Lifecycle (source verified; final native check pending)
 
 - Activation baseline: `fd3f0e8808f28aae7c4bbca992cedcbd94db6c5d`.
 - Active spec: `specs/026-focus-plans-core`.
@@ -8,11 +8,14 @@
 - Schema 20 is active through an append-only migration; migrations 1–19 remain unchanged.
 - Backend core, IPC, tags, Search, backup/restore, generated bindings, Plans UI,
   recovery-draft loading, and phase-8 restart scenarios are implemented.
-- Backend compiler/clippy gates and the previously failing migration, backup, and
-  Search paths passed after their root causes were corrected.
-- Focus Plans screen/generated DTO typecheck and phase-8 E2E TypeScript syntax pass.
-- Temporary workflows, patch scripts, compiler diaries, placeholders, duplicated
-  plans/tests, and dependency drift have been removed.
+- Task 36 remediation is now ordinary source code rather than runtime patching.
+  One-time staging run `31074176655` passed frontend typecheck/tests, Rust tests,
+  generated-binding stability, diff checks, and final repository governance.
+- Runtime patch scripts and the temporary materialization workflow were removed
+  from the verified tree before it was merged into `main`.
+- GitHub Actions on `main` now contains one sealed manual, read-only Windows
+  installer build. It has no push trigger, source mutation, commit, push, or
+  self-rewriting behavior.
 - Today remains startup/default; Life semantics remain unchanged.
 - Task 37 is prohibited: no Task/series relation, review workflow, or progress computation.
 - Only the two phase-8 native Windows scenarios remain to be executed before closure.
