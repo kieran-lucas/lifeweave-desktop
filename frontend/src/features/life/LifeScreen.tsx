@@ -102,6 +102,9 @@ export function LifeScreen({
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [reader, setReader] = useState<LifeNodeView | PinnedLifeNodeView>();
   const [busy, setBusy] = useState(false);
+  const linkedReaderNavigationGeneration = useRef(0);
+  const linkedReaderBusyOwner = useRef<number | null>(null);
+  const currentReaderIdRef = useRef<string | null>(null);
   const sceneRef = useRef<HTMLDivElement>(null),
     focalRef = useRef<HTMLDivElement>(null),
     readerHeadingRef = useRef<HTMLHeadingElement>(null),
@@ -109,6 +112,17 @@ export function LifeScreen({
     restoreFocus = useRef<string | undefined>(undefined),
     preparedEntryRequestId = useRef<string | null>(null),
     settledEntryRequestId = useRef<string | null>(null);
+  currentReaderIdRef.current = mode === "reader" && reader
+    ? "id" in reader ? reader.id : reader.node_id
+    : null;
+  const invalidateLinkedReaderNavigation = () => {
+    linkedReaderNavigationGeneration.current += 1;
+    currentReaderIdRef.current = null;
+    if (linkedReaderBusyOwner.current !== null) {
+      linkedReaderBusyOwner.current = null;
+      setBusy(false);
+    }
+  };
   const browse = useQuery({
     queryKey: lifeKeys.browse(nodeId, page),
     queryFn: () =>
@@ -189,6 +203,7 @@ export function LifeScreen({
       preparedEntryRequestId.current === requestId
     )
       return;
+    invalidateLinkedReaderNavigation();
     preparedEntryRequestId.current = requestId;
     const selected = browse.data.selected;
     const directChild = browse.data.children.find(
@@ -267,7 +282,10 @@ export function LifeScreen({
     node: LifeNodeView | PinnedLifeNodeView,
     originMode: "browse" | "pinned" = mode === "pinned" ? "pinned" : "browse",
   ) => {
-    if (busy || ("available" in node && !node.available)) return;
+    if ("available" in node && !node.available) return;
+    const supersedesLinkedNavigation = linkedReaderBusyOwner.current !== null;
+    if (busy && !supersedesLinkedNavigation) return;
+    invalidateLinkedReaderNavigation();
     cancelPendingEntryRequest();
     setBusy(true);
     const id = "id" in node ? node.id : node.node_id;
@@ -301,6 +319,7 @@ export function LifeScreen({
     setTimeout(() => setBusy(false), reduced ? 0 : 320);
   };
   const goTo = (id: string) => {
+    invalidateLinkedReaderNavigation();
     cancelPendingEntryRequest();
     if (browse.data?.selected.id !== id)
       setHistory((v) => [
@@ -312,29 +331,45 @@ export function LifeScreen({
     setMode("browse");
   };
   const openLinkedReader = async (targetNodeId: string) => {
-    if (busy) return;
+    if (busy || !reader) return;
     cancelPendingEntryRequest();
+    const sourceReader = reader;
+    const sourceReaderId = "id" in sourceReader ? sourceReader.id : sourceReader.node_id;
+    const generation = linkedReaderNavigationGeneration.current + 1;
+    linkedReaderNavigationGeneration.current = generation;
+    linkedReaderBusyOwner.current = generation;
     setBusy(true);
     try {
       const target = await client.fetchQuery({
         queryKey: lifeKeys.browse(targetNodeId, 0),
         queryFn: () => getLifeBrowseProjection({ node_id: targetNodeId, child_page: 0 }),
       });
+      if (
+        generation !== linkedReaderNavigationGeneration.current ||
+        currentReaderIdRef.current !== sourceReaderId
+      ) return;
       if (target.resolved_from_fallback || target.selected.id !== targetNodeId || !target.selected.is_leaf)
         throw new Error("That Life leaf is unavailable.");
-      if (reader) {
-        const sourceId = "id" in reader ? reader.id : reader.node_id;
-        setHistory((value) => [...value, { nodeId: sourceId, page: 0, mode: "reader", reader }]);
-      }
+      setHistory((value) => [...value, { nodeId: sourceReaderId, page: 0, mode: "reader", reader: sourceReader }]);
       setNodeId(targetNodeId);
       setPage(0);
       setReader(target.selected);
       setMode("reader");
+    } catch (error) {
+      if (
+        generation !== linkedReaderNavigationGeneration.current ||
+        currentReaderIdRef.current !== sourceReaderId
+      ) return;
+      throw error;
     } finally {
-      setBusy(false);
+      if (linkedReaderBusyOwner.current === generation) {
+        linkedReaderBusyOwner.current = null;
+        setBusy(false);
+      }
     }
   };
   const back = () => {
+    invalidateLinkedReaderNavigation();
     cancelPendingEntryRequest();
     const previous = history.at(-1);
     if (mode === "reader") {
@@ -413,6 +448,7 @@ export function LifeScreen({
             className={styles.modeButton}
             aria-pressed={mode === "browse"}
             onClick={() => {
+              invalidateLinkedReaderNavigation();
               cancelPendingEntryRequest();
               setMode("browse");
             }}
@@ -423,6 +459,7 @@ export function LifeScreen({
             className={styles.modeButton}
             aria-pressed={mode === "edit"}
             onClick={() => {
+              invalidateLinkedReaderNavigation();
               cancelPendingEntryRequest();
               setMode("edit");
             }}
@@ -433,6 +470,7 @@ export function LifeScreen({
             className={styles.modeButton}
             aria-pressed={mode === "pinned"}
             onClick={() => {
+              invalidateLinkedReaderNavigation();
               cancelPendingEntryRequest();
               setMode("pinned");
             }}
@@ -445,6 +483,7 @@ export function LifeScreen({
         <LifeEditWorkspace
           initialNodeId={projection.selected.id}
           onBrowse={(id) => {
+            invalidateLinkedReaderNavigation();
             cancelPendingEntryRequest();
             setNodeId(id);
             setPage(0);
@@ -599,6 +638,7 @@ export function LifeScreen({
                 className={styles.quietButton}
                 disabled={page === 0}
                 onClick={() => {
+                  invalidateLinkedReaderNavigation();
                   cancelPendingEntryRequest();
                   setNodeId(projection.selected.id);
                   setPage((v) => v - 1);
@@ -614,6 +654,7 @@ export function LifeScreen({
                 className={styles.quietButton}
                 disabled={page + 1 >= projection.child_page_count}
                 onClick={() => {
+                  invalidateLinkedReaderNavigation();
                   cancelPendingEntryRequest();
                   setNodeId(projection.selected.id);
                   setPage((v) => v + 1);

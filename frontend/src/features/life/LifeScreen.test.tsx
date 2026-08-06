@@ -1,4 +1,5 @@
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -80,6 +81,15 @@ const projection = (
   preferred_mode: "browse",
   viewport_anchor: null,
 });
+const deferred = <T,>() => {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve, reject };
+};
 const renderLife = (
   onTaskNavigate?: (
     localDate: string,
@@ -232,6 +242,80 @@ describe("Life Browse", () => {
     expect(await screen.findByRole("heading", { name: "Leaf", level: 1 })).toBeInTheDocument();
     expect(api.browse).toHaveBeenCalledWith({ node_id: remoteLeaf.id, child_page: 0 });
     expect(api.browse).toHaveBeenCalledWith({ node_id: thirdLeaf.id, child_page: 0 });
+  });
+  it("keeps Back authoritative when a linked Reader projection resolves late", async () => {
+    const remote = deferred<LifeBrowseProjection>();
+    api.browse.mockImplementation(({ node_id }: { node_id: string | null }) =>
+      node_id === remoteLeaf.id ? remote.promise : Promise.resolve(projection()),
+    );
+    renderLife();
+    fireEvent.click((await screen.findByText("Leaf")).closest("button")!);
+    fireEvent.click(await screen.findByRole("button", { name: "Open Remote Leaf in Life Reader" }));
+    await waitFor(() =>
+      expect(api.browse).toHaveBeenCalledWith({ node_id: remoteLeaf.id, child_page: 0 }),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /Back to Life Browse/ }));
+    expect(await screen.findByRole("heading", { name: "Life" })).toBeInTheDocument();
+    const branchButton = screen.getByText("Branch").closest("button")!;
+    const browseControlsWereEnabled = !branchButton.disabled;
+    const browseBackWasDisabled = screen.getByRole("button", { name: /^← Back$/ }).hasAttribute("disabled");
+
+    await act(async () => remote.resolve(projection(remoteLeaf, [])));
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { name: "Life" })).toBeInTheDocument(),
+    );
+    expect(screen.queryByRole("heading", { name: "Remote Leaf", level: 1 })).not.toBeInTheDocument();
+    expect(document.activeElement).not.toHaveTextContent("Remote Leaf");
+    expect(browseControlsWereEnabled).toBe(true);
+    expect(browseBackWasDisabled).toBe(true);
+    expect(screen.getByRole("button", { name: /^← Back$/ })).toBeDisabled();
+  });
+  it("keeps a newer Browse destination when a stale linked Reader projection resolves", async () => {
+    const remote = deferred<LifeBrowseProjection>();
+    api.browse.mockImplementation(({ node_id }: { node_id: string | null }) =>
+      node_id === remoteLeaf.id
+        ? remote.promise
+        : Promise.resolve(node_id === branch.id ? projection(branch, [leaf]) : projection()),
+    );
+    renderLife();
+    fireEvent.click((await screen.findByText("Leaf")).closest("button")!);
+    fireEvent.click(await screen.findByRole("button", { name: "Open Remote Leaf in Life Reader" }));
+    await waitFor(() =>
+      expect(api.browse).toHaveBeenCalledWith({ node_id: remoteLeaf.id, child_page: 0 }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Back to Life Browse/ }));
+    const branchButton = (await screen.findByText("Branch")).closest("button")!;
+    expect(branchButton).toBeEnabled();
+    fireEvent.click(branchButton);
+    expect(await screen.findByRole("heading", { name: "Branch" })).toBeInTheDocument();
+
+    await act(async () => remote.resolve(projection(remoteLeaf, [])));
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { name: "Branch" })).toBeInTheDocument(),
+    );
+    expect(screen.queryByRole("heading", { name: "Remote Leaf", level: 1 })).not.toBeInTheDocument();
+  });
+  it("silences a stale linked Reader rejection after Back", async () => {
+    const remote = deferred<LifeBrowseProjection>();
+    api.browse.mockImplementation(({ node_id }: { node_id: string | null }) =>
+      node_id === remoteLeaf.id ? remote.promise : Promise.resolve(projection()),
+    );
+    renderLife();
+    fireEvent.click((await screen.findByText("Leaf")).closest("button")!);
+    fireEvent.click(await screen.findByRole("button", { name: "Open Remote Leaf in Life Reader" }));
+    await waitFor(() =>
+      expect(api.browse).toHaveBeenCalledWith({ node_id: remoteLeaf.id, child_page: 0 }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Back to Life Browse/ }));
+    expect(await screen.findByRole("heading", { name: "Life" })).toBeInTheDocument();
+
+    await act(async () => remote.reject(new Error("late failure")));
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { name: "Life" })).toBeInTheDocument(),
+    );
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.queryByText(/unavailable|late failure/i)).not.toBeInTheDocument();
   });
   it("renders all twelve visible Reader tags and remains axe clean", async () => {
     const tags = Array.from({ length: 12 }, (_, index) => ({
