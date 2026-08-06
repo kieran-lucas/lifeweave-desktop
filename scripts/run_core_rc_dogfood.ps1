@@ -64,6 +64,10 @@ try {
   if ($LASTEXITCODE -ne 0) { throw "Narrative dogfood fixture failed." }
   cargo test --manifest-path src-tauri/Cargo.toml --locked portable::service::tests::
   if ($LASTEXITCODE -ne 0) { throw "Portable Basic Leaf/Narrative round-trip dogfood fixtures failed." }
+  # `life_branch::` covers the Task 42 package format, archive security, batched export, and the
+  # atomic import including tag, link-cap, replay, and zero-residue behaviour.
+  cargo test --manifest-path src-tauri/Cargo.toml --locked life_branch::
+  if ($LASTEXITCODE -ne 0) { throw "Life branch interchange dogfood fixtures failed." }
   # `task::` covers evaluation, Upcoming/Overdue planning, Task 38 deadline semantics, and the
   # Task 39 Saved View domain in one selector.
   cargo test --manifest-path src-tauri/Cargo.toml --locked task::

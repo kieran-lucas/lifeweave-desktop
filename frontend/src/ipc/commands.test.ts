@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const invoke = vi.hoisted(() => vi.fn());
 vi.mock("@tauri-apps/api/core", () => ({ invoke }));
 
-import { createLifeLink, getLifeLinkPanel, getRelatedTasksForLifeNode, previewPortablePackageImport, readPortablePackageExport, removeLifeLink, searchLifeLinkTargets } from "./commands";
+import { confirmLifeBranchImport, createLifeLink, discardLifeBranchImport, getLifeLinkPanel, getRelatedTasksForLifeNode, prepareLifeBranchExport, previewLifeBranchImport, previewPortablePackageImport, readLifeBranchExport, readPortablePackageExport, removeLifeLink, searchLifeLinkTargets } from "./commands";
 
 describe("Related Tasks command adapter", () => {
   beforeEach(() => invoke.mockReset().mockResolvedValue([]));
@@ -44,5 +44,35 @@ describe("Life link command adapters", () => {
       ["create_life_link", { input: { source_node_id: "source", target_node_id: "target" } }],
       ["remove_life_link", { input: { link_id: "link" } }],
     ]);
+  });
+});
+
+describe("Life branch command adapters", () => {
+  beforeEach(() => invoke.mockReset().mockResolvedValue(new ArrayBuffer(0)));
+
+  it("sends preview bytes as the raw invoke body and reads binary by opaque ID", async () => {
+    const bytes = new Uint8Array([80, 75, 3, 4]);
+    await previewLifeBranchImport(bytes);
+    expect(invoke).toHaveBeenCalledWith("preview_life_branch_import", bytes);
+    await readLifeBranchExport("export-id");
+    expect(invoke).toHaveBeenCalledWith("read_life_branch_export", { exportId: "export-id" });
+  });
+
+  it("keeps typed inputs inside an envelope and never sends a filesystem path", async () => {
+    await prepareLifeBranchExport({ node_id: "node" });
+    await confirmLifeBranchImport({
+      import_id: "import",
+      package_sha256: "a".repeat(64),
+      parent_node_id: "parent",
+      expected_tree_revision: 3,
+      operation_id: "op",
+    });
+    await discardLifeBranchImport({ import_id: "import" });
+    expect(invoke.mock.calls).toEqual([
+      ["prepare_life_branch_export", { input: { node_id: "node" } }],
+      ["confirm_life_branch_import", { input: { import_id: "import", package_sha256: "a".repeat(64), parent_node_id: "parent", expected_tree_revision: 3, operation_id: "op" } }],
+      ["discard_life_branch_import", { input: { import_id: "import" } }],
+    ]);
+    expect(JSON.stringify(invoke.mock.calls)).not.toMatch(/[A-Za-z]:\\|\/imports\/|\/exports\//);
   });
 });

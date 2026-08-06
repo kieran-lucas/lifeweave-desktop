@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-prepare-life-branch-export"
+description = "Enables the prepare_life_branch_export command without any pre-configured scope."
+commands.allow = ["prepare_life_branch_export"]
+
+[[permission]]
+identifier = "deny-prepare-life-branch-export"
+description = "Denies the prepare_life_branch_export command without any pre-configured scope."
+commands.deny = ["prepare_life_branch_export"]

@@ -1,0 +1,150 @@
+{
+  "task": 42,
+  "slice": "032-bounded-life-branch-interchange",
+  "activation_baseline": "08a76c2827c1d49556c1f255631cbe2b1a4a2437",
+  "supersedes": "docs/audits/task-41-performance-baseline.json",
+  "supersedes_note": "Task 40 and Task 41 baseline files remain byte-identical historical evidence.",
+  "method": {
+    "builds": 3,
+    "determinism": "three independent `pnpm build` runs produced byte-identical normalized inventories",
+    "gzip": "level 9, mtime=0",
+    "chunk_identity": "emitted file name with only the terminal content hash stripped"
+  },
+  "starting_baseline": {
+    "note": "measured from clean main at 08a76c2 before any Task 42 product change",
+    "chunk_count": 17,
+    "total_js_bytes": 1190836,
+    "total_js_gzip_bytes": 364842,
+    "main_js_bytes": 514710,
+    "startup_js_bytes": 544852
+  },
+  "task_41_accepted_inventory": {
+    "chunk_count": 17,
+    "total_js_bytes": 1190378,
+    "total_js_gzip_bytes": 364685,
+    "main_js_bytes": 514252,
+    "startup_js_bytes": 544394
+  },
+  "final_totals": {
+    "chunk_count": 20,
+    "total_js_bytes": 1199082,
+    "total_js_gzip_bytes": 368463,
+    "main_js_bytes": 515537,
+    "startup_js_bytes": 545679
+  },
+  "task_42_delta_against_task_41_accepted_inventory": {
+    "startup_raw_bytes": {
+      "delta": 1285,
+      "authorized_ceiling": 2048
+    },
+    "total_raw_bytes": {
+      "delta": 8704,
+      "authorized_ceiling": 24576
+    },
+    "deterministic_gzip_bytes": {
+      "delta": 3778,
+      "authorized_ceiling": 8192
+    }
+  },
+  "lazy_boundary": {
+    "importer": "frontend/src/features/life/LifeEditWorkspace.tsx",
+    "note": "LifeEditWorkspace is imported eagerly by LifeScreen, so the whole branch surface sits behind its own lazy() boundary rather than entering the startup chunk.",
+    "emitted_chunks": {
+      "LifeBranchControls.js": {
+        "raw_bytes": 4350,
+        "gzip_bytes": 2036
+      },
+      "LifeBranchImportDialog.js": {
+        "raw_bytes": 2766,
+        "gzip_bytes": 1190
+      },
+      "LifeBranch.css.js": {
+        "raw_bytes": 300,
+        "gzip_bytes": 182
+      }
+    },
+    "all_below_tracking_threshold": true
+  },
+  "final_inventory": {
+    "BasicLeafEditor.js": {
+      "raw_bytes": 52355,
+      "gzip_bytes": 17089
+    },
+    "DeadlineQueuePanel.js": {
+      "raw_bytes": 3096,
+      "gzip_bytes": 1237
+    },
+    "FocusPlansScreen.js": {
+      "raw_bytes": 18396,
+      "gzip_bytes": 5095
+    },
+    "GlobalSearchDialog.js": {
+      "raw_bytes": 4142,
+      "gzip_bytes": 1774
+    },
+    "LifeBranch.css.js": {
+      "raw_bytes": 300,
+      "gzip_bytes": 182
+    },
+    "LifeBranchControls.js": {
+      "raw_bytes": 4350,
+      "gzip_bytes": 2036
+    },
+    "LifeBranchImportDialog.js": {
+      "raw_bytes": 2766,
+      "gzip_bytes": 1190
+    },
+    "LifeLinksPanel.js": {
+      "raw_bytes": 7383,
+      "gzip_bytes": 2607
+    },
+    "NarrativeCanvasStudio.js": {
+      "raw_bytes": 20069,
+      "gzip_bytes": 5933
+    },
+    "PortablePackageImportDialog.js": {
+      "raw_bytes": 2728,
+      "gzip_bytes": 1149
+    },
+    "QueryClientProvider.js": {
+      "raw_bytes": 481,
+      "gzip_bytes": 335
+    },
+    "TagSettings.js": {
+      "raw_bytes": 9450,
+      "gzip_bytes": 2518
+    },
+    "TaskPlanningPanel.js": {
+      "raw_bytes": 4450,
+      "gzip_bytes": 1704
+    },
+    "TaskSavedViewsPanel.js": {
+      "raw_bytes": 16544,
+      "gzip_bytes": 4952
+    },
+    "dist.js": {
+      "raw_bytes": 390833,
+      "gzip_bytes": 120574
+    },
+    "index.js": {
+      "raw_bytes": 515537,
+      "gzip_bytes": 156716
+    },
+    "jsx-runtime.js": {
+      "raw_bytes": 7948,
+      "gzip_bytes": 3045
+    },
+    "markdown.js": {
+      "raw_bytes": 116541,
+      "gzip_bytes": 32939
+    },
+    "rolldown-runtime.js": {
+      "raw_bytes": 879,
+      "gzip_bytes": 505
+    },
+    "useQuery.js": {
+      "raw_bytes": 20834,
+      "gzip_bytes": 6883
+    }
+  }
+}

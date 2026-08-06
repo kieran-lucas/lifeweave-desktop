@@ -18,7 +18,7 @@ use crate::infrastructure::sqlite::{
     DbError,
     connection::{open_existing_file_connection, open_file_connection, open_readonly_connection},
     runtime::DatabaseRuntime,
-    task41_migration::{current_schema_version, max_supported_schema_version, run_all_migrations},
+    task42_migration::{current_schema_version, max_supported_schema_version, run_all_migrations},
     worker::DbWorkerHandle,
 };
 
@@ -864,7 +864,7 @@ mod tests {
             connection::{open_existing_file_connection, open_file_connection},
             foundation_record_repo as repo,
             runtime::DatabaseRuntime,
-            task41_migration::run_all_migrations as run_migrations,
+            task42_migration::run_all_migrations as run_migrations,
             worker::DbWorkerHandle,
         },
     };
@@ -1035,12 +1035,12 @@ mod tests {
         let result = restore_db(&runtime, package).unwrap();
         assert_eq!(
             result.schema_version,
-            crate::infrastructure::sqlite::task41_migration::TASK41_SCHEMA_VERSION
+            crate::infrastructure::sqlite::task42_migration::TASK42_SCHEMA_VERSION
         );
         let reopened = open_existing_file_connection(&db).unwrap();
         assert_eq!(
             current_schema_version(&reopened).unwrap(),
-            crate::infrastructure::sqlite::task41_migration::TASK41_SCHEMA_VERSION
+            crate::infrastructure::sqlite::task42_migration::TASK42_SCHEMA_VERSION
         );
         assert_eq!(
             reopened
@@ -1212,7 +1212,7 @@ mod tests {
         let restore_result = restore_db(&rt, &backup_dir).unwrap();
         assert_eq!(
             restore_result.schema_version,
-            crate::infrastructure::sqlite::task41_migration::TASK41_SCHEMA_VERSION
+            crate::infrastructure::sqlite::task42_migration::TASK42_SCHEMA_VERSION
         );
 
         let active = rt.execute(|conn| repo::list_active(conn)).unwrap();
@@ -1463,6 +1463,173 @@ mod tests {
         assert_eq!(
             panel.outgoing[0].availability,
             link_dto::LifeLinkAvailability::Active
+        );
+    }
+
+    /// A Life branch imported through the Task 42 package is ordinary local data: full database
+    /// backup and restore must carry it exactly, with no branch-package knowledge anywhere.
+    #[test]
+    fn an_imported_life_branch_survives_backup_mutation_restore_and_reopen_exactly() {
+        use crate::life_branch::{archive, dto::ConfirmLifeBranchImportInput, repository};
+
+        let (rt, db_path) = make_file_runtime();
+        let app_root = db_path.parent().unwrap().to_path_buf();
+
+        // Build a source branch, package it, and import it back under the Life root.
+        let imported = rt
+            .execute(move |conn| {
+                let node = |conn: &Connection, parent: &str, title: &str, sort: i32| -> String {
+                    let id = uuid::Uuid::now_v7().to_string();
+                    conn.execute(
+                        "INSERT INTO life_nodes VALUES(?1,?2,?3,'','life-branch','neutral',?4,NULL,'1','1',0)",
+                        rusqlite::params![id, parent, title, sort],
+                    )
+                    .unwrap();
+                    id
+                };
+                let root = node(conn, "life-root", "Backup branch", 0);
+                let leaf = node(conn, &root, "Backup leaf", 0);
+                let other = node(conn, &root, "Backup other", 1);
+                for (target, text) in [(&leaf, "Alpha"), (&other, "Beta")] {
+                    let json = serde_json::json!({"type":"doc","content":[
+                        {"type":"paragraph","content":[{"type":"text","text":text}]}
+                    ]})
+                    .to_string();
+                    let valid = crate::document::schema::validate(&json).unwrap();
+                    conn.execute(
+                        "INSERT INTO reader_documents VALUES(?1,?2,1,0,?3,?4,'1','1',NULL)",
+                        rusqlite::params![
+                            uuid::Uuid::now_v7().to_string(),
+                            target,
+                            valid.canonical_json,
+                            valid.plain_text
+                        ],
+                    )
+                    .unwrap();
+                }
+                conn.execute(
+                    "INSERT INTO life_links(id,source_node_id,target_node_id,created_at) VALUES(?1,?2,?3,'1')",
+                    rusqlite::params![uuid::Uuid::now_v7().to_string(), leaf, other],
+                )
+                .unwrap();
+
+                let source = repository::export_source(conn, &root)
+                    .map_err(|_| DbError::InvalidMigrationList)?;
+                let ticket = crate::life_branch::service::testing::export(&app_root, source)
+                    .map_err(|_| DbError::InvalidMigrationList)?;
+                let bytes = std::fs::read(crate::life_branch::service::testing::exported_package(
+                    &app_root,
+                    &ticket.export_id,
+                ))
+                .map_err(|_| DbError::InvalidMigrationList)?;
+
+                let revision: i32 = conn.query_row(
+                    "SELECT tree_revision FROM life_tree_meta WHERE singleton=1",
+                    [],
+                    |row| row.get(0),
+                )?;
+                let package = archive::validate_package_bytes(&bytes)
+                    .map_err(|_| DbError::InvalidMigrationList)?;
+                repository::confirm_import(
+                    conn,
+                    &app_root,
+                    ConfirmLifeBranchImportInput {
+                        import_id: uuid::Uuid::now_v7().to_string(),
+                        package_sha256: crate::life_branch::domain::sha256(&bytes),
+                        parent_node_id: "life-root".into(),
+                        expected_tree_revision: revision,
+                        operation_id: "backup-branch-import".into(),
+                    },
+                    package,
+                )
+                .map_err(|_| DbError::InvalidMigrationList)
+            })
+            .unwrap();
+
+        // Capture the exact imported state.
+        let subtree_sql = "WITH RECURSIVE sub(id) AS (SELECT ?1 UNION ALL SELECT n.id FROM life_nodes n JOIN sub s ON n.parent_id=s.id)
+             SELECT n.id||'|'||n.title||'|'||n.sort_key||'|'||n.revision FROM life_nodes n JOIN sub ON sub.id=n.id ORDER BY n.id";
+        let capture = |conn: &Connection, root: &str| -> Vec<String> {
+            conn.prepare(subtree_sql)
+                .unwrap()
+                .query_map([root], |row| row.get::<_, String>(0))
+                .unwrap()
+                .collect::<Result<Vec<_>, _>>()
+                .unwrap()
+        };
+        let root_id = imported.life_node_id.clone();
+        let before = rt
+            .execute({
+                let root_id = root_id.clone();
+                move |conn| Ok(capture(conn, &root_id))
+            })
+            .unwrap();
+        assert_eq!(before.len(), 3);
+
+        let backups = temp_backups_dir();
+        let backup = backup_db(&rt, &backups).unwrap();
+
+        // Mutate the imported branch after the backup was taken.
+        rt.execute({
+            let root_id = root_id.clone();
+            move |conn| {
+                conn.execute(
+                    "UPDATE life_nodes SET title='Renamed after backup' WHERE id=?1",
+                    [&root_id],
+                )?;
+                conn.execute("DELETE FROM life_links", [])?;
+                Ok(())
+            }
+        })
+        .unwrap();
+
+        restore_db(&rt, Path::new(&backup.backup_dir)).unwrap();
+        let reopened = open_existing_file_connection(&db_path).unwrap();
+
+        assert_eq!(
+            capture(&reopened, &root_id),
+            before,
+            "the imported subtree must be restored byte-exactly"
+        );
+        assert_eq!(
+            reopened
+                .query_row("SELECT COUNT(*) FROM life_links", [], |row| row
+                    .get::<_, i64>(0))
+                .unwrap(),
+            2,
+            "both the source and the imported link rows return"
+        );
+        assert_eq!(
+            reopened
+                .query_row(
+                    "SELECT operation_kind FROM life_operations WHERE operation_id='backup-branch-import'",
+                    [],
+                    |row| row.get::<_, String>(0),
+                )
+                .unwrap(),
+            "import_branch",
+            "the non-undoable import ledger row survives restore"
+        );
+        assert_eq!(
+            reopened
+                .query_row(
+                    "SELECT COUNT(*) FROM reader_documents d JOIN life_nodes n ON n.id=d.life_node_id WHERE n.title LIKE 'Backup %'",
+                    [],
+                    |row| row.get::<_, i64>(0),
+                )
+                .unwrap(),
+            4,
+            "both document copies survive"
+        );
+        assert_eq!(
+            reopened
+                .prepare("PRAGMA foreign_key_check")
+                .unwrap()
+                .query_map([], |_| Ok(()))
+                .unwrap()
+                .count(),
+            0,
+            "the restored database has no dangling reference"
         );
     }
 
@@ -3775,7 +3942,7 @@ mod tests {
         use crate::infrastructure::backup::lifecycle::{
             preflight_startup_check, recover_if_interrupted,
         };
-        use crate::infrastructure::sqlite::task41_migration::run_all_migrations as run_migrations;
+        use crate::infrastructure::sqlite::task42_migration::run_all_migrations as run_migrations;
         use crate::infrastructure::sqlite::{
             connection::open_existing_file_connection, runtime::DatabaseRuntime,
             worker::DbWorkerHandle,
@@ -3841,7 +4008,7 @@ mod tests {
         use crate::infrastructure::backup::lifecycle::{
             preflight_startup_check, recover_if_interrupted,
         };
-        use crate::infrastructure::sqlite::task41_migration::run_all_migrations as run_migrations;
+        use crate::infrastructure::sqlite::task42_migration::run_all_migrations as run_migrations;
         use crate::infrastructure::sqlite::{
             connection::open_existing_file_connection, runtime::DatabaseRuntime,
             worker::DbWorkerHandle,

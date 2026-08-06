@@ -17,8 +17,7 @@
 - Active task: **42 — Bounded Life Branch Interchange**
 - Active implementation specification: **`specs/032-bounded-life-branch-interchange`**
 - Latest feature checkpoint: **Task 41 — Explicit Life Links + Backlinks Core** (`e1fe3675315c04590aabe9c9ca87ede344dafa40`)
-- Database schema: **24**
-- Target schema: **25** (one migration rebuilding only `life_operations`; see ADR 0036)
+- Database schema: **25**
 - Next action: **Implement active spec**
 - Task 43: **prohibited, unstarted, unallocated, and unrecommended**
 
@@ -33,7 +32,7 @@ merged or overwritten, and import is atomic with exactly one tree-revision incre
 non-undoable operation.
 
 Two live-schema conflicts were surfaced during activation and resolved by explicit Product Owner
-decision in [ADR 0036](docs/adr/0036-bounded-life-branch-interchange.md): schema advances to **25**
+decision in [ADR 0036](docs/adr/0036-bounded-life-branch-interchange.md): schema advanced to **25**
 so the Life operation ledger can store `import_branch`, and an imported tag whose normalized name is
 held by an unmerged archived tag has that single assignment omitted and warned.
 

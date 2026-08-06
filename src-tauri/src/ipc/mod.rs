@@ -190,6 +190,14 @@ mod tests {
         PortablePackageImportPreview::export_all_to(&out).unwrap();
         ConfirmPortablePackageImportInput::export_all_to(&out).unwrap();
         PortablePackageImportResult::export_all_to(&out).unwrap();
+        use crate::life_branch::dto::*;
+        PrepareLifeBranchExportInput::export_all_to(&out).unwrap();
+        LifeBranchCountsView::export_all_to(&out).unwrap();
+        LifeBranchExportTicket::export_all_to(&out).unwrap();
+        LifeBranchImportPreview::export_all_to(&out).unwrap();
+        ConfirmLifeBranchImportInput::export_all_to(&out).unwrap();
+        LifeBranchImportResult::export_all_to(&out).unwrap();
+        DiscardLifeBranchImportInput::export_all_to(&out).unwrap();
         use crate::tag::dto::*;
         TagSummaryView::export_all_to(&out).unwrap();
         TagView::export_all_to(&out).unwrap();

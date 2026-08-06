@@ -7,7 +7,7 @@ import {
 import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { hierarchy, tree } from "d3-hierarchy";
 import { motion, useReducedMotion } from "motion/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   archiveLifeNode, createLifeNode, getLifeEditProjection, renameLifeNode,
@@ -18,6 +18,9 @@ import type { LifeEditNodeView } from "../../ipc/generated/LifeEditNodeView";
 import type { LifeEditProjection } from "../../ipc/generated/LifeEditProjection";
 import type { TagSummaryView } from "../../ipc/generated/TagSummaryView";
 import * as styles from "./LifeEditWorkspace.css";
+
+// Lazy so branch interchange never enters the startup chunk: LifeEditWorkspace is imported eagerly.
+const LifeBranchControls = lazy(() => import("./branch/LifeBranchControls"));
 import { TagChipList } from "../tag/TagChipList";
 import { TagPicker } from "../tag/TagPicker";
 import { invalidateTaskSavedViewReferenceData } from "../task/saved-views/savedViewQueries";
@@ -113,6 +116,7 @@ export function LifeEditWorkspace({initialNodeId,onBrowse}:{initialNodeId:string
     {selected.parent_id&&<><div className={styles.actions}><button className={styles.button} disabled={mutation.isPending||siblings(selected).findIndex(item=>item.id===selected.id)===0} onClick={()=>reorder(selected,siblings(selected).findIndex(item=>item.id===selected.id)-1)}>Move up</button><button className={styles.button} disabled={mutation.isPending||siblings(selected).findIndex(item=>item.id===selected.id)===siblings(selected).length-1} onClick={()=>reorder(selected,siblings(selected).findIndex(item=>item.id===selected.id)+1)}>Move down</button>{projection.nodes.find(node=>node.id===selected.parent_id)?.parent_id&&<button className={styles.button} disabled={mutation.isPending} onClick={()=>{const parent=projection.nodes.find(node=>node.id===selected.parent_id)!;const grand=parent.parent_id!;reparent(selected,grand,projection.nodes.filter(node=>node.parent_id===grand).length);}}>Move to parent level</button>}</div>
     <label className={styles.field}>Move into branch<select className={styles.input} value={moveParent} onChange={event=>setMoveParent(event.target.value)}>{projection.nodes.filter(node=>node.id!==selected.id&&!selectedDescendants.has(node.id)).map(node=><option key={node.id} value={node.id}>{node.title}</option>)}</select></label><button className={styles.button} disabled={mutation.isPending||!moveParent||moveParent===selected.parent_id} onClick={()=>reparent(selected,moveParent,projection.nodes.filter(node=>node.parent_id===moveParent).length)}>Move into selected branch</button>
     <div className={styles.actions}><button className={styles.button} onClick={()=>onBrowse(selected.id)}>Open in Browse</button><button className={styles.destructive} disabled={mutation.isPending} onClick={()=>run(selected.parent_id!,()=>archiveLifeNode({context:context(),node_id:selected.id,expected_node_revision:selected.revision}))}>Archive subtree</button></div></>}
+    <Suspense fallback={<p role="status">Loading branch interchange…</p>}><LifeBranchControls nodeId={selected.id} nodeTitle={selected.title} parentId={selected.parent_id} childCount={selected.child_count} treeRevision={projection.tree_revision} onImported={id=>{focusAfter.current=id;setSelectedId(id);void client.invalidateQueries({queryKey:["life"]});}}/></Suspense>
     <button className={styles.button} disabled={!projection.latest_undo||mutation.isPending} onClick={()=>projection.latest_undo&&run(selected.id,()=>undoLifeOperation({undo_token:projection.latest_undo!,expected_tree_revision:projection.tree_revision}))}>Undo latest tree change</button>
     <section className={styles.archived} aria-labelledby="archived-life-title"><h3 id="archived-life-title" className={styles.inspectorTitle}>Archived nodes</h3>{projection.archived_nodes.length===0?<p className={styles.instructions}>No archived nodes.</p>:<ul className={styles.archivedList}>{projection.archived_nodes.map(node=><li className={styles.archivedRow} key={node.id}><span>{node.title}</span><button className={styles.button} disabled={mutation.isPending} onClick={()=>run(node.id,()=>restoreLifeNode({context:context(),node_id:node.id,expected_node_revision:node.revision}))}>Restore</button></li>)}</ul>}</section>
    </aside>}

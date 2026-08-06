@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-confirm-life-branch-import"
+description = "Enables the confirm_life_branch_import command without any pre-configured scope."
+commands.allow = ["confirm_life_branch_import"]
+
+[[permission]]
+identifier = "deny-confirm-life-branch-import"
+description = "Denies the confirm_life_branch_import command without any pre-configured scope."
+commands.deny = ["confirm_life_branch_import"]

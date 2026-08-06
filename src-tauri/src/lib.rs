@@ -5,6 +5,7 @@ pub mod focus_plan;
 pub mod infrastructure;
 pub mod ipc;
 pub mod life;
+pub mod life_branch;
 pub mod life_link;
 pub mod narrative;
 pub mod platform;
@@ -31,7 +32,7 @@ use infrastructure::backup::lifecycle::{
 use infrastructure::sqlite::{
     connection::{open_existing_file_connection, open_file_connection},
     runtime::DatabaseRuntime,
-    task41_migration::run_all_migrations,
+    task42_migration::run_all_migrations,
     worker::DbWorkerHandle,
 };
 use ipc::backup::{backup_database, list_backups, restore_database};
@@ -59,6 +60,10 @@ use life::service::{
     reorder_life_sibling, reparent_life_node, restore_life_node, save_life_navigation_preference,
     set_life_node_icon, set_life_node_theme_variant, undo_life_operation, unpin_life_node,
     update_life_node_summary,
+};
+use life_branch::{
+    confirm_life_branch_import, discard_life_branch_import, prepare_life_branch_export,
+    preview_life_branch_import, read_life_branch_export,
 };
 use life_link::service::{
     create_life_link, get_life_link_panel, remove_life_link, search_life_link_targets,
@@ -134,6 +139,7 @@ pub fn run() {
             let app_data_root = app_data_directory(app.handle()).expect("app data dir unavailable");
             std::fs::create_dir_all(&app_data_root)?;
             portable::cleanup_stale_portable_artifacts(&app_data_root);
+            life_branch::cleanup_stale_life_branch_artifacts(&app_data_root);
             let db_path = app_data_root.join("lifeweave.db");
 
             let marker_path = db_path
@@ -239,6 +245,11 @@ pub fn run() {
             preview_portable_package_import,
             confirm_portable_package_import,
             discard_portable_package_import,
+            prepare_life_branch_export,
+            read_life_branch_export,
+            preview_life_branch_import,
+            confirm_life_branch_import,
+            discard_life_branch_import,
             search_global,
             list_tags,
             create_tag,

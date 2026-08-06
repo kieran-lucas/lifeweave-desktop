@@ -101,6 +101,12 @@ import type { PortablePackageExportTicket } from "./generated/PortablePackageExp
 import type { PortablePackageImportPreview } from "./generated/PortablePackageImportPreview";
 import type { ConfirmPortablePackageImportInput } from "./generated/ConfirmPortablePackageImportInput";
 import type { PortablePackageImportResult } from "./generated/PortablePackageImportResult";
+import type { PrepareLifeBranchExportInput } from "./generated/PrepareLifeBranchExportInput";
+import type { LifeBranchExportTicket } from "./generated/LifeBranchExportTicket";
+import type { LifeBranchImportPreview } from "./generated/LifeBranchImportPreview";
+import type { ConfirmLifeBranchImportInput } from "./generated/ConfirmLifeBranchImportInput";
+import type { LifeBranchImportResult } from "./generated/LifeBranchImportResult";
+import type { DiscardLifeBranchImportInput } from "./generated/DiscardLifeBranchImportInput";
 import type { TagView } from "./generated/TagView";
 import type { CreateTagInput } from "./generated/CreateTagInput";
 import type { RenameTagInput } from "./generated/RenameTagInput";
@@ -271,6 +277,17 @@ export const confirmPortablePackageImport = (input: ConfirmPortablePackageImport
   invoke<PortablePackageImportResult>("confirm_portable_package_import", { input });
 export const discardPortablePackageImport = (importId: string) =>
   invoke<void>("discard_portable_package_import", { importId });
+
+export const prepareLifeBranchExport = (input: PrepareLifeBranchExportInput) =>
+  invoke<LifeBranchExportTicket>("prepare_life_branch_export", { input });
+export const readLifeBranchExport = (exportId: string) =>
+  invoke<ArrayBuffer>("read_life_branch_export", { exportId });
+export const previewLifeBranchImport = (bytes: Uint8Array) =>
+  invoke<LifeBranchImportPreview>("preview_life_branch_import", bytes);
+export const confirmLifeBranchImport = (input: ConfirmLifeBranchImportInput) =>
+  invoke<LifeBranchImportResult>("confirm_life_branch_import", { input });
+export const discardLifeBranchImport = (input: DiscardLifeBranchImportInput) =>
+  invoke<void>("discard_life_branch_import", { input });
 
 export const listTags = (includeArchived: boolean) => invoke<TagView[]>("list_tags", { includeArchived });
 export const createTag = (input: CreateTagInput) => invoke<TagView>("create_tag", { input });

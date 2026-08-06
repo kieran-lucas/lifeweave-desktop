@@ -31,7 +31,9 @@ $allPhases = @(
   'phase11-life-links.e2e.ts',
   'phase11-life-links-restart.e2e.ts',
   'phase12-life-links-backup-restore.e2e.ts',
-  'phase12-life-links-backup-restore-restart.e2e.ts'
+  'phase12-life-links-backup-restore-restart.e2e.ts',
+  'phase13-life-branch-interchange.e2e.ts',
+  'phase13-life-branch-interchange-restart.e2e.ts'
 )
 if (-not $Phases -or $Phases.Count -eq 0) { $Phases = $allPhases }
 foreach ($phase in $Phases) {

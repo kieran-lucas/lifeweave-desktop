@@ -6,7 +6,7 @@
   "latest_closed_slice": 31,
   "latest_feature_task": 41,
   "latest_feature_checkpoint": "e1fe3675315c04590aabe9c9ca87ede344dafa40",
-  "database_schema_version": 24,
+  "database_schema_version": 25,
   "active_spec": "specs/032-bounded-life-branch-interchange",
   "next_action": "implement_active_spec",
   "forbidden_feature_jump": true,

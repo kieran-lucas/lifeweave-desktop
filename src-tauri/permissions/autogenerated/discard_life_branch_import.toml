@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-discard-life-branch-import"
+description = "Enables the discard_life_branch_import command without any pre-configured scope."
+commands.allow = ["discard_life_branch_import"]
+
+[[permission]]
+identifier = "deny-discard-life-branch-import"
+description = "Denies the discard_life_branch_import command without any pre-configured scope."
+commands.deny = ["discard_life_branch_import"]
