@@ -38,6 +38,7 @@ The immutable source is authoritative. This registry makes operational status vi
 - TanStack Query + narrow Zustand; dnd-kit and d3-hierarchy where activated.
 - Tiptap/ProseMirror direction for editor work when the relevant slice activates.
 - FTS5/rrule/testing/release foundations as specified; dependencies install only when activated.
+- GitHub Actions is limited to the sealed manual, read-only Windows installer build in `.github/workflows/manual-clean-build.yml`. Routine tasks may not modify the workflow or `.github/WORKFLOW_SEAL.sha256`; a change requires explicit Product Owner workflow authorization or evidence of a platform/toolchain break.
 
 ## PROTOTYPE-GATED
 
@@ -74,8 +75,8 @@ The immutable source is authoritative. This registry makes operational status vi
 
 ## DEFERRED
 
-- Task 36 standalone Focus Plans Core implementation pending explicit Product Owner activation;
-- Task 37 Focus Plan ↔ Task integration and review workflow pending accepted Task 36 authority and separate activation;
+- Task 36 standalone Focus Plans Core is active but remains unclosed pending completion and verification evidence;
+- Task 37 Focus Plan ↔ Task integration and review workflow remains prohibited pending accepted Task 36 authority and separate Product Owner activation;
 - prediction and opaque ML;
 - Deadline Semantics implementation after the Task 34 Product Owner modification;
 - custom user-authored Narrative templates and Visual Worlds;
