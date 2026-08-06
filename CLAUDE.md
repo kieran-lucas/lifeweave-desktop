@@ -27,3 +27,4 @@ Claude Code is the primary implementation candidate after calibration. Use Plan 
 - Do not optimize without profiler/query-plan evidence.
 - Do not implement Narrative Canvas, prediction, Graph, tags, backlinks, Noteboard, or other expansion features unless activated by an approved spec.
 - Keep Task rows non-card and Today task-first.
+- Do not modify `.github/workflows/` or `.github/WORKFLOW_SEAL.sha256` without explicit Product Owner workflow authorization; never update the seal to bypass governance.
