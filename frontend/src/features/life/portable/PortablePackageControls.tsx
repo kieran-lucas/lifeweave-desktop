@@ -4,6 +4,7 @@ import type { PortableDocumentKind } from "../../../ipc/generated/PortableDocume
 import type { PortablePackageImportPreview } from "../../../ipc/generated/PortablePackageImportPreview";
 import { confirmPortablePackageImport, discardPortablePackageImport, preparePortablePackageExport, previewPortablePackageImport, readPortablePackageExport } from "../../../ipc/commands";
 import { operationId } from "../document/schema";
+import { invalidateLifeLinkLifecycle } from "../links/lifeLinkQueries";
 import * as styles from "./PortablePackage.css";
 
 const ImportDialog = lazy(() => import("./PortablePackageImportDialog").then(module => ({ default: module.PortablePackageImportDialog })));
@@ -59,6 +60,7 @@ export function PortablePackageControls({ nodeId, documentKind, documentId, hasD
       client.invalidateQueries({ queryKey: readerKey(nodeId) }),
       client.invalidateQueries({ queryKey: canvasKey(nodeId) }),
       client.invalidateQueries({ queryKey: ["search"] }),
+      invalidateLifeLinkLifecycle(client),
     ]);
     setNotice(refresh.every(result => result.status === "fulfilled")
       ? "Lifeweave package imported into this empty leaf."

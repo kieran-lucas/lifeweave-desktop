@@ -212,10 +212,11 @@ describe("FoundationScreen", () => {
   });
 
   it("restore success reloads record list", async () => {
+    const onDatabaseRestored = vi.fn();
     vi.mocked(commands.listFoundationRecords)
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([mockRecord]);
-    render(<FoundationScreen />);
+    render(<FoundationScreen onDatabaseRestored={onDatabaseRestored} />);
     await screen.findByRole("heading", { name: "Foundation Records" });
     fireEvent.click(screen.getByRole("button", { name: "Backup" }));
     await screen.findByText(/Backup created at/);
@@ -224,6 +225,7 @@ describe("FoundationScreen", () => {
       expect(commands.restoreDatabase).toHaveBeenCalledTimes(1);
     });
     await screen.findByText("Test record");
+    expect(onDatabaseRestored).toHaveBeenCalledTimes(1);
   });
 
   it("restore failure shows error and preserves list", async () => {

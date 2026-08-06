@@ -50,7 +50,8 @@ describe("PortablePackageControls", () => {
     const confirm = await screen.findByRole("button", { name: "Import into this empty leaf" }); fireEvent.click(confirm); fireEvent.click(confirm);
     expect(api.confirm).toHaveBeenCalledTimes(1); expect(screen.getByRole("button", { name: "Importing…" })).toBeDisabled();
     resolve(); await screen.findByText("Lifeweave package imported into this empty leaf.");
-    expect(invalidate).toHaveBeenCalledTimes(3);
+    expect(invalidate).toHaveBeenCalledTimes(4);
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["life-links"] });
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
@@ -130,7 +131,7 @@ describe("PortablePackageControls", () => {
     fireEvent.change(screen.getByLabelText("Import Lifeweave package"), { target: { files: [packageFile()] } });
     fireEvent.click(await screen.findByRole("button", { name: "Import into this empty leaf" }));
     expect(await screen.findByRole("status")).toHaveTextContent("imported successfully");
-    expect(invalidate).toHaveBeenCalledTimes(3);
+    expect(invalidate).toHaveBeenCalledTimes(4);
     mounted.unmount();
     expect(api.discard).not.toHaveBeenCalled();
   });

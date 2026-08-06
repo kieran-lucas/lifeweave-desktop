@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const invoke = vi.hoisted(() => vi.fn());
 vi.mock("@tauri-apps/api/core", () => ({ invoke }));
 
-import { getRelatedTasksForLifeNode, previewPortablePackageImport, readPortablePackageExport } from "./commands";
+import { createLifeLink, getLifeLinkPanel, getRelatedTasksForLifeNode, previewPortablePackageImport, readPortablePackageExport, removeLifeLink, searchLifeLinkTargets } from "./commands";
 
 describe("Related Tasks command adapter", () => {
   beforeEach(() => invoke.mockReset().mockResolvedValue([]));
@@ -27,5 +27,22 @@ describe("portable raw command adapters", () => {
   it("requests an ArrayBuffer export by camelCase opaque ID", async () => {
     await readPortablePackageExport("export-id");
     expect(invoke).toHaveBeenCalledWith("read_portable_package_export", { exportId: "export-id" });
+  });
+});
+
+describe("Life link command adapters", () => {
+  beforeEach(() => invoke.mockReset().mockResolvedValue({}));
+
+  it("keeps stable IDs and bounded query inside typed input envelopes", async () => {
+    await getLifeLinkPanel({ source_node_id: "source" });
+    await searchLifeLinkTargets({ source_node_id: "source", query: "kế hoạch" });
+    await createLifeLink({ source_node_id: "source", target_node_id: "target" });
+    await removeLifeLink({ link_id: "link" });
+    expect(invoke.mock.calls).toEqual([
+      ["get_life_link_panel", { input: { source_node_id: "source" } }],
+      ["search_life_link_targets", { input: { source_node_id: "source", query: "kế hoạch" } }],
+      ["create_life_link", { input: { source_node_id: "source", target_node_id: "target" } }],
+      ["remove_life_link", { input: { link_id: "link" } }],
+    ]);
   });
 });

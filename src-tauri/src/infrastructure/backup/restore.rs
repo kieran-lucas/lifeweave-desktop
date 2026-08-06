@@ -18,7 +18,7 @@ use crate::infrastructure::sqlite::{
     DbError,
     connection::{open_existing_file_connection, open_file_connection, open_readonly_connection},
     runtime::DatabaseRuntime,
-    task39_migration::{current_schema_version, max_supported_schema_version, run_all_migrations},
+    task41_migration::{current_schema_version, max_supported_schema_version, run_all_migrations},
     worker::DbWorkerHandle,
 };
 
@@ -864,7 +864,7 @@ mod tests {
             connection::{open_existing_file_connection, open_file_connection},
             foundation_record_repo as repo,
             runtime::DatabaseRuntime,
-            task39_migration::run_all_migrations as run_migrations,
+            task41_migration::run_all_migrations as run_migrations,
             worker::DbWorkerHandle,
         },
     };
@@ -1035,12 +1035,12 @@ mod tests {
         let result = restore_db(&runtime, package).unwrap();
         assert_eq!(
             result.schema_version,
-            crate::infrastructure::sqlite::task39_migration::TASK39_SCHEMA_VERSION
+            crate::infrastructure::sqlite::task41_migration::TASK41_SCHEMA_VERSION
         );
         let reopened = open_existing_file_connection(&db).unwrap();
         assert_eq!(
             current_schema_version(&reopened).unwrap(),
-            crate::infrastructure::sqlite::task39_migration::TASK39_SCHEMA_VERSION
+            crate::infrastructure::sqlite::task41_migration::TASK41_SCHEMA_VERSION
         );
         assert_eq!(
             reopened
@@ -1212,7 +1212,7 @@ mod tests {
         let restore_result = restore_db(&rt, &backup_dir).unwrap();
         assert_eq!(
             restore_result.schema_version,
-            crate::infrastructure::sqlite::task39_migration::TASK39_SCHEMA_VERSION
+            crate::infrastructure::sqlite::task41_migration::TASK41_SCHEMA_VERSION
         );
 
         let active = rt.execute(|conn| repo::list_active(conn)).unwrap();
@@ -1357,6 +1357,113 @@ mod tests {
             .unwrap();
         assert_eq!(restored.selected.title, "Synthetic branch");
         assert!(restored.selected.is_pinned);
+    }
+
+    #[test]
+    fn life_links_survive_backup_mutation_restore_and_reopen_exactly() {
+        use crate::{
+            document::{dto as document_dto, repository as document_repository},
+            life::{domain::ROOT_ID, dto::CreateLifeNodeInput, repository as life_repository},
+            life_link::{dto as link_dto, repository as link_repository},
+        };
+        let (rt, db_path) = make_file_runtime();
+        let expected = rt
+            .execute(|conn| {
+                let make_leaf = |conn: &mut Connection, title: &str| {
+                    life_repository::create(
+                        conn,
+                        CreateLifeNodeInput {
+                            parent_id: ROOT_ID.into(),
+                            title: title.into(),
+                            short_description: format!("{title} description"),
+                            icon_key: "life-leaf".into(),
+                            branch_theme_id: "neutral".into(),
+                        },
+                    )
+                    .map(|result| result.node)
+                    .map_err(|_| DbError::InvalidMigrationList)
+                };
+                let source = make_leaf(conn, "Link source")?;
+                let target = make_leaf(conn, "Link target")?;
+                document_repository::create(
+                    conn,
+                    document_dto::CreateReaderDocumentInput {
+                        life_node_id: source.id.clone(),
+                        operation_id: "backup-link-source-document".into(),
+                    },
+                )
+                .map_err(|_| DbError::InvalidMigrationList)?;
+                document_repository::create(
+                    conn,
+                    document_dto::CreateReaderDocumentInput {
+                        life_node_id: target.id.clone(),
+                        operation_id: "backup-link-target-document".into(),
+                    },
+                )
+                .map_err(|_| DbError::InvalidMigrationList)?;
+                let link = link_repository::create(
+                    conn,
+                    link_dto::CreateLifeLinkInput {
+                        source_node_id: source.id.clone(),
+                        target_node_id: target.id.clone(),
+                    },
+                )
+                .map_err(|_| DbError::InvalidMigrationList)?;
+                Ok((link.link_id, source.id, target.id))
+            })
+            .unwrap();
+        let stored_before: (String, String, String, String) = rt
+            .execute({
+                let link_id = expected.0.clone();
+                move |conn| {
+                    conn.query_row(
+                        "SELECT id,source_node_id,target_node_id,created_at FROM life_links WHERE id=?1",
+                        [link_id],
+                        |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?)),
+                    )
+                    .map_err(DbError::from)
+                }
+            })
+            .unwrap();
+        let backups = temp_backups_dir();
+        let backup = backup_db(&rt, &backups).unwrap();
+        rt.execute({
+            let link_id = expected.0.clone();
+            let target_id = expected.2.clone();
+            move |conn| {
+                conn.execute("DELETE FROM life_links WHERE id=?1", [link_id])?;
+                conn.execute(
+                    "UPDATE life_nodes SET archived_at='mutated' WHERE id=?1",
+                    [target_id],
+                )?;
+                Ok(())
+            }
+        })
+        .unwrap();
+
+        restore_db(&rt, Path::new(&backup.backup_dir)).unwrap();
+        let reopened = open_existing_file_connection(&db_path).unwrap();
+        let stored_after: (String, String, String, String) = reopened
+            .query_row(
+                "SELECT id,source_node_id,target_node_id,created_at FROM life_links WHERE id=?1",
+                [&expected.0],
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?)),
+            )
+            .unwrap();
+        assert_eq!(stored_after, stored_before);
+        let panel = link_repository::panel(
+            &reopened,
+            link_dto::GetLifeLinkPanelInput {
+                source_node_id: expected.1,
+            },
+        )
+        .unwrap();
+        assert_eq!(panel.outgoing.len(), 1);
+        assert_eq!(panel.outgoing[0].endpoint_node_id, expected.2);
+        assert_eq!(
+            panel.outgoing[0].availability,
+            link_dto::LifeLinkAvailability::Active
+        );
     }
 
     #[test]
@@ -2559,6 +2666,35 @@ mod tests {
         assert_eq!(v, 1);
     }
 
+    #[test]
+    fn restore_rejects_life_link_with_missing_endpoint() {
+        let (rt, _db) = make_file_runtime();
+        let backups = temp_backups_dir();
+        let package = PathBuf::from(backup_db(&rt, &backups).unwrap().backup_dir);
+        let backup_db_path = package.join("lifeweave.db");
+        {
+            let conn = Connection::open(&backup_db_path).unwrap();
+            conn.execute_batch(
+                "PRAGMA foreign_keys=OFF;
+                 INSERT INTO life_links(id,source_node_id,target_node_id,created_at)
+                 VALUES('00000000-0000-7000-8000-000000009001',
+                        '00000000-0000-7000-8000-000000009002',
+                        '00000000-0000-7000-8000-000000009003','2026-08-07T00:00:00.000Z');",
+            )
+            .unwrap();
+        }
+        let manifest_path = package.join("manifest.json");
+        let mut manifest: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(&manifest_path).unwrap()).unwrap();
+        manifest["db_size_bytes"] =
+            serde_json::json!(std::fs::metadata(&backup_db_path).unwrap().len());
+        manifest["db_sha256"] = serde_json::json!(sha256_file(&backup_db_path).unwrap());
+        std::fs::write(&manifest_path, serde_json::to_vec(&manifest).unwrap()).unwrap();
+
+        let result = restore_db(&rt, &package);
+        assert!(matches!(result, Err(BackupError::ForeignKeyViolation)));
+    }
+
     // [proof-8/test-42] FK check query errors propagate as ForeignKeyCheckQueryError,
     // not silently swallowed. Proves the code uses map_err not unwrap_or.
     #[test]
@@ -3639,7 +3775,7 @@ mod tests {
         use crate::infrastructure::backup::lifecycle::{
             preflight_startup_check, recover_if_interrupted,
         };
-        use crate::infrastructure::sqlite::task39_migration::run_all_migrations as run_migrations;
+        use crate::infrastructure::sqlite::task41_migration::run_all_migrations as run_migrations;
         use crate::infrastructure::sqlite::{
             connection::open_existing_file_connection, runtime::DatabaseRuntime,
             worker::DbWorkerHandle,
@@ -3705,7 +3841,7 @@ mod tests {
         use crate::infrastructure::backup::lifecycle::{
             preflight_startup_check, recover_if_interrupted,
         };
-        use crate::infrastructure::sqlite::task39_migration::run_all_migrations as run_migrations;
+        use crate::infrastructure::sqlite::task41_migration::run_all_migrations as run_migrations;
         use crate::infrastructure::sqlite::{
             connection::open_existing_file_connection, runtime::DatabaseRuntime,
             worker::DbWorkerHandle,

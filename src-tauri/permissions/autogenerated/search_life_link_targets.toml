@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-search-life-link-targets"
+description = "Enables the search_life_link_targets command without any pre-configured scope."
+commands.allow = ["search_life_link_targets"]
+
+[[permission]]
+identifier = "deny-search-life-link-targets"
+description = "Denies the search_life_link_targets command without any pre-configured scope."
+commands.deny = ["search_life_link_targets"]

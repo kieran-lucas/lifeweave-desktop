@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, useReducedMotion } from "motion/react";
 import {
@@ -20,7 +20,8 @@ type Mode = "browse" | "edit" | "pinned" | "reader";
 type HistoryEntry = {
   nodeId: string;
   page: number;
-  mode: "browse" | "pinned";
+  mode: "browse" | "pinned" | "reader";
+  reader?: LifeNodeView | PinnedLifeNodeView;
   focusId?: string;
 };
 type Line = { key: string; d: string };
@@ -29,6 +30,7 @@ const lifeKeys = {
     ["life", "browse", id ?? "remembered", page] as const,
   pinned: ["life", "pinned"] as const,
 };
+const LifeLinksPanel = lazy(() => import("./links/LifeLinksPanel"));
 
 function NodeIcon({ iconKey }: { iconKey: string }) {
   return (
@@ -102,6 +104,7 @@ export function LifeScreen({
   const [busy, setBusy] = useState(false);
   const sceneRef = useRef<HTMLDivElement>(null),
     focalRef = useRef<HTMLDivElement>(null),
+    readerHeadingRef = useRef<HTMLHeadingElement>(null),
     childRefs = useRef(new Map<string, HTMLElement>()),
     restoreFocus = useRef<string | undefined>(undefined),
     preparedEntryRequestId = useRef<string | null>(null),
@@ -152,6 +155,10 @@ export function LifeScreen({
         restoreFocus.current = undefined;
       });
   }, [browse.data, mode]);
+  useEffect(() => {
+    if (mode === "reader" && reader)
+      requestAnimationFrame(() => readerHeadingRef.current?.focus({ preventScroll: true }));
+  }, [mode, reader]);
   const settleEntryRequest = (requestId: string) => {
     if (settledEntryRequestId.current === requestId) return;
     settledEntryRequestId.current = requestId;
@@ -161,12 +168,14 @@ export function LifeScreen({
     if (entryRequest) settleEntryRequest(entryRequest.requestId);
   };
   const pushEntryHistory = (focusId?: string) => {
+    const readerId = reader && ("id" in reader ? reader.id : reader.node_id);
     setHistory((value) => [
       ...value,
       {
-        nodeId: browse.data?.selected.id ?? entryRequest?.nodeId ?? "life-root",
+        nodeId: mode === "reader" && readerId ? readerId : browse.data?.selected.id ?? entryRequest?.nodeId ?? "life-root",
         page,
-        mode: mode === "pinned" ? "pinned" : "browse",
+        mode: mode === "reader" && reader ? "reader" : mode === "pinned" ? "pinned" : "browse",
+        ...(mode === "reader" && reader ? { reader } : {}),
         ...(focusId ? { focusId } : {}),
       },
     ]);
@@ -304,6 +313,29 @@ export function LifeScreen({
     setPage(0);
     setMode("browse");
   };
+  const openLinkedReader = async (targetNodeId: string) => {
+    if (busy) return;
+    cancelPendingEntryRequest();
+    setBusy(true);
+    try {
+      const target = await client.fetchQuery({
+        queryKey: lifeKeys.browse(targetNodeId, 0),
+        queryFn: () => getLifeBrowseProjection({ node_id: targetNodeId, child_page: 0 }),
+      });
+      if (target.resolved_from_fallback || target.selected.id !== targetNodeId || !target.selected.is_leaf)
+        throw new Error("That Life leaf is unavailable.");
+      if (reader) {
+        const sourceId = "id" in reader ? reader.id : reader.node_id;
+        setHistory((value) => [...value, { nodeId: sourceId, page: 0, mode: "reader", reader }]);
+      }
+      setNodeId(targetNodeId);
+      setPage(0);
+      setReader(target.selected);
+      setMode("reader");
+    } finally {
+      setBusy(false);
+    }
+  };
   const back = () => {
     cancelPendingEntryRequest();
     const previous = history.at(-1);
@@ -315,6 +347,7 @@ export function LifeScreen({
       restoreFocus.current = previous.focusId;
       setNodeId(previous.nodeId);
       setPage(previous.page);
+      if (previous.mode === "reader" && previous.reader) setReader(previous.reader);
       setMode(previous.mode);
     } else if (browse.data?.parent) {
       setNodeId(browse.data.parent.id);
@@ -350,12 +383,15 @@ export function LifeScreen({
           className={styles.readerHero}
         >
           <NodeIcon iconKey={reader.icon_key} />
-          <h1 id="life-reader-title" className={styles.heading}>
+          <h1 id="life-reader-title" className={styles.heading} tabIndex={-1} ref={readerHeadingRef}>
             {reader.title}
           </h1>
           <p className={styles.nodeDescription}>{reader.short_description}</p>
           <TagChipList tags={reader.tags} maxVisible={12} />
           <BasicLeafReader nodeId={readerId} />
+          <Suspense fallback={<p aria-live="polite">Loading links…</p>}>
+            <LifeLinksPanel nodeId={readerId} onNavigate={openLinkedReader} />
+          </Suspense>
           <RelatedTasksPanel nodeId={readerId} anchorLocalDate={anchorLocalDate} onNavigate={onTaskNavigate} />
         </motion.div>
       </section>

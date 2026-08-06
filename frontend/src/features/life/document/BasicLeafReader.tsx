@@ -13,6 +13,7 @@ import * as styles from "./BasicLeafDocument.css";
 import { NarrativeCanvasReader, narrativeKey } from "../narrative/NarrativeCanvasReader";
 import { NarrativeTemplateChooser } from "../narrative/NarrativeTemplateChooser";
 import { PortablePackageControls } from "../portable/PortablePackageControls";
+import { invalidateLifeLinkLifecycle } from "../links/lifeLinkQueries";
 
 const BasicLeafEditor = lazy(() => import("./BasicLeafEditor"));
 export const documentKey = (nodeId: string) => ["life", "document", nodeId] as const;
@@ -34,7 +35,10 @@ export function BasicLeafReader({ nodeId }: { nodeId: string }) {
   const narrativeQuery = useQuery({ queryKey: narrativeKey(nodeId), queryFn: () => getNarrativeDocument({ life_node_id: nodeId }) });
   const create = useMutation({
     mutationFn: () => createReaderDocument({ life_node_id: nodeId, operation_id: operationId("document-create") }),
-    onSuccess: () => void client.invalidateQueries({ queryKey: documentKey(nodeId) }),
+    onSuccess: () => void Promise.all([
+      client.invalidateQueries({ queryKey: documentKey(nodeId) }),
+      invalidateLifeLinkLifecycle(client),
+    ]),
   });
 
   if (query.isLoading || narrativeQuery.isLoading) {
@@ -85,6 +89,7 @@ export function BasicLeafReader({ nodeId }: { nodeId: string }) {
     setMarkdownImport(null);
     void client.invalidateQueries({ queryKey: narrativeKey(nodeId) });
     void client.invalidateQueries({ queryKey: documentKey(nodeId) });
+    void invalidateLifeLinkLifecycle(client);
     setNotice(`Markdown imported as Narrative Canvas "${doc.life_node_id}".`);
   };
 
@@ -132,6 +137,7 @@ export function BasicLeafReader({ nodeId }: { nodeId: string }) {
 
   const committed = (value: ReaderDocumentView) => {
     client.setQueryData(documentKey(nodeId), { ...projection, document: value, draft_state: "none", draft_json: null, draft_base_revision: null });
+    void invalidateLifeLinkLifecycle(client);
   };
 
   if (editing) {

@@ -200,5 +200,17 @@ mod tests {
         MergeTagsResult::export_all_to(&out).unwrap();
         SetLifeNodeTagsInput::export_all_to(&out).unwrap();
         SetLifeNodeTagsResult::export_all_to(&out).unwrap();
+        use crate::life_link::dto::*;
+        LifeLinkDocumentKind::export_all_to(&out).unwrap();
+        LifeLinkAvailability::export_all_to(&out).unwrap();
+        LifeLinkSourceView::export_all_to(&out).unwrap();
+        LifeLinkRowView::export_all_to(&out).unwrap();
+        LifeLinkPanel::export_all_to(&out).unwrap();
+        LifeLinkTargetView::export_all_to(&out).unwrap();
+        GetLifeLinkPanelInput::export_all_to(&out).unwrap();
+        SearchLifeLinkTargetsInput::export_all_to(&out).unwrap();
+        CreateLifeLinkInput::export_all_to(&out).unwrap();
+        RemoveLifeLinkInput::export_all_to(&out).unwrap();
+        LifeLinkMutationResult::export_all_to(&out).unwrap();
     }
 }

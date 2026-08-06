@@ -16,6 +16,7 @@ import * as styles from "./NarrativeCanvas.css";
 import { getDocumentAsset } from "../../../ipc/commands";
 import { NarrativeVisualWorld } from "./NarrativeVisualWorld";
 import { PortablePackageControls } from "../portable/PortablePackageControls";
+import { invalidateLifeLinkLifecycle } from "../links/lifeLinkQueries";
 
 const NarrativeCanvasStudio = lazy(() => import("./NarrativeCanvasStudio"));
 
@@ -167,7 +168,10 @@ export function NarrativeCanvasReader({ nodeId }: { nodeId: string }) {
         operation_id: operationId("narrative-create"),
         template_id: "knowledge_dossier",
       }),
-    onSuccess: () => void client.invalidateQueries({ queryKey: narrativeKey(nodeId) }),
+    onSuccess: () => void Promise.all([
+      client.invalidateQueries({ queryKey: narrativeKey(nodeId) }),
+      invalidateLifeLinkLifecycle(client),
+    ]),
   });
 
   if (query.isLoading) {
@@ -198,6 +202,7 @@ export function NarrativeCanvasReader({ nodeId }: { nodeId: string }) {
       draft_json: null,
       draft_base_revision: null,
     });
+    void invalidateLifeLinkLifecycle(client);
   };
 
   if (!document) {

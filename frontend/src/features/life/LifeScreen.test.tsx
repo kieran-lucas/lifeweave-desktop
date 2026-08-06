@@ -21,6 +21,10 @@ const api = vi.hoisted(() => ({
   save: vi.fn(),
   document: vi.fn(),
   related: vi.fn(),
+  linkPanel: vi.fn(),
+  linkSearch: vi.fn(),
+  linkCreate: vi.fn(),
+  linkRemove: vi.fn(),
 }));
 vi.mock("../../ipc/commands", () => ({
   getLifeBrowseProjection: api.browse,
@@ -31,6 +35,10 @@ vi.mock("../../ipc/commands", () => ({
   saveLifeNavigationPreference: api.save,
   getReaderDocument: api.document,
   getRelatedTasksForLifeNode: api.related,
+  getLifeLinkPanel: api.linkPanel,
+  searchLifeLinkTargets: api.linkSearch,
+  createLifeLink: api.linkCreate,
+  removeLifeLink: api.linkRemove,
 }));
 const node = (id: string, title: string, children = 0, pinned = false) => ({
   id,
@@ -52,6 +60,7 @@ const remoteLeaf = node(
   "Remote Leaf",
   0,
 );
+const thirdLeaf = node("00000000-0000-7000-8000-000000000004", "Third Leaf", 0);
 const projection = (
   selected = root,
   children = [branch, leaf],
@@ -139,6 +148,15 @@ describe("Life Browse", () => {
       draft_base_revision: null,
     });
     api.related.mockResolvedValue([]);
+    api.linkPanel.mockImplementation(({ source_node_id }: { source_node_id: string }) => {
+      const target = source_node_id === leaf.id ? remoteLeaf : source_node_id === remoteLeaf.id ? thirdLeaf : null;
+      return Promise.resolve({
+        source: { node_id: source_node_id, title: source_node_id === leaf.id ? leaf.title : source_node_id === remoteLeaf.id ? remoteLeaf.title : thirdLeaf.title, eligible: true, ineligible_reason: null },
+        outgoing: target ? [{ link_id: `link-${source_node_id}`, endpoint_node_id: target.id, title: target.title, short_description: target.short_description, icon_key: target.icon_key, document_kind: "basic_leaf", breadcrumb: `Life / ${target.title}`, availability: "active", created_at: "2026-08-07T00:00:00.000Z" }] : [],
+        backlinks: [],
+      });
+    });
+    api.linkSearch.mockResolvedValue([]);
   });
   it("renders a real root Browse with no fake personal branches", async () => {
     renderLife();
@@ -195,6 +213,25 @@ describe("Life Browse", () => {
     expect(
       await screen.findByRole("heading", { name: "Life" }),
     ).toBeInTheDocument();
+  });
+  it("preserves exact stable-ID Reader history across A to B to C", async () => {
+    api.browse.mockImplementation(({ node_id }: { node_id: string | null }) =>
+      Promise.resolve(node_id === remoteLeaf.id ? projection(remoteLeaf, []) : node_id === thirdLeaf.id ? projection(thirdLeaf, []) : projection()),
+    );
+    renderLife();
+    fireEvent.click((await screen.findByText("Leaf")).closest("button")!);
+    const toRemote = await screen.findByRole("button", { name: "Open Remote Leaf in Life Reader" });
+    fireEvent.click(toRemote);
+    const remoteHeading = await screen.findByRole("heading", { name: "Remote Leaf", level: 1 });
+    await waitFor(() => expect(remoteHeading).toHaveFocus());
+    fireEvent.click(await screen.findByRole("button", { name: "Open Third Leaf in Life Reader" }));
+    expect(await screen.findByRole("heading", { name: "Third Leaf", level: 1 })).toHaveFocus();
+    fireEvent.click(screen.getByRole("button", { name: /Back to Life Browse/ }));
+    expect(await screen.findByRole("heading", { name: "Remote Leaf", level: 1 })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Back to Life Browse/ }));
+    expect(await screen.findByRole("heading", { name: "Leaf", level: 1 })).toBeInTheDocument();
+    expect(api.browse).toHaveBeenCalledWith({ node_id: remoteLeaf.id, child_page: 0 });
+    expect(api.browse).toHaveBeenCalledWith({ node_id: thirdLeaf.id, child_page: 0 });
   });
   it("renders all twelve visible Reader tags and remains axe clean", async () => {
     const tags = Array.from({ length: 12 }, (_, index) => ({

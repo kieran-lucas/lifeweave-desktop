@@ -35,6 +35,22 @@ pub fn refresh_dirty_and_query(
     conn: &Connection,
     input: SearchGlobalInput,
 ) -> Result<GlobalSearchProjection, SearchError> {
+    refresh_dirty_indexes(conn)?;
+
+    let expr = match build_fts_expression(&input.query) {
+        Some(e) => e,
+        None => {
+            return Ok(GlobalSearchProjection {
+                groups: vec![],
+                total_visible_results: 0,
+            });
+        }
+    };
+
+    run_fts_query(conn, &expr, &input.observed_local_date)
+}
+
+pub(crate) fn refresh_dirty_indexes(conn: &Connection) -> Result<(), SearchError> {
     let dirty_scopes = load_dirty_scopes(conn)?;
     if !dirty_scopes.is_empty() {
         let has = |s: &str| dirty_scopes.iter().any(|d| d == s);
@@ -73,18 +89,7 @@ pub fn refresh_dirty_and_query(
             update_search_meta_rebuild(conn)?;
         }
     }
-
-    let expr = match build_fts_expression(&input.query) {
-        Some(e) => e,
-        None => {
-            return Ok(GlobalSearchProjection {
-                groups: vec![],
-                total_visible_results: 0,
-            });
-        }
-    };
-
-    run_fts_query(conn, &expr, &input.observed_local_date)
+    Ok(())
 }
 
 fn load_dirty_scopes(conn: &Connection) -> Result<Vec<String>, SearchError> {

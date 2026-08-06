@@ -53,7 +53,7 @@ function isRecoveryPendingError(e: unknown): boolean {
   );
 }
 
-export function FoundationScreen() {
+export function FoundationScreen({ onDatabaseRestored }: { onDatabaseRestored?: () => void } = {}) {
   const [state, setState] = useState<PageState>({ kind: "loading" });
   const [newLabel, setNewLabel] = useState("");
   const createInputRef = useRef<HTMLInputElement>(null);
@@ -188,6 +188,7 @@ export function FoundationScreen() {
     setState((prev) => prev.kind === "ready" ? { ...prev, operationBusy: true, progress: "inspecting", backupError: null } : prev);
     try {
       await restoreDatabase(id);
+      onDatabaseRestored?.();
       setState((prev) =>
         prev.kind === "ready"
           ? { ...prev, backupMessage: "Restore complete.", backupError: null, progress: "completed", operationBusy: false }

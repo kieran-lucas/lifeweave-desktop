@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-get-life-link-panel"
+description = "Enables the get_life_link_panel command without any pre-configured scope."
+commands.allow = ["get_life_link_panel"]
+
+[[permission]]
+identifier = "deny-get-life-link-panel"
+description = "Denies the get_life_link_panel command without any pre-configured scope."
+commands.deny = ["get_life_link_panel"]

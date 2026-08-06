@@ -5,6 +5,7 @@ pub mod focus_plan;
 pub mod infrastructure;
 pub mod ipc;
 pub mod life;
+pub mod life_link;
 pub mod narrative;
 pub mod platform;
 pub mod portable;
@@ -30,7 +31,7 @@ use infrastructure::backup::lifecycle::{
 use infrastructure::sqlite::{
     connection::{open_existing_file_connection, open_file_connection},
     runtime::DatabaseRuntime,
-    task39_migration::run_all_migrations,
+    task41_migration::run_all_migrations,
     worker::DbWorkerHandle,
 };
 use ipc::backup::{backup_database, list_backups, restore_database};
@@ -58,6 +59,9 @@ use life::service::{
     reorder_life_sibling, reparent_life_node, restore_life_node, save_life_navigation_preference,
     set_life_node_icon, set_life_node_theme_variant, undo_life_operation, unpin_life_node,
     update_life_node_summary,
+};
+use life_link::service::{
+    create_life_link, get_life_link_panel, remove_life_link, search_life_link_targets,
 };
 use narrative::service::{
     create_narrative_document, discard_narrative_draft, export_narrative_markdown,
@@ -207,6 +211,10 @@ pub fn run() {
             pin_life_node,
             unpin_life_node,
             save_life_navigation_preference,
+            get_life_link_panel,
+            search_life_link_targets,
+            create_life_link,
+            remove_life_link,
             get_reader_document,
             create_reader_document,
             save_reader_document,

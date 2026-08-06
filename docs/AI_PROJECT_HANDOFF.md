@@ -6,7 +6,7 @@
 - branch: `main`
 - latest closed task/slice: 40 / 030
 - active task/slice: 41 / 031
-- schema: 23
+- schema: 24
 - active specification: `specs/031-explicit-life-links`
 - latest feature checkpoint: `374abcbae263be18fa785a56d656678f9bfd9c29`
 - next action: Implement active spec

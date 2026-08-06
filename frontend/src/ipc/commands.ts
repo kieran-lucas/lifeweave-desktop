@@ -63,6 +63,13 @@ import type { ReorderLifeSiblingInput } from "./generated/ReorderLifeSiblingInpu
 import type { ReparentLifeNodeInput } from "./generated/ReparentLifeNodeInput";
 import type { UndoLifeOperationInput } from "./generated/UndoLifeOperationInput";
 import type { LifeEditProjection } from "./generated/LifeEditProjection";
+import type { GetLifeLinkPanelInput } from "./generated/GetLifeLinkPanelInput";
+import type { SearchLifeLinkTargetsInput } from "./generated/SearchLifeLinkTargetsInput";
+import type { CreateLifeLinkInput } from "./generated/CreateLifeLinkInput";
+import type { RemoveLifeLinkInput } from "./generated/RemoveLifeLinkInput";
+import type { LifeLinkPanel } from "./generated/LifeLinkPanel";
+import type { LifeLinkTargetView } from "./generated/LifeLinkTargetView";
+import type { LifeLinkMutationResult } from "./generated/LifeLinkMutationResult";
 import type { ReaderDocumentProjection } from "./generated/ReaderDocumentProjection";
 import type { ReaderDocumentView } from "./generated/ReaderDocumentView";
 import type { ReaderNodeInput } from "./generated/ReaderNodeInput";
@@ -226,6 +233,14 @@ export const setLifeNodeThemeVariant = (input: EditLifeNodeAppearanceInput) => i
 export const reorderLifeSibling = (input: ReorderLifeSiblingInput) => invoke<LifeMutationResult>("reorder_life_sibling", { input });
 export const reparentLifeNode = (input: ReparentLifeNodeInput) => invoke<LifeMutationResult>("reparent_life_node", { input });
 export const undoLifeOperation = (input: UndoLifeOperationInput) => invoke<LifeMutationResult>("undo_life_operation", { input });
+export const getLifeLinkPanel = (input: GetLifeLinkPanelInput) =>
+  invoke<LifeLinkPanel>("get_life_link_panel", { input });
+export const searchLifeLinkTargets = (input: SearchLifeLinkTargetsInput) =>
+  invoke<LifeLinkTargetView[]>("search_life_link_targets", { input });
+export const createLifeLink = (input: CreateLifeLinkInput) =>
+  invoke<LifeLinkMutationResult>("create_life_link", { input });
+export const removeLifeLink = (input: RemoveLifeLinkInput) =>
+  invoke<LifeLinkMutationResult>("remove_life_link", { input });
 export const getReaderDocument = (input: ReaderNodeInput) => invoke<ReaderDocumentProjection>("get_reader_document", { input });
 export const createReaderDocument = (input: CreateReaderDocumentInput) => invoke<ReaderDocumentView>("create_reader_document", { input });
 export const saveReaderDocument = (input: SaveReaderDocumentInput) => invoke<ReaderDocumentView>("save_reader_document", { input });

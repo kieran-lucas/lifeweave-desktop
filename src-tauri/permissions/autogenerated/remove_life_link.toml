@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-remove-life-link"
+description = "Enables the remove_life_link command without any pre-configured scope."
+commands.allow = ["remove_life_link"]
+
+[[permission]]
+identifier = "deny-remove-life-link"
+description = "Denies the remove_life_link command without any pre-configured scope."
+commands.deny = ["remove_life_link"]

@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { healthCheck } from "../ipc/commands";
 import { FoundationScreen } from "../features/foundation/FoundationScreen";
@@ -77,6 +78,7 @@ function readSidebarMode(): SidebarMode {
 }
 
 export function App() {
+  const queryClient = useQueryClient();
   const [ipcStatus, setIpcStatus] = useState<"loading" | "ready" | "error">(
     "loading",
   );
@@ -336,7 +338,7 @@ export function App() {
                   <p>
                     Development-only backup and FoundationRecord verification.
                   </p>
-                  <FoundationScreen />
+                  <FoundationScreen onDatabaseRestored={() => queryClient.clear()} />
                 </div>
               </section>
             )}
