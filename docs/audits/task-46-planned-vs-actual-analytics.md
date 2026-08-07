@@ -9,7 +9,7 @@ Task 46 / Slice 036 closes only the existing planned schedule → completed expl
 execution baseline: b5002c3b05232aa0b8ae74b924764f927cc00f1d
 activation commit:  b71d6f3711e77511a8edd0f116d5dc27f4c4c1d6
 product checkpoint: e7454241576f3c7284a3433db8844c0c5f208e52
-closure commit:     CLOSURE_COMMIT_PLACEHOLDER
+closure commit:     51d341c1937ecfb3b85056ecf7356771b2a79c1d
 schema:              26 → 26 (no migration)
 ```
 
