@@ -1,5 +1,33 @@
 # Roadmap
 
+## Slice 034 — Life Relationship Graph Explorer Core (active)
+
+Life can already show structure two ways and relationships one way, never both at once. Browse shows
+one node and its direct children. Edit shows the whole active tree but knows nothing about links. The
+Links panel shows one leaf's outgoing links and backlinks, one source at a time. `Graph` has sat under
+`OPEN — Product/UX` in `docs/DECISION_REGISTRY.md` since the registry was created; ADR 0038 is the
+Product Owner decision that resolves the narrow case.
+
+Task 44 adds a **read-only, transient explorer of the active Life hierarchy plus existing explicit
+directed Life links**. The relationships already exist and are already authoritative — only the view
+is new. It stores no graph truth, never replaces Browse or Edit, and never creates, deletes, infers,
+or rewrites relationships.
+
+Schema stays 26 with no migration and no schema change, and no dependency is added: the layout is the
+`d3-hierarchy` tidy tree Life Edit already computes, with explicit links drawn as a second pass over
+those positions.
+
+The explorer is bounded at 500 nodes, 2,000 links, and 128 levels and **rejects rather than
+truncates**. Graph is transient by construction: it is never a persisted Life mode, route, or sidebar
+destination, and a restart returns the user to the persisted mode. The drawn surface is `aria-hidden`
+and every relationship it draws has a required text counterpart.
+
+Hard boundary: no persisted graph truth of any kind, no editing from the Graph, no inferred, derived,
+typed, or weighted edges, no clustering, pathfinding, centrality, or ranking, no non-Life endpoints,
+no graph in Search, Analytics, Calendar, Today, Saved Views, Focus Plan, backup, or packages, no
+force simulation, physics, worker, canvas, or WebGL, no new dependency, capability beyond one command
+permission, workflow or seal change, and no Task 45 work is authorized.
+
 ## Slice 033 — Explicit Actual Time Sessions Core (complete)
 
 Task 43 activates the last unshipped candidate from the ADR 0028 PASS portfolio. Deadline (38),

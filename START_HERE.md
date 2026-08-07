@@ -14,12 +14,33 @@
 
 - Latest closed task: **43/60**
 - Latest closed slice: **033 — Explicit Actual Time Sessions**
-- Active task: **none**
-- Active implementation specification: **none**
+- Active task: **44 — Life Relationship Graph Explorer**
+- Active implementation specification: **`specs/034-life-relationship-graph`**
 - Latest feature checkpoint: **Task 43 — Explicit Actual Time Sessions** (`b4510ddbffbd0e8c4d5ae84213973b723df4cbad`)
 - Database schema: **26**
-- Next action: **Product Owner gate**
-- Task 44: **prohibited, unstarted, unallocated, and unrecommended**
+- Next action: **Implement active spec**
+- Task 45: **prohibited, unstarted, unallocated, and unrecommended**
+
+## Task 44 activation
+
+Task 44 is active from baseline `2d5b5d335137fe2a09f60b585d11a14a839b1e25`. It adds a **read-only,
+transient explorer of the active Life hierarchy plus existing explicit directed Life links**. It
+stores no graph truth, never replaces Browse or Edit, and never creates, deletes, infers, or rewrites
+relationships.
+
+Schema stays **26**: there is no migration and no schema change. No dependency is added — the layout
+is the `d3-hierarchy` tidy tree Life Edit already computes, with explicit links drawn as a second
+pass. `d3-force`, Cytoscape, Graphology, vis-network, physics engines, and canvas/WebGL graph
+renderers are prohibited.
+
+The explorer is bounded at 500 nodes, 2,000 links, and 128 levels, and **rejects rather than
+truncates**, because a partial graph that silently omits relationships is worse than no graph.
+
+Graph is transient by construction. `life_navigation_preferences.last_life_mode` stays constrained to
+`('browse','edit','pinned','reader')`; there is no new route, sidebar destination, or startup
+restoration, and a restart returns the user to the persisted mode. Persisted graph truth, graph
+editing, inferred or typed edges, and generalized knowledge features remain prohibited. Canonical
+decision: [ADR 0038](docs/adr/0038-life-relationship-graph-explorer.md).
 
 ## Task 43 closure
 

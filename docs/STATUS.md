@@ -1,5 +1,38 @@
 # Project Status
 
+## Task 44/60 — Life Relationship Graph Explorer Core (active)
+
+- Active slice: `034-life-relationship-graph`.
+- Activation baseline: `2d5b5d335137fe2a09f60b585d11a14a839b1e25`.
+- Schema stays 26. There is **no migration and no schema change**; migrations 1–26 are untouched.
+- Scope: a **read-only, transient explorer of the active Life hierarchy plus existing explicit
+  directed Life links**. It stores no graph truth, never replaces Browse or Edit, and never creates,
+  deletes, infers, or rewrites relationships.
+- Edges: hierarchy edges come only from `parent_id` within the connected active tree; link edges come
+  only from existing `life_links` rows. Nothing is inferred, derived, typed, or weighted.
+- Bounds are 500 nodes, 2,000 links, and 128 levels, and the projection **rejects rather than
+  truncates**. A partial graph that silently omits relationships is worse than no graph because the
+  user would draw conclusions from a picture that is not the truth.
+- A link with an endpoint outside the active tree is absent from the projection by definition, not by
+  truncation; the underlying row is never deleted, disabled, or altered and Task 41 semantics are
+  unchanged.
+- Layout is the existing `d3-hierarchy` tidy tree over parent/child edges, with explicit links drawn
+  as a separate pass. No force simulation, physics, worker, canvas, WebGL, persisted coordinate, or
+  drag. **Zero dependencies added** — `d3-force`, Cytoscape, Graphology, and vis-network are
+  prohibited, including as a way to avoid implementation work.
+- Accessibility is load-bearing: the drawn surface is `aria-hidden` and non-interactive, and every
+  relationship it draws has a text counterpart through a node selector, a selected-node inspector,
+  and a complete semantic connection list.
+- Graph is transient by construction. `life_navigation_preferences.last_life_mode` stays constrained
+  to `('browse','edit','pinned','reader')`; no route, sidebar destination, or startup restoration is
+  added, and a restart returns the user to the persisted mode.
+- Starting bundle inventory measured before any product change: 21 chunks, 1,204,073 raw, 370,223
+  deterministic gzip, 519,500 startup `index.js` — byte-identical to the accepted Task 43 inventory.
+  Authorized Task 44 deltas against it are 2 KiB startup raw, 24 KiB total raw, and 8 KiB
+  deterministic gzip.
+- Next action: implement the active spec. Task 45 remains prohibited, unstarted, unallocated, and
+  unrecommended.
+
 ## Task 43/60 — Explicit Actual Time Sessions Core (complete)
 
 - Closed slice: `033-explicit-actual-time-sessions`.

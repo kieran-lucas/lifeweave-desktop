@@ -81,7 +81,10 @@ The immutable source is authoritative. This registry makes operational status vi
 - final prediction;
 - Generic Outline role beyond the Basic Leaf heading navigator;
 - Noteboard role;
-- Graph;
+- Graph beyond the read-only transient explorer of the active Life hierarchy plus existing explicit
+  directed Life links (persisted graph truth, graph as a navigation destination, graph editing,
+  inferred/derived/typed/weighted edges, non-Life endpoints, clustering, pathfinding, centrality, and
+  ranking all remain OPEN — the read-only transient explorer case is now DECIDED, see ADR 0038);
 - whole-tree or multi-branch interchange (the single-branch case is now DECIDED — see ADR 0036);
 - custom export profiles;
 - preserve-vs-strip original asset metadata beyond the privacy-safe default;
@@ -99,7 +102,7 @@ The immutable source is authoritative. This registry makes operational status vi
 - prediction and opaque ML;
 - custom user-authored Narrative templates and Visual Worlds;
 - cross-scene block drag and scene-level independent presentation;
-- Graph and generalized knowledge features;
+- generalized knowledge features, and Graph beyond the ADR 0038 read-only transient explorer;
 - public updater/store distribution;
 - advanced full palette customization;
 - sound design.
