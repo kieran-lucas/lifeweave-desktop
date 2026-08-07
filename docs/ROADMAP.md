@@ -1,6 +1,6 @@
 # Roadmap
 
-## Slice 036 — Planned versus Actual Analytics Core (active)
+## Slice 036 — Planned versus Actual Analytics Core (complete)
 
 Task 43 created trustworthy explicit actual-time segments for one-off Tasks but deliberately left
 Analytics unchanged because attribution and comparison policy were OPEN. ADR 0040 is the Product
@@ -25,6 +25,9 @@ Hard boundary: no recurring actual time, manual entry, completed-segment editing
 tracking, surveillance, billing, export, actual time outside Analytics, deadline or Plan analytics,
 score, prediction, new route/destination, chart library, dependency, schema 27, workflow/seal change,
 generic reporting framework, deep visual polish, or Task 47 work.
+
+Task 46 closed at product checkpoint `e7454241576f3c7284a3433db8844c0c5f208e52` with schema 26.
+Task 47 remains prohibited, unstarted, unallocated, unrecommended, and is not the next candidate.
 
 ## Slice 035 — Global Keyboard Shortcuts and Shortcut Help Core (complete)
 
@@ -266,9 +269,9 @@ Task 35 selected the standalone Focus Plan entity. ADR 0030 is canonical.
 - **Task 37:** complete and closed. The reserved Focus Plans program is finished.
 - **Task 38:** complete and closed.
 - **Task 39:** complete and closed at product checkpoint `374abcbae263be18fa785a56d656678f9bfd9c29`.
-- **Tasks 40–45:** complete. **Task 46:** active under Slice 036 / ADR 0040. **Tasks 47–60:**
+- **Tasks 40–46:** complete. **Tasks 47–60:**
   available for later Product Owner decisions; none is activated or recommended. Task 47 is
-  prohibited, unstarted, unallocated, and unrecommended during Task 46.
+  prohibited, unstarted, unallocated, and unrecommended after Task 46 closure.
 - **Recurring deadline policy:** open; deliberately excluded from Slice 028.
 
 ## Closure policy

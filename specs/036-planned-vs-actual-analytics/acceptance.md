@@ -1,6 +1,6 @@
 # Task 46 Acceptance Mapping
 
-Status: ACTIVE — evidence will be recorded in
+Status: COMPLETE — evidence is recorded in
 `docs/audits/task-46-planned-vs-actual-analytics.md`.
 
 ## Authority and boundaries
@@ -64,8 +64,8 @@ Status: ACTIVE — evidence will be recorded in
 
 ## Governance and closure
 
-- [ ] Full required gates and activation-to-product diff review are recorded.
-- [ ] Closure state records Task 46/Slice 036 closed, schema 26, product checkpoint, null active spec,
+- [x] Full required gates and activation-to-product diff review are recorded.
+- [x] Closure state records Task 46/Slice 036 closed, schema 26, product checkpoint, null active spec,
       and `next_action=product_owner_gate`.
-- [ ] Task 47 remains prohibited, unstarted, unallocated, and unrecommended.
-- [ ] Final `main` is clean with `HEAD == origin/main`.
+- [x] Task 47 remains prohibited, unstarted, unallocated, and unrecommended.
+- [x] Final `main` is clean with `HEAD == origin/main`.

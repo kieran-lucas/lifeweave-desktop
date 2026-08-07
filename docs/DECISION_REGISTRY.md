@@ -19,7 +19,7 @@ The immutable source is authoritative. This registry makes operational status vi
 - Task/Life relationships are navigation-only; each one-off Task or recurring Task series links to zero or one Life node. Authority is stored on `tasks` and `task_series`; occurrences/evaluations inherit and do not store it.
 - Narrative Canvas supports 1–20 ordered scenes, three immutable built-in template IDs, and four static document-level Visual World IDs. Visual Worlds are presentation only.
 - Portable Package v1 represents one committed Basic Leaf or Narrative Canvas leaf document. Import creates a new document on a selected empty active Life leaf and excludes tree, Task, draft, history, analytics, and settings state.
-- Actual time is manual and explicit: a user starts a stopwatch on a **one-off** Task, may stop and start again, and each completed interval persists as an immutable segment. One session is active globally. Rust owns wall-clock epoch-millisecond timestamps; app close and machine sleep count as elapsed and there is no idle subtraction or surveillance of any kind. Actual time never rewrites the schedule, changes conflict rules, or completes/evaluates/scores a Task. A running timer blocks evaluation, deletion, and full backup creation. Recurring occurrences have no actual time and Analytics semantics are unchanged. See ADR 0037.
+- Actual time is manual and explicit: a user starts a stopwatch on a **one-off** Task, may stop and start again, and each completed interval persists as an immutable segment. One session is active globally. Rust owns wall-clock epoch-millisecond timestamps; app close and machine sleep count as elapsed and there is no idle subtraction or surveillance of any kind. Actual time never rewrites the schedule, changes conflict rules, or completes/evaluates/scores a Task. A running timer blocks evaluation, deletion, and full backup creation. Recurring occurrences have no actual time. ADR 0037's session feature does not itself change Analytics; the completed-session Analytics projection is separately DECIDED by ADR 0040.
 - Planned-versus-actual Analytics is a read-only projection of completed explicit one-off Task
   sessions. Reporting uses the owning existing Task's current scheduled local date and current
   category; cross-midnight sessions are not split, running sessions contribute zero, deleted Tasks
@@ -81,7 +81,18 @@ The immutable source is authoritative. This registry makes operational status vi
   change, and nothing is persisted. Custom remapping, user-editable chords, shortcut persistence, a
   command palette, command search, executable help rows, chord sequences, editor- or screen-scoped
   command sets, global OS-level hotkeys, and macOS mappings remain prohibited. Task 46 remained
-  prohibited at Task 45 closure and is now separately activated under ADR 0040.
+  prohibited at Task 45 closure and later closed separately under ADR 0040.
+
+- Task 46 / Slice 036 completes Planned versus Actual Analytics Core under ADR 0040 at product
+  checkpoint `e7454241576f3c7284a3433db8844c0c5f208e52`. Completed explicit sessions contribute only
+  through their owning existing one-off Task, attributed by that Task's current scheduled local
+  date and current category. Milliseconds sum per Task before flooring; each tracked Task enters the
+  tracked-plan denominator once; active sessions and recurring work contribute zero. The first
+  successful Stop bumps the existing Analytics source revision once in the same transaction.
+  Schema stays 26; no migration, snapshot, persistent aggregate, dependency, capability, route, or
+  second Analytics IPC is added. Recurring actual time, manual entry, editing completed segments,
+  and every other actual-time extension remain OPEN and unallocated. Task 47 remains prohibited,
+  unstarted, unallocated, and unrecommended.
 
 ## LOCKED — Technology direction
 

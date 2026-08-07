@@ -1,11 +1,11 @@
 # Project Status
 
-## Task 46/60 — Planned versus Actual Analytics Core (active)
+## Task 46/60 — Planned versus Actual Analytics Core (complete)
 
-- Active slice: `036-planned-vs-actual-analytics`.
+- Closed slice: `036-planned-vs-actual-analytics`.
 - Activation baseline: `b5002c3b05232aa0b8ae74b924764f927cc00f1d`.
-- Task 45 feature checkpoint remains `3e48ca9292f655543a79724aae674c387bdb2f0a` until Task 46
-  reaches its product checkpoint.
+- Activation commit: `b71d6f3711e77511a8edd0f116d5dc27f4c4c1d6`.
+- Product checkpoint: `e7454241576f3c7284a3433db8844c0c5f208e52`.
 - Schema stays 26. There is no migration, schema change, snapshot column, persistent actual-time
   aggregate, or new index; migrations 1–26 remain immutable.
 - Scope: completed Task 43 session segments become a read-only part of the existing Analytics
@@ -28,8 +28,8 @@
   streaks, completion, and period navigation remain unchanged.
 - Existing `get_analytics_projection` is reused. No new IPC, capability, dependency, route,
   destination, chart library, or generic reporting framework is authorized.
-- Next action: implement the active specification. Task 47 is prohibited, unstarted, unallocated,
-  and unrecommended.
+- Next action: Product Owner gate. Task 47 is prohibited, unstarted, unallocated, unrecommended,
+  and not activated.
 
 ## Task 45/60 — Global Keyboard Shortcuts and Shortcut Help Core (complete)
 

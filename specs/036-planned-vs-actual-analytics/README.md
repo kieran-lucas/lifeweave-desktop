@@ -3,13 +3,14 @@
 ## Status
 
 ```text
-Task 46: ACTIVE
-Slice 036: ACTIVE
+Task 46: COMPLETE
+Slice 036: COMPLETE
 activation baseline: b5002c3b05232aa0b8ae74b924764f927cc00f1d
 Task 45 feature checkpoint: 3e48ca9292f655543a79724aae674c387bdb2f0a
+Task 46 product checkpoint: e7454241576f3c7284a3433db8844c0c5f208e52
 starting schema: 26
 target schema: 26
-active spec package: specs/036-planned-vs-actual-analytics
+active spec package: null
 Task 47: prohibited, unstarted, unallocated, and unrecommended
 ```
 

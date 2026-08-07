@@ -67,8 +67,8 @@ This is the resumable execution ledger for Slice 036.
 - [x] T46-G01 run every specified source, governance, frontend, Rust, build, native, RC,
       performance, and diff gate;
 - [x] T46-G02 audit the activation-to-product full diff and all hard exclusions;
-- [ ] T46-G03 commit/push `implement planned-vs-actual analytics` and record its full SHA;
-- [ ] T46-G04 write the closure audit with exact evidence and disclosed debt;
-- [ ] T46-G05 close governance with Task 46/Slice 036 and schema 26;
-- [ ] T46-G06 commit/push closure, then record its SHA in the audit in a final commit;
-- [ ] T46-G07 verify clean `main`, `HEAD == origin/main`, and Task 47 unstarted.
+- [x] T46-G03 commit/push `implement planned-vs-actual analytics` and record its full SHA;
+- [x] T46-G04 write the closure audit with exact evidence and disclosed debt;
+- [x] T46-G05 close governance with Task 46/Slice 036 and schema 26;
+- [x] T46-G06 commit/push closure, then record its SHA in the audit in a final commit;
+- [x] T46-G07 verify clean `main`, `HEAD == origin/main`, and Task 47 unstarted.

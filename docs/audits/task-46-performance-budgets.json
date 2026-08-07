@@ -3,7 +3,7 @@
   "task": 46,
   "supersedes": "docs/audits/task-44-performance-budgets.json",
   "supersedes_note": "Task 16, 40, 41, 42, 43, and 44 baseline and budget files remain historical evidence. Task 45 used the Task 44 budget unchanged and created no replacement budget.",
-  "measured_at_commit": "PENDING_CHECKPOINT",
+  "measured_at_commit": "e7454241576f3c7284a3433db8844c0c5f208e52",
   "baseline_evidence": "docs/audits/task-46-performance-baseline.json",
   "main_chunk": "index.js",
   "unknown_chunk_raw_bytes_threshold": 10000,
