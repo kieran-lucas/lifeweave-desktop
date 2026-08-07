@@ -1,5 +1,36 @@
 # Project Status
 
+## Task 46/60 — Planned versus Actual Analytics Core (active)
+
+- Active slice: `036-planned-vs-actual-analytics`.
+- Activation baseline: `b5002c3b05232aa0b8ae74b924764f927cc00f1d`.
+- Task 45 feature checkpoint remains `3e48ca9292f655543a79724aae674c387bdb2f0a` until Task 46
+  reaches its product checkpoint.
+- Schema stays 26. There is no migration, schema change, snapshot column, persistent actual-time
+  aggregate, or new index; migrations 1–26 remain immutable.
+- Scope: completed Task 43 session segments become a read-only part of the existing Analytics
+  projection for existing one-off Tasks only.
+- Attribution authority is the owning Task's current `local_date` and current `category_id`.
+  Cross-midnight sessions are not split; session wall-clock date and timezone do not select the
+  reporting period.
+- Running and discarded-active sessions contribute nothing. Deleting a Task removes contribution
+  through the existing cascade. Recurring work cannot contribute.
+- A tracked Task has at least one completed segment in the requested Task-date period, including a
+  zero-duration segment. Its scheduled duration enters the tracked-plan denominator exactly once,
+  regardless of segment count. Untracked Tasks remain in established scheduled totals.
+- Milliseconds sum per Task before one whole-second floor. Rust checked arithmetic owns overall and
+  category summaries, whose actual-second totals must agree.
+- The first successful Stop updates `ended_at_ms` and bumps the existing Analytics source revision
+  exactly once in one transaction. Start, Discard, replayed Stop, and backwards-clock refusal do not
+  bump. Analytics algorithm version advances 1 → 2.
+- UI scope is one semantic Recorded actual time section and compact tracked-category lines, with
+  five facts, textual variance, explicit empty state, and transparency copy. Scheduled goals,
+  streaks, completion, and period navigation remain unchanged.
+- Existing `get_analytics_projection` is reused. No new IPC, capability, dependency, route,
+  destination, chart library, or generic reporting framework is authorized.
+- Next action: implement the active specification. Task 47 is prohibited, unstarted, unallocated,
+  and unrecommended.
+
 ## Task 45/60 — Global Keyboard Shortcuts and Shortcut Help Core (complete)
 
 - Closed slice: `035-global-keyboard-shortcuts`.

@@ -1,5 +1,31 @@
 # Roadmap
 
+## Slice 036 — Planned versus Actual Analytics Core (active)
+
+Task 43 created trustworthy explicit actual-time segments for one-off Tasks but deliberately left
+Analytics unchanged because attribution and comparison policy were OPEN. ADR 0040 is the Product
+Owner decision that closes only that loop.
+
+Task 46 extends the existing Analytics projection with a **completed-only, read-only
+planned-versus-actual summary**. Reporting uses each owning Task's current scheduled local date and
+current category. Cross-midnight sessions are not split; running and discarded-active sessions
+contribute nothing; deleting a Task removes its session contribution through the existing cascade.
+
+The comparison denominator is the scheduled duration once per tracked Task. Untracked Tasks remain
+in existing scheduled totals but do not dilute the tracked plan. Segment milliseconds sum per Task
+before flooring to whole seconds, and checked Rust arithmetic owns overall and category totals.
+
+Schema stays 26 with no migration, snapshot, persistent actual-time aggregate, dependency, new IPC,
+or capability. The existing Analytics algorithm advances to version 2, and the first successful
+Stop closes its segment and bumps the existing Analytics source revision exactly once in the same
+transaction. All Task 12 scheduled totals, completion distribution, category goal/streak, and
+evaluation semantics remain unchanged.
+
+Hard boundary: no recurring actual time, manual entry, completed-segment editing/deletion, automatic
+tracking, surveillance, billing, export, actual time outside Analytics, deadline or Plan analytics,
+score, prediction, new route/destination, chart library, dependency, schema 27, workflow/seal change,
+generic reporting framework, deep visual polish, or Task 47 work.
+
 ## Slice 035 — Global Keyboard Shortcuts and Shortcut Help Core (complete)
 
 Every destination and Global Search already exist and are already reachable — with the mouse. What
@@ -240,8 +266,9 @@ Task 35 selected the standalone Focus Plan entity. ADR 0030 is canonical.
 - **Task 37:** complete and closed. The reserved Focus Plans program is finished.
 - **Task 38:** complete and closed.
 - **Task 39:** complete and closed at product checkpoint `374abcbae263be18fa785a56d656678f9bfd9c29`.
-- **Tasks 40–60:** available for later decisions; none is activated or recommended. Task 40 is
-  explicitly prohibited and unrecommended after Slice 029 closure.
+- **Tasks 40–45:** complete. **Task 46:** active under Slice 036 / ADR 0040. **Tasks 47–60:**
+  available for later Product Owner decisions; none is activated or recommended. Task 47 is
+  prohibited, unstarted, unallocated, and unrecommended during Task 46.
 - **Recurring deadline policy:** open; deliberately excluded from Slice 028.
 
 ## Closure policy

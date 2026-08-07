@@ -14,12 +14,28 @@
 
 - Latest closed task: **45/60**
 - Latest closed slice: **035 — Global Keyboard Shortcuts and Shortcut Help**
-- Active task: **none**
-- Active implementation specification: **none**
+- Active task: **46/60 — Planned versus Actual Analytics Core**
+- Active implementation specification: **[Slice 036](specs/036-planned-vs-actual-analytics/README.md)**
 - Latest feature checkpoint: **Task 45 — Global Keyboard Shortcuts and Shortcut Help** (`3e48ca9292f655543a79724aae674c387bdb2f0a`)
 - Database schema: **26**
-- Next action: **Product Owner gate**
-- Task 46: **prohibited, unstarted, unallocated, and unrecommended**
+- Next action: **Implement active spec**
+- Task 47: **prohibited, unstarted, unallocated, and unrecommended**
+
+## Task 46 activation
+
+Task 46 / Slice 036 is active from baseline `b5002c3b05232aa0b8ae74b924764f927cc00f1d`.
+It closes exactly the remaining planned-schedule → completed-session → retrospective-Analytics
+loop for existing one-off Tasks.
+
+Completed Task 43 session segments are folded into the existing Analytics projection using the
+owning Task's **current scheduled local date and current category**. Running timers and recurring
+work contribute nothing. Each tracked Task contributes its scheduled duration once to the tracked
+plan, while untracked Tasks remain in the existing scheduled overview.
+
+Schema stays **26**: no migration, snapshot, persistent actual-time aggregate, dependency,
+capability, route, destination, or second Analytics IPC. Existing scheduled totals, category goals,
+streaks, completion distribution, and evaluation semantics remain unchanged. Canonical decision:
+[ADR 0040](docs/adr/0040-planned-vs-actual-analytics.md).
 
 ## Task 45 closure
 

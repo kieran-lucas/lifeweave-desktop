@@ -7,8 +7,8 @@
   "latest_feature_task": 45,
   "latest_feature_checkpoint": "3e48ca9292f655543a79724aae674c387bdb2f0a",
   "database_schema_version": 26,
-  "active_spec": null,
-  "next_action": "product_owner_gate",
+  "active_spec": "specs/036-planned-vs-actual-analytics",
+  "next_action": "implement_active_spec",
   "forbidden_feature_jump": true,
   "recommended_next_candidate": null,
   "source_sha256": "9c422927c09e26431d71b1ef5ab6306891a3e7c15ece0fc808bedf6f6689540a"

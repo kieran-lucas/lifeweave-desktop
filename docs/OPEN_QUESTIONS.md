@@ -12,7 +12,6 @@ Do not answer these by implementation assumption.
 - Today/Upcoming/Overdue final IA;
 - completion default hidden mapping;
 - prediction activation and algorithm;
-- actual versus scheduled/effective time semantics;
 - broad recurring edit confirmation details.
 
 ## Analytics
