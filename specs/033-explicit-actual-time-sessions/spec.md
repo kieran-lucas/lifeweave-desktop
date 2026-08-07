@@ -1,6 +1,7 @@
 # Task 43 Specification — Explicit Actual Time Sessions Core
 
-Status: ACTIVE from activation baseline `ec2ae86417d7e65315582c808250b33009ebf1c3`.
+Status: CLOSED at product checkpoint `b4510ddbffbd0e8c4d5ae84213973b723df4cbad` from activation baseline
+`ec2ae86417d7e65315582c808250b33009ebf1c3`.
 
 This file records the Product Owner's activated Task 43 contract. Everything not required here is
 out of scope. Canonical decision: `docs/adr/0037-explicit-actual-time-sessions.md`.

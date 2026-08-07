@@ -1,6 +1,7 @@
 # Task 43 Execution Plan
 
-Status: ACTIVE.
+Status: COMPLETE. All stages passed; see
+`docs/audits/task-43-explicit-actual-time-sessions.md`.
 
 ## Stage 0 — Activation and baseline
 

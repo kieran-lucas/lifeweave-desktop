@@ -3,13 +3,14 @@
 ## Status
 
 ```text
-Task 43: ACTIVE
-Slice 033: ACTIVE
+Task 43: CLOSED
+Slice 033: CLOSED
 activation baseline: ec2ae86417d7e65315582c808250b33009ebf1c3
 Task 42 feature checkpoint: 9c5d0cfb6c5e64ba7a5acfd23464e6a8474954b9
 starting schema: 25
-target schema: 26
-active spec package: specs/033-explicit-actual-time-sessions
+final schema: 26
+closed spec package: specs/033-explicit-actual-time-sessions
+product checkpoint: b4510ddbffbd0e8c4d5ae84213973b723df4cbad
 Task 44: prohibited, unstarted, unallocated, and unrecommended
 ```
 

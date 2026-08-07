@@ -1,10 +1,11 @@
 # Project Status
 
-## Task 43/60 — Explicit Actual Time Sessions Core (active)
+## Task 43/60 — Explicit Actual Time Sessions Core (complete)
 
-- Active slice: `033-explicit-actual-time-sessions`.
+- Closed slice: `033-explicit-actual-time-sessions`.
 - Activation baseline: `ec2ae86417d7e65315582c808250b33009ebf1c3`.
-- Starting schema 25; target schema 26 through one append-only migration adding exactly one table.
+- Product checkpoint: `b4510ddbffbd0e8c4d5ae84213973b723df4cbad`.
+- Starting schema 25; schema 26 through one append-only migration adding exactly one table.
 - Scope: manual, stopwatch-style actual time for **one-off Tasks only**. The user explicitly starts
   work, may stop and later start again, and each completed interval persists as an immutable
   segment. There is one active session globally, enforced by a partial unique index that is the
@@ -32,8 +33,8 @@
   deterministic gzip, 515,537 startup `index.js`, 545,679 total startup raw. Authorized Task 43
   deltas against the accepted Task 42 inventory are 4 KiB startup raw, 20 KiB total raw, and 7 KiB
   deterministic gzip.
-- Next action: implement the active spec. Task 44 remains prohibited, unstarted, unallocated, and
-  unrecommended.
+- Next action: Product Owner gate. Task 44 remains prohibited, unstarted, unallocated, and
+  unrecommended. Full evidence is in `docs/audits/task-43-explicit-actual-time-sessions.md`.
 
 ## Task 42/60 — Bounded Life Branch Interchange (complete)
 

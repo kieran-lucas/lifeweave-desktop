@@ -71,16 +71,16 @@ rather than widening the budget; startup raw settled at +3,963.
 
 ## G. Native and performance evidence
 
-- [ ] T43-G01 add phase 14 workflow and restart phases and register them in the phase list;
-- [ ] T43-G02 prove both phases load-bearing by a deliberate break, then revert it;
+- [x] T43-G01 add phase 14 workflow and restart phases and register them in the phase list;
+- [x] T43-G02 prove both phases load-bearing by a deliberate break, then revert it;
 - [x] T43-G03 add a `task::actual_time` selector to the release-candidate dogfood script;
 - [x] T43-G04 record the final bundle inventory and truthful Task 43 versioned budget evidence.
 
 ## H. Gates and closure
 
 - [x] T43-H01 run focused migration, Rust, binding, and frontend checks;
-- [ ] T43-H02 run all broad governance, build, Rust, release, native, and RC gates;
-- [ ] T43-H03 perform one full baseline diff review and fix confirmed in-scope findings;
-- [ ] T43-H04 create the Task 43 product checkpoint commit;
-- [ ] T43-H05 close all authority and evidence surfaces without allocating Task 44;
+- [x] T43-H02 run all broad governance, build, Rust, release, native, and RC gates;
+- [x] T43-H03 perform one full baseline diff review and fix confirmed in-scope findings;
+- [x] T43-H04 create the Task 43 product checkpoint commit;
+- [x] T43-H05 close all authority and evidence surfaces without allocating Task 44;
 - [ ] T43-H06 run final governance and diff checks, commit closure, push, and confirm parity.

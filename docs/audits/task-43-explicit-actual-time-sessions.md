@@ -6,14 +6,17 @@
 activation baseline           ec2ae86417d7e65315582c808250b33009ebf1c3
 activation commit             8bb7182e47a62f6265e06e947c14d30f4477df71
 implementation                d61efb17d0c76dea67b557664623ceb7efac5275
-product checkpoint            <recorded at closure>
+native evidence               b4510ddbffbd0e8c4d5ae84213973b723df4cbad
+product checkpoint            b4510ddbffbd0e8c4d5ae84213973b723df4cbad
 closure commit                <recorded at closure>
 Task 42 feature checkpoint    9c5d0cfb6c5e64ba7a5acfd23464e6a8474954b9
 schema                        25 → 26
 ```
 
 The activation commit contains only ADR 0037, the Slice 033 package, and governance surfaces — no
-product code.
+product code. The product checkpoint is the first commit whose tree passes every gate including the
+full 23-phase native suite; product code was last changed at `d61efb1`, and `b4510dd` adds only the
+phase 14 specs, their support module, and the runner registration.
 
 ## Delivered semantics
 

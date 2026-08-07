@@ -1,6 +1,6 @@
 # Roadmap
 
-## Slice 033 — Explicit Actual Time Sessions Core (active)
+## Slice 033 — Explicit Actual Time Sessions Core (complete)
 
 Task 43 activates the last unshipped candidate from the ADR 0028 PASS portfolio. Deadline (38),
 Saved Views (39), Hardening (40), Links (41), and Interchange (42) have all landed; Actual Time
