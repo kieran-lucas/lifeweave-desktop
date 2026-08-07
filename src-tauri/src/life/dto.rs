@@ -217,6 +217,7 @@ pub struct LifeEditNodeView {
     pub depth: i32,
     pub child_count: i32,
     pub is_leaf: bool,
+    pub has_document: bool,
     pub is_pinned: bool,
     pub revision: i32,
     pub tags: Vec<TagSummaryView>,

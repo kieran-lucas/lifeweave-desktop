@@ -17,7 +17,7 @@
 - Active task: **47/60 — Whole-Life Tree Interchange Core**
 - Active implementation specification: **[Slice 037](specs/037-whole-life-tree-interchange/README.md)**
 - Latest feature checkpoint: **Task 46 — Planned versus Actual Analytics Core** (`e7454241576f3c7284a3433db8844c0c5f208e52`)
-- Database schema: **26**
+- Database schema: **27**
 - Next action: **Implement active spec**
 - Task 48: **prohibited, unstarted, unallocated, and unrecommended**
 

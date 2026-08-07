@@ -6,7 +6,7 @@
   "latest_closed_slice": 36,
   "latest_feature_task": 46,
   "latest_feature_checkpoint": "e7454241576f3c7284a3433db8844c0c5f208e52",
-  "database_schema_version": 26,
+  "database_schema_version": 27,
   "active_spec": "specs/037-whole-life-tree-interchange",
   "next_action": "implement_active_spec",
   "forbidden_feature_jump": true,

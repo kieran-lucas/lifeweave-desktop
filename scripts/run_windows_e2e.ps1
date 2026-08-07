@@ -41,7 +41,9 @@ $allPhases = @(
   # Task 45 persists nothing either, so phase 16 has no restart companion by design.
   'phase16-keyboard-shortcuts.e2e.ts',
   # Task 46 adds no persistence format, so phase 17 has no restart companion by design.
-  'phase17-planned-vs-actual-analytics.e2e.ts'
+  'phase17-planned-vs-actual-analytics.e2e.ts',
+  'phase18-life-tree-interchange.e2e.ts',
+  'phase18-life-tree-interchange-restart.e2e.ts'
 )
 if (-not $Phases -or $Phases.Count -eq 0) { $Phases = $allPhases }
 foreach ($phase in $Phases) {

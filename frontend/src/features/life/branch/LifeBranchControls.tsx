@@ -10,6 +10,7 @@ import {
 } from "../../../ipc/commands";
 import { invalidateLifeBranchImport } from "./lifeBranchQueries";
 import * as styles from "./LifeBranch.css";
+import { LifeTreeControls } from "../tree/LifeTreeControls";
 
 const ImportDialog = lazy(() => import("./LifeBranchImportDialog"));
 const MAX_BYTES = 64 * 1024 * 1024;
@@ -127,7 +128,7 @@ export function LifeBranchControls({ nodeId, nodeTitle, parentId, childCount, ha
     }
   };
 
-  return <section className={styles.controls} aria-label="Life branch interchange">
+  return <><section className={styles.controls} aria-label="Life branch interchange">
     <div className={styles.actions}>
       <button className={styles.button} type="button" disabled={pending || blocked !== undefined} onClick={() => void exportBranch()}>
         {pending ? "Working…" : "Export branch"}
@@ -155,7 +156,15 @@ export function LifeBranchControls({ nodeId, nodeTitle, parentId, childCount, ha
         onCancel={() => void discard()}
       />
     </Suspense>}
-  </section>;
+  </section><LifeTreeControls
+    nodeId={nodeId}
+    nodeTitle={nodeTitle}
+    parentId={parentId}
+    childCount={childCount}
+    hasDocument={hasDocument}
+    treeRevision={treeRevision}
+    onImported={onImported}
+  /></>;
 }
 
 export default LifeBranchControls;

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-read-life-tree-export"
+description = "Enables the read_life_tree_export command without any pre-configured scope."
+commands.allow = ["read_life_tree_export"]
+
+[[permission]]
+identifier = "deny-read-life-tree-export"
+description = "Denies the read_life_tree_export command without any pre-configured scope."
+commands.deny = ["read_life_tree_export"]

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-preview-life-tree-import"
+description = "Enables the preview_life_tree_import command without any pre-configured scope."
+commands.allow = ["preview_life_tree_import"]
+
+[[permission]]
+identifier = "deny-preview-life-tree-import"
+description = "Denies the preview_life_tree_import command without any pre-configured scope."
+commands.deny = ["preview_life_tree_import"]

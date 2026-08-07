@@ -206,6 +206,14 @@ mod tests {
         ConfirmLifeBranchImportInput::export_all_to(&out).unwrap();
         LifeBranchImportResult::export_all_to(&out).unwrap();
         DiscardLifeBranchImportInput::export_all_to(&out).unwrap();
+        use crate::life_tree::dto::*;
+        PrepareLifeTreeExportInput::export_all_to(&out).unwrap();
+        LifeTreeCountsView::export_all_to(&out).unwrap();
+        LifeTreeExportTicket::export_all_to(&out).unwrap();
+        LifeTreeImportPreview::export_all_to(&out).unwrap();
+        ConfirmLifeTreeImportInput::export_all_to(&out).unwrap();
+        LifeTreeImportResult::export_all_to(&out).unwrap();
+        DiscardLifeTreeImportInput::export_all_to(&out).unwrap();
         use crate::tag::dto::*;
         TagSummaryView::export_all_to(&out).unwrap();
         TagView::export_all_to(&out).unwrap();

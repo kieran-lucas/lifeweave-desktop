@@ -125,6 +125,8 @@ fn edit_node(
     conn.query_row(
         "SELECT n.id,n.parent_id,n.title,n.short_description,n.icon_key,n.branch_theme_id,n.sort_key,0,
                 (SELECT COUNT(*) FROM life_nodes c WHERE c.parent_id=n.id AND c.archived_at IS NULL),
+                EXISTS(SELECT 1 FROM reader_documents d WHERE d.life_node_id=n.id)
+                  OR EXISTS(SELECT 1 FROM narrative_documents d WHERE d.life_node_id=n.id),
                 EXISTS(SELECT 1 FROM life_node_pins p WHERE p.node_id=n.id),n.revision
          FROM life_nodes n WHERE n.id=?1 AND (?2 OR n.archived_at IS NULL)",
         params![id, include_archived],
@@ -134,7 +136,8 @@ fn edit_node(
                 id: r.get(0)?, parent_id: r.get(1)?, title: r.get(2)?,
                 short_description: r.get(3)?, icon_key: r.get(4)?, theme_variant: r.get(5)?,
                 sort_key: r.get(6)?, depth: r.get(7)?, child_count: count,
-                is_leaf: count == 0, is_pinned: r.get(9)?, revision: r.get(10)?,
+                is_leaf: count == 0, has_document: r.get(9)?, is_pinned: r.get(10)?,
+                revision: r.get(11)?,
                 tags: vec![],
             })
         },
@@ -254,6 +257,8 @@ pub fn projection(conn: &Connection) -> Result<LifeEditProjection, LifeError> {
         FROM life_nodes n JOIN tree t ON n.parent_id=t.id WHERE n.archived_at IS NULL AND t.depth<4096
     ), counts AS (SELECT parent_id,COUNT(*) count FROM life_nodes WHERE archived_at IS NULL GROUP BY parent_id)
     SELECT t.id,t.parent_id,t.title,t.short_description,t.icon_key,t.theme,t.sort_key,t.depth,COALESCE(c.count,0),
+           EXISTS(SELECT 1 FROM reader_documents d WHERE d.life_node_id=t.id)
+             OR EXISTS(SELECT 1 FROM narrative_documents d WHERE d.life_node_id=t.id),
            EXISTS(SELECT 1 FROM life_node_pins p WHERE p.node_id=t.id),t.revision
       FROM tree t LEFT JOIN counts c ON c.parent_id=t.id ORDER BY t.path";
     let mut statement = conn.prepare(sql)?;
@@ -271,14 +276,15 @@ pub fn projection(conn: &Connection) -> Result<LifeEditProjection, LifeError> {
                 depth: r.get(7)?,
                 child_count: count,
                 is_leaf: count == 0,
-                is_pinned: r.get(9)?,
-                revision: r.get(10)?,
+                has_document: r.get(9)?,
+                is_pinned: r.get(10)?,
+                revision: r.get(11)?,
                 tags: vec![],
             })
         })?
         .collect::<Result<Vec<_>, _>>()?;
     let mut archived_statement = conn.prepare(
-        "WITH RECURSIVE all_nodes(id,parent_id,depth) AS (SELECT id,parent_id,0 FROM life_nodes WHERE parent_id IS NULL UNION ALL SELECT n.id,n.parent_id,a.depth+1 FROM life_nodes n JOIN all_nodes a ON n.parent_id=a.id WHERE a.depth<4096), counts AS (SELECT parent_id,COUNT(*) count FROM life_nodes WHERE archived_at IS NULL GROUP BY parent_id) SELECT n.id,n.parent_id,n.title,n.short_description,n.icon_key,n.branch_theme_id,n.sort_key,a.depth,COALESCE(c.count,0),EXISTS(SELECT 1 FROM life_node_pins p WHERE p.node_id=n.id),n.revision FROM life_nodes n JOIN all_nodes a ON a.id=n.id LEFT JOIN counts c ON c.parent_id=n.id WHERE n.archived_at IS NOT NULL ORDER BY a.depth,n.sort_key,n.id",
+        "WITH RECURSIVE all_nodes(id,parent_id,depth) AS (SELECT id,parent_id,0 FROM life_nodes WHERE parent_id IS NULL UNION ALL SELECT n.id,n.parent_id,a.depth+1 FROM life_nodes n JOIN all_nodes a ON n.parent_id=a.id WHERE a.depth<4096), counts AS (SELECT parent_id,COUNT(*) count FROM life_nodes WHERE archived_at IS NULL GROUP BY parent_id) SELECT n.id,n.parent_id,n.title,n.short_description,n.icon_key,n.branch_theme_id,n.sort_key,a.depth,COALESCE(c.count,0),EXISTS(SELECT 1 FROM reader_documents d WHERE d.life_node_id=n.id) OR EXISTS(SELECT 1 FROM narrative_documents d WHERE d.life_node_id=n.id),EXISTS(SELECT 1 FROM life_node_pins p WHERE p.node_id=n.id),n.revision FROM life_nodes n JOIN all_nodes a ON a.id=n.id LEFT JOIN counts c ON c.parent_id=n.id WHERE n.archived_at IS NOT NULL ORDER BY a.depth,n.sort_key,n.id",
     )?;
     let mut archived_nodes = archived_statement
         .query_map([], |r| {
@@ -294,8 +300,9 @@ pub fn projection(conn: &Connection) -> Result<LifeEditProjection, LifeError> {
                 depth: r.get(7)?,
                 child_count: count,
                 is_leaf: count == 0,
-                is_pinned: r.get(9)?,
-                revision: r.get(10)?,
+                has_document: r.get(9)?,
+                is_pinned: r.get(10)?,
+                revision: r.get(11)?,
                 tags: vec![],
             })
         })?

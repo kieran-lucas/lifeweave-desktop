@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const invoke = vi.hoisted(() => vi.fn());
 vi.mock("@tauri-apps/api/core", () => ({ invoke }));
 
-import { confirmLifeBranchImport, discardTaskActualTime, getActiveTaskActualTime, startTaskActualTime, stopTaskActualTime, createLifeLink, discardLifeBranchImport, getLifeLinkPanel, getRelatedTasksForLifeNode, prepareLifeBranchExport, previewLifeBranchImport, previewPortablePackageImport, readLifeBranchExport, readPortablePackageExport, removeLifeLink, searchLifeLinkTargets } from "./commands";
+import { confirmLifeBranchImport, confirmLifeTreeImport, discardTaskActualTime, getActiveTaskActualTime, startTaskActualTime, stopTaskActualTime, createLifeLink, discardLifeBranchImport, discardLifeTreeImport, getLifeLinkPanel, getRelatedTasksForLifeNode, prepareLifeBranchExport, prepareLifeTreeExport, previewLifeBranchImport, previewLifeTreeImport, previewPortablePackageImport, readLifeBranchExport, readLifeTreeExport, readPortablePackageExport, removeLifeLink, searchLifeLinkTargets } from "./commands";
 
 describe("Related Tasks command adapter", () => {
   beforeEach(() => invoke.mockReset().mockResolvedValue([]));
@@ -72,6 +72,27 @@ describe("Life branch command adapters", () => {
       ["prepare_life_branch_export", { input: { node_id: "node" } }],
       ["confirm_life_branch_import", { input: { import_id: "import", package_sha256: "a".repeat(64), parent_node_id: "parent", expected_tree_revision: 3, operation_id: "op" } }],
       ["discard_life_branch_import", { input: { import_id: "import" } }],
+    ]);
+    expect(JSON.stringify(invoke.mock.calls)).not.toMatch(/[A-Za-z]:\\|\/imports\/|\/exports\//);
+  });
+});
+
+describe("Life tree command adapters", () => {
+  beforeEach(() => invoke.mockReset().mockResolvedValue(new ArrayBuffer(0)));
+
+  it("uses raw bytes, opaque identities, and typed envelopes without paths", async () => {
+    const bytes = new Uint8Array([80, 75, 3, 4]);
+    await previewLifeTreeImport(bytes);
+    await readLifeTreeExport("export-id");
+    await prepareLifeTreeExport({ node_id: "life-root" });
+    await confirmLifeTreeImport({ import_id: "import", package_sha256: "a".repeat(64), parent_node_id: "destination", expected_tree_revision: 4, operation_id: "op" });
+    await discardLifeTreeImport({ import_id: "import" });
+    expect(invoke.mock.calls).toEqual([
+      ["preview_life_tree_import", bytes],
+      ["read_life_tree_export", { exportId: "export-id" }],
+      ["prepare_life_tree_export", { input: { node_id: "life-root" } }],
+      ["confirm_life_tree_import", { input: { import_id: "import", package_sha256: "a".repeat(64), parent_node_id: "destination", expected_tree_revision: 4, operation_id: "op" } }],
+      ["discard_life_tree_import", { input: { import_id: "import" } }],
     ]);
     expect(JSON.stringify(invoke.mock.calls)).not.toMatch(/[A-Za-z]:\\|\/imports\/|\/exports\//);
   });

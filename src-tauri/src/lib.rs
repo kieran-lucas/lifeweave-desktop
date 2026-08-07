@@ -7,6 +7,7 @@ pub mod ipc;
 pub mod life;
 pub mod life_branch;
 pub mod life_link;
+pub mod life_tree;
 pub mod narrative;
 pub mod platform;
 pub mod portable;
@@ -32,7 +33,7 @@ use infrastructure::backup::lifecycle::{
 use infrastructure::sqlite::{
     connection::{open_existing_file_connection, open_file_connection},
     runtime::DatabaseRuntime,
-    task43_migration::run_all_migrations,
+    task47_migration::run_all_migrations,
     worker::DbWorkerHandle,
 };
 use ipc::backup::{backup_database, list_backups, restore_database};
@@ -69,6 +70,10 @@ use life_branch::{
 };
 use life_link::service::{
     create_life_link, get_life_link_panel, remove_life_link, search_life_link_targets,
+};
+use life_tree::{
+    confirm_life_tree_import, discard_life_tree_import, prepare_life_tree_export,
+    preview_life_tree_import, read_life_tree_export,
 };
 use narrative::service::{
     create_narrative_document, discard_narrative_draft, export_narrative_markdown,
@@ -142,6 +147,7 @@ pub fn run() {
             std::fs::create_dir_all(&app_data_root)?;
             portable::cleanup_stale_portable_artifacts(&app_data_root);
             life_branch::cleanup_stale_life_branch_artifacts(&app_data_root);
+            life_tree::cleanup_stale_life_tree_artifacts(&app_data_root);
             let db_path = app_data_root.join("lifeweave.db");
 
             let marker_path = db_path
@@ -257,6 +263,11 @@ pub fn run() {
             preview_life_branch_import,
             confirm_life_branch_import,
             discard_life_branch_import,
+            prepare_life_tree_export,
+            read_life_tree_export,
+            preview_life_tree_import,
+            confirm_life_tree_import,
+            discard_life_tree_import,
             search_global,
             list_tags,
             create_tag,

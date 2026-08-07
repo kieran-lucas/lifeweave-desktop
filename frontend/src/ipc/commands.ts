@@ -112,6 +112,12 @@ import type { LifeBranchImportPreview } from "./generated/LifeBranchImportPrevie
 import type { ConfirmLifeBranchImportInput } from "./generated/ConfirmLifeBranchImportInput";
 import type { LifeBranchImportResult } from "./generated/LifeBranchImportResult";
 import type { DiscardLifeBranchImportInput } from "./generated/DiscardLifeBranchImportInput";
+import type { PrepareLifeTreeExportInput } from "./generated/PrepareLifeTreeExportInput";
+import type { LifeTreeExportTicket } from "./generated/LifeTreeExportTicket";
+import type { LifeTreeImportPreview } from "./generated/LifeTreeImportPreview";
+import type { ConfirmLifeTreeImportInput } from "./generated/ConfirmLifeTreeImportInput";
+import type { LifeTreeImportResult } from "./generated/LifeTreeImportResult";
+import type { DiscardLifeTreeImportInput } from "./generated/DiscardLifeTreeImportInput";
 import type { TagView } from "./generated/TagView";
 import type { CreateTagInput } from "./generated/CreateTagInput";
 import type { RenameTagInput } from "./generated/RenameTagInput";
@@ -302,6 +308,17 @@ export const confirmLifeBranchImport = (input: ConfirmLifeBranchImportInput) =>
   invoke<LifeBranchImportResult>("confirm_life_branch_import", { input });
 export const discardLifeBranchImport = (input: DiscardLifeBranchImportInput) =>
   invoke<void>("discard_life_branch_import", { input });
+
+export const prepareLifeTreeExport = (input: PrepareLifeTreeExportInput) =>
+  invoke<LifeTreeExportTicket>("prepare_life_tree_export", { input });
+export const readLifeTreeExport = (exportId: string) =>
+  invoke<ArrayBuffer>("read_life_tree_export", { exportId });
+export const previewLifeTreeImport = (bytes: Uint8Array) =>
+  invoke<LifeTreeImportPreview>("preview_life_tree_import", bytes);
+export const confirmLifeTreeImport = (input: ConfirmLifeTreeImportInput) =>
+  invoke<LifeTreeImportResult>("confirm_life_tree_import", { input });
+export const discardLifeTreeImport = (input: DiscardLifeTreeImportInput) =>
+  invoke<void>("discard_life_tree_import", { input });
 
 export const listTags = (includeArchived: boolean) => invoke<TagView[]>("list_tags", { includeArchived });
 export const createTag = (input: CreateTagInput) => invoke<TagView>("create_tag", { input });
