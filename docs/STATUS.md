@@ -1,10 +1,11 @@
 # Project Status
 
-## Task 42/60 — Bounded Life Branch Interchange (active)
+## Task 42/60 — Bounded Life Branch Interchange (complete)
 
-- Active slice: `032-bounded-life-branch-interchange`.
+- Closed slice: `032-bounded-life-branch-interchange`.
 - Activation baseline: `08a76c2827c1d49556c1f255631cbe2b1a4a2437`.
-- Starting schema 24; target schema 25 through one migration that rebuilds only `life_operations`.
+- Product checkpoint: `9c5d0cfb6c5e64ba7a5acfd23464e6a8474954b9`.
+- Starting schema 24; schema 25 through one migration that rebuilds only `life_operations`.
 - Scope: a distinct Life Branch Package v1 (`format: lifeweave_branch_package`,
   `format_version: 1`, `.lifeweave-branch.zip`) that exports exactly one active connected non-root
   Life branch and imports it as a fresh subtree under a chosen active documentless parent.
@@ -33,8 +34,8 @@
   and 8 KiB deterministic gzip.
 - Portable Package v1, database backup/restore semantics, whole-tree interchange, custom export
   profiles, Graph, routes, dependencies, and workflows/seal remain unchanged and prohibited.
-- Next action: implement the active spec. Task 43 remains prohibited, unstarted, unallocated, and
-  unrecommended.
+- Next action: Product Owner gate. Task 43 remains prohibited, unstarted, unallocated, and
+  unrecommended. Full evidence is in `docs/audits/task-42-bounded-life-branch-interchange.md`.
 
 ## Task 41/60 — Explicit Life Links + Backlinks Core (complete)
 

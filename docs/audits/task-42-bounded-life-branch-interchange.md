@@ -5,10 +5,16 @@
 ```text
 activation baseline           08a76c2827c1d49556c1f255631cbe2b1a4a2437
 activation commit             b2c24c490f33b90365b13bc6b46ddc3b9ae1193a
-product checkpoint            801baaf04ecd4c21c541c23c7917d678656b71f5
+implementation                801baaf04ecd4c21c541c23c7917d678656b71f5
+tag-dedupe fix                4485c83c18dd9160d1ec49845fa6079321258a40
+product checkpoint            9c5d0cfb6c5e64ba7a5acfd23464e6a8474954b9
 closure commit                <recorded at closure>
 Task 41 feature checkpoint    e1fe3675315c04590aabe9c9ca87ede344dafa40
 schema                        24 → 25
+
+The product checkpoint is the first commit whose tree passes every gate, including the full
+21-phase native suite. Product code was last changed at `4485c83`; `9c5d0cf` adds only the native
+evidence and the pagination-safe test fixtures needed to run it.
 ```
 
 The activation commit contains only ADR 0036, the Slice 032 package, and governance surfaces — no
@@ -103,9 +109,11 @@ All figures are executed results.
 
 ```text
 cargo test --locked -- --test-threads=1      683 passed, 0 failed, 4 ignored (687 total)
-  life_branch::                               73 passed
-  task42_migration::                            4 passed
-  infrastructure::backup::                    148 passed (147 before, +1 branch durability)
+  life_branch::                                72 passed  (the new module)
+  task42_migration::                            4 passed  (migration 25)
+  infrastructure::backup::                    148 passed  (147 before, +1 branch durability)
+                                               --------
+  Task 42 adds                                 77 tests
 cargo fmt -- --check                          clean
 cargo clippy --all-targets --all-features     clean, -D warnings, no suppression added
 pnpm test                                    633 passed, 44 files
@@ -113,9 +121,19 @@ pnpm typecheck                                clean
 pnpm build                                    success
 pnpm verify                                   all six gates pass
 pnpm hardening:performance                    violations: []
+pnpm tauri build                              installer produced
+RUST_TEST_THREADS=1 pnpm hardening:rc         candidate core-rc-9c5d0cf
+  document                                     35 passed
+  infrastructure::backup                      148 passed
+  narrative                                    62 passed
+  portable::service::tests::                   11 passed
+  life_branch::                                72 passed   (selector added by Task 42)
+  task::                                      100 passed
+  schema reopen sessions                        2 x 25s, no panic/CSP/ACL/corruption
+  installer sha256    d2039b7c2665da62eabb9ee1335deeee9c2c903fcea99e57ae812ca85927b649
 ```
 
-The 73 `life_branch` tests cover: the 1,260-entry arithmetic and key/path safety; strict
+The 72 `life_branch` module tests cover: the 1,260-entry arithmetic and key/path safety; strict
 `tree.json` verification (missing/multiple/unresolvable roots, cycles, orphans, duplicates,
 non-contiguous sibling indexes, excess depth, branch-with-document, two-documents-per-leaf,
 unresolvable tag/link references, unordered arrays, Vietnamese tag identity); manifest and checksum

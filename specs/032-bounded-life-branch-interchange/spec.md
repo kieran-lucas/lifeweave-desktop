@@ -1,6 +1,7 @@
 # Task 42 Specification — Bounded Life Branch Interchange
 
-Status: ACTIVE from activation baseline `08a76c2827c1d49556c1f255631cbe2b1a4a2437`.
+Status: CLOSED at product checkpoint `9c5d0cfb6c5e64ba7a5acfd23464e6a8474954b9` from
+activation baseline `08a76c2827c1d49556c1f255631cbe2b1a4a2437`.
 
 This file records the Product Owner's activated Task 42 contract. Everything not required here is
 out of scope. Authority for the two schema/tag deviations is `docs/adr/0036-bounded-life-branch-interchange.md`.

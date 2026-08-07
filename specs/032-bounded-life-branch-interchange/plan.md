@@ -1,6 +1,7 @@
 # Task 42 Execution Plan
 
-Status: ACTIVE.
+Status: COMPLETE. All stages passed; see
+`docs/audits/task-42-bounded-life-branch-interchange.md`.
 
 ## Stage 0 — Activation and baseline
 

@@ -1,6 +1,6 @@
 # Roadmap
 
-## Slice 032 — Bounded Life Branch Interchange (active)
+## Slice 032 — Bounded Life Branch Interchange (complete)
 
 Task 42 activates the Interchange candidate ADR 0028 scored at 7.610, narrowed by the explicit
 Product Owner decision in ADR 0036 to exactly one branch. Lifeweave already moves the whole

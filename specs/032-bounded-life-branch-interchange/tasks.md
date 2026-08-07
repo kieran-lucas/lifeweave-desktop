@@ -78,6 +78,6 @@ the one exercised, and the fact is recorded in the test rather than faked.
 - [x] T42-G01 run focused Rust, binding, and frontend checks;
 - [x] T42-G02 run all broad governance, build, Rust, release, native, and RC gates;
 - [x] T42-G03 perform one full baseline diff review and fix confirmed in-scope findings;
-- [ ] T42-G04 create the Task 42 product checkpoint commit;
-- [ ] T42-G05 close all authority and evidence surfaces without allocating Task 43;
+- [x] T42-G04 create the Task 42 product checkpoint commit;
+- [x] T42-G05 close all authority and evidence surfaces without allocating Task 43;
 - [ ] T42-G06 run final governance and diff checks, commit closure, push, and confirm parity.

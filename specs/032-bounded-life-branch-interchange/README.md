@@ -3,13 +3,14 @@
 ## Status
 
 ```text
-Task 42: ACTIVE
-Slice 032: ACTIVE
+Task 42: CLOSED
+Slice 032: CLOSED
 activation baseline: 08a76c2827c1d49556c1f255631cbe2b1a4a2437
 Task 41 feature checkpoint: e1fe3675315c04590aabe9c9ca87ede344dafa40
 starting schema: 24
-target schema: 25
-active spec package: specs/032-bounded-life-branch-interchange
+final schema: 25
+closed spec package: specs/032-bounded-life-branch-interchange
+product checkpoint: 9c5d0cfb6c5e64ba7a5acfd23464e6a8474954b9
 Task 43: prohibited, unstarted, unallocated, and unrecommended
 ```
 
