@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const invoke = vi.hoisted(() => vi.fn());
 vi.mock("@tauri-apps/api/core", () => ({ invoke }));
 
-import { confirmLifeBranchImport, createLifeLink, discardLifeBranchImport, getLifeLinkPanel, getRelatedTasksForLifeNode, prepareLifeBranchExport, previewLifeBranchImport, previewPortablePackageImport, readLifeBranchExport, readPortablePackageExport, removeLifeLink, searchLifeLinkTargets } from "./commands";
+import { confirmLifeBranchImport, discardTaskActualTime, getActiveTaskActualTime, startTaskActualTime, stopTaskActualTime, createLifeLink, discardLifeBranchImport, getLifeLinkPanel, getRelatedTasksForLifeNode, prepareLifeBranchExport, previewLifeBranchImport, previewPortablePackageImport, readLifeBranchExport, readPortablePackageExport, removeLifeLink, searchLifeLinkTargets } from "./commands";
 
 describe("Related Tasks command adapter", () => {
   beforeEach(() => invoke.mockReset().mockResolvedValue([]));
@@ -74,5 +74,22 @@ describe("Life branch command adapters", () => {
       ["discard_life_branch_import", { input: { import_id: "import" } }],
     ]);
     expect(JSON.stringify(invoke.mock.calls)).not.toMatch(/[A-Za-z]:\\|\/imports\/|\/exports\//);
+  });
+});
+
+describe("Task actual time command adapters", () => {
+  beforeEach(() => invoke.mockReset().mockResolvedValue(null));
+
+  it("uses a zero-argument getter and typed input envelopes for every mutation", async () => {
+    await getActiveTaskActualTime();
+    await startTaskActualTime({ task_id: "task-1", operation_id: "op-1" });
+    await stopTaskActualTime({ session_id: "session-1" });
+    await discardTaskActualTime({ session_id: "session-1" });
+    expect(invoke.mock.calls).toEqual([
+      ["get_active_task_actual_time"],
+      ["start_task_actual_time", { input: { task_id: "task-1", operation_id: "op-1" } }],
+      ["stop_task_actual_time", { input: { session_id: "session-1" } }],
+      ["discard_task_actual_time", { input: { session_id: "session-1" } }],
+    ]);
   });
 });

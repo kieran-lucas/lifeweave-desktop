@@ -32,6 +32,24 @@ pub fn backup_db(
 ) -> Result<BackupResult, BackupError> {
     // Acquire maintenance lock: serialises with concurrent restore operations.
     let _maint_guard = runtime.acquire_maintenance().map_err(BackupError::Db)?;
+
+    // Refuse before anything is created or published. A snapshot taken mid-session would, on
+    // restore, resume a timer whose start predates the restore — silently counting downtime as
+    // worked time.
+    let timer_active = runtime
+        .execute(|conn| {
+            crate::task::actual_time::any_session_active(conn).map_err(|error| match error {
+                crate::task::repository::TaskError::Db(inner) => {
+                    crate::infrastructure::sqlite::DbError::Rusqlite(inner)
+                }
+                _ => crate::infrastructure::sqlite::DbError::InvalidMigrationList,
+            })
+        })
+        .map_err(BackupError::Db)?;
+    if timer_active {
+        return Err(BackupError::ActiveTaskTimer);
+    }
+
     std::fs::create_dir_all(backups_dir).map_err(BackupError::Io)?;
 
     let unix_ms = std::time::SystemTime::now()

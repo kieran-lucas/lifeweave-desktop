@@ -32,7 +32,7 @@ use infrastructure::backup::lifecycle::{
 use infrastructure::sqlite::{
     connection::{open_existing_file_connection, open_file_connection},
     runtime::DatabaseRuntime,
-    task42_migration::run_all_migrations,
+    task43_migration::run_all_migrations,
     worker::DbWorkerHandle,
 };
 use ipc::backup::{backup_database, list_backups, restore_database};
@@ -46,13 +46,15 @@ use ipc::tag::{
 };
 use ipc::task::{
     archive_task_saved_view, create_recurring_task, create_task, create_task_saved_view,
-    delete_task, evaluate_task, get_analytics_projection, get_deadline_queue, get_month_projection,
+    delete_task, discard_task_actual_time, evaluate_task, get_active_task_actual_time,
+    get_analytics_projection, get_deadline_queue, get_month_projection,
     get_related_tasks_for_life_node, get_task_planning_projection, get_task_saved_view,
     get_task_saved_view_editor_options, get_task_saved_view_projection,
     list_archived_task_saved_views, list_completion_states, list_focus_plan_targets,
     list_recurring_occurrences, list_task_categories, list_task_saved_views, list_tasks_for_date,
-    list_today_items, reorder_task_saved_views, restore_task_saved_view, undo_task_evaluation,
-    update_category_goals, update_recurring_occurrence, update_task, update_task_saved_view,
+    list_today_items, reorder_task_saved_views, restore_task_saved_view, start_task_actual_time,
+    stop_task_actual_time, undo_task_evaluation, update_category_goals,
+    update_recurring_occurrence, update_task, update_task_saved_view,
 };
 use life::service::{
     archive_life_node, create_life_node, get_life_browse_projection, get_life_edit_projection,
@@ -196,6 +198,10 @@ pub fn run() {
             get_task_saved_view_projection,
             get_month_projection,
             list_completion_states,
+            get_active_task_actual_time,
+            start_task_actual_time,
+            stop_task_actual_time,
+            discard_task_actual_time,
             evaluate_task,
             undo_task_evaluation,
             update_category_goals,

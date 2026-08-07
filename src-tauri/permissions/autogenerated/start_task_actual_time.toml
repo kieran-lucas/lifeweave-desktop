@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-start-task-actual-time"
+description = "Enables the start_task_actual_time command without any pre-configured scope."
+commands.allow = ["start_task_actual_time"]
+
+[[permission]]
+identifier = "deny-start-task-actual-time"
+description = "Denies the start_task_actual_time command without any pre-configured scope."
+commands.deny = ["start_task_actual_time"]

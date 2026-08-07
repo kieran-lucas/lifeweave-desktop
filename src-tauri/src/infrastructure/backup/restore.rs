@@ -18,7 +18,7 @@ use crate::infrastructure::sqlite::{
     DbError,
     connection::{open_existing_file_connection, open_file_connection, open_readonly_connection},
     runtime::DatabaseRuntime,
-    task42_migration::{current_schema_version, max_supported_schema_version, run_all_migrations},
+    task43_migration::{current_schema_version, max_supported_schema_version, run_all_migrations},
     worker::DbWorkerHandle,
 };
 
@@ -864,7 +864,7 @@ mod tests {
             connection::{open_existing_file_connection, open_file_connection},
             foundation_record_repo as repo,
             runtime::DatabaseRuntime,
-            task42_migration::run_all_migrations as run_migrations,
+            task43_migration::run_all_migrations as run_migrations,
             worker::DbWorkerHandle,
         },
     };
@@ -1035,12 +1035,12 @@ mod tests {
         let result = restore_db(&runtime, package).unwrap();
         assert_eq!(
             result.schema_version,
-            crate::infrastructure::sqlite::task42_migration::TASK42_SCHEMA_VERSION
+            crate::infrastructure::sqlite::task43_migration::TASK43_SCHEMA_VERSION
         );
         let reopened = open_existing_file_connection(&db).unwrap();
         assert_eq!(
             current_schema_version(&reopened).unwrap(),
-            crate::infrastructure::sqlite::task42_migration::TASK42_SCHEMA_VERSION
+            crate::infrastructure::sqlite::task43_migration::TASK43_SCHEMA_VERSION
         );
         assert_eq!(
             reopened
@@ -1212,7 +1212,7 @@ mod tests {
         let restore_result = restore_db(&rt, &backup_dir).unwrap();
         assert_eq!(
             restore_result.schema_version,
-            crate::infrastructure::sqlite::task42_migration::TASK42_SCHEMA_VERSION
+            crate::infrastructure::sqlite::task43_migration::TASK43_SCHEMA_VERSION
         );
 
         let active = rt.execute(|conn| repo::list_active(conn)).unwrap();
@@ -1468,6 +1468,156 @@ mod tests {
 
     /// A Life branch imported through the Task 42 package is ordinary local data: full database
     /// backup and restore must carry it exactly, with no branch-package knowledge anywhere.
+    /// A running timer must block backup creation *before* anything is staged or published,
+    /// because restoring such a snapshot would resume a session whose start predates the restore
+    /// and silently count the downtime as worked time.
+    #[test]
+    fn an_active_task_timer_blocks_backup_creation_before_anything_is_staged() {
+        let (rt, _db_path) = make_file_runtime();
+        let backups = temp_backups_dir();
+
+        rt.execute(|conn| {
+            conn.execute(
+                "INSERT INTO tasks (id,local_date,start_minute,end_minute,title,description,category_id,priority,created_at,updated_at)
+                 VALUES('timed','2026-08-07',600,660,'Timed work','','general','low','1','1')",
+                [],
+            )?;
+            Ok(())
+        })
+        .unwrap();
+
+        // With no timer running, backup succeeds normally.
+        let baseline = backup_db(&rt, &backups).unwrap();
+        assert!(!baseline.backup_dir.is_empty());
+
+        rt.execute(|conn| {
+            crate::task::actual_time::start(conn, "timed", "backup-guard-op")
+                .map_err(|_| DbError::InvalidMigrationList)?;
+            Ok(())
+        })
+        .unwrap();
+
+        let before: Vec<String> = std::fs::read_dir(&backups)
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
+            .collect();
+
+        assert!(
+            matches!(backup_db(&rt, &backups), Err(BackupError::ActiveTaskTimer)),
+            "a running timer must refuse backup creation"
+        );
+
+        let after: Vec<String> = std::fs::read_dir(&backups)
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
+            .collect();
+        assert_eq!(
+            after, before,
+            "the refusal must not create a staging directory or a partial package"
+        );
+
+        // Stopping the timer restores ordinary backup behaviour.
+        let session = rt
+            .execute(|conn| {
+                Ok(crate::task::actual_time::task_view(conn, "timed")
+                    .unwrap()
+                    .active_session_id
+                    .unwrap())
+            })
+            .unwrap();
+        rt.execute(move |conn| {
+            crate::task::actual_time::stop(conn, &session)
+                .map_err(|_| DbError::InvalidMigrationList)?;
+            Ok(())
+        })
+        .unwrap();
+        backup_db(&rt, &backups).unwrap();
+    }
+
+    /// Closed segments are ordinary SQLite rows: backup and restore must carry them exactly and
+    /// must never invent, extend, or drop recorded time.
+    #[test]
+    fn closed_actual_time_survives_backup_mutation_restore_and_reopen_exactly() {
+        let (rt, db_path) = make_file_runtime();
+
+        let expected = rt
+            .execute(|conn| {
+                conn.execute(
+                    "INSERT INTO tasks (id,local_date,start_minute,end_minute,title,description,category_id,priority,created_at,updated_at)
+                     VALUES('timed','2026-08-07',600,660,'Timed work','','general','low','1','1')",
+                    [],
+                )?;
+                for round in 0..3i64 {
+                    crate::task::actual_time::start_at(
+                        conn,
+                        "timed",
+                        &format!("op-{round}"),
+                        1_770_000_000_000 + round * 100_000,
+                    )
+                    .map_err(|_| DbError::InvalidMigrationList)?;
+                    let session = crate::task::actual_time::task_view(conn, "timed")
+                        .map_err(|_| DbError::InvalidMigrationList)?
+                        .active_session_id
+                        .unwrap();
+                    crate::task::actual_time::stop_at(
+                        conn,
+                        &session,
+                        1_770_000_000_000 + round * 100_000 + 30_000,
+                    )
+                    .map_err(|_| DbError::InvalidMigrationList)?;
+                }
+                crate::task::actual_time::task_view(conn, "timed")
+                    .map_err(|_| DbError::InvalidMigrationList)
+            })
+            .unwrap();
+        assert_eq!(expected.total_completed_seconds, 90);
+        assert_eq!(expected.completed_session_count, 3);
+
+        let backups = temp_backups_dir();
+        let backup = backup_db(&rt, &backups).unwrap();
+
+        // Destroy the history after the backup: delete the owning Task entirely.
+        rt.execute(|conn| {
+            conn.execute("DELETE FROM tasks WHERE id='timed'", [])?;
+            Ok(())
+        })
+        .unwrap();
+        let wiped = rt
+            .execute(|conn| {
+                Ok(conn
+                    .query_row("SELECT COUNT(*) FROM task_actual_time_sessions", [], |r| {
+                        r.get::<_, i64>(0)
+                    })
+                    .unwrap())
+            })
+            .unwrap();
+        assert_eq!(wiped, 0, "deleting the task cascades its history away");
+
+        restore_db(&rt, Path::new(&backup.backup_dir)).unwrap();
+        let reopened = open_existing_file_connection(&db_path).unwrap();
+
+        let restored = crate::task::actual_time::task_view(&reopened, "timed").unwrap();
+        assert_eq!(
+            restored, expected,
+            "restored actual time must match byte-for-byte, with nothing fabricated"
+        );
+        assert!(
+            crate::task::actual_time::active_view(&reopened)
+                .unwrap()
+                .is_none(),
+            "restore must not resurrect or invent an active session"
+        );
+        assert_eq!(
+            reopened
+                .prepare("PRAGMA foreign_key_check")
+                .unwrap()
+                .query_map([], |_| Ok(()))
+                .unwrap()
+                .count(),
+            0
+        );
+    }
+
     #[test]
     fn an_imported_life_branch_survives_backup_mutation_restore_and_reopen_exactly() {
         use crate::life_branch::{archive, dto::ConfirmLifeBranchImportInput, repository};
@@ -3942,7 +4092,7 @@ mod tests {
         use crate::infrastructure::backup::lifecycle::{
             preflight_startup_check, recover_if_interrupted,
         };
-        use crate::infrastructure::sqlite::task42_migration::run_all_migrations as run_migrations;
+        use crate::infrastructure::sqlite::task43_migration::run_all_migrations as run_migrations;
         use crate::infrastructure::sqlite::{
             connection::open_existing_file_connection, runtime::DatabaseRuntime,
             worker::DbWorkerHandle,
@@ -4008,7 +4158,7 @@ mod tests {
         use crate::infrastructure::backup::lifecycle::{
             preflight_startup_check, recover_if_interrupted,
         };
-        use crate::infrastructure::sqlite::task42_migration::run_all_migrations as run_migrations;
+        use crate::infrastructure::sqlite::task43_migration::run_all_migrations as run_migrations;
         use crate::infrastructure::sqlite::{
             connection::open_existing_file_connection, runtime::DatabaseRuntime,
             worker::DbWorkerHandle,

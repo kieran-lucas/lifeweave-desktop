@@ -1,0 +1,139 @@
+{
+  "task": 43,
+  "slice": "033-explicit-actual-time-sessions",
+  "activation_baseline": "ec2ae86417d7e65315582c808250b33009ebf1c3",
+  "supersedes": "docs/audits/task-42-performance-baseline.json",
+  "supersedes_note": "Task 40, 41, and 42 baseline files remain byte-identical historical evidence.",
+  "method": {
+    "builds": 3,
+    "determinism": "three independent `pnpm build` runs produced byte-identical normalized inventories",
+    "gzip": "level 9, mtime=0",
+    "chunk_identity": "emitted file name with only the terminal content hash stripped"
+  },
+  "starting_baseline": {
+    "note": "measured from clean main at ec2ae86 before any Task 43 product change",
+    "chunk_count": 20,
+    "total_js_bytes": 1199082,
+    "total_js_gzip_bytes": 368463,
+    "main_js_bytes": 515537,
+    "startup_js_bytes": 545679
+  },
+  "final_totals": {
+    "chunk_count": 21,
+    "total_js_bytes": 1204073,
+    "total_js_gzip_bytes": 370223,
+    "main_js_bytes": 519500,
+    "startup_js_bytes": 549642
+  },
+  "task_43_delta_against_task_42_accepted_inventory": {
+    "startup_raw_bytes": {
+      "delta": 3963,
+      "authorized_ceiling": 4096
+    },
+    "total_raw_bytes": {
+      "delta": 4991,
+      "authorized_ceiling": 20480
+    },
+    "deterministic_gzip_bytes": {
+      "delta": 1760,
+      "authorized_ceiling": 7168
+    }
+  },
+  "lazy_boundary": {
+    "importer": "frontend/src/features/task/today/TodayScreen.tsx",
+    "note": "An inline active-timer strip measured +4,349 startup raw against the authorized 4,096. The strip only renders while a session is running, so it was moved behind a lazy() boundary rather than widening the budget. That brought startup raw to +3,963.",
+    "emitted_chunk": {
+      "ActiveTimerStrip.js": {
+        "raw_bytes": 1034,
+        "gzip_bytes": 539
+      }
+    },
+    "below_tracking_threshold": true
+  },
+  "final_inventory": {
+    "ActiveTimerStrip.js": {
+      "raw_bytes": 1034,
+      "gzip_bytes": 539
+    },
+    "BasicLeafEditor.js": {
+      "raw_bytes": 52355,
+      "gzip_bytes": 17089
+    },
+    "DeadlineQueuePanel.js": {
+      "raw_bytes": 3096,
+      "gzip_bytes": 1238
+    },
+    "FocusPlansScreen.js": {
+      "raw_bytes": 18396,
+      "gzip_bytes": 5097
+    },
+    "GlobalSearchDialog.js": {
+      "raw_bytes": 4142,
+      "gzip_bytes": 1775
+    },
+    "LifeBranch.css.js": {
+      "raw_bytes": 300,
+      "gzip_bytes": 182
+    },
+    "LifeBranchControls.js": {
+      "raw_bytes": 4350,
+      "gzip_bytes": 2036
+    },
+    "LifeBranchImportDialog.js": {
+      "raw_bytes": 2766,
+      "gzip_bytes": 1190
+    },
+    "LifeLinksPanel.js": {
+      "raw_bytes": 7383,
+      "gzip_bytes": 2606
+    },
+    "NarrativeCanvasStudio.js": {
+      "raw_bytes": 20063,
+      "gzip_bytes": 5934
+    },
+    "PortablePackageImportDialog.js": {
+      "raw_bytes": 2728,
+      "gzip_bytes": 1149
+    },
+    "QueryClientProvider.js": {
+      "raw_bytes": 481,
+      "gzip_bytes": 335
+    },
+    "TagSettings.js": {
+      "raw_bytes": 9450,
+      "gzip_bytes": 2517
+    },
+    "TaskPlanningPanel.js": {
+      "raw_bytes": 4450,
+      "gzip_bytes": 1700
+    },
+    "TaskSavedViewsPanel.js": {
+      "raw_bytes": 16544,
+      "gzip_bytes": 4952
+    },
+    "dist.js": {
+      "raw_bytes": 390833,
+      "gzip_bytes": 120574
+    },
+    "index.js": {
+      "raw_bytes": 519500,
+      "gzip_bytes": 157938
+    },
+    "jsx-runtime.js": {
+      "raw_bytes": 7948,
+      "gzip_bytes": 3045
+    },
+    "markdown.js": {
+      "raw_bytes": 116541,
+      "gzip_bytes": 32939
+    },
+    "rolldown-runtime.js": {
+      "raw_bytes": 879,
+      "gzip_bytes": 505
+    },
+    "useQuery.js": {
+      "raw_bytes": 20834,
+      "gzip_bytes": 6883
+    }
+  }
+}

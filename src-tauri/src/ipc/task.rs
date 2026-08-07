@@ -347,6 +347,59 @@ pub fn list_completion_states(
 }
 
 #[tauri::command]
+#[tracing::instrument(skip(state))]
+pub fn get_active_task_actual_time(
+    state: State<'_, DatabaseRuntime>,
+) -> Result<Option<crate::task::dto::ActiveTaskActualTimeView>, IpcError> {
+    state
+        .execute(|conn| Ok(crate::task::actual_time::active_view(conn)))
+        .map_err(map_db)?
+        .map_err(map_task)
+}
+
+#[tauri::command]
+#[tracing::instrument(skip(state, input))]
+pub fn start_task_actual_time(
+    state: State<'_, DatabaseRuntime>,
+    input: crate::task::dto::StartTaskActualTimeInput,
+) -> Result<crate::task::dto::TaskActualTimeView, IpcError> {
+    state
+        .execute(move |conn| {
+            Ok(crate::task::actual_time::start(
+                conn,
+                &input.task_id,
+                &input.operation_id,
+            ))
+        })
+        .map_err(map_db)?
+        .map_err(map_task)
+}
+
+#[tauri::command]
+#[tracing::instrument(skip(state, input))]
+pub fn stop_task_actual_time(
+    state: State<'_, DatabaseRuntime>,
+    input: crate::task::dto::TaskActualTimeSessionInput,
+) -> Result<crate::task::dto::TaskActualTimeView, IpcError> {
+    state
+        .execute(move |conn| Ok(crate::task::actual_time::stop(conn, &input.session_id)))
+        .map_err(map_db)?
+        .map_err(map_task)
+}
+
+#[tauri::command]
+#[tracing::instrument(skip(state, input))]
+pub fn discard_task_actual_time(
+    state: State<'_, DatabaseRuntime>,
+    input: crate::task::dto::TaskActualTimeSessionInput,
+) -> Result<crate::task::dto::TaskActualTimeView, IpcError> {
+    state
+        .execute(move |conn| Ok(crate::task::actual_time::discard(conn, &input.session_id)))
+        .map_err(map_db)?
+        .map_err(map_task)
+}
+
+#[tauri::command]
 #[tracing::instrument(skip(state, input))]
 pub fn evaluate_task(
     state: State<'_, DatabaseRuntime>,

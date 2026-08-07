@@ -8,6 +8,9 @@ use crate::ipc::error::IpcError;
 
 fn backup_to_ipc(e: BackupError) -> IpcError {
     match e {
+        BackupError::ActiveTaskTimer => IpcError::Validation {
+            message: "Stop or discard the running task timer before creating a backup.".into(),
+        },
         BackupError::InvalidBackupId | BackupError::BackupNotFound => IpcError::NotFound,
         BackupError::Db(_) | BackupError::Io(_) | BackupError::MissingBackupFile => {
             IpcError::Storage

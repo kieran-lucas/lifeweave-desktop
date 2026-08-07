@@ -68,6 +68,10 @@ try {
   # atomic import including tag, link-cap, replay, and zero-residue behaviour.
   cargo test --manifest-path src-tauri/Cargo.toml --locked life_branch::
   if ($LASTEXITCODE -ne 0) { throw "Life branch interchange dogfood fixtures failed." }
+  # `task::actual_time` covers the Task 43 session lifecycle, single-active invariant, clock
+  # authority, and the evaluation, delete, and backup guards.
+  cargo test --manifest-path src-tauri/Cargo.toml --locked task::actual_time
+  if ($LASTEXITCODE -ne 0) { throw "Actual time session dogfood fixtures failed." }
   # `task::` covers evaluation, Upcoming/Overdue planning, Task 38 deadline semantics, and the
   # Task 39 Saved View domain in one selector.
   cargo test --manifest-path src-tauri/Cargo.toml --locked task::

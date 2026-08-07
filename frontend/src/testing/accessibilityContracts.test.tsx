@@ -22,6 +22,10 @@ import { TaskWorkspaceTabs } from "../features/task/planning/TaskWorkspaceTabs";
  */
 
 const api = vi.hoisted(() => ({
+  getActiveTaskActualTime: vi.fn(),
+  startTaskActualTime: vi.fn(),
+  stopTaskActualTime: vi.fn(),
+  discardTaskActualTime: vi.fn(),
   listTaskSavedViews: vi.fn(),
   listArchivedTaskSavedViews: vi.fn(),
   getTaskSavedView: vi.fn(),

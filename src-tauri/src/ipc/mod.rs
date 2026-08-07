@@ -80,6 +80,10 @@ mod tests {
         RecurringOccurrenceView::export_all_to(&out).unwrap();
         crate::task::dto::UpdateRecurringOccurrenceInput::export_all_to(&out).unwrap();
         crate::task::dto::TodayItemView::export_all_to(&out).unwrap();
+        crate::task::dto::TaskActualTimeView::export_all_to(&out).unwrap();
+        crate::task::dto::ActiveTaskActualTimeView::export_all_to(&out).unwrap();
+        crate::task::dto::StartTaskActualTimeInput::export_all_to(&out).unwrap();
+        crate::task::dto::TaskActualTimeSessionInput::export_all_to(&out).unwrap();
         crate::task::dto::TodayItemKind::export_all_to(&out).unwrap();
         crate::task::dto::TaskPlanningMode::export_all_to(&out).unwrap();
         crate::task::dto::GetTaskPlanningProjectionInput::export_all_to(&out).unwrap();

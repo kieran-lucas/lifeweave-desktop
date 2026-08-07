@@ -678,6 +678,12 @@ pub fn update(conn: &Connection, input: UpdateTaskInput) -> Result<TaskView, Tas
 }
 pub fn delete(conn: &Connection, id: &str) -> Result<(), TaskError> {
     let tx = conn.unchecked_transaction()?;
+    // Deleting would cascade the running segment away silently; make the user end it deliberately.
+    if crate::task::actual_time::has_active_session(&tx, id)? {
+        return Err(TaskError::Validation(
+            "Stop or discard the running timer before deleting this task.",
+        ));
+    }
     if tx.execute("DELETE FROM tasks WHERE id=?1", params![id])? == 0 {
         Err(TaskError::NotFound)
     } else {
@@ -1007,6 +1013,8 @@ pub fn today_items(
     let areas = life_area_map(conn)?;
     let plans = focus_plan_map(conn)?;
     let categories = crate::task::planning::load_categories(conn)?;
+    // One grouped query for every one-off Task on this date; Today never issues a per-row lookup.
+    let actual_time = crate::task::actual_time::totals_for_date(conn, date)?;
     let mut stmt=conn.prepare("SELECT t.id,t.local_date,t.start_minute,t.end_minute,t.title,t.description,t.category_id,c.name,c.icon_key,c.color_key,t.priority,t.life_node_id,t.focus_plan_id,t.deadline_local_date FROM tasks t JOIN task_categories c ON c.id=t.category_id WHERE t.local_date=?1")?;
     for row in stmt.query_map(params![date], |r| {
         Ok((
@@ -1031,6 +1039,7 @@ pub fn today_items(
                 life_area: None,
                 focus_plan: None,
                 deadline: None,
+                actual_time: None,
                 tags: vec![],
             },
             r.get::<_, Option<String>>(11)?,
@@ -1043,6 +1052,14 @@ pub fn today_items(
         item.life_area = life_node_id.and_then(|id| areas.get(&id).cloned());
         item.focus_plan = focus_plan_id.and_then(|id| plans.get(&id).cloned());
         item.deadline = deadline_view(deadline, &item.local_date, observed_local_date);
+        item.actual_time = Some(actual_time.get(&item.id).cloned().unwrap_or(
+            crate::task::dto::TaskActualTimeView {
+                total_completed_seconds: 0,
+                completed_session_count: 0,
+                active_session_id: None,
+                active_started_at_ms: None,
+            },
+        ));
         out.push(item);
     }
     for occurrence in recurring_for_date(conn, date)? {
@@ -1079,6 +1096,9 @@ pub fn today_items(
             focus_plan: occurrence.focus_plan,
             // Recurring work owns no deadline in Task 38.
             deadline: None,
+            // Recurring occurrences own no actual time in Task 43: occurrence identity is
+            // series + original date, and ThisAndFuture mints a new series identity.
+            actual_time: None,
             tags: occurrence.tags,
         });
     }

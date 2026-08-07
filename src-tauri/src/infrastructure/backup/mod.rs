@@ -18,6 +18,9 @@ use crate::infrastructure::sqlite::DbError;
 /// frontend — mapped to `IpcError` in `ipc::backup`.
 #[derive(Debug)]
 pub enum BackupError {
+    /// A task timer is running. Backing up now would let a later restore reinterpret the
+    /// backup/restore downtime as worked time, so creation is refused before anything is staged.
+    ActiveTaskTimer,
     InvalidBackupId,
     BackupNotFound,
     Db(DbError),
@@ -82,6 +85,7 @@ pub enum BackupError {
 impl std::fmt::Display for BackupError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            BackupError::ActiveTaskTimer => write!(f, "a task timer is running"),
             BackupError::InvalidBackupId => write!(f, "invalid backup identity"),
             BackupError::BackupNotFound => write!(f, "backup not found"),
             BackupError::Db(e) => write!(f, "database error: {e:?}"),

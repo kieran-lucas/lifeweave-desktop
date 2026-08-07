@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import axe from "axe-core";
 import { StrictMode, type ComponentProps } from "react";
@@ -23,6 +23,7 @@ const oneOff = {
   priority: "high",
   is_override: false,
   evaluation: null,
+  actual_time: { total_completed_seconds: 0, completed_session_count: 0, active_session_id: null, active_started_at_ms: null },
   tags: [],
   life_area: null,
   focus_plan: null,
@@ -38,6 +39,10 @@ const recurring = {
   title: "Weekly review",
 };
 const commands = vi.hoisted(() => ({
+  getActiveTaskActualTime: vi.fn(),
+  startTaskActualTime: vi.fn(),
+  stopTaskActualTime: vi.fn(),
+  discardTaskActualTime: vi.fn(),
   listTodayItems: vi.fn(),
   listTaskCategories: vi.fn(),
   createTask: vi.fn(),
@@ -91,6 +96,7 @@ const renderToday = (
 describe("Today recurrence contract", () => {
   beforeEach(() => {
     vi.setSystemTime(new Date(2026, 7, 2, 23, 59));
+    commands.getActiveTaskActualTime.mockResolvedValue(null);
     commands.listTodayItems.mockResolvedValue([oneOff]);
     commands.listTaskCategories.mockResolvedValue([
       {
@@ -1179,5 +1185,220 @@ describe("Today recurrence contract", () => {
     client.setQueryData(["today-items", "2026-08-03"], [{ ...oneOff, id: "future", local_date: "2026-08-03" }]);
     await waitFor(() => expect(todayTab).toHaveFocus());
     expect(scroll).toHaveBeenCalledTimes(1);
+  });
+
+  describe("Today actual time", () => {
+    const timed = (over: Record<string, unknown> = {}) => ({
+      ...oneOff,
+      actual_time: {
+        total_completed_seconds: 0,
+        completed_session_count: 0,
+        active_session_id: null,
+        active_started_at_ms: null,
+        ...over,
+      },
+    });
+
+    it("offers Start on an unevaluated one-off row and never on a recurring row", async () => {
+      commands.listTodayItems.mockResolvedValue([timed(), recurring]);
+      renderTodayOnItsOwnDay();
+      const start = await screen.findByRole("button", { name: `Start timer for ${oneOff.title}` });
+      expect(start).toBeEnabled();
+      // Exactly one control: the recurring row owns no actual time at all.
+      expect(screen.getAllByRole("button", { name: /timer/i })).toHaveLength(1);
+    });
+
+    it("starts a timer for the row's task with a fresh operation identity", async () => {
+      commands.listTodayItems.mockResolvedValue([timed()]);
+      commands.startTaskActualTime.mockResolvedValue({
+        total_completed_seconds: 0,
+        completed_session_count: 0,
+        active_session_id: "session-1",
+        active_started_at_ms: Date.now(),
+      });
+      renderTodayOnItsOwnDay();
+      fireEvent.click(await screen.findByRole("button", { name: `Start timer for ${oneOff.title}` }));
+      await waitFor(() =>
+        expect(commands.startTaskActualTime).toHaveBeenCalledWith(
+          expect.objectContaining({ task_id: oneOff.id, operation_id: expect.any(String) }),
+        ),
+      );
+    });
+
+    it("shows Stop and the running strip once a session owns the row", async () => {
+      const started = Date.now() - 65_000;
+      commands.listTodayItems.mockResolvedValue([
+        timed({ active_session_id: "session-1", active_started_at_ms: started }),
+      ]);
+      commands.getActiveTaskActualTime.mockResolvedValue({
+        session_id: "session-1",
+        task_id: oneOff.id,
+        task_title: oneOff.title,
+        task_local_date: oneOff.local_date,
+        started_at_ms: started,
+        completed_seconds_before_active: 0,
+      });
+      renderTodayOnItsOwnDay();
+
+      expect(await screen.findByRole("button", { name: `Stop timer for ${oneOff.title}` })).toBeInTheDocument();
+      const strip = await screen.findByRole("region", { name: "Running task timer" });
+      expect(strip).toHaveTextContent(oneOff.title);
+      expect(screen.getByRole("timer")).toHaveTextContent("1:05");
+    });
+
+    it("keeps the running strip visible after navigating to another date", async () => {
+      const started = Date.now() - 5_000;
+      commands.getActiveTaskActualTime.mockResolvedValue({
+        session_id: "session-1",
+        task_id: oneOff.id,
+        task_title: oneOff.title,
+        task_local_date: oneOff.local_date,
+        started_at_ms: started,
+        completed_seconds_before_active: 0,
+      });
+      commands.listTodayItems.mockResolvedValue([]);
+      renderTodayOnItsOwnDay();
+      await screen.findByRole("region", { name: "Running task timer" });
+
+      // Move to a different day; the timer belongs to another date but must stay on screen.
+      fireEvent.click(screen.getByRole("button", { name: "Next week" }));
+      await waitFor(() =>
+        expect(screen.getByRole("region", { name: "Running task timer" })).toBeInTheDocument(),
+      );
+    });
+
+    it("shows cumulative recorded time only when it is non-zero", async () => {
+      commands.listTodayItems.mockResolvedValue([timed()]);
+      const { rerender: _r } = renderTodayOnItsOwnDay();
+      await screen.findByRole("button", { name: `Start timer for ${oneOff.title}` });
+      expect(screen.queryByText("2:00")).not.toBeInTheDocument();
+
+      cleanup();
+      commands.listTodayItems.mockResolvedValue([
+        timed({ total_completed_seconds: 120, completed_session_count: 2 }),
+      ]);
+      renderTodayOnItsOwnDay();
+      expect(await screen.findByText("2:00")).toBeInTheDocument();
+    });
+
+    it("cannot start on an evaluated row and explains why", async () => {
+      commands.listTodayItems.mockResolvedValue([
+        {
+          ...timed(),
+          evaluation: {
+            id: "e1",
+            state_id: "met",
+            label: "Met expectation",
+            visual_token: "met",
+            value_bp: 8000,
+            evaluated_at: "2026-08-02T10:00:00Z",
+            operation_id: "op",
+          },
+        },
+      ]);
+      renderTodayOnItsOwnDay();
+      const start = await screen.findByRole("button", {
+        name: `Tracking unavailable for ${oneOff.title}: undo this task's assessment first`,
+      });
+      expect(start).toBeDisabled();
+      expect(commands.startTaskActualTime).not.toHaveBeenCalled();
+    });
+
+    it("cannot start a second task while another timer runs", async () => {
+      const other = { ...timed(), id: "two", title: "Second" };
+      commands.listTodayItems.mockResolvedValue([other]);
+      commands.getActiveTaskActualTime.mockResolvedValue({
+        session_id: "session-1",
+        task_id: "elsewhere",
+        task_title: "Running elsewhere",
+        task_local_date: "2026-08-01",
+        started_at_ms: Date.now() - 1000,
+        completed_seconds_before_active: 0,
+      });
+      renderTodayOnItsOwnDay();
+      const start = await screen.findByRole("button", {
+        name: "Tracking unavailable for Second: another task timer is running",
+      });
+      expect(start).toBeDisabled();
+    });
+
+    it("blocks assessment while this row's timer runs and says so", async () => {
+      commands.listTodayItems.mockResolvedValue([
+        timed({ active_session_id: "session-1", active_started_at_ms: Date.now() - 1000 }),
+      ]);
+      renderTodayOnItsOwnDay();
+      const assess = await screen.findByRole("button", {
+        name: "Stop or discard the running timer before assessing this task",
+      });
+      expect(assess).toBeDisabled();
+    });
+
+    it("stops through the strip and refreshes both the timer and the day", async () => {
+      const started = Date.now() - 30_000;
+      commands.listTodayItems.mockResolvedValue([
+        timed({ active_session_id: "session-1", active_started_at_ms: started }),
+      ]);
+      commands.getActiveTaskActualTime.mockResolvedValue({
+        session_id: "session-1",
+        task_id: oneOff.id,
+        task_title: oneOff.title,
+        task_local_date: oneOff.local_date,
+        started_at_ms: started,
+        completed_seconds_before_active: 0,
+      });
+      commands.stopTaskActualTime.mockResolvedValue({
+        total_completed_seconds: 30,
+        completed_session_count: 1,
+        active_session_id: null,
+        active_started_at_ms: null,
+      });
+      const { client } = renderTodayOnItsOwnDay();
+      const invalidate = vi.spyOn(client, "invalidateQueries");
+
+      fireEvent.click(await screen.findByRole("button", { name: `Stop timer for ${oneOff.title}` }));
+      await waitFor(() =>
+        expect(commands.stopTaskActualTime).toHaveBeenCalledWith({ session_id: "session-1" }),
+      );
+      await waitFor(() => {
+        expect(invalidate).toHaveBeenCalledWith({ queryKey: ["task-actual-time-active"] });
+        expect(invalidate).toHaveBeenCalledWith({ queryKey: ["today-items"] });
+      });
+    });
+
+    it("discards only through the strip, never for a completed segment", async () => {
+      const started = Date.now() - 4_000;
+      commands.listTodayItems.mockResolvedValue([
+        timed({ active_session_id: "session-1", active_started_at_ms: started }),
+      ]);
+      commands.getActiveTaskActualTime.mockResolvedValue({
+        session_id: "session-1",
+        task_id: oneOff.id,
+        task_title: oneOff.title,
+        task_local_date: oneOff.local_date,
+        started_at_ms: started,
+        completed_seconds_before_active: 0,
+      });
+      commands.discardTaskActualTime.mockResolvedValue({
+        total_completed_seconds: 0,
+        completed_session_count: 0,
+        active_session_id: null,
+        active_started_at_ms: null,
+      });
+      renderTodayOnItsOwnDay();
+      fireEvent.click(await screen.findByRole("button", { name: "Discard segment" }));
+      await waitFor(() =>
+        expect(commands.discardTaskActualTime).toHaveBeenCalledWith({ session_id: "session-1" }),
+      );
+    });
+
+    it("announces a failed timer mutation once, as an alert", async () => {
+      commands.listTodayItems.mockResolvedValue([timed()]);
+      commands.startTaskActualTime.mockRejectedValue({ message: "Another task timer is already running. Stop it first." });
+      renderTodayOnItsOwnDay();
+      fireEvent.click(await screen.findByRole("button", { name: `Start timer for ${oneOff.title}` }));
+      const alerts = await screen.findAllByRole("alert");
+      expect(alerts).toHaveLength(1);
+      expect(alerts[0]).toHaveTextContent("Another task timer is already running.");
+    });
   });
 });

@@ -6,6 +6,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import axe from "axe-core";
 
 const appApi = vi.hoisted(() => ({
+  getActiveTaskActualTime: vi.fn(),
+  startTaskActualTime: vi.fn(),
+  stopTaskActualTime: vi.fn(),
+  discardTaskActualTime: vi.fn(),
   listTodayItems: vi.fn(),
   getLifeBrowseProjection: vi.fn(),
   getRelatedTasksForLifeNode: vi.fn(),
@@ -44,6 +48,10 @@ vi.mock("../ipc/commands", () => ({
   restoreDatabase: vi.fn(),
   listTasksForDate: vi.fn().mockResolvedValue([]),
   listTodayItems: appApi.listTodayItems,
+  getActiveTaskActualTime: appApi.getActiveTaskActualTime,
+  startTaskActualTime: appApi.startTaskActualTime,
+  stopTaskActualTime: appApi.stopTaskActualTime,
+  discardTaskActualTime: appApi.discardTaskActualTime,
   listTaskCategories: vi.fn().mockResolvedValue([]),
   listTaskLifeTargets: vi.fn().mockResolvedValue([]),
   listFocusPlanTargets: vi.fn().mockResolvedValue([]),
@@ -110,6 +118,7 @@ const rootProjection = {
 
 describe("App shell", () => {
   beforeEach(() => {
+    appApi.getActiveTaskActualTime.mockResolvedValue(null);
     window.localStorage.clear();
     appApi.listTodayItems.mockReset().mockResolvedValue([]);
     appApi.getLifeBrowseProjection.mockReset().mockResolvedValue(rootProjection);

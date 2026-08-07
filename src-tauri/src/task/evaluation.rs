@@ -103,6 +103,17 @@ pub(crate) fn evaluate_at(
 
     validate_clock(&input, &authoritative_now)?;
     let (_, scheduled_date, end_minute) = resolve_subject(&tx, &subject)?;
+
+    // A running timer and an assessment cannot coexist: assessment is retrospective, so the work
+    // must be finished. Placed after the replay early-return above, so replaying an evaluation that
+    // already succeeded is never blocked by a timer started afterwards.
+    if let Some(task_id) = subject.task_id.as_deref()
+        && crate::task::actual_time::has_active_session(&tx, task_id)?
+    {
+        return Err(TaskError::Validation(
+            "Stop or discard the running timer before assessing this task.",
+        ));
+    }
     if scheduled_date > authoritative_now.date
         || (scheduled_date == authoritative_now.date && end_minute > authoritative_now.minute)
     {
@@ -180,7 +191,6 @@ pub fn undo(
     Ok(result)
 }
 
-#[cfg(test)]
 pub(crate) fn current_for_one_off(
     conn: &Connection,
     task_id: &str,

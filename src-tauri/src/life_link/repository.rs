@@ -75,7 +75,7 @@ fn validate_endpoint(
 mod cap_search_tests {
     use super::*;
     use crate::infrastructure::sqlite::{
-        connection::open_memory_connection, task42_migration::run_all_migrations,
+        connection::open_memory_connection, task43_migration::run_all_migrations,
     };
 
     fn setup() -> Connection {
@@ -590,7 +590,7 @@ pub fn search_targets(
 mod tests {
     use super::*;
     use crate::infrastructure::sqlite::{
-        connection::open_memory_connection, task42_migration::run_all_migrations,
+        connection::open_memory_connection, task43_migration::run_all_migrations,
     };
 
     fn setup() -> Connection {

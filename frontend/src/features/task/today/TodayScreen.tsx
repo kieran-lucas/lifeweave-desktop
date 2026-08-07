@@ -13,10 +13,16 @@ import {
   updateTask,
 } from "../../../ipc/commands";
 import {
+  discardTaskActualTime,
   evaluateTask,
+  getActiveTaskActualTime,
   listCompletionStates,
+  startTaskActualTime,
+  stopTaskActualTime,
   undoTaskEvaluation,
 } from "../../../ipc/commands";
+import { ActualTimeRowControl } from "./ActualTimeRowControl";
+import { formatElapsed } from "./actualTime";
 import type { CompletionStateView } from "../../../ipc/generated/CompletionStateView";
 import { localToday as getLocalToday } from "../../calendar/date";
 import { WeekStrip } from "../../calendar/WeekStrip";
@@ -34,6 +40,10 @@ import { invalidateTaskSavedViewProjections } from "../saved-views/savedViewQuer
 const TaskPlanningPanel = lazy(() => import("../planning/TaskPlanningPanel"));
 const DeadlineQueuePanel = lazy(() => import("../planning/DeadlineQueuePanel"));
 const TaskSavedViewsPanel = lazy(() => import("../saved-views/TaskSavedViewsPanel"));
+// Only mounted while a timer is actually running, so it stays out of the startup chunk.
+const ActiveTimerStrip = lazy(() =>
+  import("./ActiveTimerStrip").then((module) => ({ default: module.ActiveTimerStrip })),
+);
 
 type CommonItem = Omit<
   TodayItemView,
@@ -276,6 +286,9 @@ export function TodayScreen({
       observedLocalDate: string;
       operationId: string;
     } | null>(null);
+  const [timerError, setTimerError] = useState(""), [timerNotice, setTimerNotice] = useState("");
+  // Independent of the viewed date on purpose: the running task may be scheduled on another day.
+  const activeTimer = useQuery({ queryKey: ["task-actual-time-active"], queryFn: getActiveTaskActualTime });
   const items = useQuery({
       queryKey: todayItemsKey(date, today),
       queryFn: async () => (await listTodayItems(date, today)).map(normalize),
@@ -307,6 +320,28 @@ export function TodayScreen({
       client.invalidateQueries({ queryKey: ["tags"] }),
     ]);
   };
+  const refreshActualTime = async () => {
+    await Promise.allSettled([
+      client.invalidateQueries({ queryKey: ["task-actual-time-active"] }),
+      client.invalidateQueries({ queryKey: ["today-items"] }),
+    ]);
+  };
+  const timer = useMutation({
+    mutationFn: (work: () => Promise<unknown>) => work(),
+    onMutate: () => { setTimerError(""); setTimerNotice(""); },
+    onSuccess: async (_result, _work, context) => {
+      await refreshActualTime();
+      setTimerNotice(typeof context === "string" ? context : "");
+    },
+    onError: (error) =>
+      setTimerError(
+        typeof error === "object" && error && "message" in error
+          ? String((error as { message: unknown }).message)
+          : "The timer could not be updated.",
+      ),
+  });
+  const runTimer = (notice: string, work: () => Promise<unknown>) =>
+    timer.mutate(work, { onSuccess: async () => { await refreshActualTime(); setTimerNotice(notice); } });
   const save = useMutation({
     mutationFn: async () => {
       // Recurring work owns no deadline in Task 38. Stripping it here means a one-off draft
@@ -713,6 +748,34 @@ export function TodayScreen({
         disabled={open}
         onActivate={activateWorkspaceMode}
       />
+      {/* Outside the Today tabpanel on purpose: one globally active session stays visible while
+          the user changes date or switches workspace tab. */}
+      {activeTimer.data && (
+        <Suspense fallback={<p role="status">Loading timer…</p>}>
+        <ActiveTimerStrip
+          active={activeTimer.data}
+          pending={timer.isPending}
+          onStop={() =>
+            runTimer("Timer stopped.", () =>
+              stopTaskActualTime({ session_id: activeTimer.data!.session_id }),
+            )
+          }
+          onDiscard={() =>
+            runTimer("Segment discarded.", () =>
+              discardTaskActualTime({ session_id: activeTimer.data!.session_id }),
+            )
+          }
+        />
+        </Suspense>
+      )}
+      {timerError && (
+        <p className={styles.timerError} role="alert">
+          {timerError}
+        </p>
+      )}
+      <span className={styles.srOnly} aria-live="polite">
+        {timerNotice}
+      </span>
       {workspaceMode === "today" ? (
       <div role="tabpanel" id="task-panel-today" aria-labelledby="task-tab-today">
       <div className={styles.header}>
@@ -863,6 +926,33 @@ export function TodayScreen({
                           <span aria-label={`Priority ${item.priority}`}>
                             •
                           </span>
+                          {item.kind === "one_off" && item.actual_time && (
+                            <ActualTimeRowControl
+                              taskId={item.id}
+                              taskTitle={item.title}
+                              actual={item.actual_time}
+                              evaluated={item.evaluation !== null}
+                              otherTimerRunning={
+                                activeTimer.data !== null &&
+                                activeTimer.data !== undefined &&
+                                activeTimer.data.task_id !== item.id
+                              }
+                              pending={timer.isPending}
+                              onStart={() =>
+                                runTimer("Timer started.", () =>
+                                  startTaskActualTime({
+                                    task_id: item.id,
+                                    operation_id: newOperationId(),
+                                  }),
+                                )
+                              }
+                              onStop={(sessionId) =>
+                                runTimer("Timer stopped.", () =>
+                                  stopTaskActualTime({ session_id: sessionId }),
+                                )
+                              }
+                            />
+                          )}
                           <AssessmentControl
                             itemId={item.id}
                             states={completionStates.data ?? []}
@@ -871,6 +961,12 @@ export function TodayScreen({
                               item.local_date < today ||
                               (item.local_date === today &&
                                 item.end_minute <= clockMinute)
+                            }
+                            unavailableReason={
+                              item.kind === "one_off" &&
+                              item.actual_time?.active_session_id
+                                ? "Stop or discard the running timer before assessing this task"
+                                : null
                             }
                             open={openFan === item.id}
                             onOpen={() => setOpenFan(item.id)}

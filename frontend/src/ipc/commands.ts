@@ -101,6 +101,10 @@ import type { PortablePackageExportTicket } from "./generated/PortablePackageExp
 import type { PortablePackageImportPreview } from "./generated/PortablePackageImportPreview";
 import type { ConfirmPortablePackageImportInput } from "./generated/ConfirmPortablePackageImportInput";
 import type { PortablePackageImportResult } from "./generated/PortablePackageImportResult";
+import type { TaskActualTimeView } from "./generated/TaskActualTimeView";
+import type { ActiveTaskActualTimeView } from "./generated/ActiveTaskActualTimeView";
+import type { StartTaskActualTimeInput } from "./generated/StartTaskActualTimeInput";
+import type { TaskActualTimeSessionInput } from "./generated/TaskActualTimeSessionInput";
 import type { PrepareLifeBranchExportInput } from "./generated/PrepareLifeBranchExportInput";
 import type { LifeBranchExportTicket } from "./generated/LifeBranchExportTicket";
 import type { LifeBranchImportPreview } from "./generated/LifeBranchImportPreview";
@@ -218,6 +222,14 @@ export const getTaskSavedViewProjection = (input: GetTaskSavedViewProjectionInpu
 export const getMonthProjection = (year: number, month: number, selectedDate: string, today: string) =>
   invoke<MonthProjection>("get_month_projection", { year, month, selectedDate, today });
 export const listCompletionStates = () => invoke<CompletionStateView[]>("list_completion_states");
+export const getActiveTaskActualTime = () =>
+  invoke<ActiveTaskActualTimeView | null>("get_active_task_actual_time");
+export const startTaskActualTime = (input: StartTaskActualTimeInput) =>
+  invoke<TaskActualTimeView>("start_task_actual_time", { input });
+export const stopTaskActualTime = (input: TaskActualTimeSessionInput) =>
+  invoke<TaskActualTimeView>("stop_task_actual_time", { input });
+export const discardTaskActualTime = (input: TaskActualTimeSessionInput) =>
+  invoke<TaskActualTimeView>("discard_task_actual_time", { input });
 export const evaluateTask = (input: EvaluateTaskInput) => invoke<TaskEvaluationView>("evaluate_task", { input });
 export const undoTaskEvaluation = (input: UndoTaskEvaluationInput) => invoke<TaskEvaluationView|null>("undo_task_evaluation", { input });
 export const getAnalyticsProjection = (input: AnalyticsProjectionInput) => invoke<AnalyticsProjection>("get_analytics_projection", { input });

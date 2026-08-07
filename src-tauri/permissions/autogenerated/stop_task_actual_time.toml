@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-stop-task-actual-time"
+description = "Enables the stop_task_actual_time command without any pre-configured scope."
+commands.allow = ["stop_task_actual_time"]
+
+[[permission]]
+identifier = "deny-stop-task-actual-time"
+description = "Denies the stop_task_actual_time command without any pre-configured scope."
+commands.deny = ["stop_task_actual_time"]

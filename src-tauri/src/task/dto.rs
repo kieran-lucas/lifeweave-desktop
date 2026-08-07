@@ -311,7 +311,49 @@ pub struct TodayItemView {
     pub life_area: Option<TaskLifeAreaView>,
     pub focus_plan: Option<TaskFocusPlanView>,
     pub deadline: Option<TaskDeadlineView>,
+    /// One-off rows only. Recurring occurrences own no actual time.
+    pub actual_time: Option<TaskActualTimeView>,
     pub tags: Vec<TagSummaryView>,
+}
+
+/// Recorded actual time for one one-off Task. `total_completed_seconds` covers only closed
+/// segments; a running segment is never folded in server-side so the client can tick it live from
+/// `active_started_at_ms`.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct TaskActualTimeView {
+    pub total_completed_seconds: i64,
+    pub completed_session_count: u32,
+    pub active_session_id: Option<String>,
+    pub active_started_at_ms: Option<i64>,
+}
+
+/// The one globally active session. Carries its Task's identity and scheduled date so the Today
+/// strip can name a timer running on a day the user is not currently viewing.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct ActiveTaskActualTimeView {
+    pub session_id: String,
+    pub task_id: String,
+    pub task_title: String,
+    pub task_local_date: String,
+    pub started_at_ms: i64,
+    pub completed_seconds_before_active: i64,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct StartTaskActualTimeInput {
+    pub task_id: String,
+    pub operation_id: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct TaskActualTimeSessionInput {
+    pub session_id: String,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]

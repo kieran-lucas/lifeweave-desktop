@@ -17,9 +17,8 @@
 - Active task: **43 — Explicit Actual Time Sessions**
 - Active implementation specification: **`specs/033-explicit-actual-time-sessions`**
 - Latest feature checkpoint: **Task 42 — Bounded Life Branch Interchange** (`9c5d0cfb6c5e64ba7a5acfd23464e6a8474954b9`)
-- Database schema: **25**
+- Database schema: **26**
 - Next action: **Implement active spec**
-- Target schema: **26** (one append-only migration adding `task_actual_time_sessions`; see ADR 0037)
 - Task 44: **prohibited, unstarted, unallocated, and unrecommended**
 
 ## Task 43 activation

@@ -1,10 +1,10 @@
 {
   "budget_version": 2,
-  "task": 42,
-  "supersedes": "docs/audits/task-41-performance-budgets.json",
-  "supersedes_note": "Task 40 and Task 41 baseline and budget files remain byte-identical historical evidence.",
-  "measured_at_commit": "9c5d0cfb6c5e64ba7a5acfd23464e6a8474954b9",
-  "baseline_evidence": "docs/audits/task-42-performance-baseline.json",
+  "task": 43,
+  "supersedes": "docs/audits/task-42-performance-budgets.json",
+  "supersedes_note": "Task 40, 41, and 42 baseline and budget files remain byte-identical historical evidence.",
+  "measured_at_commit": "PENDING_CHECKPOINT",
+  "baseline_evidence": "docs/audits/task-43-performance-baseline.json",
   "main_chunk": "index.js",
   "unknown_chunk_raw_bytes_threshold": 10000,
   "rules": {
@@ -30,21 +30,21 @@
   },
   "aggregates": {
     "main_js_bytes": {
-      "observed": 515537,
-      "maximum": 525848,
-      "derivation": "min(515537 + max(1024, ceil(515537 * 0.0200)), 535000)"
+      "observed": 519500,
+      "maximum": 529890,
+      "derivation": "min(519500 + max(1024, ceil(519500 * 0.0200)), 535000)"
     },
     "total_js_bytes": {
-      "observed": 1199082,
-      "maximum": 1208076,
-      "derivation": "1199082 + max(8192, ceil(1199082 * 0.0075))"
+      "observed": 1204073,
+      "maximum": 1213104,
+      "derivation": "1204073 + max(8192, ceil(1204073 * 0.0075))"
     },
     "total_js_gzip_bytes": {
-      "observed": 368463,
-      "maximum": 372559,
-      "derivation": "368463 + max(4096, ceil(368463 * 0.0100))"
+      "observed": 370223,
+      "maximum": 374319,
+      "derivation": "370223 + max(4096, ceil(370223 * 0.0100))"
     },
-    "expected_chunk_count": 20
+    "expected_chunk_count": 21
   },
   "chunks": {
     "BasicLeafEditor.js": {
@@ -57,19 +57,19 @@
     },
     "FocusPlansScreen.js": {
       "observed_raw_bytes": 18396,
-      "observed_gzip_bytes": 5095,
+      "observed_gzip_bytes": 5097,
       "maximum_raw_bytes": 19420,
       "class": "lazy",
       "owner": "Focus Plans",
       "derivation": "18396 + max(1024, ceil(18396 * 0.0200))"
     },
     "NarrativeCanvasStudio.js": {
-      "observed_raw_bytes": 20069,
-      "observed_gzip_bytes": 5933,
-      "maximum_raw_bytes": 21093,
+      "observed_raw_bytes": 20063,
+      "observed_gzip_bytes": 5934,
+      "maximum_raw_bytes": 21087,
       "class": "lazy",
       "owner": "Narrative Canvas studio",
-      "derivation": "20069 + max(1024, ceil(20069 * 0.0200))"
+      "derivation": "20063 + max(1024, ceil(20063 * 0.0200))"
     },
     "TaskSavedViewsPanel.js": {
       "observed_raw_bytes": 16544,
@@ -88,12 +88,12 @@
       "derivation": "390833 + max(1024, ceil(390833 * 0.0200))"
     },
     "index.js": {
-      "observed_raw_bytes": 515537,
-      "observed_gzip_bytes": 156716,
-      "maximum_raw_bytes": 525848,
+      "observed_raw_bytes": 519500,
+      "observed_gzip_bytes": 157938,
+      "maximum_raw_bytes": 529890,
       "class": "startup",
       "owner": "application shell and eager screens",
-      "derivation": "min(515537 + max(1024, ceil(515537 * 0.0200)), 535000)"
+      "derivation": "min(519500 + max(1024, ceil(519500 * 0.0200)), 535000)"
     },
     "markdown.js": {
       "observed_raw_bytes": 116541,
