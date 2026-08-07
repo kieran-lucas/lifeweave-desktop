@@ -1,6 +1,7 @@
 # Task 45 Execution Plan
 
-Status: ACTIVE.
+Status: COMPLETE. All stages passed; see
+`docs/audits/task-45-global-keyboard-shortcuts.md`.
 
 ## Stage 0 — Activation and baseline
 

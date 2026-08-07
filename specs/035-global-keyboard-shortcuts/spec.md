@@ -1,6 +1,7 @@
 # Task 45 Specification — Global Keyboard Shortcuts and Shortcut Help Core
 
-Status: ACTIVE from activation baseline `b8ad47d9079246cecf4c30c728bec1d3a4915b41`.
+Status: CLOSED at product checkpoint `3e48ca9292f655543a79724aae674c387bdb2f0a` from activation baseline
+`b8ad47d9079246cecf4c30c728bec1d3a4915b41`.
 
 This file records the Product Owner's activated Task 45 contract. Everything not required here is
 out of scope. Canonical decision: `docs/adr/0039-global-keyboard-shortcuts.md`.

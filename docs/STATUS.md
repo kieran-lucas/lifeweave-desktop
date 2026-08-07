@@ -1,9 +1,10 @@
 # Project Status
 
-## Task 45/60 — Global Keyboard Shortcuts and Shortcut Help Core (active)
+## Task 45/60 — Global Keyboard Shortcuts and Shortcut Help Core (complete)
 
-- Active slice: `035-global-keyboard-shortcuts`.
+- Closed slice: `035-global-keyboard-shortcuts`.
 - Activation baseline: `b8ad47d9079246cecf4c30c728bec1d3a4915b41`.
+- Product checkpoint: `3e48ca9292f655543a79724aae674c387bdb2f0a`.
 - Schema stays 26. There is **no migration and no schema change**, and no Rust, IPC, DTO, generated
   binding, or Tauri capability change of any kind; migrations 1–26 are untouched.
 - Scope: **eight global keyboard commands, defined once in a single frontend registry that owns both
@@ -35,10 +36,11 @@
   matrix — is not something a parser supplies.
 - Starting bundle inventory measured before any product change: 22 chunks, 1,214,694 raw, 373,745
   deterministic gzip, 520,983 startup `index.js` — byte-identical to the accepted Task 44 inventory.
-  Task 45 fits inside the **unchanged** Task 44 budget: headroom is 9,879 startup raw, 6,523 total
-  raw, and 3,440 deterministic gzip. No new budget generation is created.
-- Next action: implement the active spec. Task 46 remains prohibited, unstarted, unallocated, and
-  unrecommended.
+  Task 45 fits inside the **unchanged** Task 44 budget and cost 2,874 raw and 950 deterministic gzip
+  bytes: final 523,857 startup raw, 1,217,568 total raw, 374,695 gzip, still 22 chunks, all maxima
+  and the budget file unchanged. No new budget generation was created.
+- Next action: Product Owner gate. Task 46 remains prohibited, unstarted, unallocated, and
+  unrecommended. Full evidence is in `docs/audits/task-45-global-keyboard-shortcuts.md`.
 
 ## Task 44/60 — Life Relationship Graph Explorer Core (complete)
 

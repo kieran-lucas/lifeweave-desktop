@@ -12,18 +12,19 @@
 
 ## Current state
 
-- Latest closed task: **44/60**
-- Latest closed slice: **034 — Life Relationship Graph Explorer**
-- Active task: **45 — Global Keyboard Shortcuts and Shortcut Help**
-- Active implementation specification: **`specs/035-global-keyboard-shortcuts`**
-- Latest feature checkpoint: **Task 44 — Life Relationship Graph Explorer** (`7e95644dcced19a1a8349706990d20d1df53a2e1`)
+- Latest closed task: **45/60**
+- Latest closed slice: **035 — Global Keyboard Shortcuts and Shortcut Help**
+- Active task: **none**
+- Active implementation specification: **none**
+- Latest feature checkpoint: **Task 45 — Global Keyboard Shortcuts and Shortcut Help** (`3e48ca9292f655543a79724aae674c387bdb2f0a`)
 - Database schema: **26**
-- Next action: **Implement active spec**
+- Next action: **Product Owner gate**
 - Task 46: **prohibited, unstarted, unallocated, and unrecommended**
 
-## Task 45 activation
+## Task 45 closure
 
-Task 45 is active from baseline `b8ad47d9079246cecf4c30c728bec1d3a4915b41`. It adds **eight global
+Task 45 is closed at product checkpoint `3e48ca9292f655543a79724aae674c387bdb2f0a` from baseline
+`b8ad47d9079246cecf4c30c728bec1d3a4915b41`. It adds **eight global
 keyboard commands, defined once in a single frontend registry that owns both dispatch and every
 displayed chord**. A global chord never takes precedence over an editable surface or an open modal,
 and no shortcut is customizable or persisted.
@@ -47,7 +48,8 @@ uses, and the Keyboard shortcuts dialog is generated from the registry so it can
 
 Custom remapping, a command palette, command search, executable help rows, chord sequences, and
 macOS mappings all remain prohibited. Canonical decision:
-[ADR 0039](docs/adr/0039-global-keyboard-shortcuts.md).
+[ADR 0039](docs/adr/0039-global-keyboard-shortcuts.md); closure evidence is in
+`docs/audits/task-45-global-keyboard-shortcuts.md`.
 
 ## Task 44 closure
 

@@ -61,6 +61,20 @@ The immutable source is authoritative. This registry makes operational status vi
   clustering, pathfinding, centrality, ranking, generalized knowledge features, and Task 45 remain
   prohibited.
 
+- Task 45 / Slice 035 completes the Global Keyboard Shortcuts and Shortcut Help Core under ADR 0039
+  at product checkpoint `3e48ca9292f655543a79724aae674c387bdb2f0a`. There are exactly eight global
+  commands — `Ctrl+1..6` for the six destinations in sidebar order, `Ctrl+K` Search, `Ctrl+/`
+  Keyboard shortcuts — defined once in `frontend/src/app/keyboardShortcuts.ts`, which owns dispatch
+  and every displayed chord; the help dialog is generated from it and cannot drift. Windows
+  `Control` is the authority and there is no macOS or `Meta` mapping. A chord executes only when it
+  is not `defaultPrevented`, not composing, not a key repeat, no `aria-modal` dialog is open, the
+  target has no editable ancestor, and the chord matches exactly; when suppressed the global layer
+  does nothing, including no `preventDefault()`. Every command reuses the existing click-path state
+  transition. Schema stays 26 with no migration, no Rust, IPC, DTO, capability, or dependency
+  change, and nothing is persisted. Custom remapping, user-editable chords, shortcut persistence, a
+  command palette, command search, executable help rows, chord sequences, editor- or screen-scoped
+  command sets, global OS-level hotkeys, macOS mappings, and Task 46 remain prohibited.
+
 ## LOCKED — Technology direction
 
 - Tauri 2; React UI + Rust application core; TypeScript strict; Vite 8.

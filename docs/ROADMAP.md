@@ -1,6 +1,6 @@
 # Roadmap
 
-## Slice 035 — Global Keyboard Shortcuts and Shortcut Help Core (active)
+## Slice 035 — Global Keyboard Shortcuts and Shortcut Help Core (complete)
 
 Every destination and Global Search already exist and are already reachable — with the mouse. What
 is missing is a keyboard route to them. `shortcut map` has sat under `OPEN — Product/UX` in

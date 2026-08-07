@@ -3,13 +3,14 @@
 ## Status
 
 ```text
-Task 45: ACTIVE
-Slice 035: ACTIVE
+Task 45: CLOSED
+Slice 035: CLOSED
 activation baseline: b8ad47d9079246cecf4c30c728bec1d3a4915b41
 Task 44 feature checkpoint: 7e95644dcced19a1a8349706990d20d1df53a2e1
 starting schema: 26
 final schema: 26
-active spec package: specs/035-global-keyboard-shortcuts
+closed spec package: specs/035-global-keyboard-shortcuts
+product checkpoint: 3e48ca9292f655543a79724aae674c387bdb2f0a
 Task 46: prohibited, unstarted, unallocated, and unrecommended
 ```
 

@@ -1,6 +1,6 @@
 # Task 45 Work Breakdown
 
-Unchecked entries are unfinished work and this file is the resumable execution ledger.
+All entries are complete. This file was the resumable execution ledger for Slice 035.
 
 ## A. Activation
 
@@ -90,6 +90,6 @@ Unchecked entries are unfinished work and this file is the resumable execution l
       `pnpm hardening:rc`;
 - [x] T45-H06 answer the five review questions and write
       `docs/audits/task-45-global-keyboard-shortcuts.md`;
-- [ ] T45-H07 close Project State and every governance surface, leaving Task 46 unstarted,
+- [x] T45-H07 close Project State and every governance surface, leaving Task 46 unstarted,
       unallocated, and unrecommended;
-- [ ] T45-H08 leave `main` clean with `HEAD == origin/main`.
+- [x] T45-H08 leave `main` clean with `HEAD == origin/main`.
