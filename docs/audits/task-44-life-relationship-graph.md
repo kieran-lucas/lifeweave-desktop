@@ -401,7 +401,7 @@ remediation above.
 
 ```text
 reviewed state:           b209f7a63ce1218ff1d4df20566808cbe8a23e1f
-micro-remediation commit: MICROFIX_SHA
+micro-remediation commit: c3372638797ab3b66b99d3fd58900e97fa3226a7
 ```
 
 **Defect.** `openGraphNode` validated the exact stable target ID before opening the Reader but the
