@@ -25,9 +25,9 @@ class PerformanceBudgetCheckerTests(unittest.TestCase):
         self.budget_path = self.root / "budget.json"
 
     def test_default_budget_advances_to_task_46_without_rewriting_task_44(self) -> None:
-        self.assertEqual(DEFAULT_BUDGET.name, "task-46-performance-budgets.json")
+        self.assertEqual(DEFAULT_BUDGET.name, "task-47-performance-budgets.json")
         self.assertTrue(DEFAULT_BUDGET.is_file())
-        historical = DEFAULT_BUDGET.with_name("task-44-performance-budgets.json")
+        historical = DEFAULT_BUDGET.with_name("task-46-performance-budgets.json")
         self.assertTrue(historical.is_file())
 
     def tearDown(self) -> None:

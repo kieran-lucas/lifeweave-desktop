@@ -1,6 +1,6 @@
 # Project Status
 
-## Task 47/60 — Whole-Life Tree Interchange Core (active)
+## Task 47/60 — Whole-Life Tree Interchange Core (complete)
 
 Activated from baseline `1516b9c68e9e906269e4d4a00e85c508a5cd58b1` under ADR 0041 and
 `specs/037-whole-life-tree-interchange`. The approved unit is exactly the complete active non-root
@@ -8,10 +8,21 @@ Life forest beneath `life-root`, exported as Life Tree Package v1 and imported a
 one valid existing destination with fresh IDs and preserved order. Existing content and `life-root`
 are never merged, replaced, deleted, overwritten, or reordered.
 
-Activation changes no product code and leaves schema at 26. Implementation may advance only to
-schema 27 through the exact `life_operations` rebuild needed for `import_tree`. Arbitrary selected
-multi-branch export, custom profiles, archived/workspace transfer, backup replacement, generic
-interchange, dependencies, workflow/seal changes, and Task 48 remain prohibited.
+- Activation baseline: `1516b9c68e9e906269e4d4a00e85c508a5cd58b1`.
+- Activation commit: `15e98202ddf4b986377c171cac3f0ef9fc40bb16`.
+- Product checkpoint: `1c42ac5358579dc8795e4b7c1b76bc004b0269f1`.
+- Schema advances 26 → 27 through one migration rebuilding only `life_operations` to admit
+  `import_tree`; all prior rows, kinds, columns, FKs, indexes, constraints, revisions, and undo state
+  survive.
+- Tree Package v1 is distinct from Branch Package v1, Portable Package v1, and backup. Export is the
+  complete active non-root forest only; import appends roots with fresh IDs and preserved order.
+- Archive hardening, privacy-safe assets, canonical documents, tags, internal links, atomic rollback,
+  replay, backup/restore, accessibility, Phase 18/restart, and unchanged performance ceilings have
+  focused deterministic evidence.
+- No dependency, generic interchange framework, broad capability, route, workflow/seal change, or
+  Task 48 work was added.
+- Next action: Product Owner gate. Task 48 is prohibited, unstarted, unallocated, and unrecommended.
+  Full evidence is in `docs/audits/task-47-whole-life-tree-interchange.md`.
 
 ## Task 46/60 — Planned versus Actual Analytics Core (complete)
 

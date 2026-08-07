@@ -1,6 +1,6 @@
 # Roadmap
 
-## Slice 037 — Whole-Life Tree Interchange Core (active)
+## Slice 037 — Whole-Life Tree Interchange Core (complete)
 
 Task 42 shipped exactly one active connected non-root branch and left the complete active forest
 OPEN. ADR 0041 is the Product Owner decision that closes only that complete active non-root case.
@@ -19,6 +19,9 @@ unchanged. Locked performance ceilings remain unchanged.
 Hard boundary: no arbitrary selected multi-branch export, custom profile, archived transfer,
 workspace package, backup replacement, merge/replace/conflict mode, dependency, generic interchange
 framework, route/sidebar, workflow/seal change, or Task 48 work.
+
+Task 47 closed at product checkpoint `1c42ac5358579dc8795e4b7c1b76bc004b0269f1` with schema 27.
+Task 48 remains prohibited, unstarted, unallocated, unrecommended, and is not the next candidate.
 
 ## Slice 036 — Planned versus Actual Analytics Core (complete)
 

@@ -1,0 +1,31 @@
+{
+  "task": 47,
+  "slice": "037-whole-life-tree-interchange",
+  "execution_baseline": "1516b9c68e9e906269e4d4a00e85c508a5cd58b1",
+  "activation_commit": "15e98202ddf4b986377c171cac3f0ef9fc40bb16",
+  "latest_feature_checkpoint_at_activation": "e7454241576f3c7284a3433db8844c0c5f208e52",
+  "supersedes": "docs/audits/task-46-performance-baseline.json",
+  "method": {
+    "builds": 3,
+    "determinism": "three independent `pnpm build` runs from the clean activation commit produced byte-identical normalized aggregate inventories",
+    "gzip": "level 9, mtime=0",
+    "chunk_identity": "emitted file name with only the terminal content hash stripped",
+    "inventory_command": "python scripts/check_performance_budgets.py"
+  },
+  "activation_state": {
+    "note": "measured at 15e9820 before any Task 47 product edit; byte-identical to the accepted Task 46 final inventory",
+    "chunk_count": 22,
+    "total_js_bytes": 1219445,
+    "total_js_gzip_bytes": 375011,
+    "main_js_bytes": 525734,
+    "violations_against_task_46_budget": []
+  },
+  "locked_contract": {
+    "main_js_ceiling": 535000,
+    "total_js_ceiling": 1228591,
+    "total_js_gzip_ceiling": 379107,
+    "unknown_chunk_raw_bytes_threshold": 10000,
+    "budget_at_activation": "docs/audits/task-46-performance-budgets.json",
+    "expected_chunk_count_at_activation": 22
+  }
+}

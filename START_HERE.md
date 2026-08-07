@@ -12,24 +12,30 @@
 
 ## Current state
 
-- Latest closed task: **46/60**
-- Latest closed slice: **036 — Planned versus Actual Analytics Core**
-- Active task: **47/60 — Whole-Life Tree Interchange Core**
-- Active implementation specification: **[Slice 037](specs/037-whole-life-tree-interchange/README.md)**
-- Latest feature checkpoint: **Task 46 — Planned versus Actual Analytics Core** (`e7454241576f3c7284a3433db8844c0c5f208e52`)
+- Latest closed task: **47/60**
+- Latest closed slice: **037 — Whole-Life Tree Interchange Core**
+- Active task: **none**
+- Active implementation specification: **none**
+- Latest feature checkpoint: **Task 47 — Whole-Life Tree Interchange Core** (`1c42ac5358579dc8795e4b7c1b76bc004b0269f1`)
 - Database schema: **27**
-- Next action: **Implement active spec**
+- Next action: **Product Owner gate**
 - Task 48: **prohibited, unstarted, unallocated, and unrecommended**
 
-## Task 47 activation
+## Task 47 closure
 
-ADR 0041 activates exactly the complete active non-root Life forest as a distinct
-`.lifeweave-tree.zip` package. Export never packages `life-root`; import appends fresh-ID roots
-beneath one existing active documentless destination without merging, replacing, deleting, or
-reordering existing Life content. Schema remains 26 during activation and advances only through the
-specified 26→27 `life_operations` migration during implementation. Arbitrary selected multi-branch
-export, custom profiles, archived transfer, workspace packages, backup replacement, and Task 48
-remain prohibited.
+Task 47 / Slice 037 is closed at product checkpoint
+`1c42ac5358579dc8795e4b7c1b76bc004b0269f1` from baseline
+`1516b9c68e9e906269e4d4a00e85c508a5cd58b1`. It exports exactly the complete active non-root Life
+forest as distinct Life Tree Package v1 and appends the verified ordered forest beneath one existing
+active documentless destination with fresh local identities. `life-root` and existing Life content
+are never imported, merged, replaced, deleted, overwritten, or reordered.
+
+Schema **27** is one append-only migration rebuilding only `life_operations` to admit truthful
+non-undoable `import_tree` rows while preserving every prior operation and constraint. Branch
+Package v1, Portable Package v1, and full backup remain distinct. No dependency, broad filesystem
+capability, generic interchange framework, route, workflow/seal change, or Task 48 work was added.
+Canonical decision: [ADR 0041](docs/adr/0041-whole-life-tree-interchange.md); closure evidence is in
+`docs/audits/task-47-whole-life-tree-interchange.md`.
 
 ## Task 46 closure
 

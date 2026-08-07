@@ -1,0 +1,115 @@
+{
+  "budget_version": 2,
+  "task": 47,
+  "supersedes": "docs/audits/task-46-performance-budgets.json",
+  "supersedes_note": "Task 47 retains every Task 46 aggregate and per-chunk maximum unchanged; earlier baseline and budget files remain historical evidence.",
+  "measured_at_commit": "1c42ac5358579dc8795e4b7c1b76bc004b0269f1",
+  "baseline_evidence": "docs/audits/task-47-performance-baseline.json",
+  "main_chunk": "index.js",
+  "unknown_chunk_raw_bytes_threshold": 10000,
+  "rules": {
+    "chunk_identity": "emitted file name with only the terminal content hash stripped",
+    "missing_expected_chunk": "fails",
+    "unknown_chunk_at_or_above_threshold": "fails",
+    "unknown_chunk_below_threshold": "reported as untracked_small_chunks, does not fail",
+    "duplicate_normalized_identity": "fails",
+    "chunk_count_mismatch": "fails"
+  },
+  "formulas": {
+    "total_raw_maximum": "final + max(8192, ceil(final * 0.0075))",
+    "total_gzip_maximum": "final + max(4096, ceil(final * 0.0100))",
+    "chunk_maximum": "final + max(1024, ceil(final * 0.0200))",
+    "clamp": "every derived maximum is clamped to the stricter unchanged Task 46 maximum",
+    "arithmetic": "integer ceil"
+  },
+  "locked_ceilings": {
+    "index.js": 535000,
+    "BasicLeafEditor.js": 490000,
+    "markdown.js": 129000,
+    "note": "Task 46 aggregate and expected-chunk ceilings also remain binding unchanged."
+  },
+  "aggregates": {
+    "main_js_bytes": {
+      "observed": 526020,
+      "maximum": 535000,
+      "derivation": "min(Task 47 v2 formula, unchanged Task 46 maximum 535000)"
+    },
+    "total_js_bytes": {
+      "observed": 1226352,
+      "maximum": 1228591,
+      "derivation": "min(Task 47 v2 formula, unchanged Task 46 maximum 1228591)"
+    },
+    "total_js_gzip_bytes": {
+      "observed": 375977,
+      "maximum": 379107,
+      "derivation": "min(Task 47 v2 formula, unchanged Task 46 maximum 379107)"
+    },
+    "expected_chunk_count": 22
+  },
+  "chunks": {
+    "BasicLeafEditor.js": {
+      "observed_raw_bytes": 52355,
+      "observed_gzip_bytes": 17089,
+      "maximum_raw_bytes": 53403,
+      "class": "lazy",
+      "owner": "Basic Leaf editor",
+      "derivation": "unchanged Task 46 maximum"
+    },
+    "FocusPlansScreen.js": {
+      "observed_raw_bytes": 18396,
+      "observed_gzip_bytes": 5086,
+      "maximum_raw_bytes": 19420,
+      "class": "lazy",
+      "owner": "Focus Plans",
+      "derivation": "unchanged Task 46 maximum"
+    },
+    "NarrativeCanvasStudio.js": {
+      "observed_raw_bytes": 20064,
+      "observed_gzip_bytes": 5933,
+      "maximum_raw_bytes": 21093,
+      "class": "lazy",
+      "owner": "Narrative Canvas studio",
+      "derivation": "unchanged Task 46 maximum"
+    },
+    "TaskSavedViewsPanel.js": {
+      "observed_raw_bytes": 16544,
+      "observed_gzip_bytes": 4952,
+      "maximum_raw_bytes": 17568,
+      "class": "lazy",
+      "owner": "Task Saved Views",
+      "derivation": "unchanged Task 46 maximum"
+    },
+    "dist.js": {
+      "observed_raw_bytes": 390833,
+      "observed_gzip_bytes": 120574,
+      "maximum_raw_bytes": 398650,
+      "class": "lazy",
+      "owner": "Basic Leaf editor vendor core",
+      "derivation": "unchanged Task 46 maximum"
+    },
+    "index.js": {
+      "observed_raw_bytes": 526020,
+      "observed_gzip_bytes": 159688,
+      "maximum_raw_bytes": 535000,
+      "class": "startup",
+      "owner": "application shell and eager screens",
+      "derivation": "unchanged Task 46 maximum"
+    },
+    "markdown.js": {
+      "observed_raw_bytes": 116541,
+      "observed_gzip_bytes": 32939,
+      "maximum_raw_bytes": 118872,
+      "class": "lazy",
+      "owner": "Markdown interoperability pipeline",
+      "derivation": "unchanged Task 46 maximum"
+    },
+    "useQuery.js": {
+      "observed_raw_bytes": 20834,
+      "observed_gzip_bytes": 6883,
+      "maximum_raw_bytes": 21858,
+      "class": "startup",
+      "owner": "TanStack Query projection cache",
+      "derivation": "unchanged Task 46 maximum"
+    }
+  }
+}
