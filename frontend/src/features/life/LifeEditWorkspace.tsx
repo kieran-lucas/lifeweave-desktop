@@ -5,7 +5,6 @@ import {
   type DragEndEvent, type DragOverEvent,
 } from "@dnd-kit/core";
 import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { hierarchy, tree } from "d3-hierarchy";
 import { motion, useReducedMotion } from "motion/react";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -25,28 +24,15 @@ import { TagChipList } from "../tag/TagChipList";
 import { TagPicker } from "../tag/TagPicker";
 import { invalidateTaskSavedViewReferenceData } from "../task/saved-views/savedViewQueries";
 import { invalidateLifeLinkLifecycle } from "./links/lifeLinkQueries";
+import { buildLifeTreeLayout, type LayoutPoint } from "./lifeTreeLayout";
 
-type Point={x:number;y:number};
-type Layout={points:Map<string,Point>;links:Array<{id:string;d:string}>;width:number;height:number};
-type TreeDatum={data:LifeEditNodeView;children:TreeDatum[]};
+type Point=LayoutPoint;
 const icons=["life-root","life-branch","life-leaf","life-focus","life-note"];
 const themes=["neutral","blue","green","amber","violet"];
 const operationId=()=>`life-${crypto.randomUUID()}`;
 
-export function buildLifeEditLayout(nodes:LifeEditNodeView[]):Layout{
-  if(!nodes.length)return{points:new Map(),links:[],width:600,height:500};
-  const rootNode=nodes.find(node=>node.parent_id===null)??nodes[0]!;
-  const childrenByParent=new Map<string,LifeEditNodeView[]>();
-  for(const node of nodes){if(!node.parent_id)continue;const children=childrenByParent.get(node.parent_id)??[];children.push(node);childrenByParent.set(node.parent_id,children);}
-  for(const children of childrenByParent.values())children.sort((a,b)=>a.sort_key-b.sort_key||a.id.localeCompare(b.id));
-  const make=(node:LifeEditNodeView):TreeDatum=>({data:node,children:(childrenByParent.get(node.id)??[]).map(make)});
-  const root=hierarchy(make(rootNode),value=>value.children);
-  tree<typeof root.data>().nodeSize([190,105])(root);
-  const descendants=root.descendants();const minX=Math.min(...descendants.map(n=>n.x??0));const maxX=Math.max(...descendants.map(n=>n.x??0));
-  const points=new Map<string,Point>();for(const entry of descendants){points.set(entry.data.data.id,{x:(entry.x??0)-minX+24,y:(entry.y??0)+28});}
-  const links=root.links().map(link=>{const source=points.get(link.source.data.data.id)!;const target=points.get(link.target.data.data.id)!;const x1=source.x+82,y1=source.y+66,x2=target.x+82,y2=target.y;return{id:link.target.data.data.id,d:`M ${x1} ${y1} C ${x1} ${(y1+y2)/2}, ${x2} ${(y1+y2)/2}, ${x2} ${y2}`};});
-  return{points,links,width:Math.max(620,maxX-minX+220),height:Math.max(500,Math.max(...descendants.map(n=>n.y??0))+130)};
-}
+/** Life Edit geometry is the shared layout's default, so this is a pure re-export with a name. */
+export const buildLifeEditLayout=(nodes:LifeEditNodeView[])=>buildLifeTreeLayout(nodes);
 
 function descendantsOf(nodes:LifeEditNodeView[],id:string){const found=new Set<string>();let changed=true;while(changed){changed=false;for(const node of nodes)if(node.parent_id&& (node.parent_id===id||found.has(node.parent_id))&&!found.has(node.id)){found.add(node.id);changed=true;}}return found;}
 

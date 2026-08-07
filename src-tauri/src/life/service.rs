@@ -68,6 +68,13 @@ pub fn get_life_edit_projection(
     run!(state, super::edit::projection)
 }
 #[tauri::command]
+#[tracing::instrument(skip(state))]
+pub fn get_life_graph_projection(
+    state: State<'_, DatabaseRuntime>,
+) -> Result<LifeGraphProjection, IpcError> {
+    run!(state, super::graph::projection)
+}
+#[tauri::command]
 #[tracing::instrument(skip(state, input))]
 pub fn create_life_node(
     state: State<'_, DatabaseRuntime>,

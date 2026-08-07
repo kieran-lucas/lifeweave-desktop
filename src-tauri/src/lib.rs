@@ -58,10 +58,10 @@ use ipc::task::{
 };
 use life::service::{
     archive_life_node, create_life_node, get_life_browse_projection, get_life_edit_projection,
-    get_pinned_life_nodes, list_task_life_targets, pin_life_node, rename_life_node,
-    reorder_life_sibling, reparent_life_node, restore_life_node, save_life_navigation_preference,
-    set_life_node_icon, set_life_node_theme_variant, undo_life_operation, unpin_life_node,
-    update_life_node_summary,
+    get_life_graph_projection, get_pinned_life_nodes, list_task_life_targets, pin_life_node,
+    rename_life_node, reorder_life_sibling, reparent_life_node, restore_life_node,
+    save_life_navigation_preference, set_life_node_icon, set_life_node_theme_variant,
+    undo_life_operation, unpin_life_node, update_life_node_summary,
 };
 use life_branch::{
     confirm_life_branch_import, discard_life_branch_import, prepare_life_branch_export,
@@ -227,6 +227,7 @@ pub fn run() {
             search_life_link_targets,
             create_life_link,
             remove_life_link,
+            get_life_graph_projection,
             get_reader_document,
             create_reader_document,
             save_reader_document,

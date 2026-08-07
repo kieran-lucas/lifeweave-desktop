@@ -35,7 +35,9 @@ $allPhases = @(
   'phase13-life-branch-interchange.e2e.ts',
   'phase13-life-branch-interchange-restart.e2e.ts',
   'phase14-actual-time.e2e.ts',
-  'phase14-actual-time-restart.e2e.ts'
+  'phase14-actual-time-restart.e2e.ts',
+  # Task 44 persists nothing, so phase 15 has no restart companion by design.
+  'phase15-life-graph.e2e.ts'
 )
 if (-not $Phases -or $Phases.Count -eq 0) { $Phases = $allPhases }
 foreach ($phase in $Phases) {

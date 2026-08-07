@@ -26,6 +26,7 @@ const api = vi.hoisted(() => ({
   linkSearch: vi.fn(),
   linkCreate: vi.fn(),
   linkRemove: vi.fn(),
+  graph: vi.fn(),
 }));
 vi.mock("../../ipc/commands", () => ({
   getLifeBrowseProjection: api.browse,
@@ -40,6 +41,7 @@ vi.mock("../../ipc/commands", () => ({
   searchLifeLinkTargets: api.linkSearch,
   createLifeLink: api.linkCreate,
   removeLifeLink: api.linkRemove,
+  getLifeGraphProjection: api.graph,
 }));
 const node = (id: string, title: string, children = 0, pinned = false) => ({
   id,
@@ -792,5 +794,111 @@ describe("Life Browse", () => {
     await screen.findByRole("heading", { name: "Reader" });
     fireEvent.click(screen.getByRole("button", { name: /Back to Life Browse/ }));
     expect(await screen.findByRole("button", { name: "Pinned" })).toBeInTheDocument();
+  });
+});
+
+describe("Life Graph", () => {
+  const graphProjection = {
+    root_id: "life-root",
+    tree_revision: 2,
+    nodes: [
+      {
+        id: "life-root", parent_id: null, title: "Life", icon_key: "life-branch",
+        sort_key: 0, depth: 0, is_leaf: false, outgoing_link_count: 0, incoming_link_count: 0,
+      },
+      {
+        id: leaf.id, parent_id: "life-root", title: "Leaf", icon_key: "life-leaf",
+        sort_key: 1, depth: 1, is_leaf: true, outgoing_link_count: 0, incoming_link_count: 0,
+      },
+    ],
+    links: [] as Array<{ link_id: string; source_node_id: string; target_node_id: string }>,
+  };
+
+  beforeEach(() => {
+    api.browse.mockReset().mockResolvedValue(projection());
+    api.pins.mockReset().mockResolvedValue([]);
+    api.save.mockReset().mockResolvedValue(undefined);
+    api.graph.mockReset().mockResolvedValue(graphProjection);
+  });
+
+  it("opens transiently and is never written to the persisted Life mode", async () => {
+    renderLife();
+    await screen.findByRole("heading", { name: "Life System" });
+    await waitFor(() => expect(api.save).toHaveBeenCalled());
+
+    fireEvent.click(screen.getByRole("button", { name: "Graph" }));
+    expect(await screen.findByRole("heading", { name: "Life graph" })).toBeInTheDocument();
+
+    // The Rust validator only accepts browse/edit/pinned/reader, so "graph" must never reach it.
+    for (const call of api.save.mock.calls) expect(call[0].mode).not.toBe("graph");
+    expect(api.save.mock.calls.map(call => call[0].mode)).toContain("browse");
+  });
+
+  it("closes back to the untouched underlying mode", async () => {
+    renderLife();
+    await screen.findByRole("heading", { name: "Life System" });
+    fireEvent.click(screen.getByRole("button", { name: "Pinned" }));
+    fireEvent.click(screen.getByRole("button", { name: "Graph" }));
+    await screen.findByRole("heading", { name: "Life graph" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Close graph" }));
+    await waitFor(() =>
+      expect(screen.queryByRole("heading", { name: "Life graph" })).not.toBeInTheDocument(),
+    );
+    expect(screen.getByRole("button", { name: "Pinned" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("navigates without appending Life history", async () => {
+    renderLife();
+    await screen.findByRole("heading", { name: "Life System" });
+    const backBefore = screen.getByRole("button", { name: "← Back" });
+    expect(backBefore).toBeDisabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Graph" }));
+    await screen.findByRole("heading", { name: "Life graph" });
+    fireEvent.click(await screen.findByRole("button", { name: /^Leaf\./ }));
+    fireEvent.click(screen.getByRole("button", { name: "Open Leaf in Life" }));
+
+    await waitFor(() =>
+      expect(screen.queryByRole("heading", { name: "Life graph" })).not.toBeInTheDocument(),
+    );
+    // Graph hands off to Browse and pushes nothing: Back stays exactly as it was.
+    expect(screen.getByRole("button", { name: "← Back" })).toBeDisabled();
+  });
+
+  it("yields to an external entry request and does not reappear afterwards", async () => {
+    const settled = vi.fn();
+    const view = renderLife();
+    await screen.findByRole("heading", { name: "Life System" });
+    fireEvent.click(screen.getByRole("button", { name: "Graph" }));
+    await screen.findByRole("heading", { name: "Life graph" });
+
+    view.rerender(
+      <QueryClientProvider client={view.client}>
+        <LifeScreen
+          anchorLocalDate="2026-08-04"
+          entryRequest={{ requestId: "graph-yield", nodeId: leaf.id, mode: "browse" }}
+          onEntryRequestSettled={settled}
+        />
+      </QueryClientProvider>,
+    );
+
+    await waitFor(() =>
+      expect(screen.queryByRole("heading", { name: "Life graph" })).not.toBeInTheDocument(),
+    );
+    expect(screen.getByRole("button", { name: "Graph" })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("does not survive a remount", async () => {
+    const first = renderLife();
+    await screen.findByRole("heading", { name: "Life System" });
+    fireEvent.click(screen.getByRole("button", { name: "Graph" }));
+    await screen.findByRole("heading", { name: "Life graph" });
+    first.unmount();
+
+    renderLife();
+    await screen.findByRole("heading", { name: "Life System" });
+    expect(screen.queryByRole("heading", { name: "Life graph" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Graph" })).toHaveAttribute("aria-pressed", "false");
   });
 });

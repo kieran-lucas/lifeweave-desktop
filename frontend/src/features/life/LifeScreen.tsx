@@ -31,6 +31,8 @@ const lifeKeys = {
   pinned: ["life", "pinned"] as const,
 };
 const LifeLinksPanel = lazy(() => import("./links/LifeLinksPanel"));
+// Lazy so the graph explorer never enters the startup chunk: LifeScreen is imported eagerly.
+const LifeGraphWorkspace = lazy(() => import("./graph/LifeGraphWorkspace"));
 
 function NodeIcon({ iconKey }: { iconKey: string }) {
   return (
@@ -98,6 +100,9 @@ export function LifeScreen({
   const [nodeId, setNodeId] = useState<string>();
   const [page, setPage] = useState(0);
   const [mode, setMode] = useState<Mode>("browse");
+  // Graph is a transient overlay on the current mode, never a Mode itself: `last_life_mode` is
+  // constrained to browse/edit/pinned/reader in Rust, and nothing about the graph is persisted.
+  const [graphOpen, setGraphOpen] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [reader, setReader] = useState<LifeNodeView | PinnedLifeNodeView>();
@@ -204,6 +209,9 @@ export function LifeScreen({
     )
       return;
     invalidateLinkedReaderNavigation();
+    // An external entry request takes over the workspace, so a graph left open must not reappear
+    // when the user later leaves Reader.
+    setGraphOpen(false);
     preparedEntryRequestId.current = requestId;
     const selected = browse.data.selected;
     const directChild = browse.data.children.find(
@@ -477,9 +485,38 @@ export function LifeScreen({
           >
             Pinned
           </button>
+          <button
+            className={styles.modeButton}
+            aria-pressed={graphOpen}
+            onClick={() => {
+              invalidateLinkedReaderNavigation();
+              cancelPendingEntryRequest();
+              setGraphOpen(value => !value);
+            }}
+          >
+            Graph
+          </button>
         </div>
       </header>
-      {mode === "edit" ? (
+      {graphOpen ? (
+        <Suspense fallback={<p aria-live="polite">Loading the Life graph…</p>}>
+          <LifeGraphWorkspace
+            onOpenNode={id => {
+              // Deliberately history-free: this mirrors the Life Edit `onBrowse` callback and never
+              // touches the Reader link history that `openLinkedReader` owns. Graph always hands off
+              // to Browse, so Reader entry stays the user's explicit choice.
+              invalidateLinkedReaderNavigation();
+              cancelPendingEntryRequest();
+              setGraphOpen(false);
+              setNodeId(id);
+              setPage(0);
+              setReader(undefined);
+              setMode("browse");
+            }}
+            onClose={() => setGraphOpen(false)}
+          />
+        </Suspense>
+      ) : mode === "edit" ? (
         <LifeEditWorkspace
           initialNodeId={projection.selected.id}
           onBrowse={(id) => {

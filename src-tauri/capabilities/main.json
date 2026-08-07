@@ -73,6 +73,7 @@
     "allow-search-life-link-targets",
     "allow-create-life-link",
     "allow-remove-life-link",
+    "allow-get-life-graph-projection",
     "allow-get-reader-document",
     "allow-create-reader-document",
     "allow-save-reader-document",

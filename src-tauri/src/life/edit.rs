@@ -70,7 +70,7 @@ fn valid_operation(value: &str) -> bool {
             .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'-' | b'_'))
 }
 
-fn tree_revision(conn: &Connection) -> Result<i32, LifeError> {
+pub(super) fn tree_revision(conn: &Connection) -> Result<i32, LifeError> {
     Ok(conn.query_row(
         "SELECT tree_revision FROM life_tree_meta WHERE singleton=1",
         [],

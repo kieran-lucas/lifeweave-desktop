@@ -231,3 +231,34 @@ pub struct LifeEditProjection {
     pub archived_nodes: Vec<LifeEditNodeView>,
     pub latest_undo: Option<String>,
 }
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct LifeGraphNodeView {
+    pub id: String,
+    pub parent_id: Option<String>,
+    pub title: String,
+    pub icon_key: String,
+    pub sort_key: i32,
+    pub depth: i32,
+    pub is_leaf: bool,
+    pub outgoing_link_count: i32,
+    pub incoming_link_count: i32,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct LifeGraphLinkView {
+    pub link_id: String,
+    pub source_node_id: String,
+    pub target_node_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct LifeGraphProjection {
+    pub root_id: String,
+    pub tree_revision: i32,
+    pub nodes: Vec<LifeGraphNodeView>,
+    pub links: Vec<LifeGraphLinkView>,
+}

@@ -72,6 +72,10 @@ try {
   # authority, and the evaluation, delete, and backup guards.
   cargo test --manifest-path src-tauri/Cargo.toml --locked task::actual_time
   if ($LASTEXITCODE -ne 0) { throw "Actual time session dogfood fixtures failed." }
+  # `life::graph` covers the Task 44 read-only projection, its node, link, and depth bounds, the
+  # archived-endpoint exclusion, deterministic ordering, and the writes-nothing invariant.
+  cargo test --manifest-path src-tauri/Cargo.toml --locked life::graph
+  if ($LASTEXITCODE -ne 0) { throw "Life relationship graph dogfood fixtures failed." }
   # `task::` covers evaluation, Upcoming/Overdue planning, Task 38 deadline semantics, and the
   # Task 39 Saved View domain in one selector.
   cargo test --manifest-path src-tauri/Cargo.toml --locked task::

@@ -143,6 +143,9 @@ mod tests {
         LifeNavigationPreferenceView::export_all_to(&out).unwrap();
         LifeOperationContext::export_all_to(&out).unwrap();
         CreateLifeNodeOperationInput::export_all_to(&out).unwrap();
+        LifeGraphNodeView::export_all_to(&out).unwrap();
+        LifeGraphLinkView::export_all_to(&out).unwrap();
+        LifeGraphProjection::export_all_to(&out).unwrap();
         EditLifeNodeTextInput::export_all_to(&out).unwrap();
         EditLifeNodeMetadataInput::export_all_to(&out).unwrap();
         EditLifeNodeAppearanceInput::export_all_to(&out).unwrap();

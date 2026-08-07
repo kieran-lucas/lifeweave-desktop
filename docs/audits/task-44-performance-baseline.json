@@ -1,0 +1,147 @@
+{
+  "task": 44,
+  "slice": "034-life-relationship-graph",
+  "activation_baseline": "2d5b5d335137fe2a09f60b585d11a14a839b1e25",
+  "supersedes": "docs/audits/task-43-performance-baseline.json",
+  "supersedes_note": "Task 40, 41, 42, and 43 baseline files remain byte-identical historical evidence.",
+  "method": {
+    "builds": 3,
+    "determinism": "three independent `pnpm build` runs produced byte-identical normalized inventories",
+    "gzip": "level 9, mtime=0",
+    "chunk_identity": "emitted file name with only the terminal content hash stripped"
+  },
+  "starting_baseline": {
+    "note": "measured from clean main at 2d5b5d3 before any Task 44 product change; byte-identical to the accepted Task 43 inventory",
+    "chunk_count": 21,
+    "total_js_bytes": 1204073,
+    "total_js_gzip_bytes": 370223,
+    "main_js_bytes": 519500,
+    "startup_js_bytes": 549642
+  },
+  "final_totals": {
+    "chunk_count": 22,
+    "total_js_bytes": 1212126,
+    "total_js_gzip_bytes": 373089,
+    "main_js_bytes": 520452,
+    "startup_js_bytes": 550594
+  },
+  "task_44_delta_against_task_43_accepted_inventory": {
+    "startup_raw_bytes": {
+      "delta": 952,
+      "authorized_ceiling": 2048
+    },
+    "total_raw_bytes": {
+      "delta": 8053,
+      "authorized_ceiling": 24576
+    },
+    "deterministic_gzip_bytes": {
+      "delta": 2866,
+      "authorized_ceiling": 8192
+    }
+  },
+  "lazy_boundary": {
+    "importer": "frontend/src/features/life/LifeScreen.tsx",
+    "note": "LifeScreen is imported eagerly, so the graph explorer was placed behind a lazy() boundary from the start. Only the import stub and one chrome button reach the startup chunk, which is why startup raw grew by 952 bytes against an authorized 2,048.",
+    "emitted_chunk": {
+      "LifeGraphWorkspace.js": {
+        "raw_bytes": 7095,
+        "gzip_bytes": 2596
+      }
+    },
+    "below_tracking_threshold": true
+  },
+  "notes": [
+    "NarrativeCanvasStudio.js moved 20063 to 20069 raw because the new vanilla-extract stylesheet shifts generated class identifiers; it remains far inside its unchanged derived maximum.",
+    "No dependency was added. d3-hierarchy was already resident in index.js through the eager Life Edit import, so the shared tidy-tree layout extraction is startup-cost neutral."
+  ],
+  "final_inventory": {
+    "ActiveTimerStrip.js": {
+      "raw_bytes": 1034,
+      "gzip_bytes": 539
+    },
+    "BasicLeafEditor.js": {
+      "raw_bytes": 52355,
+      "gzip_bytes": 17088
+    },
+    "DeadlineQueuePanel.js": {
+      "raw_bytes": 3096,
+      "gzip_bytes": 1237
+    },
+    "FocusPlansScreen.js": {
+      "raw_bytes": 18396,
+      "gzip_bytes": 5093
+    },
+    "GlobalSearchDialog.js": {
+      "raw_bytes": 4142,
+      "gzip_bytes": 1774
+    },
+    "LifeBranch.css.js": {
+      "raw_bytes": 300,
+      "gzip_bytes": 182
+    },
+    "LifeBranchControls.js": {
+      "raw_bytes": 4350,
+      "gzip_bytes": 2035
+    },
+    "LifeBranchImportDialog.js": {
+      "raw_bytes": 2766,
+      "gzip_bytes": 1190
+    },
+    "LifeGraphWorkspace.js": {
+      "raw_bytes": 7095,
+      "gzip_bytes": 2596
+    },
+    "LifeLinksPanel.js": {
+      "raw_bytes": 7383,
+      "gzip_bytes": 2607
+    },
+    "NarrativeCanvasStudio.js": {
+      "raw_bytes": 20069,
+      "gzip_bytes": 5932
+    },
+    "PortablePackageImportDialog.js": {
+      "raw_bytes": 2728,
+      "gzip_bytes": 1149
+    },
+    "QueryClientProvider.js": {
+      "raw_bytes": 481,
+      "gzip_bytes": 335
+    },
+    "TagSettings.js": {
+      "raw_bytes": 9450,
+      "gzip_bytes": 2516
+    },
+    "TaskPlanningPanel.js": {
+      "raw_bytes": 4450,
+      "gzip_bytes": 1705
+    },
+    "TaskSavedViewsPanel.js": {
+      "raw_bytes": 16544,
+      "gzip_bytes": 4953
+    },
+    "dist.js": {
+      "raw_bytes": 390833,
+      "gzip_bytes": 120573
+    },
+    "index.js": {
+      "raw_bytes": 520452,
+      "gzip_bytes": 158213
+    },
+    "jsx-runtime.js": {
+      "raw_bytes": 7948,
+      "gzip_bytes": 3045
+    },
+    "markdown.js": {
+      "raw_bytes": 116541,
+      "gzip_bytes": 32939
+    },
+    "rolldown-runtime.js": {
+      "raw_bytes": 879,
+      "gzip_bytes": 505
+    },
+    "useQuery.js": {
+      "raw_bytes": 20834,
+      "gzip_bytes": 6883
+    }
+  }
+}

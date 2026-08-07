@@ -63,6 +63,7 @@ import type { ReorderLifeSiblingInput } from "./generated/ReorderLifeSiblingInpu
 import type { ReparentLifeNodeInput } from "./generated/ReparentLifeNodeInput";
 import type { UndoLifeOperationInput } from "./generated/UndoLifeOperationInput";
 import type { LifeEditProjection } from "./generated/LifeEditProjection";
+import type { LifeGraphProjection } from "./generated/LifeGraphProjection";
 import type { GetLifeLinkPanelInput } from "./generated/GetLifeLinkPanelInput";
 import type { SearchLifeLinkTargetsInput } from "./generated/SearchLifeLinkTargetsInput";
 import type { CreateLifeLinkInput } from "./generated/CreateLifeLinkInput";
@@ -259,6 +260,7 @@ export const createLifeLink = (input: CreateLifeLinkInput) =>
   invoke<LifeLinkMutationResult>("create_life_link", { input });
 export const removeLifeLink = (input: RemoveLifeLinkInput) =>
   invoke<LifeLinkMutationResult>("remove_life_link", { input });
+export const getLifeGraphProjection = () => invoke<LifeGraphProjection>("get_life_graph_projection");
 export const getReaderDocument = (input: ReaderNodeInput) => invoke<ReaderDocumentProjection>("get_reader_document", { input });
 export const createReaderDocument = (input: CreateReaderDocumentInput) => invoke<ReaderDocumentView>("create_reader_document", { input });
 export const saveReaderDocument = (input: SaveReaderDocumentInput) => invoke<ReaderDocumentView>("save_reader_document", { input });

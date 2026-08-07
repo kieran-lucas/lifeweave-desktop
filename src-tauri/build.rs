@@ -65,6 +65,7 @@ fn main() {
             "search_life_link_targets",
             "create_life_link",
             "remove_life_link",
+            "get_life_graph_projection",
             "get_reader_document",
             "create_reader_document",
             "save_reader_document",
