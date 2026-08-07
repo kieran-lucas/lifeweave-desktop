@@ -6,7 +6,7 @@
 - Prior feature checkpoint: `e7454241576f3c7284a3433db8844c0c5f208e52`.
 - Activation commit: `15e98202ddf4b986377c171cac3f0ef9fc40bb16`.
 - Product checkpoint: `1c42ac5358579dc8795e4b7c1b76bc004b0269f1`.
-- Closure commit: `PENDING_CLOSURE_COMMIT`.
+- Closure commit: `3bdd278e130167af87674b6b386da8acf2f5cb18`.
 - Governing decision/specification: ADR 0041 and `specs/037-whole-life-tree-interchange`.
 - Activation preflight proved clean `main`, with `HEAD == origin/main ==` the repository baseline.
 
