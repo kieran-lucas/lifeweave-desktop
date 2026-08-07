@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { describe, expect, it, beforeEach, vi } from "vitest";
 
 import { App, settleNavigationEnvelope } from "./App";
+import { shortcutCommands } from "./keyboardShortcuts";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import axe from "axe-core";
 
@@ -464,6 +465,124 @@ describe("App shell", () => {
       await screen.findByRole("heading", { name: "Today" }),
     ).toBeInTheDocument();
     expect(screen.queryByRole("grid")).not.toBeInTheDocument();
+  });
+
+  // Global keyboard shortcuts (Task 45). The suppression matrix itself is proven once in
+  // keyboardShortcuts.test.ts; these cases prove the application wiring on top of it.
+
+  it("reaches every destination through Ctrl+1..6 using the sidebar transition", async () => {
+    renderApp();
+    await screen.findByRole("heading", { name: "Today" });
+    const sidebar = screen.getByRole("navigation", { name: "Primary navigation" });
+    for (const command of shortcutCommands) {
+      if (!command.destination) continue;
+      expect(fireEvent.keyDown(window, { key: command.key, ctrlKey: true })).toBe(false);
+      const active = within(sidebar)
+        .getAllByRole("button")
+        .filter((button) => button.getAttribute("aria-current") === "page");
+      expect(active).toHaveLength(1);
+      expect(active[0]).toHaveAccessibleName(command.label);
+      expect(active[0]).toHaveAttribute("aria-keyshortcuts", command.ariaKeyShortcuts);
+    }
+    fireEvent.keyDown(window, { key: "3", ctrlKey: true });
+    expect(await screen.findByRole("heading", { name: "Analytics" })).toBeInTheDocument();
+  });
+
+  it("clears an unsettled pending Today navigation through the destination shortcut", async () => {
+    // Today items never resolve, so the pending navigation cannot settle itself. Its companion
+    // test above proves that an *uncleared* pending request pins the date across a rollover;
+    // here the destination shortcut clears it and the rollover is free to advance.
+    appApi.listTodayItems.mockReturnValue(new Promise(() => {}));
+    const leaf = { ...rootProjection.selected, id: "life-area", title: "Area" };
+    appApi.getLifeBrowseProjection.mockResolvedValue({
+      ...rootProjection,
+      selected: leaf,
+      breadcrumb: [rootProjection.selected, leaf],
+    });
+    appApi.getRelatedTasksForLifeNode.mockResolvedValue([
+      {
+        id: "task-pending",
+        kind: "one_off",
+        title: "Pending exact day",
+        group: "active",
+        navigation_local_date: "2026-08-04",
+        series_id: null,
+      },
+    ]);
+    const view = renderApp();
+    fireEvent.click(await screen.findByRole("button", { name: "Life System" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Pending exact day" }));
+    expect(await screen.findByText(/2026-08-04/)).toBeInTheDocument();
+
+    fireEvent.keyDown(window, { key: "3", ctrlKey: true });
+    fireEvent.keyDown(window, { key: "1", ctrlKey: true });
+    appApi.anchorLocalDate = "2026-08-05";
+    view.rerender(
+      <QueryClientProvider client={view.client}>
+        <App />
+      </QueryClientProvider>,
+    );
+    expect(await screen.findByText("Today · 2026-08-05")).toBeInTheDocument();
+  });
+
+  it("opens the existing Search dialog with Ctrl+K and yields the keyboard to it", async () => {
+    renderApp();
+    await screen.findByRole("heading", { name: "Today" });
+    expect(fireEvent.keyDown(window, { key: "k", ctrlKey: true })).toBe(false);
+    expect(await screen.findByRole("dialog", { name: "Search" })).toBeInTheDocument();
+
+    // An open modal owns the keyboard: no navigation, no second Search, no help.
+    expect(fireEvent.keyDown(window, { key: "3", ctrlKey: true })).toBe(true);
+    expect(fireEvent.keyDown(window, { key: "/", ctrlKey: true })).toBe(true);
+    expect(screen.getByRole("heading", { name: "Today" })).toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: "Keyboard shortcuts" })).not.toBeInTheDocument();
+  });
+
+  it("opens shortcut help with Ctrl+/, renders the registry, and restores focus", async () => {
+    renderApp();
+    await screen.findByRole("heading", { name: "Today" });
+    const opener = screen.getByRole("button", { name: "Collapse sidebar" });
+    opener.focus();
+
+    expect(fireEvent.keyDown(window, { key: "/", ctrlKey: true })).toBe(false);
+    const dialog = await screen.findByRole("dialog", { name: "Keyboard shortcuts" });
+    expect(document.activeElement).toBe(within(dialog).getByRole("heading", { level: 2 }));
+
+    // Rows are generated from the registry, so they cannot drift from what dispatch does.
+    expect([...dialog.querySelectorAll("dt")].map((node) => node.textContent)).toEqual(
+      shortcutCommands.map((command) => command.label),
+    );
+    expect([...dialog.querySelectorAll("dd")].map((node) => node.textContent)).toEqual(
+      shortcutCommands.map((command) => command.chord),
+    );
+
+    // The help dialog is itself a modal, so global chords stay suppressed while it is open.
+    expect(fireEvent.keyDown(window, { key: "3", ctrlKey: true })).toBe(true);
+    expect(screen.getByRole("heading", { name: "Today" })).toBeInTheDocument();
+
+    const result = await axe.run(dialog, {
+      runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"] },
+    });
+    expect(result.violations).toEqual([]);
+
+    fireEvent.keyDown(window, { key: "Escape" });
+    await waitFor(() => expect(document.activeElement).toBe(opener));
+    expect(screen.queryByRole("dialog", { name: "Keyboard shortcuts" })).not.toBeInTheDocument();
+  });
+
+  it("opens the same shortcut help from Settings and restores the Settings trigger", async () => {
+    renderApp();
+    await screen.findByRole("heading", { name: "Today" });
+    fireEvent.keyDown(window, { key: "6", ctrlKey: true });
+    await screen.findByRole("heading", { name: "Settings" });
+
+    const trigger = await screen.findByRole("button", { name: "Keyboard shortcuts" });
+    fireEvent.click(trigger);
+    const dialog = await screen.findByRole("dialog", { name: "Keyboard shortcuts" });
+    expect(dialog.querySelectorAll("dt")).toHaveLength(shortcutCommands.length);
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "Close" }));
+    await waitFor(() => expect(document.activeElement).toBe(trigger));
   });
 
   it.each([

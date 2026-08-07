@@ -18,3 +18,9 @@ export const lede = style({ margin: "0 0 28px", color: "var(--text-muted)", font
 export const placeholder = style({ minHeight: 220, display: "grid", placeItems: "center", padding: 32, border: "1px dashed var(--border-subtle)", borderRadius: 16, color: "var(--text-muted)", background: "var(--surface)" });
 export const foundationPanel = style({ padding: "24px 0" });
 export const coreStatus = style({ color: "var(--text-muted)" });
+export const dialogBackdrop = style({ position: "fixed", inset: 0, display: "grid", placeItems: "center", padding: 24, background: "rgba(0,0,0,0.55)", zIndex: 40 });
+export const dialogCard = style({ width: "min(520px, 100%)", maxHeight: "80vh", overflow: "auto", padding: 24, borderRadius: 16, border: "1px solid var(--border-subtle)", background: "var(--surface)", color: "var(--text-primary)" });
+export const shortcutList = style({ display: "grid", gridTemplateColumns: "1fr auto", gap: "10px 16px", margin: "20px 0 24px", alignItems: "center" });
+globalStyle(`${shortcutList} dd`, { margin: 0, justifySelf: "end" });
+export const shortcutChord = style({ padding: "3px 9px", borderRadius: 7, border: "1px solid var(--border-subtle)", background: "var(--icon-background)", fontFamily: "inherit", fontSize: "0.9rem", fontWeight: 700, whiteSpace: "nowrap" });
+export const dialogButton = style({ minHeight: 38, padding: "8px 16px", borderRadius: 10, border: "1px solid var(--border-subtle)", background: "transparent", color: "var(--text-primary)", cursor: "pointer", selectors: { "&:focus-visible": { outline: "3px solid var(--focus-ring)", outlineOffset: 2 } } });

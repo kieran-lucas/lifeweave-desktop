@@ -30,12 +30,20 @@ import { useLocalDateRollover } from "../features/calendar/useLocalDateRollover"
 import type { SearchNavigationTarget } from "../ipc/generated/SearchNavigationTarget";
 import * as styles from "./App.css";
 import { RouteErrorBoundary } from "./RouteErrorBoundary";
+import { ShortcutHelpDialog } from "./ShortcutHelpDialog";
+import {
+  destinationShortcuts,
+  resolveShortcutCommand,
+  searchShortcut,
+  shortcutHelpShortcut,
+  type Destination,
+  type DestinationShortcutCommand,
+} from "./keyboardShortcuts";
 
 const GlobalSearchDialog = lazy(
   () => import("../features/search/GlobalSearchDialog"),
 );
 
-type Destination = "today" | "calendar" | "analytics" | "plans" | "life" | "settings";
 type SidebarMode = "expanded" | "collapsed";
 type SearchNavRequest = {
   requestId: string;
@@ -59,14 +67,6 @@ type LifeEntryRequest = {
   mode: "browse" | "reader";
 };
 const preferenceKey = "lifeweave.task-sidebar-mode.v1";
-const destinations: Array<{ id: Destination; label: string }> = [
-  { id: "today", label: "Today" },
-  { id: "calendar", label: "Calendar" },
-  { id: "analytics", label: "Analytics" },
-  { id: "plans", label: "Plans" },
-  { id: "life", label: "Life System" },
-  { id: "settings", label: "Settings" },
-];
 
 function readSidebarMode(): SidebarMode {
   try {
@@ -90,9 +90,11 @@ export function App() {
     useState<SidebarMode>(readSidebarMode);
   const [lifeAutoCollapsed, setLifeAutoCollapsed] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [shortcutHelpOpen, setShortcutHelpOpen] = useState(false);
   const [pendingNav, setPendingNav] = useState<SearchNavRequest>(null);
   const headingRef = useRef<HTMLElement>(null);
   const searchTriggerRef = useRef<HTMLButtonElement>(null);
+  const shortcutHelpOpenerRef = useRef<HTMLElement | null>(null);
   const pendingTodayRequestId =
     pendingNav?.target.kind === "today" ? pendingNav.requestId : null;
   const todayFocusRequest = useMemo<TodayFocusRequest | null>(() => {
@@ -126,6 +128,24 @@ export function App() {
   const settleNavigationRequest = useCallback((requestId: string) => {
     setPendingNav((current) => settleNavigationEnvelope(current, requestId));
   }, []);
+  // The single navigation transition. Sidebar activation and Ctrl+1..6 both call this, so a
+  // shortcut can never diverge from the button it mirrors.
+  const selectDestination = useCallback((next: Destination) => {
+    setPendingNav(null);
+    setDestination(next);
+  }, []);
+  const openShortcutHelp = useCallback((opener: HTMLElement | null) => {
+    shortcutHelpOpenerRef.current = opener;
+    setShortcutHelpOpen(true);
+  }, []);
+  const closeShortcutHelp = useCallback(() => {
+    setShortcutHelpOpen(false);
+    const opener = shortcutHelpOpenerRef.current;
+    shortcutHelpOpenerRef.current = null;
+    requestAnimationFrame(() => {
+      if (opener?.isConnected) opener.focus({ preventScroll: true });
+    });
+  }, []);
 
   useEffect(() => {
     if (!pendingTodayRequestId && selectedDate === previousAnchor.current)
@@ -152,15 +172,18 @@ export function App() {
   }, [destination]);
 
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
-        e.preventDefault();
-        setSearchOpen(true);
-      }
+    const handler = (event: KeyboardEvent) => {
+      const command = resolveShortcutCommand(event);
+      // A suppressed chord leaves the event completely untouched, including preventDefault.
+      if (!command) return;
+      event.preventDefault();
+      if (command.destination) selectDestination(command.destination);
+      else if (command.id === searchShortcut.id) setSearchOpen(true);
+      else openShortcutHelp(document.activeElement as HTMLElement | null);
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, []);
+  }, [openShortcutHelp, selectDestination]);
 
   const handleSearchNavigate = (target: SearchNavigationTarget) => {
     const requestId = globalThis.crypto.randomUUID();
@@ -208,10 +231,22 @@ export function App() {
   };
 
   const collapsed = lifeAutoCollapsed || taskSidebarMode === "collapsed";
-  const selectDestination = (next: Destination) => {
-    setPendingNav(null);
-    setDestination(next);
-  };
+  const renderDestination = (command: DestinationShortcutCommand) => (
+    <button
+      key={command.id}
+      type="button"
+      className={styles.navButton}
+      onClick={() => selectDestination(command.destination)}
+      aria-current={destination === command.destination ? "page" : undefined}
+      aria-label={command.label}
+      aria-keyshortcuts={command.ariaKeyShortcuts}
+    >
+      <span aria-hidden="true" className={styles.navIcon}>
+        {command.label.slice(0, 1)}
+      </span>
+      <span className={styles.navLabel}>{command.label}</span>
+    </button>
+  );
   const activateCalendarDate = (date: string) => {
     setPendingNav(null);
     setSelectedDate(date);
@@ -228,59 +263,24 @@ export function App() {
       <nav className={styles.sidebar} aria-label="Primary navigation">
         <div className={styles.brand}>Lifeweave</div>
         <div className={styles.navGroup}>
-          {destinations.slice(0, 4).map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={styles.navButton}
-              onClick={() => selectDestination(item.id)}
-              aria-current={destination === item.id ? "page" : undefined}
-              aria-label={item.label}
-            >
-              <span aria-hidden="true" className={styles.navIcon}>
-                {item.label.slice(0, 1)}
-              </span>
-              <span className={styles.navLabel}>{item.label}</span>
-            </button>
-          ))}
+          {destinationShortcuts.slice(0, 4).map(renderDestination)}
           <div className={styles.divider} />
-          <button
-            type="button"
-            className={styles.navButton}
-            onClick={() => selectDestination("life")}
-            aria-current={destination === "life" ? "page" : undefined}
-            aria-label="Life System"
-          >
-            <span aria-hidden="true" className={styles.navIcon}>
-              L
-            </span>
-            <span className={styles.navLabel}>Life System</span>
-          </button>
+          {destinationShortcuts.slice(4, 5).map(renderDestination)}
           <div className={styles.divider} />
-          <button
-            type="button"
-            className={styles.navButton}
-            onClick={() => selectDestination("settings")}
-            aria-current={destination === "settings" ? "page" : undefined}
-            aria-label="Settings"
-          >
-            <span aria-hidden="true" className={styles.navIcon}>
-              S
-            </span>
-            <span className={styles.navLabel}>Settings</span>
-          </button>
+          {destinationShortcuts.slice(5, 6).map(renderDestination)}
           <div className={styles.divider} />
           <button
             ref={searchTriggerRef}
             type="button"
             className={styles.navButton}
             onClick={() => setSearchOpen(true)}
-            aria-label="Search (Ctrl+K)"
+            aria-label={`${searchShortcut.label} (${searchShortcut.chord})`}
+            aria-keyshortcuts={searchShortcut.ariaKeyShortcuts}
           >
             <span aria-hidden="true" className={styles.navIcon}>
               ⌕
             </span>
-            <span className={styles.navLabel}>Search</span>
+            <span className={styles.navLabel}>{searchShortcut.label}</span>
           </button>
         </div>
         <button
@@ -333,6 +333,22 @@ export function App() {
                 <Suspense fallback={<p>Loading tag settings…</p>}>
                   <TagSettings />
                 </Suspense>
+                <div className={styles.foundationPanel}>
+                  <h2>Keyboard</h2>
+                  <p>
+                    Review the eight global shortcuts. Press{" "}
+                    {shortcutHelpShortcut.chord} anywhere outside a text field, a
+                    document editor, or an open dialog.
+                  </p>
+                  <button
+                    type="button"
+                    className={styles.dialogButton}
+                    aria-keyshortcuts={shortcutHelpShortcut.ariaKeyShortcuts}
+                    onClick={(event) => openShortcutHelp(event.currentTarget)}
+                  >
+                    {shortcutHelpShortcut.label}
+                  </button>
+                </div>
                 <div className={styles.foundationPanel}>
                   <h2>Foundation tools</h2>
                   <p>
@@ -423,6 +439,7 @@ export function App() {
           />
         </Suspense>
       )}
+      {shortcutHelpOpen && <ShortcutHelpDialog onClose={closeShortcutHelp} />}
     </div>
   );
 }
