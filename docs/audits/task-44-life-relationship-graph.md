@@ -222,7 +222,7 @@ recorded at closure was evidence of the shipped behaviour, not of the contract.
 
 ```text
 reviewed state:      efc2790db5ead1e404ea876fabb433d8a0538f36
-remediation commit:  REMEDIATION_SHA
+remediation commit:  3c3bffb666de52d5b72eb50621623f8a1a590c45
 schema:              26 (unchanged)
 ```
 
