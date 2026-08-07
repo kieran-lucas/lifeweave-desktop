@@ -8,7 +8,7 @@ activation commit             b2c24c490f33b90365b13bc6b46ddc3b9ae1193a
 implementation                801baaf04ecd4c21c541c23c7917d678656b71f5
 tag-dedupe fix                4485c83c18dd9160d1ec49845fa6079321258a40
 product checkpoint            9c5d0cfb6c5e64ba7a5acfd23464e6a8474954b9
-closure commit                <recorded at closure>
+closure commit                21cebed6d0c8d460ee8618c6ef760973e64e2c99
 Task 41 feature checkpoint    e1fe3675315c04590aabe9c9ca87ede344dafa40
 schema                        24 → 25
 
