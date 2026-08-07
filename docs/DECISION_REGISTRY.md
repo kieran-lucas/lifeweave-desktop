@@ -27,7 +27,8 @@ The immutable source is authoritative. This registry makes operational status vi
   exactly once. Existing scheduled totals, goals, streaks, completion, evaluation, recurrence, and
   scoring semantics are unchanged. Schema stays 26 and the existing Analytics IPC is reused. See
   ADR 0040.
-- Life Branch Package v1 (`format: lifeweave_branch_package`, `.lifeweave-branch.zip`) represents exactly one active connected non-root Life branch: hierarchy and sibling order, node metadata, committed Basic Leaf and Narrative Canvas documents, privacy-sanitized image assets, active canonical tags, and explicit links with both endpoints inside the branch. Import appends a fresh subtree as the last active child of a chosen active documentless node, assigns fresh local IDs to everything, never merges or overwrites by title/path/content/source ID, and is atomic with one tree-revision increment and one non-undoable operation. Whole-tree and multi-branch interchange and custom export profiles remain OPEN. See ADR 0036.
+- Life Branch Package v1 (`format: lifeweave_branch_package`, `.lifeweave-branch.zip`) represents exactly one active connected non-root Life branch: hierarchy and sibling order, node metadata, committed Basic Leaf and Narrative Canvas documents, privacy-sanitized image assets, active canonical tags, and explicit links with both endpoints inside the branch. Import appends a fresh subtree as the last active child of a chosen active documentless node, assigns fresh local IDs to everything, never merges or overwrites by title/path/content/source ID, and is atomic with one tree-revision increment and one non-undoable operation. See ADR 0036.
+- Life Tree Package v1 (`format: lifeweave_tree_package`, `.lifeweave-tree.zip`) represents exactly the complete active non-root forest beneath `life-root` at one snapshot. `life-root` is never package content. Import appends the ordered roots beneath one existing active documentless destination with fresh identities, preserves all relative order, and never merges, replaces, deletes, overwrites, or reorders existing Life content. This decides the whole-tree active-forest / whole-tree multi-root case only; arbitrary selected multi-branch export and custom profiles remain OPEN. See ADR 0041.
 - Today, Upcoming, and Overdue are manual-activation tabs within Today. Upcoming is +1 through +14 local days; Overdue is -30 through -1 and is derived from absence of current evaluation.
 - Tags are a flat global vocabulary for Life nodes and Tasks. Normalized name is the deduplication/search key; merges retain aliases.
 - **Focus Plan is a standalone entity**, not a Life document or Basic Leaf template.
@@ -132,7 +133,7 @@ The immutable source is authoritative. This registry makes operational status vi
   directed Life links (persisted graph truth, graph as a navigation destination, graph editing,
   inferred/derived/typed/weighted edges, non-Life endpoints, clustering, pathfinding, centrality, and
   ranking all remain OPEN — the read-only transient explorer case is now DECIDED, see ADR 0038);
-- whole-tree or multi-branch interchange (the single-branch case is now DECIDED — see ADR 0036);
+- arbitrary user-selected multi-branch export (single-branch and complete active-forest cases are DECIDED — see ADR 0036 and ADR 0041);
 - custom export profiles;
 - preserve-vs-strip original asset metadata beyond the privacy-safe default;
 - branch node content semantics;

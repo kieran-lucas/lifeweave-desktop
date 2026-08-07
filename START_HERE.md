@@ -14,12 +14,22 @@
 
 - Latest closed task: **46/60**
 - Latest closed slice: **036 — Planned versus Actual Analytics Core**
-- Active task: **none**
-- Active implementation specification: **none**
+- Active task: **47/60 — Whole-Life Tree Interchange Core**
+- Active implementation specification: **[Slice 037](specs/037-whole-life-tree-interchange/README.md)**
 - Latest feature checkpoint: **Task 46 — Planned versus Actual Analytics Core** (`e7454241576f3c7284a3433db8844c0c5f208e52`)
 - Database schema: **26**
-- Next action: **Product Owner gate**
-- Task 47: **prohibited, unstarted, unallocated, and unrecommended**
+- Next action: **Implement active spec**
+- Task 48: **prohibited, unstarted, unallocated, and unrecommended**
+
+## Task 47 activation
+
+ADR 0041 activates exactly the complete active non-root Life forest as a distinct
+`.lifeweave-tree.zip` package. Export never packages `life-root`; import appends fresh-ID roots
+beneath one existing active documentless destination without merging, replacing, deleting, or
+reordering existing Life content. Schema remains 26 during activation and advances only through the
+specified 26→27 `life_operations` migration during implementation. Arbitrary selected multi-branch
+export, custom profiles, archived transfer, workspace packages, backup replacement, and Task 48
+remain prohibited.
 
 ## Task 46 closure
 

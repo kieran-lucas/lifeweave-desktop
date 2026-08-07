@@ -1,5 +1,18 @@
 # Project Status
 
+## Task 47/60 — Whole-Life Tree Interchange Core (active)
+
+Activated from baseline `1516b9c68e9e906269e4d4a00e85c508a5cd58b1` under ADR 0041 and
+`specs/037-whole-life-tree-interchange`. The approved unit is exactly the complete active non-root
+Life forest beneath `life-root`, exported as Life Tree Package v1 and imported append-only beneath
+one valid existing destination with fresh IDs and preserved order. Existing content and `life-root`
+are never merged, replaced, deleted, overwritten, or reordered.
+
+Activation changes no product code and leaves schema at 26. Implementation may advance only to
+schema 27 through the exact `life_operations` rebuild needed for `import_tree`. Arbitrary selected
+multi-branch export, custom profiles, archived/workspace transfer, backup replacement, generic
+interchange, dependencies, workflow/seal changes, and Task 48 remain prohibited.
+
 ## Task 46/60 — Planned versus Actual Analytics Core (complete)
 
 - Closed slice: `036-planned-vs-actual-analytics`.

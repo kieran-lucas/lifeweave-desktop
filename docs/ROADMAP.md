@@ -1,5 +1,25 @@
 # Roadmap
 
+## Slice 037 — Whole-Life Tree Interchange Core (active)
+
+Task 42 shipped exactly one active connected non-root branch and left the complete active forest
+OPEN. ADR 0041 is the Product Owner decision that closes only that complete active non-root case.
+
+Task 47 exports every active non-root node reachable beneath `life-root` at one snapshot as one
+distinct Life Tree Package v1. `life-root` itself never travels. Import appends the verified ordered
+forest beneath one existing active documentless destination with fresh identities and zero merge,
+replace, delete, overwrite, or reorder of existing content. Task 42 document, privacy-safe asset,
+tag, link, archive-hardening, staging, and atomicity authority remains binding where identical.
+
+Schema advances 26→27 only to admit truthful `import_tree` operation rows by rebuilding
+`life_operations` without losing columns, rows, kinds, constraints, foreign keys, indexes,
+revisions, or `undone_at`. Branch Package v1, Portable Package v1, and backup remain distinct and
+unchanged. Locked performance ceilings remain unchanged.
+
+Hard boundary: no arbitrary selected multi-branch export, custom profile, archived transfer,
+workspace package, backup replacement, merge/replace/conflict mode, dependency, generic interchange
+framework, route/sidebar, workflow/seal change, or Task 48 work.
+
 ## Slice 036 — Planned versus Actual Analytics Core (complete)
 
 Task 43 created trustworthy explicit actual-time segments for one-off Tasks but deliberately left
