@@ -47,7 +47,6 @@ Do not answer these by implementation assumption.
 - minimum window dimensions;
 - exact responsive thresholds;
 - multi-monitor/DPI acceptance matrix;
-- backup retention/versioning;
 - installer mode and signing budget;
 - future explicit update-check policy.
 

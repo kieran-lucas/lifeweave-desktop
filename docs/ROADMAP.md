@@ -1,5 +1,22 @@
 # Roadmap
 
+## Slice 038 — Managed Backup Retention and Compatibility Core (active)
+
+Task 48 activates ADR 0042 to bound existing managed backups without creating Backup v3. Lifeweave
+keeps the fresh backup and up to 11 other recent packages the current binary can restore. Cleanup
+runs only after staging verification, durable atomic publication, and final-package verification;
+fresh, newer-format, newer-schema, malformed, safety, staging, restore, and outside-root artifacts
+are never automatically removed. Cleanup failure preserves successful creation.
+
+Schema stays 27 and backup format stays v2. Supported older schemas remain restorable through the
+existing candidate migration without source rewrite; future versions remain backend-rejected.
+Backup & Restore moves from Foundation tooling into lazy first-class Settings content with explicit
+compatibility metadata and accessible confirmation.
+
+Hard boundary: no configurable/manual/scheduled/cloud backup management, format or schema change,
+dependency, capability broadening, background worker, workflow/seal change, or Task 49 work.
+Task 49 is prohibited, unstarted, unallocated, and unrecommended.
+
 ## Slice 037 — Whole-Life Tree Interchange Core (complete)
 
 Task 42 shipped exactly one active connected non-root branch and left the complete active forest
@@ -292,9 +309,9 @@ Task 35 selected the standalone Focus Plan entity. ADR 0030 is canonical.
 - **Task 37:** complete and closed. The reserved Focus Plans program is finished.
 - **Task 38:** complete and closed.
 - **Task 39:** complete and closed at product checkpoint `374abcbae263be18fa785a56d656678f9bfd9c29`.
-- **Tasks 40–46:** complete. **Tasks 47–60:**
-  available for later Product Owner decisions; none is activated or recommended. Task 47 is
-  prohibited, unstarted, unallocated, and unrecommended after Task 46 closure.
+- **Tasks 40–47:** complete. **Task 48:** active under Slice 038. **Tasks 49–60:** available only for
+  later Product Owner decisions; none is activated or recommended. Task 49 is prohibited,
+  unstarted, unallocated, and unrecommended.
 - **Recurring deadline policy:** open; deliberately excluded from Slice 028.
 
 ## Closure policy
