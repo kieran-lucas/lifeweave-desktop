@@ -1,5 +1,30 @@
 # Roadmap
 
+## Slice 033 — Explicit Actual Time Sessions Core (active)
+
+Task 43 activates the last unshipped candidate from the ADR 0028 PASS portfolio. Deadline (38),
+Saved Views (39), Hardening (40), Links (41), and Interchange (42) have all landed; Actual Time
+scored 7.405 and `docs/DECISION_REGISTRY.md` still lists "actual-time semantics" as OPEN. ADR 0037
+is the Product Owner decision resolving that entry.
+
+Lifeweave records what was **planned** and, retrospectively, **how it went**. It has never recorded
+how long work actually took. Task 43 adds manual stopwatch-style actual time for **one-off Tasks
+only**: explicit user-started sessions, one active timer globally, persisted immutable segments, and
+no surveillance of any kind.
+
+Schema advances 25 to 26 through one append-only migration adding a single
+`task_actual_time_sessions` table whose partial unique index is the authoritative single-active
+defense. Rust owns wall-clock epoch-millisecond timestamps; `Instant` is never persisted. A
+backwards clock rejects Stop rather than fabricating duration. Full backup creation is blocked while
+a timer runs so a restored snapshot cannot reinterpret downtime as worked time.
+
+Hard boundary: recurring actual time is excluded because occurrence identity changes under
+`ThisAndFuture`, and Analytics semantics are unchanged because actual-time aggregation needs
+separate policy. No manual time entry, editing of completed segments, auto start/stop/switching,
+idle detection, monitoring or screenshots, Pomodoro, billing, export, per-project reporting, Actual
+Time in Calendar/Search/Saved Views/Focus Plan/Life, scoring, prediction, notifications, new route,
+sidebar item, dependency, capability, workflow/seal change, or Task 44 work is authorized.
+
 ## Slice 032 — Bounded Life Branch Interchange (complete)
 
 Task 42 activates the Interchange candidate ADR 0028 scored at 7.610, narrowed by the explicit

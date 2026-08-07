@@ -1,5 +1,40 @@
 # Project Status
 
+## Task 43/60 — Explicit Actual Time Sessions Core (active)
+
+- Active slice: `033-explicit-actual-time-sessions`.
+- Activation baseline: `ec2ae86417d7e65315582c808250b33009ebf1c3`.
+- Starting schema 25; target schema 26 through one append-only migration adding exactly one table.
+- Scope: manual, stopwatch-style actual time for **one-off Tasks only**. The user explicitly starts
+  work, may stop and later start again, and each completed interval persists as an immutable
+  segment. There is one active session globally, enforced by a partial unique index that is the
+  authoritative concurrency defense.
+- Independence: schedule edits never rewrite recorded time, actual time may be shorter or longer
+  than planned, it never changes conflict rules, and it never completes, evaluates, or scores a
+  Task.
+- Clock: Rust owns UTC epoch-millisecond timestamps from `SystemTime`; `Instant` is never persisted
+  or serialized. An active session measures wall-clock elapsed time including app close and reopen,
+  backgrounding, and machine sleep, with no idle subtraction. A backwards clock rejects Stop rather
+  than clamping or fabricating duration, leaves the session active, and offers Discard.
+- Guards: a Task with an active session cannot be evaluated or deleted; an evaluated Task cannot
+  Start until its evaluation is undone; full backup creation is blocked while any timer runs so a
+  restored snapshot cannot reinterpret backup downtime as worked time.
+- Recurring Tasks are deliberately excluded. Occurrence identity is `series_id +
+  original_local_date` and a `ThisAndFuture` edit mints a new series identity, so universal timers
+  would require inventing a recurrence-history identity model. This is scope control and allocates
+  no downstream task.
+- Analytics is unchanged. Actual-time aggregation would need separate policy for cross-midnight
+  sessions, timezone changes, deleted history, category snapshots, and in-flight sessions; this
+  slice captures trustworthy source data only.
+- No surveillance: no idle detection, no keyboard, mouse, window, or process monitoring, no
+  screenshots, and no automatic start, stop, or task switching.
+- Starting bundle inventory measured before any product change: 20 chunks, 1,199,082 raw, 368,463
+  deterministic gzip, 515,537 startup `index.js`, 545,679 total startup raw. Authorized Task 43
+  deltas against the accepted Task 42 inventory are 4 KiB startup raw, 20 KiB total raw, and 7 KiB
+  deterministic gzip.
+- Next action: implement the active spec. Task 44 remains prohibited, unstarted, unallocated, and
+  unrecommended.
+
 ## Task 42/60 — Bounded Life Branch Interchange (complete)
 
 - Closed slice: `032-bounded-life-branch-interchange`.

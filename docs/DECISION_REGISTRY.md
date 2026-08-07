@@ -19,6 +19,7 @@ The immutable source is authoritative. This registry makes operational status vi
 - Task/Life relationships are navigation-only; each one-off Task or recurring Task series links to zero or one Life node. Authority is stored on `tasks` and `task_series`; occurrences/evaluations inherit and do not store it.
 - Narrative Canvas supports 1–20 ordered scenes, three immutable built-in template IDs, and four static document-level Visual World IDs. Visual Worlds are presentation only.
 - Portable Package v1 represents one committed Basic Leaf or Narrative Canvas leaf document. Import creates a new document on a selected empty active Life leaf and excludes tree, Task, draft, history, analytics, and settings state.
+- Actual time is manual and explicit: a user starts a stopwatch on a **one-off** Task, may stop and start again, and each completed interval persists as an immutable segment. One session is active globally. Rust owns wall-clock epoch-millisecond timestamps; app close and machine sleep count as elapsed and there is no idle subtraction or surveillance of any kind. Actual time never rewrites the schedule, changes conflict rules, or completes/evaluates/scores a Task. A running timer blocks evaluation, deletion, and full backup creation. Recurring occurrences have no actual time and Analytics semantics are unchanged. See ADR 0037.
 - Life Branch Package v1 (`format: lifeweave_branch_package`, `.lifeweave-branch.zip`) represents exactly one active connected non-root Life branch: hierarchy and sibling order, node metadata, committed Basic Leaf and Narrative Canvas documents, privacy-sanitized image assets, active canonical tags, and explicit links with both endpoints inside the branch. Import appends a fresh subtree as the last active child of a chosen active documentless node, assigns fresh local IDs to everything, never merges or overwrites by title/path/content/source ID, and is atomic with one tree-revision increment and one non-undoable operation. Whole-tree and multi-branch interchange and custom export profiles remain OPEN. See ADR 0036.
 - Today, Upcoming, and Overdue are manual-activation tabs within Today. Upcoming is +1 through +14 local days; Overdue is -30 through -1 and is derived from absence of current evaluation.
 - Tags are a flat global vocabulary for Life nodes and Tasks. Normalized name is the deduplication/search key; merges retain aliases.
@@ -75,7 +76,7 @@ The immutable source is authoritative. This registry makes operational status vi
 
 - final brand/name/logo;
 - final FAB icon and placement;
-- actual-time semantics;
+- actual-time semantics beyond explicit one-off sessions (recurring actual time, manual time entry, editing completed segments, and Analytics actual-time aggregation all remain OPEN — the explicit one-off case is now DECIDED, see ADR 0037);
 - final score and hidden mappings;
 - final prediction;
 - Generic Outline role beyond the Basic Leaf heading navigator;

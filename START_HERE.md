@@ -14,12 +14,33 @@
 
 - Latest closed task: **42/60**
 - Latest closed slice: **032 — Bounded Life Branch Interchange**
-- Active task: **none**
-- Active implementation specification: **none**
+- Active task: **43 — Explicit Actual Time Sessions**
+- Active implementation specification: **`specs/033-explicit-actual-time-sessions`**
 - Latest feature checkpoint: **Task 42 — Bounded Life Branch Interchange** (`9c5d0cfb6c5e64ba7a5acfd23464e6a8474954b9`)
 - Database schema: **25**
-- Next action: **Product Owner gate**
-- Task 43: **prohibited, unstarted, unallocated, and unrecommended**
+- Next action: **Implement active spec**
+- Target schema: **26** (one append-only migration adding `task_actual_time_sessions`; see ADR 0037)
+- Task 44: **prohibited, unstarted, unallocated, and unrecommended**
+
+## Task 43 activation
+
+Task 43 is active from baseline `ec2ae86417d7e65315582c808250b33009ebf1c3`. It adds **manual,
+stopwatch-style actual time for one-off Tasks only**: the user explicitly starts work, may stop and
+later start again, and each completed interval persists as an immutable segment. There is one active
+session globally, enforced by a partial unique index.
+
+Actual time is independent of the planned schedule — schedule edits never rewrite recorded time, it
+never changes conflict rules, and it never completes, evaluates, or scores a Task. An active session
+measures wall-clock elapsed time including app close and machine sleep, with no idle subtraction.
+
+There is **no surveillance**: no idle detection, no keyboard, mouse, window, or process monitoring,
+no screenshots, and no automatic start, stop, or task switching.
+
+Recurring Tasks are deliberately excluded because occurrence identity is
+`series_id + original_local_date` and a `ThisAndFuture` edit mints a new series identity. Analytics
+is untouched. Recurring actual time, manual entry, editing completed segments, Pomodoro, billing,
+export, Analytics aggregation, and Task 44 remain prohibited. Canonical decision:
+[ADR 0037](docs/adr/0037-explicit-actual-time-sessions.md).
 
 ## Task 42 closure
 
