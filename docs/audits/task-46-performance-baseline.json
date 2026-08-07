@@ -1,0 +1,54 @@
+{
+  "task": 46,
+  "slice": "036-planned-vs-actual-analytics",
+  "execution_baseline": "b5002c3b05232aa0b8ae74b924764f927cc00f1d",
+  "activation_commit": "b71d6f3711e77511a8edd0f116d5dc27f4c4c1d6",
+  "supersedes": "docs/audits/task-44-performance-baseline.json",
+  "supersedes_note": "Task 16, 40, 41, 42, 43, and 44 evidence remains historical. Task 45 used the Task 44 budget unchanged and created no replacement baseline or budget.",
+  "method": {
+    "builds": 3,
+    "determinism": "three independent `pnpm build` runs from the clean activation commit produced byte-identical normalized inventories",
+    "gzip": "level 9, mtime=0",
+    "chunk_identity": "emitted file name with only the terminal content hash stripped",
+    "inventory_command": "python scripts/check_performance_budgets.py"
+  },
+  "activation_state": {
+    "note": "measured at b71d6f3 before any Task 46 product edit; byte-identical to the accepted Task 45 inventory",
+    "chunk_count": 22,
+    "total_js_bytes": 1217568,
+    "total_js_gzip_bytes": 374695,
+    "main_js_bytes": 523857,
+    "startup_js_bytes": 553999,
+    "violations_against_task_44_budget": []
+  },
+  "locked_contract": {
+    "main_js_ceiling": 535000,
+    "unknown_chunk_raw_bytes_threshold": 10000,
+    "budget_at_activation": "docs/audits/task-44-performance-budgets.json",
+    "expected_chunk_count_at_activation": 22
+  },
+  "activation_inventory": {
+    "ActiveTimerStrip.js": { "raw_bytes": 1034, "gzip_bytes": 543 },
+    "BasicLeafEditor.js": { "raw_bytes": 52355, "gzip_bytes": 17089 },
+    "DeadlineQueuePanel.js": { "raw_bytes": 3096, "gzip_bytes": 1240 },
+    "FocusPlansScreen.js": { "raw_bytes": 18396, "gzip_bytes": 5095 },
+    "GlobalSearchDialog.js": { "raw_bytes": 4142, "gzip_bytes": 1777 },
+    "LifeBranch.css.js": { "raw_bytes": 300, "gzip_bytes": 182 },
+    "LifeBranchControls.js": { "raw_bytes": 4350, "gzip_bytes": 2037 },
+    "LifeBranchImportDialog.js": { "raw_bytes": 2766, "gzip_bytes": 1190 },
+    "LifeGraphWorkspace.js": { "raw_bytes": 9132, "gzip_bytes": 3127 },
+    "LifeLinksPanel.js": { "raw_bytes": 7383, "gzip_bytes": 2609 },
+    "NarrativeCanvasStudio.js": { "raw_bytes": 20069, "gzip_bytes": 5933 },
+    "PortablePackageImportDialog.js": { "raw_bytes": 2728, "gzip_bytes": 1150 },
+    "QueryClientProvider.js": { "raw_bytes": 481, "gzip_bytes": 335 },
+    "TagSettings.js": { "raw_bytes": 9450, "gzip_bytes": 2517 },
+    "TaskPlanningPanel.js": { "raw_bytes": 4450, "gzip_bytes": 1708 },
+    "TaskSavedViewsPanel.js": { "raw_bytes": 16544, "gzip_bytes": 4954 },
+    "dist.js": { "raw_bytes": 390833, "gzip_bytes": 120575 },
+    "index.js": { "raw_bytes": 523857, "gzip_bytes": 159262 },
+    "jsx-runtime.js": { "raw_bytes": 7948, "gzip_bytes": 3045 },
+    "markdown.js": { "raw_bytes": 116541, "gzip_bytes": 32939 },
+    "rolldown-runtime.js": { "raw_bytes": 879, "gzip_bytes": 505 },
+    "useQuery.js": { "raw_bytes": 20834, "gzip_bytes": 6883 }
+  }
+}

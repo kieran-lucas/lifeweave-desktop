@@ -1362,6 +1362,7 @@ describe("Today recurrence contract", () => {
       await waitFor(() => {
         expect(invalidate).toHaveBeenCalledWith({ queryKey: ["task-actual-time-active"] });
         expect(invalidate).toHaveBeenCalledWith({ queryKey: ["today-items"] });
+        expect(invalidate).toHaveBeenCalledWith({ queryKey: ["analytics"] });
       });
     });
 

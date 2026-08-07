@@ -324,6 +324,7 @@ export function TodayScreen({
     await Promise.allSettled([
       client.invalidateQueries({ queryKey: ["task-actual-time-active"] }),
       client.invalidateQueries({ queryKey: ["today-items"] }),
+      client.invalidateQueries({ queryKey: ["analytics"] }),
     ]);
   };
   const timer = useMutation({

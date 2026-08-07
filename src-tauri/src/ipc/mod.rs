@@ -99,6 +99,7 @@ mod tests {
         crate::task::dto::UpdateCategoryGoalsInput::export_all_to(&out).unwrap();
         crate::task::dto::AnalyticsPeriodKind::export_all_to(&out).unwrap();
         crate::task::dto::AnalyticsProjectionInput::export_all_to(&out).unwrap();
+        crate::task::dto::AnalyticsActualTimeSummaryView::export_all_to(&out).unwrap();
         crate::task::dto::AnalyticsCategoryView::export_all_to(&out).unwrap();
         crate::task::dto::AnalyticsCompletionDistributionView::export_all_to(&out).unwrap();
         crate::task::dto::AnalyticsStreakView::export_all_to(&out).unwrap();

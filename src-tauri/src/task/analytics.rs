@@ -6,17 +6,27 @@ use rusqlite::{Connection, OptionalExtension, Transaction, params};
 use super::{
     domain::validate_date,
     dto::{
-        AnalyticsCategoryView, AnalyticsCompletionDistributionView, AnalyticsPeriodKind,
-        AnalyticsProjection, AnalyticsProjectionInput, AnalyticsStreakView, TaskCategoryView,
-        UpdateCategoryGoalsInput,
+        AnalyticsActualTimeSummaryView, AnalyticsCategoryView, AnalyticsCompletionDistributionView,
+        AnalyticsPeriodKind, AnalyticsProjection, AnalyticsProjectionInput, AnalyticsStreakView,
+        TaskCategoryView, UpdateCategoryGoalsInput,
     },
     recurrence,
     repository::TaskError,
 };
 
-pub const ALGORITHM_VERSION: i32 = 1;
+pub const ALGORITHM_VERSION: i32 = 2;
 const MAX_ANALYTICS_DAYS: i64 = 366;
 const MAX_STREAK_WEEKS: i64 = 520;
+const ACTUAL_TIME_QUERY: &str = "
+    SELECT t.id,t.category_id,t.start_minute,t.end_minute,
+           SUM(s.ended_at_ms-s.started_at_ms),COUNT(*)
+      FROM tasks AS t INDEXED BY tasks_by_date
+      CROSS JOIN task_actual_time_sessions AS s INDEXED BY task_actual_time_by_task
+     WHERE t.local_date BETWEEN ?1 AND ?2
+       AND s.task_id=t.id
+       AND s.ended_at_ms IS NOT NULL
+     GROUP BY t.id,t.category_id,t.start_minute,t.end_minute
+     ORDER BY t.id";
 type EvaluationSnapshot = (String, String, String);
 type RecurringEvaluationMap = HashMap<(String, String), EvaluationSnapshot>;
 
@@ -66,6 +76,12 @@ struct Override {
 struct Goals {
     minimum: i32,
     target: i32,
+}
+
+#[derive(Debug, Default)]
+struct ActualTimeFold {
+    overall: AnalyticsActualTimeSummaryView,
+    by_category: BTreeMap<String, AnalyticsActualTimeSummaryView>,
 }
 
 pub fn bump_source_revision(conn: &Connection) -> Result<(), TaskError> {
@@ -391,12 +407,18 @@ fn read_projection(
 ) -> Result<AnalyticsProjection, TaskError> {
     let key = period_kind_key(&kind);
     let start_text = format_date(start);
+    let ActualTimeFold {
+        overall: actual_time,
+        mut by_category,
+    } = load_actual_time(conn, start, end)?;
     let base:(String,i32,i32,i32,i32)=conn.query_row("SELECT computed_at,scheduled_minutes,task_count,evaluated_count,missed_count FROM analytics_period_aggregates WHERE period_kind=?1 AND period_start=?2 AND source_revision=?3 AND algorithm_version=?4 AND observed_local_date=?5 AND observed_local_minute=?6",params![key,start_text,source,ALGORITHM_VERSION,format_date(observed),observed_minute],|r|Ok((r.get(0)?,r.get(1)?,r.get(2)?,r.get(3)?,r.get(4)?)))?;
     let mut stmt=conn.prepare("SELECT category_id,category_name_snapshot,category_icon_key_snapshot,category_color_key_snapshot,scheduled_minutes,configured_weekly_minimum,configured_weekly_target,minimum_attained_minutes,target_attained_minutes,minimum_shortfall_minutes,target_shortfall_minutes,minimum_overage_minutes,target_overage_minutes,eligible_week_count,minimum_week_count,target_week_count FROM analytics_category_aggregates WHERE period_kind=?1 AND period_start=?2 AND source_revision=?3 ORDER BY scheduled_minutes DESC,category_id")?;
     let categories = stmt
         .query_map(params![key, start_text, source], |r| {
+            let category_id: String = r.get(0)?;
             Ok(AnalyticsCategoryView {
-                category_id: r.get(0)?,
+                actual_time: by_category.remove(&category_id).unwrap_or_default(),
+                category_id,
                 category_name: r.get(1)?,
                 category_icon_key: r.get(2)?,
                 category_color_key: r.get(3)?,
@@ -415,6 +437,11 @@ fn read_projection(
             })
         })?
         .collect::<Result<Vec<_>, _>>()?;
+    if !by_category.is_empty() {
+        return Err(TaskError::Validation(
+            "Recorded Analytics category data is unavailable.",
+        ));
+    }
     let mut stmt=conn.prepare("SELECT state_id,state_label_snapshot,state_visual_snapshot,count FROM analytics_completion_distribution WHERE period_kind=?1 AND period_start=?2 AND source_revision=?3 ORDER BY state_id,state_label_snapshot")?;
     let completion_distribution = stmt
         .query_map(params![key, start_text, source], |r| {
@@ -453,10 +480,102 @@ fn read_projection(
         task_count: base.2,
         evaluated_count: base.3,
         missed_count: base.4,
+        actual_time,
         categories,
         completion_distribution,
         streaks,
     })
+}
+
+fn add_actual_time(
+    target: &mut AnalyticsActualTimeSummaryView,
+    value: &AnalyticsActualTimeSummaryView,
+) -> Result<(), TaskError> {
+    target.actual_seconds = target
+        .actual_seconds
+        .checked_add(value.actual_seconds)
+        .ok_or(TaskError::Validation("Recorded Analytics time overflowed."))?;
+    target.tracked_scheduled_seconds = target
+        .tracked_scheduled_seconds
+        .checked_add(value.tracked_scheduled_seconds)
+        .ok_or(TaskError::Validation("Recorded Analytics time overflowed."))?;
+    target.tracked_task_count = target
+        .tracked_task_count
+        .checked_add(value.tracked_task_count)
+        .ok_or(TaskError::Validation("Recorded Analytics time overflowed."))?;
+    target.completed_session_count = target
+        .completed_session_count
+        .checked_add(value.completed_session_count)
+        .ok_or(TaskError::Validation("Recorded Analytics time overflowed."))?;
+    target.variance_seconds = target
+        .actual_seconds
+        .checked_sub(target.tracked_scheduled_seconds)
+        .ok_or(TaskError::Validation("Recorded Analytics time overflowed."))?;
+    Ok(())
+}
+
+fn load_actual_time(
+    conn: &Connection,
+    start: NaiveDate,
+    end: NaiveDate,
+) -> Result<ActualTimeFold, TaskError> {
+    let mut statement = conn.prepare(ACTUAL_TIME_QUERY)?;
+    let rows = statement.query_map(params![format_date(start), format_date(end)], |row| {
+        Ok((
+            row.get::<_, String>(0)?,
+            row.get::<_, String>(1)?,
+            row.get::<_, i64>(2)?,
+            row.get::<_, i64>(3)?,
+            row.get::<_, i64>(4)?,
+            row.get::<_, i64>(5)?,
+        ))
+    })?;
+    let mut result = ActualTimeFold::default();
+    for row in rows {
+        let (_task_id, category_id, start_minute, end_minute, total_ms, session_count) = row?;
+        let scheduled_minutes = end_minute
+            .checked_sub(start_minute)
+            .filter(|value| *value > 0)
+            .ok_or(TaskError::Validation(
+                "Recorded Analytics task schedule is invalid.",
+            ))?;
+        let tracked_scheduled_seconds =
+            scheduled_minutes
+                .checked_mul(60)
+                .ok_or(TaskError::Validation(
+                    "Recorded Analytics task schedule overflowed.",
+                ))?;
+        if total_ms < 0 || session_count <= 0 {
+            return Err(TaskError::Validation(
+                "Recorded Analytics session data is invalid.",
+            ));
+        }
+        let task_summary = AnalyticsActualTimeSummaryView {
+            actual_seconds: total_ms / 1_000,
+            tracked_scheduled_seconds,
+            tracked_task_count: 1,
+            completed_session_count: session_count,
+            variance_seconds: (total_ms / 1_000)
+                .checked_sub(tracked_scheduled_seconds)
+                .ok_or(TaskError::Validation("Recorded Analytics time overflowed."))?,
+        };
+        add_actual_time(&mut result.overall, &task_summary)?;
+        add_actual_time(
+            result.by_category.entry(category_id).or_default(),
+            &task_summary,
+        )?;
+    }
+
+    let mut category_total = AnalyticsActualTimeSummaryView::default();
+    for summary in result.by_category.values() {
+        add_actual_time(&mut category_total, summary)?;
+    }
+    if category_total != result.overall {
+        return Err(TaskError::Validation(
+            "Recorded Analytics category totals are inconsistent.",
+        ));
+    }
+    Ok(result)
 }
 
 fn load_items(conn: &Connection, start: NaiveDate, end: NaiveDate) -> Result<Vec<Item>, TaskError> {
@@ -798,9 +917,10 @@ mod tests {
     use crate::{
         infrastructure::sqlite::{
             connection::{open_file_connection, open_memory_connection},
-            task39_migration::run_all_migrations as run_migrations,
+            task43_migration::run_all_migrations as run_migrations,
         },
         task::{
+            actual_time,
             dto::{
                 CreateRecurringTaskInput, CreateTaskInput, EvaluateTaskInput, OccurrenceEditScope,
                 UpdateRecurringOccurrenceInput, UpdateTaskInput,
@@ -854,6 +974,42 @@ mod tests {
             row.get(0)
         })
         .unwrap()
+    }
+    fn one_off(
+        c: &Connection,
+        title: &str,
+        date: &str,
+        start_minute: i32,
+        end_minute: i32,
+        category_id: &str,
+    ) -> super::super::dto::TaskView {
+        repository::create(
+            c,
+            CreateTaskInput {
+                title: title.into(),
+                description: "".into(),
+                local_date: date.into(),
+                start_minute,
+                end_minute,
+                category_id: category_id.into(),
+                priority: "medium".into(),
+                life_node_id: None,
+                focus_plan_id: None,
+                deadline_local_date: None,
+                tag_ids: vec![],
+            },
+        )
+        .unwrap()
+    }
+    fn complete_segment(
+        c: &mut Connection,
+        task_id: &str,
+        operation_id: &str,
+        start_ms: i64,
+        end_ms: i64,
+    ) {
+        let started = actual_time::start_at(c, task_id, operation_id, start_ms).unwrap();
+        actual_time::stop_at(c, started.active_session_id.as_deref().unwrap(), end_ms).unwrap();
     }
     #[test]
     fn migration_seeds_revision_and_goal_validation_is_atomic_idempotent() {
@@ -955,6 +1111,293 @@ mod tests {
             (3, 180, 1, 1)
         );
         assert_eq!(p.completion_distribution[0].label, "Met expectation");
+    }
+
+    #[test]
+    fn completed_sessions_floor_per_task_and_count_each_tracked_plan_once() {
+        let mut c = db();
+        c.execute(
+            "INSERT INTO task_categories(id,name,icon_key,color_key,archived_at) VALUES('focus','Focus','category-general','green',NULL)",
+            [],
+        )
+        .unwrap();
+        let tracked_general = one_off(&c, "Tracked general", "2026-08-03", 480, 540, "general");
+        one_off(&c, "Untracked general", "2026-08-04", 480, 540, "general");
+        let tracked_focus = one_off(&c, "Tracked focus", "2026-08-05", 600, 630, "focus");
+
+        // The two sub-second segments must sum to 1.2 seconds before the one per-Task floor.
+        complete_segment(&mut c, &tracked_general.id, "floor-a", 1_000_000, 1_000_600);
+        complete_segment(&mut c, &tracked_general.id, "floor-b", 2_000_000, 2_000_600);
+        complete_segment(&mut c, &tracked_focus.id, "floor-c", 3_000_000, 3_001_500);
+
+        let projection = project(
+            &mut c,
+            projection_input(AnalyticsPeriodKind::Week, "2026-08-03", "2026-08-06"),
+        )
+        .unwrap();
+        assert_eq!(
+            (projection.scheduled_minutes, projection.task_count),
+            (150, 3)
+        );
+        assert_eq!(
+            projection.actual_time,
+            AnalyticsActualTimeSummaryView {
+                actual_seconds: 2,
+                tracked_scheduled_seconds: 5_400,
+                tracked_task_count: 2,
+                completed_session_count: 3,
+                variance_seconds: -5_398,
+            }
+        );
+        let general = projection
+            .categories
+            .iter()
+            .find(|category| category.category_id == "general")
+            .unwrap();
+        assert_eq!(general.scheduled_minutes, 120);
+        assert_eq!(
+            general.actual_time,
+            AnalyticsActualTimeSummaryView {
+                actual_seconds: 1,
+                tracked_scheduled_seconds: 3_600,
+                tracked_task_count: 1,
+                completed_session_count: 2,
+                variance_seconds: -3_599,
+            }
+        );
+        let focus = projection
+            .categories
+            .iter()
+            .find(|category| category.category_id == "focus")
+            .unwrap();
+        assert_eq!(focus.scheduled_minutes, 30);
+        assert_eq!(focus.actual_time.actual_seconds, 1);
+        assert_eq!(focus.actual_time.tracked_scheduled_seconds, 1_800);
+        assert_eq!(
+            projection.actual_time.actual_seconds,
+            projection
+                .categories
+                .iter()
+                .map(|category| category.actual_time.actual_seconds)
+                .sum::<i64>()
+        );
+    }
+
+    #[test]
+    fn active_discarded_and_recurring_work_do_not_contribute_but_zero_duration_does() {
+        let mut c = db();
+        let task = one_off(&c, "Zero duration", "2026-08-03", 480, 540, "general");
+        let active = actual_time::start_at(&mut c, &task.id, "active-only", 10_000).unwrap();
+        let while_active = project(
+            &mut c,
+            projection_input(AnalyticsPeriodKind::Week, "2026-08-03", "2026-08-03"),
+        )
+        .unwrap();
+        assert_eq!(
+            while_active.actual_time,
+            AnalyticsActualTimeSummaryView::default()
+        );
+        actual_time::discard(
+            &mut c,
+            active.active_session_id.as_deref().expect("active session"),
+        )
+        .unwrap();
+        let after_discard = project(
+            &mut c,
+            projection_input(AnalyticsPeriodKind::Week, "2026-08-03", "2026-08-03"),
+        )
+        .unwrap();
+        assert_eq!(
+            after_discard.actual_time,
+            AnalyticsActualTimeSummaryView::default()
+        );
+
+        complete_segment(&mut c, &task.id, "zero-completed", 20_000, 20_000);
+        let series_id = repository::create_recurring(
+            &mut c,
+            CreateRecurringTaskInput {
+                title: "Recurring cannot track".into(),
+                description: "".into(),
+                local_date: "2026-08-03".into(),
+                start_minute: 600,
+                end_minute: 660,
+                category_id: "general".into(),
+                priority: "medium".into(),
+                frequency: "daily".into(),
+                interval: 1,
+                weekdays: vec![],
+                until: None,
+                count: Some(1),
+                life_node_id: None,
+                focus_plan_id: None,
+                tag_ids: vec![],
+            },
+        )
+        .unwrap();
+        assert!(c
+            .execute(
+                "INSERT INTO task_actual_time_sessions VALUES('recurring-leak',?1,'recurring-op',1,2)",
+                [&series_id],
+            )
+            .is_err());
+        let projection = project(
+            &mut c,
+            projection_input(AnalyticsPeriodKind::Week, "2026-08-03", "2026-08-03"),
+        )
+        .unwrap();
+        assert_eq!(
+            (projection.task_count, projection.scheduled_minutes),
+            (2, 120)
+        );
+        assert_eq!(
+            projection.actual_time,
+            AnalyticsActualTimeSummaryView {
+                actual_seconds: 0,
+                tracked_scheduled_seconds: 3_600,
+                tracked_task_count: 1,
+                completed_session_count: 1,
+                variance_seconds: -3_600,
+            }
+        );
+    }
+
+    #[test]
+    fn current_task_date_and_category_move_cross_midnight_attribution_then_delete_cascades() {
+        let mut c = db();
+        c.execute(
+            "INSERT INTO task_categories(id,name,icon_key,color_key,archived_at) VALUES('focus','Focus','category-general','green',NULL)",
+            [],
+        )
+        .unwrap();
+        let task = one_off(&c, "Cross midnight", "2026-08-03", 480, 540, "general");
+        complete_segment(
+            &mut c,
+            &task.id,
+            "cross-midnight",
+            1_775_692_740_000,
+            1_775_692_860_000,
+        );
+        let raw_before: (i64, i64) = c
+            .query_row(
+                "SELECT started_at_ms,ended_at_ms FROM task_actual_time_sessions WHERE task_id=?1",
+                [&task.id],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .unwrap();
+        let original = project(
+            &mut c,
+            projection_input(AnalyticsPeriodKind::Week, "2026-08-03", "2026-08-04"),
+        )
+        .unwrap();
+        assert_eq!(original.actual_time.actual_seconds, 120);
+        assert_eq!(original.categories[0].category_id, "general");
+
+        repository::update(
+            &c,
+            UpdateTaskInput {
+                id: task.id.clone(),
+                title: task.title.clone(),
+                description: task.description.clone(),
+                local_date: "2026-08-10".into(),
+                start_minute: task.start_minute,
+                end_minute: task.end_minute,
+                category_id: "focus".into(),
+                priority: task.priority.clone(),
+                life_node_id: None,
+                focus_plan_id: None,
+                deadline_local_date: None,
+                tag_ids: vec![],
+            },
+        )
+        .unwrap();
+        let old_period = project(
+            &mut c,
+            projection_input(AnalyticsPeriodKind::Week, "2026-08-03", "2026-08-11"),
+        )
+        .unwrap();
+        let new_period = project(
+            &mut c,
+            projection_input(AnalyticsPeriodKind::Week, "2026-08-10", "2026-08-11"),
+        )
+        .unwrap();
+        assert_eq!(
+            old_period.actual_time,
+            AnalyticsActualTimeSummaryView::default()
+        );
+        assert_eq!(new_period.actual_time.actual_seconds, 120);
+        assert_eq!(
+            new_period
+                .categories
+                .iter()
+                .find(|category| category.category_id == "focus")
+                .unwrap()
+                .actual_time
+                .actual_seconds,
+            120
+        );
+        let raw_after: (i64, i64) = c
+            .query_row(
+                "SELECT started_at_ms,ended_at_ms FROM task_actual_time_sessions WHERE task_id=?1",
+                [&task.id],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .unwrap();
+        assert_eq!(
+            raw_after, raw_before,
+            "attribution never rewrites the segment"
+        );
+
+        repository::delete(&c, &task.id).unwrap();
+        assert_eq!(
+            c.query_row(
+                "SELECT COUNT(*) FROM task_actual_time_sessions WHERE task_id=?1",
+                [&task.id],
+                |row| row.get::<_, i64>(0),
+            )
+            .unwrap(),
+            0
+        );
+        let deleted = project(
+            &mut c,
+            projection_input(AnalyticsPeriodKind::Week, "2026-08-10", "2026-08-11"),
+        )
+        .unwrap();
+        assert_eq!(
+            deleted.actual_time,
+            AnalyticsActualTimeSummaryView::default()
+        );
+    }
+
+    #[test]
+    fn overflowing_session_authority_returns_an_error_without_changing_raw_rows() {
+        let mut c = db();
+        let task = one_off(&c, "Overflow", "2026-08-03", 480, 540, "general");
+        for (id, operation) in [
+            ("overflow-a", "overflow-op-a"),
+            ("overflow-b", "overflow-op-b"),
+        ] {
+            c.execute(
+                "INSERT INTO task_actual_time_sessions VALUES(?1,?2,?3,0,?4)",
+                params![id, task.id, operation, i64::MAX],
+            )
+            .unwrap();
+        }
+        assert!(
+            project(
+                &mut c,
+                projection_input(AnalyticsPeriodKind::Week, "2026-08-03", "2026-08-03"),
+            )
+            .is_err()
+        );
+        assert_eq!(
+            c.query_row(
+                "SELECT COUNT(*) FROM task_actual_time_sessions WHERE task_id=?1 AND ended_at_ms=?2",
+                params![task.id, i64::MAX],
+                |row| row.get::<_, i64>(0),
+            )
+            .unwrap(),
+            2
+        );
     }
     #[test]
     fn recurring_moved_cancelled_and_exact_tasks_aggregate_once() {
@@ -1060,10 +1503,44 @@ mod tests {
         .unwrap();
         let input = projection_input(AnalyticsPeriodKind::Month, "2026-08-15", "2026-09-01");
         let first = project(&mut c, input.clone()).unwrap();
+        assert_eq!(first.algorithm_version, 2);
+        c.execute(
+            "UPDATE analytics_period_aggregates SET algorithm_version=1 WHERE period_kind='month' AND period_start='2026-08-01'",
+            [],
+        )
+        .unwrap();
         let second = project(&mut c, input).unwrap();
         assert_eq!(first.source_revision, second.source_revision);
-        let plan:String=c.query_row("EXPLAIN QUERY PLAN SELECT * FROM tasks INDEXED BY tasks_by_date WHERE local_date BETWEEN '2026-08-01' AND '2026-08-31'",[],|r|r.get(3)).unwrap();
-        assert!(plan.contains("tasks_by_date"));
+        assert_eq!(second.algorithm_version, 2, "stale v1 state rebuilds as v2");
+        assert_eq!(
+            c.query_row(
+                "SELECT algorithm_version FROM analytics_period_aggregates WHERE period_kind='month' AND period_start='2026-08-01'",
+                [],
+                |row| row.get::<_, i32>(0),
+            )
+            .unwrap(),
+            2
+        );
+
+        let explain = format!("EXPLAIN QUERY PLAN {ACTUAL_TIME_QUERY}");
+        let mut statement = c.prepare(&explain).unwrap();
+        let details = statement
+            .query_map(params!["2026-08-01", "2026-08-31"], |row| {
+                row.get::<_, String>(3)
+            })
+            .unwrap()
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap();
+        assert!(
+            details
+                .iter()
+                .any(|detail| detail.contains("tasks_by_date"))
+        );
+        assert!(
+            details
+                .iter()
+                .any(|detail| detail.contains("task_actual_time_by_task"))
+        );
     }
     #[test]
     fn completed_week_attainment_and_streaks_ignore_current_week() {
@@ -1479,11 +1956,14 @@ mod tests {
             },
         )
         .unwrap();
+        let task_id = repository::list(&c, "2026-08-03", "2026-08-03").unwrap()[0]
+            .id
+            .clone();
+        complete_segment(&mut c, &task_id, "reopen-segment", 1_000_000, 1_045_500);
         let input = projection_input(AnalyticsPeriodKind::Week, "2026-08-03", "2026-08-10");
-        assert_eq!(
-            project(&mut c, input.clone()).unwrap().scheduled_minutes,
-            120
-        );
+        let before = project(&mut c, input.clone()).unwrap();
+        assert_eq!(before.scheduled_minutes, 120);
+        assert_eq!(before.actual_time.actual_seconds, 45);
         drop(c);
 
         let mut reopened = open_file_connection(&path).unwrap();
@@ -1496,6 +1976,7 @@ mod tests {
             .unwrap();
         let rebuilt = project(&mut reopened, input).unwrap();
         assert_eq!(rebuilt.scheduled_minutes, 120);
+        assert_eq!(rebuilt.actual_time, before.actual_time);
         assert_eq!(rebuilt.categories[0].weekly_minimum_minutes, Some(90));
         drop(reopened);
         let _ = std::fs::remove_file(&path);

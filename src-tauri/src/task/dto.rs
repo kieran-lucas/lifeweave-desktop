@@ -44,6 +44,16 @@ pub struct AnalyticsProjectionInput {
     pub observed_local_minute: i32,
 }
 
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct AnalyticsActualTimeSummaryView {
+    pub actual_seconds: i64,
+    pub tracked_scheduled_seconds: i64,
+    pub tracked_task_count: i64,
+    pub completed_session_count: i64,
+    pub variance_seconds: i64,
+}
+
 #[derive(Debug, Clone, Serialize)]
 #[cfg_attr(test, derive(ts_rs::TS))]
 pub struct AnalyticsCategoryView {
@@ -63,6 +73,7 @@ pub struct AnalyticsCategoryView {
     pub eligible_week_count: i32,
     pub minimum_week_count: i32,
     pub target_week_count: i32,
+    pub actual_time: AnalyticsActualTimeSummaryView,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -100,6 +111,7 @@ pub struct AnalyticsProjection {
     pub task_count: i32,
     pub evaluated_count: i32,
     pub missed_count: i32,
+    pub actual_time: AnalyticsActualTimeSummaryView,
     pub categories: Vec<AnalyticsCategoryView>,
     pub completion_distribution: Vec<AnalyticsCompletionDistributionView>,
     pub streaks: Vec<AnalyticsStreakView>,

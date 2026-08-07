@@ -5,61 +5,61 @@ Status: ACTIVE — evidence will be recorded in
 
 ## Authority and boundaries
 
-- [ ] ADR 0040 is implemented exactly: current Task scheduled date and category own attribution.
-- [ ] Only completed Task 43 sessions on existing one-off Tasks contribute.
-- [ ] Running/discarded sessions and recurring occurrences contribute nothing.
-- [ ] Schema stays 26; migrations 1–26, dependencies, capabilities, workflows, and seal are unchanged.
-- [ ] Existing `get_analytics_projection` is the only Analytics IPC.
+- [x] ADR 0040 is implemented exactly: current Task scheduled date and category own attribution.
+- [x] Only completed Task 43 sessions on existing one-off Tasks contribute.
+- [x] Running/discarded sessions and recurring occurrences contribute nothing.
+- [x] Schema stays 26; migrations 1–26, dependencies, capabilities, workflows, and seal are unchanged.
+- [x] Existing `get_analytics_projection` is the only Analytics IPC.
 
 ## Arithmetic and denominator
 
-- [ ] Segment milliseconds sum per Task before flooring to whole seconds.
-- [ ] Overall actual seconds equal the category actual-second sum.
-- [ ] Tracked schedule is counted once per tracked Task, not once per segment.
-- [ ] Untracked scheduled Tasks stay in scheduled totals but not the tracked-plan denominator.
-- [ ] Zero-duration completion counts as one segment and one tracked Task with zero actual seconds.
-- [ ] Checked invalid/overflowing data returns one sanitized error without partial or fabricated data.
+- [x] Segment milliseconds sum per Task before flooring to whole seconds.
+- [x] Overall actual seconds equal the category actual-second sum.
+- [x] Tracked schedule is counted once per tracked Task, not once per segment.
+- [x] Untracked scheduled Tasks stay in scheduled totals but not the tracked-plan denominator.
+- [x] Zero-duration completion counts as one segment and one tracked Task with zero actual seconds.
+- [x] Checked invalid/overflowing data returns one sanitized error without partial or fabricated data.
 
 ## Attribution and source revision
 
-- [ ] Cross-midnight sessions are not split and use current Task `local_date`.
-- [ ] Date/category edits move reporting attribution without rewriting session rows.
-- [ ] Task deletion removes contribution through the existing cascade.
-- [ ] First successful Stop closes and bumps Analytics source revision once in one transaction.
-- [ ] Start, Discard, repeated Stop, and failed backwards Stop do not bump.
-- [ ] Analytics algorithm version is 2 and stale v1 state rebuilds.
+- [x] Cross-midnight sessions are not split and use current Task `local_date`.
+- [x] Date/category edits move reporting attribution without rewriting session rows.
+- [x] Task deletion removes contribution through the existing cascade.
+- [x] First successful Stop closes and bumps Analytics source revision once in one transaction.
+- [x] Start, Discard, repeated Stop, and failed backwards Stop do not bump.
+- [x] Analytics algorithm version is 2 and stale v1 state rebuilds.
 
 ## Backend query and durability
 
-- [ ] One bounded grouped query produces actual-time Task rows per Analytics request.
-- [ ] `EXPLAIN QUERY PLAN` meaningfully proves intended index-backed access.
-- [ ] No query-per-Task/category/day/session and no renderer SQL/raw-session aggregation exists.
-- [ ] File-backed close/reopen returns the same projection.
+- [x] One bounded grouped query produces actual-time Task rows per Analytics request.
+- [x] `EXPLAIN QUERY PLAN` meaningfully proves intended index-backed access.
+- [x] No query-per-Task/category/day/session and no renderer SQL/raw-session aggregation exists.
+- [x] File-backed close/reopen returns the same projection.
 
 ## Frontend
 
-- [ ] Recorded actual time exposes Recorded time, Tracked plan, Variance, Tracked Tasks, and Completed
+- [x] Recorded actual time exposes Recorded time, Tracked plan, Variance, Tracked Tasks, and Completed
       segments with semantic structure.
-- [ ] No tracked Tasks yields the explicit empty state.
-- [ ] Variance text covers over, under, and matched without color-only meaning.
-- [ ] A non-zero sub-minute duration renders visibly as seconds.
-- [ ] Actual category detail appears only for tracked categories.
-- [ ] Transparency copy states completed-only, current-date/current-category attribution, and active
+- [x] No tracked Tasks yields the explicit empty state.
+- [x] Variance text covers over, under, and matched without color-only meaning.
+- [x] A non-zero sub-minute duration renders visibly as seconds.
+- [x] Actual category detail appears only for tracked categories.
+- [x] Transparency copy states completed-only, current-date/current-category attribution, and active
       exclusion.
-- [ ] Scheduled overview, category goals, streaks, and completion distribution retain scheduled
+- [x] Scheduled overview, category goals, streaks, and completion distribution retain scheduled
       semantics.
-- [ ] Successful timer completion invalidates Analytics and active time never appears as completed.
-- [ ] Applicable axe checks report zero violations; no live 1 Hz announcement is added.
+- [x] Successful timer completion invalidates Analytics and active time never appears as completed.
+- [x] Applicable axe checks report zero violations; no live 1 Hz announcement is added.
 
 ## Performance and native evidence
 
-- [ ] Activation and final inventories are recorded; every locked ceiling and 10 KiB rule holds.
-- [ ] A formula-derived Task 46 budget is added only if required, preserving historical evidence.
-- [ ] Phase 17 creates two 60-minute Tasks, tracks one, and proves a 60-minute tracked plan while the
+- [x] Activation and final inventories are recorded; every locked ceiling and 10 KiB rule holds.
+- [x] A formula-derived Task 46 budget is added only if required, preserving historical evidence.
+- [x] Phase 17 creates two 60-minute Tasks, tracks one, and proves a 60-minute tracked plan while the
       scheduled overview includes both.
-- [ ] Phase 17 uses accessible UI only, asserts non-zero recorded time without exact wall-clock
+- [x] Phase 17 uses accessible UI only, asserts non-zero recorded time without exact wall-clock
       duration, and sees no application error.
-- [ ] A deliberate central projection break fails Phase 17 meaningfully; restoration proof passes
+- [x] A deliberate central projection break fails Phase 17 meaningfully; restoration proof passes
       with zero residue.
 
 ## Governance and closure

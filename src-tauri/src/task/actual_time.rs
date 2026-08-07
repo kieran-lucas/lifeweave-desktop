@@ -331,6 +331,7 @@ pub(crate) fn stop_at(
         "UPDATE task_actual_time_sessions SET ended_at_ms=?1 WHERE id=?2 AND ended_at_ms IS NULL",
         params![now_ms, session.id],
     )?;
+    super::analytics::bump_source_revision(&tx)?;
     let view = task_view(&tx, &session.task_id)?;
     tx.commit()?;
     Ok(view)
@@ -445,6 +446,15 @@ mod tests {
         conn.query_row("SELECT COUNT(*) FROM task_actual_time_sessions", [], |r| {
             r.get(0)
         })
+        .unwrap()
+    }
+
+    fn analytics_revision(conn: &Connection) -> i64 {
+        conn.query_row(
+            "SELECT source_revision FROM analytics_meta WHERE id=1",
+            [],
+            |row| row.get(0),
+        )
         .unwrap()
     }
 
@@ -582,6 +592,46 @@ mod tests {
             )
             .unwrap(),
             T0 + 90_500
+        );
+    }
+
+    #[test]
+    fn only_the_first_successful_stop_bumps_analytics_revision() {
+        let mut conn = db();
+        task(&conn, "task-a", "Write");
+        let initial = analytics_revision(&conn);
+
+        start_at(&mut conn, "task-a", "revision-op-1", T0).unwrap();
+        assert_eq!(
+            analytics_revision(&conn),
+            initial,
+            "Start contributes nothing"
+        );
+        let first = active_id(&conn, "task-a");
+
+        assert!(matches!(
+            stop_at(&mut conn, &first, T0 - 1),
+            Err(TaskError::Validation(message)) if message.contains("moved backwards")
+        ));
+        assert_eq!(analytics_revision(&conn), initial);
+
+        stop_at(&mut conn, &first, T0 + 1_000).unwrap();
+        assert_eq!(analytics_revision(&conn), initial + 1);
+        stop_at(&mut conn, &first, T0 + 90_000).unwrap();
+        assert_eq!(
+            analytics_revision(&conn),
+            initial + 1,
+            "replayed Stop is read-only"
+        );
+
+        start_at(&mut conn, "task-a", "revision-op-2", T0 + 100_000).unwrap();
+        assert_eq!(analytics_revision(&conn), initial + 1);
+        let discarded = active_id(&conn, "task-a");
+        discard(&mut conn, &discarded).unwrap();
+        assert_eq!(
+            analytics_revision(&conn),
+            initial + 1,
+            "Discard removes only non-contributing source data"
         );
     }
 
