@@ -386,25 +386,22 @@ export function LifeScreen({
   const openGraphNode = async (id: string, target: "reader" | "browse") => {
     invalidateLinkedReaderNavigation();
     cancelPendingEntryRequest();
-    if (target === "browse") {
-      setGraphOpen(false);
-      setReader(undefined);
-      setNodeId(id);
-      setPage(0);
-      setMode("browse");
-      return;
-    }
+    // Both destinations resolve the exact stable ID *before* committing anything. The graph
+    // projection is a snapshot, so a node can be archived between loading it and acting on it; a
+    // Browse hand-off that committed first would silently open whatever the fallback resolved to.
     const projection = await client.fetchQuery({
       queryKey: lifeKeys.browse(id, 0),
       queryFn: () => getLifeBrowseProjection({ node_id: id, child_page: 0 }),
     });
-    if (projection.resolved_from_fallback || projection.selected.id !== id || !projection.selected.is_leaf)
+    if (projection.resolved_from_fallback || projection.selected.id !== id)
+      throw new Error("That Life node is unavailable.");
+    if (target === "reader" && !projection.selected.is_leaf)
       throw new Error("That Life leaf is unavailable.");
     setGraphOpen(false);
     setNodeId(id);
     setPage(0);
-    setReader(projection.selected);
-    setMode("reader");
+    setReader(target === "reader" ? projection.selected : undefined);
+    setMode(target === "reader" ? "reader" : "browse");
   };
   const back = () => {
     invalidateLinkedReaderNavigation();
@@ -533,12 +530,13 @@ export function LifeScreen({
         <Suspense fallback={<p aria-live="polite">Loading the Life graph…</p>}>
           {graphError && (
             <p role="alert" className={styles.unavailable}>
-              That Life leaf is unavailable. Refresh the graph and try again.
+              That Life node is unavailable. Refresh the graph and try again.
             </p>
           )}
           <LifeGraphWorkspace
             currentNodeId={projection.selected.id}
             onOpenNode={(id, target) => {
+              setGraphError(false);
               void openGraphNode(id, target).catch(() => setGraphError(true));
             }}
             onClose={() => setGraphOpen(false)}

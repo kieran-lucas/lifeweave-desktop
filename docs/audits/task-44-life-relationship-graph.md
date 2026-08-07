@@ -391,3 +391,57 @@ closure totals are retained alongside them.
 Task 44 remains the latest closed task, Slice 034 remains closed, schema remains 26, `active_spec`
 remains `null`, `next_action` remains `product_owner_gate`, and Task 45 remains unstarted,
 unallocated, and unrecommended. No migration, dependency, lockfile, workflow, or seal changed.
+
+---
+
+## Micro-remediation — stale Graph → Browse hand-off
+
+A further Product Owner review found one confirmed **P2** navigation defect remaining after the
+remediation above.
+
+```text
+reviewed state:           b209f7a63ce1218ff1d4df20566808cbe8a23e1f
+micro-remediation commit: MICROFIX_SHA
+```
+
+**Defect.** `openGraphNode` validated the exact stable target ID before opening the Reader but the
+Browse branch committed navigation immediately. Because the graph projection is a snapshot, a branch
+archived after it was taken would be resolved through Life's ordinary fallback, silently opening a
+**different node** — violating the locked rule that a stale Graph target must fail safely.
+
+**Root cause.** When I added exact-ID resolution during the previous remediation I applied it only to
+the destination the finding named. The Browse branch returned early, above the validation, so it
+never gained the same guarantee. The sibling path was not re-checked.
+
+**Fix.** Both destinations now resolve through one shared path before anything is committed. The
+early return is gone: the projection is fetched, `resolved_from_fallback` and the exact ID are
+required for either destination, and the Reader additionally requires a leaf. Only then is any state
+set. On failure nothing moves — Graph stays open, Life state and history are untouched, no fallback
+node is opened, and the existing Graph error is shown. No history is added on either path.
+
+The refusal now covers branches as well as leaves, so its wording became *"That Life node is
+unavailable."*
+
+**Fail-before-fix.** The new regression test — Graph → Branch whose projection comes back
+`resolved_from_fallback` — fails with the early return restored and passes with the fix. Reverting
+left zero residue.
+
+While fixing this I found the pre-existing Branch → Browse test had been passing for the wrong
+reason: it asserted `← Back` was disabled, which only held because the un-awaited navigation had not
+landed yet. `← Back` is legitimately *enabled* on a branch, since a branch always has a parent. That
+test now asserts the load-bearing invariant instead — Back ascends to the parent rather than
+unwinding a graph entry, which is what an empty history produces.
+
+**Evidence.** `pnpm typecheck` clean; `pnpm test` **681 passed** across 46 files (680 → 681);
+`pnpm build` and `pnpm hardening:performance` `violations: []`; `pnpm e2e:windows -- phase15-life-graph.e2e.ts`
+4/4; `git diff --check` clean. Only `LifeScreen.tsx` and `LifeScreen.test.tsx` changed in production
+terms, so Rust and broad native gates were unaffected and not re-run.
+
+**Performance.** Startup raw 520,935 → 520,983 (**+1,483** against the Task 43 accepted inventory,
+authorized ≤ 2,048); total raw +10,621 (≤ 24,576); deterministic gzip +3,522 (≤ 8,192). Only
+`observed` values were refreshed; every `maximum`, locked ceiling, and `expected_chunk_count` is
+byte-identical to the previous commit, verified by diff. **No budget was widened.**
+
+Task 44 remains the latest closed task, Slice 034 remains closed, schema remains 26, `active_spec`
+remains `null`, `next_action` remains `product_owner_gate`, and Task 45 remains unstarted,
+unallocated, and unrecommended.

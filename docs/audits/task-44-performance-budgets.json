@@ -30,17 +30,17 @@
   },
   "aggregates": {
     "main_js_bytes": {
-      "observed": 520935,
+      "observed": 520983,
       "maximum": 530862,
       "derivation": "min(520452 + max(1024, ceil(520452 * 0.0200)), 535000)"
     },
     "total_js_bytes": {
-      "observed": 1214646,
+      "observed": 1214694,
       "maximum": 1221217,
       "derivation": "1212126 + max(8192, ceil(1212126 * 0.0075))"
     },
     "total_js_gzip_bytes": {
-      "observed": 373737,
+      "observed": 373745,
       "maximum": 377185,
       "derivation": "373089 + max(4096, ceil(373089 * 0.0100))"
     },
@@ -57,7 +57,7 @@
     },
     "FocusPlansScreen.js": {
       "observed_raw_bytes": 18396,
-      "observed_gzip_bytes": 5095,
+      "observed_gzip_bytes": 5094,
       "maximum_raw_bytes": 19420,
       "class": "lazy",
       "owner": "Focus Plans",
@@ -65,7 +65,7 @@
     },
     "NarrativeCanvasStudio.js": {
       "observed_raw_bytes": 20069,
-      "observed_gzip_bytes": 5933,
+      "observed_gzip_bytes": 5934,
       "maximum_raw_bytes": 21093,
       "class": "lazy",
       "owner": "Narrative Canvas studio",
@@ -73,7 +73,7 @@
     },
     "TaskSavedViewsPanel.js": {
       "observed_raw_bytes": 16544,
-      "observed_gzip_bytes": 4951,
+      "observed_gzip_bytes": 4953,
       "maximum_raw_bytes": 17568,
       "class": "lazy",
       "owner": "Task Saved Views",
@@ -81,14 +81,14 @@
     },
     "dist.js": {
       "observed_raw_bytes": 390833,
-      "observed_gzip_bytes": 120573,
+      "observed_gzip_bytes": 120574,
       "maximum_raw_bytes": 398650,
       "class": "lazy",
       "owner": "Basic Leaf editor vendor core",
       "derivation": "390833 + max(1024, ceil(390833 * 0.0200))"
     },
     "index.js": {
-      "observed_raw_bytes": 520935,
+      "observed_raw_bytes": 520983,
       "observed_gzip_bytes": 158328,
       "maximum_raw_bytes": 530862,
       "class": "startup",

@@ -906,8 +906,39 @@ describe("Life Graph", () => {
       expect(screen.queryByRole("heading", { name: "Life graph" })).not.toBeInTheDocument(),
     );
     expect(screen.queryByRole("heading", { name: "Reader" })).not.toBeInTheDocument();
-    // Graph pushes nothing: Back stays exactly as it was.
+    expect(await screen.findByRole("heading", { name: "Branch" })).toBeInTheDocument();
+
+    // Graph pushes no history entry, so Back ascends to the parent rather than unwinding a graph
+    // step. Asserting the destination is load-bearing; Back is legitimately enabled on a branch
+    // because it always has a parent.
+    fireEvent.click(screen.getByRole("button", { name: "← Back" }));
+    expect(await screen.findByRole("heading", { name: "Life" })).toBeInTheDocument();
+  });
+
+  it("fails safely when a Browse target no longer resolves to the requested node", async () => {
+    renderLife();
+    await screen.findByRole("heading", { name: "Life System" });
     expect(screen.getByRole("button", { name: "← Back" })).toBeDisabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Graph" }));
+    await screen.findByRole("heading", { name: "Life graph" });
+    fireEvent.change(graphSelector(), { target: { value: branch.id } });
+
+    // The branch was archived after the graph projection was taken, so Life resolves the root
+    // instead. Committing navigation first would silently open that fallback node.
+    api.browse.mockResolvedValue({ ...projection(), resolved_from_fallback: true });
+    fireEvent.click(screen.getByRole("button", { name: "Open Branch in Life Browse" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("That Life node is unavailable.");
+    // Graph stays open and no fallback node was opened.
+    expect(screen.getByRole("heading", { name: "Life graph" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Reader" })).not.toBeInTheDocument();
+
+    // Closing the graph reveals the untouched Life state: still the root, and no history entry.
+    fireEvent.click(screen.getByRole("button", { name: "Close graph" }));
+    expect(await screen.findByRole("button", { name: "← Back" })).toBeDisabled();
+    expect(screen.getByRole("heading", { name: "Life" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Branch" })).not.toBeInTheDocument();
   });
 
   it("fails safely when a Reader target no longer resolves to the requested node", async () => {
@@ -922,7 +953,7 @@ describe("Life Graph", () => {
     fireEvent.change(graphSelector(), { target: { value: leaf.id } });
     fireEvent.click(screen.getByRole("button", { name: "Open Leaf in Life Reader" }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("That Life leaf is unavailable.");
+    expect(await screen.findByRole("alert")).toHaveTextContent("That Life node is unavailable.");
     // It refuses rather than opening the wrong node.
     expect(screen.queryByRole("heading", { name: "Reader" })).not.toBeInTheDocument();
   });
