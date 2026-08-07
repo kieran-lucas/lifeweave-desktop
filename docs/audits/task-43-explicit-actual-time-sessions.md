@@ -8,7 +8,7 @@ activation commit             8bb7182e47a62f6265e06e947c14d30f4477df71
 implementation                d61efb17d0c76dea67b557664623ceb7efac5275
 native evidence               b4510ddbffbd0e8c4d5ae84213973b723df4cbad
 product checkpoint            b4510ddbffbd0e8c4d5ae84213973b723df4cbad
-closure commit                <recorded at closure>
+closure commit                289f3e3b964721797a48ec92cc86ff47134da5e9
 Task 42 feature checkpoint    9c5d0cfb6c5e64ba7a5acfd23464e6a8474954b9
 schema                        25 → 26
 ```
