@@ -184,8 +184,33 @@ cannot be read back under WebDriver. **No production backdoor was added and prev
 bypassed.**
 
 ```text
-<native phase results recorded at closure>
+pnpm e2e:windows -- phase13-life-branch-interchange.e2e.ts    1 passing
+pnpm e2e:windows                                             21 passed, 0 failed (all phases)
 ```
+
+**Deliberate break.** With the internal-link insert in `confirm_import` disabled, phase 13 failed on
+its outgoing-links assertion (`expect(received).toEqual(expected)`). The break was reverted and
+`git diff` confirmed the file byte-identical to its committed state, after which the phase passed
+again. The phase is therefore load-bearing rather than decorative.
+
+**Two harness defects were found in the Task 42 scaffolding and fixed** — both in test code, not in
+the product:
+
+1. The fixture called `set_life_node_tags` with `life_node_id`; the command takes `node_id` and
+   `expected_node_revision`.
+2. The helpers read only child page 0, but Life Browse pages children eight at a time and the
+   earlier phases leave the Life root well past one page. `establishBranchFixture` and
+   `readBranchState` now walk every page. This would have failed only in the full ordered run, never
+   standalone.
+
+**One nondiagnostic failure is disclosed.** The first full-suite run failed at
+`phase12-life-links-backup-restore` — a pre-existing Task 41 phase — on a backlink assertion in the
+lazily-loaded Links panel after restore. It passed on the very next full run with no product change
+between them, and Task 42 changes **no** Reader, links, document, narrative, or `LifeScreen` code
+(the only `life_link` edit is a test-module migration alias), so no product path connects this slice
+to that panel. Task 41 previously shipped two timing fixes in the same area (`04aa2c9`, `e1fe367`).
+Recorded as pre-existing harness timing debt under `AI_CONSTITUTION.md` §7, not as a Task 42 defect
+and not as a reason to weaken the Task 41 assertion.
 
 ## Performance
 
@@ -209,6 +234,50 @@ Task 41.
 Task 41 files, which remain byte-identical historical evidence, and
 `scripts/check_performance_budgets.py` `DEFAULT_BUDGET` was repointed. Maxima are derived by the
 documented `ceil` formulas and clamped by the unchanged locked ceilings. **No budget was inflated.**
+
+## Security review
+
+Conducted in the main session against the `portable` precedent. (A read-only subagent was launched
+for an independent pass and terminated early on an API session limit; the review below was completed
+directly and is the one that stands.)
+
+- **Path traversal — clean.** No package-supplied string ever reaches a filesystem path. `inspect`
+  rejects any entry failing `safe_archive_path` or `enclosed_name` before anything else. Document
+  and asset paths are *derived* from UUID-validated keys (`document_canonical_path`, `asset_path`)
+  and the archive is then required to match the manifest inventory exactly, so a near-miss path such
+  as `content/documents/x.json/y.md` is rejected by the equality check even though it satisfies the
+  extension gate. All writes go to opaque-ID paths under app data: exports to
+  `exports/life-branch/<uuid>`, staging to `imports/life-branch/<uuid>`, and asset payloads through
+  the existing `install_prepared_asset_in_tx`, which generates its own name and canonicalizes to
+  prove containment.
+- **Resource exhaustion — clean.** Entry count is bounded before reading; each declared size is
+  checked against a per-path ceiling; the cumulative total uses `checked_add` and is capped at
+  64 MiB; each entry is read with `take(limit + 1)` and its actual length re-verified against the
+  declared one, so a lying header cannot over-read. `Vec::with_capacity` is therefore bounded by the
+  per-path limit, not by an attacker number. The tree walk is iterative with an explicit stack,
+  depth-capped at 128 and node-capped at 500.
+- **SQL injection — clean.** Every production `format!` that builds SQL interpolates only
+  `SUBTREE_CTE` (a module constant) and `join`/`table` names drawn from a hardcoded literal array.
+  A scripted scan of all production `format!` sites found no other interpolation; every value —
+  node IDs, keys, titles, timestamps — is bound through `params![]`.
+- **Atomicity and file residue — clean.** Every fallible step inside the import runs in one closure
+  whose `Err` and commit-failure paths both call `cleanup_receipts`, which removes only
+  `receipt.created_file` — populated exclusively for newly written payloads, never for a reused one.
+  Proven by `a_failed_import_leaves_zero_database_rows_and_zero_new_files` and
+  `a_reused_asset_file_is_never_removed_when_a_later_step_fails`.
+- **Replay abuse — clean.** `confirm_life_branch_import` re-reads the staged bytes and re-verifies
+  `sha256` against the caller's `package_sha256` before any mutation, then re-validates the archive.
+  The fingerprint binds operation ID, package digest, parent, and expected revision, so reusing an
+  operation ID with different bytes, a different destination, or a different revision fails rather
+  than replaying.
+- **Information disclosure — clean.** All five commands carry `#[tracing::instrument]` with the
+  input, request, and export ID in the skip list. Every error is a `&'static str` with no
+  interpolated content or path. Omission warnings are counts only, asserted by a test that fails if
+  a node ID, document text, task title, or node title appears.
+- **Symlink / TOCTOU — clean.** `discard_life_branch_import` uses `symlink_metadata` and refuses a
+  non-directory or symlink; both stale-cleanup passes require the matching file/directory type, a
+  non-symlink, and a valid opaque UUIDv7 name, so an unowned or planted entry is skipped. A test
+  asserts unowned files and non-UUID directories survive cleanup untouched.
 
 ## Integrity state
 

@@ -69,15 +69,15 @@ the one exercised, and the fact is recorded in the test rather than faked.
 ## F. Native and performance evidence
 
 - [x] T42-F01 add phase 13 workflow and restart phases and register them in the phase list;
-- [ ] T42-F02 prove both phases load-bearing by a deliberate break, then revert it;
+- [x] T42-F02 prove both phases load-bearing by a deliberate break, then revert it;
 - [x] T42-F03 add a `life_branch` selector to the release-candidate dogfood script;
 - [x] T42-F04 record the final bundle inventory and truthful Task 42 versioned budget evidence.
 
 ## G. Gates and closure
 
 - [x] T42-G01 run focused Rust, binding, and frontend checks;
-- [ ] T42-G02 run all broad governance, build, Rust, release, native, and RC gates;
-- [ ] T42-G03 perform one full baseline diff review and fix confirmed in-scope findings;
+- [x] T42-G02 run all broad governance, build, Rust, release, native, and RC gates;
+- [x] T42-G03 perform one full baseline diff review and fix confirmed in-scope findings;
 - [ ] T42-G04 create the Task 42 product checkpoint commit;
 - [ ] T42-G05 close all authority and evidence surfaces without allocating Task 43;
 - [ ] T42-G06 run final governance and diff checks, commit closure, push, and confirm parity.

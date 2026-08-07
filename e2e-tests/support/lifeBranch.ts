@@ -32,20 +32,33 @@ export async function establishBranchFixture(): Promise<Fixture> {
     try {
       const invoke = (window as unknown as { __TAURI_INTERNALS__: { invoke: Invoke } })
         .__TAURI_INTERNALS__.invoke;
-      type Browse = { tree_revision: number; children: Array<{ id: string; title: string }> };
-      const browse = (nodeId: string) =>
-        invoke<Browse>("get_life_browse_projection", { input: { node_id: nodeId, child_page: 0 } });
+      type Child = { id: string; title: string; revision: number };
+      type Browse = { tree_revision: number; children: Child[]; child_page_count: number };
+      const browse = (nodeId: string, page = 0) =>
+        invoke<Browse>("get_life_browse_projection", {
+          input: { node_id: nodeId, child_page: page },
+        });
+      // Life Browse pages children 8 at a time, and earlier phases leave the Life root well past
+      // one page, so every lookup walks all pages rather than trusting page 0.
+      const allChildren = async (nodeId: string) => {
+        const first = await browse(nodeId);
+        const children = [...first.children];
+        for (let page = 1; page < first.child_page_count; page++) {
+          children.push(...(await browse(nodeId, page)).children);
+        }
+        return { children, treeRevision: first.tree_revision };
+      };
 
       let counter = 0;
       const ensureNode = async (parentId: string, title: string) => {
-        const current = await browse(parentId);
+        const current = await allChildren(parentId);
         const existing = current.children.find((child) => child.title === title);
         if (existing) return existing.id;
         const created = await invoke<{ node: { id: string } }>("create_life_node", {
           input: {
             context: {
               operation_id: `e2e-branch-node-${title.replace(/\W+/g, "-")}-${counter++}`,
-              expected_tree_revision: current.tree_revision,
+              expected_tree_revision: current.treeRevision,
             },
             parent_id: parentId,
             title,
@@ -105,8 +118,15 @@ export async function establishBranchFixture(): Promise<Fixture> {
       };
       const sharedTagId = await ensureTag(sharedTag!);
       const newTagId = await ensureTag(newTag!);
+      const inners = await allChildren(innerId);
+      const basicNode = inners.children.find((child) => child.id === basicId);
+      if (!basicNode) throw new Error("basic leaf disappeared before tagging");
       await invoke("set_life_node_tags", {
-        input: { life_node_id: basicId, tag_ids: [sharedTagId, newTagId] },
+        input: {
+          node_id: basicId,
+          tag_ids: [sharedTagId, newTagId],
+          expected_node_revision: basicNode.revision,
+        },
       });
 
       stage = "links";
@@ -240,9 +260,20 @@ export async function readBranchState(parentTitle: string | null, rootTitle: str
     const invoke = (window as unknown as { __TAURI_INTERNALS__: { invoke: Invoke } })
       .__TAURI_INTERNALS__.invoke;
     type Node = { id: string; title: string };
-    type Browse = { selected: Node; children: Node[]; tree_revision: number };
-    const browse = (nodeId: string) =>
-      invoke<Browse>("get_life_browse_projection", { input: { node_id: nodeId, child_page: 0 } });
+    type Browse = { selected: Node; children: Node[]; child_page_count: number };
+    const page = (nodeId: string, index: number) =>
+      invoke<Browse>("get_life_browse_projection", {
+        input: { node_id: nodeId, child_page: index },
+      });
+    // Children are paged 8 at a time; a branch can sit on any page.
+    const browse = async (nodeId: string) => {
+      const first = await page(nodeId, 0);
+      const children = [...first.children];
+      for (let index = 1; index < first.child_page_count; index++) {
+        children.push(...(await page(nodeId, index)).children);
+      }
+      return { children };
+    };
 
     const missing = {
       found: false,
