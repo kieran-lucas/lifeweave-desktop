@@ -210,3 +210,184 @@ Task 45 is neither allocated, started, nor recommended.
 product checkpoint: 7e95644dcced19a1a8349706990d20d1df53a2e1
 closure commit:     5380883
 ```
+
+---
+
+# Post-closure remediation
+
+Independent Product Owner review of the closed slice returned **CHANGES REQUIRED** with three
+confirmed findings. This section records the remediation. It does not revise the sections above:
+the original implementation genuinely did not satisfy these three contracts, and the evidence
+recorded at closure was evidence of the shipped behaviour, not of the contract.
+
+```text
+reviewed state:      efc2790db5ead1e404ea876fabb433d8a0538f36
+remediation commit:  REMEDIATION_SHA
+schema:              26 (unchanged)
+```
+
+## Finding 1 — Graph carried no document authority
+
+**Confirmed.** `LifeGraphNodeView` and `LifeGraphLinkView` exposed no document kind or availability,
+and `life::graph` read only `life_nodes` and `life_links`. The Graph could not distinguish a branch
+from a Basic Leaf, a Narrative Canvas, or an empty leaf, and every projected edge looked equally
+available.
+
+**Root cause.** I wrote the slice spec around "hierarchy plus links" and never reconciled it against
+the Task 41 availability model. Excluding archived endpoints was correct, but I treated *document*
+unavailability as out of scope when it is the second half of the same rule.
+
+**Fix.** `LifeGraphNodeView` gains `document_kind` and `LifeGraphLinkView` gains `availability`,
+both reusing the existing `life_link::dto` enums rather than minting parallel ones, so the Graph and
+the Links panel cannot drift. Classification reuses the Task 41 endpoint rule verbatim: a supported
+document is exactly one committed Basic Leaf **or** exactly one committed Narrative Canvas.
+
+Document counts join through two additional CTEs inside the **existing** node statement — one
+`UNION ALL` over the two document tables, grouped by node, then left-joined. The projection still
+issues exactly two prepared statements plus the singleton revision read, so the source-shape proof of
+the query count still binds and is asserted against a 150-node half-documented tree.
+
+Availability is derived in Rust from the already-bounded node and link lists:
+
+```text
+both endpoints documented leaves      → active
+either endpoint undocumented          → unavailable, edge stays visible
+endpoint archived / outside the tree  → edge absent, life_links row untouched
+```
+
+No schema change, no migration, no link mutation, and no document row is written or read for
+mutation.
+
+## Finding 2 — `Open in Life` always went to Browse
+
+**Confirmed.** Every selected node was sent to Browse, and I had locked that behaviour into a test.
+
+**Root cause.** Without document authority in the projection the frontend could not tell a documented
+leaf from an empty one, so I chose the single safe destination and documented the choice instead of
+recognising it as a contract violation. The test then froze the wrong behaviour.
+
+**Fix.** Routing is now derived from the projection:
+
+```text
+active documented leaf         → Reader
+active branch                  → Browse
+active empty/unavailable leaf  → Browse
+```
+
+The button label states the destination, so the routing is visible before activation. Hand-off goes
+through a new `openGraphNode` in `LifeScreen` that resolves the **exact stable node ID** through the
+existing Life browse projection and refuses on `resolved_from_fallback`, an ID mismatch, or a
+non-leaf, surfacing *"That Life leaf is unavailable."* rather than opening the wrong node. It appends
+**no** history — neither Browse history nor the Task 41 linked-Reader history that `openLinkedReader`
+owns — because Graph is top-level navigation.
+
+The tests that locked the incorrect behaviour were replaced, not adjusted.
+
+## Finding 3 — The visual layer was the accessibility surface
+
+**Confirmed.** Every positioned graph node was a focusable `<button>`, so a 500-node graph was 500
+tab stops, and the only semantic view of relationships was the selected node's connection groups —
+reachable only by iterating every node.
+
+**Root cause.** I read the "aria-hidden SVG plus node selector" requirement as satisfied by hiding
+the `<svg>` and making the positioned marks buttons. That hides the drawing but makes the visual
+layout the primary keyboard surface, which is the opposite of the intent.
+
+**Fix.** The semantic layer is now the authority:
+
+- a standard `<select>` node selector carrying **every** projected node in deterministic tree order,
+  each labelled with its depth and its kind in words;
+- the selected-node inspector, now stating node kind and document availability;
+- a new **complete explicit-link table** listing every visible edge exactly once as
+  `Source → Target → Availability`, with no node iteration required.
+
+Positioned marks became non-focusable `aria-hidden` `<div>`s that retain pointer selection, so the
+drawn canvas contributes **zero** tab stops. Visual and semantic selection stay synchronised in both
+directions. Unavailable edges are drawn with a distinct dotted stroke class *and* labelled in text,
+never by colour alone. Axe remains at zero violations.
+
+The connection list is still bounded by the selected node's own degree, exactly like the Links panel;
+that is a property of the node, not of graph size, and the tests assert the canvas separately.
+
+## Finding 4 (contract item 4) — Initial selection
+
+Graph now opens with the current Life node selected when it appears in the projection, falling back
+to the root. It is component state only: not persisted, and `graph` still never reaches
+`life_navigation_preferences`.
+
+## Fail-before-fix and deliberate-break evidence
+
+- **Finding 2 regression test proven load-bearing:** forcing `opensInReader` to `false` — the exact
+  defect under review — made phase 15 fail at
+  `Can't call click on element with selector "button=Open E2E Graph Source in Life Reader"`. Reverted;
+  `grep -c "DELIBERATE BREAK"` returns 0 and the installer was rebuilt before the green run.
+- **Two harness defects were found and fixed rather than worked around:** WebdriverIO's element-array
+  `map` resolves to a promise and cannot be given to `Promise.all`; and the `openGraph` helper clicked
+  the Graph toggle unconditionally, closing an already-open graph. Both were harness bugs, not product
+  bugs, and are recorded as such.
+- **Two database protections were discovered while writing tests** and are now asserted instead of
+  being faked: a node cannot hold both document kinds, and a documented leaf cannot gain an active
+  child. Both "unsupported leaf" transitions are therefore unreachable, so the tests assert the
+  refusals and the classifier keeps a documented defensive arm.
+
+## Native coverage limitation, stated plainly
+
+There is **no production path** to remove or archive a committed document — every `archived_at` write
+on `reader_documents` and `narrative_documents` in the repository is test-only — and Task 41 correctly
+refuses to create a link to an undocumented leaf. An **unavailable edge is therefore not constructible
+natively**, so phase 15 does not assert one. It asserts what the fixture can genuinely exercise: the
+document-free leaf classified as `Empty leaf` in the selector, offered Browse and never Reader. The
+unavailable-edge classification is proven by three `life::graph` Rust tests. This is a real coverage
+boundary, not a passing claim.
+
+## Remediation evidence
+
+| Gate | Result |
+|---|---|
+| `cargo test --locked -- --test-threads=1` | **732 passed**, 0 failed, 4 ignored (725 → 732) |
+| `cargo clippy --locked --all-targets --all-features -- -D warnings` | clean, no suppressions |
+| `cargo fmt -- --check` | clean |
+| `pnpm test` | **680 passed** across 46 files (673 → 680), axe zero |
+| `pnpm typecheck` | clean |
+| `pnpm verify` | all six gates pass |
+| `pnpm hardening:performance` | `violations: []` |
+| `pnpm tauri build` | NSIS installer produced |
+| `pnpm e2e:windows -- phase15-life-graph.e2e.ts` | 4/4 |
+| `pnpm e2e:windows` | **24/24 native phases pass** |
+| `pnpm hardening:rc` | `core-rc-efc2790`, all eight selectors green, installer sha256 `82d0ac0da196a15374fb8a884a87cef33c7d0dcd8b49278006fc3d5ab794d3a3` |
+| `git diff --check` | clean |
+
+New Rust coverage: branch / Basic Leaf / Narrative Canvas / empty-leaf classification; documented
+endpoints yield an active edge; an endpoint losing its document keeps the edge and marks it
+unavailable while the `life_links` row survives; a branch endpoint is unavailable rather than absent;
+an archived endpoint removes the edge while both the link and document rows survive; document
+classification stays batched on a 150-node tree; and the schema is still 26.
+
+New frontend coverage: the selector carries every node in tree order with its kind; the drawn canvas
+has zero tab stops at 5 and at 205 nodes; visual and semantic selection stay synchronised; the link
+table lists every edge exactly once with availability; unavailable edges differ by class and by text;
+Graph opens on the current node and falls back to the root; `Open in Life` routes documented leaf →
+Reader and branch / empty leaf → Browse; a stale Reader target fails safely without opening another
+node; Reader hand-off adds no linked-Reader history.
+
+## Performance
+
+Measured across three builds; deterministic.
+
+| Aggregate | Task 43 accepted | At closure | After remediation | Delta vs Task 43 | Authorized |
+|---|---|---|---|---|---|
+| startup `index.js` raw | 519,500 | 520,452 | 520,935 | **+1,435** | ≤ 2,048 |
+| total raw | 1,204,073 | 1,212,126 | 1,214,646 | **+10,573** | ≤ 24,576 |
+| deterministic gzip | 370,223 | 373,089 | 373,737 | **+3,514** | ≤ 8,192 |
+| chunk count | 21 | 22 | 22 | +1 | — |
+
+Still inside the originally authorized envelope. **No budget was widened**: every `maximum`, locked
+ceiling, and derivation in `task-44-performance-budgets.json` is byte-identical to closure; only the
+`observed` values and the baseline's final totals were refreshed to the remediated truth, and the
+closure totals are retained alongside them.
+
+## State after remediation
+
+Task 44 remains the latest closed task, Slice 034 remains closed, schema remains 26, `active_spec`
+remains `null`, `next_action` remains `product_owner_gate`, and Task 45 remains unstarted,
+unallocated, and unrecommended. No migration, dependency, lockfile, workflow, or seal changed.

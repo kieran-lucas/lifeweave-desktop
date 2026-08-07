@@ -30,17 +30,17 @@
   },
   "aggregates": {
     "main_js_bytes": {
-      "observed": 520452,
+      "observed": 520935,
       "maximum": 530862,
       "derivation": "min(520452 + max(1024, ceil(520452 * 0.0200)), 535000)"
     },
     "total_js_bytes": {
-      "observed": 1212126,
+      "observed": 1214646,
       "maximum": 1221217,
       "derivation": "1212126 + max(8192, ceil(1212126 * 0.0075))"
     },
     "total_js_gzip_bytes": {
-      "observed": 373089,
+      "observed": 373737,
       "maximum": 377185,
       "derivation": "373089 + max(4096, ceil(373089 * 0.0100))"
     },
@@ -57,7 +57,7 @@
     },
     "FocusPlansScreen.js": {
       "observed_raw_bytes": 18396,
-      "observed_gzip_bytes": 5093,
+      "observed_gzip_bytes": 5095,
       "maximum_raw_bytes": 19420,
       "class": "lazy",
       "owner": "Focus Plans",
@@ -65,7 +65,7 @@
     },
     "NarrativeCanvasStudio.js": {
       "observed_raw_bytes": 20069,
-      "observed_gzip_bytes": 5932,
+      "observed_gzip_bytes": 5933,
       "maximum_raw_bytes": 21093,
       "class": "lazy",
       "owner": "Narrative Canvas studio",
@@ -73,7 +73,7 @@
     },
     "TaskSavedViewsPanel.js": {
       "observed_raw_bytes": 16544,
-      "observed_gzip_bytes": 4953,
+      "observed_gzip_bytes": 4951,
       "maximum_raw_bytes": 17568,
       "class": "lazy",
       "owner": "Task Saved Views",
@@ -88,8 +88,8 @@
       "derivation": "390833 + max(1024, ceil(390833 * 0.0200))"
     },
     "index.js": {
-      "observed_raw_bytes": 520452,
-      "observed_gzip_bytes": 158213,
+      "observed_raw_bytes": 520935,
+      "observed_gzip_bytes": 158328,
       "maximum_raw_bytes": 530862,
       "class": "startup",
       "owner": "application shell and eager screens",
@@ -111,5 +111,6 @@
       "owner": "TanStack Query projection cache",
       "derivation": "20834 + max(1024, ceil(20834 * 0.0200))"
     }
-  }
+  },
+  "remediation_note": "Observations refreshed after the Task 44 post-closure remediation. Every maximum, locked ceiling, and derivation is unchanged from closure: no budget was widened."
 }

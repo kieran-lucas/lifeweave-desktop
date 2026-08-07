@@ -6,9 +6,24 @@
 //! Task 41 flow. Nothing is inferred, derived, typed, or weighted.
 
 use rusqlite::Connection;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use super::{domain::ROOT_ID, dto::*, repository::LifeError};
+use crate::life_link::dto::{LifeLinkAvailability, LifeLinkDocumentKind};
+
+/// Document classification reuses the Task 41 endpoint rule verbatim: a supported document is
+/// exactly one committed Basic Leaf **or** exactly one committed Narrative Canvas. A branch, a leaf
+/// with neither, and a leaf with both are all unsupported.
+fn document_kind(is_leaf: bool, basic: i64, narrative: i64) -> Option<LifeLinkDocumentKind> {
+    if !is_leaf {
+        return None;
+    }
+    match (basic, narrative) {
+        (1, 0) => Some(LifeLinkDocumentKind::BasicLeaf),
+        (0, 1) => Some(LifeLinkDocumentKind::NarrativeCanvas),
+        _ => None,
+    }
+}
 
 /// Bounds are refusals, never truncations. A partial graph that silently omits nodes or
 /// relationships is worse than no graph, because the user would draw conclusions from a picture that
@@ -43,9 +58,19 @@ WITH RECURSIVE tree(id,parent_id,title,icon_key,sort_key,depth,path) AS (
       WHERE n.archived_at IS NULL AND t.depth<?1
 ), counts AS (
     SELECT parent_id,COUNT(*) count FROM life_nodes WHERE archived_at IS NULL GROUP BY parent_id
+), documents AS (
+    SELECT life_node_id,1 AS basic,0 AS narrative FROM reader_documents WHERE archived_at IS NULL
+    UNION ALL
+    SELECT life_node_id,0,1 FROM narrative_documents WHERE archived_at IS NULL
+), document_counts AS (
+    SELECT life_node_id,SUM(basic) basic,SUM(narrative) narrative
+      FROM documents GROUP BY life_node_id
 )
-SELECT t.id,t.parent_id,t.title,t.icon_key,t.sort_key,t.depth,COALESCE(c.count,0)
-  FROM tree t LEFT JOIN counts c ON c.parent_id=t.id
+SELECT t.id,t.parent_id,t.title,t.icon_key,t.sort_key,t.depth,COALESCE(c.count,0),
+       COALESCE(d.basic,0),COALESCE(d.narrative,0)
+  FROM tree t
+  LEFT JOIN counts c ON c.parent_id=t.id
+  LEFT JOIN document_counts d ON d.life_node_id=t.id
   ORDER BY t.path
   LIMIT ?2
 "#;
@@ -83,6 +108,7 @@ pub fn projection(conn: &Connection) -> Result<LifeGraphProjection, LifeError> {
     let mut nodes = statement
         .query_map([depth_probe, MAX_GRAPH_NODES + 1], |row| {
             let child_count: i32 = row.get(6)?;
+            let is_leaf = child_count == 0;
             Ok(LifeGraphNodeView {
                 id: row.get(0)?,
                 parent_id: row.get(1)?,
@@ -90,7 +116,8 @@ pub fn projection(conn: &Connection) -> Result<LifeGraphProjection, LifeError> {
                 icon_key: row.get(3)?,
                 sort_key: row.get(4)?,
                 depth: row.get(5)?,
-                is_leaf: child_count == 0,
+                is_leaf,
+                document_kind: document_kind(is_leaf, row.get(7)?, row.get(8)?),
                 outgoing_link_count: 0,
                 incoming_link_count: 0,
             })
@@ -109,17 +136,34 @@ pub fn projection(conn: &Connection) -> Result<LifeGraphProjection, LifeError> {
     }
 
     let mut link_statement = conn.prepare(LINKS_SQL)?;
-    let links = link_statement
+    let mut links = link_statement
         .query_map([depth_probe, MAX_GRAPH_LINKS + 1], |row| {
             Ok(LifeGraphLinkView {
                 link_id: row.get(0)?,
                 source_node_id: row.get(1)?,
                 target_node_id: row.get(2)?,
+                availability: LifeLinkAvailability::Active,
             })
         })?
         .collect::<Result<Vec<_>, _>>()?;
     if links.len() as i64 > MAX_GRAPH_LINKS {
         return Err(LifeError::Validation(TOO_MANY_LINKS));
+    }
+
+    // Task 41 semantics, preserved exactly: an edge between two active nodes stays **visible** when
+    // an endpoint's supported document goes away — it is marked unavailable, never deleted or
+    // hidden. Archived endpoints are a different case and are already absent from the active tree.
+    let documented: HashSet<&str> = nodes
+        .iter()
+        .filter(|node| node.document_kind.is_some())
+        .map(|node| node.id.as_str())
+        .collect();
+    for link in &mut links {
+        if !documented.contains(link.source_node_id.as_str())
+            || !documented.contains(link.target_node_id.as_str())
+        {
+            link.availability = LifeLinkAvailability::Unavailable;
+        }
     }
 
     // Counts are derived from the already-bounded link list rather than queried per node.
@@ -172,6 +216,45 @@ mod tests {
             params![id],
         )
         .unwrap();
+    }
+
+    fn add_basic(conn: &Connection, node_id: &str) -> String {
+        let id = uuid::Uuid::now_v7().to_string();
+        conn.execute(
+            "INSERT INTO reader_documents VALUES(?1,?2,1,0,'{}','body','1','1',NULL)",
+            params![id, node_id],
+        )
+        .unwrap();
+        id
+    }
+
+    fn add_narrative(conn: &Connection, node_id: &str) {
+        conn.execute(
+            "INSERT INTO narrative_documents(id,life_node_id,schema_version,revision,canonical_json,plain_text,created_at,updated_at,archived_at,template_id,template_version)
+             VALUES(?1,?2,1,0,'{}','body','1','1',NULL,'knowledge_dossier',1)",
+            params![uuid::Uuid::now_v7().to_string(), node_id],
+        )
+        .unwrap();
+    }
+
+    fn kind(value: &LifeGraphProjection, id: &str) -> Option<LifeLinkDocumentKind> {
+        value
+            .nodes
+            .iter()
+            .find(|node| node.id == id)
+            .expect("node present")
+            .document_kind
+            .clone()
+    }
+
+    fn availability(value: &LifeGraphProjection, link_id: &str) -> LifeLinkAvailability {
+        value
+            .links
+            .iter()
+            .find(|link| link.link_id == link_id)
+            .expect("link present")
+            .availability
+            .clone()
     }
 
     fn add_link(conn: &Connection, source: &str, target: &str) -> String {
@@ -525,6 +608,197 @@ mod tests {
             assert_eq!(sql.matches('?').count(), 2, "{sql}");
             assert!(sql.contains("?1") && sql.contains("?2"));
         }
+    }
+
+    #[test]
+    fn classifies_branches_documented_leaves_and_empty_leaves() {
+        let conn = setup();
+        let branch = add_node(&conn, ROOT_ID, "Branch", 1);
+        add_node(&conn, &branch, "Branch child", 1);
+        let basic = add_node(&conn, ROOT_ID, "Basic leaf", 2);
+        add_basic(&conn, &basic);
+        let narrative = add_node(&conn, ROOT_ID, "Narrative leaf", 3);
+        add_narrative(&conn, &narrative);
+        let empty = add_node(&conn, ROOT_ID, "Empty leaf", 4);
+
+        let value = projection(&conn).unwrap();
+
+        assert_eq!(
+            kind(&value, &branch),
+            None,
+            "a branch carries no document kind"
+        );
+        assert_eq!(kind(&value, ROOT_ID), None);
+        assert_eq!(kind(&value, &basic), Some(LifeLinkDocumentKind::BasicLeaf));
+        assert_eq!(
+            kind(&value, &narrative),
+            Some(LifeLinkDocumentKind::NarrativeCanvas)
+        );
+        assert_eq!(kind(&value, &empty), None, "an empty leaf is undocumented");
+
+        // A leaf carrying both kinds at once is unreachable: the database refuses the second
+        // document. The classifier keeps a defensive `None` arm for it, but this asserts the real
+        // invariant rather than pretending the state can be constructed.
+        let refused = conn
+            .execute(
+                "INSERT INTO narrative_documents(id,life_node_id,schema_version,revision,canonical_json,plain_text,created_at,updated_at,archived_at,template_id,template_version)
+                 VALUES(?1,?2,1,0,'{}','body','1','1',NULL,'knowledge_dossier',1)",
+                params![uuid::Uuid::now_v7().to_string(), basic],
+            )
+            .unwrap_err();
+        assert!(
+            refused.to_string().contains("already has"),
+            "unexpected error: {refused}"
+        );
+    }
+
+    #[test]
+    fn documented_endpoints_make_an_edge_active() {
+        let conn = setup();
+        let source = add_node(&conn, ROOT_ID, "Source", 1);
+        add_basic(&conn, &source);
+        let target = add_node(&conn, ROOT_ID, "Target", 2);
+        add_narrative(&conn, &target);
+        let link = add_link(&conn, &source, &target);
+
+        let value = projection(&conn).unwrap();
+
+        assert_eq!(availability(&value, &link), LifeLinkAvailability::Active);
+    }
+
+    #[test]
+    fn an_endpoint_losing_its_document_keeps_the_edge_but_marks_it_unavailable() {
+        let conn = setup();
+        let source = add_node(&conn, ROOT_ID, "Source", 1);
+        let document = add_basic(&conn, &source);
+        let target = add_node(&conn, ROOT_ID, "Target", 2);
+        add_basic(&conn, &target);
+        let link = add_link(&conn, &source, &target);
+        assert_eq!(
+            availability(&projection(&conn).unwrap(), &link),
+            LifeLinkAvailability::Active
+        );
+
+        conn.execute(
+            "UPDATE reader_documents SET archived_at='1' WHERE id=?1",
+            params![document],
+        )
+        .unwrap();
+
+        let value = projection(&conn).unwrap();
+        assert_eq!(
+            value.links.len(),
+            1,
+            "the edge stays visible; it is never deleted or hidden"
+        );
+        assert_eq!(
+            availability(&value, &link),
+            LifeLinkAvailability::Unavailable
+        );
+        assert_eq!(kind(&value, &source), None);
+        let stored: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM life_links WHERE id=?1",
+                params![link],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(stored, 1, "the link row itself is untouched");
+    }
+
+    #[test]
+    fn a_branch_endpoint_is_unavailable_and_a_documented_leaf_cannot_become_one() {
+        let conn = setup();
+        let source = add_node(&conn, ROOT_ID, "Source", 1);
+        add_basic(&conn, &source);
+        // A link row can name a branch directly; Task 41 rejects creating one, but the graph must
+        // still classify whatever the table holds rather than assume.
+        let branch = add_node(&conn, ROOT_ID, "Branch", 2);
+        add_node(&conn, &branch, "Branch child", 1);
+        let link = add_link(&conn, &source, &branch);
+
+        let value = projection(&conn).unwrap();
+        assert_eq!(value.links.len(), 1, "the edge stays visible");
+        assert_eq!(
+            availability(&value, &link),
+            LifeLinkAvailability::Unavailable
+        );
+
+        // The reverse transition is unreachable: a documented leaf cannot gain a child.
+        let refused = conn
+            .execute(
+                "INSERT INTO life_nodes VALUES(?1,?2,'Child','Description','life-leaf','neutral',1,NULL,'1','1',0)",
+                params![uuid::Uuid::now_v7().to_string(), source],
+            )
+            .unwrap_err();
+        assert!(
+            refused.to_string().contains("cannot gain an active child"),
+            "unexpected error: {refused}"
+        );
+    }
+
+    #[test]
+    fn an_archived_endpoint_removes_the_edge_while_rows_stay_intact() {
+        let conn = setup();
+        let source = add_node(&conn, ROOT_ID, "Source", 1);
+        add_basic(&conn, &source);
+        let target = add_node(&conn, ROOT_ID, "Target", 2);
+        let document = add_basic(&conn, &target);
+        let link = add_link(&conn, &source, &target);
+        archive(&conn, &target);
+
+        let value = projection(&conn).unwrap();
+        assert!(
+            value.links.is_empty(),
+            "an archived endpoint leaves the active tree, so its edge is absent, not unavailable"
+        );
+        let links: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM life_links WHERE id=?1",
+                params![link],
+                |row| row.get(0),
+            )
+            .unwrap();
+        let documents: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM reader_documents WHERE id=?1",
+                params![document],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!((links, documents), (1, 1), "rows must survive untouched");
+    }
+
+    #[test]
+    fn document_classification_stays_batched_on_a_wide_documented_tree() {
+        let conn = setup();
+        for index in 0..150 {
+            let leaf = add_node(&conn, ROOT_ID, &format!("Leaf {index}"), index);
+            if index % 2 == 0 {
+                add_basic(&conn, &leaf);
+            }
+        }
+
+        let value = projection(&conn).unwrap();
+
+        let documented = value
+            .nodes
+            .iter()
+            .filter(|node| node.document_kind.is_some())
+            .count();
+        assert_eq!(documented, 75);
+        assert_eq!(value.nodes.len(), 151);
+    }
+
+    #[test]
+    fn remediation_does_not_move_the_schema() {
+        let conn = setup();
+        let version: u32 = conn
+            .query_row("SELECT MAX(version) FROM schema_migrations", [], |row| {
+                row.get(0)
+            })
+            .unwrap();
+        assert_eq!(version, 26);
     }
 
     #[test]

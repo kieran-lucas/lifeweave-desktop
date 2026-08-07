@@ -103,6 +103,7 @@ export function LifeScreen({
   // Graph is a transient overlay on the current mode, never a Mode itself: `last_life_mode` is
   // constrained to browse/edit/pinned/reader in Rust, and nothing about the graph is persisted.
   const [graphOpen, setGraphOpen] = useState(false);
+  const [graphError, setGraphError] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [reader, setReader] = useState<LifeNodeView | PinnedLifeNodeView>();
@@ -376,6 +377,35 @@ export function LifeScreen({
       }
     }
   };
+  /**
+   * Graph hand-off. Graph is a top-level view, so this is top-level navigation: it resolves the
+   * exact stable node ID and deliberately appends **no** history, neither Browse history nor the
+   * Task 41 linked-Reader history that `openLinkedReader` owns. A target that no longer resolves to
+   * the requested node fails safely by staying put and reporting, rather than opening a fallback.
+   */
+  const openGraphNode = async (id: string, target: "reader" | "browse") => {
+    invalidateLinkedReaderNavigation();
+    cancelPendingEntryRequest();
+    if (target === "browse") {
+      setGraphOpen(false);
+      setReader(undefined);
+      setNodeId(id);
+      setPage(0);
+      setMode("browse");
+      return;
+    }
+    const projection = await client.fetchQuery({
+      queryKey: lifeKeys.browse(id, 0),
+      queryFn: () => getLifeBrowseProjection({ node_id: id, child_page: 0 }),
+    });
+    if (projection.resolved_from_fallback || projection.selected.id !== id || !projection.selected.is_leaf)
+      throw new Error("That Life leaf is unavailable.");
+    setGraphOpen(false);
+    setNodeId(id);
+    setPage(0);
+    setReader(projection.selected);
+    setMode("reader");
+  };
   const back = () => {
     invalidateLinkedReaderNavigation();
     cancelPendingEntryRequest();
@@ -491,6 +521,7 @@ export function LifeScreen({
             onClick={() => {
               invalidateLinkedReaderNavigation();
               cancelPendingEntryRequest();
+              setGraphError(false);
               setGraphOpen(value => !value);
             }}
           >
@@ -500,18 +531,15 @@ export function LifeScreen({
       </header>
       {graphOpen ? (
         <Suspense fallback={<p aria-live="polite">Loading the Life graph…</p>}>
+          {graphError && (
+            <p role="alert" className={styles.unavailable}>
+              That Life leaf is unavailable. Refresh the graph and try again.
+            </p>
+          )}
           <LifeGraphWorkspace
-            onOpenNode={id => {
-              // Deliberately history-free: this mirrors the Life Edit `onBrowse` callback and never
-              // touches the Reader link history that `openLinkedReader` owns. Graph always hands off
-              // to Browse, so Reader entry stays the user's explicit choice.
-              invalidateLinkedReaderNavigation();
-              cancelPendingEntryRequest();
-              setGraphOpen(false);
-              setNodeId(id);
-              setPage(0);
-              setReader(undefined);
-              setMode("browse");
+            currentNodeId={projection.selected.id}
+            onOpenNode={(id, target) => {
+              void openGraphNode(id, target).catch(() => setGraphError(true));
             }}
             onClose={() => setGraphOpen(false)}
           />

@@ -20,22 +20,22 @@
   },
   "final_totals": {
     "chunk_count": 22,
-    "total_js_bytes": 1212126,
-    "total_js_gzip_bytes": 373089,
-    "main_js_bytes": 520452,
-    "startup_js_bytes": 550594
+    "total_js_bytes": 1214646,
+    "total_js_gzip_bytes": 373737,
+    "main_js_bytes": 520935,
+    "startup_js_bytes": 551077
   },
   "task_44_delta_against_task_43_accepted_inventory": {
     "startup_raw_bytes": {
-      "delta": 952,
+      "delta": 1435,
       "authorized_ceiling": 2048
     },
     "total_raw_bytes": {
-      "delta": 8053,
+      "delta": 10573,
       "authorized_ceiling": 24576
     },
     "deterministic_gzip_bytes": {
-      "delta": 2866,
+      "delta": 3514,
       "authorized_ceiling": 8192
     }
   },
@@ -57,7 +57,7 @@
   "final_inventory": {
     "ActiveTimerStrip.js": {
       "raw_bytes": 1034,
-      "gzip_bytes": 539
+      "gzip_bytes": 540
     },
     "BasicLeafEditor.js": {
       "raw_bytes": 52355,
@@ -65,15 +65,15 @@
     },
     "DeadlineQueuePanel.js": {
       "raw_bytes": 3096,
-      "gzip_bytes": 1237
+      "gzip_bytes": 1236
     },
     "FocusPlansScreen.js": {
       "raw_bytes": 18396,
-      "gzip_bytes": 5093
+      "gzip_bytes": 5095
     },
     "GlobalSearchDialog.js": {
       "raw_bytes": 4142,
-      "gzip_bytes": 1774
+      "gzip_bytes": 1776
     },
     "LifeBranch.css.js": {
       "raw_bytes": 300,
@@ -81,15 +81,15 @@
     },
     "LifeBranchControls.js": {
       "raw_bytes": 4350,
-      "gzip_bytes": 2035
+      "gzip_bytes": 2036
     },
     "LifeBranchImportDialog.js": {
       "raw_bytes": 2766,
       "gzip_bytes": 1190
     },
     "LifeGraphWorkspace.js": {
-      "raw_bytes": 7095,
-      "gzip_bytes": 2596
+      "raw_bytes": 9132,
+      "gzip_bytes": 3125
     },
     "LifeLinksPanel.js": {
       "raw_bytes": 7383,
@@ -97,11 +97,11 @@
     },
     "NarrativeCanvasStudio.js": {
       "raw_bytes": 20069,
-      "gzip_bytes": 5932
+      "gzip_bytes": 5933
     },
     "PortablePackageImportDialog.js": {
       "raw_bytes": 2728,
-      "gzip_bytes": 1149
+      "gzip_bytes": 1150
     },
     "QueryClientProvider.js": {
       "raw_bytes": 481,
@@ -109,7 +109,7 @@
     },
     "TagSettings.js": {
       "raw_bytes": 9450,
-      "gzip_bytes": 2516
+      "gzip_bytes": 2515
     },
     "TaskPlanningPanel.js": {
       "raw_bytes": 4450,
@@ -117,15 +117,15 @@
     },
     "TaskSavedViewsPanel.js": {
       "raw_bytes": 16544,
-      "gzip_bytes": 4953
+      "gzip_bytes": 4951
     },
     "dist.js": {
       "raw_bytes": 390833,
       "gzip_bytes": 120573
     },
     "index.js": {
-      "raw_bytes": 520452,
-      "gzip_bytes": 158213
+      "raw_bytes": 520935,
+      "gzip_bytes": 158328
     },
     "jsx-runtime.js": {
       "raw_bytes": 7948,
@@ -142,6 +142,29 @@
     "useQuery.js": {
       "raw_bytes": 20834,
       "gzip_bytes": 6883
+    }
+  },
+  "closure_totals": {
+    "chunk_count": 22,
+    "total_js_bytes": 1212126,
+    "total_js_gzip_bytes": 373089,
+    "main_js_bytes": 520452,
+    "startup_js_bytes": 550594
+  },
+  "remediation": {
+    "note": "The post-closure remediation added document authority to the projection and replaced the per-node visual buttons with a semantic selector, inspector, and complete link table. Measured across three builds; every maximum from closure is unchanged.",
+    "closure_final_totals": {
+      "chunk_count": 22,
+      "total_js_bytes": 1212126,
+      "total_js_gzip_bytes": 373089,
+      "main_js_bytes": 520452,
+      "startup_js_bytes": 550594
+    },
+    "emitted_chunk": {
+      "LifeGraphWorkspace.js": {
+        "raw_bytes": 9132,
+        "gzip_bytes": 3125
+      }
     }
   }
 }

@@ -3,6 +3,8 @@ import { $, browser, expect } from "@wdio/globals";
 export const GRAPH_PARENT = "E2E Graph Parent";
 export const GRAPH_SOURCE = "E2E Graph Source";
 export const GRAPH_TARGET = "E2E Graph Target";
+export const GRAPH_SECOND = "E2E Graph Second";
+export const GRAPH_EMPTY = "E2E Graph Empty";
 
 type Browse = {
   tree_revision: number;
@@ -10,15 +12,27 @@ type Browse = {
 };
 
 /**
- * Idempotently establishes a branch with one child plus two linkable leaves under the Life root,
- * and draws exactly one explicit link from source to target.
+ * Idempotently establishes, under the Life root: one branch with a child, three documented leaves,
+ * and one document-free leaf. Two explicit links are drawn from the source leaf.
  *
- * The link is created through raw IPC rather than the Links UI so that phase 15 exercises only the
+ * The document-free leaf exists to prove document classification through the UI — it must appear as
+ * an empty leaf and must not be Reader-openable. It carries **no** link: Task 41 correctly refuses
+ * to create one to an undocumented leaf, and there is no production path to remove a committed
+ * document, so an unavailable edge cannot be constructed natively. That classification is proven by
+ * the `life::graph` Rust tests instead, and the audit records the limitation.
+ *
+ * Links are created through raw IPC rather than the Links UI so that phase 15 exercises only the
  * graph. Task 41's own phases already cover link creation through the accessible UI.
  */
 export async function establishGraphFixtures() {
   const result = await browser.execute(
-    async (parentTitle: string, sourceTitle: string, targetTitle: string) => {
+    async (
+      parentTitle: string,
+      sourceTitle: string,
+      targetTitle: string,
+      secondTitle: string,
+      emptyTitle: string,
+    ) => {
       const invoke = (
         window as unknown as {
           __TAURI_INTERNALS__: { invoke: <T>(command: string, payload?: unknown) => Promise<T> };
@@ -75,27 +89,34 @@ export async function establishGraphFixtures() {
       const childId = await ensure(parentId, `${parentTitle} Child`, "child");
       const sourceId = await ensure("life-root", sourceTitle, "source");
       const targetId = await ensure("life-root", targetTitle, "target");
+      const secondId = await ensure("life-root", secondTitle, "second");
+      const emptyId = await ensure("life-root", emptyTitle, "empty");
       await withDocument(sourceId, "source");
       await withDocument(targetId, "target");
+      await withDocument(secondId, "second");
+      // `emptyId` deliberately receives no document.
 
       const panel = await invoke<{ outgoing: Array<{ endpoint_node_id: string }> }>(
         "get_life_link_panel",
         { input: { source_node_id: sourceId } },
       );
-      if (!panel.outgoing.some(row => row.endpoint_node_id === targetId))
-        await invoke("create_life_link", {
-          input: { source_node_id: sourceId, target_node_id: targetId },
-        });
+      for (const endpoint of [targetId, secondId])
+        if (!panel.outgoing.some(row => row.endpoint_node_id === endpoint))
+          await invoke("create_life_link", {
+            input: { source_node_id: sourceId, target_node_id: endpoint },
+          });
 
-      return { parentId, childId, sourceId, targetId };
+      return { parentId, childId, sourceId, targetId, secondId, emptyId };
     },
     GRAPH_PARENT,
     GRAPH_SOURCE,
     GRAPH_TARGET,
+    GRAPH_SECOND,
+    GRAPH_EMPTY,
   );
 
   expect(typeof result.sourceId).toBe("string");
-  expect(typeof result.targetId).toBe("string");
+  expect(typeof result.emptyId).toBe("string");
   return result;
 }
 
@@ -106,13 +127,32 @@ export async function openLifeSystem() {
   await expect($("h1=Life System")).toBeDisplayed();
 }
 
-export const graphNode = (title: string) => $(`button[aria-label^="${title}."]`);
+/** The semantic node selector is the accessibility authority for the graph. */
+export const graphSelector = () => $("#life-graph-node-selector");
+
+export async function graphOptionLabels() {
+  // WebdriverIO's element-array `map` is chainable and resolves to a promise rather than an array,
+  // so it cannot be handed to `Promise.all`. Read the labels sequentially instead.
+  const options = await graphSelector().$$("option");
+  const labels: string[] = [];
+  for (const option of options) labels.push(await option.getText());
+  return labels;
+}
+
+export async function selectGraphNode(title: string) {
+  const labels = await graphOptionLabels();
+  const label = labels.find(value => value.includes(title));
+  if (!label) throw new Error(`no graph option for ${title}`);
+  await graphSelector().selectByVisibleText(label);
+}
 
 export const connectionSection = (heading: string) =>
   $(`section[aria-labelledby='life-graph-${heading}-heading']`);
 
 export async function openGraph() {
   await openLifeSystem();
+  // The Graph action is a toggle, so clicking it while the graph is already open would close it.
+  if (await $("h3=Life graph").isExisting()) return;
   const browseButton = $("button=Browse");
   if (await browseButton.isExisting()) await browseButton.click();
   await $("button=Graph").click();

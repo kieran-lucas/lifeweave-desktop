@@ -13,6 +13,9 @@ const ROOT = "life-root";
 const WORK = "00000000-0000-7000-8000-000000000101";
 const HEALTH = "00000000-0000-7000-8000-000000000102";
 const PLAN = "00000000-0000-7000-8000-000000000103";
+const EMPTY = "00000000-0000-7000-8000-000000000104";
+
+type DocumentKind = "basic_leaf" | "narrative_canvas" | null;
 
 const node = (
   id: string,
@@ -22,6 +25,7 @@ const node = (
     depth: number;
     sort_key: number;
     is_leaf: boolean;
+    document_kind: DocumentKind;
     outgoing_link_count: number;
     incoming_link_count: number;
   }> = {},
@@ -33,30 +37,54 @@ const node = (
   sort_key: 1,
   depth: 0,
   is_leaf: true,
+  document_kind: null as DocumentKind,
   outgoing_link_count: 0,
   incoming_link_count: 0,
   ...overrides,
 });
 
-/** Work → Health is the one explicit link; Work also parents Plan. */
+/**
+ * Work (branch) → Plan (Basic Leaf); Health is a Narrative Canvas leaf; Empty carries no document.
+ * Plan → Health is an active explicit link; Plan → Empty is an unavailable one.
+ */
 const projection = () => ({
   root_id: ROOT,
   tree_revision: 12,
   nodes: [
     node(ROOT, null, "Life", { depth: 0, is_leaf: false }),
-    node(WORK, ROOT, "Work", { depth: 1, sort_key: 1, is_leaf: false, outgoing_link_count: 1 }),
-    node(PLAN, WORK, "Kế hoạch", { depth: 2, sort_key: 1 }),
-    node(HEALTH, ROOT, "Health", { depth: 1, sort_key: 2, incoming_link_count: 1 }),
+    node(WORK, ROOT, "Work", { depth: 1, sort_key: 1, is_leaf: false }),
+    node(PLAN, WORK, "Kế hoạch", {
+      depth: 2,
+      sort_key: 1,
+      document_kind: "basic_leaf",
+      outgoing_link_count: 2,
+    }),
+    node(HEALTH, ROOT, "Health", {
+      depth: 1,
+      sort_key: 2,
+      document_kind: "narrative_canvas",
+      incoming_link_count: 1,
+    }),
+    node(EMPTY, ROOT, "Scratch", { depth: 1, sort_key: 3, incoming_link_count: 1 }),
   ],
-  links: [{ link_id: "link-1", source_node_id: WORK, target_node_id: HEALTH }],
+  links: [
+    { link_id: "link-1", source_node_id: PLAN, target_node_id: HEALTH, availability: "active" },
+    { link_id: "link-2", source_node_id: PLAN, target_node_id: EMPTY, availability: "unavailable" },
+  ],
 });
 
-const mount = (onOpenNode = vi.fn(), onClose = vi.fn()) => {
+const mount = (props: Partial<Parameters<typeof LifeGraphWorkspace>[0]> = {}) => {
+  const onOpenNode = props.onOpenNode ?? vi.fn();
+  const onClose = props.onClose ?? vi.fn();
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return {
     ...render(
       <QueryClientProvider client={client}>
-        <LifeGraphWorkspace onOpenNode={onOpenNode} onClose={onClose} />
+        <LifeGraphWorkspace
+          {...props}
+          onOpenNode={onOpenNode}
+          onClose={onClose}
+        />
       </QueryClientProvider>,
     ),
     client,
@@ -65,96 +93,178 @@ const mount = (onOpenNode = vi.fn(), onClose = vi.fn()) => {
   };
 };
 
-describe("LifeGraphWorkspace", () => {
+const selector = () => screen.getByRole("combobox", { name: "Life node" });
+
+describe("LifeGraphWorkspace semantic surface", () => {
   beforeEach(() => {
     api.graph.mockReset().mockResolvedValue(projection());
   });
 
-  it("draws the hierarchy and explicit links on a decorative, non-focusable surface", async () => {
+  it("exposes every projected node through one standard selector in tree order", async () => {
+    mount();
+    await screen.findByRole("heading", { name: "Life graph" });
+
+    const options = within(selector()).getAllByRole("option");
+    expect(options.map(option => option.getAttribute("value"))).toEqual([
+      ROOT,
+      WORK,
+      PLAN,
+      HEALTH,
+      EMPTY,
+    ]);
+    // Node type is stated in words, so it is never carried by glyph or colour alone.
+    expect(options.map(option => option.textContent)).toEqual([
+      "Life (Branch)",
+      "— Work (Branch)",
+      "— — Kế hoạch (Basic Leaf)",
+      "— Health (Narrative Canvas)",
+      "— Scratch (Empty leaf)",
+    ]);
+  });
+
+  it("keeps the visual layer decorative rather than a keyboard surface", async () => {
     const view = mount();
     await screen.findByRole("heading", { name: "Life graph" });
 
     const svg = view.container.querySelector("svg")!;
     expect(svg).toHaveAttribute("aria-hidden", "true");
     expect(svg).toHaveAttribute("focusable", "false");
-    expect(svg.querySelectorAll("[tabindex]")).toHaveLength(0);
 
-    // Three hierarchy edges (root→Work, Work→Plan, root→Health) and exactly one link edge.
-    // Scoped to direct children so the arrowhead marker inside `<defs>` is not counted.
-    const paths = Array.from(svg.querySelectorAll(":scope > path[d]"));
-    expect(paths).toHaveLength(4);
+    const marks = view.container.querySelectorAll("[data-life-graph-id]");
+    expect(marks).toHaveLength(5);
+    for (const mark of marks) {
+      expect(mark).toHaveAttribute("aria-hidden", "true");
+      expect(mark.tagName).not.toBe("BUTTON");
+      expect(mark).not.toHaveAttribute("tabindex");
+    }
 
-    // Every node is reachable as a real button, and the counts are spoken, never colour-only.
+    // The drawn canvas contributes no tab stops at all.
+    const canvas = view.container.querySelector("svg")!.parentElement!;
     expect(
-      screen.getByRole("button", {
-        name: "Work. Level 2. Branch. 1 outgoing link, 0 backlinks.",
-      }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", {
-        name: "Health. Level 2. Leaf. 0 outgoing links, 1 backlink.",
-      }),
-    ).toBeInTheDocument();
+      canvas.querySelectorAll("button, select, a[href], input, [tabindex]:not([tabindex='-1'])"),
+    ).toHaveLength(0);
   });
 
-  it("gives every drawn relationship a text counterpart in the connection list", async () => {
-    mount();
-    fireEvent.click(await screen.findByRole("button", { name: /^Work\./ }));
+  it("keeps the drawn canvas at zero tab stops however many nodes are projected", async () => {
+    const many = projection();
+    // 200 extra leaves under the root: 200 more drawn marks, and 200 more selector options.
+    for (let index = 0; index < 200; index += 1)
+      many.nodes.push(node(`bulk-${index}`, ROOT, `Bulk ${index}`, { depth: 1, sort_key: 9 }));
+    api.graph.mockResolvedValue(many);
 
-    const outgoing = screen.getByRole("region", { name: /Outgoing links/ });
-    expect(within(outgoing).getByRole("heading", { name: "Outgoing links (1)" })).toBeInTheDocument();
+    const view = mount({ currentNodeId: HEALTH });
+    await screen.findByRole("heading", { name: "Life graph" });
+
+    expect(within(selector()).getAllByRole("option")).toHaveLength(205);
+    expect(view.container.querySelectorAll("[data-life-graph-id]")).toHaveLength(205);
+
+    const canvas = view.container.querySelector("svg")!.parentElement!;
     expect(
-      within(outgoing).getByRole("button", { name: "Outgoing link: Health. Select in the graph." }),
-    ).toBeInTheDocument();
+      canvas.querySelectorAll("button, select, a[href], input, [tabindex]:not([tabindex='-1'])"),
+    ).toHaveLength(0);
 
-    const children = screen.getByRole("region", { name: /Children/ });
-    expect(within(children).getByRole("button", { name: /^Child: Kế hoạch/ })).toBeInTheDocument();
-
-    const parent = screen.getByRole("region", { name: /Parent/ });
-    expect(within(parent).getByRole("button", { name: /^Parent: Life/ })).toBeInTheDocument();
-
-    expect(screen.getByRole("heading", { name: "Backlinks (0)" })).toBeInTheDocument();
-
-    // Selecting the far end of a link moves the inspector there and shows the reciprocal backlink.
-    fireEvent.click(
-      within(outgoing).getByRole("button", { name: "Outgoing link: Health. Select in the graph." }),
+    // With a low-degree node selected, the whole workspace stays a small keyboard surface. The
+    // connection list is bounded by the selected node's own degree, exactly like the Links panel;
+    // it is not a function of graph size.
+    const focusable = view.container.querySelectorAll(
+      "button, select, a[href], input, [tabindex]:not([tabindex='-1'])",
     );
-    expect(screen.getByRole("heading", { name: "Backlinks (1)" })).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Backlink: Work. Select in the graph." }),
-    ).toBeInTheDocument();
+    expect(focusable.length).toBeLessThan(20);
   });
 
-  it("counts every projected relationship, so no drawn edge is missing from the text", async () => {
+  it("keeps visual and semantic selection synchronised", async () => {
     const view = mount();
     await screen.findByRole("heading", { name: "Life graph" });
-    const value = projection();
 
-    const drawnEdges = view.container.querySelectorAll("svg > path[d]").length;
-    const hierarchyEdges = value.nodes.filter(entry => entry.parent_id !== null).length;
-    expect(drawnEdges).toBe(hierarchyEdges + value.links.length);
+    fireEvent.change(selector(), { target: { value: HEALTH } });
+    expect(screen.getByRole("heading", { name: "Health" })).toBeInTheDocument();
+    expect(
+      view.container.querySelector(`[data-life-graph-id="${HEALTH}"]`),
+    ).toHaveAttribute("data-selected", "true");
 
-    // Walking every node through the selector must surface each edge as text exactly twice — once
-    // from each endpoint — so a drawn edge with no counterpart is impossible.
-    let described = 0;
-    for (const entry of value.nodes) {
-      fireEvent.click(screen.getByRole("button", { name: new RegExp(`^${entry.title}\\.`) }));
-      for (const label of ["Parent", "Children", "Outgoing links", "Backlinks"]) {
-        const region = screen.getByRole("region", { name: new RegExp(`^${label}`) });
-        described += within(region).queryAllByRole("button").length;
-      }
-    }
-    expect(described).toBe(drawnEdges * 2);
+    fireEvent.click(view.container.querySelector(`[data-life-graph-id="${PLAN}"]`)!);
+    expect(selector()).toHaveValue(PLAN);
+    expect(screen.getByRole("heading", { name: "Kế hoạch" })).toBeInTheDocument();
   });
 
-  it("hands off to Life without opening the Reader, and closes on request", async () => {
-    const view = mount();
-    fireEvent.click(await screen.findByRole("button", { name: /^Health\./ }));
-    fireEvent.click(screen.getByRole("button", { name: "Open Health in Life" }));
-    expect(view.onOpenNode).toHaveBeenCalledExactlyOnceWith(HEALTH);
+  it("lists every explicit link exactly once with its availability", async () => {
+    mount();
+    await screen.findByRole("heading", { name: "Life graph" });
 
-    fireEvent.click(screen.getByRole("button", { name: "Close graph" }));
-    expect(view.onClose).toHaveBeenCalledTimes(1);
+    const region = screen.getByRole("region", { name: /All explicit links/ });
+    expect(within(region).getByRole("heading", { name: "All explicit links (2)" })).toBeInTheDocument();
+
+    const rows = within(region).getAllByRole("row").slice(1);
+    expect(rows).toHaveLength(2);
+    expect(
+      rows.map(row => within(row).getAllByRole("cell").map(cell => cell.textContent)),
+    ).toEqual([
+      ["Kế hoạch", "Health", "Available"],
+      ["Kế hoạch", "Scratch", "Unavailable"],
+    ]);
+
+    // Selecting an endpoint from the list moves the inspector without iterating every node.
+    fireEvent.click(within(rows[1]!).getByRole("button", { name: /Select target Scratch/ }));
+    expect(screen.getByRole("heading", { name: "Scratch" })).toBeInTheDocument();
+  });
+
+  it("represents an unavailable link distinctly in the drawing and in text", async () => {
+    const view = mount();
+    await screen.findByRole("heading", { name: "Life graph" });
+
+    const edges = Array.from(view.container.querySelectorAll("svg > path[data-unavailable]"));
+    expect(edges.map(edge => edge.getAttribute("data-unavailable"))).toEqual(["false", "true"]);
+    // Distinct class, not merely a distinct colour.
+    expect(edges[0]!.getAttribute("class")).not.toBe(edges[1]!.getAttribute("class"));
+
+    fireEvent.change(selector(), { target: { value: PLAN } });
+    const outgoing = screen.getByRole("region", { name: /Outgoing links/ });
+    expect(
+      within(outgoing).getByRole("button", {
+        name: "Outgoing link, Unavailable: Scratch. Select in the graph.",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(outgoing).getByRole("button", {
+        name: "Outgoing link, Available: Health. Select in the graph.",
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("opens on the current Life node and falls back to the root", async () => {
+    const focused = mount({ currentNodeId: HEALTH });
+    await screen.findByRole("heading", { name: "Life graph" });
+    expect(selector()).toHaveValue(HEALTH);
+    expect(screen.getByRole("heading", { name: "Health" })).toBeInTheDocument();
+    focused.unmount();
+
+    mount({ currentNodeId: "00000000-0000-7000-8000-00000000dead" });
+    await screen.findByRole("heading", { name: "Life graph" });
+    expect(selector()).toHaveValue(ROOT);
+  });
+
+  it("routes Open in Life by node kind", async () => {
+    const view = mount({ currentNodeId: PLAN });
+    await screen.findByRole("heading", { name: "Life graph" });
+
+    // A documented leaf opens the Reader.
+    fireEvent.click(screen.getByRole("button", { name: "Open Kế hoạch in Life Reader" }));
+    expect(view.onOpenNode).toHaveBeenLastCalledWith(PLAN, "reader");
+
+    // A branch opens Browse.
+    fireEvent.change(selector(), { target: { value: WORK } });
+    fireEvent.click(screen.getByRole("button", { name: "Open Work in Life Browse" }));
+    expect(view.onOpenNode).toHaveBeenLastCalledWith(WORK, "browse");
+
+    // An empty or otherwise unavailable leaf opens Browse.
+    fireEvent.change(selector(), { target: { value: EMPTY } });
+    fireEvent.click(screen.getByRole("button", { name: "Open Scratch in Life Browse" }));
+    expect(view.onOpenNode).toHaveBeenLastCalledWith(EMPTY, "browse");
+
+    // A Narrative Canvas leaf is documented and therefore also opens the Reader.
+    fireEvent.change(selector(), { target: { value: HEALTH } });
+    fireEvent.click(screen.getByRole("button", { name: "Open Health in Life Reader" }));
+    expect(view.onOpenNode).toHaveBeenLastCalledWith(HEALTH, "reader");
   });
 
   it("renders the Rust-owned bound refusal as text instead of a partial graph", async () => {
@@ -168,35 +278,39 @@ describe("LifeGraphWorkspace", () => {
       "This Life tree is too large for the graph explorer (500 node maximum).",
     );
     expect(view.container.querySelector("svg")).toBeNull();
-    expect(screen.queryByRole("button", { name: /Level/ })).not.toBeInTheDocument();
-    expect((await axe.run(view.container, { rules: { "color-contrast": { enabled: false } } })).violations).toEqual([]);
+    expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+    expect(
+      (await axe.run(view.container, { rules: { "color-contrast": { enabled: false } } })).violations,
+    ).toEqual([]);
   });
 
   it("keeps no selection across a remount", async () => {
     const first = mount();
-    fireEvent.click(await screen.findByRole("button", { name: /^Health\./ }));
+    fireEvent.change(await screen.findByRole("combobox", { name: "Life node" }), {
+      target: { value: HEALTH },
+    });
     expect(screen.getByRole("heading", { name: "Health" })).toBeInTheDocument();
     first.unmount();
 
     mount();
     await screen.findByRole("heading", { name: "Life graph" });
-    // Selection falls back to the root, never to the previously inspected node.
-    expect(screen.getByRole("heading", { name: "Life" })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Health" })).not.toBeInTheDocument();
+    expect(selector()).toHaveValue(ROOT);
   });
 
-  it("has zero applicable axe violations and keyboard parity", async () => {
+  it("has zero applicable axe violations", async () => {
     const view = mount();
     await screen.findByRole("heading", { name: "Life graph" });
 
-    for (const button of screen.getAllByRole("button")) {
-      expect(button).not.toHaveAttribute("tabindex", "-1");
-      expect(button.getAttribute("aria-label") ?? button.textContent).toBeTruthy();
-    }
     const accessibility = await axe.run(view.container, {
       rules: { "color-contrast": { enabled: false } },
     });
     expect(accessibility.violations).toEqual([]);
+  });
+
+  it("closes on request", async () => {
+    const view = mount();
+    fireEvent.click(await screen.findByRole("button", { name: "Close graph" }));
+    expect(view.onClose).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -210,7 +324,6 @@ describe("Life graph layout", () => {
   });
 
   it("positions from parent edges only, so an explicit link never moves a node", () => {
-    // The projection's link list is not an input to the layout at all: same nodes, same geometry.
     const withoutLinks = buildLifeTreeLayout(projection().nodes);
     const reordered = buildLifeTreeLayout([...projection().nodes].reverse());
     expect([...withoutLinks.points.entries()].sort()).toEqual(

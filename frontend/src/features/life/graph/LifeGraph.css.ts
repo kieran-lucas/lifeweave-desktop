@@ -40,13 +40,13 @@ export const hierarchyEdge = style({});
  * never carried by colour alone.
  */
 export const linkEdge = style({});
-export const nodeButton = style({
+/** Unavailable links stay drawn. Dotted plus a thinner stroke, never colour alone. */
+export const unavailableEdge = style({});
+export const nodeMark = style({
   position: "absolute",
   transform: "translate(var(--graph-x),var(--graph-y))",
   display: "grid",
-  gridTemplateColumns: "22px minmax(0,1fr)",
-  alignItems: "center",
-  gap: 7,
+  gap: 2,
   width: 152,
   minHeight: 52,
   padding: "8px 9px",
@@ -57,11 +57,10 @@ export const nodeButton = style({
   textAlign: "left",
   cursor: "pointer",
   selectors: {
-    "&[aria-pressed=true]": {
+    "&[data-selected=true]": {
       borderColor: "var(--focus-ring)",
       boxShadow: "0 0 0 2px color-mix(in srgb, var(--focus-ring) 25%, transparent)",
     },
-    "&:focus-visible": { outline: "3px solid var(--focus-ring)", outlineOffset: 2 },
   },
 });
 export const nodeTitle = style({
@@ -115,6 +114,34 @@ export const connectionButton = style({
 });
 export const connectionKind = style({ display: "block", fontSize: 11, color: "var(--text-muted)" });
 export const empty = style({ margin: 0, fontSize: 12, color: "var(--text-muted)" });
+export const field = style({ display: "grid", gap: 5, color: "var(--text-muted)", fontSize: 13 });
+export const select = style({
+  width: "100%",
+  minWidth: 0,
+  border: "1px solid var(--border-subtle)",
+  borderRadius: 9,
+  padding: "8px 10px",
+  background: "var(--app-background)",
+  color: "var(--text-primary)",
+  font: "inherit",
+  selectors: { "&:focus-visible": { outline: "3px solid var(--focus-ring)", outlineOffset: 1 } },
+});
+export const allLinks = style({
+  gridColumn: "1/-1",
+  display: "grid",
+  gap: 8,
+  padding: 16,
+  border: "1px solid var(--border-subtle)",
+  borderRadius: 16,
+  background: "var(--surface)",
+});
+export const tableScroll = style({ overflowX: "auto" });
+export const table = style({
+  width: "100%",
+  borderCollapse: "collapse",
+  fontSize: 13,
+  textAlign: "left",
+});
 export const actions = style({ display: "flex", gap: 7, flexWrap: "wrap" });
 export const button = style({
   border: "1px solid var(--border-subtle)",
@@ -149,6 +176,18 @@ globalStyle(`${edges} path.${linkEdge}`, {
   strokeDasharray: "6 4",
   fill: "none",
   markerEnd: "url(#life-graph-arrow)",
+});
+globalStyle(`${edges} path.${unavailableEdge}`, {
+  stroke: "var(--text-muted)",
+  strokeWidth: 1,
+  strokeDasharray: "1 5",
+  fill: "none",
+  markerEnd: "url(#life-graph-arrow)",
+});
+globalStyle(`${table} th, ${table} td`, {
+  padding: "5px 8px",
+  borderBottom: "1px solid var(--border-subtle)",
+  verticalAlign: "top",
 });
 globalStyle(`${workspace} button:focus-visible`, {
   outline: "3px solid var(--focus-ring)",

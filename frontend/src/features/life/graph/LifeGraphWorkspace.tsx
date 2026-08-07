@@ -12,9 +12,10 @@ import * as styles from "./LifeGraph.css";
 /**
  * Read-only, transient explorer of the active Life hierarchy plus existing explicit Life links.
  *
- * The drawn surface is decorative: it is `aria-hidden` and non-interactive, exactly like the Life
- * Edit canvas and the Browse connectors. Every relationship it draws also exists as text in the node
- * selector, the inspector, and the connection list, so the graph is fully usable without sight.
+ * The accessibility authority is the semantic layer — a node selector over every projected node, a
+ * selected-node inspector, and one complete list of every visible explicit link. The drawn surface
+ * is decorative: `aria-hidden`, non-focusable, and pointer-only, so a 500-node graph never becomes
+ * 500 tab stops.
  *
  * Nothing here is persisted. Selection lives in component state and is dropped on unmount.
  */
@@ -45,17 +46,24 @@ const refusalText = (error: unknown, fallback: string) => {
 const countLabel = (value: number, singular: string, plural: string) =>
   `${value} ${value === 1 ? singular : plural}`;
 
-type Connection = {
-  key: string;
-  nodeId: string;
-  title: string;
-  kind: string;
+/** Node type is stated as words, never by glyph or colour alone. */
+export const nodeKindLabel = (node: LifeGraphNodeView) => {
+  if (!node.is_leaf) return "Branch";
+  if (node.document_kind === "basic_leaf") return "Basic Leaf";
+  if (node.document_kind === "narrative_canvas") return "Narrative Canvas";
+  return "Empty leaf";
 };
 
-function connectionsFor(
-  projection: LifeGraphProjection,
-  selected: LifeGraphNodeView,
-): { parent: Connection[]; children: Connection[]; outgoing: Connection[]; incoming: Connection[] } {
+/** A documented leaf is the only node the Reader can open. */
+export const opensInReader = (node: LifeGraphNodeView) =>
+  node.is_leaf && node.document_kind !== null;
+
+const availabilityLabel = (value: "active" | "archived" | "unavailable") =>
+  value === "active" ? "Available" : value === "archived" ? "Archived" : "Unavailable";
+
+type Connection = { key: string; nodeId: string; title: string; kind: string };
+
+function connectionsFor(projection: LifeGraphProjection, selected: LifeGraphNodeView) {
   const byId = new Map(projection.nodes.map(node => [node.id, node] as const));
   const title = (id: string) => byId.get(id)?.title ?? "Unavailable Life node";
 
@@ -78,7 +86,7 @@ function connectionsFor(
       key: `outgoing:${link.link_id}`,
       nodeId: link.target_node_id,
       title: title(link.target_node_id),
-      kind: "Outgoing link",
+      kind: `Outgoing link, ${availabilityLabel(link.availability)}`,
     }));
   const incoming: Connection[] = projection.links
     .filter(link => link.target_node_id === selected.id)
@@ -86,7 +94,7 @@ function connectionsFor(
       key: `incoming:${link.link_id}`,
       nodeId: link.source_node_id,
       title: title(link.source_node_id),
-      kind: "Backlink",
+      kind: `Backlink, ${availabilityLabel(link.availability)}`,
     }));
   return { parent, children, outgoing, incoming };
 }
@@ -132,7 +140,11 @@ function ConnectionGroup({
   );
 }
 
-function GraphNodeButton({
+/**
+ * A positioned visual mark. Deliberately not a button: it is `aria-hidden` and non-focusable so the
+ * drawn graph adds no tab stops. Keyboard and assistive-technology access is the node selector.
+ */
+function GraphNodeMark({
   node,
   point,
   selected,
@@ -143,8 +155,7 @@ function GraphNodeButton({
   selected: boolean;
   onSelect: () => void;
 }) {
-  // Positions are CSS custom properties set imperatively, matching the Life Edit canvas.
-  const ref = useRef<HTMLButtonElement | null>(null);
+  const ref = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     const element = ref.current;
     if (!element) return;
@@ -152,37 +163,30 @@ function GraphNodeButton({
     element.style.setProperty("--graph-y", `${point.y}px`);
   }, [point]);
   return (
-    <button
+    <div
       ref={ref}
-      type="button"
+      aria-hidden="true"
       data-life-graph-id={node.id}
-      className={styles.nodeButton}
-      aria-pressed={selected}
-      aria-label={`${node.title}. Level ${node.depth + 1}. ${
-        node.is_leaf ? "Leaf" : "Branch"
-      }. ${countLabel(node.outgoing_link_count, "outgoing link", "outgoing links")}, ${countLabel(
-        node.incoming_link_count,
-        "backlink",
-        "backlinks",
-      )}.`}
+      data-selected={selected ? "true" : "false"}
+      className={styles.nodeMark}
       onClick={onSelect}
     >
-      <span aria-hidden="true">{node.is_leaf ? "◇" : "◆"}</span>
-      <span>
-        <span className={styles.nodeTitle}>{node.title}</span>
-        <span className={styles.nodeMeta}>
-          Level {node.depth + 1} · {node.outgoing_link_count}→ · {node.incoming_link_count}←
-        </span>
+      <span className={styles.nodeTitle}>{node.title}</span>
+      <span className={styles.nodeMeta}>
+        {nodeKindLabel(node)} · {node.outgoing_link_count}&rarr; · {node.incoming_link_count}&larr;
       </span>
-    </button>
+    </div>
   );
 }
 
 export function LifeGraphWorkspace({
+  currentNodeId,
   onOpenNode,
   onClose,
 }: {
-  onOpenNode: (nodeId: string) => void;
+  /** The Life node the user is already on; Graph opens focused on it when it is projected. */
+  currentNodeId?: string | undefined;
+  onOpenNode: (nodeId: string, target: "reader" | "browse") => void;
   onClose: () => void;
 }) {
   const graph = useLifeGraphProjection();
@@ -226,10 +230,18 @@ export function LifeGraphWorkspace({
       </section>
     );
 
-  const selected = projection.nodes.find(node => node.id === selectedId) ?? projection.nodes[0];
+  // Selection starts on the node the user was already looking at, falling back to the root.
+  const initialId =
+    currentNodeId && projection.nodes.some(node => node.id === currentNodeId)
+      ? currentNodeId
+      : (projection.nodes[0]?.id ?? null);
+  const activeId = selectedId ?? initialId;
+  const selected = projection.nodes.find(node => node.id === activeId) ?? projection.nodes[0];
   const connections = selected
     ? connectionsFor(projection, selected)
     : { parent: [], children: [], outgoing: [], incoming: [] };
+
+  const titleById = new Map(projection.nodes.map(node => [node.id, node.title] as const));
 
   // Explicit links are a cyclic overlay, so they are drawn from the tidy-tree positions rather than
   // being fed into the hierarchy that produced them.
@@ -245,6 +257,7 @@ export function LifeGraphWorkspace({
     return [
       {
         id: link.link_id,
+        unavailable: link.availability !== "active",
         d: `M ${x1} ${y1} C ${x1} ${y1 - lift}, ${x2} ${y2 - lift}, ${x2} ${y2}`,
       },
     ];
@@ -269,13 +282,7 @@ export function LifeGraphWorkspace({
       </div>
 
       <div className={styles.canvasViewport}>
-        <div
-          ref={canvasRef}
-          className={styles.canvas}
-          role="group"
-          aria-labelledby="life-graph-heading"
-          aria-describedby="life-graph-instructions"
-        >
+        <div ref={canvasRef} className={styles.canvas}>
           <svg
             className={styles.edges}
             width={layout.width}
@@ -300,14 +307,19 @@ export function LifeGraphWorkspace({
               <path key={`hierarchy:${edge.id}`} className={styles.hierarchyEdge} d={edge.d} />
             ))}
             {linkEdges.map(edge => (
-              <path key={`link:${edge.id}`} className={styles.linkEdge} d={edge.d} />
+              <path
+                key={`link:${edge.id}`}
+                className={edge.unavailable ? styles.unavailableEdge : styles.linkEdge}
+                data-unavailable={edge.unavailable ? "true" : "false"}
+                d={edge.d}
+              />
             ))}
           </svg>
           {projection.nodes.map(node => {
             const point = layout.points.get(node.id);
             if (!point) return null;
             return (
-              <GraphNodeButton
+              <GraphNodeMark
                 key={node.id}
                 node={node}
                 point={point}
@@ -321,15 +333,32 @@ export function LifeGraphWorkspace({
 
       <div className={styles.inspector}>
         <p className={styles.empty} id="life-graph-instructions">
-          Hierarchy edges are solid. Explicit links are dashed and arrow-tipped. Every relationship
-          shown is also listed below as text.
+          Hierarchy edges are solid. Explicit links are dashed and arrow-tipped; unavailable ones are
+          dotted and labelled. Every relationship shown is also listed below as text.
         </p>
+
+        <label className={styles.field} htmlFor="life-graph-node-selector">
+          Life node
+          <select
+            id="life-graph-node-selector"
+            className={styles.select}
+            value={selected?.id ?? ""}
+            onChange={event => setSelectedId(event.target.value)}
+          >
+            {projection.nodes.map(node => (
+              <option key={node.id} value={node.id}>
+                {`${"— ".repeat(node.depth)}${node.title} (${nodeKindLabel(node)})`}
+              </option>
+            ))}
+          </select>
+        </label>
+
         {selected ? (
           <>
             <h3 className={styles.inspectorTitle}>{selected.title}</h3>
             <p className={styles.inspectorMeta}>
+              <span>{nodeKindLabel(selected)}</span>
               <span>Level {selected.depth + 1}</span>
-              <span>{selected.is_leaf ? "Life leaf" : "Life branch"}</span>
               <span>{countLabel(connections.children.length, "child", "children")}</span>
               <span>
                 {countLabel(selected.outgoing_link_count, "outgoing link", "outgoing links")}
@@ -340,9 +369,13 @@ export function LifeGraphWorkspace({
               <button
                 type="button"
                 className={styles.button}
-                onClick={() => onOpenNode(selected.id)}
+                onClick={() =>
+                  onOpenNode(selected.id, opensInReader(selected) ? "reader" : "browse")
+                }
               >
-                Open {selected.title} in Life
+                {opensInReader(selected)
+                  ? `Open ${selected.title} in Life Reader`
+                  : `Open ${selected.title} in Life Browse`}
               </button>
             </div>
             <ConnectionGroup
@@ -378,6 +411,57 @@ export function LifeGraphWorkspace({
           <p className={styles.empty}>This Life tree has no active nodes to graph.</p>
         )}
       </div>
+
+      <section className={styles.allLinks} aria-labelledby="life-graph-all-links-heading">
+        <h4 className={styles.connectionHeading} id="life-graph-all-links-heading">
+          All explicit links ({projection.links.length})
+        </h4>
+        {projection.links.length === 0 ? (
+          <p className={styles.empty}>This Life tree has no explicit links.</p>
+        ) : (
+          <div className={styles.tableScroll}>
+            <table className={styles.table}>
+              <caption className={styles.empty}>
+                Every explicit directed link drawn above, listed once.
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Source</th>
+                  <th scope="col">Target</th>
+                  <th scope="col">Availability</th>
+                </tr>
+              </thead>
+              <tbody>
+                {projection.links.map(link => (
+                  <tr key={link.link_id} data-availability={link.availability}>
+                    <td>
+                      <button
+                        type="button"
+                        className={styles.connectionButton}
+                        onClick={() => setSelectedId(link.source_node_id)}
+                        aria-label={`Select source ${titleById.get(link.source_node_id) ?? "Unavailable Life node"} in the graph.`}
+                      >
+                        {titleById.get(link.source_node_id) ?? "Unavailable Life node"}
+                      </button>
+                    </td>
+                    <td>
+                      <button
+                        type="button"
+                        className={styles.connectionButton}
+                        onClick={() => setSelectedId(link.target_node_id)}
+                        aria-label={`Select target ${titleById.get(link.target_node_id) ?? "Unavailable Life node"} in the graph.`}
+                      >
+                        {titleById.get(link.target_node_id) ?? "Unavailable Life node"}
+                      </button>
+                    </td>
+                    <td>{availabilityLabel(link.availability)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
     </div>
   );
 }

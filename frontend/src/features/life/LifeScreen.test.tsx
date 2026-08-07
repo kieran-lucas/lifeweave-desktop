@@ -804,18 +804,42 @@ describe("Life Graph", () => {
     nodes: [
       {
         id: "life-root", parent_id: null, title: "Life", icon_key: "life-branch",
-        sort_key: 0, depth: 0, is_leaf: false, outgoing_link_count: 0, incoming_link_count: 0,
+        sort_key: 0, depth: 0, is_leaf: false, document_kind: null,
+        outgoing_link_count: 0, incoming_link_count: 0,
+      },
+      {
+        id: branch.id, parent_id: "life-root", title: "Branch", icon_key: "life-branch",
+        sort_key: 1, depth: 1, is_leaf: false, document_kind: null,
+        outgoing_link_count: 0, incoming_link_count: 0,
       },
       {
         id: leaf.id, parent_id: "life-root", title: "Leaf", icon_key: "life-leaf",
-        sort_key: 1, depth: 1, is_leaf: true, outgoing_link_count: 0, incoming_link_count: 0,
+        sort_key: 2, depth: 1, is_leaf: true, document_kind: "basic_leaf" as const,
+        outgoing_link_count: 0, incoming_link_count: 0,
       },
     ],
-    links: [] as Array<{ link_id: string; source_node_id: string; target_node_id: string }>,
+    links: [] as Array<{
+      link_id: string;
+      source_node_id: string;
+      target_node_id: string;
+      availability: "active" | "archived" | "unavailable";
+    }>,
   };
+  const graphSelector = () => screen.getByRole("combobox", { name: "Life node" });
 
   beforeEach(() => {
-    api.browse.mockReset().mockResolvedValue(projection());
+    // Graph hand-off resolves the exact stable node ID, so the fixture must answer per node.
+    api.browse
+      .mockReset()
+      .mockImplementation(({ node_id }: { node_id: string | null }) =>
+        Promise.resolve(
+          node_id === leaf.id
+            ? projection(leaf, [])
+            : node_id === branch.id
+              ? projection(branch, [leaf])
+              : projection(),
+        ),
+      );
     api.pins.mockReset().mockResolvedValue([]);
     api.save.mockReset().mockResolvedValue(undefined);
     api.graph.mockReset().mockResolvedValue(graphProjection);
@@ -848,22 +872,59 @@ describe("Life Graph", () => {
     expect(screen.getByRole("button", { name: "Pinned" })).toHaveAttribute("aria-pressed", "true");
   });
 
-  it("navigates without appending Life history", async () => {
+  it("opens a documented leaf in the Reader without appending linked-Reader history", async () => {
     renderLife();
     await screen.findByRole("heading", { name: "Life System" });
-    const backBefore = screen.getByRole("button", { name: "← Back" });
-    expect(backBefore).toBeDisabled();
+    expect(screen.getByRole("button", { name: "← Back" })).toBeDisabled();
 
     fireEvent.click(screen.getByRole("button", { name: "Graph" }));
     await screen.findByRole("heading", { name: "Life graph" });
-    fireEvent.click(await screen.findByRole("button", { name: /^Leaf\./ }));
-    fireEvent.click(screen.getByRole("button", { name: "Open Leaf in Life" }));
+    fireEvent.change(graphSelector(), { target: { value: leaf.id } });
+    fireEvent.click(screen.getByRole("button", { name: "Open Leaf in Life Reader" }));
+
+    // A documented leaf reaches the Reader, resolved by exact stable ID.
+    expect(await screen.findByRole("heading", { name: "Reader" })).toBeInTheDocument();
+    expect(api.browse).toHaveBeenCalledWith({ node_id: leaf.id, child_page: 0 });
+
+    // Graph is top-level navigation: leaving the Reader must not unwind into a graph entry.
+    fireEvent.click(screen.getByRole("button", { name: /Back to Life Browse/ }));
+    await screen.findByRole("button", { name: "Pinned" });
+    expect(screen.getByRole("button", { name: "← Back" })).toBeDisabled();
+  });
+
+  it("opens a branch in Browse without appending Life history", async () => {
+    renderLife();
+    await screen.findByRole("heading", { name: "Life System" });
+    expect(screen.getByRole("button", { name: "← Back" })).toBeDisabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Graph" }));
+    await screen.findByRole("heading", { name: "Life graph" });
+    fireEvent.change(graphSelector(), { target: { value: branch.id } });
+    fireEvent.click(screen.getByRole("button", { name: "Open Branch in Life Browse" }));
 
     await waitFor(() =>
       expect(screen.queryByRole("heading", { name: "Life graph" })).not.toBeInTheDocument(),
     );
-    // Graph hands off to Browse and pushes nothing: Back stays exactly as it was.
+    expect(screen.queryByRole("heading", { name: "Reader" })).not.toBeInTheDocument();
+    // Graph pushes nothing: Back stays exactly as it was.
     expect(screen.getByRole("button", { name: "← Back" })).toBeDisabled();
+  });
+
+  it("fails safely when a Reader target no longer resolves to the requested node", async () => {
+    renderLife();
+    await screen.findByRole("heading", { name: "Life System" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Graph" }));
+    await screen.findByRole("heading", { name: "Life graph" });
+
+    // The node vanished between projection and hand-off, so Life resolves something else.
+    api.browse.mockResolvedValue({ ...projection(), resolved_from_fallback: true });
+    fireEvent.change(graphSelector(), { target: { value: leaf.id } });
+    fireEvent.click(screen.getByRole("button", { name: "Open Leaf in Life Reader" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("That Life leaf is unavailable.");
+    // It refuses rather than opening the wrong node.
+    expect(screen.queryByRole("heading", { name: "Reader" })).not.toBeInTheDocument();
   });
 
   it("yields to an external entry request and does not reappear afterwards", async () => {
