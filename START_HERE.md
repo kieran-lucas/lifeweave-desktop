@@ -14,12 +14,40 @@
 
 - Latest closed task: **44/60**
 - Latest closed slice: **034 — Life Relationship Graph Explorer**
-- Active task: **none**
-- Active implementation specification: **none**
+- Active task: **45 — Global Keyboard Shortcuts and Shortcut Help**
+- Active implementation specification: **`specs/035-global-keyboard-shortcuts`**
 - Latest feature checkpoint: **Task 44 — Life Relationship Graph Explorer** (`7e95644dcced19a1a8349706990d20d1df53a2e1`)
 - Database schema: **26**
-- Next action: **Product Owner gate**
-- Task 45: **prohibited, unstarted, unallocated, and unrecommended**
+- Next action: **Implement active spec**
+- Task 46: **prohibited, unstarted, unallocated, and unrecommended**
+
+## Task 45 activation
+
+Task 45 is active from baseline `b8ad47d9079246cecf4c30c728bec1d3a4915b41`. It adds **eight global
+keyboard commands, defined once in a single frontend registry that owns both dispatch and every
+displayed chord**. A global chord never takes precedence over an editable surface or an open modal,
+and no shortcut is customizable or persisted.
+
+```text
+Ctrl+1  Today          Ctrl+5  Life System
+Ctrl+2  Calendar       Ctrl+6  Settings
+Ctrl+3  Analytics      Ctrl+K  Search
+Ctrl+4  Plans          Ctrl+/  Keyboard shortcuts
+```
+
+Schema stays **26**: there is no migration, no schema change, and no Rust, IPC, DTO, or capability
+change. No dependency is added — `tinykeys` is explicitly not adopted, because eight fixed
+`Ctrl`+single-key chords have no grammar to parse.
+
+A chord executes only when it is not `defaultPrevented`, not composing, not a key repeat, no modal is
+open, focus is not in an editable surface, and the chord matches the registry exactly. When
+suppressed the global layer does nothing — including no `preventDefault()` — so `Ctrl+K` stays
+available to the editor. Every command reuses the state transition its existing click path already
+uses, and the Keyboard shortcuts dialog is generated from the registry so it cannot drift.
+
+Custom remapping, a command palette, command search, executable help rows, chord sequences, and
+macOS mappings all remain prohibited. Canonical decision:
+[ADR 0039](docs/adr/0039-global-keyboard-shortcuts.md).
 
 ## Task 44 closure
 

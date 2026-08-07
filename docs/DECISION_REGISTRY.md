@@ -100,7 +100,10 @@ The immutable source is authoritative. This registry makes operational status vi
 - custom export profiles;
 - preserve-vs-strip original asset metadata beyond the privacy-safe default;
 - branch node content semantics;
-- shortcut map;
+- shortcut map beyond the eight locked global commands (custom remapping, user-editable chords,
+  shortcut persistence, a command palette, command search, chord sequences, editor- or screen-scoped
+  command sets, global OS-level hotkeys, and macOS/`Meta` mappings all remain OPEN — the global
+  eight-command case is now DECIDED, see ADR 0039);
 - global application/branch appearance beyond the four locked Narrative Canvas worlds;
 - backup retention/version policy;
 - multi-monitor details.

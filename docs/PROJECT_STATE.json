@@ -7,8 +7,8 @@
   "latest_feature_task": 44,
   "latest_feature_checkpoint": "7e95644dcced19a1a8349706990d20d1df53a2e1",
   "database_schema_version": 26,
-  "active_spec": null,
-  "next_action": "product_owner_gate",
+  "active_spec": "specs/035-global-keyboard-shortcuts",
+  "next_action": "implement_active_spec",
   "forbidden_feature_jump": true,
   "recommended_next_candidate": null,
   "source_sha256": "9c422927c09e26431d71b1ef5ab6306891a3e7c15ece0fc808bedf6f6689540a"

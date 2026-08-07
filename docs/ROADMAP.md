@@ -1,5 +1,35 @@
 # Roadmap
 
+## Slice 035 — Global Keyboard Shortcuts and Shortcut Help Core (active)
+
+Every destination and Global Search already exist and are already reachable — with the mouse. What
+is missing is a keyboard route to them. `shortcut map` has sat under `OPEN — Product/UX` in
+`docs/DECISION_REGISTRY.md` since the registry was created, while the same registry lists the
+keyboard command registry and accessibility foundation as locked technical ground: the substrate was
+decided and only the mapping was not. ADR 0039 is the Product Owner decision that closes it.
+
+Task 45 adds **eight global keyboard commands, defined once in a single frontend registry that owns
+both dispatch and every displayed chord**: `Ctrl+1..6` for the six destinations in their existing
+sidebar order, `Ctrl+K` for Search, and `Ctrl+/` for a read-only Keyboard shortcuts dialog that is
+generated from the registry and therefore cannot drift from behaviour.
+
+Windows `Control` is the authority; there is no macOS map. Schema stays 26 with no migration and no
+Rust, IPC, DTO, or capability change, and no dependency is added — `tinykeys` is explicitly not
+adopted, because eight fixed `Ctrl`+single-key chords have no grammar to parse.
+
+The hard part is suppression, not dispatch. A chord executes only when it is not `defaultPrevented`,
+not composing, not a key repeat, no modal is open, focus is not in an editable surface, and the chord
+matches exactly. When suppressed the global layer does nothing at all, **including no
+`preventDefault()`** — swallowing a key while declining to act on it is what would stop `Ctrl+K`
+inserting a link in the editor. Every command reuses the state transition its existing click path
+already uses, so a shortcut cannot diverge from the button it mirrors.
+
+Hard boundary: no shortcut persistence, customization, remapping UI, import, export, or backup
+participation, no command palette, command search, or executable help row, no chord sequences or
+`Alt`/`Shift` chords, no macOS or `Meta` mapping, no global OS-level hotkey, no editor keymap change,
+no new route or sidebar destination, no schema, Rust, IPC, dependency, capability, workflow, or seal
+change, no new performance-budget generation, and no Task 46 work is authorized.
+
 ## Slice 034 — Life Relationship Graph Explorer Core (complete)
 
 Life can already show structure two ways and relationships one way, never both at once. Browse shows
