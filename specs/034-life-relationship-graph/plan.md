@@ -1,6 +1,7 @@
 # Task 44 Execution Plan
 
-Status: ACTIVE.
+Status: COMPLETE. All stages passed; see
+`docs/audits/task-44-life-relationship-graph.md`.
 
 ## Stage 0 — Activation and baseline
 

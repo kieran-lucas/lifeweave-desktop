@@ -50,6 +50,17 @@ The immutable source is authoritative. This registry makes operational status vi
   inferred/inline/title-parsed links, branches, non-Life endpoints, dependencies, and Task 42 remain
   prohibited.
 
+- Task 44 / Slice 034 completes the Life Relationship Graph Explorer Core under ADR 0038 at product
+  checkpoint `7e95644dcced19a1a8349706990d20d1df53a2e1`. Graph is a read-only, transient explorer of the active Life hierarchy
+  plus existing explicit directed Life links. It stores no graph truth, never replaces Browse or
+  Edit, and never creates, deletes, infers, or rewrites relationships. Schema stays 26 with no
+  migration and no dependency: the layout is the existing `d3-hierarchy` tidy tree with explicit
+  links drawn as a second pass. Bounds are 500 nodes, 2,000 links, and 128 levels, and the
+  projection rejects rather than truncates. `graph` is never a persisted Life mode, route, or
+  sidebar destination. Persisted graph truth, graph editing, inferred/derived/typed/weighted edges,
+  clustering, pathfinding, centrality, ranking, generalized knowledge features, and Task 45 remain
+  prohibited.
+
 ## LOCKED — Technology direction
 
 - Tauri 2; React UI + Rust application core; TypeScript strict; Vite 8.

@@ -1,9 +1,10 @@
 # Project Status
 
-## Task 44/60 — Life Relationship Graph Explorer Core (active)
+## Task 44/60 — Life Relationship Graph Explorer Core (complete)
 
-- Active slice: `034-life-relationship-graph`.
+- Closed slice: `034-life-relationship-graph`.
 - Activation baseline: `2d5b5d335137fe2a09f60b585d11a14a839b1e25`.
+- Product checkpoint: `7e95644dcced19a1a8349706990d20d1df53a2e1`.
 - Schema stays 26. There is **no migration and no schema change**; migrations 1–26 are untouched.
 - Scope: a **read-only, transient explorer of the active Life hierarchy plus existing explicit
   directed Life links**. It stores no graph truth, never replaces Browse or Edit, and never creates,
@@ -30,8 +31,8 @@
   deterministic gzip, 519,500 startup `index.js` — byte-identical to the accepted Task 43 inventory.
   Authorized Task 44 deltas against it are 2 KiB startup raw, 24 KiB total raw, and 8 KiB
   deterministic gzip.
-- Next action: implement the active spec. Task 45 remains prohibited, unstarted, unallocated, and
-  unrecommended.
+- Next action: Product Owner gate. Task 45 remains prohibited, unstarted, unallocated, and
+  unrecommended. Full evidence is in `docs/audits/task-44-life-relationship-graph.md`.
 
 ## Task 43/60 — Explicit Actual Time Sessions Core (complete)
 

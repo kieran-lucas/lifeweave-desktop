@@ -83,5 +83,5 @@ Unchecked entries are unfinished work and this file is the resumable execution l
 - [x] T44-H03 correct the Task 43 budget `measured_at_commit` placeholder to the real checkpoint;
 - [x] T44-H04 run focused and broad gates including native phases, Tauri build, and RC dogfood;
 - [x] T44-H05 review the full baseline diff once and fix confirmed in-scope defects only;
-- [ ] T44-H06 write the closure audit and close every governance surface without allocating Task 45;
-- [ ] T44-H07 commit, push after gates, and confirm clean remote parity.
+- [x] T44-H06 write the closure audit and close every governance surface without allocating Task 45;
+- [x] T44-H07 commit, push after gates, and confirm clean remote parity.

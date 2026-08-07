@@ -1,6 +1,6 @@
 # Roadmap
 
-## Slice 034 — Life Relationship Graph Explorer Core (active)
+## Slice 034 — Life Relationship Graph Explorer Core (complete)
 
 Life can already show structure two ways and relationships one way, never both at once. Browse shows
 one node and its direct children. Edit shows the whole active tree but knows nothing about links. The

@@ -3,7 +3,7 @@
   "task": 44,
   "supersedes": "docs/audits/task-43-performance-budgets.json",
   "supersedes_note": "Task 40, 41, 42, and 43 baseline and budget files remain historical evidence. The only edit to a superseded file was filling the Task 43 budget measured_at_commit placeholder with its real product checkpoint b4510dd; no measurement changed.",
-  "measured_at_commit": "PENDING_CHECKPOINT",
+  "measured_at_commit": "7e95644dcced19a1a8349706990d20d1df53a2e1",
   "baseline_evidence": "docs/audits/task-44-performance-baseline.json",
   "main_chunk": "index.js",
   "unknown_chunk_raw_bytes_threshold": 10000,

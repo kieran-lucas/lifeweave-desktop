@@ -1,6 +1,7 @@
 # Task 44 Specification — Life Relationship Graph Explorer Core
 
-Status: ACTIVE from activation baseline `2d5b5d335137fe2a09f60b585d11a14a839b1e25`.
+Status: CLOSED at product checkpoint `7e95644dcced19a1a8349706990d20d1df53a2e1` from activation baseline
+`2d5b5d335137fe2a09f60b585d11a14a839b1e25`.
 
 This file records the Product Owner's activated Task 44 contract. Everything not required here is
 out of scope. Canonical decision: `docs/adr/0038-life-relationship-graph-explorer.md`.

@@ -12,18 +12,19 @@
 
 ## Current state
 
-- Latest closed task: **43/60**
-- Latest closed slice: **033 — Explicit Actual Time Sessions**
-- Active task: **44 — Life Relationship Graph Explorer**
-- Active implementation specification: **`specs/034-life-relationship-graph`**
-- Latest feature checkpoint: **Task 43 — Explicit Actual Time Sessions** (`b4510ddbffbd0e8c4d5ae84213973b723df4cbad`)
+- Latest closed task: **44/60**
+- Latest closed slice: **034 — Life Relationship Graph Explorer**
+- Active task: **none**
+- Active implementation specification: **none**
+- Latest feature checkpoint: **Task 44 — Life Relationship Graph Explorer** (`7e95644dcced19a1a8349706990d20d1df53a2e1`)
 - Database schema: **26**
-- Next action: **Implement active spec**
+- Next action: **Product Owner gate**
 - Task 45: **prohibited, unstarted, unallocated, and unrecommended**
 
-## Task 44 activation
+## Task 44 closure
 
-Task 44 is active from baseline `2d5b5d335137fe2a09f60b585d11a14a839b1e25`. It adds a **read-only,
+Task 44 is closed at product checkpoint `7e95644dcced19a1a8349706990d20d1df53a2e1` from baseline
+`2d5b5d335137fe2a09f60b585d11a14a839b1e25`. It adds a **read-only,
 transient explorer of the active Life hierarchy plus existing explicit directed Life links**. It
 stores no graph truth, never replaces Browse or Edit, and never creates, deletes, infers, or rewrites
 relationships.
@@ -40,7 +41,8 @@ Graph is transient by construction. `life_navigation_preferences.last_life_mode`
 `('browse','edit','pinned','reader')`; there is no new route, sidebar destination, or startup
 restoration, and a restart returns the user to the persisted mode. Persisted graph truth, graph
 editing, inferred or typed edges, and generalized knowledge features remain prohibited. Canonical
-decision: [ADR 0038](docs/adr/0038-life-relationship-graph-explorer.md).
+decision: [ADR 0038](docs/adr/0038-life-relationship-graph-explorer.md); closure evidence is in
+`docs/audits/task-44-life-relationship-graph.md`.
 
 ## Task 43 closure
 
