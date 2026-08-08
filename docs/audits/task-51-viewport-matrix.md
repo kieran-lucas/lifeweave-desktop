@@ -129,7 +129,67 @@ Fixed with two changes, neither of which reorders anything:
 Re-audited at 960 × 640 after the fix: inspector visible with its title, close control, all four
 facet tabs and its body; 28 screens, 0 collisions, 0 overflow.
 
-## 6. What this does not yet cover
+## 6. Calendar — migrated and evidenced
+
+Calendar was traced, recomposed for v2, rendered, and measured. It is not a palette inheritance.
+
+### Composition decision: the grid is hairlines, not cards
+
+The previous version drew the month as a 1 px `gap` over a `--border-subtle` background, so each of
+35–42 cells became a filled tile floating on a coloured sheet — a card per day, and a field of boxes
+before a single date was read. It is now **one continuous surface** with a single outer hairline and
+a 12 px radius matching the Today row group; separators are real 1 px lines on the cells, so there
+is exactly one line between neighbours and none on the outer edge.
+
+Blue appears exactly twice: a filled accent disc behind today's date number, and the pale v2
+selection fill for the selected date. The two marks are deliberately different kinds — a shape and a
+field — so they stay distinguishable from each other and in forced colors, and neither is
+colour-only: today also carries `aria-current="date"` and selection `aria-selected`.
+
+Days outside the shown month recede by **tone, not opacity**, because opacity dimmed the hairlines
+along with the text.
+
+### A V2 violation the render caught
+
+The three period-load bars rendered **green**. `accent-color` alone was not enough: adding
+`border`/`border-radius` moved Chromium off the native `<progress>` path and the fallback painted
+the user-agent default, so every day in the month carried a green bar — a direct breach of the
+no-green rule, invisible in the CSS and obvious the moment the month was drawn. Fixed with
+`appearance: none` plus explicit `::-webkit-progress-bar` / `::-webkit-progress-value` /
+`::-moz-progress-bar` backgrounds, so no user-agent colour can leak through.
+
+The load bars themselves are kept: morning / afternoon / evening ratios are factual schedule
+information that the accessible summary depends on, not decoration. Only their weight changed — 3 px
+on a neutral track — so a dense month reads as texture.
+
+Unevaluated past work keeps its own warning colour rather than being folded into the accent; v2
+preserves warning and error semantics instead of forcing every state into one hue.
+
+### Calendar geometry
+
+| Viewport | achieved | frame / viewport | collisions | docOverflow | vpOverflow |
+|---|---|---|---:|---:|---:|
+| 1536×794 | 1536×794 | 1163 / 1184 | 0 | 0 | 0 |
+| 1280×800 | 1279×799 | 922 / 942 | 0 | 0 | 0 |
+| 1280×720 | 1280×719 | 922 / 943 | 0 | 0 | 0 |
+| 960×640 | 960×640 | 622 / 642 | 0 | 0 | 0 |
+
+28 states per run. Calendar's full keyboard grid — arrows, Home/End, PageUp/PageDown, Enter/Space,
+roving `tabIndex`, focus restoration on month change — is untouched; this was a presentation change
+only, and the 13 Calendar tests pass.
+
+### Calendar bundle
+
+```text
+startup index.js   535,381 -> 535,778   (+397)
+ceiling            550,000              headroom 14,222
+warning point      545,000              not reached
+```
+
+Calendar is eagerly imported by the shell today and this change did not alter that; the +397 bytes
+are its own style constants. No new chunk, no new dependency.
+
+## 7. What this does not yet cover
 
 - Physical Windows DPI scaling at 125% / 150% remains **NOT RUN**; every row above is at the
   system's own 1.25 device pixel ratio, which is not the same test.
