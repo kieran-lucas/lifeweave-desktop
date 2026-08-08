@@ -179,6 +179,7 @@ export function TagSettings() {
 
       <section aria-label="Active tags">
           <h3 className={styles.mergeHeading}>Active tags</h3>
+          <div className={styles.tableScroll}>
           <table className={styles.table}>
             <thead>
               <tr>
@@ -214,10 +215,12 @@ export function TagSettings() {
               ))}
             </tbody>
           </table>
+          </div>
         </section>
 
       <section aria-label="Archived tags">
           <h3 className={styles.mergeHeading}>Archived tags</h3>
+          <div className={styles.tableScroll}>
           <table className={styles.table}>
             <thead>
               <tr>
@@ -253,10 +256,12 @@ export function TagSettings() {
               ))}
             </tbody>
           </table>
+          </div>
         </section>
 
       <section aria-label="Merged aliases">
           <h3 className={styles.mergeHeading}>Merged aliases</h3>
+          <div className={styles.tableScroll}>
           <table className={styles.table}>
             <thead>
               <tr>
@@ -276,6 +281,7 @@ export function TagSettings() {
               ))}
             </tbody>
           </table>
+          </div>
         </section>
 
       <span aria-live="polite" className={styles.srOnly}>{mergeAnnouncement}</span>

@@ -1,7 +1,13 @@
-import { Fragment, useEffect, useId, useRef } from "react";
+import { Fragment, useEffect, useId, useRef, type MouseEvent } from "react";
 
 import { shortcutCommands } from "./keyboardShortcuts";
 import * as styles from "./App.css";
+import {
+  DialogBackdrop,
+  DialogFooter,
+  DialogHeader,
+  DialogSurface,
+} from "./layout/DialogSurface";
 
 /**
  * The read-only Keyboard shortcuts dialog (ADR 0039).
@@ -53,27 +59,29 @@ export function ShortcutHelpDialog({ onClose }: { onClose: () => void }) {
   }, [onClose]);
 
   return (
-    <div
-      className={styles.dialogBackdrop}
+    <DialogBackdrop
       role="presentation"
-      onMouseDown={(event) => {
+      onMouseDown={(event: MouseEvent) => {
         if (event.target === event.currentTarget) onClose();
       }}
     >
-      <section
-        ref={dialog}
-        className={styles.dialogCard}
+      <DialogSurface
+        as="section"
+        width="compact"
+        surfaceRef={dialog}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={descriptionId}
       >
-        <h2 id={titleId} tabIndex={-1} ref={heading}>
-          Keyboard shortcuts
-        </h2>
-        <p id={descriptionId}>
-          These work anywhere except inside a text field, a document editor, or an open dialog.
-        </p>
+        <DialogHeader>
+          <h2 id={titleId} tabIndex={-1} ref={heading}>
+            Keyboard shortcuts
+          </h2>
+          <p id={descriptionId}>
+            These work anywhere except inside a text field, a document editor, or an open dialog.
+          </p>
+        </DialogHeader>
         <dl className={styles.shortcutList}>
           {shortcutCommands.map((command) => (
             <Fragment key={command.id}>
@@ -84,11 +92,13 @@ export function ShortcutHelpDialog({ onClose }: { onClose: () => void }) {
             </Fragment>
           ))}
         </dl>
-        <button type="button" className={styles.dialogButton} onClick={onClose}>
-          Close
-        </button>
-      </section>
-    </div>
+        <DialogFooter>
+          <button type="button" className={styles.dialogButton} onClick={onClose}>
+            Close
+          </button>
+        </DialogFooter>
+      </DialogSurface>
+    </DialogBackdrop>
   );
 }
 

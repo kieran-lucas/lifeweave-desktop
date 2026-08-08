@@ -17,6 +17,7 @@ import {
   saveFocusPlanDraft,
 } from "./ipc";
 import * as styles from "./FocusPlansScreen.css";
+import { PageFrame, PageHeader } from "../../app/layout/PageFrame";
 import { LinkedWorkPanel, type TaskNavigate } from "./LinkedWorkPanel";
 import { ReviewsPanel } from "./ReviewsPanel";
 import { useQueryClient } from "@tanstack/react-query";
@@ -380,18 +381,19 @@ export function FocusPlansScreen({
   }
 
   return (
-    <section className={styles.screen} aria-labelledby="plans-heading">
-      <header className={styles.header}>
-        <div>
-          <h1 id="plans-heading" tabIndex={-1} className={styles.heading}>Plans</h1>
-          <p className={styles.lede}>Medium-term strategies without fragmenting your Life tree.</p>
-        </div>
-        <form className={styles.createForm} onSubmit={handleCreate}>
-          <label className={styles.srOnly} htmlFor="new-plan-title">New plan title</label>
-          <input id="new-plan-title" className={styles.input} value={createTitle} onChange={(event) => setCreateTitle(event.target.value)} placeholder="New focus plan" />
-          <button className={styles.primaryButton} disabled={status === "saving" || !createTitle.trim()}>Create</button>
-        </form>
-      </header>
+    <PageFrame as="section" type="standard" aria-labelledby="plans-heading">
+      <PageHeader
+        actions={
+          <form className={styles.createForm} onSubmit={handleCreate}>
+            <label className={styles.srOnly} htmlFor="new-plan-title">New plan title</label>
+            <input id="new-plan-title" className={styles.input} value={createTitle} onChange={(event) => setCreateTitle(event.target.value)} placeholder="New focus plan" />
+            <button className={styles.primaryButton} disabled={status === "saving" || !createTitle.trim()}>Create</button>
+          </form>
+        }
+      >
+        <h1 id="plans-heading" tabIndex={-1} className={styles.heading}>Plans</h1>
+        <p className={styles.lede}>Medium-term strategies without fragmenting your Life tree.</p>
+      </PageHeader>
 
       {error && <p className={styles.error} role="alert">{error}</p>}
       <div className={styles.portfolios} role="tablist" aria-label="Plan portfolios">
@@ -483,6 +485,6 @@ export function FocusPlansScreen({
         </div>
       </div>
       <p className={styles.srOnly} aria-live="polite">{status === "saving" ? "Saving plan." : ""}</p>
-    </section>
+    </PageFrame>
   );
 }

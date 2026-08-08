@@ -1,13 +1,13 @@
 import { style } from "@vanilla-extract/css";
+import { space } from "../../../app/layout/tokens.css";
+import { dialogBackdrop, dialogSurface, splitWorkspace } from "../../../app/layout/layout.css";
 
-export const shell = style({
-  display: "grid",
-  gridTemplateColumns: "minmax(190px, 260px) minmax(0, 1fr)",
-  gap: 24,
-  alignItems: "start",
-  '@media': { '(max-width: 760px)': { gridTemplateColumns: "1fr" } },
-});
-export const manager = style({ display: "flex", flexDirection: "column", gap: 12 });
+/* Manager rail leads, results flex — the shared split workspace (ADR 0044). */
+export const shell = style([
+  splitWorkspace,
+  { vars: { "--lw-split-columns": "minmax(190px, 260px) minmax(0, 1fr)" } },
+]);
+export const manager = style({ display: "flex", flexDirection: "column", gap: space.x3, minInlineSize: 0 });
 export const viewList = style({ listStyle: "none", margin: 0, padding: 0 });
 export const viewLine = style({
   display: "grid",
@@ -20,27 +20,12 @@ export const viewLine = style({
 export const actions = style({ display: "flex", flexWrap: "wrap", gap: 6 });
 export const results = style({ minWidth: 0, display: "flex", flexDirection: "column", gap: 16 });
 export const notice = style({ borderLeft: "3px solid var(--focus-ring)", paddingLeft: 12 });
-export const dialog = style({
-  position: "fixed",
-  inset: 0,
-  zIndex: 40,
-  display: "grid",
-  placeItems: "center",
-  padding: 20,
-  background: "rgba(0, 0, 0, 0.45)",
-});
-export const editor = style({
-  width: "min(760px, 100%)",
-  maxHeight: "calc(100vh - 40px)",
-  overflowY: "auto",
-  display: "flex",
-  flexDirection: "column",
-  gap: 16,
-  padding: 24,
-  background: "var(--surface-primary, Canvas)",
-  color: "var(--text-primary, CanvasText)",
-  border: "1px solid var(--border-subtle)",
-});
+/* MODAL_SURFACE — shared backdrop and surface geometry (ADR 0044). */
+export const dialog = dialogBackdrop;
+export const editor = style([
+  dialogSurface.standard,
+  { background: "var(--surface-primary, Canvas)", color: "var(--text-primary, CanvasText)" },
+]);
 export const field = style({ display: "flex", flexDirection: "column", gap: 6 });
 export const fieldRow = style({ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 12 });
 export const clause = style({ border: "1px solid var(--border-subtle)", padding: 12, display: "flex", flexDirection: "column", gap: 8 });

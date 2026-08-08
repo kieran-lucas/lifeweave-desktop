@@ -1,6 +1,11 @@
 import { globalStyle, style } from "@vanilla-extract/css";
+import { splitWorkspace } from "../../app/layout/layout.css";
 
-export const workspace=style({display:"grid",gridTemplateColumns:"minmax(0,1fr) 280px",gap:18,alignItems:"start","@container":{"(max-width: 780px)":{gridTemplateColumns:"1fr"}}});
+/*
+ * Canvas leads, inspector is a bounded rail. The flexible track is `minmax(0, 1fr)` from the shared
+ * primitive, so the inspector can never squeeze the canvas into page-level overflow (ADR 0044).
+ */
+export const workspace=style([splitWorkspace,{vars:{"--lw-split-columns":"minmax(0,1fr) minmax(260px,300px)"}}]);
 export const canvasViewport=style({position:"relative",minWidth:0,minHeight:520,overflow:"auto",border:"1px solid var(--border-subtle)",borderRadius:18,background:"color-mix(in srgb, var(--surface) 75%, var(--app-background))",scrollbarGutter:"stable"});
 export const canvas=style({position:"relative",minWidth:"100%",minHeight:500});
 export const links=style({position:"absolute",inset:0,pointerEvents:"none",overflow:"visible"});

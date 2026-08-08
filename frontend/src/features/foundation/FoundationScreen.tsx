@@ -147,7 +147,7 @@ export function FoundationScreen() {
 
   if (state.kind === "loading") {
     return (
-      <section className={styles.screen} aria-labelledby="fr-heading">
+      <section className={styles.panel} aria-labelledby="fr-heading">
         <h1 id="fr-heading" className={styles.heading}>
           Foundation Records
         </h1>
@@ -160,7 +160,7 @@ export function FoundationScreen() {
 
   if (state.kind === "error") {
     return (
-      <section className={styles.screen} aria-labelledby="fr-heading">
+      <section className={styles.panel} aria-labelledby="fr-heading">
         <h1 id="fr-heading" className={styles.heading}>
           Foundation Records
         </h1>
@@ -174,7 +174,7 @@ export function FoundationScreen() {
   const { active, archived } = state;
 
   return (
-    <section className={styles.screen} aria-labelledby="fr-heading">
+    <section className={styles.panel} aria-labelledby="fr-heading">
       <h1 id="fr-heading" className={styles.heading}>
         Foundation Records
       </h1>

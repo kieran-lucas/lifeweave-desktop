@@ -34,6 +34,7 @@ import { localToday } from "../features/calendar/date";
 import { useLocalDateRollover } from "../features/calendar/useLocalDateRollover";
 import type { SearchNavigationTarget } from "../ipc/generated/SearchNavigationTarget";
 import * as styles from "./App.css";
+import { PageFrame, PageHeader } from "./layout/PageFrame";
 import { RouteErrorBoundary } from "./RouteErrorBoundary";
 import { ShortcutHelpDialog } from "./ShortcutHelpDialog";
 import {
@@ -305,7 +306,7 @@ export function App() {
           </span>
         </button>
       </nav>
-      <main className={styles.viewport}>
+      <main className={styles.viewport} data-app-viewport="">
         {ipcStatus === "loading" && (
           <p className={styles.coreStatus} aria-live="polite">
             Connecting to application core…
@@ -319,21 +320,24 @@ export function App() {
         {ipcStatus === "ready" && (
           <RouteErrorBoundary key={destination} destination={destination}>
             {destination === "settings" && (
-              <section
+              <PageFrame
+                as="section"
+                type="standard"
                 ref={headingRef}
-                className={styles.destination}
                 aria-labelledby="settings-heading"
               >
-                <h1
-                  id="settings-heading"
-                  tabIndex={-1}
-                  className={styles.heading}
-                >
-                  Settings
-                </h1>
-                <p className={styles.lede}>
-                  Application preferences, backup and restore, and foundation verification tools.
-                </p>
+                <PageHeader>
+                  <h1
+                    id="settings-heading"
+                    tabIndex={-1}
+                    className={styles.heading}
+                  >
+                    Settings
+                  </h1>
+                  <p className={styles.lede}>
+                    Application preferences, backup and restore, and foundation verification tools.
+                  </p>
+                </PageHeader>
                 <CategoryGoals />
                 <Suspense fallback={<p>Loading tag settings…</p>}>
                   <TagSettings />
@@ -341,28 +345,40 @@ export function App() {
                 <Suspense fallback={<p>Loading backup settings…</p>}>
                   <BackupSettings onDatabaseRestored={() => queryClient.clear()} />
                 </Suspense>
-                <div className={styles.foundationPanel}>
-                  <h2>Keyboard</h2>
+                <section
+                  className={styles.settingsSection}
+                  aria-labelledby="settings-keyboard-heading"
+                >
+                  <h2 id="settings-keyboard-heading">Keyboard</h2>
                   <p>
                     Review the eight global shortcuts. Press{" "}
                     {shortcutHelpShortcut.chord} anywhere outside a text field, a
                     document editor, or an open dialog.
                   </p>
-                  <button
-                    type="button"
-                    className={styles.dialogButton}
-                    aria-keyshortcuts={shortcutHelpShortcut.ariaKeyShortcuts}
-                    onClick={(event) => openShortcutHelp(event.currentTarget)}
-                  >
-                    {shortcutHelpShortcut.label}
-                  </button>
-                </div>
-                <div className={styles.foundationPanel}>
-                  <h2>Foundation tools</h2>
+                  <div>
+                    <button
+                      type="button"
+                      className={styles.dialogButton}
+                      aria-keyshortcuts={shortcutHelpShortcut.ariaKeyShortcuts}
+                      onClick={(event) => openShortcutHelp(event.currentTarget)}
+                    >
+                      {shortcutHelpShortcut.label}
+                    </button>
+                  </div>
+                </section>
+                {/*
+                  Foundation tools are verification tooling. They stay last and visually secondary,
+                  but Task 50 does not hide or collapse them — that would need new authority.
+                */}
+                <section
+                  className={styles.settingsSection}
+                  aria-labelledby="settings-foundation-heading"
+                >
+                  <h2 id="settings-foundation-heading">Foundation tools</h2>
                   <p>FoundationRecord verification tools.</p>
                   <FoundationScreen />
-                </div>
-              </section>
+                </section>
+              </PageFrame>
             )}
             {destination === "today" && (
               <div

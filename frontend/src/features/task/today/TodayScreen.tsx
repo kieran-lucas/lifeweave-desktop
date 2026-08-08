@@ -1,4 +1,12 @@
-import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Suspense,
+  lazy,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+} from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { OccurrenceEditScope } from "../../../ipc/generated/OccurrenceEditScope";
 import type { TaskCategoryView } from "../../../ipc/generated/TaskCategoryView";
@@ -29,6 +37,14 @@ import { WeekStrip } from "../../calendar/WeekStrip";
 import { CategoryIcon } from "../categoryIcons";
 import { AssessmentControl } from "../../completion/AssessmentControl";
 import * as styles from "./TodayScreen.css";
+import * as layout from "../../../app/layout/layout.css";
+import { PageFrame, PageHeader } from "../../../app/layout/PageFrame";
+import {
+  DialogBackdrop,
+  DialogFooter,
+  DialogHeader,
+  DialogSurface,
+} from "../../../app/layout/DialogSurface";
 import { LifeAreaCombobox } from "../LifeAreaCombobox";
 import { FocusPlanCombobox } from "../FocusPlanCombobox";
 import { TaskWorkspaceTabs, type TaskWorkspaceMode } from "../planning/TaskWorkspaceTabs";
@@ -160,36 +176,44 @@ function TimeWheel({
 }) {
   const hour = Math.floor(value / 60),
     minute = value % 60;
+  // Hour and minute are one compact sub-control pair inside their own bounded group, which §11.2
+  // allows to share a line. The group itself is a single field unit on the form grid.
   return (
-    <div role="group" aria-label={`${name} time`} className={styles.wheel}>
-      <label>
-        {name} hour
-        <select
-          aria-label={`${name} hour`}
-          value={hour}
-          onChange={(e) => onChange(Number(e.target.value) * 60 + minute)}
-        >
-          {Array.from({ length: end ? 21 : 20 }, (_, i) => i + 4).map((h) => (
-            <option key={h} value={h}>
-              {String(h).padStart(2, "0")}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label>
-        {name} minute
-        <select
-          aria-label={`${name} minute`}
-          value={minute}
-          onChange={(e) => onChange(hour * 60 + Number(e.target.value))}
-        >
-          {Array.from({ length: 60 }, (_, m) => (
-            <option key={m} value={m}>
-              {String(m).padStart(2, "0")}
-            </option>
-          ))}
-        </select>
-      </label>
+    <div role="group" aria-label={`${name} time`} className={layout.field}>
+      <span>{name}</span>
+      <div className={styles.wheel}>
+        <label className={styles.wheelPart}>
+          <span className={styles.srOnly}>{name} hour</span>
+          <select
+            className={layout.fieldControl}
+            aria-label={`${name} hour`}
+            value={hour}
+            onChange={(e) => onChange(Number(e.target.value) * 60 + minute)}
+          >
+            {Array.from({ length: end ? 21 : 20 }, (_, i) => i + 4).map((h) => (
+              <option key={h} value={h}>
+                {String(h).padStart(2, "0")}
+              </option>
+            ))}
+          </select>
+        </label>
+        <span aria-hidden="true">:</span>
+        <label className={styles.wheelPart}>
+          <span className={styles.srOnly}>{name} minute</span>
+          <select
+            className={layout.fieldControl}
+            aria-label={`${name} minute`}
+            value={minute}
+            onChange={(e) => onChange(hour * 60 + Number(e.target.value))}
+          >
+            {Array.from({ length: 60 }, (_, m) => (
+              <option key={m} value={m}>
+                {String(m).padStart(2, "0")}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
     </div>
   );
 }
@@ -743,7 +767,7 @@ export function TodayScreen({
     selectDate(value);
   };
   return (
-    <section className={styles.root}>
+    <PageFrame as="section" type="standard">
       <TaskWorkspaceTabs
         active={workspaceMode}
         disabled={open}
@@ -778,25 +802,31 @@ export function TodayScreen({
         {timerNotice}
       </span>
       {workspaceMode === "today" ? (
-      <div role="tabpanel" id="task-panel-today" aria-labelledby="task-tab-today">
-      <div className={styles.header}>
-        <div>
-          <p className={styles.eyebrow}>
-            {date === today ? "Today" : "Selected day"} · {date}
-          </p>
-          <h1 id="today-heading" tabIndex={-1}>
-            Today
-          </h1>
-        </div>
-        <button
-          ref={trigger}
-          className={styles.create}
-          aria-label="Create task"
-          onClick={() => begin()}
-        >
-          Plan task
-        </button>
-      </div>
+      <div
+        className={styles.workspacePanel}
+        role="tabpanel"
+        id="task-panel-today"
+        aria-labelledby="task-tab-today"
+      >
+      <PageHeader
+        actions={
+          <button
+            ref={trigger}
+            className={styles.create}
+            aria-label="Create task"
+            onClick={() => begin()}
+          >
+            Plan task
+          </button>
+        }
+      >
+        <p className={styles.eyebrow}>
+          {date === today ? "Today" : "Selected day"} · {date}
+        </p>
+        <h1 id="today-heading" tabIndex={-1}>
+          Today
+        </h1>
+      </PageHeader>
       <WeekStrip selectedDate={date} today={today} onSelectDate={selectUserDate} />
       {assessmentError && <p role="alert">{assessmentError}</p>}
       {lastOperation && (
@@ -820,11 +850,17 @@ export function TodayScreen({
           {grouped.map((period) => (
             <section
               key={period.name}
+              className={styles.period}
               aria-labelledby={`${period.name}-heading`}
             >
-              <h2 id={`${period.name}-heading`}>
-                {period.name}
-                <span>
+              {/*
+                The name and the range are two spaced boxes, not one run of text. Before Task 50
+                this rendered as `Morning04:00–12:00`, because the separation was relying on
+                inter-element whitespace that never existed.
+              */}
+              <h2 id={`${period.name}-heading`} className={styles.periodHeading}>
+                <span>{period.name}</span>
+                <span className={styles.periodRange}>
                   {formatMinute(period.start)}–{formatMinute(period.end)}
                 </span>
               </h2>
@@ -924,9 +960,32 @@ export function TodayScreen({
                             )}
                             <TagChipList tags={item.tags} />
                           </div>
+                          {/*
+                            One action track. Before Task 50 these siblings were laid directly on a
+                            three-track grid that could render four children, so a fourth implicit
+                            auto column appeared whenever a Task carried actual time.
+                          */}
+                          <div className={styles.rowActions}>
                           <span aria-label={`Priority ${item.priority}`}>
                             •
                           </span>
+                          {/*
+                            The visible edit path. Double-click and Enter still work, but neither
+                            advertised itself, which is the one MISSING_USER_SURFACE the Task 50
+                            census found. This calls the same `begin` the gestures call.
+                          */}
+                          <button
+                            type="button"
+                            className={styles.rowEditButton}
+                            aria-label={`Edit ${item.title}`}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              begin(item, event.currentTarget);
+                            }}
+                            onDoubleClick={(event) => event.stopPropagation()}
+                          >
+                            Edit
+                          </button>
                           {item.kind === "one_off" && item.actual_time && (
                             <ActualTimeRowControl
                               taskId={item.id}
@@ -980,6 +1039,7 @@ export function TodayScreen({
                               })
                             }
                           />
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -1007,15 +1067,16 @@ export function TodayScreen({
         </div>
       )}
       {workspaceMode === "today" && open && (
-        <div
-          className={styles.dialog}
+        <DialogBackdrop
           role="dialog"
           aria-modal="true"
           aria-labelledby="task-dialog-heading"
           ref={dialog}
         >
-          <form
-            onSubmit={(e) => {
+          <DialogSurface
+            as="form"
+            width="standard"
+            onSubmit={(e: FormEvent<HTMLFormElement>) => {
               e.preventDefault();
               setError("");
               if (draft.start_minute >= draft.end_minute) {
@@ -1053,293 +1114,336 @@ export function TodayScreen({
               save.mutate();
             }}
           >
-            <h2 id="task-dialog-heading">
-              {editing ? "Edit task" : "Create task"}
-            </h2>
-            {error && (
-              <p role="alert" id="task-error">
-                {error}
-              </p>
-            )}
-            <label>
-              Title
-              <input
-                value={draft.title}
-                aria-describedby={error ? "task-error" : undefined}
-                onChange={(e) => setDraft({ ...draft, title: e.target.value })}
-              />
-            </label>
-            <label>
-              Description
-              <textarea
-                value={draft.description}
-                onChange={(e) =>
-                  setDraft({ ...draft, description: e.target.value })
-                }
-              />
-            </label>
-            <label>
-              Date
-              <input
-                type="date"
-                value={draft.local_date}
-                onChange={(e) =>
-                  setDraft({ ...draft, local_date: e.target.value })
-                }
-              />
-            </label>
-            <TimeWheel
-              name="Start"
-              value={draft.start_minute}
-              onChange={(n) => setDraft({ ...draft, start_minute: n })}
-            />
-            <TimeWheel
-              name="End"
-              end
-              value={draft.end_minute}
-              onChange={(n) => setDraft({ ...draft, end_minute: n })}
-            />
-            <label>
-              Category
-              <select
-                value={draft.category_id}
-                onChange={(e) =>
-                  setDraft({ ...draft, category_id: e.target.value })
-                }
-              >
-                {(categories.data ?? []).map((c: TaskCategoryView) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Priority
-              <select
-                value={draft.priority}
-                onChange={(e) =>
-                  setDraft({ ...draft, priority: e.target.value })
-                }
-              >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-              </select>
-            </label>
-            <LifeAreaCombobox
-              value={draft.life_node_id}
-              current={editing?.life_area}
-              onChange={(life_node_id) => {
-                setDraft({ ...draft, life_node_id });
-                if (editing?.kind === "recurring") setScope("entire_series");
-              }}
-            />
-            <FocusPlanCombobox
-              value={draft.focus_plan_id}
-              current={editing?.focus_plan}
-              disabled={
-                editing?.kind === "recurring" &&
-                scope === "only_this_occurrence"
-              }
-              disabledReason="This Focus Plan belongs to the series. Change scope to Entire series to edit it."
-              onChange={(focus_plan_id) =>
-                setDraft({ ...draft, focus_plan_id })
-              }
-            />
-            <div>
-              <label htmlFor="task-deadline">Deadline</label>
-              <p id="task-deadline-help">
-                {isRecurringDraft
-                  ? "Recurring tasks cannot carry a deadline yet."
-                  : "Schedule is when you plan to work. Deadline is when it must be finished."}
-              </p>
-              <input
-                id="task-deadline"
-                type="date"
-                aria-describedby="task-deadline-help"
-                disabled={isRecurringDraft}
-                value={draft.deadline_local_date ?? ""}
-                onChange={(event) =>
-                  setDraft({
-                    ...draft,
-                    deadline_local_date: event.target.value || null,
-                  })
-                }
-              />
-              {draft.deadline_local_date && !isRecurringDraft && (
-                <button
-                  type="button"
-                  onClick={() =>
-                    setDraft({ ...draft, deadline_local_date: null })
+            <DialogHeader>
+              <h2 id="task-dialog-heading">
+                {editing ? "Edit task" : "Create task"}
+              </h2>
+              {error && (
+                <p role="alert" id="task-error">
+                  {error}
+                </p>
+              )}
+            </DialogHeader>
+            <div className={layout.formGrid}>
+              <label className={`${layout.field} ${layout.fieldSpan.full}`}>
+                Title
+                <input
+                  className={layout.fieldControl}
+                  value={draft.title}
+                  aria-describedby={error ? "task-error" : undefined}
+                  onChange={(e) => setDraft({ ...draft, title: e.target.value })}
+                />
+              </label>
+              <label className={`${layout.field} ${layout.fieldSpan.full}`}>
+                Description
+                <textarea
+                  className={`${layout.fieldControl} ${styles.textarea}`}
+                  value={draft.description}
+                  onChange={(e) =>
+                    setDraft({ ...draft, description: e.target.value })
+                  }
+                />
+              </label>
+              {/* Schedule is one semantic group, so it gets one common region (Palmer 1992). */}
+              <fieldset className={`${layout.fieldGroup} ${layout.fieldSpan.full}`}>
+                <legend className={styles.legend}>Schedule</legend>
+                <label className={`${layout.field} ${layout.fieldSpan.third}`}>
+                  Date
+                  <input
+                    className={layout.fieldControl}
+                    type="date"
+                    value={draft.local_date}
+                    onChange={(e) =>
+                      setDraft({ ...draft, local_date: e.target.value })
+                    }
+                  />
+                </label>
+                <div className={layout.fieldSpan.third}>
+                  <TimeWheel
+                    name="Start"
+                    value={draft.start_minute}
+                    onChange={(n) => setDraft({ ...draft, start_minute: n })}
+                  />
+                </div>
+                <div className={layout.fieldSpan.third}>
+                  <TimeWheel
+                    name="End"
+                    end
+                    value={draft.end_minute}
+                    onChange={(n) => setDraft({ ...draft, end_minute: n })}
+                  />
+                </div>
+              </fieldset>
+              <label className={`${layout.field} ${layout.fieldSpan.half}`}>
+                Category
+                <select
+                  className={layout.fieldControl}
+                  value={draft.category_id}
+                  onChange={(e) =>
+                    setDraft({ ...draft, category_id: e.target.value })
                   }
                 >
-                  Clear deadline
-                </button>
+                  {(categories.data ?? []).map((c: TaskCategoryView) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className={`${layout.field} ${layout.fieldSpan.half}`}>
+                Priority
+                <select
+                  className={layout.fieldControl}
+                  value={draft.priority}
+                  onChange={(e) =>
+                    setDraft({ ...draft, priority: e.target.value })
+                  }
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </label>
+              <div className={layout.fieldSpan.half}>
+                <LifeAreaCombobox
+                  value={draft.life_node_id}
+                  current={editing?.life_area}
+                  onChange={(life_node_id) => {
+                    setDraft({ ...draft, life_node_id });
+                    if (editing?.kind === "recurring") setScope("entire_series");
+                  }}
+                />
+              </div>
+              <div className={layout.fieldSpan.half}>
+                <FocusPlanCombobox
+                  value={draft.focus_plan_id}
+                  current={editing?.focus_plan}
+                  disabled={
+                    editing?.kind === "recurring" &&
+                    scope === "only_this_occurrence"
+                  }
+                  disabledReason="This Focus Plan belongs to the series. Change scope to Entire series to edit it."
+                  onChange={(focus_plan_id) =>
+                    setDraft({ ...draft, focus_plan_id })
+                  }
+                />
+              </div>
+              <div className={`${layout.field} ${layout.fieldSpan.full}`}>
+                <label htmlFor="task-deadline">Deadline</label>
+                <p id="task-deadline-help" className={layout.fieldHelp}>
+                  {isRecurringDraft
+                    ? "Recurring tasks cannot carry a deadline yet."
+                    : "Schedule is when you plan to work. Deadline is when it must be finished."}
+                </p>
+                <div className={layout.controlRow}>
+                  <input
+                    id="task-deadline"
+                    className={styles.dateControl}
+                    type="date"
+                    aria-describedby="task-deadline-help"
+                    disabled={isRecurringDraft}
+                    value={draft.deadline_local_date ?? ""}
+                    onChange={(event) =>
+                      setDraft({
+                        ...draft,
+                        deadline_local_date: event.target.value || null,
+                      })
+                    }
+                  />
+                  {draft.deadline_local_date && !isRecurringDraft && (
+                    <button
+                      type="button"
+                      className={styles.rowEditButton}
+                      onClick={() =>
+                        setDraft({ ...draft, deadline_local_date: null })
+                      }
+                    >
+                      Clear deadline
+                    </button>
+                  )}
+                </div>
+              </div>
+              {editing?.kind === "recurring" &&
+              scope !== "entire_series" ? (
+                <div className={`${layout.field} ${layout.fieldSpan.full}`}>
+                  <TagChipList tags={editing.tags} maxVisible={12} />
+                  <p className={styles.seriesTagsNote}>
+                    Tags belong to the series. Change scope to Entire series to edit.
+                  </p>
+                </div>
+              ) : (
+                <div className={layout.fieldSpan.full}>
+                  <TagPicker
+                    selectedTags={draft.selectedTags}
+                    onChange={(next) =>
+                      setDraft({ ...draft, selectedTags: next, tag_ids: next.map((t) => t.id) })
+                    }
+                    allowCreate
+                  />
+                </div>
+              )}
+              {!editing && (
+                <fieldset className={`${layout.fieldGroup} ${layout.fieldSpan.full}`}>
+                  <legend className={styles.legend}>Recurring</legend>
+                  <label className={`${styles.checkLabel} ${layout.fieldSpan.full}`}>
+                    <input
+                      type="checkbox"
+                      checked={recurring}
+                      onChange={(e) => setRecurring(e.target.checked)}
+                    />{" "}
+                    Repeat task
+                  </label>
+                  {recurring && (
+                    <>
+                      <label className={`${layout.field} ${layout.fieldSpan.half}`}>
+                        Frequency
+                        <select
+                          className={layout.fieldControl}
+                          value={frequency}
+                          onChange={(e) => setFrequency(e.target.value)}
+                        >
+                          <option value="daily">Daily</option>
+                          <option value="weekly">Weekly</option>
+                          <option value="monthly">Monthly</option>
+                        </select>
+                      </label>
+                      <label className={`${layout.field} ${layout.fieldSpan.half}`}>
+                        Interval
+                        <input
+                          className={layout.fieldControl}
+                          aria-label="Recurrence interval"
+                          type="number"
+                          min="1"
+                          max="366"
+                          value={interval}
+                          onChange={(e) => setInterval(Number(e.target.value))}
+                        />
+                      </label>
+                      {frequency === "weekly" && (
+                        <fieldset className={`${styles.subGroup} ${layout.fieldSpan.full}`}>
+                          <legend className={styles.legend}>Weekdays</legend>
+                          <div className={layout.controlRow}>
+                            {weekdays.map((day, index) => (
+                              <label key={day} className={styles.checkLabel}>
+                                <input
+                                  type="checkbox"
+                                  checked={selectedDays.includes(index)}
+                                  onChange={(e) =>
+                                    setSelectedDays(
+                                      e.target.checked
+                                        ? [...selectedDays, index]
+                                        : selectedDays.filter((x) => x !== index),
+                                    )
+                                  }
+                                />
+                                {day}
+                              </label>
+                            ))}
+                          </div>
+                        </fieldset>
+                      )}
+                      <fieldset className={`${styles.subGroup} ${layout.fieldSpan.full}`}>
+                        <legend className={styles.legend}>Ends</legend>
+                        <div className={layout.controlRow}>
+                          {["never", "count", "until"].map((mode) => (
+                            <label key={mode} className={styles.checkLabel}>
+                              <input
+                                type="radio"
+                                name="end-mode"
+                                checked={endMode === mode}
+                                onChange={() => setEndMode(mode)}
+                              />
+                              {mode}
+                            </label>
+                          ))}
+                        </div>
+                        {endMode === "count" && (
+                          <label className={layout.field}>
+                            Occurrence count
+                            <input
+                              className={styles.numberControl}
+                              type="number"
+                              min="1"
+                              max="1000"
+                              value={count}
+                              onChange={(e) => setCount(Number(e.target.value))}
+                            />
+                          </label>
+                        )}
+                        {endMode === "until" && (
+                          <label className={layout.field}>
+                            Until
+                            <input
+                              className={styles.dateControl}
+                              type="date"
+                              value={until}
+                              onChange={(e) => setUntil(e.target.value)}
+                            />
+                          </label>
+                        )}
+                      </fieldset>
+                      <ol
+                        className={`${styles.previewList} ${layout.fieldSpan.full}`}
+                        aria-label="Recurrence preview"
+                      >
+                        {previews.map((value) => (
+                          <li key={value}>{value}</li>
+                        ))}
+                      </ol>
+                    </>
+                  )}
+                </fieldset>
+              )}
+              {editing?.kind === "recurring" && (
+                <fieldset className={`${layout.fieldGroup} ${layout.fieldSpan.full}`}>
+                  <legend className={styles.legend}>Occurrence scope</legend>
+                  <div className={`${styles.scopeList} ${layout.fieldSpan.full}`}>
+                    {(
+                      [
+                        "only_this_occurrence",
+                        "this_and_future",
+                        "entire_series",
+                      ] as OccurrenceEditScope[]
+                    ).map((value) => (
+                      <label key={value} className={styles.checkLabel}>
+                        <input
+                          type="radio"
+                          name="scope"
+                          checked={scope === value}
+                          onChange={() => setScope(value)}
+                        />
+                        {value === "only_this_occurrence"
+                          ? "Only this occurrence"
+                          : value === "this_and_future"
+                            ? "This and future occurrences"
+                            : "Entire series"}
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
               )}
             </div>
-            {editing?.kind === "recurring" &&
-            scope !== "entire_series" ? (
-              <div>
-                <TagChipList tags={editing.tags} maxVisible={12} />
-                <p className={styles.seriesTagsNote}>
-                  Tags belong to the series. Change scope to Entire series to edit.
-                </p>
-              </div>
-            ) : (
-              <TagPicker
-                selectedTags={draft.selectedTags}
-                onChange={(next) =>
-                  setDraft({ ...draft, selectedTags: next, tag_ids: next.map((t) => t.id) })
-                }
-                allowCreate
-              />
-            )}
-            {!editing && (
-              <fieldset>
-                <legend>Recurring</legend>
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={recurring}
-                    onChange={(e) => setRecurring(e.target.checked)}
-                  />{" "}
-                  Repeat task
-                </label>
-                {recurring && (
-                  <>
-                    <label>
-                      Frequency
-                      <select
-                        value={frequency}
-                        onChange={(e) => setFrequency(e.target.value)}
-                      >
-                        <option value="daily">Daily</option>
-                        <option value="weekly">Weekly</option>
-                        <option value="monthly">Monthly</option>
-                      </select>
-                    </label>
-                    <label>
-                      Interval
-                      <input
-                        aria-label="Recurrence interval"
-                        type="number"
-                        min="1"
-                        max="366"
-                        value={interval}
-                        onChange={(e) => setInterval(Number(e.target.value))}
-                      />
-                    </label>
-                    {frequency === "weekly" && (
-                      <fieldset>
-                        <legend>Weekdays</legend>
-                        {weekdays.map((day, index) => (
-                          <label key={day}>
-                            <input
-                              type="checkbox"
-                              checked={selectedDays.includes(index)}
-                              onChange={(e) =>
-                                setSelectedDays(
-                                  e.target.checked
-                                    ? [...selectedDays, index]
-                                    : selectedDays.filter((x) => x !== index),
-                                )
-                              }
-                            />
-                            {day}
-                          </label>
-                        ))}
-                      </fieldset>
-                    )}
-                    <fieldset>
-                      <legend>Ends</legend>
-                      {["never", "count", "until"].map((mode) => (
-                        <label key={mode}>
-                          <input
-                            type="radio"
-                            name="end-mode"
-                            checked={endMode === mode}
-                            onChange={() => setEndMode(mode)}
-                          />
-                          {mode}
-                        </label>
-                      ))}
-                      {endMode === "count" && (
-                        <label>
-                          Occurrence count
-                          <input
-                            type="number"
-                            min="1"
-                            max="1000"
-                            value={count}
-                            onChange={(e) => setCount(Number(e.target.value))}
-                          />
-                        </label>
-                      )}
-                      {endMode === "until" && (
-                        <label>
-                          Until
-                          <input
-                            type="date"
-                            value={until}
-                            onChange={(e) => setUntil(e.target.value)}
-                          />
-                        </label>
-                      )}
-                    </fieldset>
-                    <ol aria-label="Recurrence preview">
-                      {previews.map((value) => (
-                        <li key={value}>{value}</li>
-                      ))}
-                    </ol>
-                  </>
-                )}
-              </fieldset>
-            )}
-            {editing?.kind === "recurring" && (
-              <fieldset>
-                <legend>Occurrence scope</legend>
-                {(
-                  [
-                    "only_this_occurrence",
-                    "this_and_future",
-                    "entire_series",
-                  ] as OccurrenceEditScope[]
-                ).map((value) => (
-                  <label key={value}>
-                    <input
-                      type="radio"
-                      name="scope"
-                      checked={scope === value}
-                      onChange={() => setScope(value)}
-                    />
-                    {value === "only_this_occurrence"
-                      ? "Only this occurrence"
-                      : value === "this_and_future"
-                        ? "This and future occurrences"
-                        : "Entire series"}
-                  </label>
-                ))}
-              </fieldset>
-            )}
-            <button type="submit" disabled={save.isPending || remove.isPending}>
-              {save.isPending ? "Saving…" : "Save"}
-            </button>
-            <button type="button" onClick={closeDialog}>
-              Cancel
-            </button>
-            {editing && (
-              <button
-                type="button"
-                disabled={save.isPending || remove.isPending}
-                onClick={() => remove.mutate()}
-              >
-                {remove.isPending ? "Deleting…" : "Delete"}
+            <DialogFooter>
+              {editing && (
+                <button
+                  type="button"
+                  className={layout.dialogFooterLeading}
+                  disabled={save.isPending || remove.isPending}
+                  onClick={() => remove.mutate()}
+                >
+                  {remove.isPending ? "Deleting…" : "Delete"}
+                </button>
+              )}
+              <button type="button" onClick={closeDialog}>
+                Cancel
               </button>
-            )}
-          </form>
-        </div>
+              <button type="submit" disabled={save.isPending || remove.isPending}>
+                {save.isPending ? "Saving…" : "Save"}
+              </button>
+            </DialogFooter>
+          </DialogSurface>
+        </DialogBackdrop>
       )}
-    </section>
+    </PageFrame>
   );
 }

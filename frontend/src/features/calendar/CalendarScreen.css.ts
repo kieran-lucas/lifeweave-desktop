@@ -1,10 +1,14 @@
 import { style } from "@vanilla-extract/css";
-export const root=style({width:"min(1120px,100%)",margin:"0 auto",paddingBottom:64,containerType:"inline-size"});
-export const header=style({display:"flex",justifyContent:"space-between",alignItems:"end",gap:20,marginBottom:24});
+import { space } from "../../app/layout/tokens.css";
+
+/*
+ * Calendar owns no page width. It is a WIDE_WORKSPACE and consumes the shared `PageFrame`, which
+ * is also the query container its cells reflow against (ADR 0044).
+ */
 export const eyebrow=style({margin:0,color:"var(--text-muted)"});
-export const actions=style({display:"flex",alignItems:"center",gap:10});
+export const actions=style({display:"flex",flexWrap:"wrap",alignItems:"center",gap:space.control,minInlineSize:0});
 export const actionButton=style({minHeight:36,border:"1px solid var(--border-subtle)",borderRadius:9,background:"var(--surface)",color:"var(--text-primary)",cursor:"pointer"});
-export const grid=style({display:"grid",gap:1,border:"1px solid var(--border-subtle)",background:"var(--border-subtle)"});
+export const grid=style({display:"grid",gap:1,border:"1px solid var(--border-subtle)",background:"var(--border-subtle)",minInlineSize:0});
 export const weekdays=style({display:"grid",gridTemplateColumns:"repeat(7,minmax(0,1fr))",background:"var(--surface)",color:"var(--text-muted)",textAlign:"center",paddingBlock:8,fontSize:12});
 export const week=style({display:"grid",gridTemplateColumns:"repeat(7,minmax(0,1fr))",gap:1});
 export const cell=style({minWidth:0,minHeight:116,background:"var(--surface)"});

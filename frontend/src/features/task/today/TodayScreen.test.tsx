@@ -93,6 +93,123 @@ const renderToday = (
   return { ...view, client };
 };
 
+describe("Task 50 layout contracts", () => {
+  beforeEach(() => {
+    vi.setSystemTime(new Date(2026, 7, 2, 23, 59));
+    commands.getActiveTaskActualTime.mockResolvedValue(null);
+    commands.listTodayItems.mockResolvedValue([oneOff]);
+    commands.listTaskCategories.mockResolvedValue([
+      { id: "general", name: "General", icon_key: "category-general", color_key: "blue" },
+    ]);
+    commands.listTaskLifeTargets.mockResolvedValue([]);
+    commands.listFocusPlanTargets.mockResolvedValue([]);
+    commands.listTags.mockResolvedValue([]);
+    commands.listCompletionStates.mockResolvedValue([]);
+  });
+  afterEach(cleanup);
+
+  const openEditor = async () => {
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })}>
+        <TodayScreen selectedDate={oneOff.local_date} anchorLocalDate={oneOff.local_date} />
+      </QueryClientProvider>,
+    );
+    await screen.findByText("Focus");
+  };
+
+  it("renders exactly one page frame and declares its type", async () => {
+    await openEditor();
+    const frames = document.querySelectorAll("[data-page-frame]");
+    expect(frames).toHaveLength(1);
+    expect(frames[0]).toHaveAttribute("data-page-type", "standard");
+  });
+
+  /*
+   * The period heading rendered as `Morning04:00–12:00` before Task 50, because the separation was
+   * relying on inter-element whitespace that never existed. Name and range are now two boxes.
+   */
+  it("separates the period name from its time range as layout, not text", async () => {
+    await openEditor();
+    const heading = screen.getByRole("heading", { name: /Morning/ });
+    const parts = [...heading.children].map((node) => node.textContent);
+    expect(parts).toEqual(["Morning", "04:00–12:00"]);
+    // Two element children, and no bare text node between them: the gap is a layout property, so
+    // the heading must not be able to fall back to a single run of text. `textContent` still
+    // concatenates here — the rendered spacing itself is proven in native phase 21.
+    expect(heading.children).toHaveLength(2);
+    expect([...heading.childNodes].every((node) => node.nodeType === Node.ELEMENT_NODE)).toBe(true);
+  });
+
+  /*
+   * The one MISSING_USER_SURFACE the Task 50 census found: edit, delete and recurring-occurrence
+   * scope were reachable only through a double-click or Enter that nothing advertised.
+   */
+  it("offers a visible Edit control on the task row", async () => {
+    await openEditor();
+    const edit = screen.getByRole("button", { name: `Edit ${oneOff.title}` });
+    expect(edit).toBeVisible();
+    fireEvent.click(edit);
+    expect(screen.getByRole("heading", { name: "Edit task" })).toBeInTheDocument();
+    // Delete lives inside that editor, so the same control is what makes deletion reachable.
+    expect(screen.getByRole("button", { name: "Delete" })).toBeInTheDocument();
+  });
+
+  it("keeps double-click and Enter working on the row", async () => {
+    await openEditor();
+    const row = screen.getByText("Focus").closest("[role='listitem']")!;
+    fireEvent.doubleClick(row);
+    expect(screen.getByRole("heading", { name: "Edit task" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    fireEvent.keyDown(row, { key: "Enter" });
+    expect(screen.getByRole("heading", { name: "Edit task" })).toBeInTheDocument();
+  });
+
+  it("builds the task dialog as a real contained surface", async () => {
+    await openEditor();
+    fireEvent.click(screen.getByRole("button", { name: "Create task" }));
+    const dialog = screen.getByRole("dialog");
+    // ADR 0039 modal detection depends on this pairing surviving the rebuild.
+    expect(dialog).toHaveAttribute("aria-modal", "true");
+    const surface = dialog.querySelector("[data-dialog-surface]");
+    expect(surface).not.toBeNull();
+    expect(surface!.tagName).toBe("FORM");
+    expect(surface).toHaveAttribute("data-dialog-width", "standard");
+    expect(within(surface as HTMLElement).getByRole("heading", { name: "Create task" })).toBeInTheDocument();
+    expect(within(surface as HTMLElement).getByRole("button", { name: "Save" })).toBeInTheDocument();
+    expect(within(surface as HTMLElement).getByRole("button", { name: "Cancel" })).toBeInTheDocument();
+  });
+
+  it("keeps every task field present after the rebuild", async () => {
+    await openEditor();
+    fireEvent.click(screen.getByRole("button", { name: "Create task" }));
+    for (const label of [
+      "Title",
+      "Description",
+      "Date",
+      "Start hour",
+      "Start minute",
+      "End hour",
+      "End minute",
+      "Category",
+      "Priority",
+      "Deadline",
+      "Repeat task",
+    ])
+      expect(screen.getByLabelText(label)).toBeInTheDocument();
+  });
+
+  it("keeps the recurrence controls inside the dialog when recurrence is enabled", async () => {
+    await openEditor();
+    fireEvent.click(screen.getByRole("button", { name: "Create task" }));
+    fireEvent.click(screen.getByLabelText("Repeat task"));
+    for (const label of ["Frequency", "Recurrence interval"])
+      expect(screen.getByLabelText(label)).toBeInTheDocument();
+    const surface = screen.getByRole("dialog").querySelector("[data-dialog-surface]")!;
+    // Recurrence must be part of the bounded surface, not escape into the backdrop.
+    expect(surface.contains(screen.getByLabelText("Frequency"))).toBe(true);
+  });
+});
+
 describe("Today recurrence contract", () => {
   beforeEach(() => {
     vi.setSystemTime(new Date(2026, 7, 2, 23, 59));

@@ -1,28 +1,13 @@
 import { style } from "@vanilla-extract/css";
+import { dialogBackdrop, dialogSurface } from "../../../app/layout/layout.css";
 
-export const overlay = style({
-  position: "fixed",
-  inset: 0,
-  background: "rgba(0,0,0,0.45)",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  zIndex: 200,
-});
+/* MODAL_SURFACE — shared backdrop and surface geometry (ADR 0044). */
+export const overlay = dialogBackdrop;
 
-export const dialog = style({
-  background: "var(--surface)",
-  border: "1px solid var(--border-subtle)",
-  borderRadius: 16,
-  padding: "28px 32px",
-  width: "min(480px, 92vw)",
-  maxHeight: "80vh",
-  overflowY: "auto",
-  display: "flex",
-  flexDirection: "column",
-  gap: 16,
-  boxShadow: "0 8px 40px rgba(0,0,0,0.18)",
-});
+export const dialog = style([
+  dialogSurface.compact,
+  { boxShadow: "0 8px 40px rgba(0,0,0,0.18)" },
+]);
 
 export const title = style({ fontWeight: 700, fontSize: "1.1rem", margin: 0 });
 

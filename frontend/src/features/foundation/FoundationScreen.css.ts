@@ -1,9 +1,14 @@
 import { style } from "@vanilla-extract/css";
 
-export const screen = style({
-  maxWidth: "680px",
-  margin: "0 auto",
-  padding: "32px 16px",
+/*
+ * Foundation tools are content inside the Settings STANDARD_PAGE. They own no page width and no
+ * page padding; the reading measure below is a text measure, not a page frame (ADR 0044).
+ */
+export const panel = style({
+  display: "flex",
+  flexDirection: "column",
+  maxInlineSize: "68ch",
+  minInlineSize: 0,
 });
 
 export const heading = style({
@@ -14,12 +19,16 @@ export const heading = style({
 
 export const form = style({
   display: "flex",
+  flexWrap: "wrap",
   gap: "8px",
   marginBottom: "24px",
+  minInlineSize: 0,
 });
 
 export const input = style({
   flex: 1,
+  minInlineSize: 0,
+  boxSizing: "border-box",
   padding: "8px 12px",
   border: "1px solid var(--border-subtle)",
   borderRadius: "8px",

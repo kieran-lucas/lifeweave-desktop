@@ -64,7 +64,7 @@ export function FocusPlanAnalyticsSection({
   const data = query.data;
 
   return (
-    <section aria-labelledby="focus-plan-activity">
+    <section className={styles.section} aria-labelledby="focus-plan-activity">
       <h2 id="focus-plan-activity">Focus Plan activity</h2>
       {query.isLoading && <p role="status">Loading Focus Plan activity…</p>}
       {query.isError && <p role="alert">Unable to load Focus Plan activity.</p>}

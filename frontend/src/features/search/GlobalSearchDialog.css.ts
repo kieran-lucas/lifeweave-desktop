@@ -1,5 +1,12 @@
 import { style } from "@vanilla-extract/css";
+import { dialogSurface } from "../../app/layout/layout.css";
 
+/*
+ * MODAL_SURFACE. Search is the one documented centring exception in the modal family: a global
+ * search palette is anchored near the top of the viewport, which is the prototypical desktop
+ * placement and keeps the result list rooted while it grows. Its width, bounded block size and
+ * internal scroll come from the shared modal grammar (ADR 0044).
+ */
 export const overlay = style({
   position: "fixed",
   inset: 0,
@@ -8,20 +15,21 @@ export const overlay = style({
   alignItems: "flex-start",
   justifyContent: "center",
   paddingTop: "clamp(48px, 12vh, 120px)",
-  zIndex: 9000,
+  zIndex: "var(--layer-overlay)",
 });
 
-export const card = style({
-  width: "min(600px, 94vw)",
-  maxHeight: "min(480px, 70vh)",
-  background: "var(--sidebar-background, #fff)",
-  border: "1px solid var(--border-subtle, #ddd)",
-  borderRadius: 14,
-  overflow: "hidden",
-  display: "flex",
-  flexDirection: "column",
-  boxShadow: "0 8px 40px rgba(0,0,0,0.18)",
-});
+export const card = style([
+  dialogSurface.standard,
+  {
+    // The palette must stay clear of its own top offset as well as the bottom inset.
+    maxBlockSize: "min(560px, calc(100dvh - clamp(48px, 12vh, 120px) - var(--lw-space-5)))",
+    padding: 0,
+    gap: 0,
+    background: "var(--sidebar-background, #fff)",
+    borderRadius: 14,
+    boxShadow: "0 8px 40px rgba(0,0,0,0.18)",
+  },
+]);
 
 export const inputRow = style({
   display: "flex",

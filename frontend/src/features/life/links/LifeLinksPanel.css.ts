@@ -1,4 +1,5 @@
 import { globalStyle, style } from "@vanilla-extract/css";
+import { dialogBackdrop, dialogSurface } from "../../../app/layout/layout.css";
 
 export const panel = style({
   marginTop: 32,
@@ -71,28 +72,14 @@ export const state = style({
   color: "var(--text-muted)",
   fontSize: 12,
 });
-export const overlay = style({
-  position: "fixed",
-  inset: 0,
-  zIndex: 80,
-  display: "grid",
-  placeItems: "center",
-  padding: 20,
-  background: "color-mix(in srgb, #000 46%, transparent)",
-});
-export const dialog = style({
-  width: "min(620px, 100%)",
-  maxHeight: "min(760px, calc(100vh - 40px))",
-  overflowY: "auto",
-  padding: 24,
-  border: "1px solid var(--border-subtle)",
-  borderRadius: 18,
-  background: "var(--surface)",
-  color: "var(--text-primary)",
-  boxShadow: "0 24px 80px rgba(0,0,0,.28)",
-});
+/* MODAL_SURFACE — shared backdrop and surface geometry (ADR 0044). */
+export const overlay = dialogBackdrop;
+export const dialog = style([
+  dialogSurface.standard,
+  { borderRadius: 18, boxShadow: "0 24px 80px rgba(0,0,0,.28)" },
+]);
 export const field = style({ display: "grid", gap: 6, marginTop: 18 });
-export const searchRow = style({ display: "flex", gap: 8 });
+export const searchRow = style({ display: "flex", flexWrap: "wrap", gap: 8, minInlineSize: 0 });
 export const input = style({
   minWidth: 0,
   flex: 1,

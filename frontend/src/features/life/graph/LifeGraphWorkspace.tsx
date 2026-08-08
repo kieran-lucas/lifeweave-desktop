@@ -281,7 +281,9 @@ export function LifeGraphWorkspace({
         </div>
       </div>
 
-      <div className={styles.canvasViewport}>
+      {/* `data-graph-canvas` is the hook native phase 21 uses to prove this region — not the page —
+          owns the graph's horizontal scroll. */}
+      <div className={styles.canvasViewport} data-graph-canvas="">
         <div ref={canvasRef} className={styles.canvas}>
           <svg
             className={styles.edges}

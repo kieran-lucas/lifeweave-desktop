@@ -11,6 +11,7 @@ import {
 import type { LifeNodeView } from "../../ipc/generated/LifeNodeView";
 import type { PinnedLifeNodeView } from "../../ipc/generated/PinnedLifeNodeView";
 import * as styles from "./LifeScreen.css";
+import { PageFrame, PageHeader } from "../../app/layout/PageFrame";
 import { TagChipList } from "../tag/TagChipList";
 import { LifeEditWorkspace } from "./LifeEditWorkspace";
 import { BasicLeafReader } from "./document/BasicLeafReader";
@@ -431,18 +432,18 @@ export function LifeScreen({
     );
   if (browse.isError || !browse.data)
     return (
-      <section className={styles.screen}>
+      <PageFrame as="section" type="wide">
         <h1 className={styles.heading}>Life System</h1>
         <p role="alert">
           Life System could not be loaded. Your tree context is preserved.
         </p>
-      </section>
+      </PageFrame>
     );
   const projection = browse.data;
   if (mode === "reader" && reader) {
     const readerId = "id" in reader ? reader.id : reader.node_id;
     return (
-      <section className={styles.reader} aria-labelledby="life-reader-title">
+      <PageFrame as="section" type="reading" aria-labelledby="life-reader-title">
         <button className={styles.quietButton} onClick={back}>
           ← Back to Life Browse
         </button>
@@ -462,22 +463,13 @@ export function LifeScreen({
           </Suspense>
           <RelatedTasksPanel nodeId={readerId} anchorLocalDate={anchorLocalDate} onNavigate={onTaskNavigate} />
         </motion.div>
-      </section>
+      </PageFrame>
     );
   }
   return (
-    <section className={styles.screen} aria-labelledby="life-heading">
-      <header className={styles.header}>
-        <div>
-          <h1 id="life-heading" className={styles.heading} tabIndex={-1}>
-            Life System
-          </h1>
-          <p className={styles.nodeDescription}>
-            {mode === "edit"
-              ? "Edit the complete structure with atomic moves and undo."
-              : "Browse one branch at a time."}
-          </p>
-        </div>
+    <PageFrame as="section" type="wide" aria-labelledby="life-heading">
+      <PageHeader
+        actions={
         <div className={styles.modes} aria-label="Life view">
           <button
             className={styles.modeButton}
@@ -525,7 +517,17 @@ export function LifeScreen({
             Graph
           </button>
         </div>
-      </header>
+        }
+      >
+        <h1 id="life-heading" className={styles.heading} tabIndex={-1}>
+          Life System
+        </h1>
+        <p className={styles.nodeDescription}>
+          {mode === "edit"
+            ? "Edit the complete structure with atomic moves and undo."
+            : "Browse one branch at a time."}
+        </p>
+      </PageHeader>
       {graphOpen ? (
         <Suspense fallback={<p aria-live="polite">Loading the Life graph…</p>}>
           {graphError && (
@@ -730,7 +732,7 @@ export function LifeScreen({
           <RelatedTasksPanel nodeId={projection.selected.id} anchorLocalDate={anchorLocalDate} onNavigate={onTaskNavigate} />
         </>
       )}
-    </section>
+    </PageFrame>
   );
 }
 

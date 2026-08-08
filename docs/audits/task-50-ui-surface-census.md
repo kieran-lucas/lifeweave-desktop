@@ -228,17 +228,21 @@ a new route, or a new persistent preference in order to be surfaced.
 
 ## Totals
 
+Counted by capability row, not by handler. The one cross-reference row — category goal mutation,
+listed under Analytics because Analytics displays the facts — is counted once, in Settings, where
+the control actually lives.
+
 ```text
-DECIDED user-facing capabilities audited: 96
-SURFACED:                                 41
-CONTEXTUALLY_SURFACED:                    39
-MISSING_USER_SURFACE found:                3   (Task edit, Task delete, recurring occurrence edit)
-MISSING_USER_SURFACE fixed:                3   (one visible row Edit control resolves all three)
-BLOCKED_SURFACE:                           0
-INTERNAL_CHOREOGRAPHY:                     9
-RECOVERY/SAFETY_INTERNAL:                  4
+DECIDED user-facing capabilities audited: 101
+SURFACED:                                  41
+CONTEXTUALLY_SURFACED:                     45
+MISSING_USER_SURFACE found:                 3   (Task edit, Task delete, recurring occurrence edit)
+MISSING_USER_SURFACE fixed:                 3   (one visible row Edit control resolves all three)
+BLOCKED_SURFACE:                            0
+INTERNAL_CHOREOGRAPHY:                      6   rows, covering 11 handlers
+RECOVERY/SAFETY_INTERNAL:                   4
 DUPLICATE_BACKEND_PATH_SAME_USER_CAPABILITY: 2
-DEFERRED_OR_PROHIBITED (verified absent):  9 groups
+DEFERRED_OR_PROHIBITED (verified absent):   8 groups
 ```
 
 Backend handlers registered: **117**. Handlers with a frontend consumer: **115**. The two without a

@@ -1,12 +1,14 @@
 import { globalStyle, style } from "@vanilla-extract/css";
+import { splitWorkspace } from "../../../app/layout/layout.css";
 
-export const workspace = style({
-  display: "grid",
-  gridTemplateColumns: "minmax(0,1fr) 300px",
-  gap: 18,
-  alignItems: "start",
-  "@container": { "(max-width: 780px)": { gridTemplateColumns: "1fr" } },
-});
+/*
+ * Canvas leads, inspector is a bounded readable rail that stays reachable when the workspace stacks
+ * (ADR 0044). The canvas viewport below owns the graph's own two-dimensional scroll.
+ */
+export const workspace = style([
+  splitWorkspace,
+  { vars: { "--lw-split-columns": "minmax(0,1fr) minmax(280px,320px)" } },
+]);
 export const header = style({
   gridColumn: "1/-1",
   display: "flex",

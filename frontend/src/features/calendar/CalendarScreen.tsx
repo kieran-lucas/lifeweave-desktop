@@ -5,6 +5,7 @@ import type { CalendarDayProjection } from "../../ipc/generated/CalendarDayProje
 import { getMonthProjection } from "../../ipc/commands";
 import { CategoryIcon } from "../task/categoryIcons";
 import * as styles from "./CalendarScreen.css";
+import { PageFrame, PageHeader } from "../../app/layout/PageFrame";
 
 type Props = { selectedDate: string; today: string; onActivateDate: (date: string) => void };
 
@@ -33,8 +34,10 @@ export function CalendarScreen({ selectedDate, today, onActivateDate }: Props) {
   const changeMonth=(delta:number)=>{const next=viewMonth.add({months:delta});setViewMonth(next);const current=parseDate(focusedDate),clamped=next.set({day:Math.min(current.day,next.calendar.getDaysInMonth(next))});setFocusedDate(clamped.toString());requestAnimationFrame(()=>refs.current.get(clamped.toString())?.focus());};
   const onKey=(event:React.KeyboardEvent<HTMLButtonElement>,value:string)=>{const date=parseDate(value);let next:string|undefined;if(event.key==="ArrowLeft")next=date.subtract({days:1}).toString();if(event.key==="ArrowRight")next=date.add({days:1}).toString();if(event.key==="ArrowUp")next=date.subtract({weeks:1}).toString();if(event.key==="ArrowDown")next=date.add({weeks:1}).toString();if(event.key==="Home")next=date.subtract({days:getDayOfWeek(date,locale,"mon")}).toString();if(event.key==="End")next=date.add({days:6-getDayOfWeek(date,locale,"mon")}).toString();if(event.key==="PageUp"){event.preventDefault();changeMonth(-1);return;}if(event.key==="PageDown"){event.preventDefault();changeMonth(1);return;}if(event.key==="Enter"||event.key===" "){event.preventDefault();onActivateDate(value);return;}if(next){event.preventDefault();moveFocus(next);}};
 
-  return <section className={styles.root} aria-labelledby="calendar-heading">
-    <header className={styles.header}><div><p className={styles.eyebrow}>Schedule projection · algorithm v{query.data?.algorithm_version??1}</p><h1 id="calendar-heading" tabIndex={-1}>Calendar</h1></div><div className={styles.actions}><button className={styles.actionButton} type="button" aria-label="Previous month" onClick={()=>changeMonth(-1)}>‹</button><strong aria-live="polite">{monthLabel}</strong><button className={styles.actionButton} type="button" aria-label="Next month" onClick={()=>changeMonth(1)}>›</button><button className={styles.actionButton} type="button" onClick={()=>{const date=parseDate(today);setViewMonth(date.set({day:1}));setFocusedDate(today);}}>Today</button></div></header>
+  return <PageFrame as="section" type="wide" aria-labelledby="calendar-heading">
+    <PageHeader actions={<><button className={styles.actionButton} type="button" aria-label="Previous month" onClick={()=>changeMonth(-1)}>‹</button><strong aria-live="polite">{monthLabel}</strong><button className={styles.actionButton} type="button" aria-label="Next month" onClick={()=>changeMonth(1)}>›</button><button className={styles.actionButton} type="button" onClick={()=>{const date=parseDate(today);setViewMonth(date.set({day:1}));setFocusedDate(today);}}>Today</button></>}>
+      <p className={styles.eyebrow}>Schedule projection · algorithm v{query.data?.algorithm_version??1}</p><h1 id="calendar-heading" tabIndex={-1}>Calendar</h1>
+    </PageHeader>
     {query.isError&&<p role="alert">Unable to load the calendar projection.</p>}
     {query.isLoading&&<p aria-live="polite">Loading calendar…</p>}
     <div role="grid" aria-label={monthLabel} aria-busy={query.isFetching} className={styles.grid}>
@@ -48,7 +51,7 @@ export function CalendarScreen({ selectedDate, today, onActivateDate }: Props) {
         </div>;
       })}</div>)}
     </div>
-  </section>;
+  </PageFrame>;
 }
 
 function DaySummary({day}:{day:CalendarDayProjection}) { return <div className={styles.summary}>

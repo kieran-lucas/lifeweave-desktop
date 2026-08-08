@@ -6,6 +6,7 @@ import type { AnalyticsPeriodKind } from "../../ipc/generated/AnalyticsPeriodKin
 import { localToday } from "../calendar/date";
 import { CategoryIcon } from "../task/categoryIcons";
 import * as styles from "./AnalyticsScreen.css";
+import { PageFrame, PageHeader } from "../../app/layout/PageFrame";
 import { actualTimeVariance, formatActualTime, scheduledDuration } from "./format";
 
 export { actualTimeVariance, formatActualTime } from "./format";
@@ -70,13 +71,19 @@ export function AnalyticsScreen({
     data?.completion_distribution.reduce((sum, item) => sum + item.count, 0) ?? 0;
 
   return (
-    <section className={styles.root} aria-labelledby="analytics-heading">
-      <header>
+    <PageFrame as="section" type="standard" aria-labelledby="analytics-heading">
+      <PageHeader>
         <p className={styles.eyebrow}>Objective Analytics · scheduled and recorded time</p>
         <h1 id="analytics-heading" tabIndex={-1}>
           Analytics
         </h1>
-        <div role="tablist" aria-label="Analytics period">
+      </PageHeader>
+      {/*
+        Period kind and period navigation are one control group, so they sit in one common region
+        rather than floating away from the summary they govern.
+      */}
+      <div className={styles.periodControls}>
+        <div className={styles.periodTabs} role="tablist" aria-label="Analytics period">
           {kinds.map((value) => (
             <button
               key={value}
@@ -98,12 +105,12 @@ export function AnalyticsScreen({
           </button>
           <button onClick={() => setAnchor(today)}>Current period</button>
         </div>
-      </header>
+      </div>
       {query.isLoading && <p aria-live="polite">Loading objective Analytics…</p>}
       {query.isError && <p role="alert">Unable to load objective Analytics.</p>}
       {data && (
         <>
-          <section aria-labelledby="scheduled-overview">
+          <section className={styles.section} aria-labelledby="scheduled-overview">
             <h2 id="scheduled-overview">Scheduled overview</h2>
             <p className={styles.primary}>
               <strong>{scheduledDuration(data.scheduled_minutes)}</strong>
@@ -125,7 +132,7 @@ export function AnalyticsScreen({
             </dl>
           </section>
 
-          <section aria-labelledby="recorded-actual-time">
+          <section className={styles.section} aria-labelledby="recorded-actual-time">
             <h2 id="recorded-actual-time">Recorded actual time</h2>
             <dl className={styles.facts}>
               <div>
@@ -158,7 +165,7 @@ export function AnalyticsScreen({
             </p>
           </section>
 
-          <section aria-labelledby="category-time">
+          <section className={styles.section} aria-labelledby="category-time">
             <h2 id="category-time">Category scheduled time</h2>
             {data.categories.length === 0 ? (
               <p>No scheduled tasks in this period.</p>
@@ -229,7 +236,7 @@ export function AnalyticsScreen({
             )}
           </section>
 
-          <section aria-labelledby="objective-streaks">
+          <section className={styles.section} aria-labelledby="objective-streaks">
             <h2 id="objective-streaks">Objective streaks</h2>
             {data.streaks.length === 0 ? (
               <p>No configured completed-week streaks yet.</p>
@@ -245,7 +252,7 @@ export function AnalyticsScreen({
             )}
           </section>
 
-          <section aria-labelledby="completion-distribution">
+          <section className={styles.section} aria-labelledby="completion-distribution">
             <h2 id="completion-distribution">Completion distribution</h2>
             {data.completion_distribution.length === 0 ? (
               <p>No evaluations in this period.</p>
@@ -261,7 +268,8 @@ export function AnalyticsScreen({
                     />
                   ))}
                 </div>
-                <table>
+                <div className={styles.tableScroll}>
+                <table className={styles.table}>
                   <caption>Evaluation counts</caption>
                   <thead>
                     <tr>
@@ -278,6 +286,7 @@ export function AnalyticsScreen({
                     ))}
                   </tbody>
                 </table>
+                </div>
               </>
             )}
           </section>
@@ -293,6 +302,6 @@ export function AnalyticsScreen({
           </Suspense>
         </>
       )}
-    </section>
+    </PageFrame>
   );
 }

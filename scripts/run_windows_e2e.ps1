@@ -48,7 +48,9 @@ $allPhases = @(
   'phase19-managed-backup-versions.e2e.ts',
   # Task 49 is a derived read-only projection at unchanged schema 27, so phase 20 has no restart
   # companion by design.
-  'phase20-focus-plan-analytics.e2e.ts'
+  'phase20-focus-plan-analytics.e2e.ts',
+  # Task 50 persists nothing, so phase 21 has no restart companion by design.
+  'phase21-global-layout.e2e.ts'
 )
 # Evidence tooling that must be requested explicitly. The layout capture walks the whole screenshot
 # matrix at three viewports and reports rather than asserts, so it belongs to the Task 50 audit

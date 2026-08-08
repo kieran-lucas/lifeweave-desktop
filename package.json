@@ -11,7 +11,7 @@
     "source:verify": "python scripts/verify_source_integrity.py",
     "governance:check": "python scripts/check_repository.py && python scripts/check_project_state.py",
     "index:check": "python scripts/generate_spec_index.py --check && python scripts/generate_coverage_matrix.py --check",
-    "verify": "pnpm source:verify && pnpm governance:check && pnpm index:check && python scripts/verify_no_remote_assets.py && python scripts/verify_security.py && python scripts/verify_hardening.py",
+    "verify": "pnpm source:verify && pnpm governance:check && pnpm index:check && python scripts/verify_no_remote_assets.py && python scripts/verify_security.py && python scripts/verify_hardening.py && python scripts/check_layout_authority.py",
     "hardening:performance": "python scripts/check_performance_budgets.py",
     "hardening:narrative-performance": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run_narrative_performance_evidence.ps1",
     "hardening:portable-performance": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run_portable_performance_evidence.ps1",
