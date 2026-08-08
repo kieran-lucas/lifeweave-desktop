@@ -5,8 +5,9 @@ import { fileURLToPath } from "node:url";
 
 import { appLocalDate, seedLayoutFixture } from "../support/layoutFixture.js";
 import {
+  enterAuditViewport,
   findCollisions,
-  maximizeAndDescribe,
+  requestedViewport,
   utilization,
   type Collision,
 } from "../support/spacingAudit.js";
@@ -23,7 +24,10 @@ import {
  */
 
 const ESCAPE = String.fromCharCode(0xe00c);
-const label = process.env.LIFEWEAVE_AUDIT_LABEL ?? "pass1";
+const viewport = requestedViewport();
+const label =
+  process.env.LIFEWEAVE_AUDIT_LABEL ??
+  (viewport ? `${viewport.width}x${viewport.height}` : "pass1");
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const outputRoot = join(repoRoot, "target", "e2e-artifacts", "task-50b", label);
 
@@ -35,7 +39,7 @@ type ScreenRecord = {
 };
 
 const records: ScreenRecord[] = [];
-let environment: Awaited<ReturnType<typeof maximizeAndDescribe>> | null = null;
+let environment: Awaited<ReturnType<typeof enterAuditViewport>> | null = null;
 
 const shot = async (name: string) => {
   await browser.saveScreenshot(join(outputRoot, `${name}.png`));
@@ -89,13 +93,20 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
     this.timeout(300_000);
     mkdirSync(outputRoot, { recursive: true });
     await browser.url("http://tauri.localhost");
-    environment = await maximizeAndDescribe();
+    environment = await enterAuditViewport();
     const seeded = await seedLayoutFixture(await appLocalDate());
     if (!seeded.ok) throw new Error(`fixture seeding failed at ${seeded.stage}: ${seeded.error}`);
     await browser.url("http://tauri.localhost");
     await browser.pause(700);
-    // Re-assert the maximized state after the reload.
-    environment = await maximizeAndDescribe();
+    /*
+     * Re-assert the audited presentation after the reload.
+     *
+     * In canonical mode this re-maximizes, as it always has. In explicit-viewport mode it re-applies
+     * and re-verifies the requested size — the previous attempt re-maximized unconditionally here,
+     * which silently discarded the requested viewport and measured a maximized window while
+     * reporting a small one.
+     */
+    environment = await enterAuditViewport();
   });
 
   after(() => {
@@ -111,6 +122,11 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
     }, {});
     // Printed so the run log itself carries the finding, not only the artifact.
     console.log(`\n=== MAXIMIZED AUDIT (${label}) ===`);
+    console.log(
+      `mode: ${environment?.mode ?? "?"}  requested: ${
+        environment?.requested ? `${environment.requested.width}x${environment.requested.height}` : "maximized"
+      }  achieved: ${environment?.innerWidth}x${environment?.innerHeight} @ DPR ${environment?.devicePixelRatio}`,
+    );
     console.log(`environment: ${JSON.stringify(environment)}`);
     console.log(`screens: ${records.length}  collisions: ${collisions.length} ${JSON.stringify(byKind)}`);
     for (const record of records) {

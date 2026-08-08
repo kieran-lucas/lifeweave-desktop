@@ -269,10 +269,8 @@ export async function findCollisions(screen: string): Promise<Collision[]> {
 }
 
 /** Maximizes the real Tauri window and reports the environment that actually resulted. */
-export async function maximizeAndDescribe() {
-  await browser.maximizeWindow();
-  await browser.pause(500);
-  return browser.execute(() => ({
+const describeViewport = () =>
+  browser.execute(() => ({
     innerWidth: window.innerWidth,
     innerHeight: window.innerHeight,
     outerWidth: window.outerWidth,
@@ -283,6 +281,107 @@ export async function maximizeAndDescribe() {
     availWidth: screen.availWidth,
     availHeight: screen.availHeight,
   }));
+
+/**
+ * The requested viewport, parsed from `LIFEWEAVE_AUDIT_VIEWPORT` as `WIDTHxHEIGHT`.
+ *
+ * Absent means canonical mode: maximize the real window, which stays the Task 50 authority.
+ */
+export function requestedViewport(): { width: number; height: number } | null {
+  const raw = process.env.LIFEWEAVE_AUDIT_VIEWPORT;
+  if (!raw) return null;
+  const [width, height] = raw.split("x").map(Number);
+  if (!width || !height) throw new Error(`LIFEWEAVE_AUDIT_VIEWPORT must be WIDTHxHEIGHT, got "${raw}"`);
+  return { width, height };
+}
+
+/**
+ * Put the window into the audited presentation and report what the WebView *actually* measured.
+ *
+ * Two modes, deliberately:
+ *
+ * **Canonical** — no requested viewport. Maximize and measure. Unchanged Task 50 behaviour; the
+ * measured viewport is the authority and nothing is hard-coded to a size.
+ *
+ * **Explicit viewport** — a size was requested. The window is set to an *outer* size chosen so the
+ * inner viewport lands on the request, because `setWindowRect` sizes the frame and the inner
+ * viewport is smaller by the window chrome. The chrome delta is measured from the live window
+ * rather than assumed, then the result is verified.
+ *
+ * The verification is the point. An earlier attempt simply called `setWindowRect` and trusted it;
+ * the walk then re-maximized after its fixture reload and silently measured a maximized window
+ * while claiming to test 1280×800. This function fails loudly instead.
+ */
+export async function enterAuditViewport() {
+  const requested = requestedViewport();
+  if (!requested) {
+    await browser.maximizeWindow();
+    await browser.pause(500);
+    return { mode: "canonical" as const, requested: null, ...(await describeViewport()) };
+  }
+
+  // Measure this window's chrome, then aim the outer size so the inner viewport hits the request.
+  const before = await describeViewport();
+  const chromeX = before.outerWidth - before.innerWidth;
+  const chromeY = before.outerHeight - before.innerHeight;
+
+  /*
+   * Refuse a viewport this display physically cannot show, *before* attempting the resize.
+   *
+   * On the measured machine the work area is 1536 × 816, so a requested 1440 × 900 needs a window
+   * taller than the desktop. Asking for it does not merely clamp — it killed the WebView mid-run
+   * and produced "no such window: target window already closed", which reads like a product crash
+   * and is not one. Failing here says what is actually true.
+   */
+  if (requested.width + chromeX > before.availWidth || requested.height + chromeY > before.availHeight) {
+    throw new Error(
+      `requested viewport ${requested.width}x${requested.height} does not fit this display: ` +
+        `needs ${requested.width + chromeX}x${requested.height + chromeY} of window, ` +
+        `work area is ${before.availWidth}x${before.availHeight}. ` +
+        `This is an environment limit, not a layout defect — record it as NOT ACHIEVABLE.`,
+    );
+  }
+  await browser.setWindowRect(0, 0, requested.width + chromeX, requested.height + chromeY);
+  await browser.pause(600);
+
+  let achieved = await describeViewport();
+  // One corrective pass: DPI rounding and OS minimum-size clamping can shift the first attempt.
+  const driftX = requested.width - achieved.innerWidth;
+  const driftY = requested.height - achieved.innerHeight;
+  if (Math.abs(driftX) > 1 || Math.abs(driftY) > 1) {
+    await browser.setWindowRect(
+      0,
+      0,
+      requested.width + chromeX + driftX,
+      requested.height + chromeY + driftY,
+    );
+    await browser.pause(600);
+    achieved = await describeViewport();
+  }
+
+  /*
+   * Fail loudly rather than reporting a viewport that was never achieved. 2 px absorbs DPI rounding
+   * at devicePixelRatio 1.25 and nothing more; a window the OS refused to make that small — the
+   * Tauri minimum is 960 × 640 — trips this instead of quietly producing misleading evidence.
+   */
+  const offX = Math.abs(achieved.innerWidth - requested.width);
+  const offY = Math.abs(achieved.innerHeight - requested.height);
+  if (offX > 2 || offY > 2) {
+    throw new Error(
+      `requested viewport ${requested.width}x${requested.height} was not achieved: ` +
+        `measured ${achieved.innerWidth}x${achieved.innerHeight} ` +
+        `(off by ${offX}x${offY}; window chrome ${chromeX}x${chromeY})`,
+    );
+  }
+
+  return { mode: "explicit" as const, requested, ...achieved };
+}
+
+/** Canonical maximize. Retained for callers that always want the maximized presentation. */
+export async function maximizeAndDescribe() {
+  await browser.maximizeWindow();
+  await browser.pause(500);
+  return describeViewport();
 }
 
 /** Width utilization of the page frame inside the main viewport. */
