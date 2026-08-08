@@ -25,10 +25,19 @@ export const root = style({
   borderBottom: "1px solid var(--border-subtle)",
 });
 
+/*
+ * 8 px between day cells, not 2.
+ *
+ * The first pass used 2 px and the Task 50 semantic-collision detector reported five `inline`
+ * collisions across the week — two adjacent day buttons whose boxes sit closer than the 8 px floor
+ * for inline semantic units read as one run, which is the same class of defect as
+ * `Morning04:00–12:00`. Removing the cell borders made the boxes adjacent in a way the bordered
+ * version had hidden.
+ */
 export const days = style({
   display: "grid",
   gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
-  gap: 2,
+  gap: 8,
 });
 
 /** Chromeless arrows: a hover tone, no border, no fill at rest. */
