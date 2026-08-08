@@ -1,5 +1,29 @@
 # Roadmap
 
+## Slice 039 — Focus Plan Activity Analytics Core (active)
+
+Task 49 activates ADR 0043. Task 37 linked work to Plans and added manual reviews but deliberately
+prohibited Plan analytics because no decision existed about what a Plan number would mean. ADR 0043
+answers only the factual case: Analytics may report Focus Plan activity over the same
+week/month/year periods Objective Analytics already owns.
+
+Reporting attributes one-off Tasks and generated non-cancelled recurring occurrences through their
+**current** authoritative Task/series → Plan relationship, manual reviews through
+`reviewed_local_date`, and completed actual time only through linked one-off Tasks under Task 46
+arithmetic. Relinking moves retrospective attribution because the relationship, not a stored copy
+of it, is the authority.
+
+Schema stays 27 with no migration, no historical Plan-link snapshot, no occurrence-owned relation,
+and no persistent Plan aggregate. Exactly one read-only IPC command feeds a lazy `Focus Plan
+activity` section inside the single Analytics destination, bounded at 500 qualifying Plans with
+rejection rather than truncation.
+
+Hard boundary: no automatic Plan progress, phase relationships, scoring, health, prediction,
+automatic lifecycle, completion percentage, target-date lateness analytics, review content
+analytics, review edit/delete/archive/scheduling/search, many-to-many Task→Plan, schema 28,
+dependency, destination, chart library, workflow/seal change, or Task 50 work. Task 50 is
+prohibited, unstarted, unallocated, and unrecommended.
+
 ## Slice 038 — Managed Backup Retention and Compatibility Core (complete)
 
 Task 48 activates ADR 0042 to bound existing managed backups without creating Backup v3. Lifeweave
@@ -310,8 +334,8 @@ Task 35 selected the standalone Focus Plan entity. ADR 0030 is canonical.
 - **Task 37:** complete and closed. The reserved Focus Plans program is finished.
 - **Task 38:** complete and closed.
 - **Task 39:** complete and closed at product checkpoint `374abcbae263be18fa785a56d656678f9bfd9c29`.
-- **Tasks 40–47:** complete. **Task 48:** active under Slice 038. **Tasks 49–60:** available only for
-  later Product Owner decisions; none is activated or recommended. Task 49 is prohibited,
+- **Tasks 40–48:** complete. **Task 49:** active under Slice 039. **Tasks 50–60:** available only for
+  later Product Owner decisions; none is activated or recommended. Task 50 is prohibited,
   unstarted, unallocated, and unrecommended.
 - **Recurring deadline policy:** open; deliberately excluded from Slice 028.
 

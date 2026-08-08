@@ -44,6 +44,13 @@ The immutable source is authoritative. This registry makes operational status vi
 - Focus Plan owns first-class variants, ordered phases, committed revisions, and one recovery draft. Rich-text bodies reuse the accepted Basic Leaf canonical value schema by value, not `reader_documents` rows.
 - Focus Plans use shared tags, a distinct `focus_plan` Search entity kind, and full-database backup authority.
 - Focus Plans have no automatic progress percentage and no reminder/notification dependency.
+- Focus Plan activity Analytics is a bounded read-only projection of existing authority over the
+  Objective Analytics week/month/year periods. One-off Tasks and recurring occurrences are
+  attributed through their **current** `tasks.focus_plan_id` / `task_series.focus_plan_id`, manual
+  reviews through `reviewed_local_date`, and completed actual time only through linked one-off
+  Tasks under Task 46 semantics. No historical Plan-link snapshot, occurrence-owned relation,
+  persistent Plan aggregate, percentage, score, health signal, phase inference, or lifecycle
+  automation exists. Schema stays 27 and exactly one read-only IPC command is added. See ADR 0043.
 - Task 36 / Slice 026 is complete at feature checkpoint `57bd42d8eed5643d2fee3b04f74bd3c44e738da2`.
 - Each one-off Task or recurring Task series links to zero or one Focus Plan. Authority is stored on `tasks` and `task_series`; occurrences, overrides, and evaluations inherit and do not store it. Task/Life and Task/Focus Plan are independent. A new or changed target must be an active non-archived Plan; an existing link survives later Plan archive and projects explicitly as archived.
 - A one-off Task links to zero or one date-only deadline stored on `tasks`. Schedule and deadline are independent; `scheduled_date <= deadline_date` is not an invariant and scheduling after a deadline is surfaced, never repaired. Recurring series, occurrences, overrides, and evaluations own no deadline.
@@ -157,7 +164,9 @@ The immutable source is authoritative. This registry makes operational status vi
 
 - Focus Plan review edit, delete, archive, scheduling, reminders, and Search indexing remain prohibited pending a separate Product Owner decision;
 - recurring, occurrence, and override deadlines, deadline time-of-day, deadline reminders and scheduling, and deadline or lateness analytics remain prohibited pending a separate Product Owner decision;
-- automatic Plan progress, phase-to-Task relationships, and Plan analytics expansion remain prohibited;
+- automatic Plan progress, phase-to-Task relationships, Plan scoring/health/prediction, automatic
+  Plan lifecycle, and Plan analytics beyond the ADR 0043 factual activity projection remain
+  prohibited (factual Focus Plan activity analytics is DECIDED — see ADR 0043);
 - prediction and opaque ML;
 - custom user-authored Narrative templates and Visual Worlds;
 - cross-scene block drag and scene-level independent presentation;
