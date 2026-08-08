@@ -236,8 +236,37 @@ net eager cost         +2,268 bytes for the whole feature
   `<progress>` path — and are now explicitly blue on a neutral track. Full keyboard grid untouched;
   13 Calendar tests pass; 0 collisions and 0 overflow at all four achievable viewports.
 
-**Not yet migrated** — these inherit the v2 palette through `global.css` but have not had their
-composition reworked:
+### Art system — "Maxping" pass, foundation landed
+
+The Product Owner directed a stronger, warmer-blooded direction: the product was reading as correct
+but stiff. One shared art system now underlies the whole application rather than per-screen
+decoration.
+
+```text
+Layer 0  atmosphere   one fixed field, mounted once behind the shell
+Layer 1  page ground  the canvas above it
+Layer 2  structure    sections and groups, hairline-defined
+Layer 3  glass        cards, inspectors, dialogs, popovers
+Layer 4  luminous     selected and focused states
+```
+
+- **`Atmosphere.tsx`** — three wide aura fields anchored off-centre so the middle of every page stays
+  clean where text lives, five flowing contour strokes, and nine placed glints. **Entirely static**:
+  no animation, no timer, no canvas, no filter, `aria-hidden`, `pointer-events: none`. Mounted once,
+  so pages cannot drift apart visually and there is a single place to tune the mood.
+- **Glass** (`glass`, `glassStrong`) — tint first, blur second. The tint alone carries the material,
+  so hierarchy and text contrast survive when `backdrop-filter` is unsupported or disabled; the blur
+  is a `@supports` enhancement at a deliberate 10px, because this machine has integrated graphics.
+  An inset highlight gives the lit rim that distinguishes glass from mere transparency.
+- **`forcedColorsReset`** — the one place the art system switches off rather than adapts. A
+  translucent tint means nothing in a high-contrast palette, so both tint and blur drop to `Canvas`
+  with a real `CanvasText` border.
+- Applied so far: shell and sidebar (translucent over the field), Today's row group
+  (`glassStrong`, the densest text), Calendar's month grid (`glassStrong`), and the Today inspector
+  (`glass` — it was a bare column with a leading hairline, the clearest remaining "stiff" surface).
+
+**Not yet given the art pass** — these have the v2 palette and, in Today's and Calendar's case, v2
+composition, but have not been through the material/atmosphere treatment:
 Analytics, Focus Plans, Life/Graph, Reader/Editor, Narrative, Search, Settings and the dialog set.
 Visual-regression goldens for v2 are not yet established, and the whole-app coherence pass has not
 been run.
