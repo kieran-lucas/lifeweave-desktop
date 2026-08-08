@@ -226,12 +226,26 @@ Analytics, Focus Plans, Life/Graph, Reader/Editor, Narrative, Search, Settings a
 Visual-regression goldens for v2 are not yet established, and the whole-app coherence pass has not
 been run.
 
-**Outstanding and attempted:** the multi-viewport re-audit of Today + inspector at 1280x800,
-1280x720 and 960x640. A first attempt added a viewport switch to the Task 50 audit walk and failed —
-the walk re-maximizes after its fixture reload, which undoes any requested size, and the run ended
-with a closed webview. The spec edit was reverted rather than left half-working. Only the canonical
-maximized 1536x794 viewport has been audited since the inspector landed (24 screens, 0 collisions,
-0 overflow).
+**Multi-viewport geometry matrix — complete.** The Task 50 audit harness gained an explicit
+viewport mode that sizes the outer window from measured chrome, re-applies after the fixture reload
+instead of re-maximizing, and **verifies the achieved viewport within 2 px, failing loudly**. No
+Task 50 assertion was relaxed. Full record in `docs/audits/task-51-viewport-matrix.md`.
+
+```text
+requested    achieved     DPR    screens  collisions  docOv  vpOv
+1536x794*    1536x794     1.25      24         0        0      0
+1280x800     1279x799     1.25      24         0        0      0
+1280x720     1280x720     1.25      24         0        0      0
+ 960x640      960x640     1.25      24         0        0      0
+1440x900     NOT ACHIEVABLE — needs a window taller than the 1536x816 work area
+```
+
+960x640 is the `tauri.conf.json` minimum and holds completely: long titles and metadata chips wrap
+rather than clip, the conditional split reserves no empty rail, the week strip's 8 px day gap
+survives compression, and the tab strip wraps rather than forcing horizontal scroll.
+
+Not covered: the inspector at small viewports — the audit walk selects no task, so every row is the
+unselected composition. Physical DPI 125% / 150% remains NOT RUN.
 
 ```text
 gates    verify · typecheck · build · performance budget    PASS
