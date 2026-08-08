@@ -861,8 +861,13 @@ export function TodayScreen({
         governed by the shared layout authority rather than by a private grid. Today moves from
         STANDARD_PAGE to WIDE_WORKSPACE because it now carries a detail rail; that is a deliberate
         taxonomy change, not an incidental one.
+
+        The split is applied only when something is selected. `splitWorkspace` always reserves its
+        260-320px detail track, so applying it unconditionally left a dead band down the right of an
+        unselected Today — the same defect the prototype hit, caught again here by looking at the
+        rendered screen rather than at the code.
       */}
-      <div className={layout.splitWorkspace}>
+      <div className={selectedItem ? layout.splitWorkspace : undefined}>
       <div className={styles.timelineColumn}>
       {items.isLoading ? (
         <p aria-live="polite">Loading tasks…</p>
