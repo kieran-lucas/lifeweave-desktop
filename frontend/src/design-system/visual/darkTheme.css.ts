@@ -66,9 +66,10 @@ export const darkTheme = createTheme(vars, {
      * low-chroma blue disappears entirely, and a high-lightness one glows. These land ~1.3:1 above
      * the canvas — visible as atmosphere, never as a surface.
      */
-    ambientContour: "oklch(32% 0.05 238)",
-    ambientGlowPrimary: "oklch(27% 0.055 238)",
-    ambientGlowSecondary: "oklch(26% 0.04 268)",
+    ambientContour: "oklch(36% 0.075 237)", //         1.77:1 above the canvas
+    ambientGlowPrimary: "oklch(30% 0.085 237)", //     1.43:1
+    ambientGlowSecondary: "oklch(28% 0.06 262)", //    1.29:1
+    ambientAura: "oklch(26% 0.06 232)", //             1.24:1
 
     focusRing: "oklch(80% 0.09 273)",
     backdrop: "oklch(10% 0.004 67.8 / 0.6)",

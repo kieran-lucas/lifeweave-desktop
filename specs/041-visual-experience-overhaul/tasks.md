@@ -66,16 +66,27 @@
 ## Stage F — VISUAL LOCK
 
 - [x] Present captures, viewport, DPR, token values, deviations and open questions, then **STOP**.
-- [ ] Do not begin production visual reconstruction before `VISUAL LOCK APPROVED` is received.
+- [x] **`VISUAL LOCK APPROVED` received.**
+
+### Product Owner decisions recorded at the gate
+
+- [x] Keep the **native decorated titlebar**; no `decorations: false`, no custom HTML titlebar, no
+      window-control capability. §11's capability exclusion stands unamended.
+- [x] Keep `@vanilla-extract/recipes`, constrained to primitives that genuinely have variants.
+- [x] Locked composition stands unchanged: continuous surface, inspector on the workspace canvas,
+      periods with no container, `#EFEFF4` selection fill plus the 2 px accent edge.
+- [x] Strengthen the art toward a clear light-blue vibe, ambient roles only, content plane stays
+      warm-neutral, 33° of hue separation from the accent.
 
 ## Stage G — Motion prototype
 
-- [ ] Assign each interaction to its cheapest correct layer.
-- [ ] Prove completion commits state before the check settles, and that rollback is coherent.
-- [ ] Prove the inspector reads as the plane rebalancing, not a card appearing.
-- [ ] Feature-detect element-scoped View Transitions and prove the fallback.
-- [ ] Instrument acknowledgement, inspector open, completion, reorder, drag, route and traversal.
-- [ ] Compare normal and reduced motion; do not fabricate unmeasurable numbers.
+- [x] Assign each interaction to its cheapest correct layer.
+- [x] Prove completion commits state before the check settles, and that rollback is coherent.
+- [x] Prove the inspector reads as the plane rebalancing, not a card appearing.
+- [x] Feature-detect element-scoped View Transitions and prove the fallback.
+- [x] Instrument acknowledgement, inspector open, completion, layout settling, drag and day change.
+- [x] Compare normal and reduced motion; do not fabricate unmeasurable numbers.
+- [x] Keep the art static so it can never take a frame from an interaction.
 
 ## Stage H — MOTION LOCK
 

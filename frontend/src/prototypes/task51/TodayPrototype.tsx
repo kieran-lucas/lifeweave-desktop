@@ -1,6 +1,9 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from "motion/react";
 
+import { spring, reduced } from "../../design-system/visual/motion.css";
 import { Icon, type IconName } from "../../design-system/visual/icons";
+import { beginInteraction, commitInteraction } from "./instrumentation";
 import { Ambient } from "./Ambient";
 import * as s from "./prototype.css";
 import {
@@ -109,24 +112,41 @@ function Sidebar({ collapsed }: { collapsed: boolean }) {
 function TaskRow({
   task,
   selected,
+  dragging,
   onSelect,
+  onToggle,
+  onDragStart,
 }: {
   task: PrototypeTask;
   selected: boolean;
-  onSelect: () => void;
+  dragging: boolean;
+  /** Keyboard activation is instrumented on the same path as the pointer, so it takes any event. */
+  onSelect: (event: React.SyntheticEvent) => void;
+  onToggle: (event: React.MouseEvent) => void;
+  onDragStart: (event: React.PointerEvent, id: string) => void;
 }) {
   const done = task.evaluation === "completed" || task.evaluation === "partial";
+  const reduce = useReducedMotion();
   return (
-    <div
+    <motion.div
       role="listitem"
-      className={`${s.row} ${selected ? s.rowSelected : ""}`}
+      /*
+       * `layout` is Motion's layout projection: when this row's position changes because a sibling
+       * left the list, it is animated with a transform rather than by interpolating `top` frame by
+       * frame. That is what keeps a reflow on the compositor instead of in layout.
+       */
+      layout
+      transition={reduce ? reduced.spring : spring.settle}
+      exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.98 }}
+      className={`${s.row} ${selected ? s.rowSelected : ""} ${dragging ? s.rowDragging : ""}`}
       tabIndex={0}
       aria-current={selected ? "true" : undefined}
       onClick={onSelect}
+      onPointerDown={(event) => onDragStart(event, task.id)}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
-          onSelect();
+          onSelect(event);
         }
       }}
     >
@@ -134,7 +154,7 @@ function TaskRow({
         type="button"
         className={s.checkState[task.evaluation ?? "none"]}
         aria-label={`${evaluationLabel(task.evaluation)}: ${task.title}`}
-        onClick={(event) => event.stopPropagation()}
+        onClick={onToggle}
       >
         <Icon name={checkIcon(task.evaluation)} />
       </button>
@@ -188,7 +208,7 @@ function TaskRow({
         )}
         <span className={s.rowTime}>{formatTime(task.startMinute)}</span>
       </span>
-    </div>
+    </motion.div>
   );
 }
 
@@ -212,8 +232,25 @@ function Inspector({ task }: { task: PrototypeTask }) {
     { id: "links", label: "Links", icon: "link", count: linkCount ? String(linkCount) : undefined },
   ];
 
+  const reduce = useReducedMotion();
   return (
-    <aside className={s.inspector} aria-label="Task details">
+    /*
+     * The inspector reads as the plane rebalancing, not a card appearing.
+     *
+     * `layout` lets Motion project the column's geometry with a transform instead of animating
+     * `width` frame by frame, which would force layout on every frame of the open. The content
+     * fades slightly behind the geometry so the panel does not appear to slide text in from
+     * off-screen.
+     */
+    <motion.aside
+      layout
+      initial={reduce ? { opacity: 0 } : { opacity: 0, x: 24 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={reduce ? { opacity: 0 } : { opacity: 0, x: 24 }}
+      transition={reduce ? reduced.spring : spring.settle}
+      className={s.inspector}
+      aria-label="Task details"
+    >
       <div className={s.inspectorHeader}>
         <span className={s.inspectorContext}>
           <Icon name="plans" size={16} />
@@ -342,14 +379,125 @@ function Inspector({ task }: { task: PrototypeTask }) {
           </div>
         </section>
       </div>
-    </aside>
+    </motion.aside>
   );
 }
 
 export function TodayPrototype({ state }: { state: LockState }) {
   const showInspector = state === "selected" || state === "dark-selected" || state === "timer";
-  const tasks = state === "empty" ? [] : state === "dense" || state === "timer" ? dense : populated;
+  const source = state === "empty" ? [] : state === "dense" || state === "timer" ? dense : populated;
   const [selectedId, setSelectedId] = useState<string | null>("t3");
+  const reduce = useReducedMotion();
+
+  /*
+   * Optimistic state (spec §8). Completion is held locally and applied immediately; in production
+   * this is the optimistic projection over the TanStack Query cache, and the mutation reconciles
+   * behind it. Nothing here waits for an animation, and the animation cannot prevent the change.
+   */
+  const [overrides, setOverrides] = useState<Record<string, PrototypeTask["evaluation"]>>({});
+  const [hideCompleted, setHideCompleted] = useState(false);
+  const [order, setOrder] = useState<string[] | null>(null);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dayOffset, setDayOffset] = useState(0);
+  /** `none` | `document` | `element` — see `changeDay`. Prototype-only measurement switch. */
+  const viewTransition = useMemo(
+    () => new URLSearchParams(location.search).get("vt") ?? "none",
+    [],
+  );
+
+  const dayLabel = useMemo(() => {
+    const base = new Date(2026, 7, 8);
+    base.setDate(base.getDate() + dayOffset);
+    return base.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+  }, [dayOffset]);
+
+  const tasks = useMemo(() => {
+    const applied = source.map((t) =>
+      t.id in overrides ? { ...t, evaluation: overrides[t.id]! } : t,
+    );
+    const ordered = order
+      ? [...applied].sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id))
+      : applied;
+    return hideCompleted
+      ? ordered.filter((t) => t.evaluation !== "completed" && t.evaluation !== "partial")
+      : ordered;
+  }, [source, overrides, order, hideCompleted]);
+
+  /*
+   * `useLayoutEffect` runs after React has mutated the DOM and before paint, which is the exact
+   * boundary the "input → commit" metric wants. It deliberately does not wait for the animation.
+   */
+  useLayoutEffect(() => {
+    commitInteraction();
+    // `dayOffset` belongs here. Omitting it made the day-change measurement wait for the *next*
+    // interaction's commit and report ~740 ms, which was read as a View Transition cost and was
+    // not one. The correction and its consequences are recorded in `task-51-motion-lock.md` §6.
+  }, [overrides, hideCompleted, selectedId, order, dayOffset]);
+
+  const toggle = useCallback((task: PrototypeTask) => (event: React.MouseEvent) => {
+    event.stopPropagation();
+    beginInteraction("task-complete", event.timeStamp);
+    setOverrides((current) => ({
+      ...current,
+      [task.id]: current[task.id] === "completed" || (!(task.id in current) && task.evaluation === "completed")
+        ? null
+        : "completed",
+    }));
+  }, []);
+
+  const select = useCallback((task: PrototypeTask) => (event: React.SyntheticEvent) => {
+    beginInteraction("row-select", event.timeStamp);
+    setSelectedId(task.id);
+  }, []);
+
+  /*
+   * Direct-manipulation probe.
+   *
+   * This is instrumentation for the motion contract, **not a proposed Today behaviour** — Today
+   * orders rows by scheduled time and Task 51 changes no product semantics. It exists because the
+   * gate requires measured drag responsiveness, and the surface that will actually use this contract
+   * in production is the Life Edit tree, which already runs dnd-kit.
+   *
+   * The critical property being proven: a pointer move does *no* IPC, no query, and no database
+   * work. It reorders an in-memory array and lets Motion's layout projection settle the transforms.
+   */
+  const dragState = useRef<{ id: string; startY: number } | null>(null);
+  const onDragStart = useCallback((event: React.PointerEvent, id: string) => {
+    if (event.button !== 0 || !event.altKey) return; // Alt-drag, so ordinary clicks stay ordinary.
+    dragState.current = { id, startY: event.clientY };
+    setDragId(id);
+    (event.currentTarget as HTMLElement).setPointerCapture?.(event.pointerId);
+  }, []);
+
+  useEffect(() => {
+    if (!dragId) return;
+    const move = (event: PointerEvent) => {
+      const drag = dragState.current;
+      if (!drag) return;
+      const delta = event.clientY - drag.startY;
+      if (Math.abs(delta) < 40) return;
+      drag.startY = event.clientY;
+      setOrder((current) => {
+        const ids = current ?? tasks.map((t) => t.id);
+        const from = ids.indexOf(drag.id);
+        const to = Math.max(0, Math.min(ids.length - 1, from + (delta > 0 ? 1 : -1)));
+        if (from === to || from < 0) return current;
+        const next = [...ids];
+        next.splice(to, 0, next.splice(from, 1)[0]!);
+        return next;
+      });
+    };
+    const up = () => {
+      dragState.current = null;
+      setDragId(null);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+    return () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+  }, [dragId, tasks]);
 
   const grouped = useMemo(
     () => periods.map((p) => ({ ...p, tasks: tasks.filter((t) => periodOf(t) === p.id) })),
@@ -362,6 +510,60 @@ export function TodayPrototype({ state }: { state: LockState }) {
 
   const withInspector = showInspector && selected;
 
+  /*
+   * The day change is the one bounded large-surface swap on this screen, so it is the one place a
+   * native View Transition earns its cost (ADR 0045 §5).
+   *
+   * Only the day header and the timeline carry a `view-transition-name`; the sidebar and the
+   * inspector do not, so they stay put and stay interactive rather than the whole document
+   * cross-fading. It is feature-detected, and the fallback is simply to apply the state — the
+   * change is never gated on the API existing.
+   *
+   * Element-scoped `element.startViewTransition` is probed separately in `capabilities()`; where it
+   * is unavailable the document-scoped API is used with named elements, which is the supported way
+   * to bound a transition today.
+   */
+  const timelineRef = useRef<HTMLDivElement>(null);
+
+  /*
+   * The day change is the one bounded large-surface swap on this screen, so it is the one place a
+   * native View Transition could earn its cost (ADR 0045 §5).
+   *
+   * All three strategies are implemented and selected by `?vt=`, so the gate compares them on
+   * measurement in a single run rather than on argument:
+   *
+   *     ?vt=none      (default) state commits, a keyed transform/opacity cross-fade follows
+   *     ?vt=document  document.startViewTransition
+   *     ?vt=element   Element.prototype.startViewTransition on the timeline subtree
+   *
+   * Reduced motion always takes the `none` path: a snapshot cross-fade is exactly the kind of
+   * travel that preference asks to remove.
+   */
+  const changeDay = useCallback(
+    (direction: -1 | 1, event: React.MouseEvent) => {
+      beginInteraction("day-change", event.timeStamp);
+      const apply = () => setDayOffset((current) => current + direction);
+
+      if (reduce || viewTransition === "none") {
+        apply();
+        return;
+      }
+      if (viewTransition === "document") {
+        const start = (document as Document & { startViewTransition?: (cb: () => void) => unknown })
+          .startViewTransition;
+        if (start) start.call(document, apply);
+        else apply();
+        return;
+      }
+      const element = timelineRef.current as
+        | (HTMLDivElement & { startViewTransition?: (cb: () => void) => unknown })
+        | null;
+      if (element?.startViewTransition) element.startViewTransition(apply);
+      else apply();
+    },
+    [reduce, viewTransition],
+  );
+
   return (
     <div className={`${s.shell} ${withInspector ? "" : s.shellNoInspector}`}>
       <Sidebar collapsed={collapsed} />
@@ -370,27 +572,57 @@ export function TodayPrototype({ state }: { state: LockState }) {
         <Ambient density={density} />
 
         <div className={s.workspaceScroll}>
-          <div className={s.workspaceContent}>
-            <header className={s.pageHeader}>
+          {/*
+            The day change's continuity, without a snapshot. Keying on `dayOffset` gives the old
+            timeline an exit and the new one an entrance, both on transform and opacity only, both
+            interruptible, and neither able to delay the state that produced them.
+          */}
+          <motion.div
+            key={dayOffset}
+            className={s.workspaceContent}
+            ref={timelineRef}
+            initial={reduce ? { opacity: 0 } : { opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={reduce ? reduced.spring : { duration: 0.19, ease: [0.2, 0, 0, 1] }}
+          >
+            <header className={`${s.pageHeader} ${s.vtHeader}`}>
               <div>
                 <h1 className={s.pageTitle}>Today</h1>
-                <p className={s.pageDate}>Saturday, August 8</p>
+                <p className={s.pageDate}>{dayLabel}</p>
                 <p className={s.pageSummary}>
                   {tasks.length} {tasks.length === 1 ? "task" : "tasks"}
                   {tasks.length > 0 && " · 3 focus blocks"}
                 </p>
               </div>
               <div className={s.dateNav}>
-                <button type="button" className={s.bareButton} aria-label="Previous day">
+                <button
+                  type="button"
+                  className={s.bareButton}
+                  aria-label="Previous day"
+                  onClick={(event) => changeDay(-1, event)}
+                >
                   <Icon name="chevronLeft" />
                 </button>
-                <button type="button" className={s.quietButton}>
+                <button type="button" className={s.quietButton} onClick={() => setDayOffset(0)}>
                   Today
                 </button>
-                <button type="button" className={s.bareButton} aria-label="Open calendar">
-                  <Icon name="calendar" />
+                <button
+                  type="button"
+                  className={s.quietButton}
+                  aria-pressed={hideCompleted}
+                  onClick={(event) => {
+                    beginInteraction("hide-completed", event.timeStamp);
+                    setHideCompleted((v) => !v);
+                  }}
+                >
+                  {hideCompleted ? "Show all" : "Hide done"}
                 </button>
-                <button type="button" className={s.bareButton} aria-label="Next day">
+                <button
+                  type="button"
+                  className={s.bareButton}
+                  aria-label="Next day"
+                  onClick={(event) => changeDay(1, event)}
+                >
                   <Icon name="chevronRight" />
                 </button>
               </div>
@@ -404,8 +636,12 @@ export function TodayPrototype({ state }: { state: LockState }) {
                 </p>
               </div>
             ) : (
-              grouped.map((period) => (
-                <section key={period.id} className={s.period} aria-labelledby={`${period.id}-heading`}>
+              <LayoutGroup>{grouped.map((period) => (
+                <section
+                  key={period.id}
+                  className={`${s.period} ${period.id === "morning" ? s.vtTimeline : ""}`}
+                  aria-labelledby={`${period.id}-heading`}
+                >
                   <h2 id={`${period.id}-heading`} className={s.periodHeading}>
                     <Icon
                       name={period.id === "evening" ? "moon" : "today"}
@@ -419,19 +655,24 @@ export function TodayPrototype({ state }: { state: LockState }) {
                     <span className={s.periodCount}>{period.tasks.length}</span>
                   </h2>
                   <div className={s.rows} role="list" aria-label={`${period.name} tasks`}>
-                    {period.tasks.map((task) => (
-                      <TaskRow
-                        key={task.id}
-                        task={task}
-                        selected={showInspector && task.id === selected?.id}
-                        onSelect={() => setSelectedId(task.id)}
-                      />
-                    ))}
+                    <AnimatePresence initial={false}>
+                      {period.tasks.map((task) => (
+                        <TaskRow
+                          key={task.id}
+                          task={task}
+                          selected={showInspector && task.id === selected?.id}
+                          dragging={dragId === task.id}
+                          onSelect={select(task)}
+                          onToggle={toggle(task)}
+                          onDragStart={onDragStart}
+                        />
+                      ))}
+                    </AnimatePresence>
                   </div>
                 </section>
-              ))
+              ))}</LayoutGroup>
             )}
-          </div>
+          </motion.div>
         </div>
 
         <footer className={s.workspaceFooter}>
@@ -444,7 +685,7 @@ export function TodayPrototype({ state }: { state: LockState }) {
         </footer>
       </main>
 
-      {withInspector && <Inspector task={selected} />}
+      <AnimatePresence>{withInspector && <Inspector task={selected} />}</AnimatePresence>
     </div>
   );
 }

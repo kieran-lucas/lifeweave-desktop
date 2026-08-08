@@ -72,17 +72,29 @@ export const lightTheme = createTheme(vars, {
     lifeCream: "oklch(96.74% 0.013 71.33)", //      #FAF3EB  Creative Expression
 
     /*
-     * Light blue art, per explicit Product Owner direction. Hue 238 is a true light blue rather
-     * than the 270–286 blue-violet the interface accent uses, which keeps the atmosphere legibly
-     * distinct from the accent instead of reading as a washed-out selection.
+     * Light blue art. Strengthened after VISUAL LOCK on explicit Product Owner direction: the
+     * atmosphere must lean *clearly* light blue rather than merely non-warm.
      *
-     * Chroma is higher than the rest of the palette (0.045 against the canvas's 0.0017) because at
-     * these lightnesses a lower chroma reads as dirty grey rather than as blue. Lightness is high
-     * enough that each value still sits within 1.15:1 of the canvas, so art remains peripheral.
+     * Hue 237 is a true sky blue. The interface accent lives at 270.15, so there are **33 degrees**
+     * between atmosphere and interactive state — enough that a glow can never be mistaken for a
+     * selection, which is the confusion the separation exists to prevent.
+     *
+     * Chroma is far above the rest of the palette (0.055–0.075 against the canvas's 0.0017). This
+     * is the single sanctioned chroma exception, and it is necessary: at these lightnesses a lower
+     * chroma reads as dirty grey rather than as blue.
+     *
+     * Measured against the canvas: aura 1.14:1, glowPrimary 1.22:1, glowSecondary 1.24:1,
+     * contour 1.55:1. The contour's raw ratio is the highest, but it is drawn as a 1 px stroke at
+     * 0.18–0.55 opacity, so its *perceived* presence is a fraction of that number — the token
+     * ratio is the ceiling of what a solid fill would read as, not what the art actually renders.
+     *
+     * None of these reaches a canvas, surface, text, border, accent or state role. The content
+     * plane stays warm-neutral exactly as the visual lock has it.
      */
-    ambientContour: "oklch(88% 0.038 238)", //          contour lines
-    ambientGlowPrimary: "oklch(94% 0.045 238)", //      the light blue field
-    ambientGlowSecondary: "oklch(93.5% 0.032 268)", //  a few degrees toward violet, for depth
+    ambientContour: "oklch(84% 0.062 237)", //          #A5D1EE  contour lines
+    ambientGlowPrimary: "oklch(92% 0.075 237)", //      #B5EDFF  the light blue field
+    ambientGlowSecondary: "oklch(91.5% 0.055 262)", //  #CFE4FF  toward violet, for depth
+    ambientAura: "oklch(94% 0.055 232)", //             #C7F3FF  the widest, faintest horizon
 
     focusRing: "oklch(47.79% 0.118 270.31)",
     backdrop: "oklch(24.04% 0.0015 17.26 / 0.45)",

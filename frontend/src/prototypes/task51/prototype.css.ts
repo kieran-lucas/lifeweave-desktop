@@ -333,6 +333,17 @@ export const rowSelected = style({
   },
 });
 
+/**
+ * The checkbox microstate is pure CSS, deliberately.
+ *
+ * It is the highest-frequency control in the product, and the cheapest correct layer for a
+ * two-property state change is a compositor-friendly CSS transition — no React re-render for the
+ * visual, no JavaScript on the pointer path, nothing to schedule.
+ *
+ * `:active` gives the tactile press. It fires on pointer-down, so the acknowledgement is visible
+ * before the click handler has run, let alone before any state has committed. That ordering is the
+ * entire point: motion follows state, but *acknowledgement* precedes it.
+ */
 export const check = style({
   display: "grid",
   placeItems: "center",
@@ -343,7 +354,12 @@ export const check = style({
   padding: 0,
   background: "transparent",
   cursor: "pointer",
-  transition: `color ${duration.check} ${easing.standard}`,
+  // Only transform and colour. Never `all`.
+  transition: `color ${duration.check} ${easing.standard}, transform ${duration.press} ${easing.standard}`,
+  selectors: {
+    "&:active": { transform: "scale(0.86)" },
+    "&:focus-visible": { outline: `2px solid ${vars.color.focusRing}`, outlineOffset: 2, borderRadius: vars.radius.full },
+  },
 });
 
 /**
@@ -731,10 +747,24 @@ export const ambientLayer = style({ position: "absolute", inset: 0, inlineSize: 
  * out and shortening each fade keeps the reading area clean canvas while the atmosphere stays
  * present at the margins.
  */
+/**
+ * The light-blue field.
+ *
+ * Placement is the whole design here. The timeline occupies a bounded 720 px measure at the left of
+ * the workspace, so everything to its right is open plane — and that is where the atmosphere lives.
+ * The centres sit in or beyond that right band, never over the reading column, which is why the
+ * field can be this present without ever sitting behind a task title.
+ *
+ * Strengthened at the Product Owner's direction after VISUAL LOCK: the earlier placement was
+ * measurably light blue but read as "not warm" rather than as light blue. The aura is now wide
+ * enough to give the plane a horizon, and the two glows are large enough to be seen as light rather
+ * than as a tint.
+ */
 export const ambientGlow = style({
-  backgroundImage: `radial-gradient(520px 360px at 100% -14%, ${vars.color.ambientGlowPrimary}, transparent 62%),
-                    radial-gradient(440px 320px at 116% 44%, ${vars.color.ambientGlowSecondary}, transparent 64%),
-                    radial-gradient(400px 300px at -12% 112%, ${vars.color.ambientGlowPrimary}, transparent 66%)`,
+  backgroundImage: `radial-gradient(760px 520px at 86% -6%, ${vars.color.ambientGlowPrimary}, transparent 68%),
+                    radial-gradient(620px 460px at 104% 40%, ${vars.color.ambientGlowSecondary}, transparent 70%),
+                    radial-gradient(520px 380px at -8% 108%, ${vars.color.ambientGlowPrimary}, transparent 70%),
+                    radial-gradient(1200px 820px at 96% 24%, ${vars.color.ambientAura}, transparent 76%)`,
 });
 
 /** Fills the theme wrapper, which is the prototype's root box. */
@@ -746,9 +776,9 @@ export const fill = style({ blockSize: "100%" });
  * a bug, and this is one multiply-free opacity change on a composited layer.
  */
 export const ambientDensity = styleVariants({
-  quiet: { opacity: 0.9 },
-  normal: { opacity: 0.5 },
-  dense: { opacity: 0.22 },
+  quiet: { opacity: 1 },
+  normal: { opacity: 0.8 },
+  dense: { opacity: 0.36 },
 });
 
 /**
@@ -766,6 +796,79 @@ export const workspaceContent = style({
   position: "relative",
   zIndex: 1,
   maxInlineSize: 720,
+});
+
+/* ── Motion support ──────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Press feedback on the low-chrome controls, in CSS for the same reason as the checkbox: it is a
+ * transform on the compositor, it needs no state, and it lands on pointer-down.
+ */
+globalStyle(`${quietButton}:active, ${bareButton}:active, ${navItem}:active`, {
+  transform: "scale(0.97)",
+});
+globalStyle(`${quietButton}, ${bareButton}, ${navItem}`, {
+  transitionProperty: "background-color, color, transform",
+  transitionDuration: `${duration.state}, ${duration.state}, ${duration.press}`,
+  transitionTimingFunction: easing.standard,
+});
+
+/**
+ * The row being dragged in the direct-manipulation probe.
+ *
+ * `willChange: transform` is set only while a drag is active, never permanently — a standing
+ * `will-change` on every row would hold a compositor layer per row for the entire session, which on
+ * two cores and integrated graphics is exactly the "art and effects competing with interaction"
+ * failure the design law forbids.
+ */
+export const rowDragging = style({
+  position: "relative",
+  zIndex: 2,
+  cursor: "grabbing",
+  willChange: "transform",
+  background: vars.color.surfaceRaised,
+  boxShadow: vars.elevation.floating,
+  borderRadius: vars.radius.control,
+});
+
+/** The one legitimate elevation on a task surface: a genuinely floating drag overlay. */
+export const rowDropTarget = style({
+  boxShadow: `inset 0 -2px 0 ${vars.color.selectionEdge}`,
+});
+
+/**
+ * View-transition names for the bounded workspace swap.
+ *
+ * Only the day header and the timeline participate. The sidebar and the inspector are deliberately
+ * excluded so they stay interactive and unaffected — a whole-document fade on every navigation is
+ * exactly what ADR 0045 §5 rules out.
+ */
+export const vtHeader = style({ viewTransitionName: "lw-day-header" });
+export const vtTimeline = style({ viewTransitionName: "lw-timeline" });
+
+globalStyle("::view-transition-old(lw-day-header), ::view-transition-new(lw-day-header)", {
+  animationDuration: duration.route,
+  animationTimingFunction: easing.standard,
+});
+globalStyle("::view-transition-old(lw-timeline), ::view-transition-new(lw-timeline)", {
+  animationDuration: duration.route,
+  animationTimingFunction: easing.standard,
+});
+
+/*
+ * Reduced motion, designed rather than zeroed.
+ *
+ * Travel is removed — the press scale, the drag lift, the view transition — and a short tonal
+ * cross-fade is kept so a change is still perceived as a change. The application's current global
+ * rule sets every duration to 0.01 ms, which replaces a movement with a jump; that is the defect
+ * this block exists to avoid repeating.
+ */
+globalStyle(
+  `${quietButton}:active, ${bareButton}:active, ${navItem}:active, ${check}:active`,
+  { "@media": { "(prefers-reduced-motion: reduce)": { transform: "none" } } },
+);
+globalStyle(rowDragging, {
+  "@media": { "(prefers-reduced-motion: reduce)": { boxShadow: "none", background: vars.color.surfaceSelected } },
 });
 
 /* ── Prototype chrome (not part of the design) ───────────────────────────────────────────── */

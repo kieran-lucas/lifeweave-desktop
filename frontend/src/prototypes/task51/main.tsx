@@ -3,9 +3,13 @@ import { createRoot } from "react-dom/client";
 
 import { darkTheme } from "../../design-system/visual/darkTheme.css";
 import { lightTheme } from "../../design-system/visual/lightTheme.css";
+import { exposeForCapture } from "./instrumentation";
 import * as s from "./prototype.css";
 import { TodayPrototype, type LockState } from "./TodayPrototype";
 import "./prototypeGlobal.css";
+
+// Motion measurements are read by `task51-motion-lock-capture.e2e.ts` from the real WebView.
+exposeForCapture();
 
 /**
  * Task 51 prototype entry.

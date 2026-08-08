@@ -93,6 +93,12 @@ export const vars = createThemeContract({
     ambientContour: null,
     ambientGlowPrimary: null,
     ambientGlowSecondary: null,
+    /**
+     * The peripheral aura: the widest, faintest field, sitting behind the other two so the
+     * atmosphere has a horizon rather than three discrete blooms. Added when the Product Owner
+     * directed the art to lean more clearly light blue after VISUAL LOCK.
+     */
+    ambientAura: null,
 
     focusRing: null,
     backdrop: null,

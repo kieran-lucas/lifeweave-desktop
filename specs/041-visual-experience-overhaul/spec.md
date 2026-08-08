@@ -202,27 +202,31 @@ than a quiet Life surface, and Today and Reader require no continuous animation 
 
 ### 10.1 The art hue is light blue
 
-Explicit Product Owner direction: **the art vibe is light blue.** This is the one place in Task 51
-where a hue deliberately departs from the reference's warm-neutral plane.
+Explicit Product Owner direction, strengthened at VISUAL LOCK: **the art vibe is light blue, and
+must lean clearly that way rather than merely reading as non-warm.** This is the one place in
+Task 51 where a hue deliberately departs from the reference's warm-neutral plane.
 
-It is confined to the three ambient roles — `ambientContour`, `ambientGlowPrimary`,
-`ambientGlowSecondary` — and touches no canvas, surface, text, border, accent or state colour. The
-separation is what makes it work: because the content plane stays warm, a cool light-blue
-atmosphere reads as air and distance *behind* the interface, rather than as a second theme
-competing with it. A light-blue canvas would instead read as the cool blue-grey system Task 51 is
-replacing.
+It is confined to four ambient roles — `ambientContour`, `ambientGlowPrimary`,
+`ambientGlowSecondary`, `ambientAura` — and touches no canvas, surface, text, border, accent or
+state colour. The separation is what makes it work: because the content plane stays warm, a cool
+light-blue atmosphere reads as **air and light behind the interface**, rather than as a second
+theme competing with it. A light-blue canvas would instead read as the cool blue-grey system
+Task 51 is replacing.
 
 Constraints that still bind it:
 
-- hue sits near **238** — a true light blue, held clear of the 270–286 blue-violet the interface
-  accent occupies, so atmosphere is never mistaken for selection;
-- every ambient value stays within roughly **1.15:1 of the canvas** in light and **1.3:1** in dark,
-  so the art is perceived peripherally and never competes with information;
+- hue sits at **237** — a true sky blue. The interface accent is at **270.15**, giving **33 degrees**
+  of separation, so ambient atmosphere and interactive state can never be confused;
+- ambient values sit between **1.14:1 and 1.55:1 of the canvas** in light, and 1.24:1 to 1.77:1 in
+  dark. The contour occupies the top of that range and renders as a 1 px stroke at 0.18–0.55
+  opacity, so the token ratio bounds a solid fill of that colour rather than describing what the art
+  actually draws;
 - chroma may exceed the rest of the palette, because at these lightnesses a lower chroma reads as
   dirty grey rather than as blue — this is the one sanctioned chroma exception;
-- it retreats under density and disappears entirely behind a dense Today, exactly as any other
+- it retreats under density and all but disappears behind a dense Today, exactly as any other
   ambient treatment must;
-- it introduces no animation requirement of its own.
+- it introduces **no animation requirement of its own**, and may never take a frame from an
+  interaction. The whole ambient layer is static paint with `pointer-events: none`.
 
 Any approved ambient movement animates only transform and opacity, at small amplitude and long
 period, and stops when its surface is not visible, when the window is inactive where detectable, or

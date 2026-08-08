@@ -108,11 +108,66 @@ reserved for an absent inspector, default WebView2 scrollbars rendering as a bri
 dark composition, and an ambient field washing across the task titles. None would have surfaced from
 restyling components one at a time.
 
+### VISUAL LOCK — approved
+
+`VISUAL LOCK APPROVED` was granted on the composition in `docs/audits/task-51-visual-lock.md`, with
+four Product Owner decisions recorded in ADR 0045 § "Product Owner decisions at VISUAL LOCK":
+
+- the **native decorated titlebar is kept** — no `decorations: false`, no custom HTML titlebar, and
+  therefore no new window-control capability. Spec §11's capability exclusion stands unamended;
+- `@vanilla-extract/recipes` is **kept**, constrained to primitives that genuinely have variants;
+- the locked composition stands unchanged — continuous surface, inspector on the workspace canvas,
+  periods with no container, `#EFEFF4` selection fill plus the 2 px accent edge;
+- the art must **lean further into light blue**, ambient roles only, content plane still
+  warm-neutral, with 33° of hue separation between ambient (237) and accent (270.15).
+
+### Phase 5 — motion prototype, complete
+
+Motion was added to the locked composition; nothing was redesigned. Each interaction sits on the
+cheapest correct layer: CSS for hover, press, focus and the checkbox microstate; optimistic React
+state for completion; Motion layout projection for row settling, removal and inspector geometry;
+plain pointer events plus layout projection for drag.
+
+Measured on the target machine at 60 Hz, where one frame is 16.67 ms:
+
+```text
+task completion    input → commit  p50 4.0 ms     input → frame  p50 12.0 ms
+row selection      input → commit  p50 3.3 ms     input → frame  p50  5.0 ms
+layout settle      input → commit  p50 4.4 ms     input → frame  p50  7.7 ms
+day change         input → commit  p50 5.0 ms     input → frame  p50 13.3 ms
+drag               81 frames over a 24-step gesture, p95 17.5 ms, 0 dropped
+idle               121 frames over 2031 ms, 0 dropped
+long tasks >50 ms  0 across the entire session
+```
+
+Every state change commits inside a single frame; the slowest p50 is 5.0 ms. Reduced motion —
+emulated and confirmed active — is steadier still (zero dropped frames across all six completion
+runs) and is a designed state with an 80 ms tonal cross-fade, rather than the blanket `0.01 ms`
+zeroing the application currently ships.
+
+**View Transitions were prototyped, measured three ways, and not adopted.** Against a direct state
+change with a keyed cross-fade at **6.8 ms** commit, `document.startViewTransition` measured
+**19.8 ms** and `Element.prototype.startViewTransition` **23.0 ms** — roughly 3×, enough to push the
+commit outside one frame, and the document form produced a seven-frame drop cluster. Scoping the
+snapshot to a subtree did not make it cheaper. Both remain implemented behind `?vt=` and
+feature-detected so a future machine can be re-measured rather than guessed at.
+
+**A measurement was published and retracted.** Earlier passes reported 791 ms and 742 ms for those
+two APIs. Those figures were an instrumentation defect — the commit-recording effect did not depend
+on `dayOffset`, so the timer ran until the next interaction — and were caught only because the
+number survived removing the View Transition entirely. The retraction is recorded in
+`docs/audits/task-51-motion-lock.md` §6.1 rather than silently overwritten. The decision it produced
+happens to stand; its justification is now correct and far narrower.
+
+Art cannot compete with interaction by construction: the ambient layer is static paint with no
+animation, no filter and no timer, `pointer-events: none` and `aria-hidden`, and `will-change` is
+applied only to the row actually being dragged.
+
 ### Process gates
 
 ```text
-VISUAL LOCK   evidence presented — docs/audits/task-51-visual-lock.md — AWAITING APPROVAL
-MOTION LOCK   blocked on VISUAL LOCK
+VISUAL LOCK   APPROVED
+MOTION LOCK   evidence presented — docs/audits/task-51-motion-lock.md — AWAITING APPROVAL
 ```
 
 No production presentation file may be visually overhauled before `VISUAL LOCK APPROVED` is received

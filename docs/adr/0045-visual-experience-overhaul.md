@@ -204,6 +204,52 @@ freeze is therefore **replaced by a Task 51 art-direction authority check** asse
 visual contract is the sole declarer of colour, radius, elevation, editorial type and motion, and
 that no feature reintroduces a hardcoded hex. It is never deleted to make a red gate green.
 
+## Product Owner decisions at VISUAL LOCK
+
+`VISUAL LOCK APPROVED` was granted on the composition captured in
+`docs/audits/task-51-visual-lock.md`, with four decisions recorded here because they close open
+items this ADR raised.
+
+### 1. The native decorated titlebar is kept
+
+The reference draws its own 52 px in-app titlebar. Lifeweave keeps the **native Windows titlebar**
+for the production baseline: no `decorations: false`, no custom HTML titlebar, and therefore no
+window-control capability. §11's exclusion of new Tauri capabilities stands unamended, and the
+composition is authored for the content area beneath the native chrome. This may be revisited later
+as its own decision; it is not deferred work inside Task 51.
+
+### 2. `@vanilla-extract/recipes` is kept
+
+Retained rather than removed, on the condition that it is used **only for primitives that genuinely
+have variants**. It may not become a default wrapper around single-axis styling that
+`styleVariants` already expresses. The dependency note's provisional status is resolved to *kept
+with a usage constraint*.
+
+### 3. The locked composition stands
+
+Approved and not reopened: the continuous-surface composition, the inspector sharing the workspace
+canvas, periods with no container, and selection as `#EFEFF4` fill plus a 2 px accent edge. Motion
+work may not redesign any of it.
+
+### 4. The art must lean further into light blue
+
+The ambient direction from activation is strengthened. Atmosphere must read *clearly* light blue,
+not merely non-warm, and remains bound by every constraint that already governed it:
+
+- it applies to **ambient roles only** — contour atmosphere, glow field, sparse spatial dots, and
+  the peripheral aura added for this decision;
+- it may not reach canvas, surface, text, border, or any state colour; the content plane stays
+  warm-neutral exactly as the lock has it;
+- it must read as **air and light behind the interface**, never as a cool blue-grey system UI;
+- it must stay separated from the blue-violet accent so atmosphere is never confused with
+  interactive state. Implemented as **33 degrees** of hue separation: ambient at 237, accent at
+  270.15.
+
+Measured after the change: aura 1.14:1, glow 1.22:1, secondary glow 1.24:1, contour 1.55:1 against
+the canvas. The contour's raw token ratio is the highest of the four, but it renders as a 1 px
+stroke at 0.18–0.55 opacity, so its perceived presence is a fraction of that figure — the token
+ratio bounds what a solid fill of that colour would read as, not what the art draws.
+
 ## Consequences
 
 - `frontend/src/design-system/visual/` becomes the single answer to "what colour, radius, weight or
