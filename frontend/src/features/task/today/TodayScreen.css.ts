@@ -6,7 +6,8 @@ import { space } from "../../../app/layout/tokens.css";
  * here is the timeline's own domain grid (ADR 0044).
  */
 export const workspacePanel=style({display:"flex",flexDirection:"column",gap:space.section,minInlineSize:0});
-export const eyebrow=style({color:"var(--text-muted)",margin:0});
+/** v2 sets the date line in the accent, which is the reference's one use of blue in the header. */
+export const eyebrow=style({color:"var(--accent)",fontWeight:600,fontSize:"0.9375rem",letterSpacing:"-0.01em",margin:0});
 export const create=style({padding:"10px 16px"});
 export const timeline=style({display:"flex",flexDirection:"column",gap:space.section,minInlineSize:0});
 export const period=style({display:"flex",flexDirection:"column",gap:space.control,minInlineSize:0});
