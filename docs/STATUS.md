@@ -1,9 +1,11 @@
 # Project Status
 
-## Task 50/60 — Global Layout System + UI Surface Completeness (active)
+## Task 50/60 — Global Layout System + UI Surface Completeness (complete)
 
 - Activation baseline: `2c4cb188937393103e12b1042779af5ea266acda`.
-- Active slice: `040-global-layout-system` under
+- Activation commit: `5451fe784fa50cb3fff65cad2f12f8a448349c9b`.
+- Product checkpoint: `b4d7d32046f3e3edbff6d734116d3c2bd645d676`.
+- Closed slice: `040-global-layout-system` under
   [ADR 0044](adr/0044-global-layout-system-and-ui-surface-completeness.md).
 - Schema remains 27; no migration, no Rust product change, no new IPC command, no new Tauri
   capability, no new dependency, no workflow or seal change.
@@ -12,20 +14,40 @@
   `LOCAL_SCROLL_WORKSPACE`), one 4 px-derived spacing ramp, one responsive gutter, real modal and
   form containment, a proven no-horizontal-overflow invariant for ordinary screens, real-browser
   geometry evidence, and a visible path for every already-decided user-facing capability.
-- Named baseline defects under repair: the Task create/edit dialog renders a bare `<form>` inside a
-  backdrop with no surface, width, padding, scroll container or grid; Settings produces a measured
-  15 px document-level horizontal scrollbar because the application root is sized `width: 100vw`;
-  Today period headings concatenate as `Morning04:00–12:00`; and the Today timeline row declares
-  three grid tracks for up to four rendered children.
+- Named baseline defects, all repaired at source: the Task create/edit dialog rendered a bare
+  `<form>` inside a backdrop with no surface, width, padding, scroll container or grid; Settings
+  produced a measured 15 px document-level horizontal scrollbar from `width: 100vw` shell sizing,
+  compounded by a main viewport that was not a containing block so `srOnly` spans escaped its
+  `overflow: auto`; Today period headings concatenated as `Morning04:00–12:00`; and the Today
+  timeline row declared three grid tracks for up to four rendered children.
+- Measured baseline → final across 54 comparable rows: document horizontal overflow 18 rows at
+  +15 px → **0**; maximum capped-frame left/right imbalance 15.2 px → **0.00 px**; content roots
+  governed by the shared frame 0 → **54 of 54**; distinct standard-page widths at 1920 expanded
+  3 → **1**.
 - The UI surface census audited 101 decided capabilities against all 117 registered handlers and
   found exactly one `MISSING_USER_SURFACE` group — Task edit, Task delete and recurring-occurrence
-  edit are reachable only by double-click or `Enter` on a row that advertises neither — and zero
-  `BLOCKED_SURFACE` items.
+  edit were reachable only by double-click or `Enter` on a row that advertised neither. One visible
+  row Edit control resolves all three; zero `BLOCKED_SURFACE` items.
+- Native phase 21 proves the invariants against the real WebView box model at 1280×720, 1440×900 and
+  1920×1080 in both sidebar states: 22 passing, 0 failing. One deliberate break — a known
+  overflowing fixed dialog width — failed exactly the containment assertion at all three viewports
+  and was restored to 22 passing with no residue.
+- Gates: `pnpm verify` (including a new layout-authority governance check), typecheck, 766 frontend
+  tests across 51 files, production build, performance with `violations: []` against the
+  **unchanged** Task 49 budget, `cargo fmt`, full-target clippy, 790 Rust tests serial (4 ignored),
+  release installer, phase 21, bounded native segments, and RC dogfood all pass.
+- Disclosed and deliberately not repaired: the pre-existing Phase 14 / Phase 17 cross-phase fixture
+  collision Task 49 recorded. The full matrix reaches phase 17 and stops with a byte-identical
+  failure; phase 17 passes standalone and phases 18–21 pass as one segment. Weakening it was
+  explicitly prohibited without separate Product Owner authorization. Physical Windows DPI evidence
+  at 125% / 150% is **NOT RUN**.
 - **Task 50 is not a feature checkpoint.** Following the Task 40 precedent, `latest_feature_task`
   stays 49 at `7622db3d8b2b42d69c8f497b6899c5be82e9f9a9`.
 - Art direction is explicitly out of scope and remains unallocated: no palette, brand, logo, font
   family, icon language, radius or shadow language, illustration, Visual World art, motion
-  personality, or sound change. Task 51 is prohibited, unstarted, unallocated, and unrecommended.
+  personality, or sound change.
+- Next action: Product Owner gate. Task 51 is prohibited, unstarted, unallocated, and unrecommended.
+  Full evidence is in `docs/audits/task-50-layout-final.md`.
 
 ## Task 49/60 — Focus Plan Activity Analytics Core (complete)
 

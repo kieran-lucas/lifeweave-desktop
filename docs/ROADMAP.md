@@ -1,6 +1,6 @@
 # Roadmap
 
-## Slice 040 — Global Layout System + UI Surface Completeness (active)
+## Slice 040 — Global Layout System + UI Surface Completeness (complete)
 
 Task 50 activates ADR 0044. Forty-nine closed tasks each added a screen and, with it, a private
 answer to "how wide is a page?" — seven maximum widths, three centring rules and three page-local
@@ -27,11 +27,21 @@ capability must have a visible path in its valid context, using existing IPC onl
 one missing surface — Task edit, Task delete and recurring-occurrence edit were reachable only by an
 invisible double-click or `Enter` gesture — and zero blocked surfaces.
 
+Closed at product checkpoint `b4d7d32046f3e3edbff6d734116d3c2bd645d676`. Measured across 54
+comparable rows, document horizontal overflow went from 18 rows at +15 px to zero, maximum
+capped-frame imbalance from 15.2 px to 0.00 px, and every content root is now the shared frame.
+Native phase 21 proves the invariants at three viewports in both sidebar states, and a deliberate
+break failed exactly the containment assertion before being restored.
+
 Task 50 is a **layout and evidence slice, not a feature slice**; following the Task 40 precedent it
-does not advance `latest_feature_task`. Schema stays 27 with no migration, no Rust product change,
-no new IPC command, no new capability and no new dependency. Art direction — palette, brand, font
-family, icon language, radius and shadow language, illustration, Visual World art, motion and sound
-— is explicitly excluded and remains unallocated for a later Product Owner gate.
+does not advance `latest_feature_task`, which stays at 49. Schema stays 27 with no migration, no
+Rust product change, no new IPC command, no new capability and no new dependency, and Task 49's
+performance ceilings are unchanged and satisfied. Art direction — palette, brand, font family, icon
+language, radius and shadow language, illustration, Visual World art, motion and sound — is
+explicitly excluded and remains unallocated for a later Product Owner gate.
+
+The pre-existing Phase 14 / Phase 17 cross-phase fixture collision disclosed by Task 49 remains
+disclosed and unrepaired, as the Task 50 contract required.
 
 ## Slice 039 — Focus Plan Activity Analytics Core (complete)
 
@@ -368,8 +378,8 @@ Task 35 selected the standalone Focus Plan entity. ADR 0030 is canonical.
 - **Task 37:** complete and closed. The reserved Focus Plans program is finished.
 - **Task 38:** complete and closed.
 - **Task 39:** complete and closed at product checkpoint `374abcbae263be18fa785a56d656678f9bfd9c29`.
-- **Tasks 40–49:** complete. **Tasks 50–60:** available only for later Product Owner decisions; none
-  is activated or recommended. Task 50 is prohibited, unstarted, unallocated, and unrecommended.
+- **Tasks 40–50:** complete. **Tasks 51–60:** available only for later Product Owner decisions; none
+  is activated or recommended. Task 51 is prohibited, unstarted, unallocated, and unrecommended.
 - **Recurring deadline policy:** open; deliberately excluded from Slice 028.
 
 ## Closure policy

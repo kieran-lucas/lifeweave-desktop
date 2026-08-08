@@ -140,8 +140,10 @@ The immutable source is authoritative. This registry makes operational status vi
   existing IPC only; a backend command is not a feature and a duplicate backend path never earns a
   second control. STILL DEFERRED and explicitly untouched: art direction of every kind — palette,
   brand, logo, font family, icon language, radius and shadow language, illustration, Visual World
-  art, motion personality, and sound. See ADR 0044. Task 51 is prohibited, unstarted, unallocated,
-  and unrecommended.
+  art, motion personality, and sound. See ADR 0044. Task 50 / Slice 040 is complete at product
+  checkpoint `b4d7d32046f3e3edbff6d734116d3c2bd645d676` with schema 27, and is a layout and evidence
+  slice rather than a feature checkpoint, so `latest_feature_task` remains 49. Task 51 is
+  prohibited, unstarted, unallocated, and unrecommended.
 
 ## LOCKED — Technology direction
 

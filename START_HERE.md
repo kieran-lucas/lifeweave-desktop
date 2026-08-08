@@ -12,29 +12,45 @@
 
 ## Current state
 
-- Latest closed task: **49/60**
-- Latest closed slice: **039 — Focus Plan Activity Analytics Core**
-- Active task: **50 — Global Layout System + UI Surface Completeness**
-- Active implementation specification: **`specs/040-global-layout-system`**
+- Latest closed task: **50/60**
+- Latest closed slice: **040 — Global Layout System + UI Surface Completeness**
+- Active task: **none**
+- Active implementation specification: **none**
 - Latest feature checkpoint: **Task 49 — Focus Plan Activity Analytics Core** (`7622db3d8b2b42d69c8f497b6899c5be82e9f9a9`)
 - Database schema: **27**
-- Next action: **Implement active spec**
+- Next action: **Product Owner gate**
 - Task 51: **prohibited, unstarted, unallocated, and unrecommended**
 
-## Task 50 activation
+## Task 50 closure
 
-Task 50 / Slice 040 is active from baseline `2c4cb188937393103e12b1042779af5ea266acda` under
-[ADR 0044](docs/adr/0044-global-layout-system-and-ui-surface-completeness.md). It replaces seven
-page-local width authorities with one geometry authority, gives every surface a declared page type
-from a finite taxonomy, rebuilds the Task create/edit dialog as a real contained surface, removes
-the measured 15 px global horizontal scrollbar at source, and proves the invariants with real
-WebView measurement.
+Task 50 / Slice 040 is closed at product checkpoint
+`b4d7d32046f3e3edbff6d734116d3c2bd645d676` from baseline
+`2c4cb188937393103e12b1042779af5ea266acda` under
+[ADR 0044](docs/adr/0044-global-layout-system-and-ui-surface-completeness.md). Lifeweave now has
+exactly one geometry authority — `frontend/src/app/layout/` — and every top-level surface declares
+one type from a finite taxonomy: `STANDARD_PAGE` 1152, `WIDE_WORKSPACE` 1440, `READING_PAGE` 768,
+`MODAL_SURFACE` 520/720/960, `LOCAL_SCROLL_WORKSPACE`. Seven page-local widths, three centring rules
+and three page-local paddings are gone.
 
-Task 50 is a **layout and evidence slice, not a feature slice**. Following the Task 40 precedent it
-does not advance `latest_feature_task`, which stays at 49. Schema remains **27** with no migration,
-no Rust product change, no new IPC command, no new capability, and no new dependency. Art direction
-— palette, brand, font family, icon language, radius and shadow language, illustration, Visual World
-art, motion and sound — is explicitly **not** in this slice and remains unallocated.
+Three defects were repaired at source. The Task create/edit dialog was a bare `<form>` in a backdrop
+with no surface, width, padding, scroll container or grid; it is now a real contained dialog with a
+deterministic field grid, and no field, semantic or validation changed. Settings produced a measured
+15 px document-level horizontal scrollbar from viewport-unit shell sizing, compounded by a main
+viewport that was not a containing block; both halves are fixed and the overflow is now **0 px on
+every measured row**. The Today timeline row declared three grid tracks while rendering four
+children.
+
+The UI surface census audited 101 decided capabilities against all 117 registered handlers and found
+one missing surface — Task edit, delete and recurring-occurrence scope were reachable only by an
+unadvertised double-click or `Enter`. A visible row **Edit** control now provides the path; the
+gestures still work. Zero blocked surfaces.
+
+Schema remains **27** with no migration, no Rust product change, no new IPC command, no new
+capability and no new dependency, and Task 49's performance ceilings are unchanged and satisfied.
+Art direction — palette, brand, logo, font family, icon language, radius and shadow language,
+illustration, Visual World art, motion and sound — was explicitly out of scope and remains
+unallocated for the next Product Owner gate. Closure evidence is in
+`docs/audits/task-50-layout-final.md`.
 
 ## Task 49 closure
 
