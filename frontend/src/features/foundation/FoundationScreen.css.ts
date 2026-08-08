@@ -112,7 +112,7 @@ export const archivedItem = style([
 ]);
 
 export const statusText = style({
-  color: "var(--text-muted, #666)",
+  color: "var(--text-muted, var(--text-muted))",
   fontSize: "0.9rem",
   padding: "16px 0",
 });
@@ -123,7 +123,7 @@ export const sectionHeading = style({
   fontWeight: 700,
   letterSpacing: "0.08em",
   textTransform: "uppercase",
-  color: "var(--text-muted, #666)",
+  color: "var(--text-muted, var(--text-muted))",
 });
 
 export const contentsForm = style({

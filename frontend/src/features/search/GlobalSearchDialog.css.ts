@@ -35,13 +35,13 @@ export const inputRow = style({
   display: "flex",
   alignItems: "center",
   padding: "12px 16px",
-  borderBottom: "1px solid var(--border-subtle, #ddd)",
+  borderBottom: "1px solid var(--border-subtle, var(--border-subtle))",
   gap: 10,
 });
 
 export const searchIcon = style({
   flexShrink: 0,
-  color: "var(--text-muted, #888)",
+  color: "var(--text-muted, var(--text-muted))",
   fontSize: 16,
   pointerEvents: "none",
   userSelect: "none",
@@ -55,21 +55,21 @@ export const input = style({
   color: "var(--text-primary, #000)",
   fontSize: "1rem",
   lineHeight: 1.4,
-  "::placeholder": { color: "var(--text-muted, #888)" },
+  "::placeholder": { color: "var(--text-muted, var(--text-muted))" },
 });
 
 export const closeButton = style({
   flexShrink: 0,
   border: 0,
   background: "transparent",
-  color: "var(--text-muted, #888)",
+  color: "var(--text-muted, var(--text-muted))",
   cursor: "pointer",
   fontSize: "0.85rem",
   padding: "4px 8px",
   borderRadius: 6,
   selectors: {
     "&:focus-visible": { outline: "3px solid var(--focus-ring, #0078d4)", outlineOffset: 2 },
-    "&:hover": { background: "var(--active-background, #f0f0f0)" },
+    "&:hover": { background: "var(--active-background, var(--icon-background))" },
   },
 });
 
@@ -81,7 +81,7 @@ export const results = style({
 
 export const statusLine = style({
   padding: "10px 18px",
-  color: "var(--text-muted, #888)",
+  color: "var(--text-muted, var(--text-muted))",
   fontSize: "0.9rem",
 });
 
@@ -91,7 +91,7 @@ export const groupHeading = style({
   fontWeight: 700,
   letterSpacing: "0.06em",
   textTransform: "uppercase",
-  color: "var(--text-muted, #888)",
+  color: "var(--text-muted, var(--text-muted))",
 });
 
 export const option = style({
@@ -105,7 +105,7 @@ export const option = style({
   lineHeight: 1.35,
   selectors: {
     "&[aria-selected=true]": {
-      background: "var(--active-background, #f0f0f0)",
+      background: "var(--active-background, var(--icon-background))",
     },
     "&:focus": { outline: 0 },
   },
@@ -123,7 +123,7 @@ export const optionTitle = style({
 
 export const optionContext = style({
   display: "block",
-  color: "var(--text-muted, #888)",
+  color: "var(--text-muted, var(--text-muted))",
   fontSize: "0.8rem",
   overflow: "hidden",
   whiteSpace: "nowrap",
@@ -132,7 +132,7 @@ export const optionContext = style({
 
 export const optionSnippet = style({
   display: "block",
-  color: "var(--text-muted, #888)",
+  color: "var(--text-muted, var(--text-muted))",
   fontSize: "0.8rem",
   overflow: "hidden",
   whiteSpace: "nowrap",
@@ -149,5 +149,5 @@ export const mark = style({
 export const moreNote = style({
   padding: "4px 18px 8px",
   fontSize: "0.78rem",
-  color: "var(--text-muted, #888)",
+  color: "var(--text-muted, var(--text-muted))",
 });

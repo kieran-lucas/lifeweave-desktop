@@ -2,7 +2,8 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from "motion/react";
 
 import { spring, reduced } from "../../design-system/visual/motion.css";
-import { Icon, type IconName } from "../../design-system/visual/icons";
+import { Icon } from "../../design-system/visual/icons";
+import { icons, type IconName } from "./icons";
 import { beginInteraction, commitInteraction } from "./instrumentation";
 import * as s from "./prototype.css";
 import {
@@ -60,7 +61,7 @@ function Sidebar({ collapsed }: { collapsed: boolean }) {
     <nav className={s.sidebar} aria-label="Primary navigation">
       <div className={s.brand}>
         <span className={s.brandMark} aria-hidden="true">
-          <Icon name="life" size={14} />
+          <Icon d={icons.life} size={14} />
         </span>
         {!collapsed && <span className={s.brandName}>Lifeweave</span>}
       </div>
@@ -74,7 +75,7 @@ function Sidebar({ collapsed }: { collapsed: boolean }) {
             aria-current={destination.id === "today" ? "page" : undefined}
             aria-label={destination.label}
           >
-            <Icon name={destination.icon} className={s.navIcon} />
+            <Icon d={icons[destination.icon]} className={s.navIcon} />
             {!collapsed && <span className={s.navLabel}>{destination.label}</span>}
           </button>
         ))}
@@ -82,11 +83,11 @@ function Sidebar({ collapsed }: { collapsed: boolean }) {
         <div className={s.sidebarDivider} />
 
         <button type="button" className={s.navItem} aria-label="Search">
-          <Icon name="search" className={s.navIcon} />
+          <Icon d={icons.search} className={s.navIcon} />
           {!collapsed && <span className={s.navLabel}>Search</span>}
         </button>
         <button type="button" className={s.navItem} aria-label="Settings">
-          <Icon name="settings" className={s.navIcon} />
+          <Icon d={icons.settings} className={s.navIcon} />
           {!collapsed && <span className={s.navLabel}>Settings</span>}
         </button>
       </div>
@@ -98,10 +99,10 @@ function Sidebar({ collapsed }: { collapsed: boolean }) {
       */}
       <div className={s.sidebarFooter}>
         <button type="button" className={s.bareButton} aria-label="Collapse sidebar">
-          <Icon name="panelLeft" />
+          <Icon d={icons.panelLeft} />
         </button>
         <button type="button" className={s.bareButton} aria-label="Switch to dark theme">
-          <Icon name="moon" />
+          <Icon d={icons.moon} />
         </button>
       </div>
     </nav>
@@ -157,7 +158,7 @@ function TaskRow({
         aria-label={`${evaluationLabel(task.evaluation)}: ${task.title}`}
         onClick={onToggle}
       >
-        <Icon name={checkIcon(task.evaluation)} />
+        <Icon d={icons[checkIcon(task.evaluation)]} />
       </button>
 
       <span className={s.rowMain}>
@@ -203,7 +204,7 @@ function TaskRow({
         )}
         {task.priority === "high" && (
           <span className={s.rowFlag} title="High priority">
-            <Icon name="flagFilled" size={16} />
+            <Icon d={icons.flagFilled} size={16} />
             <span hidden>High priority</span>
           </span>
         )}
@@ -254,14 +255,14 @@ function Inspector({ task }: { task: PrototypeTask }) {
     >
       <div className={s.inspectorHeader}>
         <span className={s.inspectorContext}>
-          <Icon name="plans" size={16} />
+          <Icon d={icons.plans} size={16} />
           {task.focusPlan ?? task.category}
         </span>
         <button type="button" className={s.bareButton} aria-label="More actions">
-          <Icon name="more" />
+          <Icon d={icons.more} />
         </button>
         <button type="button" className={s.bareButton} aria-label="Close details">
-          <Icon name="dismiss" />
+          <Icon d={icons.dismiss} />
         </button>
       </div>
 
@@ -270,7 +271,7 @@ function Inspector({ task }: { task: PrototypeTask }) {
           {task.title}
           {task.priority === "high" && (
             <span className={s.rowFlag} title="High priority">
-              <Icon name="flagFilled" size={18} />
+              <Icon d={icons.flagFilled} size={18} />
             </span>
           )}
         </h2>
@@ -285,7 +286,7 @@ function Inspector({ task }: { task: PrototypeTask }) {
               aria-selected={tab === item.id}
               onClick={() => setTab(item.id)}
             >
-              <Icon name={item.icon} size={16} />
+              <Icon d={icons[item.icon]} size={16} />
               {item.label}
               {item.count && <span className={s.tabCount}>{item.count}</span>}
             </button>
@@ -301,26 +302,26 @@ function Inspector({ task }: { task: PrototypeTask }) {
 
         <dl className={s.metaGrid}>
           <dt className={s.metaLabel}>
-            <Icon name="flag" size={15} /> Priority
+            <Icon d={icons.flag} size={15} /> Priority
           </dt>
           <dd className={s.metaValue}>{task.priority === "high" ? "High" : "Normal"}</dd>
 
           <dt className={s.metaLabel}>
-            <Icon name="today" size={15} /> Scheduled
+            <Icon d={icons.today} size={15} /> Scheduled
           </dt>
           <dd className={s.metaValue}>
             {formatTime(task.startMinute)} – {formatTime(task.endMinute)}
           </dd>
 
           <dt className={s.metaLabel}>
-            <Icon name="details" size={15} /> Category
+            <Icon d={icons.details} size={15} /> Category
           </dt>
           <dd className={s.metaValue}>{task.category}</dd>
 
           {task.lifeArea && (
             <>
               <dt className={s.metaLabel}>
-                <Icon name="life" size={15} /> Life area
+                <Icon d={icons.life} size={15} /> Life area
               </dt>
               <dd className={s.metaValue}>{task.lifeArea}</dd>
             </>
@@ -329,21 +330,21 @@ function Inspector({ task }: { task: PrototypeTask }) {
           {task.focusPlan && (
             <>
               <dt className={s.metaLabel}>
-                <Icon name="plans" size={15} /> Focus Plan
+                <Icon d={icons.plans} size={15} /> Focus Plan
               </dt>
               <dd className={s.metaValue}>{task.focusPlan}</dd>
             </>
           )}
 
           <dt className={s.metaLabel}>
-            <Icon name="checkCircle" size={15} /> Status
+            <Icon d={icons.checkCircle} size={15} /> Status
           </dt>
           <dd className={s.metaValue}>{evaluationLabel(task.evaluation)}</dd>
 
           {task.actualTime && (
             <>
               <dt className={s.metaLabel}>
-                <Icon name="subtasks" size={15} /> Time recorded
+                <Icon d={icons.subtasks} size={15} /> Time recorded
               </dt>
               <dd className={s.metaValue}>{formatDuration(task.actualTime.totalSeconds)}</dd>
             </>
@@ -354,7 +355,7 @@ function Inspector({ task }: { task: PrototypeTask }) {
           <header className={s.lifePreviewHead}>
             Life System preview
             <button type="button" className={s.lifePreviewOpen}>
-              Open <Icon name="chevronRight" size={14} />
+              Open <Icon d={icons.chevronRight} size={14} />
             </button>
           </header>
           <div className={s.lifeCanvas}>
@@ -607,7 +608,7 @@ export function TodayPrototype({ state }: { state: LockState }) {
                   aria-label="Previous day"
                   onClick={(event) => changeDay(-1, event)}
                 >
-                  <Icon name="chevronLeft" />
+                  <Icon d={icons.chevronLeft} />
                 </button>
                 <button type="button" className={s.quietButton} onClick={() => setDayOffset(0)}>
                   Today
@@ -629,7 +630,7 @@ export function TodayPrototype({ state }: { state: LockState }) {
                   aria-label="Next day"
                   onClick={(event) => changeDay(1, event)}
                 >
-                  <Icon name="chevronRight" />
+                  <Icon d={icons.chevronRight} />
                 </button>
               </div>
             </header>
@@ -650,7 +651,7 @@ export function TodayPrototype({ state }: { state: LockState }) {
                 >
                   <h2 id={`${period.id}-heading`} className={s.periodHeading}>
                     <Icon
-                      name={period.id === "evening" ? "moon" : "today"}
+                      d={period.id === "evening" ? icons.moon : icons.today}
                       size={16}
                       className={s.periodIcon}
                     />
@@ -683,10 +684,10 @@ export function TodayPrototype({ state }: { state: LockState }) {
 
         <footer className={s.workspaceFooter}>
           <span className={s.footerFacts}>
-            <Icon name="plans" size={15} />3 focus blocks today · 9:00 AM · 1:00 PM · 7:00 PM
+            <Icon d={icons.plans} size={15} />3 focus blocks today · 9:00 AM · 1:00 PM · 7:00 PM
           </span>
           <button type="button" className={s.lifePreviewOpen}>
-            Review day <Icon name="chevronRight" size={14} />
+            Review day <Icon d={icons.chevronRight} size={14} />
           </button>
         </footer>
       </main>

@@ -10,18 +10,27 @@ export const eyebrow=style({color:"var(--text-muted)",margin:0});
 export const create=style({padding:"10px 16px"});
 export const timeline=style({display:"flex",flexDirection:"column",gap:space.section,minInlineSize:0});
 export const period=style({display:"flex",flexDirection:"column",gap:space.control,minInlineSize:0});
+/**
+ * The v2 row group.
+ *
+ * Baseline v2 puts each period's rows inside one bounded region: a 1 px hairline, a 12 px radius,
+ * and an interior a shade whiter than the canvas. Measured at x 320-1033 in the reference. It is a
+ * single enclosure level, not a card — no shadow, no heavy border — and it is what makes the list
+ * read as one object instead of loose lines.
+ */
+export const group_=style({background:"var(--surface)",border:"1px solid var(--border-subtle)",borderRadius:12,overflow:"hidden",minInlineSize:0});
 /** Name and range are two spaced boxes; the separation is layout, never a literal space in text. */
 export const periodHeading=style({display:"flex",flexWrap:"wrap",alignItems:"baseline",gap:space.control,margin:0,minInlineSize:0});
 export const periodRange=style({fontVariantNumeric:"tabular-nums",fontWeight:400,color:"var(--text-muted)",fontSize:"1rem"});
 export const empty=style({color:"var(--text-muted)",margin:0});
-export const group=style({display:"grid",gridTemplateColumns:"minmax(92px,116px) minmax(0,1fr)",gap:space.field,borderTop:"1px solid var(--border-subtle)",paddingTop:space.x3,minInlineSize:0});
+export const group=style({display:"grid",gridTemplateColumns:"minmax(92px,116px) minmax(0,1fr)",gap:space.field,paddingBlock:space.x3,paddingInline:space.x4,minInlineSize:0,selectors:{"&:not(:last-child)":{borderBottom:"1px solid var(--border-subtle)"}}});
 export const time=style({fontVariantNumeric:"tabular-nums",color:"var(--text-muted)"});
 /*
  * Two declared tracks: content, then one action region. The action region is a flex container, so
  * the row can never grow an undeclared implicit column the way it did with three tracks and four
  * children.
  */
-export const row=style({display:"grid",gridTemplateColumns:"minmax(0,1fr) auto",gap:space.x3,alignItems:"start",padding:"8px 0",borderBottom:"1px solid var(--border-subtle)",cursor:"pointer",minInlineSize:0});
+export const row=style({display:"grid",gridTemplateColumns:"minmax(0,1fr) auto",gap:space.x3,alignItems:"start",padding:"8px 0",cursor:"pointer",minInlineSize:0,borderRadius:8,transition:"background-color 100ms cubic-bezier(0.2,0,0,1)",selectors:{"&:hover":{background:"var(--icon-background)"}}});
 /*
  * The row's content column. Title, description, metadata and tags are four stacked units; the
  * metadata itself is a wrapping group with a parent gap, so the category can never run into the
@@ -36,10 +45,15 @@ export const rowMeta=style({display:"flex",flexWrap:"wrap",alignItems:"center",g
  * title stays fully readable, which an ellipsis would have taken away from sighted users even
  * though the accessible name kept it.
  */
-export const rowChip=style({maxInlineSize:"28rem",textAlign:"left",overflowWrap:"anywhere",border:"1px solid var(--border-subtle)",borderRadius:"0.5rem",background:"transparent",color:"inherit",padding:"0.2rem 0.5rem",cursor:"pointer",selectors:{"&:focus-visible":{outline:"3px solid var(--focus-ring)",outlineOffset:2}}});
+export const rowChip=style({maxInlineSize:"28rem",textAlign:"left",overflowWrap:"anywhere",border:0,borderRadius:"0.375rem",background:"var(--active-background)",color:"var(--accent)",fontSize:"0.8125rem",padding:"0.2rem 0.5rem",cursor:"pointer",selectors:{"&:focus-visible":{outline:"3px solid var(--focus-ring)",outlineOffset:2}}});
 export const rowActions=style({display:"flex",flexWrap:"wrap",alignItems:"center",justifyContent:"flex-end",gap:space.control,minInlineSize:0});
-export const rowEditButton=style({border:"1px solid var(--border-subtle)",borderRadius:"0.5rem",background:"transparent",color:"inherit",padding:"0.25rem 0.55rem",cursor:"pointer",whiteSpace:"nowrap",selectors:{"&:focus-visible":{outline:"3px solid var(--focus-ring)",outlineOffset:2}}});
-export const selected=style({outline:"2px solid var(--focus-ring)"});
+export const rowEditButton=style({border:0,borderRadius:"0.375rem",background:"transparent",color:"var(--text-muted)",fontSize:"0.8125rem",padding:"0.25rem 0.5rem",cursor:"pointer",whiteSpace:"nowrap",selectors:{"&:focus-visible":{outline:"3px solid var(--focus-ring)",outlineOffset:2}}});
+/**
+ * v2 selection is a pale blue fill, not an outline. The 2 px focus-ring outline this used to draw
+ * made a selected row read as a focused control, and stacked a hard edge on top of a hairline the
+ * row already had.
+ */
+export const selected=style({background:"var(--icon-background)"});
 export const assessment=style({color:"var(--text-muted)",textAlign:"center"});
 export const category=style({color:"var(--text-muted)",fontSize:12});
 
@@ -60,7 +74,7 @@ export const textarea=style({minBlockSize:"5.5rem",resize:"vertical"});
 export const dateControl=style({minInlineSize:0,maxInlineSize:"12rem",boxSizing:"border-box"});
 export const numberControl=style({minInlineSize:0,maxInlineSize:"8rem",boxSizing:"border-box"});
 export const undo=style({margin:0,color:"var(--text-muted)"});
-export const seriesTagsNote=style({fontSize:11,color:"var(--text-muted, #666)",margin:"4px 0 0"});
+export const seriesTagsNote=style({fontSize:11,color:"var(--text-muted, var(--text-muted))",margin:"4px 0 0"});
 
 // ── Actual time (Task 43). Running state is conveyed by text and a border, never colour alone.
 export const timerStrip = style({ display: "flex", flexWrap: "wrap", gap: "0.6rem", alignItems: "center", marginBlock: "0.6rem", padding: "0.55rem 0.75rem", border: "1px solid currentColor", borderRadius: "0.6rem" });

@@ -9,7 +9,7 @@ import { splitWorkspace } from "../../app/layout/layout.css";
  */
 
 export const heading = style({ margin: 0, fontSize: "2rem" });
-export const lede = style({ margin: "6px 0 0", color: "var(--text-muted, #666)" });
+export const lede = style({ margin: "6px 0 0", color: "var(--text-muted, var(--text-muted))" });
 export const createForm = style({ display: "flex", flexWrap: "wrap", alignItems: "center", gap: space.control, minInlineSize: 0 });
 export const portfolios = style({ display: "flex", gap: "6px", flexWrap: "wrap" });
 export const tab = style({ minHeight: "40px", padding: "8px 12px", border: "1px solid var(--border-subtle)", borderRadius: "8px", background: "var(--surface)", color: "inherit", cursor: "pointer", selectors: { '&[aria-selected="true"], &[aria-pressed="true"]': { outline: "2px solid var(--accent)", outlineOffset: "1px" }, "&:disabled": { opacity: 0.5, cursor: "not-allowed" } } });
@@ -38,9 +38,9 @@ export const dangerButton = style([secondaryButton, { color: "var(--error, #b423
 export const iconButton = style([secondaryButton, { minWidth: "36px", padding: "4px" }]);
 export const actions = style({ display: "flex", gap: "8px", flexWrap: "wrap" });
 export const error = style({ color: "var(--error, #b42318)", padding: "10px 12px", border: "1px solid currentColor", borderRadius: "8px" });
-export const muted = style({ color: "var(--text-muted, #666)", fontSize: "0.9rem" });
-export const emptyState = style({ color: "var(--text-muted, #666)", textAlign: "center", padding: "80px 20px" });
-export const draftNote = style({ color: "var(--text-muted, #666)", fontSize: "0.85rem", margin: 0 });
+export const muted = style({ color: "var(--text-muted, var(--text-muted))", fontSize: "0.9rem" });
+export const emptyState = style({ color: "var(--text-muted, var(--text-muted))", textAlign: "center", padding: "80px 20px" });
+export const draftNote = style({ color: "var(--text-muted, var(--text-muted))", fontSize: "0.85rem", margin: 0 });
 export const variantTabs = style({ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "12px" });
 export const variantControl = style({ display: "inline-flex", gap: "3px", alignItems: "center" });
 export const variantEditor = style({ display: "grid", gap: "12px", paddingTop: "12px" });

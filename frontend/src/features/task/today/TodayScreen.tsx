@@ -867,7 +867,13 @@ export function TodayScreen({
               {period.groups.length === 0 ? (
                 <p className={styles.empty}>No tasks scheduled.</p>
               ) : (
-                period.groups.map((group) => (
+                /*
+                  One bounded group per period, as baseline v2 measures. The time-column rows sit
+                  inside it and carry their own separators, so the list reads as a single object
+                  rather than as loose lines on the canvas.
+                */
+                <div className={styles.group_}>
+                {period.groups.map((group) => (
                   <div
                     className={styles.group}
                     key={`${group[0]!.start_minute}-${group[0]!.end_minute}`}
@@ -1053,7 +1059,8 @@ export function TodayScreen({
                       ))}
                     </div>
                   </div>
-                ))
+                ))}
+                </div>
               )}
             </section>
           ))}

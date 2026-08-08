@@ -57,8 +57,8 @@ HEADER = '''/*
  * GENERATED FILE — do not edit by hand.
  * Regenerate with:  python scripts/generate_visual_icons.py
  *
- * The Lifeweave icon vocabulary (ADR 0045 §26): a curated {count}-icon subset of Fluent System
- * Icons, vendored as inline paths.
+ * The Lifeweave icon vocabulary (ADR 0045): a curated {count}-icon subset of Fluent System Icons,
+ * vendored as inline paths.
  *
  * Source:  @fluentui/svg-icons {version}  (npm)
  * License: MIT — Copyright (c) Microsoft Corporation
@@ -67,27 +67,27 @@ HEADER = '''/*
  * The attribution deliberately omits the URL scheme: `scripts/verify_no_remote_assets.py` rejects
  * any `https?://` under `frontend/src`, and that gate is more valuable than a clickable comment.
  *
+ * **Each path is a separate named export, deliberately.** An earlier version kept them in one
+ * `Record<IconName, string>` and let `Icon` look the path up by name. That reads nicely and cannot
+ * tree-shake: a dynamic lookup forces every entry into the bundle, so production shipped all
+ * {count} icons to render the seven the shell actually uses, and `index.js` went 1,551 bytes over
+ * its locked ceiling. Named exports let the bundler drop what no one imports.
+ *
  * Predominantly 20px regular weight, themed with `currentColor`. Filled variants appear only where
  * state semantics benefit — a completed task, a raised priority. No colour-icon variants.
  *
  * Every icon is `aria-hidden` and focusable={{false}}: an icon is never the accessible name. A
- * control that renders only an icon must carry its own `aria-label`, which the prototype and the
- * production surfaces both assert.
+ * control that renders only an icon must carry its own `aria-label`.
  */
 import type {{ SVGProps }} from "react";
 
-export type IconName =
-{names};
-
-const paths: Record<IconName, string> = {{
 {entries}
-}};
 
 export function Icon({{
-  name,
+  d,
   size = 20,
   ...rest
-}}: {{ name: IconName; size?: number }} & Omit<SVGProps<SVGSVGElement>, "name">) {{
+}}: {{ d: string; size?: number }} & Omit<SVGProps<SVGSVGElement>, "d">) {{
   return (
     <svg
       width={{size}}
@@ -98,7 +98,7 @@ export function Icon({{
       focusable={{false}}
       {{...rest}}
     >
-      <path d={{paths[name]}} />
+      <path d={{d}} />
     </svg>
   );
 }}
@@ -128,15 +128,14 @@ def main() -> int:
         if len(found) != 1:
             print(f"{stem}.svg has {len(found)} paths; expected exactly 1", file=sys.stderr)
             return 1
-        entries.append(f'  // {stem}\n  {name}:\n    "{found[0]}",')
+        export_name = "icon" + name[0].upper() + name[1:]
+        entries.append(f'/** {stem} */\nexport const {export_name} =\n  "{found[0]}";')
 
-    names = "\n".join(f'  | "{name}"' for name in ICONS)
     TARGET.write_text(
         HEADER.format(
             count=len(ICONS),
             version=version,
-            names=names,
-            entries="\n".join(entries),
+            entries="\n\n".join(entries),
         ),
         encoding="utf-8",
     )
