@@ -7,7 +7,7 @@ baseline / activation baseline : 2c4cb188937393103e12b1042779af5ea266acda
 activation                     : 5451fe784fa50cb3fff65cad2f12f8a448349c9b
 product checkpoint             : b4d7d32046f3e3edbff6d734116d3c2bd645d676
 closure                        : 944c929c21eb2302837948b3ac79488a0c4b2137
-audit record                   : <audit-record-sha>
+audit-record commit            : 7c7c7c4c9a685d1296ceb764af46761c936ac244
 schema                         : 27 → 27, no migration
 ```
 
