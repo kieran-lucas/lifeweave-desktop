@@ -5,6 +5,7 @@ use super::BackupError;
 use crate::infrastructure::durability;
 
 pub const SUPPORTED_FORMAT_VERSION: u32 = 2;
+pub const MAX_INVENTORY_MANIFEST_BYTES: u64 = 256 * 1024;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[cfg_attr(test, derive(ts_rs::TS))]
@@ -42,6 +43,32 @@ impl BackupManifest {
             return Err(BackupError::UnsupportedFormatVersion(
                 manifest.format_version,
             ));
+        }
+        Ok(manifest)
+    }
+
+    /// Reads only bounded metadata for managed-backup inventory. Unlike the strict restore parser,
+    /// this intentionally accepts future format versions so an older binary can label and protect
+    /// them. It never makes such a package restorable.
+    pub fn read_for_inventory(dir: &Path) -> Result<Self, BackupError> {
+        let path = dir.join("manifest.json");
+        let metadata = std::fs::symlink_metadata(&path).map_err(BackupError::Io)?;
+        if !metadata.file_type().is_file()
+            || metadata.file_type().is_symlink()
+            || metadata.len() > MAX_INVENTORY_MANIFEST_BYTES
+        {
+            return Err(BackupError::InvalidBackupId);
+        }
+        let bytes = std::fs::read(path).map_err(BackupError::Io)?;
+        let manifest: BackupManifest =
+            serde_json::from_slice(&bytes).map_err(BackupError::ManifestParse)?;
+        if manifest.format_version == 0
+            || manifest.app_version.len() > 128
+            || manifest.created_at.len() > 64
+            || manifest.db_sha256.len() > 128
+            || manifest.assets.len() > 100_000
+        {
+            return Err(BackupError::InvalidBackupId);
         }
         Ok(manifest)
     }

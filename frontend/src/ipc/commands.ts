@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 
 import type { BackupSummary } from "./generated/BackupSummary";
+import type { BackupCreateResult } from "./generated/BackupCreateResult";
 import type { BackupProgress } from "./generated/BackupProgress";
 import type { RestoreResult } from "./generated/RestoreResult";
 import type { HealthCheck } from "./generated/HealthCheck";
@@ -165,9 +166,9 @@ export function restoreFoundationRecord(
   return invoke<void>("restore_foundation_record", { input });
 }
 
-/** Creates a backup package and returns the backup location and checksum. */
-export function backupDatabase(): Promise<BackupSummary> {
-  return invoke<BackupSummary>("backup_database");
+/** Creates, verifies, publishes, and then applies managed retention. */
+export function backupDatabase(): Promise<BackupCreateResult> {
+  return invoke<BackupCreateResult>("backup_database");
 }
 
 export function listBackups(): Promise<BackupSummary[]> {

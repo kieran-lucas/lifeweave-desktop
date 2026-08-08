@@ -24,10 +24,10 @@ class PerformanceBudgetCheckerTests(unittest.TestCase):
         self.assets.mkdir(parents=True)
         self.budget_path = self.root / "budget.json"
 
-    def test_default_budget_advances_to_task_46_without_rewriting_task_44(self) -> None:
-        self.assertEqual(DEFAULT_BUDGET.name, "task-47-performance-budgets.json")
+    def test_default_budget_advances_to_task_48_without_rewriting_task_47(self) -> None:
+        self.assertEqual(DEFAULT_BUDGET.name, "task-48-performance-budgets.json")
         self.assertTrue(DEFAULT_BUDGET.is_file())
-        historical = DEFAULT_BUDGET.with_name("task-46-performance-budgets.json")
+        historical = DEFAULT_BUDGET.with_name("task-47-performance-budgets.json")
         self.assertTrue(historical.is_file())
 
     def tearDown(self) -> None:

@@ -1,0 +1,31 @@
+{
+  "task": 48,
+  "slice": "038-managed-backup-retention-compatibility",
+  "execution_baseline": "17a833067cfca5e4c4b11da11dfd987528cb444a",
+  "activation_commit": "a0c5dea",
+  "latest_feature_checkpoint_at_activation": "1c42ac5358579dc8795e4b7c1b76bc004b0269f1",
+  "supersedes": "docs/audits/task-47-performance-baseline.json",
+  "method": {
+    "builds": 3,
+    "determinism": "three independent `pnpm build` runs from the clean activation commit produced byte-identical normalized aggregate and chunk inventories",
+    "gzip": "level 9, mtime=0",
+    "chunk_identity": "emitted file name with only the terminal content hash stripped",
+    "inventory_command": "python scripts/check_performance_budgets.py"
+  },
+  "activation_state": {
+    "note": "measured at a0c5dea before any Task 48 product edit; byte-identical to the accepted Task 47 final inventory",
+    "chunk_count": 22,
+    "total_js_bytes": 1226352,
+    "total_js_gzip_bytes": 375977,
+    "main_js_bytes": 526020,
+    "violations_against_task_47_budget": []
+  },
+  "locked_contract": {
+    "main_js_ceiling": 535000,
+    "basic_leaf_editor_ceiling": 490000,
+    "markdown_ceiling": 129000,
+    "unknown_chunk_raw_bytes_threshold": 10000,
+    "budget_at_activation": "docs/audits/task-47-performance-budgets.json",
+    "expected_chunk_count_at_activation": 22
+  }
+}

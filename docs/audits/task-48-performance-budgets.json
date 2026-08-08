@@ -1,0 +1,115 @@
+{
+  "budget_version": 2,
+  "task": 48,
+  "supersedes": "docs/audits/task-47-performance-budgets.json",
+  "supersedes_note": "Task 48 truthfully versions aggregate maxima for the approved lazy Backup Settings feature. The locked index.js, BasicLeafEditor.js, and markdown.js ceilings remain unchanged; earlier evidence remains historical.",
+  "measured_at_commit": "PENDING_CHECKPOINT",
+  "baseline_evidence": "docs/audits/task-48-performance-baseline.json",
+  "main_chunk": "index.js",
+  "unknown_chunk_raw_bytes_threshold": 10000,
+  "rules": {
+    "chunk_identity": "emitted file name with only the terminal content hash stripped",
+    "missing_expected_chunk": "fails",
+    "unknown_chunk_at_or_above_threshold": "fails",
+    "unknown_chunk_below_threshold": "reported as untracked_small_chunks, does not fail",
+    "duplicate_normalized_identity": "fails",
+    "chunk_count_mismatch": "fails"
+  },
+  "formulas": {
+    "total_raw_maximum": "final + max(8192, ceil(final * 0.0075))",
+    "total_gzip_maximum": "final + max(4096, ceil(final * 0.0100))",
+    "chunk_maximum": "final + max(1024, ceil(final * 0.0200))",
+    "clamp": "index.js, BasicLeafEditor.js, and markdown.js remain clamped by the unchanged locked ceilings",
+    "arithmetic": "integer ceil"
+  },
+  "locked_ceilings": {
+    "index.js": 535000,
+    "BasicLeafEditor.js": 490000,
+    "markdown.js": 129000,
+    "note": "No locked ceiling changed. Task 48 supersedes only Task 47 aggregate maxima and expected chunk count through the approved formula."
+  },
+  "aggregates": {
+    "main_js_bytes": {
+      "observed": 524181,
+      "maximum": 534665,
+      "derivation": "524181 + ceil(524181 * 0.0200) = 534665, below locked 535000"
+    },
+    "total_js_bytes": {
+      "observed": 1231159,
+      "maximum": 1240393,
+      "derivation": "1231159 + ceil(1231159 * 0.0075) = 1240393"
+    },
+    "total_js_gzip_bytes": {
+      "observed": 377912,
+      "maximum": 382008,
+      "derivation": "377912 + max(4096, ceil(377912 * 0.0100)) = 382008"
+    },
+    "expected_chunk_count": 23
+  },
+  "chunks": {
+    "BasicLeafEditor.js": {
+      "observed_raw_bytes": 52355,
+      "observed_gzip_bytes": 17090,
+      "maximum_raw_bytes": 53403,
+      "class": "lazy",
+      "owner": "Basic Leaf editor",
+      "derivation": "52355 + ceil(52355 * 0.0200)"
+    },
+    "FocusPlansScreen.js": {
+      "observed_raw_bytes": 18396,
+      "observed_gzip_bytes": 5095,
+      "maximum_raw_bytes": 19420,
+      "class": "lazy",
+      "owner": "Focus Plans",
+      "derivation": "18396 + max(1024, ceil(18396 * 0.0200))"
+    },
+    "NarrativeCanvasStudio.js": {
+      "observed_raw_bytes": 20065,
+      "observed_gzip_bytes": 5932,
+      "maximum_raw_bytes": 21089,
+      "class": "lazy",
+      "owner": "Narrative Canvas studio",
+      "derivation": "20065 + max(1024, ceil(20065 * 0.0200))"
+    },
+    "TaskSavedViewsPanel.js": {
+      "observed_raw_bytes": 16544,
+      "observed_gzip_bytes": 4954,
+      "maximum_raw_bytes": 17568,
+      "class": "lazy",
+      "owner": "Task Saved Views",
+      "derivation": "16544 + max(1024, ceil(16544 * 0.0200))"
+    },
+    "dist.js": {
+      "observed_raw_bytes": 390833,
+      "observed_gzip_bytes": 120575,
+      "maximum_raw_bytes": 398650,
+      "class": "lazy",
+      "owner": "Basic Leaf editor vendor core",
+      "derivation": "390833 + ceil(390833 * 0.0200)"
+    },
+    "index.js": {
+      "observed_raw_bytes": 524181,
+      "observed_gzip_bytes": 159296,
+      "maximum_raw_bytes": 534665,
+      "class": "startup",
+      "owner": "application shell and eager screens",
+      "derivation": "524181 + ceil(524181 * 0.0200), below locked 535000"
+    },
+    "markdown.js": {
+      "observed_raw_bytes": 116541,
+      "observed_gzip_bytes": 32939,
+      "maximum_raw_bytes": 118872,
+      "class": "lazy",
+      "owner": "Markdown interoperability pipeline",
+      "derivation": "116541 + ceil(116541 * 0.0200), below locked 129000"
+    },
+    "useQuery.js": {
+      "observed_raw_bytes": 20834,
+      "observed_gzip_bytes": 6883,
+      "maximum_raw_bytes": 21858,
+      "class": "startup",
+      "owner": "TanStack Query projection cache",
+      "derivation": "20834 + max(1024, ceil(20834 * 0.0200))"
+    }
+  }
+}

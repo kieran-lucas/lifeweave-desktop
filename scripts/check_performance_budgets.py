@@ -19,7 +19,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_BUDGET = ROOT / "docs" / "audits" / "task-47-performance-budgets.json"
+DEFAULT_BUDGET = ROOT / "docs" / "audits" / "task-48-performance-budgets.json"
 DEFAULT_ASSETS = ROOT / "frontend" / "dist" / "assets"
 
 BUDGET_VERSION = 2

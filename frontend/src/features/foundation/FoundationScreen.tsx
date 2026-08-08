@@ -3,16 +3,12 @@ import { useEffect, useRef, useState } from "react";
 import type { FoundationRecordView } from "../../ipc/generated/FoundationRecordView";
 import {
   archiveFoundationRecord,
-  backupDatabase,
   createFoundationRecord,
   listArchivedFoundationRecords,
-  listBackups,
   listFoundationRecords,
-  restoreDatabase,
   restoreFoundationRecord,
   updateFoundationRecord,
 } from "../../ipc/commands";
-import type { BackupSummary } from "../../ipc/generated/BackupSummary";
 import * as styles from "./FoundationScreen.css";
 
 type EditState = { id: string; label: string; revision: number } | null;
@@ -26,12 +22,6 @@ type PageState =
       archived: FoundationRecordView[];
       formError: string | null;
       edit: EditState;
-      backups: BackupSummary[];
-      selectedBackupId: string | null;
-      progress: string | null;
-      operationBusy: boolean;
-      backupMessage: string | null;
-      backupError: string | null;
     };
 
 function operationId(): string {
@@ -45,15 +35,7 @@ function extractErrorMessage(e: unknown): string {
   return "An unexpected error occurred.";
 }
 
-function isRecoveryPendingError(e: unknown): boolean {
-  return !!(
-    e &&
-    typeof e === "object" &&
-    (e as { code?: unknown }).code === "RecoveryPending"
-  );
-}
-
-export function FoundationScreen({ onDatabaseRestored }: { onDatabaseRestored?: () => void } = {}) {
+export function FoundationScreen() {
   const [state, setState] = useState<PageState>({ kind: "loading" });
   const [newLabel, setNewLabel] = useState("");
   const createInputRef = useRef<HTMLInputElement>(null);
@@ -61,10 +43,9 @@ export function FoundationScreen({ onDatabaseRestored }: { onDatabaseRestored?: 
 
   async function load() {
     try {
-      const [active, archived, backups] = await Promise.all([
+      const [active, archived] = await Promise.all([
         listFoundationRecords(),
         listArchivedFoundationRecords(),
-        listBackups(),
       ]);
       setState((prev) => ({
         kind: "ready",
@@ -72,12 +53,6 @@ export function FoundationScreen({ onDatabaseRestored }: { onDatabaseRestored?: 
         archived,
         formError: null,
         edit: prev.kind === "ready" ? prev.edit : null,
-        backups,
-        selectedBackupId: prev.kind === "ready" ? prev.selectedBackupId : null,
-        progress: null,
-        operationBusy: false,
-        backupMessage: prev.kind === "ready" ? prev.backupMessage : null,
-        backupError: null,
       }));
     } catch (e) {
       setState({ kind: "error", message: extractErrorMessage(e) });
@@ -150,59 +125,6 @@ export function FoundationScreen({ onDatabaseRestored }: { onDatabaseRestored?: 
       const msg = extractErrorMessage(e);
       setState((prev) =>
         prev.kind === "ready" ? { ...prev, formError: msg } : prev,
-      );
-    }
-  }
-
-  async function handleBackup() {
-    if (state.kind !== "ready") return;
-    setState((prev) => prev.kind === "ready" ? { ...prev, operationBusy: true, progress: "preparing", backupError: null } : prev);
-    try {
-      const result = await backupDatabase();
-      const backups = await listBackups();
-      setState((prev) =>
-        prev.kind === "ready"
-          ? {
-              ...prev,
-              backups,
-              selectedBackupId: result.backup_id,
-              backupMessage: `Backup created at ${result.created_at}`,
-              backupError: null,
-              progress: "completed",
-              operationBusy: false,
-            }
-          : prev,
-      );
-    } catch (e) {
-      setState((prev) =>
-        prev.kind === "ready"
-          ? { ...prev, backupError: extractErrorMessage(e), backupMessage: null, operationBusy: false }
-          : prev,
-      );
-    }
-  }
-
-  async function handleDbRestore() {
-    if (state.kind !== "ready" || !state.selectedBackupId) return;
-    const id = state.selectedBackupId;
-    setState((prev) => prev.kind === "ready" ? { ...prev, operationBusy: true, progress: "inspecting", backupError: null } : prev);
-    try {
-      await restoreDatabase(id);
-      onDatabaseRestored?.();
-      setState((prev) =>
-        prev.kind === "ready"
-          ? { ...prev, backupMessage: "Restore complete.", backupError: null, progress: "completed", operationBusy: false }
-          : prev,
-      );
-      await load();
-    } catch (e) {
-      const msg = isRecoveryPendingError(e)
-        ? "Restart the application to complete cleanup, then try again."
-        : extractErrorMessage(e);
-      setState((prev) =>
-        prev.kind === "ready"
-          ? { ...prev, backupError: msg, backupMessage: null, operationBusy: false }
-          : prev,
       );
     }
   }
@@ -283,35 +205,6 @@ export function FoundationScreen({ onDatabaseRestored }: { onDatabaseRestored?: 
           </p>
         )}
       </form>
-
-      <div className={`${styles.form} ${styles.operationBar}`}>
-        <button type="button" className={styles.button} onClick={handleBackup} disabled={state.operationBusy}>
-          Backup
-        </button>
-        <select aria-label="Backup selection" value={state.selectedBackupId ?? ""} onChange={(e) => setState((prev) => prev.kind === "ready" ? { ...prev, selectedBackupId: e.target.value || null } : prev)} disabled={state.operationBusy}>
-          <option value="">Select backup</option>
-          {state.backups.map((backup) => <option key={backup.backup_id} value={backup.backup_id}>{backup.created_at}</option>)}
-        </select>
-        <button
-          type="button"
-          className={styles.secondaryButton}
-          onClick={handleDbRestore}
-          disabled={!state.selectedBackupId || state.operationBusy}
-        >
-          Restore
-        </button>
-      </div>
-      {state.backupMessage && (
-        <p className={styles.statusText} aria-live="polite">
-          {state.backupMessage}
-        </p>
-      )}
-      {state.progress && <p className={styles.statusText} aria-live="polite">Progress: {state.progress}</p>}
-      {state.backupError && (
-        <p className={styles.errorText} role="alert">
-          {state.backupError}
-        </p>
-      )}
 
       {active.length === 0 && archived.length === 0 && (
         <p className={styles.statusText}>No records yet. Add one above.</p>

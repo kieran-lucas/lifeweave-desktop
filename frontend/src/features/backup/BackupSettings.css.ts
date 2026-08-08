@@ -1,0 +1,20 @@
+import { globalStyle, style } from "@vanilla-extract/css";
+
+export const panel = style({ marginTop: "24px", padding: "24px", border: "1px solid var(--border-subtle)", borderRadius: "16px", background: "var(--surface)" });
+export const headingRow = style({ display: "flex", alignItems: "start", justifyContent: "space-between", gap: "16px", flexWrap: "wrap" });
+export const heading = style({ margin: 0, fontSize: "1.25rem" });
+export const intro = style({ margin: "6px 0 0", color: "var(--text-muted, #666)" });
+export const subheading = style({ margin: "24px 0 8px", fontSize: "1rem" });
+export const policy = style({ maxWidth: "72ch", lineHeight: 1.55 });
+export const primaryButton = style({ padding: "8px 16px", border: 0, borderRadius: "8px", background: "var(--accent)", color: "#fff", fontWeight: 700, cursor: "pointer", selectors: { "&:disabled": { opacity: 0.55, cursor: "not-allowed" } } });
+export const secondaryButton = style({ padding: "6px 10px", border: "1px solid var(--border-subtle)", borderRadius: "7px", background: "transparent", color: "inherit", cursor: "pointer", selectors: { "&:disabled": { opacity: 0.5, cursor: "not-allowed" } } });
+export const tableScroll = style({ overflowX: "auto" });
+export const table = style({ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" });
+globalStyle(`${table} th`, { textAlign: "left", padding: "8px", borderBottom: "1px solid var(--border-subtle)" });
+globalStyle(`${table} td`, { padding: "10px 8px", verticalAlign: "top", borderBottom: "1px solid var(--border-subtle)" });
+export const status = style({ marginTop: "16px", color: "var(--text-muted, #666)" });
+export const error = style({ marginTop: "16px", color: "var(--error, #c0392b)" });
+export const backdrop = style({ position: "fixed", inset: 0, zIndex: 100, display: "grid", placeItems: "center", padding: "20px", background: "rgba(0, 0, 0, 0.55)" });
+export const dialog = style({ width: "min(520px, 100%)", padding: "24px", borderRadius: "16px", background: "var(--surface)", boxShadow: "0 20px 60px rgba(0,0,0,.35)" });
+export const dialogActions = style({ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "24px" });
+export const visuallyHidden = style({ position: "absolute", width: "1px", height: "1px", padding: 0, margin: "-1px", overflow: "hidden", clip: "rect(0, 0, 0, 0)", whiteSpace: "nowrap", border: 0 });

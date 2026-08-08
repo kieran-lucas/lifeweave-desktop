@@ -1,7 +1,7 @@
 use tauri::{Emitter, Manager, State};
 
 use crate::infrastructure::backup::{
-    self, BackupError, BackupId, BackupProgress, BackupSummary, RestoreResult,
+    self, BackupCreateResult, BackupError, BackupId, BackupProgress, BackupSummary, RestoreResult,
 };
 use crate::infrastructure::sqlite::runtime::DatabaseRuntime;
 use crate::ipc::error::IpcError;
@@ -35,14 +35,14 @@ fn backup_to_ipc(e: BackupError) -> IpcError {
 }
 
 /// Creates a backup package at the app's default backups directory.
-/// Returns the backup location, checksum, and schema version.
+/// Returns path-free backup metadata plus the post-publication retention outcome.
 /// Does not log backup destination or record content.
 #[tauri::command]
 #[tracing::instrument(level = "info", skip(app, state))]
 pub fn backup_database(
     app: tauri::AppHandle,
     state: State<'_, DatabaseRuntime>,
-) -> Result<BackupSummary, IpcError> {
+) -> Result<BackupCreateResult, IpcError> {
     let progress = |phase: &str| {
         let _ = app.emit(
             "backup-progress",
@@ -60,23 +60,11 @@ pub fn backup_database(
         .join("backups");
 
     progress("snapshotting");
-    let result = backup::backup_db(&state, &backups_dir).map_err(backup_to_ipc)?;
+    let result = backup::create_managed_backup(&state, &backups_dir).map_err(backup_to_ipc)?;
     progress("verifying");
-    let id = result
-        .backup_dir
-        .rsplit(['\\', '/'])
-        .next()
-        .ok_or(IpcError::Storage)?
-        .to_owned();
     progress("publishing");
-    let summary = BackupSummary {
-        backup_id: BackupId(id),
-        schema_version: result.schema_version,
-        created_at: result.created_at,
-        db_size_bytes: result.db_size_bytes,
-    };
     progress("completed");
-    Ok(summary)
+    Ok(result)
 }
 
 #[tauri::command]
@@ -151,7 +139,9 @@ mod tests {
     #[test]
     fn export_backup_ipc_bindings() {
         use crate::infrastructure::backup::manifest::{BackupAssetEntry, BackupManifest};
-        use crate::infrastructure::backup::{BackupProgress, BackupSummary, RestoreResult};
+        use crate::infrastructure::backup::{
+            BackupCompatibility, BackupCreateResult, BackupProgress, BackupSummary, RestoreResult,
+        };
 
         let out = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .parent()
@@ -159,6 +149,10 @@ mod tests {
             .join("frontend/src/ipc/generated/");
 
         BackupSummary::export_all_to(&out).expect("ts binding export failed for BackupSummary");
+        BackupCompatibility::export_all_to(&out)
+            .expect("ts binding export failed for BackupCompatibility");
+        BackupCreateResult::export_all_to(&out)
+            .expect("ts binding export failed for BackupCreateResult");
         BackupProgress::export_all_to(&out).expect("ts binding export failed for BackupProgress");
         RestoreResult::export_all_to(&out).expect("ts binding export failed for RestoreResult");
         BackupManifest::export_all_to(&out).expect("ts binding export failed for BackupManifest");

@@ -9,6 +9,7 @@ pub mod manifest;
 pub mod restore;
 
 pub use engine::backup_db;
+pub use engine::create_managed_backup;
 pub use engine::list_backups;
 pub use restore::restore_db;
 
@@ -178,14 +179,36 @@ pub struct BackupResult {
 #[cfg_attr(test, derive(ts_rs::TS))]
 pub struct BackupId(pub String);
 
+/// Version compatibility only. Full checksums and integrity remain restore-time authority.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub enum BackupCompatibility {
+    Ready,
+    MigrationRequired,
+    NewerSchema,
+    NewerFormat,
+}
+
 /// Safe metadata returned to the renderer. It intentionally contains no path.
-#[derive(Debug, Clone, serde::Serialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(test, derive(ts_rs::TS))]
 pub struct BackupSummary {
     pub backup_id: BackupId,
+    pub format_version: u32,
+    pub app_version: String,
     pub schema_version: u32,
     pub created_at: String,
     pub db_size_bytes: u64,
+    pub compatibility: BackupCompatibility,
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct BackupCreateResult {
+    pub backup: BackupSummary,
+    pub pruned_backup_count: u32,
+    pub retention_cleanup_pending: bool,
 }
 
 #[derive(Debug, Clone, serde::Serialize)]

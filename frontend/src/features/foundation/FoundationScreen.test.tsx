@@ -23,19 +23,6 @@ const archivedRecord = {
   revision: 1,
 };
 
-const mockBackupResult = {
-  backup_id: "lifeweave_backup_1",
-  schema_version: 2,
-  created_at: "2026-08-01T12:00:00Z",
-  db_size_bytes: BigInt(4096),
-};
-const mockBackups = [mockBackupResult];
-
-const mockRestoreResult = {
-  restored_at: "2026-08-01T12:01:00Z",
-  schema_version: 2,
-};
-
 beforeEach(() => {
   vi.mocked(commands.listFoundationRecords).mockResolvedValue([]);
   vi.mocked(commands.listArchivedFoundationRecords).mockResolvedValue([]);
@@ -47,9 +34,6 @@ beforeEach(() => {
   });
   vi.mocked(commands.archiveFoundationRecord).mockResolvedValue(undefined);
   vi.mocked(commands.restoreFoundationRecord).mockResolvedValue(undefined);
-  vi.mocked(commands.backupDatabase).mockResolvedValue(mockBackupResult);
-  vi.mocked(commands.listBackups).mockResolvedValue(mockBackups);
-  vi.mocked(commands.restoreDatabase).mockResolvedValue(mockRestoreResult);
 });
 
 describe("FoundationScreen", () => {
@@ -181,78 +165,4 @@ describe("FoundationScreen", () => {
     expect(screen.getByRole("button", { name: "Add" })).toBeDisabled();
   });
 
-  it("backup button triggers backupDatabase command", async () => {
-    render(<FoundationScreen />);
-    await screen.findByRole("heading", { name: "Foundation Records" });
-    fireEvent.click(screen.getByRole("button", { name: "Backup" }));
-    await waitFor(() => {
-      expect(commands.backupDatabase).toHaveBeenCalledTimes(1);
-    });
-  });
-
-  it("backup success shows status message", async () => {
-    render(<FoundationScreen />);
-    await screen.findByRole("heading", { name: "Foundation Records" });
-    fireEvent.click(screen.getByRole("button", { name: "Backup" }));
-    await screen.findByText(/Backup created at/);
-  });
-
-  it("backup failure shows error message", async () => {
-    vi.mocked(commands.backupDatabase).mockRejectedValue({ message: "Disk full." });
-    render(<FoundationScreen />);
-    await screen.findByRole("heading", { name: "Foundation Records" });
-    fireEvent.click(screen.getByRole("button", { name: "Backup" }));
-    await screen.findByText("Disk full.");
-  });
-
-  it("restore button is disabled before a backup exists", async () => {
-    render(<FoundationScreen />);
-    await screen.findByRole("heading", { name: "Foundation Records" });
-    expect(screen.getByRole("button", { name: "Restore" })).toBeDisabled();
-  });
-
-  it("restore success reloads record list", async () => {
-    const onDatabaseRestored = vi.fn();
-    vi.mocked(commands.listFoundationRecords)
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([mockRecord]);
-    render(<FoundationScreen onDatabaseRestored={onDatabaseRestored} />);
-    await screen.findByRole("heading", { name: "Foundation Records" });
-    fireEvent.click(screen.getByRole("button", { name: "Backup" }));
-    await screen.findByText(/Backup created at/);
-    fireEvent.click(screen.getByRole("button", { name: "Restore" }));
-    await waitFor(() => {
-      expect(commands.restoreDatabase).toHaveBeenCalledTimes(1);
-    });
-    await screen.findByText("Test record");
-    expect(onDatabaseRestored).toHaveBeenCalledTimes(1);
-  });
-
-  it("restore failure shows error and preserves list", async () => {
-    vi.mocked(commands.listFoundationRecords).mockResolvedValue([mockRecord]);
-    vi.mocked(commands.restoreDatabase).mockRejectedValue({ message: "Restore failed." });
-    render(<FoundationScreen />);
-    await screen.findByText("Test record");
-    fireEvent.click(screen.getByRole("button", { name: "Backup" }));
-    await screen.findByText(/Backup created at/);
-    fireEvent.click(screen.getByRole("button", { name: "Restore" }));
-    await screen.findByText("Restore failed.");
-    expect(screen.getByText("Test record")).toBeInTheDocument();
-  });
-
-  it("restore RecoveryPending shows restart guidance without internal details", async () => {
-    vi.mocked(commands.listFoundationRecords).mockResolvedValue([mockRecord]);
-    vi.mocked(commands.restoreDatabase).mockRejectedValue({ code: "RecoveryPending" });
-    render(<FoundationScreen />);
-    await screen.findByText("Test record");
-    fireEvent.click(screen.getByRole("button", { name: "Backup" }));
-    await screen.findByText(/Backup created at/);
-    fireEvent.click(screen.getByRole("button", { name: "Restore" }));
-    await screen.findByText(/Restart the application to complete cleanup/);
-    // Must not expose internal error details.
-    expect(screen.queryByText(/RecoveryPending/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/marker/)).not.toBeInTheDocument();
-    // Original list must still be visible.
-    expect(screen.getByText("Test record")).toBeInTheDocument();
-  });
 });

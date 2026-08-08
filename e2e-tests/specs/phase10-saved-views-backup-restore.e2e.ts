@@ -1,4 +1,5 @@
 import { $, browser, expect } from "@wdio/globals";
+import { createManagedBackup, restoreManagedBackup } from "../support/managedBackups.js";
 
 import {
   DEADLINE,
@@ -38,13 +39,7 @@ describe("Phase 10 — Saved View and deadline backup/restore", () => {
     // --- back up ---------------------------------------------------------------------------------
     await $("button[aria-label='Settings']").click();
     await expect($("h1=Settings")).toBeDisplayed();
-    await $("button=Backup").click();
-    const backup = $("select[aria-label='Backup selection']");
-    await backup.waitUntil(async () => (await backup.getValue()) !== "", {
-      timeoutMsg: "Backup selection was not populated after creation.",
-    });
-    const selectedBackup = await backup.getValue();
-    expect(selectedBackup).not.toBe("");
+    const selectedBackup = await createManagedBackup();
 
     // --- mutate live state in three independent ways ----------------------------------------------
     await $("button[aria-label='Today']").click();
@@ -82,11 +77,7 @@ describe("Phase 10 — Saved View and deadline backup/restore", () => {
 
     // --- restore -----------------------------------------------------------------------------------
     await $("button[aria-label='Settings']").click();
-    const restoreBackup = $("select[aria-label='Backup selection']");
-    await restoreBackup.selectByAttribute("value", selectedBackup);
-    await expect(restoreBackup).toHaveValue(selectedBackup);
-    await $("button=Restore").click();
-    await expect($(sel.restoreComplete)).toBeDisplayed();
+    await restoreManagedBackup(selectedBackup);
 
     // --- verify the pre-backup values, not merely the counts -------------------------------------
     await $("button[aria-label='Today']").click();

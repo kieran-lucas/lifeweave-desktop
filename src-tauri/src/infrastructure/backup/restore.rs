@@ -86,7 +86,7 @@ fn copy_candidate(source_path: &Path, candidate_path: &Path) -> Result<(), Backu
     candidate.sync_all().map_err(BackupError::Io)
 }
 
-fn validate_candidate(
+pub(super) fn validate_candidate(
     candidate_path: &Path,
     manifest: &BackupManifest,
     supported_schema: u32,
@@ -1503,7 +1503,10 @@ mod tests {
             .collect();
 
         assert!(
-            matches!(backup_db(&rt, &backups), Err(BackupError::ActiveTaskTimer)),
+            matches!(
+                crate::infrastructure::backup::engine::create_managed_backup(&rt, &backups),
+                Err(BackupError::ActiveTaskTimer)
+            ),
             "a running timer must refuse backup creation"
         );
 
@@ -1924,6 +1927,8 @@ mod tests {
             assets: vec![],
         };
         manifest.write_to_dir(&package).unwrap();
+        let source_database_before = std::fs::read(&candidate).unwrap();
+        let source_manifest_before = std::fs::read(package.join("manifest.json")).unwrap();
 
         let result = restore_db(&rt, &package).unwrap();
         assert_eq!(result.schema_version, 27);
@@ -1939,6 +1944,11 @@ mod tests {
                 )
                 .unwrap(),
             1
+        );
+        assert_eq!(std::fs::read(&candidate).unwrap(), source_database_before);
+        assert_eq!(
+            std::fs::read(package.join("manifest.json")).unwrap(),
+            source_manifest_before
         );
     }
 

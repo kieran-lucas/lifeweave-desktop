@@ -117,10 +117,6 @@ export const sectionHeading = style({
   color: "var(--text-muted, #666)",
 });
 
-export const operationBar = style({
-  marginTop: "1rem",
-});
-
 export const contentsForm = style({
   display: "contents",
 });

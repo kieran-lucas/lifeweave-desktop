@@ -1,4 +1,5 @@
 import { $, browser, expect } from "@wdio/globals";
+import { createManagedBackup, restoreManagedBackup } from "../support/managedBackups.js";
 import {
   LINK_ALPHA, LINK_BETA, LINK_GAMMA, MUTATED_BETA, expectBacklink,
   expectOutgoing, linksPanel, openLifeRoot, openReader,
@@ -12,10 +13,7 @@ describe("Phase 12 — Life link backup and restore", () => {
     await expectOutgoing(LINK_BETA);
 
     await $("button[aria-label='Settings']").click();
-    await $("button=Backup").click();
-    const backups = $("select[aria-label='Backup selection']");
-    await backups.waitUntil(async () => (await backups.getValue()) !== "", { timeoutMsg: "Life link backup was not selected." });
-    const backupId = await backups.getValue();
+    const backupId = await createManagedBackup();
 
     await openLifeRoot();
     await $("button=Edit").click();
@@ -38,9 +36,7 @@ describe("Phase 12 — Life link backup and restore", () => {
     await expect(linksPanel().$("h3=Outgoing links (0)")).toBeDisplayed();
 
     await $("button[aria-label='Settings']").click();
-    await backups.selectByAttribute("value", backupId);
-    await $("button=Restore").click();
-    await expect($("p=Restore complete.")).toBeDisplayed();
+    await restoreManagedBackup(backupId);
 
     await openReader(LINK_ALPHA);
     await expectOutgoing(LINK_BETA);

@@ -25,6 +25,11 @@ const FocusPlansScreen = lazy(() =>
 const TagSettings = lazy(() =>
   import("../features/tag/TagSettings").then((m) => ({ default: m.TagSettings }))
 );
+const BackupSettings = lazy(() =>
+  import("../features/backup/BackupSettings").then((module) => ({
+    default: module.BackupSettings,
+  })),
+);
 import { localToday } from "../features/calendar/date";
 import { useLocalDateRollover } from "../features/calendar/useLocalDateRollover";
 import type { SearchNavigationTarget } from "../ipc/generated/SearchNavigationTarget";
@@ -327,11 +332,14 @@ export function App() {
                   Settings
                 </h1>
                 <p className={styles.lede}>
-                  Application preferences and foundation verification tools.
+                  Application preferences, backup and restore, and foundation verification tools.
                 </p>
                 <CategoryGoals />
                 <Suspense fallback={<p>Loading tag settings…</p>}>
                   <TagSettings />
+                </Suspense>
+                <Suspense fallback={<p>Loading backup settings…</p>}>
+                  <BackupSettings onDatabaseRestored={() => queryClient.clear()} />
                 </Suspense>
                 <div className={styles.foundationPanel}>
                   <h2>Keyboard</h2>
@@ -351,10 +359,8 @@ export function App() {
                 </div>
                 <div className={styles.foundationPanel}>
                   <h2>Foundation tools</h2>
-                  <p>
-                    Development-only backup and FoundationRecord verification.
-                  </p>
-                  <FoundationScreen onDatabaseRestored={() => queryClient.clear()} />
+                  <p>FoundationRecord verification tools.</p>
+                  <FoundationScreen />
                 </div>
               </section>
             )}
