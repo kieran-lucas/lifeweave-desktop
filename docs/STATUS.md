@@ -163,11 +163,52 @@ Art cannot compete with interaction by construction: the ambient layer is static
 animation, no filter and no timer, `pointer-events: none` and `aria-hidden`, and `will-change` is
 applied only to the row actually being dragged.
 
+### Phase 6 — production reconstruction, IN PROGRESS
+
+`VISUAL LOCK V2 APPROVED` and the Motion Lock was revalidated against v2 and preserved
+(`docs/audits/task-51-motion-lock.md` §10a). Production reconstruction has begun.
+
+**Migrated to v2 in production:**
+
+- `global.css` — the whole application moved onto the v2 palette in one step by re-pointing the
+  legacy custom-property values, so all 30 domain style files adopted it without a 30-file diff;
+- the art-direction freeze in `check_layout_authority.py` replaced by a v2 authority check that
+  additionally fails on zeroed reduced motion, any `@font-face`, a missing visual-contract role, or
+  a reintroduced green completion tone;
+- Literata removed — 0 imports confirmed, **106,560 → 0 font bytes**, no `@font-face` anywhere;
+- the app shell — 220 → 260 px sidebar, the grey letter tiles replaced by real 20 px outline icons
+  that take the accent when current, v2 pill geometry, sans headings;
+- Today — the period row group (hairline, 12 px radius, whiter interior, as measured), pale-blue
+  selection replacing the 2 px focus-ring outline, tinted metadata chips replacing outlined boxes,
+  the date line in the accent;
+- completion is blue everywhere: `AssessmentControl` already resolved through `var(--accent)`, so
+  no green remains in task state;
+- 7 of 22 vendored icons now reach production, because the icon module was rewritten from a
+  non-tree-shakeable lookup map to named exports.
+
+**Not yet migrated** — these inherit the v2 palette through `global.css` but have not had their
+composition reworked: the production context inspector (exists only in the prototype), the Today
+week strip and workspace tab strip, Calendar, Analytics, Focus Plans, Life/Graph, Reader/Editor,
+Narrative, Search, Settings and the dialog set. Visual-regression goldens for v2 are not yet
+established.
+
+```text
+gates    verify · typecheck · build · performance budget    PASS
+tests    766 passed across 51 files
+geometry 24 production screens, 0 collisions, 0 document overflow, 0 viewport overflow
+bundle   index.js 529,527 -> 533,113 (ceiling 535,000; 1,887 bytes headroom)
+```
+
+The bundle briefly exceeded its ceiling by 1,551 bytes when the shell adopted icons. It was fixed at
+source — the icon module could not tree-shake, so production shipped all 22 icons to draw 7 — rather
+than by raising the threshold.
+
 ### Process gates
 
 ```text
-VISUAL LOCK   APPROVED
-MOTION LOCK   evidence presented — docs/audits/task-51-motion-lock.md — AWAITING APPROVAL
+VISUAL LOCK      APPROVED (v1), superseded by VISUAL LOCK V2 APPROVED
+MOTION LOCK      revalidated against v2 and preserved
+PHASE 6          in progress — see above for what is and is not migrated
 ```
 
 No production presentation file may be visually overhauled before `VISUAL LOCK APPROVED` is received
