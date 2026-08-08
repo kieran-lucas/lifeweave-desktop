@@ -121,7 +121,15 @@ describe("Task 50 layout contracts", () => {
     await openEditor();
     const frames = document.querySelectorAll("[data-page-frame]");
     expect(frames).toHaveLength(1);
-    expect(frames[0]).toHaveAttribute("data-page-type", "standard");
+    /*
+     * Today is WIDE_WORKSPACE, not STANDARD_PAGE, from Task 51.
+     *
+     * It carries a master/detail split now — the timeline plus the context inspector — and the
+     * Task 50 taxonomy assigns 1440 to exactly that shape. This is an intentional change to the
+     * layout authority recorded in ADR 0045, not a relaxed assertion: the contract still requires
+     * exactly one frame and still requires it to declare a type from the finite taxonomy.
+     */
+    expect(frames[0]).toHaveAttribute("data-page-type", "wide");
   });
 
   /*

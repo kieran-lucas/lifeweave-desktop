@@ -53,6 +53,13 @@ import { TagPicker } from "../../tag/TagPicker";
 import type { TagSummaryView } from "../../../ipc/generated/TagSummaryView";
 import { invalidateTaskSavedViewProjections } from "../saved-views/savedViewQueries";
 
+/*
+ * The inspector mounts only when a task is selected, so it stays out of the Today startup chunk.
+ * Eagerly imported it cost 8,835 bytes and pushed `index.js` 6,948 bytes past its locked ceiling.
+ */
+const TaskInspector = lazy(() =>
+  import("./TaskInspector").then((module) => ({ default: module.TaskInspector })),
+);
 const TaskPlanningPanel = lazy(() => import("../planning/TaskPlanningPanel"));
 const DeadlineQueuePanel = lazy(() => import("../planning/DeadlineQueuePanel"));
 const TaskSavedViewsPanel = lazy(() => import("../saved-views/TaskSavedViewsPanel"));
@@ -692,6 +699,14 @@ export function TodayScreen({
     dialog.current?.querySelector<HTMLElement>("input")?.focus();
     return () => document.removeEventListener("keydown", handler);
   }, [open]);
+  /*
+    The inspector reads the same `items` projection the timeline renders, so opening it costs no
+    query, no IPC command and no new projection — only a lookup.
+  */
+  const selectedItem = useMemo(
+    () => (items.data ?? []).find((entry) => entry.id === selected) ?? null,
+    [items.data, selected],
+  );
   const grouped = useMemo(
     () =>
       periods.map((period) => ({
@@ -767,7 +782,7 @@ export function TodayScreen({
     selectDate(value);
   };
   return (
-    <PageFrame as="section" type="standard">
+    <PageFrame as="section" type="wide">
       <TaskWorkspaceTabs
         active={workspaceMode}
         disabled={open}
@@ -841,6 +856,14 @@ export function TodayScreen({
           </button>
         </p>
       )}
+      {/*
+        Master/detail via the Task 50 `splitWorkspace` primitive, so the inspector's geometry stays
+        governed by the shared layout authority rather than by a private grid. Today moves from
+        STANDARD_PAGE to WIDE_WORKSPACE because it now carries a detail rail; that is a deliberate
+        taxonomy change, not an incidental one.
+      */}
+      <div className={layout.splitWorkspace}>
+      <div className={styles.timelineColumn}>
       {items.isLoading ? (
         <p aria-live="polite">Loading tasks…</p>
       ) : items.isError ? (
@@ -1066,6 +1089,18 @@ export function TodayScreen({
           ))}
         </div>
       )}
+      </div>
+      {selectedItem && (
+        <Suspense fallback={null}>
+        <TaskInspector
+          item={selectedItem}
+          onClose={() => setSelected(null)}
+          onLifeNavigate={onLifeNavigate}
+          onFocusPlanNavigate={onFocusPlanNavigate}
+        />
+        </Suspense>
+      )}
+      </div>
       </div>
       ) : (
         <div role="tabpanel" id={`task-panel-${workspaceMode}`} aria-labelledby={`task-tab-${workspaceMode}`}>

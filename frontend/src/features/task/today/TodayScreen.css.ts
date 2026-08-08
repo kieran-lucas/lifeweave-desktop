@@ -90,3 +90,5 @@ export const rowTimer = style({ display: "inline-flex", gap: "0.4rem", alignItem
 export const rowTimerTotal = style({ fontVariantNumeric: "tabular-nums", opacity: 0.85 });
 export const rowTimerButton = style({ border: "1px solid currentColor", borderRadius: "0.5rem", background: "transparent", color: "inherit", padding: "0.25rem 0.55rem", cursor: "pointer", selectors: { "&:disabled": { cursor: "not-allowed", opacity: 0.5 } } });
 export const srOnly = style({ position: "absolute", inlineSize: "1px", blockSize: "1px", overflow: "hidden", clipPath: "inset(50%)" });
+/** The timeline half of the master/detail split. */
+export const timelineColumn=style({display:"flex",flexDirection:"column",gap:space.section,minInlineSize:0});
