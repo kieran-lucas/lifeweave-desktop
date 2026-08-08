@@ -11,7 +11,7 @@ export const eyebrow=style({margin:0,color:"var(--text-muted)"});
 /** One region for the period controls, so they read as governing the summary below them. */
 export const periodControls=style({display:"flex",flexWrap:"wrap",alignItems:"center",justifyContent:"space-between",gap:space.field,padding:space.x3,border:"1px solid var(--border-subtle)",borderRadius:12,minInlineSize:0});
 export const periodTabs=style({display:"flex",flexWrap:"wrap",gap:space.x1,minInlineSize:0});
-export const periodNav=style({display:"flex",flexWrap:"wrap",gap:space.control,alignItems:"center",minInlineSize:0});
+export const periodNav=style({display:"flex",flexWrap:"wrap",gap:space.x3,alignItems:"center",minInlineSize:0});
 
 /** Every Analytics section shares one internal rhythm. */
 export const section=style({display:"flex",flexDirection:"column",gap:space.group,minInlineSize:0});
@@ -25,7 +25,7 @@ globalStyle(`${primary} span`,{color:"var(--text-muted)"});
  * never demands more width than it has. A fixed `repeat(3, …)` was the previous authority and could
  * not step down at all.
  */
-export const facts=style({display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(180px, 1fr))",gap:space.field,margin:0,minInlineSize:0});
+export const facts=style({display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(180px, 260px))",justifyContent:"start",gap:space.field,margin:0,minInlineSize:0});
 globalStyle(`${facts} div`,{borderTop:"1px solid var(--border-subtle)",paddingTop:10,minInlineSize:0});
 globalStyle(`${facts} dt`,{color:"var(--text-muted)"});
 globalStyle(`${facts} dd`,{margin:0,fontSize:24});

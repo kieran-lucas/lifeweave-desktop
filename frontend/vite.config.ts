@@ -19,5 +19,13 @@ export default defineConfig({
     setupFiles: ["./src/testing/setup.ts"],
     restoreMocks: true,
     clearMocks: true,
+    /*
+     * The default 5s per-test budget is comfortable when a file runs alone and is not when the whole
+     * suite runs: under thread contention the heaviest files take roughly twice their solo duration,
+     * and query-backed screens then exceed it. Raising the budget removes that dependence on machine
+     * load. It weakens nothing — a test that genuinely hangs still fails, just later.
+     */
+    testTimeout: 20_000,
+    hookTimeout: 20_000,
   },
 });

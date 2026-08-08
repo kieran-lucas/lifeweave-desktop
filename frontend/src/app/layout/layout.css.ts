@@ -1,6 +1,24 @@
-import { style, styleVariants } from "@vanilla-extract/css";
+import { globalStyle, style, styleVariants } from "@vanilla-extract/css";
 
 import { dialogInset, dialogWidth, frame, space } from "./tokens.css";
+
+/* ── Baseline native-control geometry ────────────────────────────────────────────────────────
+ *
+ * A `<button>` or `<select>` with no rule of its own renders at the UA default `padding: 1px 6px`,
+ * which reads as a cramped browser control rather than part of the application. The maximized audit
+ * found that on the week strip, the Analytics period controls, the tag actions, the planning and
+ * saved-view actions, the plan table, and every `<select>` in the Task dialog.
+ *
+ * These are deliberately **element** selectors, specificity 0-0-1, so any component that already
+ * declares its own padding still wins. Nothing here sets colour, border, radius or shadow — the
+ * controls keep exactly the appearance they had, at a size that is no longer cramped.
+ */
+globalStyle("button, select", {
+  minBlockSize: 34,
+  paddingBlock: space.x2,
+  paddingInline: space.x3,
+});
+globalStyle("textarea", { padding: space.control });
 
 /**
  * The shared layout classes (ADR 0044).
@@ -193,6 +211,9 @@ export const fieldControl = style({
   inlineSize: "100%",
   minInlineSize: 0,
   boxSizing: "border-box",
+  minBlockSize: 38,
+  paddingBlock: space.control,
+  paddingInline: space.x3,
 });
 
 export const fieldHelp = style({

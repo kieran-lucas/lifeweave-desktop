@@ -2,6 +2,8 @@ import { useId, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { listTaskLifeTargets } from "../../ipc/commands";
 import type { TaskLifeAreaView } from "../../ipc/generated/TaskLifeAreaView";
+import * as layout from "../../app/layout/layout.css";
+import * as combo from "./TaskCombobox.css";
 
 const fold = (value: string) =>
   value.normalize("NFD").replace(/\p{M}/gu, "").toLocaleLowerCase();
@@ -39,12 +41,13 @@ export function LifeAreaCombobox({
     }
   };
   return (
-    <div>
+    <div className={layout.field}>
       <label htmlFor={id}>Life area</label>
       {current?.archived && value === current.id && (
-        <p>Archived life area: {current.title}</p>
+        <p className={layout.fieldHelp}>Archived life area: {current.title}</p>
       )}
       <input
+        className={combo.input}
         id={id}
         role="combobox"
         aria-expanded={open}
@@ -83,14 +86,19 @@ export function LifeAreaCombobox({
           }
         }}
       />
-      {query.isError && <p role="alert">Life areas could not be loaded.</p>}
+      {query.isError && (
+        <p className={layout.fieldHelp} role="alert">
+          Life areas could not be loaded.
+        </p>
+      )}
       {!query.isLoading && !query.isError && open && (
-        <ul id={`${id}-listbox`} role="listbox">
+        <ul className={combo.listbox} id={`${id}-listbox`} role="listbox">
           {options.length === 0 ? (
-            <li>No matching Life areas.</li>
+            <li className={combo.empty}>No matching Life areas.</li>
           ) : (
             options.map((option, index) => (
               <li
+                className={combo.option}
                 id={`${id}-${option.id}`}
                 role="option"
                 aria-selected={value === option.id}
@@ -99,7 +107,7 @@ export function LifeAreaCombobox({
                 onClick={() => select(index)}
               >
                 {option.title}
-                <span> — {option.breadcrumb}</span>
+                <span>— {option.breadcrumb}</span>
               </li>
             ))
           )}
@@ -107,6 +115,7 @@ export function LifeAreaCombobox({
       )}
       {value && (
         <button
+          className={combo.clear}
           type="button"
           onClick={() => {
             onChange(null);

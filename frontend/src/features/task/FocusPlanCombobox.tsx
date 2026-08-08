@@ -2,6 +2,8 @@ import { useId, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { listFocusPlanTargets } from "../../ipc/commands";
 import type { TaskFocusPlanView } from "../../ipc/generated/TaskFocusPlanView";
+import * as layout from "../../app/layout/layout.css";
+import * as combo from "./TaskCombobox.css";
 
 const fold = (value: string) =>
   value.normalize("NFD").replace(/\p{M}/gu, "").toLocaleLowerCase();
@@ -44,13 +46,18 @@ export function FocusPlanCombobox({
     }
   };
   return (
-    <div>
+    <div className={layout.field}>
       <label htmlFor={id}>Focus Plan</label>
-      {disabled && <p id={`${id}-scope`}>{disabledReason}</p>}
+      {disabled && (
+        <p className={layout.fieldHelp} id={`${id}-scope`}>
+          {disabledReason}
+        </p>
+      )}
       {current?.archived && value === current.id && (
-        <p>Archived Focus Plan: {current.title}</p>
+        <p className={layout.fieldHelp}>Archived Focus Plan: {current.title}</p>
       )}
       <input
+        className={combo.input}
         id={id}
         role="combobox"
         aria-expanded={open}
@@ -90,14 +97,19 @@ export function FocusPlanCombobox({
           }
         }}
       />
-      {query.isError && <p role="alert">Focus Plans could not be loaded.</p>}
+      {query.isError && (
+        <p className={layout.fieldHelp} role="alert">
+          Focus Plans could not be loaded.
+        </p>
+      )}
       {!disabled && !query.isLoading && !query.isError && open && (
-        <ul id={`${id}-listbox`} role="listbox">
+        <ul className={combo.listbox} id={`${id}-listbox`} role="listbox">
           {options.length === 0 ? (
-            <li>No matching Focus Plans.</li>
+            <li className={combo.empty}>No matching Focus Plans.</li>
           ) : (
             options.map((option, index) => (
               <li
+                className={combo.option}
                 id={`${id}-${option.id}`}
                 role="option"
                 aria-selected={value === option.id}
@@ -106,7 +118,7 @@ export function FocusPlanCombobox({
                 onClick={() => select(index)}
               >
                 {option.title}
-                <span> — {option.lifecycle}</span>
+                <span>— {option.lifecycle}</span>
               </li>
             ))
           )}
@@ -114,6 +126,7 @@ export function FocusPlanCombobox({
       )}
       {value && !disabled && (
         <button
+          className={combo.clear}
           type="button"
           onClick={() => {
             onChange(null);

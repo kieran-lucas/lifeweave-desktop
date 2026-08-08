@@ -49,6 +49,62 @@
 - Next action: Product Owner gate. Task 51 is prohibited, unstarted, unallocated, and unrecommended.
   Full evidence is in `docs/audits/task-50-layout-final.md`.
 
+### Task 50 post-closure remediation — maximized-window layout
+
+Task 50 stays closed. A follow-up pass locked the layout for the canonical desktop presentation — a
+real Windows window **maximized to the usable work area** — and fixed every defect it surfaced.
+
+Measured environment: screen 1536×864 CSS at `devicePixelRatio` 1.25, work area 1536×816,
+**maximized inner viewport 1536×794**. Nothing is hard-coded to that size; the measured viewport is
+the authority. This also explains the anomaly the Task 50 baseline recorded but could not attribute:
+a requested 1920-wide window exceeds the 1536 CSS screen, which is why one capture read 1536.
+
+A mechanical **semantic-collision detector** was added (`e2e-tests/support/spacingAudit.ts`). Task
+50's gate proved containment — nothing overflows or overlaps — but could not prove *separation*:
+`Morning04:00–12:00` overlaps nothing and is still a blocking defect. The detector measures the gap
+between adjacent semantic units' actual text ink in the real WebView, across every screen.
+
+Across five passes it went from **239 collisions to 0** on 24 screens, with zero document overflow
+and zero main-viewport overflow throughout. Confirmed defects, all fixed at source:
+
+- **`Life areaNone` / `Focus PlanNone`** — both comboboxes rendered a bare `<div>` with an inline
+  `<label>` and `<input>`, the exact label/control concatenation the contract calls blocking. They
+  now use the shared field geometry.
+- **Today row metadata was a bare inline flow**, so the category ran into the Life-area chip. Title,
+  description, metadata and tags are now four stacked units with a wrapping metadata group; the
+  Life-area and Focus-Plan chips are bounded and wrap rather than truncate, so no information is
+  lost.
+- **`Hours`/`Minutes` in Category goals** sat against each other in inline flow; they are now two
+  field units inside one bounded group.
+- **Life Browse was badly unbalanced** — a single child card marooned far left under a centred focal
+  node. This was a Task 50 regression: `auto-fill` keeps empty tracks. Changed to `auto-fit` with a
+  capped track and centred packing.
+- **Plans' create form wrapped**, the `width:100%` input consuming the whole flex line and pushing
+  Create onto a second row. The header field now flexes from a readable basis.
+- **Analytics metrics drifted to the thirds** of a 1152 px frame; the fact grid now caps its track so
+  three metrics read as one group.
+- **~70 native buttons and every `<select>` rendered at the UA default `padding: 1px 6px`** — cramped
+  browser controls on the week strip, the Analytics period controls, tag actions, planning and
+  saved-view actions and the plan table. A baseline control geometry was added to the layout
+  authority at **element-selector specificity**, so every component that already styles itself still
+  wins and nothing gains a colour, border, radius or shadow.
+
+The previously disclosed frontend flake is now **diagnosed and fixed, not carried**: it was not
+Testing Library losing a race but vitest's default 5 s per-test budget being exceeded under
+full-suite thread contention. `testTimeout`/`hookTimeout` are raised and the Testing Library async
+window is set below them so a genuine miss still reports "unable to find" rather than a bare
+timeout. Two consecutive clean full-suite runs followed.
+
+Gates: `pnpm verify` including the layout-authority check, typecheck, **766 frontend tests across 51
+files**, production build, performance `violations: []` against the unchanged Task 49 budget
+(index 529,527 ≤ 535,000; 24 chunks), native phase 21 **22 passing**, and the maximized audit at
+**0 collisions**. Regression re-measured at 1280×720 and 1440×900: 54 rows, zero overflow, zero
+centring imbalance, and the four standard pages share one frame width at every viewport
+(952.8 / 1103.2 / 1152).
+
+Schema stays 27. No migration, Rust, IPC, capability, dependency, workflow or seal change, and no
+palette, font, icon, radius, shadow, illustration, Visual World or motion change.
+
 ## Task 49/60 — Focus Plan Activity Analytics Core (complete)
 
 - Activation baseline: `86261298ccd99204da503f508b4dfb9ac50cee04`.

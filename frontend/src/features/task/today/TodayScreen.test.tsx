@@ -927,7 +927,7 @@ describe("Today recurrence contract", () => {
     fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Linked" } });
     const chooser = screen.getByRole("combobox", { name: "Life area" });
     fireEvent.change(chooser, { target: { value: "University" } });
-    await screen.findByRole("option", { name:/University/ });
+    await screen.findByRole("option", { name: /University/ });
     fireEvent.keyDown(chooser, { key: "Enter" });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() => expect(commands.createTask).toHaveBeenCalledWith(expect.objectContaining({ life_node_id: "university" })));

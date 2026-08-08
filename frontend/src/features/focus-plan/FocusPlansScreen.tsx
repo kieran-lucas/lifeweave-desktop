@@ -386,7 +386,7 @@ export function FocusPlansScreen({
         actions={
           <form className={styles.createForm} onSubmit={handleCreate}>
             <label className={styles.srOnly} htmlFor="new-plan-title">New plan title</label>
-            <input id="new-plan-title" className={styles.input} value={createTitle} onChange={(event) => setCreateTitle(event.target.value)} placeholder="New focus plan" />
+            <input id="new-plan-title" className={styles.createInput} value={createTitle} onChange={(event) => setCreateTitle(event.target.value)} placeholder="New focus plan" />
             <button className={styles.primaryButton} disabled={status === "saving" || !createTitle.trim()}>Create</button>
           </form>
         }

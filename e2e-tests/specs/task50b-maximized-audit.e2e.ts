@@ -1,0 +1,232 @@
+import { $, browser } from "@wdio/globals";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+import { appLocalDate, seedLayoutFixture } from "../support/layoutFixture.js";
+import {
+  findCollisions,
+  maximizeAndDescribe,
+  utilization,
+  type Collision,
+} from "../support/spacingAudit.js";
+
+/**
+ * Task 50 follow-up — maximized-window layout audit.
+ *
+ * Reports rather than asserts, so it can be run repeatedly against a UI that is being fixed. The
+ * canonical presentation is a real Windows window maximized to the usable work area, not a
+ * requested pixel size; the measured viewport is the authority and nothing here hard-codes one.
+ *
+ * Run with `pnpm e2e:windows -- task50b-maximized-audit.e2e.ts`. Set
+ * `LIFEWEAVE_AUDIT_LABEL=pass2` for a later pass.
+ */
+
+const ESCAPE = String.fromCharCode(0xe00c);
+const label = process.env.LIFEWEAVE_AUDIT_LABEL ?? "pass1";
+const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
+const outputRoot = join(repoRoot, "target", "e2e-artifacts", "task-50b", label);
+
+type ScreenRecord = {
+  screen: string;
+  utilization: Awaited<ReturnType<typeof utilization>>;
+  collisions: Collision[];
+  note?: string;
+};
+
+const records: ScreenRecord[] = [];
+let environment: Awaited<ReturnType<typeof maximizeAndDescribe>> | null = null;
+
+const shot = async (name: string) => {
+  await browser.saveScreenshot(join(outputRoot, `${name}.png`));
+};
+
+async function capture(screen: string, file: string, note?: string) {
+  await browser.pause(350);
+  const record: ScreenRecord = {
+    screen,
+    utilization: await utilization(),
+    collisions: await findCollisions(screen),
+  };
+  if (note) record.note = note;
+  records.push(record);
+  await shot(file);
+}
+
+const go = async (destination: string, heading: string) => {
+  await $(`button[aria-label='${destination}']`).click();
+  await $(heading).waitForDisplayed({ timeout: 30_000 });
+  await browser.pause(300);
+};
+
+const tab = async (name: string) => {
+  await $(`#task-tab-${name}`).click();
+  await browser.pause(600);
+};
+
+const dismiss = async () => {
+  const dialog = $("[role='dialog'][aria-modal='true']");
+  if (await dialog.isExisting()) {
+    const cancel = dialog.$("button=Cancel");
+    if (await cancel.isExisting()) await cancel.click();
+    else await browser.keys(ESCAPE);
+    await browser.pause(300);
+  }
+};
+
+const tryClick = async (selector: string) => {
+  const element = $(selector);
+  if ((await element.isExisting()) && (await element.isDisplayed())) {
+    await element.click();
+    await browser.pause(500);
+    return true;
+  }
+  return false;
+};
+
+describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
+  before(async function () {
+    this.timeout(300_000);
+    mkdirSync(outputRoot, { recursive: true });
+    await browser.url("http://tauri.localhost");
+    environment = await maximizeAndDescribe();
+    const seeded = await seedLayoutFixture(await appLocalDate());
+    if (!seeded.ok) throw new Error(`fixture seeding failed at ${seeded.stage}: ${seeded.error}`);
+    await browser.url("http://tauri.localhost");
+    await browser.pause(700);
+    // Re-assert the maximized state after the reload.
+    environment = await maximizeAndDescribe();
+  });
+
+  after(() => {
+    const collisions = records.flatMap(r => r.collisions);
+    writeFileSync(
+      join(outputRoot, "audit.json"),
+      `${JSON.stringify({ label, environment, records }, null, 2)}\n`,
+      "utf8",
+    );
+    const byKind = collisions.reduce<Record<string, number>>((acc, c) => {
+      acc[c.kind] = (acc[c.kind] ?? 0) + 1;
+      return acc;
+    }, {});
+    // Printed so the run log itself carries the finding, not only the artifact.
+    console.log(`\n=== MAXIMIZED AUDIT (${label}) ===`);
+    console.log(`environment: ${JSON.stringify(environment)}`);
+    console.log(`screens: ${records.length}  collisions: ${collisions.length} ${JSON.stringify(byKind)}`);
+    for (const record of records) {
+      const u = record.utilization;
+      console.log(
+        `- ${record.screen.padEnd(24)} type=${u?.pageType ?? "-"} frame=${u?.frameWidth ?? "-"}/${u?.innerWidth ?? "-"} ratio=${u?.ratio ?? "-"} docOv=${u?.documentOverflow ?? "-"} vpOv=${u?.viewportOverflow ?? "-"} collisions=${record.collisions.length}`,
+      );
+      for (const c of record.collisions.slice(0, 8))
+        console.log(`    [${c.kind}] gap=${c.gap} space=${c.literalSpace} ${c.first} | ${c.second}  @ ${c.path}`);
+    }
+  });
+
+  it("walks every surface with the window maximized", async function () {
+    this.timeout(900_000);
+
+    await go("Today", "h1#today-heading");
+    await capture("today", "01-today");
+
+    if (await tryClick("button[aria-label='Create task']")) {
+      await capture("task-create", "02-task-create");
+      if (await tryClick("[data-dialog-surface] fieldset input[type='checkbox']"))
+        await capture("task-recurring", "03-task-recurring");
+      await dismiss();
+    }
+    if (await tryClick("button[aria-label^='Edit ']")) {
+      await capture("task-edit", "04-task-edit");
+      await dismiss();
+    }
+
+    await tab("upcoming");
+    await capture("upcoming", "05-upcoming");
+    await tab("overdue");
+    await capture("overdue", "06-overdue");
+    await tab("deadlines");
+    await capture("deadlines", "07-deadlines");
+    await tab("views");
+    await capture("saved-views", "08-saved-views");
+    await tab("today");
+
+    await go("Calendar", "h1#calendar-heading");
+    await capture("calendar", "09-calendar");
+
+    await go("Analytics", "h1#analytics-heading");
+    await capture("analytics", "10-analytics");
+
+    await go("Plans", "h1#plans-heading");
+    await capture("plans", "11-plans");
+
+    await go("Life System", "h1#life-heading");
+    await capture("life-browse", "12-life-browse");
+    if (await tryClick("button=Edit")) await capture("life-edit", "13-life-edit");
+    if (await tryClick("button=Pinned")) await capture("life-pinned", "14-life-pinned");
+    if (await tryClick("button=Browse")) {
+      if (await tryClick("button=Graph")) {
+        await capture("life-graph", "15-life-graph");
+        await tryClick("button=Graph");
+      }
+    }
+    // A documented leaf opens the Reader, which is the reading frame. Child cards carry their node
+    // id, so the leaf is reached by data attribute rather than by matching card prose.
+    const leaf = await browser.execute(() => {
+      for (const node of document.querySelectorAll<HTMLElement>("[data-life-id]"))
+        if ((node.textContent ?? "").includes("Layout Child One")) return node.dataset.lifeId ?? "";
+      return "";
+    });
+    if (leaf && (await tryClick(`[data-life-id='${leaf}']`))) {
+      await browser.pause(800);
+      await capture("life-reader", "16-life-reader");
+      if (await tryClick("button=Edit document")) {
+        await browser.pause(1200);
+        await capture("basic-editor", "17-basic-editor");
+        await tryClick("button=Back to Reader");
+        await browser.pause(500);
+      }
+      await tryClick("button*=Back to Life Browse");
+      await browser.pause(500);
+    } else {
+      records.push({ screen: "life-reader", utilization: null, collisions: [], note: "leaf card not reachable" });
+    }
+
+    await go("Settings", "h1#settings-heading");
+    await capture("settings-top", "18-settings");
+    await browser.execute(() => {
+      const main = document.querySelector("[data-app-viewport]");
+      if (main) main.scrollTop = main.scrollHeight / 2;
+    });
+    await capture("settings-tags", "19-settings-tags");
+    await browser.execute(() => {
+      const main = document.querySelector("[data-app-viewport]");
+      if (main) main.scrollTop = main.scrollHeight;
+    });
+    await capture("settings-foundation", "20-settings-foundation");
+    await browser.execute(() => {
+      const main = document.querySelector("[data-app-viewport]");
+      if (main) main.scrollTop = 0;
+    });
+
+    if (await tryClick("button[aria-label^='Search']")) {
+      await capture("search", "21-search");
+      await tryClick("button[aria-label='Close search']");
+    }
+    if (await tryClick("button=Keyboard shortcuts")) {
+      await capture("keyboard-help", "22-keyboard-help");
+      await dismiss();
+    }
+    if (await tryClick("button=Create backup")) {
+      await browser.pause(3000);
+      await capture("backup-settings", "23-backup");
+    }
+
+    // Collapsed sidebar is the second canonical shell state.
+    await tryClick("button[aria-label='Collapse sidebar']");
+    await go("Today", "h1#today-heading");
+    await capture("today-collapsed", "24-today-collapsed");
+    await go("Analytics", "h1#analytics-heading");
+    await capture("analytics-collapsed", "25-analytics-collapsed");
+    await tryClick("button[aria-label='Expand sidebar']");
+  });
+});

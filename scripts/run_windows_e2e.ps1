@@ -56,7 +56,8 @@ $allPhases = @(
 # matrix at three viewports and reports rather than asserts, so it belongs to the Task 50 audit
 # rather than to the release gate the default full run represents.
 $auxiliaryPhases = @(
-  'task50-layout-capture.e2e.ts'
+  'task50-layout-capture.e2e.ts',
+  'task50b-maximized-audit.e2e.ts'
 )
 if (-not $Phases -or $Phases.Count -eq 0) { $Phases = $allPhases }
 foreach ($phase in $Phases) {

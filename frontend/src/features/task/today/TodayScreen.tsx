@@ -895,9 +895,15 @@ export function TodayScreen({
                             if (e.key === "Enter") begin(item, e.currentTarget);
                           }}
                         >
-                          <div>
+                          {/*
+                            Title, description, metadata and tags are four stacked units, and the
+                            metadata row is a wrapping flex group. Before this they were a bare
+                            inline flow, so the category ran straight into the Life-area chip.
+                          */}
+                          <div className={styles.rowContent}>
                             <strong>{item.title}</strong>
-                            <p>{item.description}</p>
+                            <p className={styles.rowDescription}>{item.description}</p>
+                            <div className={styles.rowMeta}>
                             <span className={styles.category}>
                               <CategoryIcon
                                 iconKey={item.category_icon_key}
@@ -913,6 +919,7 @@ export function TodayScreen({
                               ) : (
                                 <button
                                   type="button"
+                                  className={styles.rowChip}
                                   aria-label={`Life area: ${item.life_area.title}. ${item.life_area.breadcrumb}`}
                                   onClick={(event) => {
                                     event.stopPropagation();
@@ -931,6 +938,7 @@ export function TodayScreen({
                               ) : (
                                 <button
                                   type="button"
+                                  className={styles.rowChip}
                                   aria-label={`Focus Plan: ${item.focus_plan.title}`}
                                   onClick={(event) => {
                                     event.stopPropagation();
@@ -956,8 +964,9 @@ export function TodayScreen({
                               </span>
                             )}
                             {item.kind === "recurring" && (
-                              <span aria-label="Recurring task"> ↻</span>
+                              <span aria-label="Recurring task">↻</span>
                             )}
+                            </div>
                             <TagChipList tags={item.tags} />
                           </div>
                           {/*

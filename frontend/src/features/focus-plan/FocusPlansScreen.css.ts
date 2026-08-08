@@ -10,7 +10,7 @@ import { splitWorkspace } from "../../app/layout/layout.css";
 
 export const heading = style({ margin: 0, fontSize: "2rem" });
 export const lede = style({ margin: "6px 0 0", color: "var(--text-muted, #666)" });
-export const createForm = style({ display: "flex", flexWrap: "wrap", gap: space.control, minInlineSize: 0 });
+export const createForm = style({ display: "flex", flexWrap: "wrap", alignItems: "center", gap: space.control, minInlineSize: 0 });
 export const portfolios = style({ display: "flex", gap: "6px", flexWrap: "wrap" });
 export const tab = style({ minHeight: "40px", padding: "8px 12px", border: "1px solid var(--border-subtle)", borderRadius: "8px", background: "var(--surface)", color: "inherit", cursor: "pointer", selectors: { '&[aria-selected="true"], &[aria-pressed="true"]': { outline: "2px solid var(--accent)", outlineOffset: "1px" }, "&:disabled": { opacity: 0.5, cursor: "not-allowed" } } });
 // The list rail leads and the detail flexes, so the columns are supplied in that order.
@@ -25,6 +25,12 @@ export const tagFieldset = style({ display: "flex", flexWrap: "wrap", gap: "10px
 export const checkLabel = style({ display: "inline-flex", gap: "6px", alignItems: "center" });
 export const twoColumns = style({ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "12px", '@media': { '(max-width: 700px)': { gridTemplateColumns: "1fr" } } });
 export const input = style({ width: "100%", boxSizing: "border-box", minHeight: "40px", padding: "8px 10px", border: "1px solid var(--border-subtle)", borderRadius: "8px", background: "var(--surface)", color: "inherit", font: "inherit" });
+/*
+ * The header create field. The shared `input` is `width:100%`, which made it consume the whole flex
+ * line and pushed Create onto a second row under the heading. Here it flexes from a readable basis
+ * instead, so the field and its button stay one control group.
+ */
+export const createInput = style([input, { inlineSize: "auto", flex: "1 1 16rem", minInlineSize: "12rem", maxInlineSize: "24rem" }]);
 export const textarea = style([input, { minHeight: "94px", resize: "vertical" }]);
 export const primaryButton = style({ minHeight: "40px", padding: "8px 14px", border: 0, borderRadius: "8px", background: "var(--accent)", color: "#fff", fontWeight: 700, cursor: "pointer", selectors: { "&:disabled": { opacity: 0.5, cursor: "not-allowed" } } });
 export const secondaryButton = style({ minHeight: "36px", padding: "6px 10px", border: "1px solid var(--border-subtle)", borderRadius: "8px", background: "transparent", color: "inherit", cursor: "pointer", selectors: { "&:disabled": { opacity: 0.5, cursor: "not-allowed" } } });

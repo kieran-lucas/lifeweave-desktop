@@ -22,6 +22,21 @@ export const time=style({fontVariantNumeric:"tabular-nums",color:"var(--text-mut
  * children.
  */
 export const row=style({display:"grid",gridTemplateColumns:"minmax(0,1fr) auto",gap:space.x3,alignItems:"start",padding:"8px 0",borderBottom:"1px solid var(--border-subtle)",cursor:"pointer",minInlineSize:0});
+/*
+ * The row's content column. Title, description, metadata and tags are four stacked units; the
+ * metadata itself is a wrapping group with a parent gap, so the category can never run into the
+ * Life-area chip the way it did in bare inline flow.
+ */
+export const rowContent=style({display:"flex",flexDirection:"column",alignItems:"flex-start",gap:space.control,minInlineSize:0});
+export const rowDescription=style({margin:0,color:"var(--text-muted)"});
+export const rowMeta=style({display:"flex",flexWrap:"wrap",alignItems:"center",gap:space.control,minInlineSize:0});
+/*
+ * Life-area and Focus-Plan chips are native buttons. They are bounded so a long Plan title stops
+ * stretching one metadata chip across the whole row, and they *wrap* rather than truncate — the
+ * title stays fully readable, which an ellipsis would have taken away from sighted users even
+ * though the accessible name kept it.
+ */
+export const rowChip=style({maxInlineSize:"28rem",textAlign:"left",overflowWrap:"anywhere",border:"1px solid var(--border-subtle)",borderRadius:"0.5rem",background:"transparent",color:"inherit",padding:"0.2rem 0.5rem",cursor:"pointer",selectors:{"&:focus-visible":{outline:"3px solid var(--focus-ring)",outlineOffset:2}}});
 export const rowActions=style({display:"flex",flexWrap:"wrap",alignItems:"center",justifyContent:"flex-end",gap:space.control,minInlineSize:0});
 export const rowEditButton=style({border:"1px solid var(--border-subtle)",borderRadius:"0.5rem",background:"transparent",color:"inherit",padding:"0.25rem 0.55rem",cursor:"pointer",whiteSpace:"nowrap",selectors:{"&:focus-visible":{outline:"3px solid var(--focus-ring)",outlineOffset:2}}});
 export const selected=style({outline:"2px solid var(--focus-ring)"});

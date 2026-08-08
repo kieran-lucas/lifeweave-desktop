@@ -498,12 +498,19 @@ phase 21                                 passes standalone and as the tail of th
 125% and 150% scaling: **NOT RUN**. Window resizing through WebDriver is not physical DPI evidence
 and is not claimed as such. This joins the existing Task 40 physical Narrator/DPI evidence debt.
 
-### One observed frontend flake, not reproduced
+### One observed frontend flake — since diagnosed and fixed
 
 During one full-suite run, two Focus Plan tests in `TodayScreen.test.tsx` failed while that file
-took 41 s against its usual 19 s. They passed in isolation immediately afterwards and in three
-subsequent full-suite runs, and no assertion in either test touches layout. Recorded as
-load-related flakiness rather than silently dropped; no product change was made for it.
+took 41 s against its usual 19 s. They passed in isolation and in three subsequent full-suite runs,
+and no assertion in either test touches layout, so it was recorded here as load-related flakiness
+rather than silently dropped.
+
+**Resolved in the maximized-window remediation** (see `docs/STATUS.md`). The cause was not Testing
+Library losing a race: it was vitest's default **5 s per-test budget** being exceeded under
+full-suite thread contention, which killed the test with a bare timeout and no element detail.
+`testTimeout`/`hookTimeout` are raised and the Testing Library async window is set below them, so a
+genuine miss reports "unable to find" again. Two consecutive clean full-suite runs followed. No
+assertion was weakened.
 
 ### Not machine-assertable
 
