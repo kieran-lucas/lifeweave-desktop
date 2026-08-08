@@ -14,21 +14,23 @@
 
 - [x] Record ADR 0045 and Slice 041 without any product code change.
 - [x] Report the Task 51 prohibition contradiction rather than reconciling it silently.
-- [ ] Update PROJECT_STATE, START_HERE, STATUS and ROADMAP so the ledger agrees with the
+- [x] Update PROJECT_STATE, START_HERE, STATUS and ROADMAP so the ledger agrees with the
       authorized state.
-- [ ] Regenerate the spec index and coverage matrix; keep `pnpm verify` green.
+- [x] Regenerate the spec index and coverage matrix; keep `pnpm verify` green.
 
 ## Stage C — State matrix
 
-- [ ] Extend the Task 50 census into the Task 51 visual state matrix.
-- [ ] Cover Today populated, dense, selected, completed, timer-running, empty, create, edit,
+- [x] Extend the Task 50 census into the Task 51 visual state matrix.
+- [x] Cover Today populated, dense, selected, completed, timer-running, empty, create, edit,
       recurring, Upcoming, Overdue, Deadlines and Saved Views.
-- [ ] Cover Calendar, Analytics, Focus Plans, Life Browse/Edit/Pinned/Graph/Reader/Basic editor.
-- [ ] Cover Narrative Reader, Studio and representative Visual Worlds — not covered by the existing
+- [x] Cover Calendar, Analytics, Focus Plans, Life Browse/Edit/Pinned/Graph/Reader/Basic editor.
+- [x] Cover Narrative Reader, Studio and representative Visual Worlds — not covered by the existing
       walk.
-- [ ] Cover Search, Settings, Backup, dialogs, destructive confirmation, keyboard help, tag picker,
+- [x] Cover Search, Settings, Backup, dialogs, destructive confirmation, keyboard help, tag picker,
       menus and popovers.
-- [ ] Cover dark mode, forced colors and reduced motion as global axes.
+- [x] Cover dark mode, forced colors and reduced motion as global axes.
+- [x] Record that the four Narrative Visual Worlds are an approved per-world palette to harmonise,
+      not stray colour to delete.
 
 ## Stage D — Prototype infrastructure
 
