@@ -703,6 +703,36 @@ export function TodayScreen({
     The inspector reads the same `items` projection the timeline renders, so opening it costs no
     query, no IPC command and no new projection — only a lookup.
   */
+  /*
+   * Selection provenance, for focus handling.
+   *
+   * The inspector was pointer-only until this change: the row's `Enter` already opens the editor
+   * (a Task 50 gesture that must not change), so no key selected a task and keyboard users could
+   * not reach the inspector at all. `Space` now selects, which is the remaining natural key on a
+   * focusable row and collides with nothing.
+   *
+   * `openedByKeyboard` decides whether focus moves into the inspector. A pointer user should not
+   * have focus yanked out from under them; a keyboard user must not be left on a row that has just
+   * scrolled off-screen behind the stacked inspector.
+   */
+  const selectionOpener = useRef<HTMLElement | null>(null);
+  const [openedByKeyboard, setOpenedByKeyboard] = useState(false);
+  const selectTask = (id: string, element: HTMLElement | null, viaKeyboard: boolean) => {
+    selectionOpener.current = element;
+    setOpenedByKeyboard(viaKeyboard);
+    setSelected(id);
+  };
+  /** Close and return focus where the user left it, never to `body`. */
+  const closeInspector = () => {
+    const opener = selectionOpener.current;
+    selectionOpener.current = null;
+    setOpenedByKeyboard(false);
+    setSelected(null);
+    requestAnimationFrame(() => {
+      if (opener?.isConnected) opener.focus({ preventScroll: false });
+    });
+  };
+
   const selectedItem = useMemo(
     () => (items.data ?? []).find((entry) => entry.id === selected) ?? null,
     [items.data, selected],
@@ -923,10 +953,16 @@ export function TodayScreen({
                           data-task-id={item.kind === "one_off" ? item.id : undefined}
                           data-series-id={item.kind === "recurring" ? item.series_id : undefined}
                           data-original-local-date={item.kind === "recurring" ? item.original_local_date : undefined}
-                          onClick={() => setSelected(item.id)}
+                          aria-current={selected === item.id ? "true" : undefined}
+                          onClick={(e) => selectTask(item.id, e.currentTarget, false)}
                           onDoubleClick={(e) => begin(item, e.currentTarget)}
                           onKeyDown={(e) => {
+                            // Enter keeps opening the editor — a Task 50 gesture, unchanged.
                             if (e.key === "Enter") begin(item, e.currentTarget);
+                            else if (e.key === " " || e.key === "Spacebar") {
+                              e.preventDefault();
+                              selectTask(item.id, e.currentTarget, true);
+                            }
                           }}
                         >
                           {/*
@@ -1099,7 +1135,8 @@ export function TodayScreen({
         <Suspense fallback={null}>
         <TaskInspector
           item={selectedItem}
-          onClose={() => setSelected(null)}
+          focusOnOpen={openedByKeyboard}
+          onClose={closeInspector}
           onLifeNavigate={onLifeNavigate}
           onFocusPlanNavigate={onFocusPlanNavigate}
         />

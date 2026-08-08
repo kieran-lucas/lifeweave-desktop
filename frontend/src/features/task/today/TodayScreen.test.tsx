@@ -1528,3 +1528,66 @@ describe("Today recurrence contract", () => {
     });
   });
 });
+
+/*
+ * Inspector keyboard semantics.
+ *
+ * The inspector was pointer-only when it landed: the row's `Enter` opens the editor, a Task 50
+ * gesture that must not change, so no key reached the inspector at all. These contracts pin the
+ * behaviour that closed that gap, because it is the kind of thing a later visual refactor silently
+ * removes.
+ */
+describe("Today inspector keyboard semantics", () => {
+  it("opens the inspector with Space and leaves Enter opening the editor", async () => {
+    renderToday();
+    const row = await screen.findByRole("listitem", { name: /Morning review/i }).catch(() => null)
+      ?? (await screen.findAllByRole("listitem"))[0]!;
+
+    fireEvent.keyDown(row, { key: " " });
+    const inspector = await screen.findByRole("complementary", { name: /^Details for/ });
+    expect(inspector).toBeInTheDocument();
+    // The row advertises selection to assistive technology, not only through its tint.
+    expect(row).toHaveAttribute("aria-current", "true");
+  });
+
+  it("moves focus to the inspector heading when opened by keyboard", async () => {
+    renderToday();
+    const row = (await screen.findAllByRole("listitem"))[0]!;
+    fireEvent.keyDown(row, { key: " " });
+    const inspector = await screen.findByRole("complementary", { name: /^Details for/ });
+    const heading = within(inspector).getByRole("heading", { level: 2 });
+    // Programmatic target only: it must never enter the tab order.
+    expect(heading).toHaveAttribute("tabindex", "-1");
+    await waitFor(() => expect(heading).toHaveFocus());
+  });
+
+  it("does not steal focus when opened by pointer", async () => {
+    renderToday();
+    const row = (await screen.findAllByRole("listitem"))[0]!;
+    fireEvent.click(row);
+    const inspector = await screen.findByRole("complementary", { name: /^Details for/ });
+    const heading = within(inspector).getByRole("heading", { level: 2 });
+    expect(heading).not.toHaveFocus();
+  });
+
+  it("restores focus to the originating row when closed", async () => {
+    renderToday();
+    const row = (await screen.findAllByRole("listitem"))[0]!;
+    fireEvent.keyDown(row, { key: " " });
+    const inspector = await screen.findByRole("complementary", { name: /^Details for/ });
+    fireEvent.click(within(inspector).getByRole("button", { name: "Close details" }));
+    await waitFor(() => expect(row).toHaveFocus());
+  });
+
+  it("closes on Escape and restores focus", async () => {
+    renderToday();
+    const row = (await screen.findAllByRole("listitem"))[0]!;
+    fireEvent.keyDown(row, { key: " " });
+    const inspector = await screen.findByRole("complementary", { name: /^Details for/ });
+    fireEvent.keyDown(inspector, { key: "Escape" });
+    await waitFor(() =>
+      expect(screen.queryByRole("complementary", { name: /^Details for/ })).toBeNull(),
+    );
+    await waitFor(() => expect(row).toHaveFocus());
+  });
+});

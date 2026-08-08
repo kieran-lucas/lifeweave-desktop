@@ -45,17 +45,21 @@ type Facet = "note" | "details" | "time" | "links";
 
 export function TaskInspector({
   item,
+  focusOnOpen,
   onClose,
   onLifeNavigate,
   onFocusPlanNavigate,
 }: {
   item: TodayItem;
+  /** True when a keyboard action opened this; see the focus policy on `heading` below. */
+  focusOnOpen: boolean;
   onClose: () => void;
   onLifeNavigate?: ((id: string) => void) | undefined;
   onFocusPlanNavigate?: ((id: string) => void) | undefined;
 }) {
   const [facet, setFacet] = useState<Facet>("note");
   const root = useRef<HTMLElement>(null);
+  const heading = useRef<HTMLHeadingElement>(null);
 
   /*
    * Bring the inspector into view when it opens *stacked*.
@@ -75,7 +79,20 @@ export function TaskInspector({
     if (!node) return;
     const stacked = node.getBoundingClientRect().top > window.innerHeight - 80;
     if (stacked) node.scrollIntoView({ block: "nearest" });
-  }, [item.id]);
+
+    /*
+     * Focus follows the user's own modality.
+     *
+     * Keyboard selection moves focus to the heading, which carries `tabIndex={-1}` so it is a
+     * programmatic target and never enters the tab order. Without this a keyboard user at a narrow
+     * width scrolls the inspector into view while their focus stays on a row that just went
+     * off-screen — the exact stranding the brief rules out.
+     *
+     * Pointer selection deliberately does not move focus: taking it would be a surprise, and the
+     * inspector is contextual detail, not a dialog.
+     */
+    if (focusOnOpen) heading.current?.focus({ preventScroll: true });
+  }, [item.id, focusOnOpen]);
 
   const linkCount = (item.life_area ? 1 : 0) + (item.focus_plan ? 1 : 0);
   /*
@@ -107,7 +124,22 @@ export function TaskInspector({
   ];
 
   return (
-    <aside ref={root} className={styles.inspector} aria-label={`Details for ${item.title}`}>
+    /*
+     * A labelled region, not a dialog. It is non-modal in both presentations, so it gets no
+     * `role="dialog"`, no focus trap and no `aria-modal` — Escape simply closes it, which matches
+     * the application's existing convention without pretending the surface is modal.
+     */
+    <aside
+      ref={root}
+      className={styles.inspector}
+      aria-label={`Details for ${item.title}`}
+      onKeyDown={(event) => {
+        if (event.key === "Escape") {
+          event.stopPropagation();
+          onClose();
+        }
+      }}
+    >
       <div className={styles.inspectorHeader}>
         <span className={styles.inspectorContext}>
           <Icon d={iconPlans} size={15} />
@@ -123,7 +155,9 @@ export function TaskInspector({
         </button>
       </div>
 
-      <h2 className={styles.inspectorTitle}>{item.title}</h2>
+      <h2 ref={heading} className={styles.inspectorTitle} tabIndex={-1}>
+        {item.title}
+      </h2>
 
       {/* Low-chrome inline navigation: text, an accent underline, and the hairline it sits on. */}
       <div className={styles.inspectorTabs} role="tablist" aria-label="Task facets">
