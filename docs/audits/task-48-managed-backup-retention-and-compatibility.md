@@ -6,7 +6,7 @@
 - Prior feature checkpoint: `1c42ac5358579dc8795e4b7c1b76bc004b0269f1`.
 - Activation commit: `a0c5dea1e2767c43819923a2bfaa7d16ba207e6b`.
 - Product checkpoint: `51e24c54f12f0236ecba1bd81936bc11db59f8ac`.
-- Closure commit: `PENDING_CLOSURE_COMMIT`.
+- Closure commit: `fff4a08d0877440532c15bfe2a9fd0ab5bd9182d`.
 - Governing decision/specification: ADR 0042 and
   `specs/038-managed-backup-retention-compatibility`.
 - Activation preflight proved a clean `main` with `HEAD == origin/main ==` the baseline.
