@@ -1,0 +1,121 @@
+{
+  "budget_version": 2,
+  "task": 51,
+  "supersedes": "docs/audits/task-49-performance-budgets.json",
+  "supersedes_note": "Task 51 supersedes Task 49. The index.js locked ceiling is raised from 535,000 to 550,000 by explicit Product Owner decision; BasicLeafEditor.js and markdown.js are unchanged.",
+  "measured_at_commit": "8acd525",
+  "baseline_evidence": "docs/audits/task-51-visual-lock.md",
+  "main_chunk": "index.js",
+  "unknown_chunk_raw_bytes_threshold": 10000,
+  "rules": {
+    "chunk_identity": "emitted file name with only the terminal content hash stripped",
+    "missing_expected_chunk": "fails",
+    "unknown_chunk_at_or_above_threshold": "fails",
+    "unknown_chunk_below_threshold": "reported as untracked_small_chunks, does not fail",
+    "duplicate_normalized_identity": "fails",
+    "chunk_count_mismatch": "fails"
+  },
+  "formulas": {
+    "total_raw_maximum": "final + max(8192, ceil(final * 0.0075))",
+    "total_gzip_maximum": "final + max(4096, ceil(final * 0.0100))",
+    "chunk_maximum": "final + max(1024, ceil(final * 0.0200))",
+    "clamp": "index.js is clamped by the Task 51 locked ceiling of 550000; BasicLeafEditor.js and markdown.js remain clamped by their unchanged locked ceilings",
+    "arithmetic": "integer ceil"
+  },
+  "locked_ceilings": {
+    "index.js": 550000,
+    "BasicLeafEditor.js": 490000,
+    "markdown.js": 129000,
+    "note": "index.js raised 535000 -> 550000 under Task 51, authorized by the Product Owner on measured evidence: the canonical V2 Today context inspector and its shared split wiring. Three legitimate reclaims were applied before the request (tree-shakeable icons -3438, lazy inspector -6151, co-located inspector styles -426); the residual eager cost was 381 bytes over the old ceiling. Raising a maximum remains a Product Owner decision supported by measurement, per docs/PERFORMANCE_BUDGETS.md."
+  },
+  "aggregates": {
+    "main_js_bytes": {
+      "observed": 535381,
+      "maximum": 546089,
+      "derivation": "535381 + max(1024, ceil(535381 * 0.0200)) = 546089, clamped down to the Task 51 locked 550000"
+    },
+    "total_js_bytes": {
+      "observed": 1254564,
+      "maximum": 1263974,
+      "derivation": "1254564 + max(8192, ceil(1254564 * 0.0075))"
+    },
+    "total_js_gzip_bytes": {
+      "observed": 385429,
+      "maximum": 389525,
+      "derivation": "385429 + max(4096, ceil(385429 * 0.0100))"
+    },
+    "expected_chunk_count": 25
+  },
+  "chunks": {
+    "BasicLeafEditor.js": {
+      "observed_raw_bytes": 52362,
+      "observed_gzip_bytes": 17086,
+      "maximum_raw_bytes": 53410,
+      "class": "lazy",
+      "owner": "Basic Leaf editor",
+      "derivation": "52362 + max(1024, ceil(52362 * 0.0200))"
+    },
+    "FocusPlansScreen.js": {
+      "observed_raw_bytes": 18549,
+      "observed_gzip_bytes": 5168,
+      "maximum_raw_bytes": 19573,
+      "class": "lazy",
+      "owner": "Focus Plans",
+      "derivation": "18549 + max(1024, ceil(18549 * 0.0200))"
+    },
+    "NarrativeCanvasStudio.js": {
+      "observed_raw_bytes": 20074,
+      "observed_gzip_bytes": 5936,
+      "maximum_raw_bytes": 21098,
+      "class": "lazy",
+      "owner": "Narrative Canvas studio",
+      "derivation": "20074 + max(1024, ceil(20074 * 0.0200))"
+    },
+    "TaskSavedViewsPanel.js": {
+      "observed_raw_bytes": 16570,
+      "observed_gzip_bytes": 4970,
+      "maximum_raw_bytes": 17594,
+      "class": "lazy",
+      "owner": "Task Saved Views",
+      "derivation": "16570 + max(1024, ceil(16570 * 0.0200))"
+    },
+    "dist.js": {
+      "observed_raw_bytes": 390833,
+      "observed_gzip_bytes": 120575,
+      "maximum_raw_bytes": 398650,
+      "class": "lazy",
+      "owner": "Basic Leaf editor vendor core",
+      "derivation": "390833 + max(1024, ceil(390833 * 0.0200))"
+    },
+    "index.js": {
+      "observed_raw_bytes": 535381,
+      "observed_gzip_bytes": 162877,
+      "maximum_raw_bytes": 546089,
+      "class": "startup",
+      "owner": "application shell and eager screens",
+      "derivation": "535381 + max(1024, ceil(535381 * 0.0200))"
+    },
+    "markdown.js": {
+      "observed_raw_bytes": 116541,
+      "observed_gzip_bytes": 32939,
+      "maximum_raw_bytes": 118872,
+      "class": "lazy",
+      "owner": "Markdown interoperability pipeline",
+      "derivation": "116541 + max(1024, ceil(116541 * 0.0200))"
+    },
+    "useQuery.js": {
+      "observed_raw_bytes": 20834,
+      "observed_gzip_bytes": 6883,
+      "maximum_raw_bytes": 21858,
+      "class": "startup",
+      "owner": "TanStack Query projection cache",
+      "derivation": "20834 + max(1024, ceil(20834 * 0.0200))"
+    }
+  },
+  "task_51_notes": [
+    "The V2 production context inspector is lazy: TaskInspector.js 7.34 kB and TaskInspector.css 2.86 kB load only when a task is selected, so both sit below the 10,000-byte tracking threshold and are reported under untracked_small_chunks.",
+    "Net eager cost of the whole inspector feature is +2,268 bytes against the session baseline of 533,113.",
+    "Headroom against the new ceiling at this measurement is 550000 - 535381 = 14619 bytes. It is not free space: tree shaking, named imports and lazy secondary surfaces remain required.",
+    "expected_chunk_count 24 -> 25. The added chunk is TaskInspector, the lazily-loaded Today context inspector. A new chunk below the 10,000-byte tracking threshold does not fail the gate on size, but the count is pinned deliberately so an unnoticed extra chunk still does."
+  ]
+}
