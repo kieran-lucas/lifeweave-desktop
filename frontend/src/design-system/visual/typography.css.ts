@@ -7,11 +7,14 @@
  * family at different weights. The brief makes v2 the source of truth and forbids adding detail the
  * image does not contain, so this file no longer declares or loads Literata.
  *
- * Consequence for the dependency set: `@fontsource-variable/literata` is now **unused**, and with
- * it the 106,560 bytes of woff2 subsets that were being emitted. It is left installed rather than
- * removed unilaterally, because dropping an editorial face is a Product Owner decision about
- * Reader and Narrative as much as about Today — it is raised in the change report, not decided
- * here.
+ * `@fontsource-variable/literata` has been **removed** from the dependency set by Product Owner
+ * decision, after a full-repository search confirmed zero imports. That deletes the 106,560 bytes
+ * of woff2 subsets the prototype build was emitting. If a separately approved Reader or Narrative
+ * design later earns an editorial face, it is reintroduced then, with evidence — not carried as a
+ * speculative dependency now.
+ *
+ * There is consequently **no `@font-face` anywhere in the application**: every surface uses the
+ * platform font, and `font-src 'self'` has nothing to load.
  */
 
 /**
