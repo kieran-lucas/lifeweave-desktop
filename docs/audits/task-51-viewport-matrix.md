@@ -83,11 +83,55 @@ Inspected in the rendered captures rather than inferred:
 - **The workspace tab strip wraps** rather than forcing horizontal scroll, which is what keeps the
   document-overflow invariant true at the narrow end.
 
-## 5. What this does not yet cover
+## 5. Selected state — the production inspector
 
-- The inspector was **not** exercised at the small viewports: the Task 50 walk does not select a
-  task, so every row above is the unselected composition. Inspector behaviour below roughly 1180 px
-  is therefore unverified in production, and is the first thing to check when the next surface work
-  touches Today.
+The walk now selects a real seeded task and exercises the production inspector and all four of its
+facets. Selection is semantic: it clicks the row **title**, because the row's Life-area and
+Focus-Plan chips are buttons that correctly `stopPropagation`, and on this fixture a long
+Focus-Plan chip sits across the row's centre — a naive centre-click selected nothing and the first
+run failed on exactly that. The wait is on `aside[aria-label^="Details for"]`, which exists only in
+`features/task/today/TaskInspector.tsx`, so the evidence cannot accidentally pass against the
+isolated prototype.
+
+### State coverage — explicit, not inferred
+
+| Viewport | achieved | Today unselected | Today selected + inspector | facets | Result |
+|---|---|---:|---:|---:|---|
+| 1536×794 | 1536×794 | YES | YES | Note · Details · Time · Links | PASS |
+| 1280×800 | 1279×800 | YES | YES | Note · Details · Time · Links | PASS |
+| 1280×720 | 1280×720 | YES | YES | Note · Details · Time · Links | PASS |
+| 960×640 | 959×639 | YES | YES | Note · Details · Time · Links | PASS |
+| 1440×900 | — | NOT TESTED | NOT TESTED | — | NOT ACHIEVABLE |
+
+28 screens per run, **0 semantic collisions, 0 document overflow, 0 workspace overflow** at every
+achievable viewport.
+
+### One real defect, found by rendering it
+
+At 960 × 640 the row highlighted and **nothing else appeared**. `splitWorkspace` drops to a single
+column below 900 px of container width, so the inspector was stacking beneath the entire timeline:
+real, correctly ordered, and completely off-screen. Selecting a task looked like it had failed.
+
+The geometry numbers were clean throughout — stacking is perfectly valid layout — so this was only
+visible by looking at the capture. It is the clearest argument in this task for rendering evidence
+rather than reading CSS.
+
+Fixed with two changes, neither of which reorders anything:
+
+1. **The inspector scrolls itself into view when it opens stacked.** Task 50 stacks in DOM order
+   precisely so reading and focus order survive narrow widths, so CSS `order` was rejected. The
+   scroll uses `block: "nearest"`, a no-op in the side-by-side layout, and the default instant
+   behaviour needs no reduced-motion branch.
+2. **The separator follows the layout.** A leading vertical hairline on a full-width stacked block
+   reads as a stray line; the same container query the split uses switches it to a top rule, and
+   drops `position: sticky`, which is only meaningful beside the timeline.
+
+Re-audited at 960 × 640 after the fix: inspector visible with its title, close control, all four
+facet tabs and its body; 28 screens, 0 collisions, 0 overflow.
+
+## 6. What this does not yet cover
+
 - Physical Windows DPI scaling at 125% / 150% remains **NOT RUN**; every row above is at the
   system's own 1.25 device pixel ratio, which is not the same test.
+- Keyboard focus order through the inspector, and focus restoration on close, have not been
+  measured — only the close control's presence and accessible name.
