@@ -200,6 +200,30 @@ only. Decorative art is `pointer-events: none`, `aria-hidden`, and carries no se
 occupies empty space and retreats as information density rises: a dense Today shows less ambient art
 than a quiet Life surface, and Today and Reader require no continuous animation at all.
 
+### 10.1 The art hue is light blue
+
+Explicit Product Owner direction: **the art vibe is light blue.** This is the one place in Task 51
+where a hue deliberately departs from the reference's warm-neutral plane.
+
+It is confined to the three ambient roles — `ambientContour`, `ambientGlowPrimary`,
+`ambientGlowSecondary` — and touches no canvas, surface, text, border, accent or state colour. The
+separation is what makes it work: because the content plane stays warm, a cool light-blue
+atmosphere reads as air and distance *behind* the interface, rather than as a second theme
+competing with it. A light-blue canvas would instead read as the cool blue-grey system Task 51 is
+replacing.
+
+Constraints that still bind it:
+
+- hue sits near **238** — a true light blue, held clear of the 270–286 blue-violet the interface
+  accent occupies, so atmosphere is never mistaken for selection;
+- every ambient value stays within roughly **1.15:1 of the canvas** in light and **1.3:1** in dark,
+  so the art is perceived peripherally and never competes with information;
+- chroma may exceed the rest of the palette, because at these lightnesses a lower chroma reads as
+  dirty grey rather than as blue — this is the one sanctioned chroma exception;
+- it retreats under density and disappears entirely behind a dense Today, exactly as any other
+  ambient treatment must;
+- it introduces no animation requirement of its own.
+
 Any approved ambient movement animates only transform and opacity, at small amplitude and long
 period, and stops when its surface is not visible, when the window is inactive where detectable, or
 when reduced motion is requested.

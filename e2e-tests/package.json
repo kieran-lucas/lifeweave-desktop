@@ -8,6 +8,7 @@
     "@wdio/mocha-framework": "9.27.1",
     "@wdio/native-utils": "2.5.0",
     "@wdio/spec-reporter": "9.27.1",
+    "@wdio/visual-service": "^9.3.0",
     "expect-webdriverio": "^5.4.0",
     "typescript": "^5.9.3"
   }

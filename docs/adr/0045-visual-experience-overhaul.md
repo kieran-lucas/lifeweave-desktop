@@ -161,7 +161,7 @@ never exceeds the system preference and never produces a disorienting jump in pl
 This aligns the implementation with `docs/ACCESSIBILITY_AND_INPUT.md`, which already forbids zeroing
 every duration.
 
-### 7. Art is bounded and retreating
+### 7. Art is bounded, retreating, and light blue
 
 Baseline art is static SVG contours, soft gradients, sparse dots and pastel graph nodes, built from
 CSS, SVG and ordinary DOM. No WebGL engine, no particle field, no looping video, no animated blur,
@@ -169,6 +169,18 @@ no character art, no wallpaper. Art occupies empty space and reduces as informat
 Today and Reader carry no required continuous animation. Any approved ambient movement animates only
 transform and opacity, is bounded in amplitude and period, and stops when its surface is hidden or
 the window is inactive.
+
+**The art hue is light blue**, by explicit Product Owner direction recorded during activation. It is
+scoped to the three ambient roles and reaches no canvas, surface, text, border, accent or state
+colour. The scoping is the decision: the content plane stays warm-neutral as the reference has it,
+and a cool light-blue atmosphere therefore reads as air behind the interface. Applying the same hue
+to the canvas would reproduce the cool blue-grey system this slice exists to replace.
+
+Ambient hue sits near 238, deliberately clear of the 270–286 blue-violet the interface accent
+occupies, so atmosphere can never be mistaken for selection. Ambient chroma is permitted to exceed
+the rest of the palette — the single sanctioned chroma exception — because at these lightnesses a
+lower chroma reads as dirty grey rather than as blue. Every ambient value stays within roughly
+1.15:1 of the canvas in light and 1.3:1 in dark.
 
 ### 8. The window stays opaque
 
