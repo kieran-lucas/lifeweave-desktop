@@ -109,6 +109,22 @@ The immutable source is authoritative. This registry makes operational status vi
   and every other actual-time extension remain OPEN and unallocated. Task 47 remains prohibited,
   unstarted, unallocated, and unrecommended.
 
+- Task 49 / Slice 039 completes Focus Plan Activity Analytics Core under ADR 0043 at product
+  checkpoint `7622db3d8b2b42d69c8f497b6899c5be82e9f9a9`. DECIDED: factual Focus Plan activity
+  analytics; current Task/series → Plan attribution; review-date aggregation; completed one-off
+  actual-time aggregation. One-off Tasks and generated non-cancelled recurring occurrences are
+  attributed through their current `tasks.focus_plan_id` / `task_series.focus_plan_id`, so
+  relinking moves retrospective attribution and no historical Plan-link snapshot exists. Reviews
+  aggregate by `reviewed_local_date` into counts and the latest date only — never content.
+  Completed actual time comes only from linked one-off Tasks under unchanged Task 46 arithmetic,
+  and recurring work never enters the denominator. Overall fields are exact sums of the Plan rows,
+  ordering is deterministic, and more than 500 qualifying Plans is rejected rather than truncated.
+  Schema stays 27 with no migration, no persistent Plan aggregate, and exactly one read-only IPC
+  command feeding a lazy section inside the single Analytics destination. STILL DEFERRED: automatic
+  progress and phase relations; scoring, health, and prediction; automatic lifecycle; and review
+  edit, delete, archive, scheduling, and search. Task 50 is prohibited, unstarted, unallocated, and
+  unrecommended.
+
 ## LOCKED — Technology direction
 
 - Tauri 2; React UI + Rust application core; TypeScript strict; Vite 8.

@@ -3,7 +3,7 @@
   "task": 49,
   "supersedes": "docs/audits/task-48-performance-budgets.json",
   "supersedes_note": "Task 49 truthfully versions aggregate maxima and the expected chunk count for the approved lazy Focus Plan activity Analytics section. The locked index.js, BasicLeafEditor.js, and markdown.js ceilings remain unchanged; the derived index.js maximum now clamps to the unchanged 535,000 ceiling. Earlier evidence remains historical.",
-  "measured_at_commit": "pending-product-checkpoint",
+  "measured_at_commit": "7622db3d8b2b42d69c8f497b6899c5be82e9f9a9",
   "baseline_evidence": "docs/audits/task-49-performance-baseline.json",
   "main_chunk": "index.js",
   "unknown_chunk_raw_bytes_threshold": 10000,

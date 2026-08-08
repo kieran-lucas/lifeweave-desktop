@@ -1,6 +1,6 @@
 # Roadmap
 
-## Slice 039 — Focus Plan Activity Analytics Core (active)
+## Slice 039 — Focus Plan Activity Analytics Core (complete)
 
 Task 49 activates ADR 0043. Task 37 linked work to Plans and added manual reviews but deliberately
 prohibited Plan analytics because no decision existed about what a Plan number would mean. ADR 0043
@@ -21,7 +21,8 @@ rejection rather than truncation.
 Hard boundary: no automatic Plan progress, phase relationships, scoring, health, prediction,
 automatic lifecycle, completion percentage, target-date lateness analytics, review content
 analytics, review edit/delete/archive/scheduling/search, many-to-many Task→Plan, schema 28,
-dependency, destination, chart library, workflow/seal change, or Task 50 work. Task 50 is
+dependency, destination, chart library, workflow/seal change, or Task 50 work. Task 49 closed at
+product checkpoint `7622db3d8b2b42d69c8f497b6899c5be82e9f9a9` with schema 27. Task 50 is
 prohibited, unstarted, unallocated, and unrecommended.
 
 ## Slice 038 — Managed Backup Retention and Compatibility Core (complete)
@@ -334,9 +335,8 @@ Task 35 selected the standalone Focus Plan entity. ADR 0030 is canonical.
 - **Task 37:** complete and closed. The reserved Focus Plans program is finished.
 - **Task 38:** complete and closed.
 - **Task 39:** complete and closed at product checkpoint `374abcbae263be18fa785a56d656678f9bfd9c29`.
-- **Tasks 40–48:** complete. **Task 49:** active under Slice 039. **Tasks 50–60:** available only for
-  later Product Owner decisions; none is activated or recommended. Task 50 is prohibited,
-  unstarted, unallocated, and unrecommended.
+- **Tasks 40–49:** complete. **Tasks 50–60:** available only for later Product Owner decisions; none
+  is activated or recommended. Task 50 is prohibited, unstarted, unallocated, and unrecommended.
 - **Recurring deadline policy:** open; deliberately excluded from Slice 028.
 
 ## Closure policy

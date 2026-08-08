@@ -1,9 +1,11 @@
 # Project Status
 
-## Task 49/60 — Focus Plan Activity Analytics Core (active)
+## Task 49/60 — Focus Plan Activity Analytics Core (complete)
 
 - Activation baseline: `86261298ccd99204da503f508b4dfb9ac50cee04`.
-- Active slice: `039-focus-plan-activity-analytics` under ADR 0043.
+- Activation commit: `2d12d76011a73934a0dab4cab8f0977bf0deb99c`.
+- Product checkpoint: `7622db3d8b2b42d69c8f497b6899c5be82e9f9a9`.
+- Closed slice: `039-focus-plan-activity-analytics` under ADR 0043.
 - Schema remains 27; no migration, no persistent Plan analytics aggregate, no second
   source-revision system.
 - Scope: a bounded read-only Focus Plan activity projection over the existing Objective Analytics
@@ -16,9 +18,10 @@
   cardinality, and review creation/read semantics remain binding and unchanged.
 - No automatic Plan progress, phase relation, scoring, health, prediction, automatic lifecycle,
   percentage, review content analytics, dependency, capability broadening, destination, chart
-  library, workflow/seal change, or Task 50 work is authorized.
-- Next action: implement the active specification. Task 50 is prohibited, unstarted, unallocated,
-  and unrecommended.
+  library, workflow/seal change, or Task 50 work was added.
+- Next action: Product Owner gate. Task 50 is prohibited, unstarted, unallocated, and
+  unrecommended. Full evidence is in
+  `docs/audits/task-49-focus-plan-activity-analytics.md`.
 
 ## Task 48/60 — Managed Backup Retention and Compatibility Core (complete)
 

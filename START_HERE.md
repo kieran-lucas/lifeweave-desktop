@@ -12,29 +12,34 @@
 
 ## Current state
 
-- Latest closed task: **48/60**
-- Latest closed slice: **038 — Managed Backup Retention and Compatibility Core**
-- Active task: **49/60 — Focus Plan Activity Analytics Core**
-- Active implementation specification: **[Slice 039](specs/039-focus-plan-activity-analytics/README.md)**
-- Latest feature checkpoint: **Task 48 — Managed Backup Retention and Compatibility Core** (`51e24c54f12f0236ecba1bd81936bc11db59f8ac`)
+- Latest closed task: **49/60**
+- Latest closed slice: **039 — Focus Plan Activity Analytics Core**
+- Active task: **none**
+- Active implementation specification: **none**
+- Latest feature checkpoint: **Task 49 — Focus Plan Activity Analytics Core** (`7622db3d8b2b42d69c8f497b6899c5be82e9f9a9`)
 - Database schema: **27**
-- Next action: **Implement active spec**
+- Next action: **Product Owner gate**
 - Task 50: **prohibited, unstarted, unallocated, and unrecommended**
 
-## Task 49 activation
+## Task 49 closure
 
-Task 49 / Slice 039 is active from baseline `86261298ccd99204da503f508b4dfb9ac50cee04` under
-[ADR 0043](docs/adr/0043-focus-plan-activity-analytics.md). Analytics may report factual Focus Plan
+Task 49 / Slice 039 is closed at product checkpoint
+`7622db3d8b2b42d69c8f497b6899c5be82e9f9a9` from baseline
+`86261298ccd99204da503f508b4dfb9ac50cee04` under
+[ADR 0043](docs/adr/0043-focus-plan-activity-analytics.md). Analytics now reports factual Focus Plan
 activity over the same week/month/year periods Objective Analytics already owns: current
 Plan-linked scheduled work, existing evaluation and missed facts, manual review dates, and
 completed one-off actual-time sessions.
 
 Attribution follows each Task's or recurring series' **current** `focus_plan_id`; no historical
-Plan-link snapshot, occurrence-owned relation, or persistent Plan aggregate is created. Schema
-remains **27** with no migration and exactly one read-only IPC command. This is retrospective
-evidence only: automatic Plan progress, phase relationships, scoring, health, prediction, automatic
-lifecycle, target-date lateness analytics, review content analytics, new dependencies or
-destinations, workflow/seal changes, and Task 50 work are all prohibited.
+Plan-link snapshot, occurrence-owned relation, or persistent Plan aggregate was created. Schema
+remains **27** with no migration and exactly one read-only IPC command feeding a lazy `Focus Plan
+activity` section inside the single Analytics destination, bounded at 500 Plans with rejection
+rather than truncation. This is retrospective evidence only: automatic Plan progress, phase
+relationships, scoring, health, prediction, automatic lifecycle, target-date lateness analytics,
+review content analytics, new dependencies or destinations, workflow/seal changes, and Task 50 work
+remain prohibited. Closure evidence is in
+`docs/audits/task-49-focus-plan-activity-analytics.md`.
 
 ## Task 48 closure
 
