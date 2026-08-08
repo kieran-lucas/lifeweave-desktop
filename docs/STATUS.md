@@ -204,20 +204,34 @@ recovery.
   deliberate taxonomy change recorded in its contract test. The inspector is lazy-loaded and the
   split collapses when nothing is selected.
 
-> **BLOCKED ON A GOVERNANCE DECISION.** With the inspector in place `index.js` is **535,381 bytes
-> against the locked 535,000 ceiling — 381 over**. Three legitimate reclaims were applied first:
-> tree-shakeable icons (−3,438), lazy inspector (−6,151), co-located inspector styles (−426). The
-> remaining 381 bytes are the split wiring, the selection memo and the eager class constants for the
-> timeline column. Per `docs/PERFORMANCE_BUDGETS.md` raising a maximum is a Product Owner decision
-> supported by measurement, so the threshold has **not** been touched and the gate is left failing
-> rather than silenced. Net cost of the whole inspector feature is +2,268 bytes eager, with 7.34 kB
-> JS and 2.86 kB CSS deferred to a lazy chunk.
+**Startup ceiling raised, by Product Owner decision.** The inspector left `index.js` 381 bytes over
+the old 535,000 ceiling after three legitimate reclaims (tree-shakeable icons −3,438, lazy inspector
+−6,151, co-located inspector styles −426). The ceiling is now **550,000**, recorded in
+`docs/audits/task-51-performance-budgets.json` with its rationale in `locked_ceilings.note` and in
+`docs/PERFORMANCE_BUDGETS.md`. The gate stayed red while the decision was requested and now passes
+**because the governance changed, not because the check was bypassed**.
+
+```text
+index.js              535,381 / 550,000   headroom 14,619
+total_js_bytes      1,254,564
+total_js_gzip         385,429
+expected_chunk_count       25   (24 -> 25: the lazy TaskInspector chunk)
+lazy inspector         7.34 kB JS + 2.86 kB CSS, loaded only on selection
+net eager cost         +2,268 bytes for the whole feature
+```
 
 **Not yet migrated** — these inherit the v2 palette through `global.css` but have not had their
 composition reworked: Calendar,
 Analytics, Focus Plans, Life/Graph, Reader/Editor, Narrative, Search, Settings and the dialog set.
 Visual-regression goldens for v2 are not yet established, and the whole-app coherence pass has not
 been run.
+
+**Outstanding and attempted:** the multi-viewport re-audit of Today + inspector at 1280x800,
+1280x720 and 960x640. A first attempt added a viewport switch to the Task 50 audit walk and failed —
+the walk re-maximizes after its fixture reload, which undoes any requested size, and the run ended
+with a closed webview. The spec edit was reverted rather than left half-working. Only the canonical
+maximized 1536x794 viewport has been audited since the inspector landed (24 screens, 0 collisions,
+0 overflow).
 
 ```text
 gates    verify · typecheck · build · performance budget    PASS
