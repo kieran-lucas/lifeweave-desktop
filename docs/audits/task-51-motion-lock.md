@@ -229,6 +229,59 @@ warm-neutral exactly as the lock has it.
 | Day change is prototype-local | the real day change goes through the existing query path; the prototype proves the motion, not the data flow | n/a |
 | Reduced motion emulated via CDP | measures the code path, not the Windows setting plumbing | n/a — a real OS-level check is recorded as not run |
 
+## 10a. V2 revalidation — Motion Lock preserved
+
+Baseline v2 changed palette, type treatment, Today's ambient art and the selected/completed visual
+state. It did not change the spatial interaction model, so the locked motion evidence was re-run
+against v2 rather than rebuilt.
+
+Run `v2motion-clean`, on the same machine, with nothing else executing.
+
+| Interaction | v1 (`motion4`) | **v2 (clean)** | Δ |
+|---|---|---|---|
+| Task completion | 4.0 ms | **6.5 ms** | +2.5 |
+| Row selection | 3.3 ms | **5.7 ms** | +2.4 |
+| Layout settle | 4.4 ms | **6.2 ms** | +1.8 |
+| Day change | 5.0 ms | **6.4 ms** | +1.4 |
+| Day change, `vt=none` | 6.8 ms | **6.8 ms** | 0.0 |
+| Day change, `vt=document` | 19.8 ms | **20.0 ms** | +0.2 |
+| Day change, `vt=element` | 23.0 ms | **21.1 ms** | −1.9 |
+| Reduced motion, completion | 4.2 ms | **4.3 ms** | +0.1 |
+
+```text
+drag        90 frames, p95 17.5 ms, 1 dropped   (v1: 81 frames, p95 17.5, 0 dropped)
+idle       121 frames, p95 16.8 ms, 0 dropped   (v1: 121 frames, p95 17.2, 0 dropped)
+long tasks >50 ms: 0
+```
+
+### Verdict: not material, and disclosed rather than rounded away
+
+The three normal-mode interactions each rose by ~2 ms. That is consistent enough across
+interactions to look real rather than like noise, and the most likely cause is v2's row-group
+element — one more box to lay out and paint per period. It is **not** a font-metric effect: the
+serif was removed, and reduced motion, which shares the same layout and differs only in what is
+animated, is within 0.1 ms of v1.
+
+It does not change the conclusion. Every commit still lands inside a single 16.67 ms frame with
+roughly 2.5× headroom, long tasks remain at zero, idle is unchanged, and drag's single dropped frame
+in ninety is within run-to-run variance.
+
+The independent reproduction of the View Transition comparison is worth noting: 20.0 / 21.1 ms
+against the earlier 19.8 / 23.0 ms, measured on a different build weeks of edits apart. That
+finding was the one this gate previously got wrong, and it now has two agreeing runs behind it.
+
+Checks required by the revalidation brief:
+
+```text
+timings unchanged accidentally        no — the ~2 ms rise is attributed and bounded
+new font metric destabilises layout   no — no webfont remains; reduced motion matches v1
+removing Today art hurt paint         no — idle identical, long tasks still zero
+blue checked/selected animate cleanly yes — CSS colour + transform only, no new paint class
+transitions add box/shadow/colour noise  no — no shadow or border animates anywhere
+```
+
+**The Motion Lock is preserved.** Phase 6 proceeds.
+
 ## 11. Runs
 
 ```text
