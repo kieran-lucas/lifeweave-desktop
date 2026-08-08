@@ -3,101 +3,84 @@ import { createTheme } from "@vanilla-extract/css";
 import { vars } from "./contract.css";
 
 /**
- * Dark theme — composed, not inverted (ADR 0045 §29).
+ * Dark theme — composed, not inverted (ADR 0045 §29), and recomposed for baseline v2.
  *
- * Inverting the light theme would produce a cold near-white-on-black sheet and would flip the
- * elevation logic upside down, because in dark compositions a raised surface gets *lighter* while
- * in light compositions it stays the same and gains a shadow. So this file re-derives every role
- * against the same axes:
+ * v1's dark theme was warm to match its warm light plane. v2's light plane is a cool near-white
+ * monochrome with a saturated blue accent, so this file follows it onto the same axes:
  *
- *   - the canvas keeps the light theme's warm hue (67.8) at very low lightness, so the product
- *     stays recognisably Lifeweave rather than becoming a generic dark app;
- *   - tonal separations are small — 4 to 5 points of OKLCH lightness — because large steps read as
- *     stacked panels, which is exactly what the continuous-surface law forbids;
- *   - the blue-violet family is lifted in lightness and *reduced* in chroma, because a saturated
- *     accent on a dark field glows and fatigues over the long sessions this product is built for;
- *   - hairlines stay visible but quiet, at a lightness step rather than a colour change;
- *   - art intensity stays below content, as in light.
+ *   - the canvas keeps the light theme's cool hue (~264) at very low lightness, so the product
+ *     stays recognisably itself rather than becoming a generic dark app;
+ *   - tonal separations stay small — 3 to 5 points of OKLCH lightness — because large steps read as
+ *     stacked panels, which the flat composition forbids;
+ *   - the accent is lifted in lightness and reduced in chroma. A 0.196-chroma blue on a dark field
+ *     glows and fatigues over the long sessions this product is built for, so dark takes 0.13;
+ *   - a raised surface gets *lighter* here, where in light it gets whiter and keeps no shadow;
+ *   - completion is blue in both themes.
  */
 export const darkTheme = createTheme(vars, {
   color: {
-    canvas: "oklch(17.5% 0.004 67.8)",
-    surface: "oklch(21% 0.004 67.8)",
-    surfaceSubtle: "oklch(19.5% 0.004 67.8)",
-    // Raised surfaces gain lightness here, where in light they gain a shadow.
-    surfaceRaised: "oklch(25% 0.005 67.8)",
-    surfaceSelected: "oklch(26% 0.018 273)",
-    // The light theme separates nav selection from task selection by making nav *darker*. On a dark
-    // canvas the equivalent separation runs the other way: nav selection is one step lighter.
-    surfaceSelectedNav: "oklch(28.5% 0.022 273)",
-    surfaceHover: "oklch(23.5% 0.008 273)",
+    canvas: "oklch(17.5% 0.008 264)",
+    surface: "oklch(15.5% 0.008 264)", //  the sidebar sits *below* the canvas here, as in light
+    surfaceSubtle: "oklch(19.5% 0.008 264)",
+    surfaceRaised: "oklch(21.5% 0.009 264)", //  the row group and inspector
+    surfaceSelected: "oklch(26% 0.035 264)",
+    surfaceSelectedNav: "oklch(28% 0.04 264)",
+    surfaceHover: "oklch(23% 0.012 264)",
 
-    textPrimary: "oklch(95% 0.003 67.8)",
-    textSecondary: "oklch(79% 0.004 67.8)",
-    textTertiary: "oklch(66% 0.004 67.8)",
-    textDisabled: "oklch(48% 0.004 67.8)",
-    textOnAccent: "oklch(17.5% 0.004 67.8)",
+    textPrimary: "oklch(96% 0.003 264)",
+    textSecondary: "oklch(80% 0.006 264)",
+    textTertiary: "oklch(67% 0.008 264)",
+    textDisabled: "oklch(50% 0.008 264)",
+    textOnAccent: "oklch(17.5% 0.008 264)",
 
-    borderHairline: "oklch(28% 0.006 273)",
-    borderStrong: "oklch(52% 0.03 273)",
+    borderHairline: "oklch(26% 0.008 264)",
+    borderStrong: "oklch(34% 0.012 264)",
 
-    // Lifted and de-chromed relative to light: 47.79%/0.118 becomes 76%/0.075.
-    accent: "oklch(76% 0.075 273)",
-    accentMuted: "oklch(66% 0.06 273)",
-    accentSoft: "oklch(32% 0.035 273)",
-    selectionEdge: "oklch(66% 0.06 273)",
+    accent: "oklch(76% 0.13 258)",
+    accentMuted: "oklch(68% 0.12 258)",
+    accentSoft: "oklch(30% 0.05 264)",
+    selectionEdge: "oklch(76% 0.13 258)",
 
-    success: "oklch(74% 0.08 150)",
-    warning: "oklch(76% 0.09 50)",
-    danger: "oklch(70% 0.13 27)",
-    successSoft: "oklch(30% 0.035 150)",
-    warningSoft: "oklch(31% 0.04 50)",
-    dangerSoft: "oklch(30% 0.05 27)",
+    // Completion is blue in both themes.
+    success: "oklch(76% 0.13 258)",
+    warning: "oklch(78% 0.11 70)",
+    danger: "oklch(70% 0.14 25)",
+    successSoft: "oklch(30% 0.05 264)",
+    warningSoft: "oklch(30% 0.045 70)",
+    dangerSoft: "oklch(30% 0.05 25)",
 
-    lifeLavender: "oklch(34% 0.04 290)",
-    lifeMint: "oklch(33% 0.035 155)",
-    lifePeach: "oklch(34% 0.04 50)",
-    lifeBlue: "oklch(33% 0.04 273)",
-    lifeCream: "oklch(33% 0.025 85)",
+    lifeLavender: "oklch(30% 0.045 264)",
+    lifeMint: "oklch(28% 0.02 160)",
+    lifePeach: "oklch(28% 0.02 60)",
+    lifeBlue: "oklch(28% 0.025 264)",
+    lifeCream: "oklch(28% 0.015 90)",
 
-    /*
-     * The same light-blue direction, re-derived for a dark field. Hue is held at 238 so the art
-     * keeps its identity, but chroma is raised while lightness drops: on a near-black canvas a
-     * low-chroma blue disappears entirely, and a high-lightness one glows. These land ~1.3:1 above
-     * the canvas — visible as atmosphere, never as a surface.
-     */
-    ambientContour: "oklch(36% 0.075 237)", //         1.77:1 above the canvas
-    ambientGlowPrimary: "oklch(30% 0.085 237)", //     1.43:1
-    ambientGlowSecondary: "oklch(28% 0.06 262)", //    1.29:1
-    ambientAura: "oklch(26% 0.06 232)", //             1.24:1
+    // Retained, and not rendered on Today. See the light theme for why.
+    ambientContour: "oklch(26% 0.015 264)",
+    ambientGlowPrimary: "oklch(21% 0.015 264)",
+    ambientGlowSecondary: "oklch(21% 0.012 274)",
+    ambientAura: "oklch(20% 0.01 264)",
 
-    focusRing: "oklch(80% 0.09 273)",
-    backdrop: "oklch(10% 0.004 67.8 / 0.6)",
+    focusRing: "oklch(80% 0.13 258)",
+    backdrop: "oklch(10% 0.006 264 / 0.6)",
   },
 
-  // Geometry-adjacent appearance values are identical across themes by design: a radius is not a
-  // property of the lighting.
   radius: {
     small: "4px",
     control: "8px",
     surface: "12px",
-    floating: "16px",
+    floating: "14px",
     full: "999px",
   },
 
-  /*
-   * Shadows barely register on a dark canvas, so the two visible steps carry a small amount of
-   * their separation as a lighter surface (above) and use shadow only to detach a floating element
-   * from what is behind it.
-   */
   elevation: {
     none: "none",
-    floating: "0 4px 16px oklch(0% 0 0 / 0.4)",
-    modal: "0 16px 48px oklch(0% 0 0 / 0.55)",
+    floating: "0 2px 10px oklch(0% 0 0 / 0.4)",
+    modal: "0 12px 40px oklch(0% 0 0 / 0.55)",
   },
 
   hairline: {
-    structural: "1px solid oklch(28% 0.006 273)",
-    subtle: "1px solid oklch(23% 0.005 67.8)",
+    structural: "1px solid oklch(26% 0.008 264)",
+    subtle: "1px solid oklch(22% 0.008 264)",
   },
 });

@@ -250,6 +250,50 @@ the canvas. The contour's raw token ratio is the highest of the four, but it ren
 stroke at 0.18–0.55 opacity, so its perceived presence is a fraction of that figure — the token
 ratio bounds what a solid fill of that colour would read as, not what the art draws.
 
+## Superseding reference: Lifeweave Visual Baseline v2
+
+After VISUAL LOCK was approved and the motion prototype was measured, the Product Owner supplied a
+**new reference image** and made it the source of truth:
+`docs/visual/task-51/lifeweave-visual-baseline-v2.png`.
+
+v2 is not a refinement of v1. It is a different art direction, and it reverses several decisions
+this ADR previously recorded. Both images are retained so the change is traceable rather than
+implied.
+
+| | v1 (approved, superseded) | **v2 (current source of truth)** |
+|---|---|---|
+| Plane | warm neutral `#FBFAF9` | **cool near-white `#FCFCFD`** |
+| Accent | muted blue-violet `#3B4D92`, hue 270 | **saturated blue `#1157CE`, hue 261** |
+| Completed task | accent-toned check | **blue check, and green is banned from task state** |
+| Titles | Literata editorial serif | **UI sans, bold** |
+| Period rows | no container | **white container, hairline, radius 12** |
+| Ambient art | light-blue contour + glow field | **none on Today** |
+| Selection companion | 2 px left accent bar | **accent-toned checkbox ring** |
+
+### What carried over unchanged
+
+The three-column composition and its proportions, the inspector sharing the workspace plane, row
+geometry, the low-chrome inspector tabs, the hairline-first separation language, the finite
+vocabularies, the enclosure budget, and the whole motion system measured at MOTION LOCK. v2 changes
+palette, type and ornament — not structure.
+
+### Consequences of the reversal
+
+- **The light-blue art direction is withdrawn.** ADR §7's "the art hue is light blue" applied to v1.
+  v2 contains no ambient field at all, and the brief states the top decoration must be removed and
+  nothing may encroach on content. The `ambient*` roles and the `Ambient` component are retained but
+  are **not rendered on Today**; their values are re-derived to near-neutral so they cannot
+  reintroduce a coloured atmosphere by accident.
+- **Literata is now unused.** Removing the serif drops 106,560 bytes of woff2 subsets from the
+  prototype bundle. The package is left installed rather than removed unilaterally, because dropping
+  an editorial face is a decision about Reader and Narrative as much as about Today. Raised for
+  decision, not taken here.
+- **`success` resolves to the accent.** Completion is blue by explicit instruction, so no task state
+  uses green. The `success` token remains for non-task semantics.
+- **VISUAL LOCK is reopened to the extent v2 differs.** The approval granted on the v1 composition
+  cannot cover a palette and type system it did not show. Structure remains locked; appearance
+  requires re-approval.
+
 ## Consequences
 
 - `frontend/src/design-system/visual/` becomes the single answer to "what colour, radius, weight or

@@ -282,7 +282,24 @@ export const periodCount = style({
  * shared left edge and their hairline separators. Adding a box here would be the single easiest
  * way to lose the composition.
  */
-export const rows = style({ display: "flex", flexDirection: "column" });
+/**
+ * Baseline v2 DOES give the period its own surface, where v1 did not.
+ *
+ * Measured: the rows sit inside a bounded region from x 320 to x 1033 with a 1 px hairline edge,
+ * and its interior is whiter (#FFFFFF) than the workspace canvas (#FCFCFD). That is one enclosure
+ * level, which the brief permits — it asks for "khong box long box qua nhieu", not for zero boxes —
+ * and it is what makes the list read as a single object rather than as loose lines.
+ *
+ * `overflow: hidden` lets the selected row's fill reach the rounded corners cleanly.
+ */
+export const rows = style({
+  display: "flex",
+  flexDirection: "column",
+  background: vars.color.surfaceRaised,
+  border: vars.hairline.structural,
+  borderRadius: vars.radius.surface,
+  overflow: "hidden",
+});
 
 export const row = style({
   position: "relative",
@@ -290,10 +307,9 @@ export const row = style({
   gridTemplateColumns: "auto minmax(0, 1fr) auto",
   alignItems: "center",
   gap: 12,
-  minBlockSize: 40,
-  paddingBlock: 8,
-  paddingInline: 8,
-  borderRadius: vars.radius.control,
+  minBlockSize: 42,
+  paddingBlock: 9,
+  paddingInline: 16,
   border: 0,
   background: "transparent",
   textAlign: "left",
@@ -320,16 +336,7 @@ export const rowSelected = style({
   background: vars.color.surfaceSelected,
   selectors: {
     "&:hover": { background: vars.color.surfaceSelected },
-    "&::before": {
-      content: '""',
-      position: "absolute",
-      insetBlock: 4,
-      insetInlineStart: 0,
-      inlineSize: 2,
-      borderRadius: vars.radius.full,
-      background: vars.color.selectionEdge,
-    },
-    "&:not(:last-child)": { boxShadow: "none" },
+    "&:not(:last-child)": { boxShadow: `inset 0 -1px 0 ${vars.color.borderHairline}` },
   },
 });
 
@@ -367,12 +374,29 @@ export const check = style({
  * rather than two. Colour is never the only carrier: each state also differs in fill and glyph, and
  * each control carries its state in its accessible name.
  */
+/**
+ * Four appearances, because Lifeweave evaluates a task into a *state* rather than a boolean.
+ *
+ * Completed is BLUE by explicit instruction — no green anywhere in task state. Colour is never the
+ * only carrier: the glyph changes with the state and each control states its state in its
+ * accessible name.
+ */
 export const checkState = styleVariants({
-  none: [check, { color: vars.color.textTertiary }],
+  none: [check, { color: vars.color.borderStrong }],
   completed: [check, { color: vars.color.accent }],
-  partial: [check, { color: vars.color.textSecondary }],
+  partial: [check, { color: vars.color.accentMuted }],
   missed: [check, { color: vars.color.danger }],
 });
+
+/**
+ * The selected row's ring takes the accent.
+ *
+ * The pale selected fill measures 1.05:1 against the canvas — below the 3:1 SC 1.4.11 asks of a
+ * state indicator. v1 solved that with a 2 px left bar; v2's reference has no bar and the brief
+ * forbids adding decoration the image lacks, so the second signal moves onto a mark the design
+ * already draws. 6.25:1, nothing invented.
+ */
+export const checkSelected = style({ color: vars.color.accent });
 
 export const rowMain = style({ minInlineSize: 0, display: "flex", flexDirection: "column", gap: 3 });
 

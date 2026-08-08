@@ -3,125 +3,126 @@ import { createTheme } from "@vanilla-extract/css";
 import { vars } from "./contract.css";
 
 /**
- * Light theme — the primary target of the Product Owner's reference image.
+ * Light theme — measured from `docs/visual/task-51/lifeweave-visual-baseline-v2.png`.
  *
- * Values are expressed in `oklch()` so lightness and chroma relationships are perceptually
- * controlled rather than hand-picked per component, and so the dark theme can be composed against
- * the same axes instead of being derived by inversion.
+ * **This replaces the warm-neutral palette of baseline v1.** The Product Owner supplied a new
+ * reference and made it the source of truth; the direction changed from a warm editorial plane with
+ * a muted blue-violet accent to a **cool near-white monochrome plane with a saturated blue accent**.
+ * Nothing here is a reinterpretation of v1 — every value below is sampled from v2.
  *
- * Each value is the measured OKLCH of a reference anchor, **except** where measurement showed the
- * anchor cannot carry its role accessibly. Those four deviations are marked `DEVIATION` with the
- * number that forced them; they are recorded in the audit and are reversible if the Product Owner
- * prefers the anchor and accepts the contrast cost.
+ * Values are `oklch()` so lightness and chroma relationships stay perceptually controlled and the
+ * dark theme can be composed against the same axes rather than inverted.
+ *
+ * Measured contrast is recorded beside each role. Two roles deviate from the sampled anchor because
+ * the anchor cannot carry its job accessibly; both are marked DEVIATION.
  */
 export const lightTheme = createTheme(vars, {
   color: {
-    // Warm neutral plane. Chroma 0.0017 at hue 67.8 is what makes it read warm rather than grey;
-    // it is far too low to read as a colour, which is the intent.
-    canvas: "oklch(98.56% 0.0017 67.8)", //            #FBFAF9
-    surface: "oklch(96.76% 0.0017 67.8)", //           #F5F4F3
-    surfaceSubtle: "oklch(96.46% 0.0017 67.8)", //     #F4F3F2
-    surfaceRaised: "oklch(98.86% 0.0017 67.8)", //     #FCFBFA
-    surfaceSelected: "oklch(95.36% 0.0067 286.27)", //    #EFEFF4  measured, task row
-    surfaceSelectedNav: "oklch(93.55% 0.0067 286.27)", // #E9E9EE  measured, sidebar pill
-    surfaceHover: "oklch(96.9% 0.004 286.27)",
+    /*
+     * Three near-white planes, separated by ~0.5% lightness each. The whole hierarchy lives in that
+     * sliver: sidebar sits lowest, the workspace canvas above it, and the row group and inspector
+     * highest. Anything larger reads as stacked panels, which is what "liền phẳng" rules out.
+     */
+    canvas: "oklch(99.13% 0.0013 286.38)", //        #FCFCFD  workspace + inspector plane
+    surface: "oklch(98.57% 0.0026 286.35)", //       #FAFAFC  sidebar
+    surfaceSubtle: "oklch(97.9% 0.003 280)", //               chips, quiet fills
+    surfaceRaised: "oklch(100% 0 0)", //             #FFFFFF  the row group, menus, dialogs
+    surfaceSelected: "oklch(97.56% 0.0086 264.52)", //#F4F7FD  selected task row
+    surfaceSelectedNav: "oklch(96.19% 0.0109 274.89)", // #F0F2FA  selected sidebar item
+    surfaceHover: "oklch(98.1% 0.004 270)",
 
-    textPrimary: "oklch(24.04% 0.0015 17.26)", //   #201F1F  15.77:1 on canvas
-    textSecondary: "oklch(37.91% 0 89.88)", //      #424242   9.64:1
-    // DEVIATION 1 — the reference anchor #7A7979 measures 4.16:1 on the canvas and 3.79:1 over the
-    // selected fill. Metadata at 12–13px is body text, so it needs 4.5:1, not the 3:1 large-text
-    // allowance. Lightness lowered 57.70% -> 53.74% at identical hue and chroma, which clears 4.5:1
-    // on both backgrounds. The visible warmth and weight of the role are unchanged.
-    textTertiary: "oklch(53.74% 0.0012 17.19)", //  #6E6D6D   4.50:1 on selected, 5.03:1 on canvas
-    textDisabled: "oklch(64.68% 0.0673 264.78)",
-    textOnAccent: "oklch(98.56% 0.0017 67.8)",
+    textPrimary: "oklch(25.42% 0.0111 254.04)", //   #1F2328  15.41:1
+    textSecondary: "oklch(37.37% 0.0153 259.81)", // #3C4149  10.02:1
+    textTertiary: "oklch(49.75% 0.0196 259.42)", //  #5C636E   5.91:1 on canvas, 5.65:1 on selected
+    /*
+     * DEVIATION 1 — the sampled quaternary grey `#8A9099` measures 3.14:1 on the canvas and 3.00:1
+     * on the selected fill. That is fine for a disabled control, which is exempt, and not fine for
+     * anything a user must read. `textDisabled` therefore keeps the sampled tone, and no live text
+     * uses it; live metadata uses `textTertiary` instead.
+     */
+    textDisabled: "oklch(65.13% 0.0151 258.36)", //  #8A9099   3.14:1 — disabled only
+    textOnAccent: "oklch(100% 0 0)",
 
-    borderHairline: "oklch(94.15% 0.0067 286.27)", // #EBEBF0 — quiet by intent
-    // Non-text contrast 3.15:1 against the canvas, so a boundary drawn with it is perceivable
-    // on its own where one genuinely must be.
-    borderStrong: "oklch(64.68% 0.0673 264.78)", //   #7A8EB8
-
-    // Measured from the reference's active tab rule and checkbox fill (#3B4D92), which is slightly
-    // darker than the #44579F anchor and measures better: 7.57:1 rather than 6.48:1.
-    accent: "oklch(44.19% 0.115 270.15)", //      #3B4D92   7.57:1 — safe as text
-    accentMuted: "oklch(55.23% 0.1004 271.34)", //#5D6EAD   4.69:1 — safe as text
-    accentSoft: "oklch(85.36% 0.0312 273.58)", // #C8CEE4 — fill only
-    // DEVIATION 2 — not an anchor. The reference's selection is a pale fill, which measures
-    // 1.10:1 against the canvas: beautiful, and below SC 1.4.11's 3:1 for a state indicator. The
-    // fill is kept exactly as the reference has it and this edge carries the state alongside it,
-    // so selection is never communicated by the wash alone.
-    selectionEdge: "oklch(64.68% 0.0673 264.78)", // #7A8EB8  3.15:1
-
-    // DEVIATION 3 — #7BAC84 measures 2.49:1 and cannot be status *text*. Lightness lowered to
-    // 54.99% at identical hue and chroma. The anchor survives unchanged as `successSoft`.
-    success: "oklch(54.99% 0.0783 149.66)", //     #4F7E59   4.52:1
-    // DEVIATION 4 — #DB8A68 measures 2.57:1, same reasoning. Anchor survives as `warningSoft`.
-    warning: "oklch(56.9% 0.1102 43.37)", //       #AC5F3F   4.51:1
-    danger: "oklch(50% 0.15 27)",
-    successSoft: "oklch(91.6% 0.0225 155.9)", //   #D8E8DD
-    warningSoft: "oklch(80.14% 0.0744 50.82)", //  #E6B193
-    dangerSoft: "oklch(90% 0.045 27)",
-
-    // Measured from the reference's Life System Preview nodes. Far paler than the palette anchors
-    // suggest — every node sits within 1.2:1 of the canvas, which is why the preview reads as a
-    // quiet diagram rather than a colourful mind-map. Node labels carry their own text colour.
-    lifeLavender: "oklch(94.24% 0.0107 286.19)", // #EBEBF3  Lifeweave Project
-    lifeMint: "oklch(94.94% 0.0107 136.56)", //     #EBF0E9  Learning & Growth
-    lifePeach: "oklch(96.82% 0.0101 58.22)", //     #FAF3EE  Relationships
-    lifeBlue: "oklch(95.15% 0.0046 258.32)", //     #EDEFF2  Impact & Contribution
-    lifeCream: "oklch(96.74% 0.013 71.33)", //      #FAF3EB  Creative Expression
+    borderHairline: "oklch(94.92% 0.0042 271.37)", //#EDEEF1  the row separator and group edge
+    borderStrong: "oklch(92.18% 0.0071 268.54)", //  #E3E5EA
 
     /*
-     * Light blue art. Strengthened after VISUAL LOCK on explicit Product Owner direction: the
-     * atmosphere must lean *clearly* light blue rather than merely non-warm.
-     *
-     * Hue 237 is a true sky blue. The interface accent lives at 270.15, so there are **33 degrees**
-     * between atmosphere and interactive state — enough that a glow can never be mistaken for a
-     * selection, which is the confusion the separation exists to prevent.
-     *
-     * Chroma is far above the rest of the palette (0.055–0.075 against the canvas's 0.0017). This
-     * is the single sanctioned chroma exception, and it is necessary: at these lightnesses a lower
-     * chroma reads as dirty grey rather than as blue.
-     *
-     * Measured against the canvas: aura 1.14:1, glowPrimary 1.22:1, glowSecondary 1.24:1,
-     * contour 1.55:1. The contour's raw ratio is the highest, but it is drawn as a 1 px stroke at
-     * 0.18–0.55 opacity, so its *perceived* presence is a fraction of that number — the token
-     * ratio is the ceiling of what a solid fill would read as, not what the art actually renders.
-     *
-     * None of these reaches a canvas, surface, text, border, accent or state role. The content
-     * plane stays warm-neutral exactly as the visual lock has it.
+     * The accent. Saturated blue, sampled from the checked circles, the date line, the active nav
+     * icon and the active tab. At 6.25:1 it is safe as text, which matters because this design uses
+     * blue *as text* in several places the previous one did not — the date, "Review day", the
+     * active tab label, and the Energy value.
      */
-    ambientContour: "oklch(84% 0.062 237)", //          #A5D1EE  contour lines
-    ambientGlowPrimary: "oklch(92% 0.075 237)", //      #B5EDFF  the light blue field
-    ambientGlowSecondary: "oklch(91.5% 0.055 262)", //  #CFE4FF  toward violet, for depth
-    ambientAura: "oklch(94% 0.055 232)", //             #C7F3FF  the widest, faintest horizon
+    accent: "oklch(49.4% 0.1959 260.92)", //         #1157CE   6.25:1
+    accentMuted: "oklch(54.61% 0.2152 262.88)", //   #2563EB   5.04:1
+    accentSoft: "oklch(96.19% 0.0109 274.89)", //    #F0F2FA — fill only
+    /*
+     * DEVIATION 2 — the selected fill measures 1.05:1 against the canvas, far below the 3:1
+     * WCAG 2.2 SC 1.4.11 asks of a state indicator.
+     *
+     * v1 solved this with a 2 px left accent bar. The new reference has no such bar, and the brief
+     * forbids adding decoration the image does not contain — so the bar is **removed** and the
+     * companion signal moves onto something the design already draws: the selected row's checkbox
+     * ring takes the accent colour, at 6.25:1. Selection is still carried by two signals, and
+     * nothing was invented to achieve it.
+     */
+    selectionEdge: "oklch(49.4% 0.1959 260.92)",
 
-    focusRing: "oklch(47.79% 0.118 270.31)",
-    backdrop: "oklch(24.04% 0.0015 17.26 / 0.45)",
+    /*
+     * Completion is BLUE, by explicit Product Owner instruction — "task đã tick cũng dùng blue
+     * (không dùng green)". `success` therefore resolves to the accent rather than to a green, and
+     * no task state uses green anywhere.
+     */
+    success: "oklch(49.4% 0.1959 260.92)",
+    warning: "oklch(52% 0.13 65)",
+    danger: "oklch(50% 0.17 25)",
+    successSoft: "oklch(96.19% 0.0109 274.89)",
+    warningSoft: "oklch(95% 0.04 75)",
+    dangerSoft: "oklch(95% 0.035 25)",
+
+    // Life preview nodes: near-white with the faintest tint, exactly as sampled. The focal node is
+    // the only one that carries the accent family.
+    lifeLavender: "oklch(97.4% 0.009 268)", //   #F0F3FD, the focal node
+    lifeMint: "oklch(98.2% 0.005 160)",
+    lifePeach: "oklch(98.2% 0.005 60)",
+    lifeBlue: "oklch(98% 0.006 264)",
+    lifeCream: "oklch(98.4% 0.004 90)",
+
+    /*
+     * Ambient art is retained as a token family but is **not rendered on Today**. The brief is
+     * explicit: no decorative field at the top, art must be almost invisible, nothing may encroach
+     * on content. These values are kept near-neutral so that if a quieter surface ever uses them,
+     * they cannot reintroduce the coloured atmosphere this reference removed.
+     */
+    ambientContour: "oklch(96% 0.006 264)",
+    ambientGlowPrimary: "oklch(98.4% 0.004 264)",
+    ambientGlowSecondary: "oklch(98.4% 0.003 274)",
+    ambientAura: "oklch(98.8% 0.003 264)",
+
+    focusRing: "oklch(49.4% 0.1959 260.92)",
+    backdrop: "oklch(25.42% 0.0111 254.04 / 0.4)",
   },
 
   radius: {
     small: "4px",
     control: "8px",
     surface: "12px",
-    floating: "16px",
+    floating: "14px",
     full: "999px",
   },
 
   /*
-   * Elevation exists in three steps and main content uses `none`. The two visible steps are
-   * expressed as a single soft shadow rather than a stack, because on the measured target machine
-   * — two cores, integrated graphics — a multi-layer shadow is real compositing work for an effect
-   * the reference does not contain.
+   * Elevation is almost absent. The row group and the inspector are distinguished by being *whiter*
+   * than the canvas, not by floating above it — which is why `floating` is this soft and why main
+   * content uses `none`.
    */
   elevation: {
     none: "none",
-    floating: "0 4px 16px oklch(24.04% 0.0015 17.26 / 0.08)",
-    modal: "0 16px 48px oklch(24.04% 0.0015 17.26 / 0.16)",
+    floating: "0 2px 10px oklch(25.42% 0.0111 254.04 / 0.06)",
+    modal: "0 12px 40px oklch(25.42% 0.0111 254.04 / 0.14)",
   },
 
   hairline: {
-    structural: "1px solid oklch(94.15% 0.0067 286.27)",
-    subtle: "1px solid oklch(96.46% 0.0017 67.8)",
+    structural: "1px solid oklch(94.92% 0.0042 271.37)",
+    subtle: "1px solid oklch(97.2% 0.003 271)",
   },
 });

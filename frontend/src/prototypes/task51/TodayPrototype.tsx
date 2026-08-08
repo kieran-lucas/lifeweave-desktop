@@ -4,7 +4,6 @@ import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from "motion/r
 import { spring, reduced } from "../../design-system/visual/motion.css";
 import { Icon, type IconName } from "../../design-system/visual/icons";
 import { beginInteraction, commitInteraction } from "./instrumentation";
-import { Ambient } from "./Ambient";
 import * as s from "./prototype.css";
 import {
   dense,
@@ -152,7 +151,9 @@ function TaskRow({
     >
       <button
         type="button"
-        className={s.checkState[task.evaluation ?? "none"]}
+        className={`${s.checkState[task.evaluation ?? "none"]} ${
+          selected && task.evaluation === null ? s.checkSelected : ""
+        }`}
         aria-label={`${evaluationLabel(task.evaluation)}: ${task.title}`}
         onClick={onToggle}
       >
@@ -505,7 +506,6 @@ export function TodayPrototype({ state }: { state: LockState }) {
   );
 
   const selected = tasks.find((t) => t.id === selectedId) ?? tasks.find((t) => t.note) ?? tasks[0];
-  const density = state === "empty" ? "quiet" : state === "dense" || state === "timer" ? "dense" : "normal";
   const collapsed = false;
 
   const withInspector = showInspector && selected;
@@ -568,9 +568,15 @@ export function TodayPrototype({ state }: { state: LockState }) {
     <div className={`${s.shell} ${withInspector ? "" : s.shellNoInspector}`}>
       <Sidebar collapsed={collapsed} />
 
-      <main className={s.workspace}>
-        <Ambient density={density} />
+      {/*
+        No ambient art on Today.
 
+        Baseline v2 contains none: no contour field, no glow, no decorative band above the header.
+        The brief is explicit that the top decoration must go and that nothing may encroach on
+        content, so the layer is not rendered here at all. The `Ambient` component and its tokens
+        survive for a quieter surface to opt into later; Today opts out.
+      */}
+      <main className={s.workspace}>
         <div className={s.workspaceScroll}>
           {/*
             The day change's continuity, without a snapshot. Keying on `dayOffset` gives the old

@@ -200,7 +200,19 @@ only. Decorative art is `pointer-events: none`, `aria-hidden`, and carries no se
 occupies empty space and retreats as information density rises: a dense Today shows less ambient art
 than a quiet Life surface, and Today and Reader require no continuous animation at all.
 
-### 10.1 The art hue is light blue
+### 10.0 WITHDRAWN for baseline v2
+
+**§10.1 below applied to reference v1 and no longer governs.** The Product Owner supplied
+`lifeweave-visual-baseline-v2.png` as the new source of truth. It contains **no ambient art**, and
+the accompanying brief requires that the decorative field above the header be removed, that art be
+almost invisible, and that no contour or glow encroach on content.
+
+Today therefore renders no ambient layer at all. The `ambient*` roles and the `Ambient` component
+are retained for a quieter surface to opt into later, and their values are re-derived to
+near-neutral so a coloured atmosphere cannot return by accident. §10.1 is kept below as the record
+of a superseded decision, not as an instruction.
+
+### 10.1 The art hue is light blue — SUPERSEDED, see §10.0
 
 Explicit Product Owner direction, strengthened at VISUAL LOCK: **the art vibe is light blue, and
 must lean clearly that way rather than merely reading as non-warm.** This is the one place in
