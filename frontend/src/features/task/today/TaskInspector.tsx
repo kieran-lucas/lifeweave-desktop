@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   Icon,
@@ -55,6 +55,27 @@ export function TaskInspector({
   onFocusPlanNavigate?: ((id: string) => void) | undefined;
 }) {
   const [facet, setFacet] = useState<Facet>("note");
+  const root = useRef<HTMLElement>(null);
+
+  /*
+   * Bring the inspector into view when it opens *stacked*.
+   *
+   * `splitWorkspace` drops to a single column below 900px of container width, which puts the
+   * inspector under the whole timeline. Measured at a 960x640 viewport, selecting a task then
+   * highlighted the row and showed nothing — the detail was real, correctly ordered and entirely
+   * off-screen, so selection looked like it had failed.
+   *
+   * The fix is a scroll, not a reorder. Task 50 stacks in DOM order precisely so reading and focus
+   * order survive narrow widths, and CSS `order` would break that for a visual gain. `block:
+   * "nearest"` is a no-op when the inspector is already beside the timeline, so the wide layout is
+   * untouched, and the default instant behaviour respects reduced motion without a media query.
+   */
+  useEffect(() => {
+    const node = root.current;
+    if (!node) return;
+    const stacked = node.getBoundingClientRect().top > window.innerHeight - 80;
+    if (stacked) node.scrollIntoView({ block: "nearest" });
+  }, [item.id]);
 
   const linkCount = (item.life_area ? 1 : 0) + (item.focus_plan ? 1 : 0);
   /*
@@ -86,7 +107,7 @@ export function TaskInspector({
   ];
 
   return (
-    <aside className={styles.inspector} aria-label={`Details for ${item.title}`}>
+    <aside ref={root} className={styles.inspector} aria-label={`Details for ${item.title}`}>
       <div className={styles.inspectorHeader}>
         <span className={styles.inspectorContext}>
           <Icon d={iconPlans} size={15} />

@@ -9,7 +9,25 @@ import { space } from "../../../app/layout/tokens.css";
  * ceiling even after the component itself was made lazy. Co-locating the styles with the component
  * moves those constants into the lazy chunk, where they belong.
  */
-export const inspector=style({display:"flex",flexDirection:"column",minInlineSize:0,paddingInlineStart:space.x5,borderInlineStart:"1px solid var(--border-subtle)",position:"sticky",top:0,alignSelf:"start"});
+/*
+ * The separator follows the layout.
+ *
+ * `splitWorkspace` stacks below 900px of *container* width, and a leading vertical hairline on a
+ * full-width stacked block reads as a stray line rather than as a division. The same container
+ * query the split uses switches it to a top rule, so the separator always sits between the two
+ * regions it actually separates. `position: sticky` is likewise only meaningful beside the
+ * timeline.
+ */
+export const inspector=style({
+  display:"flex",flexDirection:"column",minInlineSize:0,
+  paddingBlockStart:space.field,marginBlockStart:space.x3,
+  borderBlockStart:"1px solid var(--border-subtle)",
+  "@container":{"(min-width: 900px)":{
+    paddingInlineStart:space.x5,paddingBlockStart:0,marginBlockStart:0,
+    borderBlockStart:"none",borderInlineStart:"1px solid var(--border-subtle)",
+    position:"sticky",top:0,alignSelf:"start",
+  }},
+});
 export const inspectorHeader=style({display:"flex",alignItems:"center",gap:space.control,minInlineSize:0});
 export const inspectorContext=style({display:"inline-flex",alignItems:"center",gap:6,marginInlineEnd:"auto",minInlineSize:0,color:"var(--text-muted)",fontSize:"0.8125rem",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"});
 export const inspectorClose=style({display:"grid",placeItems:"center",inlineSize:28,blockSize:28,minBlockSize:0,padding:0,border:0,borderRadius:8,background:"transparent",color:"var(--text-muted)",cursor:"pointer",selectors:{"&:hover":{background:"var(--icon-background)",color:"var(--text-primary)"},"&:focus-visible":{outline:"2px solid var(--focus-ring)",outlineOffset:2}}});

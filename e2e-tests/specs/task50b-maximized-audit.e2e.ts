@@ -143,7 +143,57 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
     this.timeout(900_000);
 
     await go("Today", "h1#today-heading");
-    await capture("today", "01-today");
+    await capture("today--unselected", "01-today");
+
+    /*
+     * Today with the production context inspector open.
+     *
+     * Selection is semantic, not coordinate-based: the first seeded row carries `data-task-id`, and
+     * clicking it is exactly what a user does. The wait is on the inspector's own accessible name
+     * rather than on a fixed pause, because the inspector is lazily imported and an arbitrary
+     * timeout would either flake or hide a slow load.
+     *
+     * This asserts the *production* inspector — `aside[aria-label^="Details for"]` exists only in
+     * `features/task/today/TaskInspector.tsx`, never in the isolated prototype.
+     */
+    /*
+     * Click the row's *title*, not the row's centre.
+     *
+     * The row selects on click, but its Life-area and Focus-Plan chips are buttons that correctly
+     * `stopPropagation`, and on the seeded fixture a long Focus-Plan chip sits across the middle of
+     * the row — so a naive centre-click lands on the chip and selects nothing. The title is inert
+     * and bubbles to the row, which is what a user clicking the task name actually does.
+     */
+    const firstRow = $("[role='listitem'][data-task-id] strong");
+    if (await firstRow.isExisting()) {
+      await firstRow.click();
+      const inspector = $("aside[aria-label^='Details for']");
+      await inspector.waitForDisplayed({ timeout: 15_000 });
+      await capture("today--selected", "01b-today-selected");
+
+      // Each inspector facet is a separate composition and each is measured.
+      for (const facet of ["Details", "Time", "Links"]) {
+        const tab = $(`[role='tab']=${facet}`);
+        if (await tab.isExisting()) {
+          await tab.click();
+          await browser.pause(250);
+          await capture(`today--selected-${facet.toLowerCase()}`, `01c-today-${facet.toLowerCase()}`);
+        }
+      }
+
+      const close = $("button[aria-label='Close details']");
+      if (await close.isExisting()) {
+        await close.click();
+        await browser.pause(300);
+      }
+    } else {
+      records.push({
+        screen: "today--selected",
+        utilization: null,
+        collisions: [],
+        note: "NOT TESTED: no seeded row exposed data-task-id",
+      });
+    }
 
     if (await tryClick("button[aria-label='Create task']")) {
       await capture("task-create", "02-task-create");
