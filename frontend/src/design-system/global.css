@@ -1,38 +1,65 @@
+/*
+ * Lifeweave global baseline — Visual Baseline v2 (ADR 0045).
+ *
+ * The legacy custom-property NAMES are deliberately preserved. Thirty domain `*.css.ts` files
+ * consume `--surface`, `--text-muted`, `--active-background` and friends; re-pointing their values
+ * moves the entire application onto the v2 palette in one step, and lets each feature migrate to
+ * the typed visual contract in `design-system/visual/` at its own pace instead of in one
+ * unreviewable diff.
+ *
+ * Every value below is measured from `docs/visual/task-51/lifeweave-visual-baseline-v2.png`.
+ * The composition is neutral first, blue second: the neutral ramp spans barely 5% of lightness, and
+ * blue appears only where the reference uses it — active navigation, selection, dates, active tabs,
+ * links and actions, and completed tasks.
+ */
 :root {
-  font-family: Inter, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
-  color: #18202a;
-  background: #f5f7fa;
+  font-family: "Segoe UI Variable", "Segoe UI", Inter, system-ui, sans-serif;
+  color: #1f2328;
+  background: #fcfcfd;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+
+  /* Neutral planes. Sidebar sits lowest, canvas above it, raised surfaces are pure white. */
+  --app-background: #fcfcfd;
+  --sidebar-background: #fafafc;
   --surface: #ffffff;
-  --border-subtle: #dce2e8;
-  --accent: #476dd6;
-  --app-background: #f5f7fa;
-  --sidebar-background: #ffffff;
-  --surface: #ffffff;
-  --text-primary: #18202a;
-  --text-muted: #647080;
-  --active-background: #e9efff;
-  --icon-background: #edf1f6;
-  --focus-ring: #476dd6;
+  --border-subtle: #edeef1;
+
+  /* Text. 15.4:1, 10.0:1 and 5.9:1 on the canvas respectively. */
+  --text-primary: #1f2328;
+  --text-muted: #5c636e;
+
+  /* The single accent. 6.25:1 on canvas, so it is safe as text — v2 uses blue *as text*. */
+  --accent: #1157ce;
+  --active-background: #f0f2fa;
+  --icon-background: #f4f7fd;
+  --focus-ring: #1157ce;
+
   --layer-modal: 10;
   --layer-overlay: 40;
 }
 
+/*
+ * Dark is composed against the same axes rather than inverted: the canvas keeps the cool hue at low
+ * lightness, tonal steps stay small so regions do not read as stacked panels, and the accent is
+ * lifted in lightness and reduced in chroma — a saturated blue on a dark field glows and fatigues
+ * over the long sessions this product is built for.
+ */
 @media (prefers-color-scheme: dark) {
   :root {
-    color: #e8edf3;
-    background: #11161d;
-    --surface: #181f28;
-    --app-background: #11161d;
-    --sidebar-background: #181f28;
-    --text-primary: #e8edf3;
-    --text-muted: #aeb9c6;
-    --active-background: #293754;
-    --icon-background: #2a3441;
-    --focus-ring: #91adff;
-    --border-subtle: #303b47;
-    --accent: #91adff;
+    color: #f2f3f5;
+    background: #14161a;
+    --app-background: #14161a;
+    --sidebar-background: #111317;
+    --surface: #1b1e23;
+    --border-subtle: #2a2e35;
+    --text-primary: #f2f3f5;
+    --text-muted: #a3abb6;
+    --accent: #8ab4f8;
+    --active-background: #22293a;
+    --icon-background: #1f2531;
+    --focus-ring: #8ab4f8;
   }
 }
 
@@ -61,18 +88,35 @@ select {
 }
 
 :focus-visible {
-  outline: 3px solid var(--accent);
-  outline-offset: 3px;
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 
+/*
+ * Scrollbars are part of the composition. The WebView2 default is a light grey column that reads as
+ * a bright bar through a dark theme, which the Task 51 capture caught.
+ */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-subtle) transparent;
+}
+
+/*
+ * Reduced motion is a designed state, not a blanket zeroing (ADR 0045 §6).
+ *
+ * The previous rule set every duration to 0.01ms, which replaces a movement with a jump — the exact
+ * disorientation the movement existed to prevent, and something
+ * `docs/ACCESSIBILITY_AND_INPUT.md` already forbids. What is removed here is *travel*; what is kept
+ * is a short tonal cross-fade, so a change is still perceived as a change.
+ */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     scroll-behavior: auto !important;
-    animation-duration: 0.01ms !important;
+    animation-duration: 80ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    transition-duration: 80ms !important;
   }
 }
 
@@ -86,6 +130,8 @@ select {
     --surface: Canvas;
     --app-background: Canvas;
     --sidebar-background: Canvas;
+    --active-background: Highlight;
+    --icon-background: Canvas;
   }
 
   button,
