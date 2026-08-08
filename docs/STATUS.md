@@ -220,8 +220,24 @@ lazy inspector         7.34 kB JS + 2.86 kB CSS, loaded only on selection
 net eager cost         +2,268 bytes for the whole feature
 ```
 
+- the **Today inspector keyboard path**. It was pointer-only when it landed: the row's `Enter`
+  opens the editor (a Task 50 gesture that must not change), so no key reached the inspector at all.
+  `Space` now selects; keyboard selection moves focus to the heading (`tabIndex={-1}`, never in tab
+  order) while pointer selection deliberately does not steal focus; `Escape` and the close control
+  both restore focus to the originating row, never to `body`. The region is labelled and non-modal —
+  no `role="dialog"`, no focus trap, no `aria-modal`, because it is contextual detail. Five contracts
+  pin this in `TodayScreen.test.tsx`.
+- **Calendar** — recomposed, not repainted. The month grid was a 1 px `gap` over a coloured sheet,
+  making every one of 35–42 cells a floating tile; it is now one continuous surface with a single
+  outer hairline and separators drawn on the cells. Today is a filled accent disc, selection the
+  pale v2 field — two different kinds of mark, neither colour-only. Outside-month days recede by
+  tone rather than opacity, which had been dimming the hairlines too. **The period-load bars were
+  rendering green** — `accent-color` was silently ignored once the element left Chromium's native
+  `<progress>` path — and are now explicitly blue on a neutral track. Full keyboard grid untouched;
+  13 Calendar tests pass; 0 collisions and 0 overflow at all four achievable viewports.
+
 **Not yet migrated** — these inherit the v2 palette through `global.css` but have not had their
-composition reworked: Calendar,
+composition reworked:
 Analytics, Focus Plans, Life/Graph, Reader/Editor, Narrative, Search, Settings and the dialog set.
 Visual-regression goldens for v2 are not yet established, and the whole-app coherence pass has not
 been run.
