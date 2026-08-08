@@ -1,0 +1,238 @@
+# ADR 0045 — Visual experience overhaul (Quiet Luminous Atlas)
+
+## Status
+
+Accepted and activated for Task 51 / Slice 041 from explicit Product Owner activation baseline
+`43d0d1e822336c97527f85e1ab154fc74a61f058`.
+
+Task 51 is a **presentation slice**. It changes no schema, no migration, no domain rule, no IPC
+contract and no Rust product code, so under the Task 40 and Task 50 precedent it does not advance
+`latest_feature_task`, which stays at 49 with checkpoint
+`7622db3d8b2b42d69c8f497b6899c5be82e9f9a9`.
+
+### Authorization and the contradiction it resolves
+
+`START_HERE.md`, `docs/STATUS.md` and `specs/040-global-layout-system/README.md` each record
+"Task 51: prohibited, unstarted, unallocated, and unrecommended". That was the correct state at
+Task 50 closure, whose ADR deferred art direction "to a later Product Owner gate".
+
+The Task 51 activation prompt is that gate: an explicit later Product Owner decision, which
+`AI_CONSTITUTION.md` §1 ranks above the files above. Per the same section the contradiction is
+**reported rather than silently reconciled** — it is recorded here, in
+`docs/audits/task-51-visual-baseline.md` §6.3, and the three files are updated by this activation
+rather than left to disagree with the ledger.
+
+## Context
+
+Task 50 gave Lifeweave exactly one geometry authority and proved it: at the canonical maximized
+viewport of 1536 × 794 the application has zero document overflow, zero viewport overflow and zero
+semantic spacing collisions across 24 audited screens. It also said, explicitly and correctly, that
+the application would still look plain, because "decorating a broken layout was the failure mode
+this ADR exists to prevent".
+
+The layout is no longer broken. What remains is that Lifeweave has **no visual system at all**.
+Measured at this baseline across `frontend/src`:
+
+```text
+CSS custom properties in the whole design system   13
+distinct borderRadius values                       31
+distinct boxShadow values                          14
+distinct hardcoded hex colours in features/*       29   (87 occurrences)
+editorial type scale                                0
+motion vocabulary                                   0
+icon vocabulary                                     0   (destinations render their first letter
+                                                        in a filled grey square)
+```
+
+This is structurally the same defect Task 50 fixed one layer down — many private answers to one
+question — and it produces the same class of incoherence. Life Browse renders a filled rounded
+container holding four navigation buttons, floated above a white card with a 24 px radius and a
+large shadow, which itself contains a second card with its own shadow. A populated Today row places
+outlined metadata chips inside a row that already carries a bottom hairline.
+
+The Product Owner has supplied a single visual target, **Lifeweave Visual Baseline v1**, and has
+stated that fidelity to it outranks preserving the current composition.
+
+## Research basis
+
+ADR 0044's sources are not restated; its classical-aesthetics rubric (Ngo, Teo & Byrne 2003) and its
+common-region justification (Palmer 1992) remain in force and are the reason this ADR forbids
+solving hierarchy with rectangles. Task 51 adds constraints from the platform and the measured
+target machine rather than new aesthetic theory:
+
+- **W3C WCAG 2.2, SC 1.4.11 Non-text Contrast** and **SC 1.4.3 Contrast (Minimum)** — a restrained
+  palette must still clear 3:1 for interface boundaries and state, and 4.5:1 for body text. The
+  reference's pale tonal selection is adopted only where it does that, which is why the decision
+  below requires selection to be legible without relying on the fill alone.
+- **W3C WCAG 2.2, SC 2.3.3 Animation from Interactions** — motion driven by interaction must be
+  disableable. This is why reduced motion is a designed state here rather than a blanket zeroing.
+- **CSS Color Level 4 `oklch()`** — perceptual lightness lets a tonal ramp be derived rather than
+  hand-picked, which is the mechanism that stops 31 radii and 29 hex colours recurring as 29 hex
+  colours in a new hue.
+- **The measured target machine** — 2 cores, integrated GPU, 7.8 GB RAM, 1.25 DPR. Continuous blur,
+  glass, large animated filters and per-frame shadow interpolation are excluded on measurement
+  grounds, not only on taste grounds.
+
+No claim is made that any value below is an experimentally proven optimum. The reference image is
+the authority for appearance; this ADR is the authority for how that appearance is expressed.
+
+## Decision
+
+> **Lifeweave is one continuous calm surface, articulated by space, type, tone, hairline and
+> motion. Boxes are exceptions, not structure. There is exactly one visual authority — a token
+> contract separate from the geometry authority — and no feature declares its own colour, radius,
+> elevation, editorial type or transition. The whole screen is locked before any production surface
+> is restyled, and state always commits before motion.**
+
+### 1. Two authorities, not one
+
+```text
+frontend/src/app/layout/          geometry     Task 50, unchanged in kind
+frontend/src/design-system/visual/  appearance   Task 51
+```
+
+Geometry answers "how wide, how far apart". Appearance answers "what colour, what radius, what
+weight, how fast". They are kept apart so a future agent editing a hue cannot move a page edge, and
+because `check_layout_authority.py` already enforces that `app/layout/tokens.css.ts` contains
+geometry only. That rule is retained.
+
+### 2. Finite visual vocabularies
+
+Each vocabulary is small and closed. A value outside it requires a documented reason in the closure
+audit, exactly as a non-ramp spacing value already does.
+
+```text
+radius        small · control · surface · floating          (4 levels, replacing 31)
+elevation     none · floating · modal                        (3 levels, replacing 14 shadows)
+hairline      structural · subtle                            (2, replacing ad-hoc grey borders)
+type          UI family + editorial family, one scale each
+motion        named durations, easings and springs
+colour        semantic roles only; no page-specific colour where a role exists
+```
+
+Colour roles are derived in `oklch()` so lightness and chroma relationships hold across light and
+dark, and are exposed through a vanilla-extract `createThemeContract` so a missing role is a type
+error rather than a silent fallback.
+
+### 3. Enclosure budget
+
+Visible content may not exceed **two enclosure levels** without a recorded reason. Hierarchy is
+established in this order:
+
+```text
+space → tone → hairline → typography → elevation
+```
+
+Elevation is reserved for surfaces that genuinely float — menus, popovers, transient dialogs, and a
+drag overlay. Main content is `none`. A selected row may not simultaneously carry a strong border,
+a saturated fill and a shadow.
+
+### 4. Full-screen lock before production edit
+
+Production presentation files are not overhauled component-by-component. The sequence is
+prototype → `VISUAL LOCK` → motion prototype → `MOTION LOCK` → production. Approval is explicit and
+is never inferred. If implementation reveals a genuine layout problem, the locked design is updated
+first and re-evidenced; it is not improvised around in production.
+
+The prototype lives in `frontend/src/prototypes/task51/` and may not change production appearance
+before approval.
+
+### 5. State before motion
+
+A click is acknowledged on the next display frame where physically possible. A task mutation commits
+optimistically and the settling animation follows it; the animation never gates the state. Direct
+manipulation uses interruptible transform-based layout animation, never snapshot-based view
+transitions. Per-pointer-move IPC or database work is prohibited.
+
+Work is assigned to the cheapest correct layer:
+
+```text
+CSS / WAAPI            hover, press, focus, checkbox microstate, small popover entry
+Motion layout          reorder settling, inspector geometry, selected indicator, spatial reflow
+element View Transition  bounded large-surface continuity, feature-detected, with a working fallback
+React <Activity>       selective warm state preservation, only where profiled
+```
+
+### 6. Reduced motion is a designed state
+
+The current blanket `animation-duration: 0.01ms !important` is replaced. Large transforms, spatial
+sweeps and ambient loops become short fades, tonal state change or instant state. The application
+never exceeds the system preference and never produces a disorienting jump in place of a movement.
+This aligns the implementation with `docs/ACCESSIBILITY_AND_INPUT.md`, which already forbids zeroing
+every duration.
+
+### 7. Art is bounded and retreating
+
+Baseline art is static SVG contours, soft gradients, sparse dots and pastel graph nodes, built from
+CSS, SVG and ordinary DOM. No WebGL engine, no particle field, no looping video, no animated blur,
+no character art, no wallpaper. Art occupies empty space and reduces as information density rises;
+Today and Reader carry no required continuous animation. Any approved ambient movement animates only
+transform and opacity, is bounded in amplitude and period, and stops when its surface is hidden or
+the window is inactive.
+
+### 8. The window stays opaque
+
+The current opaque Tauri window foundation is kept. Mica, Acrylic, transparency and global glass are
+not adopted; on the measured target hardware they would cost compositing work for an effect the
+reference does not contain.
+
+### 9. Behavioural primitives stay native first
+
+Native semantic HTML remains the first choice. A behavioural primitive library is admitted only if
+the prototype identifies a concrete primitive where it beats the existing implementation, and if
+admitted it owns that primitive class exclusively — there may not be two owners of dialog focus
+behaviour. Default library appearance never ships.
+
+### 10. The art-direction freeze is replaced, not bypassed
+
+`scripts/check_layout_authority.py` currently fails the build if `global.css` stops containing
+`font-family: Inter,`, `--accent: #476dd6;`, `--surface: #ffffff;` or `--focus-ring: #476dd6;`.
+That freeze existed because Task 50 was not authorized to choose art direction. Task 51 is. The
+freeze is therefore **replaced by a Task 51 art-direction authority check** asserting that the
+visual contract is the sole declarer of colour, radius, elevation, editorial type and motion, and
+that no feature reintroduces a hardcoded hex. It is never deleted to make a red gate green.
+
+## Consequences
+
+- `frontend/src/design-system/visual/` becomes the single answer to "what colour, radius, weight or
+  duration is this?". A future agent opens one directory, not thirty `*.css.ts` files.
+- The 29 hardcoded hex colours in `features/*` become semantic roles and therefore start
+  participating in dark theme and forced colors, which several of them currently do not.
+- The application shell gains a third column for the context inspector. The 220 px sidebar and the
+  absence of an inspector are presentation decisions Task 50 did not lock, and both may change.
+- Task 50's geometry invariants remain binding and are re-proven, not re-argued: zero document
+  overflow, zero viewport overflow, zero semantic collisions, stable framing, local scroll
+  ownership.
+- New dependencies are limited to self-hosted Literata, a curated Fluent System icon subset,
+  vanilla-extract recipes, and the WebdriverIO v9 visual service, each with a written rationale.
+- The bundle budget is measured and reported at each gate. `index.js` has 5,473 bytes of headroom at
+  baseline; raising a ceiling remains a Product Owner decision supported by measurement.
+
+## Explicitly not decided here
+
+No product semantics. No category rename, no removed recurrence control, no removed metadata, no
+hidden error or recovery information, no collapsed accessibility alternative, and no new Task facet.
+The reference inspector shows Note / Details / Subtasks / Links; Lifeweave Tasks have no subtasks and
+no task-to-task links, and none will be invented to match the picture. The inspector expresses the
+facets a Lifeweave Task actually has.
+
+No schema 28, no migration, no Rust product change, no new IPC command, no new Tauri capability, no
+broadened filesystem or shell permission, no network service, no accounts or sync, no backup format
+change, and no workflow or seal change.
+
+No replacement of React, Tauri, Tiptap, dnd-kit, TanStack Query, d3-hierarchy or vanilla-extract. No
+Tailwind, shadcn, Material UI, full Fluent UI React, GSAP, Rive, PixiJS, Three.js, React Flow,
+Sigma, Cytoscape, `window-vibrancy`, second drag-and-drop library, second editor, chart library, or
+React canary.
+
+Still deferred and untouched: Narrative Canvas expansion, prediction, advanced Graph, tags beyond
+the existing unified system, backlinks beyond ADR 0035, Noteboard, sound design, brand and logo
+work, and every item ADR 0044 listed as not decided.
+
+## Rollback
+
+Task 51 is presentation-only and adds no persisted data, so rollback is a Git operation with no
+migration and no user-data consequence. Work is committed as ordered local checkpoints on
+`task-51-visual-experience` from `43d0d1e`, and any checkpoint may be reverted independently. The
+visual contract is additive until the production slice consumes it, so the prototype phases are
+removable without touching a production surface.

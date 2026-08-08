@@ -1,5 +1,66 @@
 # Project Status
 
+## Task 51/60 — Visual Experience Overhaul, "Quiet Luminous Atlas" (active)
+
+- Activation baseline: `43d0d1e822336c97527f85e1ab154fc74a61f058`.
+- Active slice: `041-visual-experience-overhaul` under
+  [ADR 0045](adr/0045-visual-experience-overhaul.md).
+- Local branch `task-51-visual-experience`, created from the activation baseline. **Nothing is
+  pushed**, no PR is opened, no remote branch is modified, and the sealed workflow is untouched, per
+  explicit Product Owner instruction for this task.
+- Task 50 closed with art direction explicitly unallocated and deferred to a later Product Owner
+  gate. Task 51 is that gate. Until activation, `START_HERE.md`, this file and Slice 040 recorded
+  Task 51 as prohibited; the activation prompt is an explicit later Product Owner decision, which
+  `AI_CONSTITUTION.md` §1 ranks above those files. The contradiction is recorded rather than
+  silently reconciled — ADR 0045 § "Authorization and the contradiction it resolves".
+- Scope: one visual authority under `frontend/src/design-system/visual/` beside Task 50's geometry
+  authority; finite radius, elevation, hairline, type, motion and colour vocabularies; an enclosure
+  budget replacing nested rectangles; a context inspector column; restrained static art; dark theme
+  composed deliberately; reduced motion as a designed state; visual regression; and interaction
+  performance instrumentation.
+- **Presentation only.** Schema stays 27 with no migration, no Rust product change, no new IPC
+  command, no new capability, no broadened permission, no network service, no backup-format change
+  and no workflow or seal change. No product semantics change, and no Task facet is invented to
+  match the reference image — Lifeweave has no subtasks and no task-to-task links, which the
+  reference inspector displays.
+- Following the Task 40 and Task 50 precedent, Task 51 does **not** advance `latest_feature_task`,
+  which stays 49 at `7622db3d8b2b42d69c8f497b6899c5be82e9f9a9`.
+
+### Phase 0 baseline — measured, complete
+
+Environment: Windows 11 build 26200, Intel i3-1115G4 (2 cores / 4 threads), Intel UHD integrated
+graphics, 7.8 GB RAM, WebView2 151.0.4129.72. Screen 1536 × 864 CSS at `devicePixelRatio` 1.25, work
+area 1536 × 816, **maximized inner viewport 1536 × 794** — identical to the Task 50 post-closure
+record.
+
+Gates at `43d0d1e`, before any Task 51 edit: `pnpm verify` PASS; `pnpm typecheck` PASS; `pnpm test`
+PASS at **766 tests across 51 files**; `pnpm build` PASS; `pnpm hardening:performance` PASS with
+`violations: []`; the Task 50 maximized layout audit PASS at **24 screens, 0 semantic collisions,
+0 document overflow, 0 viewport overflow**. Rust gates are recorded as NOT RUN, because the Rust
+tree is out of scope and untouched; they run before closure.
+
+Visual census of the state Task 51 replaces: the whole design system declares **13 CSS custom
+properties**, while `frontend/src` contains **31 distinct border radii, 14 distinct box shadows and
+29 distinct hardcoded hex colours across 87 occurrences**, with no scale for elevation, hairline,
+editorial type, icon or motion. This is structurally the same defect Task 50 fixed one layer down.
+
+`index.js` measures 529,527 bytes against its locked 535,000 ceiling — **5,473 bytes of headroom**,
+recorded as the hardest pre-existing constraint on the slice. Raising a ceiling remains a Product
+Owner decision supported by measurement, not a response to a red gate.
+
+Baseline evidence: `docs/audits/task-51-visual-baseline.md`.
+
+### Process gates — both outstanding
+
+```text
+VISUAL LOCK   not requested — the Product Owner reference image has not been supplied, and
+              §3 of the activation prompt forbids claiming visual fidelity without it
+MOTION LOCK   blocked on VISUAL LOCK
+```
+
+No production presentation file may be visually overhauled before `VISUAL LOCK APPROVED` is received
+in words. Approval is never inferred.
+
 ## Task 50/60 — Global Layout System + UI Surface Completeness (complete)
 
 - Activation baseline: `2c4cb188937393103e12b1042779af5ea266acda`.
@@ -46,8 +107,9 @@
 - Art direction is explicitly out of scope and remains unallocated: no palette, brand, logo, font
   family, icon language, radius or shadow language, illustration, Visual World art, motion
   personality, or sound change.
-- Next action: Product Owner gate. Task 51 is prohibited, unstarted, unallocated, and unrecommended.
-  Full evidence is in `docs/audits/task-50-layout-final.md`.
+- At Task 50 closure the next action was a Product Owner gate, with Task 51 prohibited, unstarted,
+  unallocated and unrecommended. That gate has since been taken: Task 51 is activated above under
+  ADR 0045. Full Task 50 evidence remains in `docs/audits/task-50-layout-final.md`.
 
 ### Task 50 post-closure remediation — maximized-window layout
 
