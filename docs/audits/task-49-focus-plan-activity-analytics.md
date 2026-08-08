@@ -6,8 +6,8 @@
 execution baseline        86261298ccd99204da503f508b4dfb9ac50cee04
 activation commit         2d12d76011a73934a0dab4cab8f0977bf0deb99c
 product checkpoint        7622db3d8b2b42d69c8f497b6899c5be82e9f9a9
-closure commit            <closure-commit>
-audit-record commit       <audit-record-commit>
+closure commit            fdb65d74220eb98d8ddfc9f5d844631d227e0271
+audit-record commit       this commit
 Task 48 feature checkpoint 51e24c54f12f0236ecba1bd81936bc11db59f8ac
 schema                    27 -> 27 (no migration)
 canonical decision        ADR 0043 — Focus Plan Activity Analytics
