@@ -186,11 +186,23 @@ applied only to the row actually being dragged.
 - 7 of 22 vendored icons now reach production, because the icon module was rewritten from a
   non-tree-shakeable lookup map to named exports.
 
+- the Today **week strip** — seven bordered 58 px cells and two bordered arrows replaced by a
+  chromeless typographic cluster: pale-blue selected day, an accent dot for today, no cell borders,
+  and one hairline beneath the whole header;
+- the Today **workspace tab strip** — now low-chrome inline navigation with a 2 px accent underline
+  instead of a boxed strip stacked above the page's other boxed regions.
+
+**Feature → UI completeness audited** across the whole repository
+(`docs/audits/task-51-feature-ui-completeness.md`): **117 registered handlers, 0 orphaned**; 2
+unreachable exported components, both Task 20 schema prototypes and intentionally non-UI; no dead
+routes and no duplicate entry points. The open Task 51 work is visual convergence, not feature
+recovery.
+
 **Not yet migrated** — these inherit the v2 palette through `global.css` but have not had their
-composition reworked: the production context inspector (exists only in the prototype), the Today
-week strip and workspace tab strip, Calendar, Analytics, Focus Plans, Life/Graph, Reader/Editor,
-Narrative, Search, Settings and the dialog set. Visual-regression goldens for v2 are not yet
-established.
+composition reworked: the production context inspector (exists only in the prototype), Calendar,
+Analytics, Focus Plans, Life/Graph, Reader/Editor, Narrative, Search, Settings and the dialog set.
+Visual-regression goldens for v2 are not yet established, and the whole-app coherence pass has not
+been run.
 
 ```text
 gates    verify · typecheck · build · performance budget    PASS
