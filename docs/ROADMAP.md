@@ -1,6 +1,6 @@
 # Roadmap
 
-## Slice 038 — Managed Backup Retention and Compatibility Core (active)
+## Slice 038 — Managed Backup Retention and Compatibility Core (complete)
 
 Task 48 activates ADR 0042 to bound existing managed backups without creating Backup v3. Lifeweave
 keeps the fresh backup and up to 11 other recent packages the current binary can restore. Cleanup
@@ -15,7 +15,8 @@ compatibility metadata and accessible confirmation.
 
 Hard boundary: no configurable/manual/scheduled/cloud backup management, format or schema change,
 dependency, capability broadening, background worker, workflow/seal change, or Task 49 work.
-Task 49 is prohibited, unstarted, unallocated, and unrecommended.
+Task 48 closed at product checkpoint `51e24c54f12f0236ecba1bd81936bc11db59f8ac` with schema 27
+and backup format v2. Task 49 is prohibited, unstarted, unallocated, and unrecommended.
 
 ## Slice 037 — Whole-Life Tree Interchange Core (complete)
 

@@ -1,9 +1,11 @@
 # Project Status
 
-## Task 48/60 — Managed Backup Retention and Compatibility Core (active)
+## Task 48/60 — Managed Backup Retention and Compatibility Core (complete)
 
 - Activation baseline: `17a833067cfca5e4c4b11da11dfd987528cb444a`.
-- Active slice: `038-managed-backup-retention-compatibility` under ADR 0042.
+- Activation commit: `a0c5dea1e2767c43819923a2bfaa7d16ba207e6b`.
+- Product checkpoint: `51e24c54f12f0236ecba1bd81936bc11db59f8ac`.
+- Closed slice: `038-managed-backup-retention-compatibility` under ADR 0042.
 - Schema remains 27; no migration. Backup format remains v2.
 - Scope: explicit Ready/MigrationRequired/NewerSchema/NewerFormat inventory metadata; exactly 12
   currently restorable managed backups; pruning only after verified durable publication; fresh and
@@ -12,9 +14,10 @@
 - Existing strict restore, candidate migration, immutable source, active-timer guard, safety
   snapshot, maintenance lock, marker/rollback, checksum/integrity/FK/asset validation remain binding.
 - No dependency, broad filesystem capability, background worker, network destination,
-  workflow/seal change, format/schema change, or Task 49 work is authorized.
-- Next action: implement the active specification. Task 49 is prohibited, unstarted, unallocated,
-  and unrecommended.
+  workflow/seal change, format/schema change, or Task 49 work was added.
+- Next action: Product Owner gate. Task 49 is prohibited, unstarted, unallocated, and
+  unrecommended. Full evidence is in
+  `docs/audits/task-48-managed-backup-retention-and-compatibility.md`.
 
 ## Task 47/60 — Whole-Life Tree Interchange Core (complete)
 

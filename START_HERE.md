@@ -12,19 +12,21 @@
 
 ## Current state
 
-- Latest closed task: **47/60**
-- Latest closed slice: **037 — Whole-Life Tree Interchange Core**
-- Active task: **48/60 — Managed Backup Retention and Compatibility Core**
-- Active implementation specification: **[Slice 038](specs/038-managed-backup-retention-compatibility/README.md)**
-- Latest feature checkpoint: **Task 47 — Whole-Life Tree Interchange Core** (`1c42ac5358579dc8795e4b7c1b76bc004b0269f1`)
+- Latest closed task: **48/60**
+- Latest closed slice: **038 — Managed Backup Retention and Compatibility Core**
+- Active task: **none**
+- Active implementation specification: **none**
+- Latest feature checkpoint: **Task 48 — Managed Backup Retention and Compatibility Core** (`51e24c54f12f0236ecba1bd81936bc11db59f8ac`)
 - Database schema: **27**
-- Next action: **Implement active spec**
+- Next action: **Product Owner gate**
 - Task 49: **prohibited, unstarted, unallocated, and unrecommended**
 
-## Task 48 activation
+## Task 48 closure
 
-Task 48 / Slice 038 is active from baseline `17a833067cfca5e4c4b11da11dfd987528cb444a`
-under [ADR 0042](docs/adr/0042-managed-backup-retention-and-compatibility.md). It keeps at most 12
+Task 48 / Slice 038 is closed at product checkpoint
+`51e24c54f12f0236ecba1bd81936bc11db59f8ac` from baseline
+`17a833067cfca5e4c4b11da11dfd987528cb444a` under
+[ADR 0042](docs/adr/0042-managed-backup-retention-and-compatibility.md). It keeps at most 12
 currently restorable managed backups and prunes only after the fresh package is verified, durably
 published, and verified again. Fresh, incompatible, unknown, safety, staging, restore, and
 outside-root artifacts are never automatically removed; cleanup failure does not invalidate the
@@ -33,7 +35,8 @@ fresh backup.
 Schema remains **27** and backup format remains **v2**. Backup & Restore becomes first-class lazy
 Settings content with explicit version compatibility and accessible restore confirmation. No
 dependency, capability broadening, network/background worker, workflow/seal change, or Task 49 work
-is authorized.
+was added. Closure evidence is in
+`docs/audits/task-48-managed-backup-retention-and-compatibility.md`.
 
 ## Task 47 closure
 

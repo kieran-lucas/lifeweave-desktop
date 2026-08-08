@@ -3,7 +3,7 @@
   "task": 48,
   "supersedes": "docs/audits/task-47-performance-budgets.json",
   "supersedes_note": "Task 48 truthfully versions aggregate maxima for the approved lazy Backup Settings feature. The locked index.js, BasicLeafEditor.js, and markdown.js ceilings remain unchanged; earlier evidence remains historical.",
-  "measured_at_commit": "PENDING_CHECKPOINT",
+  "measured_at_commit": "51e24c54f12f0236ecba1bd81936bc11db59f8ac",
   "baseline_evidence": "docs/audits/task-48-performance-baseline.json",
   "main_chunk": "index.js",
   "unknown_chunk_raw_bytes_threshold": 10000,
