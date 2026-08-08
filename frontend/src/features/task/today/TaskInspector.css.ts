@@ -1,5 +1,6 @@
 import { style } from "@vanilla-extract/css";
 import { space } from "../../../app/layout/tokens.css";
+import { glass } from "../../../design-system/visual/atmosphere.css";
 
 /*
  * Inspector styles live beside the lazily-loaded inspector, not in `TodayScreen.css.ts`.
@@ -18,16 +19,27 @@ import { space } from "../../../app/layout/tokens.css";
  * regions it actually separates. `position: sticky` is likewise only meaningful beside the
  * timeline.
  */
-export const inspector=style({
+/*
+ * The inspector is glass.
+ *
+ * It was a bare column with a leading hairline, which read as an unfinished edge of the page rather
+ * than as a detail surface — the "stiff" quality the art pass exists to remove. `glass` rather than
+ * `glassStrong` because its content is shorter than the timeline's and it sits over the strongest
+ * part of the aura, so a lighter tint lets the field through and makes the column feel lifted.
+ *
+ * Radius and padding keep it a surface rather than a floating card: it still shares the workspace
+ * plane and still separates with a hairline, exactly as the v2 reference draws it.
+ */
+export const inspector=style([glass,{
   display:"flex",flexDirection:"column",minInlineSize:0,
-  paddingBlockStart:space.field,marginBlockStart:space.x3,
-  borderBlockStart:"1px solid var(--border-subtle)",
+  padding:space.field,
+  borderRadius:12,
+  marginBlockStart:space.x3,
   "@container":{"(min-width: 900px)":{
-    paddingInlineStart:space.x5,paddingBlockStart:0,marginBlockStart:0,
-    borderBlockStart:"none",borderInlineStart:"1px solid var(--border-subtle)",
+    marginBlockStart:0,marginInlineStart:space.x4,
     position:"sticky",top:0,alignSelf:"start",
   }},
-});
+}]);
 export const inspectorHeader=style({display:"flex",alignItems:"center",gap:space.control,minInlineSize:0});
 export const inspectorContext=style({display:"inline-flex",alignItems:"center",gap:6,marginInlineEnd:"auto",minInlineSize:0,color:"var(--text-muted)",fontSize:"0.8125rem",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"});
 export const inspectorClose=style({display:"grid",placeItems:"center",inlineSize:28,blockSize:28,minBlockSize:0,padding:0,border:0,borderRadius:8,background:"transparent",color:"var(--text-muted)",cursor:"pointer",selectors:{"&:hover":{background:"var(--icon-background)",color:"var(--text-primary)"},"&:focus-visible":{outline:"2px solid var(--focus-ring)",outlineOffset:2}}});

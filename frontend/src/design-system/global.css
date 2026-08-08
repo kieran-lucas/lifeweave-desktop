@@ -38,6 +38,46 @@
 
   --layer-modal: 10;
   --layer-overlay: 40;
+
+  /*
+   * ── The art system (Task 51 "Maxping" pass) ─────────────────────────────────────────────
+   *
+   * One material family for the whole application, declared once here so every surface draws from
+   * the same light rather than inventing its own decoration. The identity is anime-blue: cool,
+   * luminous, layered, soft around the product's hard structure.
+   *
+   * Layer 0  atmosphere   a single fixed field behind everything
+   * Layer 1  page ground  the canvas, above
+   * Layer 2  structure    sections and groups, hairline-defined
+   * Layer 3  glass        cards, inspectors, dialogs, popovers
+   * Layer 4  luminous     selected and focused states
+   */
+
+  /* Layer 0 — the aura field. Wide, faint, and static; no animation anywhere in the art system. */
+  --art-aura-primary: oklch(93% 0.055 240);
+  --art-aura-secondary: oklch(94% 0.038 262);
+  --art-aura-cool: oklch(95% 0.032 218);
+  --art-line: oklch(88% 0.045 238);
+  --art-glint: oklch(78% 0.09 238);
+
+  /*
+   * Layer 3 — glass.
+   *
+   * Tint first, blur second. The tint alone carries the material, so the surface still reads
+   * correctly where `backdrop-filter` is unavailable or disabled, and text contrast never depends
+   * on the blur. 10px is deliberately gentle: this machine has integrated graphics, and a large
+   * backdrop blur is real per-frame GPU work.
+   */
+  --glass-surface: color-mix(in srgb, #ffffff 78%, transparent);
+  --glass-surface-strong: color-mix(in srgb, #ffffff 88%, transparent);
+  --glass-border: color-mix(in srgb, var(--accent) 12%, var(--border-subtle));
+  --glass-highlight: color-mix(in srgb, #ffffff 70%, transparent);
+  --glass-blur: 10px;
+
+  /* Layer 4 — luminous state. A selected object gains light, not a heavier outline. */
+  --glow-selected: 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent),
+    0 2px 12px color-mix(in srgb, var(--accent) 10%, transparent);
+  --glow-focus: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
 }
 
 /*
@@ -60,6 +100,18 @@
     --active-background: #22293a;
     --icon-background: #1f2531;
     --focus-ring: #8ab4f8;
+
+    /* The same art family re-derived for a dark field: lower lightness, higher chroma, same hues. */
+    --art-aura-primary: oklch(26% 0.06 240);
+    --art-aura-secondary: oklch(24% 0.05 262);
+    --art-aura-cool: oklch(25% 0.045 218);
+    --art-line: oklch(34% 0.06 238);
+    --art-glint: oklch(62% 0.1 238);
+
+    --glass-surface: color-mix(in srgb, #202634 72%, transparent);
+    --glass-surface-strong: color-mix(in srgb, #202634 88%, transparent);
+    --glass-border: color-mix(in srgb, var(--accent) 16%, var(--border-subtle));
+    --glass-highlight: color-mix(in srgb, #ffffff 8%, transparent);
   }
 }
 

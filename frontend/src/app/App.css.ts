@@ -1,5 +1,6 @@
 import { globalStyle, style } from "@vanilla-extract/css";
 
+import { glass, aboveAtmosphere } from "../design-system/visual/atmosphere.css";
 import { gutter, space } from "./layout/tokens.css";
 
 /**
@@ -13,8 +14,8 @@ import { gutter, space } from "./layout/tokens.css";
  * space available to it, that horizontal scrollbar shrank the available height, and the two axes
  * fed each other. Measured evidence is in `docs/audits/task-50-layout-baseline.md` §2.1.
  */
-export const appRoot = style({ display: "grid", gridTemplateColumns: "260px minmax(0, 1fr)", inlineSize: "100%", blockSize: "100%", overflow: "hidden", background: "var(--app-background)", selectors: { "&[data-sidebar-mode=collapsed]": { gridTemplateColumns: "68px minmax(0, 1fr)" } } });
-export const sidebar = style({ display: "flex", flexDirection: "column", minWidth: 0, padding: "18px 14px", borderRight: "1px solid var(--border-subtle)", background: "var(--sidebar-background)", transition: "width 160ms ease, padding 160ms ease" });
+export const appRoot = style({ display: "grid", gridTemplateColumns: "260px minmax(0, 1fr)", inlineSize: "100%", blockSize: "100%", overflow: "hidden", background: "transparent", selectors: { "&[data-sidebar-mode=collapsed]": { gridTemplateColumns: "68px minmax(0, 1fr)" } } });
+export const sidebar = style({ display: "flex", flexDirection: "column", minWidth: 0, padding: "18px 14px", borderRight: "1px solid var(--glass-border)", background: "color-mix(in srgb, var(--sidebar-background) 82%, transparent)", position: "relative", zIndex: 1, transition: "width 160ms ease, padding 160ms ease" });
 export const brand = style({ display: "flex", alignItems: "center", gap: 10, minHeight: 34, padding: "0 10px", marginBottom: 18, fontWeight: 650, fontSize: "0.9rem", letterSpacing: "-0.01em", color: "var(--text-primary)" });
 /** The product mark. A filled accent disc, as in the v2 reference — not a letter in a grey tile. */
 export const brandMark = style({ display: "grid", placeItems: "center", width: 24, height: 24, flexShrink: 0, borderRadius: 999, background: "var(--accent)", color: "#fff" });
@@ -49,7 +50,7 @@ export const collapseButton = style({ marginTop: "auto", display: "flex", gap: 1
  * scrollbar was the second half of the measured Settings defect: it shrank `clientWidth` by 15px,
  * which the old `100vw` root then turned into horizontal overflow.
  */
-export const viewport = style({ position: "relative", minInlineSize: 0, minBlockSize: 0, overflow: "auto", scrollbarGutter: "stable both-edges", padding: gutter });
+export const viewport = style({ position: "relative", zIndex: 1, minInlineSize: 0, minBlockSize: 0, overflow: "auto", scrollbarGutter: "stable both-edges", padding: gutter });
 
 /** v2 sets every heading in the platform sans. Weight and scale carry the hierarchy, not a serif. */
 export const heading = style({ margin: 0, color: "var(--text-primary)", fontSize: "clamp(1.75rem, 2.4vw, 2.125rem)", fontWeight: 700, letterSpacing: "-0.022em", lineHeight: 1.2 });

@@ -43,6 +43,7 @@ import {
   iconSettings,
   iconToday,
 } from "../design-system/visual/icons";
+import { Atmosphere } from "../design-system/visual/Atmosphere";
 import * as styles from "./App.css";
 import { PageFrame, PageHeader } from "./layout/PageFrame";
 import { RouteErrorBoundary } from "./RouteErrorBoundary";
@@ -290,6 +291,12 @@ export function App() {
       className={styles.appRoot}
       data-sidebar-mode={collapsed ? "collapsed" : "expanded"}
     >
+      {/*
+        Layer 0, mounted exactly once. Every page in the product sits on this one field, which is
+        what keeps the art a system rather than per-screen decoration — and means there is a single
+        place to tune the mood.
+      */}
+      <Atmosphere />
       <nav className={styles.sidebar} aria-label="Primary navigation">
         <div className={styles.brand}>
           <span className={styles.brandMark} aria-hidden="true">

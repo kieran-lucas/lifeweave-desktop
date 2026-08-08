@@ -1,5 +1,6 @@
 import { style } from "@vanilla-extract/css";
 import { space } from "../../../app/layout/tokens.css";
+import { glassStrong } from "../../../design-system/visual/atmosphere.css";
 
 /*
  * Today owns no page width. It is a STANDARD_PAGE and consumes the shared `PageFrame`; what remains
@@ -19,7 +20,15 @@ export const period=style({display:"flex",flexDirection:"column",gap:space.contr
  * single enclosure level, not a card — no shadow, no heavy border — and it is what makes the list
  * read as one object instead of loose lines.
  */
-export const group_=style({background:"var(--surface)",border:"1px solid var(--border-subtle)",borderRadius:12,overflow:"hidden",minInlineSize:0});
+/*
+ * The row group is the product's primary glass surface.
+ *
+ * It uses `glassStrong` rather than `glass`: this is the densest text on the screen, and a more
+ * opaque tint keeps a full day of task titles effortless to read while the atmosphere still shows
+ * at its edges. The border and highlight come from the shared material, so it cannot drift from the
+ * inspector, Calendar or the dialogs.
+ */
+export const group_=style([glassStrong,{borderRadius:12,overflow:"hidden",minInlineSize:0}]);
 /** Name and range are two spaced boxes; the separation is layout, never a literal space in text. */
 export const periodHeading=style({display:"flex",flexWrap:"wrap",alignItems:"baseline",gap:space.control,margin:0,minInlineSize:0});
 export const periodRange=style({fontVariantNumeric:"tabular-nums",fontWeight:400,color:"var(--text-muted)",fontSize:"1rem"});

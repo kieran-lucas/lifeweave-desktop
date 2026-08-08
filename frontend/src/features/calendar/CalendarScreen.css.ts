@@ -1,5 +1,6 @@
 import { style } from "@vanilla-extract/css";
 import { space } from "../../app/layout/tokens.css";
+import { glassStrong } from "../../design-system/visual/atmosphere.css";
 
 /*
  * Calendar, composed for Visual Baseline v2.
@@ -65,14 +66,10 @@ export const actionButton = style({
  * One continuous surface with a single outer hairline and a 12 px radius, matching the Today row
  * group. `overflow: hidden` lets the corner cells clip to the radius so no cell fill escapes it.
  */
-export const grid = style({
-  display: "grid",
-  border: "1px solid var(--border-subtle)",
-  borderRadius: 12,
-  overflow: "hidden",
-  background: "var(--surface)",
-  minInlineSize: 0,
-});
+export const grid = style([
+  glassStrong,
+  { display: "grid", borderRadius: 12, overflow: "hidden", minInlineSize: 0 },
+]);
 
 export const weekdays = style({
   display: "grid",
