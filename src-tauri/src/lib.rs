@@ -24,8 +24,8 @@ use document::service::{
 };
 use focus_plan::service::{
     create_focus_plan, create_focus_plan_review, discard_focus_plan_draft, get_focus_plan,
-    get_focus_plan_linked_work, list_focus_plan_reviews, list_focus_plans, mutate_focus_plan,
-    save_focus_plan_draft,
+    get_focus_plan_analytics_projection, get_focus_plan_linked_work, list_focus_plan_reviews,
+    list_focus_plans, mutate_focus_plan, save_focus_plan_draft,
 };
 use infrastructure::backup::lifecycle::{
     StartupDisposition, preflight_startup_check, recover_if_interrupted,
@@ -285,6 +285,7 @@ pub fn run() {
             get_focus_plan_linked_work,
             list_focus_plan_reviews,
             create_focus_plan_review,
+            get_focus_plan_analytics_projection,
         ])
         .run(tauri::generate_context!())
         .expect("failed to run Lifeweave");

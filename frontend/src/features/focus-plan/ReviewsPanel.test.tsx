@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import axe from "axe-core";
 import { describe, expect, it, vi } from "vitest";
@@ -34,8 +35,19 @@ const savedHistory = {
   ],
 };
 
-const renderPanel = () =>
-  render(<ReviewsPanel planId="plan-1" anchorLocalDate="2026-08-06" />);
+const renderPanel = () => {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  return {
+    ...render(
+      <QueryClientProvider client={client}>
+        <ReviewsPanel planId="plan-1" anchorLocalDate="2026-08-06" />
+      </QueryClientProvider>,
+    ),
+    client,
+  };
+};
 
 describe("ReviewsPanel", () => {
   it("creates a review, shows newest-first history, and reports factual metadata", async () => {
@@ -130,6 +142,25 @@ describe("ReviewsPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: "Saving review…" }));
     expect(commands.createFocusPlanReview).toHaveBeenCalledTimes(1);
     release.current?.();
+  });
+
+  it("invalidates Analytics so Focus Plan activity reflects the committed review", async () => {
+    vi.mocked(commands.listFocusPlanReviews)
+      .mockResolvedValueOnce(emptyHistory)
+      .mockResolvedValue(savedHistory);
+    vi.mocked(commands.createFocusPlanReview).mockResolvedValue(savedHistory.reviews[0]!);
+
+    const { client } = renderPanel();
+    const invalidate = vi.spyOn(client, "invalidateQueries");
+    await screen.findByText("No reviews recorded yet.");
+    fireEvent.change(screen.getByLabelText("Reflection"), {
+      target: { value: "Momentum held." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save review" }));
+
+    await waitFor(() =>
+      expect(invalidate).toHaveBeenCalledWith({ queryKey: ["analytics"] }),
+    );
   });
 
   it("keeps every review field keyboard reachable", async () => {

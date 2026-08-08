@@ -1,42 +1,24 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { parseDate } from "@internationalized/date";
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { getAnalyticsProjection } from "../../ipc/commands";
-import type { AnalyticsActualTimeSummaryView } from "../../ipc/generated/AnalyticsActualTimeSummaryView";
 import type { AnalyticsPeriodKind } from "../../ipc/generated/AnalyticsPeriodKind";
 import { localToday } from "../calendar/date";
 import { CategoryIcon } from "../task/categoryIcons";
 import * as styles from "./AnalyticsScreen.css";
+import { actualTimeVariance, formatActualTime, scheduledDuration } from "./format";
+
+export { actualTimeVariance, formatActualTime } from "./format";
+
+// Focus Plan activity is an additional read of the same period, so it stays out of the startup
+// bundle and loads only once a user actually opens Analytics.
+const FocusPlanAnalyticsSection = lazy(() =>
+  import("./FocusPlanAnalyticsSection").then((module) => ({
+    default: module.FocusPlanAnalyticsSection,
+  })),
+);
 
 const kinds: AnalyticsPeriodKind[] = ["week", "month", "year"];
-const scheduledDuration = (minutes: number) =>
-  `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
-
-export function formatActualTime(seconds: bigint) {
-  const value = BigInt(seconds);
-  const hours = value / 3_600n;
-  const minutes = (value % 3_600n) / 60n;
-  const remainingSeconds = value % 60n;
-  if (hours > 0n) {
-    return `${hours}h ${minutes}m${remainingSeconds > 0n ? ` ${remainingSeconds}s` : ""}`;
-  }
-  if (minutes > 0n) {
-    return `${minutes}m${remainingSeconds > 0n ? ` ${remainingSeconds}s` : ""}`;
-  }
-  return `${remainingSeconds}s`;
-}
-
-export function actualTimeVariance(summary: AnalyticsActualTimeSummaryView) {
-  const actual = BigInt(summary.actual_seconds);
-  const tracked = BigInt(summary.tracked_scheduled_seconds);
-  if (actual > tracked) {
-    return `Over tracked plan by ${formatActualTime(summary.variance_seconds)}`;
-  }
-  if (actual < tracked) {
-    return `Under tracked plan by ${formatActualTime(-summary.variance_seconds)}`;
-  }
-  return "Matched tracked plan";
-}
 
 function moveDate(date: string, kind: AnalyticsPeriodKind, amount: number) {
   const value = parseDate(date);
@@ -48,7 +30,11 @@ function moveDate(date: string, kind: AnalyticsPeriodKind, amount: number) {
   ).toString();
 }
 
-export function AnalyticsScreen() {
+export function AnalyticsScreen({
+  onPlanNavigate,
+}: {
+  onPlanNavigate?: (planId: string) => void;
+} = {}) {
   const [kind, setKind] = useState<AnalyticsPeriodKind>("week");
   const [anchor, setAnchor] = useState(localToday());
   const client = useQueryClient();
@@ -295,6 +281,16 @@ export function AnalyticsScreen() {
               </>
             )}
           </section>
+
+          <Suspense fallback={<p role="status">Loading Focus Plan activity…</p>}>
+            <FocusPlanAnalyticsSection
+              periodKind={kind}
+              anchorLocalDate={anchor}
+              observedLocalDate={today}
+              observedLocalMinute={observedMinute}
+              onPlanNavigate={onPlanNavigate}
+            />
+          </Suspense>
         </>
       )}
     </section>

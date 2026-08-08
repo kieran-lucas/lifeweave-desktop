@@ -400,7 +400,7 @@ export function App() {
                   headingRef.current = node;
                 }}
               >
-                <AnalyticsScreen />
+                <AnalyticsScreen onPlanNavigate={navigateToFocusPlan} />
               </div>
             )}
             {destination === "plans" && (

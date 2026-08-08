@@ -1,8 +1,10 @@
 use tauri::State;
 
 use super::{
+    analytics,
     dto::{
-        CreateFocusPlanInput, CreateFocusPlanReviewInput, FocusPlanDetailView, FocusPlanIdInput,
+        CreateFocusPlanInput, CreateFocusPlanReviewInput, FocusPlanAnalyticsInput,
+        FocusPlanAnalyticsProjection, FocusPlanDetailView, FocusPlanIdInput,
         FocusPlanLinkedWorkInput, FocusPlanLinkedWorkView, FocusPlanListInput,
         FocusPlanMutationResult, FocusPlanReviewHistoryView, FocusPlanReviewListInput,
         FocusPlanReviewView, FocusPlanSummaryView, MutateFocusPlanInput, SaveFocusPlanDraftInput,
@@ -127,6 +129,19 @@ pub fn list_focus_plan_reviews(
 ) -> Result<FocusPlanReviewHistoryView, IpcError> {
     state
         .execute(move |conn| Ok(repository::list_reviews(conn, &input)))
+        .map_err(map_db)?
+        .map_err(map)
+}
+
+/// Read-only factual Focus Plan activity for one Analytics period. This command writes nothing.
+#[tauri::command]
+#[tracing::instrument(skip(state, input))]
+pub fn get_focus_plan_analytics_projection(
+    state: State<'_, DatabaseRuntime>,
+    input: FocusPlanAnalyticsInput,
+) -> Result<FocusPlanAnalyticsProjection, IpcError> {
+    state
+        .execute(move |conn| Ok(analytics::projection(conn, input)))
         .map_err(map_db)?
         .map_err(map)
 }

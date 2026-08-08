@@ -144,5 +144,7 @@ describe("FocusPlansScreen", () => {
     await waitFor(() => expect(api.createFocusPlan).toHaveBeenCalledWith(expect.objectContaining({ title: "Interview Plan" })));
     await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: ["task-saved-view-projection"] }));
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ["task-saved-view-options"] });
+    // A Plan mutation changes the title, lifecycle, and archive state Focus Plan Analytics reports.
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["analytics"] });
   });
 });

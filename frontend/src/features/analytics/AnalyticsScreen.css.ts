@@ -14,3 +14,6 @@ globalStyle(`${categories} li`,{borderTop:"1px solid var(--border-subtle)",paddi
 globalStyle(`${categories} progress`,{display:"block",width:"min(100%,520px)",accentColor:"var(--accent)"});
 export const distribution=style({display:"grid",gap:3,maxWidth:520});
 globalStyle(`${distribution} progress`,{width:"100%",height:8,accentColor:"var(--accent)"});
+export const planTableWrap=style({overflowX:"auto"});
+export const planTable=style({borderCollapse:"collapse",width:"100%",textAlign:"left"});
+globalStyle(`${planTable} th, ${planTable} td`,{borderTop:"1px solid var(--border-subtle)",padding:"8px 12px 8px 0",verticalAlign:"top"});

@@ -44,7 +44,7 @@ fn new_id() -> String {
     Uuid::now_v7().to_string()
 }
 
-fn lifecycle_from_db(value: &str) -> Result<FocusPlanLifecycle> {
+pub(crate) fn lifecycle_from_db(value: &str) -> Result<FocusPlanLifecycle> {
     match value {
         "draft" => Ok(FocusPlanLifecycle::Draft),
         "active" => Ok(FocusPlanLifecycle::Active),

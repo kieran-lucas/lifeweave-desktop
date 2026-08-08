@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-get-focus-plan-analytics-projection"
+description = "Enables the get_focus_plan_analytics_projection command without any pre-configured scope."
+commands.allow = ["get_focus_plan_analytics_projection"]
+
+[[permission]]
+identifier = "deny-get-focus-plan-analytics-projection"
+description = "Denies the get_focus_plan_analytics_projection command without any pre-configured scope."
+commands.deny = ["get_focus_plan_analytics_projection"]

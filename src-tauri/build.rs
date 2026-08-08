@@ -117,6 +117,7 @@ fn main() {
             "get_focus_plan_linked_work",
             "list_focus_plan_reviews",
             "create_focus_plan_review",
+            "get_focus_plan_analytics_projection",
         ]),
     ))
     .expect("failed to generate Tauri ACL manifest");

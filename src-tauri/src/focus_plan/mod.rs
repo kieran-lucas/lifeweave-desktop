@@ -1,3 +1,4 @@
+pub mod analytics;
 #[cfg(test)]
 mod bindings;
 pub mod dto;

@@ -14,7 +14,10 @@ export async function createManagedBackup(): Promise<string> {
     throw new Error(`backup creation failed: ${await failure.getText()}`);
   }
   await expect(success).toBeDisplayed();
-  const first = $("table tbody tr");
+  // Scoped to the backup section on purpose. Settings renders Tag settings — which owns up to
+  // three tables — before Backup & Restore, so an unscoped `table tbody tr` reads the first tag
+  // row instead of the fresh backup once any tag exists.
+  const first = $("section[aria-labelledby='backup-settings-heading'] table tbody tr");
   await expect(first).toBeDisplayed();
   const backupId = await first.getAttribute("data-backup-id");
   if (!backupId) throw new Error("fresh managed backup row has no opaque identity");

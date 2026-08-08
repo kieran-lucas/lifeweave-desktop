@@ -124,6 +124,7 @@
     "allow-discard-focus-plan-draft",
     "allow-get-focus-plan-linked-work",
     "allow-list-focus-plan-reviews",
-    "allow-create-focus-plan-review"
+    "allow-create-focus-plan-review",
+    "allow-get-focus-plan-analytics-projection"
   ]
 }

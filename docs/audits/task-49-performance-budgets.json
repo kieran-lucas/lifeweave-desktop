@@ -1,0 +1,121 @@
+{
+  "budget_version": 2,
+  "task": 49,
+  "supersedes": "docs/audits/task-48-performance-budgets.json",
+  "supersedes_note": "Task 49 truthfully versions aggregate maxima and the expected chunk count for the approved lazy Focus Plan activity Analytics section. The locked index.js, BasicLeafEditor.js, and markdown.js ceilings remain unchanged; the derived index.js maximum now clamps to the unchanged 535,000 ceiling. Earlier evidence remains historical.",
+  "measured_at_commit": "pending-product-checkpoint",
+  "baseline_evidence": "docs/audits/task-49-performance-baseline.json",
+  "main_chunk": "index.js",
+  "unknown_chunk_raw_bytes_threshold": 10000,
+  "rules": {
+    "chunk_identity": "emitted file name with only the terminal content hash stripped",
+    "missing_expected_chunk": "fails",
+    "unknown_chunk_at_or_above_threshold": "fails",
+    "unknown_chunk_below_threshold": "reported as untracked_small_chunks, does not fail",
+    "duplicate_normalized_identity": "fails",
+    "chunk_count_mismatch": "fails"
+  },
+  "formulas": {
+    "total_raw_maximum": "final + max(8192, ceil(final * 0.0075))",
+    "total_gzip_maximum": "final + max(4096, ceil(final * 0.0100))",
+    "chunk_maximum": "final + max(1024, ceil(final * 0.0200))",
+    "clamp": "index.js, BasicLeafEditor.js, and markdown.js remain clamped by the unchanged locked ceilings",
+    "arithmetic": "integer ceil"
+  },
+  "locked_ceilings": {
+    "index.js": 535000,
+    "BasicLeafEditor.js": 490000,
+    "markdown.js": 129000,
+    "note": "No locked ceiling changed. Task 49 supersedes only Task 48 aggregate maxima and expected chunk count through the approved formula."
+  },
+  "aggregates": {
+    "main_js_bytes": {
+      "observed": 524831,
+      "maximum": 535000,
+      "derivation": "524831 + ceil(524831 * 0.0200) = 535328, clamped down to the unchanged locked 535000"
+    },
+    "total_js_bytes": {
+      "observed": 1236207,
+      "maximum": 1245479,
+      "derivation": "1236207 + max(8192, ceil(1236207 * 0.0075)) = 1245479"
+    },
+    "total_js_gzip_bytes": {
+      "observed": 379517,
+      "maximum": 383613,
+      "derivation": "379517 + max(4096, ceil(379517 * 0.0100)) = 383613"
+    },
+    "expected_chunk_count": 24
+  },
+  "chunks": {
+    "BasicLeafEditor.js": {
+      "observed_raw_bytes": 52355,
+      "observed_gzip_bytes": 17088,
+      "maximum_raw_bytes": 53403,
+      "class": "lazy",
+      "owner": "Basic Leaf editor",
+      "derivation": "52355 + ceil(52355 * 0.0200)"
+    },
+    "FocusPlansScreen.js": {
+      "observed_raw_bytes": 18559,
+      "observed_gzip_bytes": 5140,
+      "maximum_raw_bytes": 19583,
+      "class": "lazy",
+      "owner": "Focus Plans",
+      "derivation": "18559 + max(1024, ceil(18559 * 0.0200))"
+    },
+    "NarrativeCanvasStudio.js": {
+      "observed_raw_bytes": 20065,
+      "observed_gzip_bytes": 5927,
+      "maximum_raw_bytes": 21089,
+      "class": "lazy",
+      "owner": "Narrative Canvas studio",
+      "derivation": "20065 + max(1024, ceil(20065 * 0.0200))"
+    },
+    "TaskSavedViewsPanel.js": {
+      "observed_raw_bytes": 16544,
+      "observed_gzip_bytes": 4957,
+      "maximum_raw_bytes": 17568,
+      "class": "lazy",
+      "owner": "Task Saved Views",
+      "derivation": "16544 + max(1024, ceil(16544 * 0.0200))"
+    },
+    "dist.js": {
+      "observed_raw_bytes": 390833,
+      "observed_gzip_bytes": 120573,
+      "maximum_raw_bytes": 398650,
+      "class": "lazy",
+      "owner": "Basic Leaf editor vendor core",
+      "derivation": "390833 + ceil(390833 * 0.0200)"
+    },
+    "index.js": {
+      "observed_raw_bytes": 524831,
+      "observed_gzip_bytes": 159456,
+      "maximum_raw_bytes": 535000,
+      "class": "startup",
+      "owner": "application shell and eager screens",
+      "derivation": "524831 + ceil(524831 * 0.0200) = 535328, clamped down to the unchanged locked 535000"
+    },
+    "markdown.js": {
+      "observed_raw_bytes": 116541,
+      "observed_gzip_bytes": 32939,
+      "maximum_raw_bytes": 118872,
+      "class": "lazy",
+      "owner": "Markdown interoperability pipeline",
+      "derivation": "116541 + ceil(116541 * 0.0200), below locked 129000"
+    },
+    "useQuery.js": {
+      "observed_raw_bytes": 20834,
+      "observed_gzip_bytes": 6883,
+      "maximum_raw_bytes": 21858,
+      "class": "startup",
+      "owner": "TanStack Query projection cache",
+      "derivation": "20834 + max(1024, ceil(20834 * 0.0200))"
+    }
+  },
+  "task_49_notes": {
+    "new_lazy_chunk": "FocusPlanAnalyticsSection.js at 4,235 raw / 1,392 gzip bytes stays below the 10,000-byte threshold and is therefore reported as an untracked small chunk rather than budgeted, consistent with every other sub-threshold lazy chunk.",
+    "startup_delta": "index.js grew 524,181 -> 524,830 (+650 bytes) for the lazy import wiring, the extracted formatter module, and one IPC adapter entry. Focus Plan Analytics rendering and its projection types stay out of startup.",
+    "focus_plans_screen_delta": "FocusPlansScreen.js grew 18,396 -> 18,559 (+163 bytes) for the two added Analytics invalidations.",
+    "determinism": "three independent `pnpm build` runs produced byte-identical normalized aggregate and chunk inventories"
+  }
+}

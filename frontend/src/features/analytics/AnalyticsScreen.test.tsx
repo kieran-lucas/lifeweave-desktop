@@ -13,6 +13,7 @@ import { CategoryGoals } from "./CategoryGoals";
 
 vi.mock("../../ipc/commands", () => ({
   getAnalyticsProjection: vi.fn(),
+  getFocusPlanAnalyticsProjection: vi.fn(),
   listTaskCategories: vi.fn(),
   updateCategoryGoals: vi.fn(),
 }));
@@ -146,9 +147,39 @@ const projectionWithActual = (
   ],
 });
 
+const focusPlanProjection = {
+  period_start: "2026-07-27",
+  period_end: "2026-08-02",
+  plan_count: 1,
+  scheduled_minutes: 60n,
+  work_item_count: 1,
+  evaluated_count: 1,
+  missed_count: 0,
+  review_count: 0,
+  actual_time: zeroActual,
+  plans: [
+    {
+      plan_id: "plan-1",
+      title: "AI Foundations",
+      lifecycle: "active" as const,
+      archived: false,
+      scheduled_minutes: 60n,
+      work_item_count: 1,
+      one_off_task_count: 1,
+      recurring_occurrence_count: 0,
+      evaluated_count: 1,
+      missed_count: 0,
+      review_count: 0,
+      latest_reviewed_local_date: null,
+      actual_time: zeroActual,
+    },
+  ],
+};
+
 describe("objective Analytics", () => {
   beforeEach(() => {
     vi.mocked(commands.getAnalyticsProjection).mockResolvedValue(projection);
+    vi.mocked(commands.getFocusPlanAnalyticsProjection).mockResolvedValue(focusPlanProjection);
     vi.mocked(commands.listTaskCategories).mockResolvedValue([]);
   });
 
@@ -268,12 +299,49 @@ describe("objective Analytics", () => {
     expect(screen.getAllByText("0s")).toHaveLength(2);
   });
 
+  it("lazily renders the Focus Plan activity section inside the one Analytics destination", async () => {
+    renderWithClient(<AnalyticsScreen />);
+    expect(
+      await screen.findByRole("heading", { name: "Focus Plan activity" }),
+    ).toBeInTheDocument();
+    expect(await screen.findByRole("table", { name: /Focus Plan activity in this period/ }))
+      .toBeInTheDocument();
+    // Analytics is still one destination: no second heading level 1 and no new route.
+    expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
+  });
+
+  it("asks both projections for exactly the same period", async () => {
+    renderWithClient(<AnalyticsScreen />);
+    await screen.findByRole("heading", { name: "Focus Plan activity" });
+    fireEvent.click(screen.getByRole("tab", { name: "Month" }));
+    await waitFor(() =>
+      expect(vi.mocked(commands.getFocusPlanAnalyticsProjection)).toHaveBeenCalledWith(
+        expect.objectContaining({ period_kind: "month" }),
+      ),
+    );
+    // Objective Analytics additionally prefetches the adjacent periods, so the proof is that the
+    // Focus Plan input is one of the periods Objective Analytics itself asked for, field for field.
+    const plans = vi.mocked(commands.getFocusPlanAnalyticsProjection).mock.calls.at(-1)![0];
+    const objectiveInputs = vi
+      .mocked(commands.getAnalyticsProjection)
+      .mock.calls.map((call) => call[0]);
+    expect(objectiveInputs).toContainEqual(plans);
+  });
+
+  it("opens the exact Focus Plan from Analytics", async () => {
+    const onPlanNavigate = vi.fn();
+    renderWithClient(<AnalyticsScreen onPlanNavigate={onPlanNavigate} />);
+    fireEvent.click(await screen.findByRole("button", { name: "Open Plan AI Foundations" }));
+    expect(onPlanNavigate).toHaveBeenCalledWith("plan-1");
+  });
+
   it("has zero applicable accessibility violations", async () => {
     vi.mocked(commands.getAnalyticsProjection).mockResolvedValue(
       projectionWithActual(actual(60n, 3_600n)),
     );
-    const { container } = renderWithClient(<AnalyticsScreen />);
+    const { container } = renderWithClient(<AnalyticsScreen onPlanNavigate={vi.fn()} />);
     await screen.findByRole("region", { name: "Recorded actual time" });
+    await screen.findByRole("table", { name: /Focus Plan activity in this period/ });
     expect((await axe.run(container)).violations).toEqual([]);
   });
 });

@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 
 import { createFocusPlanReview, listFocusPlanReviews } from "../../ipc/commands";
@@ -34,6 +35,7 @@ export function ReviewsPanel({
   const [nextFocus, setNextFocus] = useState("");
   const reflectionRef = useRef<HTMLTextAreaElement>(null);
   const refocusAfterSave = useRef(false);
+  const queryClient = useQueryClient();
 
   // The form fieldset is disabled while a save is pending, so focus can only return to the
   // reflection field once that render has committed.
@@ -77,6 +79,8 @@ export function ReviewsPanel({
         next_focus: nextFocus.trim() ? nextFocus : null,
       });
       setHistory(await listFocusPlanReviews({ plan_id: planId, limit: null }));
+      // A committed review is Focus Plan Analytics evidence for its review date's period.
+      await queryClient.invalidateQueries({ queryKey: ["analytics"] });
       // Only clear the draft once the review is committed.
       setReflection("");
       setNextFocus("");

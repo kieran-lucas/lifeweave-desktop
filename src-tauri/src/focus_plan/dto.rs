@@ -300,6 +300,56 @@ pub struct FocusPlanLinkedWorkInput {
     pub anchor_local_date: String,
 }
 
+/// Period selection for the Focus Plan activity projection. The four fields are exactly the
+/// Objective Analytics period contract, so both projections answer for the same window.
+#[derive(Debug, Clone, Deserialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct FocusPlanAnalyticsInput {
+    pub period_kind: crate::task::dto::AnalyticsPeriodKind,
+    pub anchor_local_date: String,
+    pub observed_local_date: String,
+    pub observed_local_minute: i32,
+}
+
+/// Factual activity for one Focus Plan in the requested period.
+///
+/// Every field is retrospective evidence. There is deliberately no percentage, ratio, score,
+/// health, or completion field: ADR 0043 reports what happened and never grades a Plan.
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct FocusPlanAnalyticsPlanView {
+    pub plan_id: String,
+    pub title: String,
+    pub lifecycle: FocusPlanLifecycle,
+    pub archived: bool,
+    pub scheduled_minutes: i64,
+    pub work_item_count: u32,
+    pub one_off_task_count: u32,
+    pub recurring_occurrence_count: u32,
+    pub evaluated_count: u32,
+    pub missed_count: u32,
+    pub review_count: u32,
+    pub latest_reviewed_local_date: Option<String>,
+    pub actual_time: crate::task::dto::AnalyticsActualTimeSummaryView,
+}
+
+/// The whole bounded projection. Overall fields are the exact sums of `plans`, and `plan_count`
+/// is `plans.len()`.
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct FocusPlanAnalyticsProjection {
+    pub period_start: String,
+    pub period_end: String,
+    pub plan_count: u32,
+    pub scheduled_minutes: i64,
+    pub work_item_count: u32,
+    pub evaluated_count: u32,
+    pub missed_count: u32,
+    pub review_count: u32,
+    pub actual_time: crate::task::dto::AnalyticsActualTimeSummaryView,
+    pub plans: Vec<FocusPlanAnalyticsPlanView>,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

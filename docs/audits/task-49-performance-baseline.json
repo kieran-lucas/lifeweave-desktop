@@ -1,0 +1,31 @@
+{
+  "task": 49,
+  "slice": "039-focus-plan-activity-analytics",
+  "execution_baseline": "86261298ccd99204da503f508b4dfb9ac50cee04",
+  "activation_commit": "2d12d76011a73934a0dab4cab8f0977bf0deb99c",
+  "latest_feature_checkpoint_at_activation": "51e24c54f12f0236ecba1bd81936bc11db59f8ac",
+  "supersedes": "docs/audits/task-48-performance-baseline.json",
+  "method": {
+    "builds": 3,
+    "determinism": "three independent `pnpm build` runs from the clean activation commit produced byte-identical normalized aggregate and chunk inventories",
+    "gzip": "level 9, mtime=0",
+    "chunk_identity": "emitted file name with only the terminal content hash stripped",
+    "inventory_command": "python scripts/check_performance_budgets.py"
+  },
+  "activation_state": {
+    "note": "measured at 2d12d760 before any Task 49 product edit; byte-identical to the accepted Task 48 final inventory",
+    "chunk_count": 23,
+    "total_js_bytes": 1231159,
+    "total_js_gzip_bytes": 377912,
+    "main_js_bytes": 524181,
+    "violations_against_task_48_budget": []
+  },
+  "locked_contract": {
+    "main_js_ceiling": 535000,
+    "basic_leaf_editor_ceiling": 490000,
+    "markdown_ceiling": 129000,
+    "unknown_chunk_raw_bytes_threshold": 10000,
+    "budget_at_activation": "docs/audits/task-48-performance-budgets.json",
+    "expected_chunk_count_at_activation": 23
+  }
+}

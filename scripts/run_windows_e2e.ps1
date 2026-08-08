@@ -45,7 +45,10 @@ $allPhases = @(
   'phase18-life-tree-interchange.e2e.ts',
   'phase18-life-tree-interchange-restart.e2e.ts',
   # Task 48 changes neither schema nor backup format, so phase 19 has no restart companion.
-  'phase19-managed-backup-versions.e2e.ts'
+  'phase19-managed-backup-versions.e2e.ts',
+  # Task 49 is a derived read-only projection at unchanged schema 27, so phase 20 has no restart
+  # companion by design.
+  'phase20-focus-plan-analytics.e2e.ts'
 )
 if (-not $Phases -or $Phases.Count -eq 0) { $Phases = $allPhases }
 foreach ($phase in $Phases) {

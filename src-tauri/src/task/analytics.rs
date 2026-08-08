@@ -15,7 +15,7 @@ use super::{
 };
 
 pub const ALGORITHM_VERSION: i32 = 2;
-const MAX_ANALYTICS_DAYS: i64 = 366;
+pub(crate) const MAX_ANALYTICS_DAYS: i64 = 366;
 const MAX_STREAK_WEEKS: i64 = 520;
 const ACTUAL_TIME_QUERY: &str = "
     SELECT t.id,t.category_id,t.start_minute,t.end_minute,
@@ -40,6 +40,11 @@ struct Item {
     category_icon: String,
     category_color: String,
     evaluation: Option<EvaluationSnapshot>,
+    // Task 49 reads the Plan relation of the authority that generated this work item: `tasks` for a
+    // one-off and `task_series` for an occurrence. Nothing is stored back, so relinking simply
+    // changes what the next read reports.
+    focus_plan_id: Option<String>,
+    recurring: bool,
 }
 
 #[derive(Clone)]
@@ -60,6 +65,7 @@ struct Series {
     end: i32,
     dtstart: String,
     rule: String,
+    focus_plan_id: Option<String>,
 }
 
 #[derive(Clone)]
@@ -203,7 +209,7 @@ pub fn projection(
     )
 }
 
-fn projection_at(
+pub(crate) fn projection_at(
     conn: &mut Connection,
     input: AnalyticsProjectionInput,
     authoritative_date: NaiveDate,
@@ -293,9 +299,7 @@ fn rebuild(
         if let Some(snapshot) = &item.evaluation {
             evaluated += 1;
             *distribution.entry(snapshot.clone()).or_default() += 1;
-        } else if item.date < observed
-            || (item.date == observed && item.end_minute <= observed_minute)
-        {
+        } else if is_missed(item, observed, observed_minute) {
             missed += 1;
         }
     }
@@ -487,7 +491,7 @@ fn read_projection(
     })
 }
 
-fn add_actual_time(
+pub(crate) fn add_actual_time(
     target: &mut AnalyticsActualTimeSummaryView,
     value: &AnalyticsActualTimeSummaryView,
 ) -> Result<(), TaskError> {
@@ -514,6 +518,44 @@ fn add_actual_time(
     Ok(())
 }
 
+/// ADR 0040 arithmetic for exactly one tracked one-off Task: milliseconds sum before a single
+/// floor to seconds, and the tracked schedule counts that Task once. Focus Plan Analytics folds
+/// the same per-Task summary under a different grouping key, so the two projections cannot report
+/// different recorded time for the same Task.
+pub(crate) fn tracked_task_actual_time(
+    start_minute: i64,
+    end_minute: i64,
+    total_ms: i64,
+    session_count: i64,
+) -> Result<AnalyticsActualTimeSummaryView, TaskError> {
+    let scheduled_minutes = end_minute
+        .checked_sub(start_minute)
+        .filter(|value| *value > 0)
+        .ok_or(TaskError::Validation(
+            "Recorded Analytics task schedule is invalid.",
+        ))?;
+    let tracked_scheduled_seconds =
+        scheduled_minutes
+            .checked_mul(60)
+            .ok_or(TaskError::Validation(
+                "Recorded Analytics task schedule overflowed.",
+            ))?;
+    if total_ms < 0 || session_count <= 0 {
+        return Err(TaskError::Validation(
+            "Recorded Analytics session data is invalid.",
+        ));
+    }
+    Ok(AnalyticsActualTimeSummaryView {
+        actual_seconds: total_ms / 1_000,
+        tracked_scheduled_seconds,
+        tracked_task_count: 1,
+        completed_session_count: session_count,
+        variance_seconds: (total_ms / 1_000)
+            .checked_sub(tracked_scheduled_seconds)
+            .ok_or(TaskError::Validation("Recorded Analytics time overflowed."))?,
+    })
+}
+
 fn load_actual_time(
     conn: &Connection,
     start: NaiveDate,
@@ -533,32 +575,8 @@ fn load_actual_time(
     let mut result = ActualTimeFold::default();
     for row in rows {
         let (_task_id, category_id, start_minute, end_minute, total_ms, session_count) = row?;
-        let scheduled_minutes = end_minute
-            .checked_sub(start_minute)
-            .filter(|value| *value > 0)
-            .ok_or(TaskError::Validation(
-                "Recorded Analytics task schedule is invalid.",
-            ))?;
-        let tracked_scheduled_seconds =
-            scheduled_minutes
-                .checked_mul(60)
-                .ok_or(TaskError::Validation(
-                    "Recorded Analytics task schedule overflowed.",
-                ))?;
-        if total_ms < 0 || session_count <= 0 {
-            return Err(TaskError::Validation(
-                "Recorded Analytics session data is invalid.",
-            ));
-        }
-        let task_summary = AnalyticsActualTimeSummaryView {
-            actual_seconds: total_ms / 1_000,
-            tracked_scheduled_seconds,
-            tracked_task_count: 1,
-            completed_session_count: session_count,
-            variance_seconds: (total_ms / 1_000)
-                .checked_sub(tracked_scheduled_seconds)
-                .ok_or(TaskError::Validation("Recorded Analytics time overflowed."))?,
-        };
+        let task_summary =
+            tracked_task_actual_time(start_minute, end_minute, total_ms, session_count)?;
         add_actual_time(&mut result.overall, &task_summary)?;
         add_actual_time(
             result.by_category.entry(category_id).or_default(),
@@ -582,7 +600,7 @@ fn load_items(conn: &Connection, start: NaiveDate, end: NaiveDate) -> Result<Vec
     let start_text = format_date(start);
     let end_text = format_date(end);
     let mut out = Vec::new();
-    let mut stmt=conn.prepare("SELECT t.local_date,t.end_minute,t.end_minute-t.start_minute,c.id,c.name,c.icon_key,c.color_key,e.state_id,e.state_label_snapshot,e.state_visual_snapshot FROM tasks t JOIN task_categories c ON c.id=t.category_id LEFT JOIN task_evaluations e ON e.subject_kind='one_off' AND e.task_id=t.id AND e.is_current=1 WHERE t.local_date BETWEEN ?1 AND ?2")?;
+    let mut stmt=conn.prepare("SELECT t.local_date,t.end_minute,t.end_minute-t.start_minute,c.id,c.name,c.icon_key,c.color_key,e.state_id,e.state_label_snapshot,e.state_visual_snapshot,t.focus_plan_id FROM tasks t JOIN task_categories c ON c.id=t.category_id LEFT JOIN task_evaluations e ON e.subject_kind='one_off' AND e.task_id=t.id AND e.is_current=1 WHERE t.local_date BETWEEN ?1 AND ?2")?;
     for row in stmt.query_map(params![start_text, end_text], |r| {
         Ok((
             r.get::<_, String>(0)?,
@@ -595,6 +613,7 @@ fn load_items(conn: &Connection, start: NaiveDate, end: NaiveDate) -> Result<Vec
             r.get::<_, Option<String>>(7)?,
             r.get::<_, Option<String>>(8)?,
             r.get::<_, Option<String>>(9)?,
+            r.get::<_, Option<String>>(10)?,
         ))
     })? {
         let (
@@ -608,6 +627,7 @@ fn load_items(conn: &Connection, start: NaiveDate, end: NaiveDate) -> Result<Vec
             state,
             label,
             visual,
+            focus_plan_id,
         ) = row?;
         out.push(Item {
             date: parse_date(&date)?,
@@ -618,6 +638,8 @@ fn load_items(conn: &Connection, start: NaiveDate, end: NaiveDate) -> Result<Vec
             category_icon,
             category_color,
             evaluation: state.map(|s| (s, label.unwrap_or_default(), visual.unwrap_or_default())),
+            focus_plan_id,
+            recurring: false,
         });
     }
     let series = load_series(conn, &end_text)?;
@@ -665,7 +687,7 @@ fn load_items(conn: &Connection, start: NaiveDate, end: NaiveDate) -> Result<Vec
 }
 
 fn load_series(conn: &Connection, end: &str) -> Result<Vec<Series>, TaskError> {
-    let mut stmt=conn.prepare("SELECT s.id,s.category_id,c.name,c.icon_key,c.color_key,s.start_minute,s.end_minute,s.dtstart_local_date,s.rrule FROM task_series s JOIN task_categories c ON c.id=s.category_id WHERE s.archived_at IS NULL AND s.dtstart_local_date<=?1")?;
+    let mut stmt=conn.prepare("SELECT s.id,s.category_id,c.name,c.icon_key,c.color_key,s.start_minute,s.end_minute,s.dtstart_local_date,s.rrule,s.focus_plan_id FROM task_series s JOIN task_categories c ON c.id=s.category_id WHERE s.archived_at IS NULL AND s.dtstart_local_date<=?1")?;
     Ok(stmt
         .query_map(params![end], |r| {
             Ok(Series {
@@ -678,6 +700,7 @@ fn load_series(conn: &Connection, end: &str) -> Result<Vec<Series>, TaskError> {
                 end: r.get(6)?,
                 dtstart: r.get(7)?,
                 rule: r.get(8)?,
+                focus_plan_id: r.get(9)?,
             })
         })?
         .collect::<Result<Vec<_>, _>>()?)
@@ -762,7 +785,57 @@ fn series_item(
         category_icon: icon,
         category_color: color,
         evaluation: evaluations.get(&(master.id.clone(), original)).cloned(),
+        // An override may move, retime, or recategorize an occurrence but owns no Plan relation,
+        // so the authoritative series relation is the only Plan authority an occurrence has.
+        focus_plan_id: master.focus_plan_id.clone(),
+        recurring: true,
     }))
+}
+
+/// One factual Focus Plan-linked work item for Task 49 reporting.
+///
+/// This is a read-only fact, not a stored relationship: the Plan comes from the current `tasks` or
+/// `task_series` authority every time the projection runs.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct FocusPlanWorkFact {
+    pub plan_id: String,
+    pub recurring: bool,
+    pub scheduled_minutes: i32,
+    pub evaluated: bool,
+    pub missed: bool,
+}
+
+/// Missed means the work was never evaluated and its scheduled end is already behind the observed
+/// local minute. Objective Analytics and Focus Plan Analytics share this one definition so the two
+/// projections cannot drift apart.
+fn is_missed(item: &Item, observed: NaiveDate, observed_minute: i32) -> bool {
+    item.evaluation.is_none()
+        && (item.date < observed || (item.date == observed && item.end_minute <= observed_minute))
+}
+
+/// Every Plan-linked work item in the period: one scheduled one-off Task, or one generated
+/// non-cancelled recurring occurrence. Recurrence generation, moves, cancellations, effective
+/// times, and evaluation snapshots all come from the existing Objective Analytics projection.
+pub(crate) fn focus_plan_work_facts(
+    conn: &Connection,
+    start: NaiveDate,
+    end: NaiveDate,
+    observed: NaiveDate,
+    observed_minute: i32,
+) -> Result<Vec<FocusPlanWorkFact>, TaskError> {
+    Ok(load_items(conn, start, end)?
+        .into_iter()
+        .filter_map(|item| {
+            let plan_id = item.focus_plan_id.clone()?;
+            Some(FocusPlanWorkFact {
+                plan_id,
+                recurring: item.recurring,
+                scheduled_minutes: item.duration,
+                evaluated: item.evaluation.is_some(),
+                missed: is_missed(&item, observed, observed_minute),
+            })
+        })
+        .collect())
 }
 
 fn attainment_counts(
@@ -862,7 +935,10 @@ fn rebuild_streaks(
     Ok(())
 }
 
-fn period_bounds(kind: &AnalyticsPeriodKind, anchor: NaiveDate) -> (NaiveDate, NaiveDate) {
+pub(crate) fn period_bounds(
+    kind: &AnalyticsPeriodKind,
+    anchor: NaiveDate,
+) -> (NaiveDate, NaiveDate) {
     match kind {
         AnalyticsPeriodKind::Week => {
             let start = week_start(anchor);
@@ -889,11 +965,11 @@ fn period_bounds(kind: &AnalyticsPeriodKind, anchor: NaiveDate) -> (NaiveDate, N
 fn week_start(date: NaiveDate) -> NaiveDate {
     date - Duration::days(date.weekday().num_days_from_monday() as i64)
 }
-fn parse_date(value: &str) -> Result<NaiveDate, TaskError> {
+pub(crate) fn parse_date(value: &str) -> Result<NaiveDate, TaskError> {
     NaiveDate::parse_from_str(value, "%Y-%m-%d")
         .map_err(|_| TaskError::Validation("Choose a valid Analytics date."))
 }
-fn format_date(value: NaiveDate) -> String {
+pub(crate) fn format_date(value: NaiveDate) -> String {
     value.format("%Y-%m-%d").to_string()
 }
 fn period_kind_key(kind: &AnalyticsPeriodKind) -> &'static str {

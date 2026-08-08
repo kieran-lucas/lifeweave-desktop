@@ -19,6 +19,8 @@ import type { FocusPlanReviewListInput } from "./generated/FocusPlanReviewListIn
 import type { FocusPlanReviewHistoryView } from "./generated/FocusPlanReviewHistoryView";
 import type { CreateFocusPlanReviewInput } from "./generated/CreateFocusPlanReviewInput";
 import type { FocusPlanReviewView } from "./generated/FocusPlanReviewView";
+import type { FocusPlanAnalyticsInput } from "./generated/FocusPlanAnalyticsInput";
+import type { FocusPlanAnalyticsProjection } from "./generated/FocusPlanAnalyticsProjection";
 import type { TaskView } from "./generated/TaskView";
 import type { RelatedTaskView } from "./generated/RelatedTaskView";
 import type { CreateTaskInput } from "./generated/CreateTaskInput";
@@ -191,6 +193,8 @@ export const listFocusPlanReviews = (input: FocusPlanReviewListInput) =>
   invoke<FocusPlanReviewHistoryView>("list_focus_plan_reviews", { input });
 export const createFocusPlanReview = (input: CreateFocusPlanReviewInput) =>
   invoke<FocusPlanReviewView>("create_focus_plan_review", { input });
+export const getFocusPlanAnalyticsProjection = (input: FocusPlanAnalyticsInput) =>
+  invoke<FocusPlanAnalyticsProjection>("get_focus_plan_analytics_projection", { input });
 export const getRelatedTasksForLifeNode = (nodeId: string, anchorLocalDate: string) =>
   invoke<RelatedTaskView[]>("get_related_tasks_for_life_node", { nodeId, anchorLocalDate });
 export const listTasksForDate = (localDate: string, observedLocalDate: string) =>

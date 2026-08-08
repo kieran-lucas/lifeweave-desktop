@@ -250,6 +250,8 @@ export function FocusPlansScreen({
         mutation,
       });
       await invalidateTaskSavedViewReferenceData(queryClient);
+      // Title, lifecycle, archive, and restore all change what Focus Plan Analytics reports.
+      await queryClient.invalidateQueries({ queryKey: ["analytics"] });
       await refreshSelected();
       return true;
     } catch (cause) {
@@ -307,6 +309,7 @@ export function FocusPlansScreen({
       setPortfolio("draft");
       syncDetail(plan);
       await invalidateTaskSavedViewReferenceData(queryClient);
+      await queryClient.invalidateQueries({ queryKey: ["analytics"] });
       await loadPortfolio("draft");
     } catch (cause) {
       setError(messageFromError(cause));
