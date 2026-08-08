@@ -7,8 +7,8 @@
   "latest_feature_task": 49,
   "latest_feature_checkpoint": "7622db3d8b2b42d69c8f497b6899c5be82e9f9a9",
   "database_schema_version": 27,
-  "active_spec": null,
-  "next_action": "product_owner_gate",
+  "active_spec": "specs/040-global-layout-system",
+  "next_action": "implement_active_spec",
   "forbidden_feature_jump": true,
   "recommended_next_candidate": null,
   "source_sha256": "9c422927c09e26431d71b1ef5ab6306891a3e7c15ece0fc808bedf6f6689540a"

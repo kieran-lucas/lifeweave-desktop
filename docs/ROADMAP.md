@@ -1,5 +1,38 @@
 # Roadmap
 
+## Slice 040 — Global Layout System + UI Surface Completeness (active)
+
+Task 50 activates ADR 0044. Forty-nine closed tasks each added a screen and, with it, a private
+answer to "how wide is a page?" — seven maximum widths, three centring rules and three page-local
+paddings stacked on the one shared viewport gutter. Slice 040 replaces that with a single geometry
+authority and a finite page taxonomy: `STANDARD_PAGE` 1152, `WIDE_WORKSPACE` 1440, `READING_PAGE`
+768, `MODAL_SURFACE` 520/720/960, and `LOCAL_SCROLL_WORKSPACE` for the graph canvas, the tree canvas
+and wide tables.
+
+Three defects are structural rather than cosmetic and are repaired at source. The Task create/edit
+dialog renders a bare `<form>` inside a fixed backdrop with no surface, width, padding, scroll
+container or grid, and is rebuilt as a real contained dialog with a deterministic field grid.
+Settings produces a measured 15 px document-level horizontal scrollbar because the application root
+is sized `width: 100vw`, which by definition includes the classic scrollbar gutter. The Today
+timeline row declares three grid tracks while rendering up to four children.
+
+Ordinary screens must satisfy `scrollWidth <= clientWidth + 1` at the document root, the main
+viewport and the page frame, at 1280×720, 1440×900 and 1920×1080, in both sidebar states and in both
+empty and populated states. Concealment is prohibited: no global `overflow-x: hidden`, no
+negative-margin clipping, no `translateX` compensation and no `scale()` to fit. Invariants are proven
+by real WebView measurement in native phase 21, never by jsdom.
+
+The slice also completes UI surface coverage: every already-decided, implemented user-facing
+capability must have a visible path in its valid context, using existing IPC only. The census found
+one missing surface — Task edit, Task delete and recurring-occurrence edit were reachable only by an
+invisible double-click or `Enter` gesture — and zero blocked surfaces.
+
+Task 50 is a **layout and evidence slice, not a feature slice**; following the Task 40 precedent it
+does not advance `latest_feature_task`. Schema stays 27 with no migration, no Rust product change,
+no new IPC command, no new capability and no new dependency. Art direction — palette, brand, font
+family, icon language, radius and shadow language, illustration, Visual World art, motion and sound
+— is explicitly excluded and remains unallocated for a later Product Owner gate.
+
 ## Slice 039 — Focus Plan Activity Analytics Core (complete)
 
 Task 49 activates ADR 0043. Task 37 linked work to Plans and added manual reviews but deliberately

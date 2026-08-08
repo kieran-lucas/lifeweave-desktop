@@ -14,12 +14,27 @@
 
 - Latest closed task: **49/60**
 - Latest closed slice: **039 — Focus Plan Activity Analytics Core**
-- Active task: **none**
-- Active implementation specification: **none**
+- Active task: **50 — Global Layout System + UI Surface Completeness**
+- Active implementation specification: **`specs/040-global-layout-system`**
 - Latest feature checkpoint: **Task 49 — Focus Plan Activity Analytics Core** (`7622db3d8b2b42d69c8f497b6899c5be82e9f9a9`)
 - Database schema: **27**
-- Next action: **Product Owner gate**
-- Task 50: **prohibited, unstarted, unallocated, and unrecommended**
+- Next action: **Implement active spec**
+- Task 51: **prohibited, unstarted, unallocated, and unrecommended**
+
+## Task 50 activation
+
+Task 50 / Slice 040 is active from baseline `2c4cb188937393103e12b1042779af5ea266acda` under
+[ADR 0044](docs/adr/0044-global-layout-system-and-ui-surface-completeness.md). It replaces seven
+page-local width authorities with one geometry authority, gives every surface a declared page type
+from a finite taxonomy, rebuilds the Task create/edit dialog as a real contained surface, removes
+the measured 15 px global horizontal scrollbar at source, and proves the invariants with real
+WebView measurement.
+
+Task 50 is a **layout and evidence slice, not a feature slice**. Following the Task 40 precedent it
+does not advance `latest_feature_task`, which stays at 49. Schema remains **27** with no migration,
+no Rust product change, no new IPC command, no new capability, and no new dependency. Art direction
+— palette, brand, font family, icon language, radius and shadow language, illustration, Visual World
+art, motion and sound — is explicitly **not** in this slice and remains unallocated.
 
 ## Task 49 closure
 

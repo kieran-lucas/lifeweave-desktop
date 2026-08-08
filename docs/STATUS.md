@@ -1,5 +1,32 @@
 # Project Status
 
+## Task 50/60 — Global Layout System + UI Surface Completeness (active)
+
+- Activation baseline: `2c4cb188937393103e12b1042779af5ea266acda`.
+- Active slice: `040-global-layout-system` under
+  [ADR 0044](adr/0044-global-layout-system-and-ui-surface-completeness.md).
+- Schema remains 27; no migration, no Rust product change, no new IPC command, no new Tauri
+  capability, no new dependency, no workflow or seal change.
+- Scope: one geometry authority under `frontend/src/app/layout/`, a finite page taxonomy
+  (`STANDARD_PAGE` 1152 · `WIDE_WORKSPACE` 1440 · `READING_PAGE` 768 · `MODAL_SURFACE` 520/720/960 ·
+  `LOCAL_SCROLL_WORKSPACE`), one 4 px-derived spacing ramp, one responsive gutter, real modal and
+  form containment, a proven no-horizontal-overflow invariant for ordinary screens, real-browser
+  geometry evidence, and a visible path for every already-decided user-facing capability.
+- Named baseline defects under repair: the Task create/edit dialog renders a bare `<form>` inside a
+  backdrop with no surface, width, padding, scroll container or grid; Settings produces a measured
+  15 px document-level horizontal scrollbar because the application root is sized `width: 100vw`;
+  Today period headings concatenate as `Morning04:00–12:00`; and the Today timeline row declares
+  three grid tracks for up to four rendered children.
+- The UI surface census audited 101 decided capabilities against all 117 registered handlers and
+  found exactly one `MISSING_USER_SURFACE` group — Task edit, Task delete and recurring-occurrence
+  edit are reachable only by double-click or `Enter` on a row that advertises neither — and zero
+  `BLOCKED_SURFACE` items.
+- **Task 50 is not a feature checkpoint.** Following the Task 40 precedent, `latest_feature_task`
+  stays 49 at `7622db3d8b2b42d69c8f497b6899c5be82e9f9a9`.
+- Art direction is explicitly out of scope and remains unallocated: no palette, brand, logo, font
+  family, icon language, radius or shadow language, illustration, Visual World art, motion
+  personality, or sound change. Task 51 is prohibited, unstarted, unallocated, and unrecommended.
+
 ## Task 49/60 — Focus Plan Activity Analytics Core (complete)
 
 - Activation baseline: `86261298ccd99204da503f508b4dfb9ac50cee04`.

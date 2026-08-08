@@ -50,9 +50,15 @@ $allPhases = @(
   # companion by design.
   'phase20-focus-plan-analytics.e2e.ts'
 )
+# Evidence tooling that must be requested explicitly. The layout capture walks the whole screenshot
+# matrix at three viewports and reports rather than asserts, so it belongs to the Task 50 audit
+# rather than to the release gate the default full run represents.
+$auxiliaryPhases = @(
+  'task50-layout-capture.e2e.ts'
+)
 if (-not $Phases -or $Phases.Count -eq 0) { $Phases = $allPhases }
 foreach ($phase in $Phases) {
-  if ($phase -notin $allPhases) { throw "unknown native E2E phase: $phase" }
+  if ($phase -notin $allPhases -and $phase -notin $auxiliaryPhases) { throw "unknown native E2E phase: $phase" }
 }
 
 function Test-DriverPortOpen {

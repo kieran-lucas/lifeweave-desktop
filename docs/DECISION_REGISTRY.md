@@ -124,6 +124,24 @@ The immutable source is authoritative. This registry makes operational status vi
   progress and phase relations; scoring, health, and prediction; automatic lifecycle; and review
   edit, delete, archive, scheduling, and search. Task 50 is prohibited, unstarted, unallocated, and
   unrecommended.
+- Lifeweave has exactly one geometry authority. Every top-level surface declares one type from a
+  finite taxonomy — `STANDARD_PAGE` 1152, `WIDE_WORKSPACE` 1440, `READING_PAGE` 768,
+  `MODAL_SURFACE` 520/720/960, `LOCAL_SCROLL_WORKSPACE` — and consumes one shared page frame, one
+  responsive gutter `clamp(24px, 3vw, 48px)`, and one 4 px-derived spacing ramp
+  (`4 8 12 16 24 32 48 64`). No page-local maximum width, page gutter, dialog width, or page-level
+  section gap may live in domain CSS. Ordinary screens satisfy `scrollWidth <= clientWidth + 1` at
+  the document root, the main viewport, and the page frame; the graph canvas, the tree canvas, and
+  wide tables own their horizontal scroll locally. Concealment is prohibited: no global
+  `overflow-x: hidden`, negative-margin clipping, `translateX` compensation, or `scale()` to fit.
+  Modals are backdrop → surface → heading → status → body → footer, and form fields are
+  label → control → help/error as one vertical unit with no two visible sibling controls
+  intersecting. Layout invariants are proven by real-browser measurement, never by jsdom. Every
+  DECIDED implemented user-facing capability must have a visible path in its valid context, using
+  existing IPC only; a backend command is not a feature and a duplicate backend path never earns a
+  second control. STILL DEFERRED and explicitly untouched: art direction of every kind — palette,
+  brand, logo, font family, icon language, radius and shadow language, illustration, Visual World
+  art, motion personality, and sound. See ADR 0044. Task 51 is prohibited, unstarted, unallocated,
+  and unrecommended.
 
 ## LOCKED — Technology direction
 
