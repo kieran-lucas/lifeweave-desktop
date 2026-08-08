@@ -50,16 +50,81 @@ Owner decision supported by measurement, not a response to a red gate.
 
 Baseline evidence: `docs/audits/task-51-visual-baseline.md`.
 
-### Process gates — both outstanding
+### Phases 1–4 — complete
+
+- **Governance.** ADR 0045 and Slice 041 recorded; the ledger, status, roadmap and entry document
+  updated so they agree with the authorized state.
+- **State matrix.** 78 surfaces and states enumerated; 24 already covered by the `task50b` walk,
+  **54 to add**. Narrative is reached by nothing today. The four Visual Worlds are recorded as an
+  approved per-world palette to *harmonise*, not as stray colour to delete.
+- **Dependencies.** Four added, each with a written admission note in
+  `docs/audits/task-51-dependency-notes.md`. `@base-ui/react` was evaluated and **not installed** —
+  the prototype found no primitive that beats native semantics. **Measured impact on the shipped
+  application: 0 bytes**, same `index.js` content hash, same 24 chunks.
+- **Visual authority.** `frontend/src/design-system/visual/` — a `createThemeContract` where every
+  role is `null`, so a missing role is a build error; light and dark as two `createTheme`
+  implementations derived in `oklch()`; a measured type scale; a motion vocabulary; and 22 Fluent
+  icons vendored from 20,621 by `scripts/generate_visual_icons.py`. **31 radii → 4, 14 shadows → 3,
+  29 hardcoded hex colours → semantic roles.**
+- **Prototype.** The whole `Sidebar | Today | Inspector` composition, isolated behind a second Vite
+  entry that the production build excludes.
+
+### Reference measurement
+
+The Product Owner supplied `docs/visual/task-51/lifeweave-visual-baseline-v1.png` (1586 × 992).
+Measured by pixel sampling, not by eye — full record in `docs/audits/task-51-reference-measurement.md`.
+
+Two findings changed the design and were invisible to inspection: **the inspector is the same plane
+as the workspace** (`#FBFAF9`, separated by one hairline, no fill or shadow of its own), and **there
+is no period container** — the rows sit directly on the canvas.
+
+A third finding is an accessibility conflict: the reference's `#EFEFF4` selection fill measures
+**1.10:1** against the canvas, far below the 3:1 WCAG 2.2 SC 1.4.11 asks of a state indicator. It is
+resolved by *addition* — the fill is kept exactly as measured and a 2 px accent edge at 3.15:1
+carries the state alongside it.
+
+### Art direction — light blue
+
+Explicit Product Owner direction recorded during activation: the art vibe is **light blue**. It is
+scoped to the three ambient roles and reaches no canvas, surface, text, border, accent or state
+colour. The scoping is the decision: the content plane stays warm as the reference has it, so a cool
+atmosphere reads as air behind the interface rather than as the cool blue-grey system this slice
+replaces.
+
+### Measured results at the lock gate
 
 ```text
-VISUAL LOCK   not requested — the Product Owner reference image has not been supplied, and
-              §3 of the activation prompt forbids claiming visual fidelity without it
+captures                       12    six lock states plus four viewports
+semantic spacing collisions     0    Task 50 detector, reused unchanged
+document / workspace overflow   0    every state, every viewport
+viewports proven               1536×794 · 1440×900 · 1280×720 · 960×640
+contrast                       every text role ≥ 4.5:1, every boundary and state ≥ 3:1, both themes
+production bundle delta         0 bytes
+gates                          verify · typecheck · build · performance budget all PASS
+```
+
+Three defects were found only because the whole screen was composed at once: a 464 px dead column
+reserved for an absent inspector, default WebView2 scrollbars rendering as a bright bar through the
+dark composition, and an ambient field washing across the task titles. None would have surfaced from
+restyling components one at a time.
+
+### Process gates
+
+```text
+VISUAL LOCK   evidence presented — docs/audits/task-51-visual-lock.md — AWAITING APPROVAL
 MOTION LOCK   blocked on VISUAL LOCK
 ```
 
 No production presentation file may be visually overhauled before `VISUAL LOCK APPROVED` is received
-in words. Approval is never inferred.
+in words. Approval is never inferred. `design-system/global.css` is unchanged, so Task 50's
+art-direction freeze is still intact and still enforced.
+
+Open decision carried to the gate: the reference draws its own 52 px in-app titlebar, which would
+need `decorations: false` and window-control capabilities that spec §11 currently excludes.
+
+Not run and recorded as such: forced colors, Narrator spot checks, physical DPI at 125% / 150%
+(inherited debt), and visual-regression goldens, which are deliberately established *after* the lock
+rather than before it.
 
 ## Task 50/60 — Global Layout System + UI Surface Completeness (complete)
 

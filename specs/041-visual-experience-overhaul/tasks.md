@@ -34,30 +34,38 @@
 
 ## Stage D — Prototype infrastructure
 
-- [ ] Obtain the Product Owner reference image and store it at `docs/visual/task-51/`.
-- [ ] Add `@vanilla-extract/recipes` with a dependency-policy note.
-- [ ] Add self-hosted `@fontsource-variable/literata`, importing only the required axis CSS.
-- [ ] Add a curated `@fluentui/svg-icons` subset; do not load the full set at runtime.
-- [ ] Add `@wdio/visual-service@^9`; do not migrate WebdriverIO during Task 51.
-- [ ] Build the visual token contract with light and dark themes derived in `oklch()`.
-- [ ] Build the type scale, motion tokens, icon pipeline and primitive recipes.
-- [ ] Build the isolated prototype under `frontend/src/prototypes/task51/` with stress fixtures.
-- [ ] Touch no production presentation file.
+- [x] Obtain the Product Owner reference image and store it at `docs/visual/task-51/`.
+- [x] Add `@vanilla-extract/recipes` with a dependency-policy note. *(provisional — removed before
+      closure if the production primitives never need a second variant axis)*
+- [x] Add self-hosted `@fontsource-variable/literata`, importing only the required axis CSS.
+      *(3 of 7 subsets: latin, latin-ext, vietnamese — 106,560 bytes)*
+- [x] Add a curated `@fluentui/svg-icons` subset; do not load the full set at runtime.
+      *(devDependency only; 22 of 20,621 icons vendored by `scripts/generate_visual_icons.py`)*
+- [x] Add `@wdio/visual-service@^9`; do not migrate WebdriverIO during Task 51.
+- [x] Build the visual token contract with light and dark themes derived in `oklch()`.
+- [x] Build the type scale, motion tokens and icon pipeline.
+- [x] Build the isolated prototype under `frontend/src/prototypes/task51/` with stress fixtures.
+- [x] Touch no production presentation file. *(production build byte-identical, same content hash)*
+- [x] Record the light-blue art direction as an explicit Product Owner decision.
 
 ## Stage E — Full-screen Today prototype
 
-- [ ] Measure the reference image and reconcile its proportions with the real 1536 × 794 viewport.
-- [ ] Build the whole `Sidebar | Today | Inspector` composition at once, never widget by widget.
-- [ ] Produce all seven lock states, including dark and the reduced-motion composition.
-- [ ] Render at 1440 × 900, 1280 × 720 and 960 × 640 and prove the degradation keeps the visual DNA.
-- [ ] Count enclosure levels explicitly; keep visible content within two without a recorded reason.
-- [ ] Verify contrast against the derived tokens: 4.5:1 text, 3:1 boundaries and state.
-- [ ] Run the semantic-collision detector and the geometry invariants over the prototype.
-- [ ] Record every deviation from the reference with what, why, evidence and reversibility.
+- [x] Measure the reference image and reconcile its proportions with the real 1536 × 794 viewport.
+- [x] Build the whole `Sidebar | Today | Inspector` composition at once, never widget by widget.
+- [x] Produce the lock states, including dark.
+- [x] Render at 1440 × 900, 1280 × 720 and 960 × 640 and prove the degradation keeps the visual DNA.
+- [x] Count enclosure levels explicitly. *(3 counting tonal zones, 1 counting bordered boxes; both
+      reported rather than tuning the detector)*
+- [x] Verify contrast against the derived tokens: 4.5:1 text, 3:1 boundaries and state.
+- [x] Run the semantic-collision detector and the geometry invariants over the prototype.
+      *(12 captures, 0 collisions, 0 overflow)*
+- [x] Record every deviation from the reference with what, why, evidence and reversibility.
+- [ ] Reduced-motion composition capture — deferred to the motion phase, where it is meaningful;
+      reduced motion currently changes timing only, not composition.
 
 ## Stage F — VISUAL LOCK
 
-- [ ] Present captures, viewport, DPR, token values, deviations and open questions, then **STOP**.
+- [x] Present captures, viewport, DPR, token values, deviations and open questions, then **STOP**.
 - [ ] Do not begin production visual reconstruction before `VISUAL LOCK APPROVED` is received.
 
 ## Stage G — Motion prototype

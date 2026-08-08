@@ -451,6 +451,9 @@ export const workspaceFooter = style({
   ...text.meta,
   color: vars.color.textTertiary,
   background: vars.color.canvas,
+  // Matches the timeline's bounded measure plus its padding, so the footer's two ends align with
+  // the column above rather than with the window.
+  maxInlineSize: 840,
 });
 
 export const footerFacts = style({ display: "flex", alignItems: "center", gap: 10, minInlineSize: 0 });
@@ -748,7 +751,22 @@ export const ambientDensity = styleVariants({
   dense: { opacity: 0.22 },
 });
 
-export const workspaceContent = style({ position: "relative", zIndex: 1 });
+/**
+ * The timeline keeps a bounded measure even when the inspector is absent.
+ *
+ * With the inspector open the workspace gives the content column 692 px, which is the reference's
+ * measure and never reaches this cap. With the inspector closed the column would otherwise stretch
+ * to 1156 px, and the time — right-aligned by design — drifts a hand's width away from the title it
+ * belongs to, which is exactly the scannability the row layout exists to protect.
+ *
+ * Capping it keeps one measure in both states and turns the extra width into canvas, which is what
+ * the reference already does with its own right margin.
+ */
+export const workspaceContent = style({
+  position: "relative",
+  zIndex: 1,
+  maxInlineSize: 720,
+});
 
 /* ── Prototype chrome (not part of the design) ───────────────────────────────────────────── */
 
