@@ -331,6 +331,17 @@ export async function enterMeasuredViewport(requested: AuditViewportRequest) {
     return { mode: "canonical" as const, requested: null, ...(await describeViewport()) };
   }
 
+  // The governed minimum visual baseline is the measured 959×639 WebView produced by the
+  // 960×640 Windows window request at 125% DPI. Windows can otherwise round that same request to
+  // 960×639 between sessions, changing the physical PNG width by one pixel despite identical CSS.
+  // Geometry-only audits continue to target the requested size; pixel comparisons stabilize the
+  // already-recorded achieved viewport from visual-baseline metadata.
+  const stabilizeVisualMinimum = process.env.LIFEWEAVE_VISUAL_REGRESSION === "1" &&
+    requested.width === 960 && requested.height === 640;
+  const expected = stabilizeVisualMinimum
+    ? { width: 959, height: 639 }
+    : requested;
+
   // Measure this window's chrome, then aim the outer size so the inner viewport hits the request.
   const before = await describeViewport();
   const chromeX = before.outerWidth - before.innerWidth;
@@ -344,7 +355,7 @@ export async function enterMeasuredViewport(requested: AuditViewportRequest) {
    * and produced "no such window: target window already closed", which reads like a product crash
    * and is not one. Failing here says what is actually true.
    */
-  if (requested.width + chromeX > before.availWidth || requested.height + chromeY > before.availHeight) {
+  if (expected.width + chromeX > before.availWidth || expected.height + chromeY > before.availHeight) {
     throw new Error(
       `requested viewport ${requested.width}x${requested.height} does not fit this display: ` +
         `needs ${requested.width + chromeX}x${requested.height + chromeY} of window, ` +
@@ -352,19 +363,21 @@ export async function enterMeasuredViewport(requested: AuditViewportRequest) {
         `This is an environment limit, not a layout defect — record it as NOT ACHIEVABLE.`,
     );
   }
-  await browser.setWindowRect(0, 0, requested.width + chromeX, requested.height + chromeY);
+  await browser.setWindowRect(0, 0, expected.width + chromeX, expected.height + chromeY);
   await browser.pause(600);
 
   let achieved = await describeViewport();
   // One corrective pass: DPI rounding and OS minimum-size clamping can shift the first attempt.
-  const driftX = requested.width - achieved.innerWidth;
-  const driftY = requested.height - achieved.innerHeight;
-  if (Math.abs(driftX) > 1 || Math.abs(driftY) > 1) {
+  const driftX = expected.width - achieved.innerWidth;
+  const driftY = expected.height - achieved.innerHeight;
+  if (stabilizeVisualMinimum
+    ? driftX !== 0 || driftY !== 0
+    : Math.abs(driftX) > 1 || Math.abs(driftY) > 1) {
     await browser.setWindowRect(
       0,
       0,
-      requested.width + chromeX + driftX,
-      requested.height + chromeY + driftY,
+      expected.width + chromeX + driftX,
+      expected.height + chromeY + driftY,
     );
     await browser.pause(600);
     achieved = await describeViewport();
@@ -375,9 +388,10 @@ export async function enterMeasuredViewport(requested: AuditViewportRequest) {
    * at devicePixelRatio 1.25 and nothing more; a window the OS refused to make that small — the
    * Tauri minimum is 960 × 640 — trips this instead of quietly producing misleading evidence.
    */
-  const offX = Math.abs(achieved.innerWidth - requested.width);
-  const offY = Math.abs(achieved.innerHeight - requested.height);
-  if (offX > 2 || offY > 2) {
+  const offX = Math.abs(achieved.innerWidth - expected.width);
+  const offY = Math.abs(achieved.innerHeight - expected.height);
+  const allowedDrift = stabilizeVisualMinimum ? 0 : 2;
+  if (offX > allowedDrift || offY > allowedDrift) {
     throw new Error(
       `requested viewport ${requested.width}x${requested.height} was not achieved: ` +
         `measured ${achieved.innerWidth}x${achieved.innerHeight} ` +

@@ -31,6 +31,8 @@ require("https:" not in re.search(r'"csp":\s*"([^"]+)', tauri).group(1), "produc
 require('"minWidth": 960' in tauri and '"minHeight": 640' in tauri, "measured minimum window contract drifted")
 require('"maximized": true' in tauri and '"fullscreen": false' in tauri,
         "main window must launch maximized with native window controls retained")
+require('"backgroundColor": "#FCFCFD"' in tauri,
+        "main window and WebView must paint the Lifeweave canvas before frontend startup")
 
 cargo = (ROOT / "src-tauri" / "Cargo.toml").read_text(encoding="utf-8")
 require("default = [\"e2e-test\"]" not in cargo, "production build enables the E2E feature")

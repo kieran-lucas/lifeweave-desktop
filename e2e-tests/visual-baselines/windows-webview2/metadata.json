@@ -11,7 +11,7 @@
   "themes": ["light", "dark"],
   "darkThemeProof": "WebView2 DevTools Emulation.setEmulatedMedia plus production matchMedia assertion",
   "accessibilityMedia": {
-    "forcedColors": "10 tracked goldens; DevTools Emulation.setEmulatedMedia plus production matchMedia assertion",
+    "forcedColors": "12 tracked goldens; DevTools Emulation.setEmulatedMedia plus production matchMedia assertion",
     "reducedMotion": "36-state native walk; production matchMedia assertion; 5 representative static captures matched light goldens byte-for-byte"
   },
   "languages": {
@@ -42,7 +42,7 @@
   ],
   "motion": {
     "cssAnimationsDisabledByVisualService": true,
-    "blinkingCursorStability": "visual service suppression plus explicit focused-text blur/restore for WebView2 native caret",
+    "blinkingCursorStability": "visual service suppression plus a temporary transparent caret on the focused text-editable; focus and expanded state remain unchanged",
     "reducedMotionAudit": "target/e2e-artifacts/task-50b/task51-visual-baseline-generate-reduced-motion-1536-20260809/"
   },
   "fixture": {
@@ -52,7 +52,7 @@
     "fixtureCheckpoint": "be71661 plus the tracked empty-leaf/import extension"
   },
   "sourceTreeCheckpoints": ["e2818cf", "fe2903b", "ddf8980", "ab9333c", "ad0650b", "1432896", "60e1eb4", "be8a59a"],
-  "snapshotCount": 97,
+  "snapshotCount": 105,
   "comparison": {
     "mismatchPercentage": 0,
     "autoAcceptanceDefault": false,
@@ -67,7 +67,11 @@
       "target/e2e-artifacts/task-50b/task51-edge-dark-verify-20260809/",
       "target/e2e-artifacts/task-50b/task51-imports-light-verify-20260810/",
       "target/e2e-artifacts/task-50b/task51-imports-dark-verify-20260810/",
-      "target/e2e-artifacts/task-50b/task51-deterministic-dark-zero2-20260810/"
+      "target/e2e-artifacts/task-50b/task51-deterministic-dark-zero2-20260810/",
+      "target/e2e-artifacts/task-50b/task51-task-combobox-verify-light-1536-20260810/",
+      "target/e2e-artifacts/task-50b/task51-task-combobox-verify-dark-1536-20260810/",
+      "target/e2e-artifacts/task-50b/task51-task-combobox-verify-forced-colors-pass3-1536-20260810/",
+      "target/e2e-artifacts/task-50b/task51-task-combobox-verify-min-final3-20260810/"
     ]
   },
   "runtimeOnlyEvidence": [
