@@ -7,6 +7,7 @@ import type { SearchResultView } from "../../ipc/generated/SearchResultView";
 import type { SearchTextFragment } from "../../ipc/generated/SearchTextFragment";
 import { localToday } from "../calendar/date";
 import * as styles from "./GlobalSearchDialog.css";
+import { Icon, iconSearch } from "../../design-system/visual/icons";
 
 type Props = {
   onClose: () => void;
@@ -48,7 +49,7 @@ function flattenResults(proj: GlobalSearchProjection): FlatResult[] {
 
 function Fragments({ fragments }: { fragments: SearchTextFragment[] }) {
   return (
-    <>
+    <span data-visual-text-run="">
       {fragments.map((f, i) =>
         f.emphasized ? (
           <mark key={i} className={styles.mark}>
@@ -58,7 +59,7 @@ function Fragments({ fragments }: { fragments: SearchTextFragment[] }) {
           <span key={i}>{f.text}</span>
         ),
       )}
-    </>
+    </span>
   );
 }
 
@@ -161,7 +162,7 @@ export default function GlobalSearchDialog({ onClose, onNavigate, invokerRef }: 
     >
       <div role="dialog" aria-modal="true" aria-label="Search" className={styles.card}>
         <div className={styles.inputRow}>
-          <span className={styles.searchIcon} aria-hidden="true">⌕</span>
+          <span className={styles.searchIcon} aria-hidden="true"><Icon d={iconSearch} size={16} /></span>
           <input
             ref={inputRef}
             type="search"

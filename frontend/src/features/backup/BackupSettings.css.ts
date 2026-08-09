@@ -8,7 +8,7 @@ import { dialogBackdrop, dialogSurface, scrollRegion } from "../../app/layout/la
  * spacing comes from the page rhythm, and its confirmation dialog uses the shared modal geometry
  * (ADR 0044).
  */
-export const panel = style({ display: "flex", flexDirection: "column", gap: space.group, padding: space.x5, border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-surface)", background: "var(--surface)", minInlineSize: 0 });
+export const panel = style({ display: "flex", flexDirection: "column", gap: space.group, paddingBlockStart: space.x5, borderTop: "1px solid var(--border-subtle)", background: "transparent", minInlineSize: 0 });
 export const headingRow = style({ display: "flex", alignItems: "start", justifyContent: "space-between", gap: "16px", flexWrap: "wrap" });
 export const heading = style({ margin: 0, fontSize: "1.25rem" });
 export const intro = style({ margin: "6px 0 0", color: "var(--text-muted, var(--text-muted))" });

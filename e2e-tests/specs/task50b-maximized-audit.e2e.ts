@@ -323,6 +323,13 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
 
     if (await tryClick("button[aria-label^='Search']")) {
       await capture("search", "21-search");
+      const searchInput = $("input[aria-label='Search tasks, life nodes, and documents']");
+      await searchInput.setValue("Layout");
+      await $("[role='option']").waitForDisplayed({ timeout: 15_000 });
+      await capture("search--results", "21b-search-results");
+      await searchInput.setValue("task51-no-result-sentinel");
+      await $("p=No results.").waitForDisplayed({ timeout: 15_000 });
+      await capture("search--no-results", "21c-search-no-results");
       await tryClick("button[aria-label='Close search']");
     }
     if (await tryClick("button=Keyboard shortcuts")) {

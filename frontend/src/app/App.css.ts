@@ -1,6 +1,5 @@
 import { globalStyle, style } from "@vanilla-extract/css";
 
-import { glass, aboveAtmosphere } from "../design-system/visual/atmosphere.css";
 // Side-effect import: this is what puts the type system and its one authorized @font-face into the
 // production bundle. Before it, `visual/typography.css.ts` was reachable only from the excluded
 // prototype entry, so the scale shipped to nothing.
@@ -69,7 +68,7 @@ export const lede = style({ margin: 0, color: "var(--text-muted)", fontSize: "0.
  * its own description as from the controls below it. Title and description are now one unit with a
  * tight gap, and the content is pushed away from both.
  */
-export const settingsSection = style([glass, { display: "flex", flexDirection: "column", gap: space.x2, minInlineSize: 0, padding: space.x5, borderRadius: "var(--radius-surface)" }]);
+export const settingsSection = style({ display: "flex", flexDirection: "column", gap: space.x2, minInlineSize: 0, paddingBlockStart: space.x5, borderTop: "1px solid var(--border-subtle)" });
 
 /*
  * A settings heading is `sectionTitle`, not the global `h2` role.

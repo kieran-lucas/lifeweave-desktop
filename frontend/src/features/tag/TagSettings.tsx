@@ -304,7 +304,7 @@ export function TagSettings() {
                 <option key={t.id} value={t.id}>{t.name}</option>
               ))}
             </select>
-            <span aria-hidden="true">→</span>
+            <span>into</span>
             <select
               className={styles.select}
               value={mergeTargetId}
@@ -408,7 +408,7 @@ function TagRow({
             {tag.name}
             {isMerged && tag.merged_into && (
               <span className={styles.mergedAlias}>
-                → {tag.merged_into.name}
+                Merged into {tag.merged_into.name}
               </span>
             )}
           </>

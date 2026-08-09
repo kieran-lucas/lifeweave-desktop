@@ -21,6 +21,7 @@ Evidence shorthand:
 - `RDL` — `target/e2e-artifacts/task-50b/task51-reader-dialog-pass2-20260809/`
 - `RNA` — `target/e2e-artifacts/task-50b/task51-narrative-pass3-20260809/`
 - `LIFEP3` — `target/e2e-artifacts/task-50b/task51-life-family-pass3-20260809/`
+- `SSEP2` — `target/e2e-artifacts/task-50b/task51-settings-search-pass2-20260809/`
 - `DOM` — focused React/Vitest behavior and accessibility contracts
 - `GEO` — real WebView spacing audit; collisions/document overflow/viewport overflow
 
@@ -85,8 +86,8 @@ Evidence shorthand:
 
 | Surface / entry | Primary states and nested UI | Shared primitives | L/D/N/K/F | Evidence | Status | Defects / next proof |
 |---|---|---|---|---|---|---|
-| Global Search — sidebar `Search` or `Ctrl+K` | initial, typing/loading, grouped results, keyboard active result, no result, long text, close/restore | modal/search field, result groups, loading/empty | Y/N/Y/P/N | RMAX/R960 `21-search.png`; DOM | PARTIAL | Current real capture is empty only; render results/no-results and verify focus restoration. |
-| Settings — sidebar `Settings` | goals, tags, backup/restore, keyboard, Foundation tools, forms/tables/destructive actions | settings sections, fields, check/radio/select, tables, chips | Y/N/Y/P/N | RMAX/R960 `18`–`20`, `23`; GEO; DOM | PARTIAL | Current sections still read as large bordered strips and table density is visually raw; deliberate content-level pass needed. |
+| Global Search — sidebar `Search` or `Ctrl+K` | initial, typing/loading, grouped results, keyboard active result, no result, long text, close/restore | modal/search field, result groups, loading/empty | Y/N/Y/P/N | SSEP2 `21`, `21b`, `21c`; R960 `21`; DOM; GEO | PARTIAL | Initial, 16-result grouped/keyboard-active, and no-result states render with the shared search icon and no native cancel glyph. Loading/error, keyboard traversal/focus restoration, dark/FC remain. |
+| Settings — sidebar `Settings` | goals, tags, backup/restore, keyboard, Foundation tools, forms/tables/destructive actions | settings sections, fields, check/radio/select, tables, chips | Y/N/Y/P/N | SSEP2 `18`–`20`, `23`; R960; GEO; DOM | PARTIAL | Settings now reads as one editorial form: bounded goal controls and hairline section transitions replace full-width strips/card islands. Tag merge/open states, restore dialog, validation/error and dark/FC remain. |
 | Tag picker/chips — Task/Life/Settings forms | closed/open combobox, search/no result, many chips, merge/archive states | combobox, listbox, chip buttons | N/N/N/P/N | DOM only | NOT REVIEWED | Add real open-state and many-chip captures; converge with other comboboxes. |
 | Shortcut help — Settings button or `Ctrl+/` | open/close, eight commands, narrow/long labels | shared dialog, key badges | Y/N/Y/P/N | RMAX/R960 `22-keyboard-help.png`; DOM | PARTIAL | Dark/FC and focus containment/restore current capture remain. |
 | Restore confirmation — Settings `Restore` | destructive confirmation, compatibility warning, failure | shared dialog, danger button, status | N/N/N/P/N | DOM/native functional tests only | NOT REVIEWED | Add safe current real capture without completing restore. |
@@ -116,7 +117,7 @@ These rows prevent a broad family row from concealing unreviewed nested states.
 | Narrative blocks/editor | timeline/image/rich-text/metric/callout; unknown/unsupported preservation; asset loading/failure; draft conflict; reorder; undo/redo; delete/dirty-exit dialogs | DOM only | NOT REVIEWED |
 | Settings category goals/tags | configured/unconfigured/validation/saving/error; tag create/rename/archive/restore/merge confirm/error/aliases | top capture plus DOM | PARTIAL |
 | Settings backup/Foundation | create pending/cleanup notice/list error/compatibility variants/restore pending/error; Foundation loading/error/empty/create/edit/archive/restore | basic captures plus functional tests | PARTIAL |
-| Global Search | initial/loading/error/grouped/truncated-more/keyboard-active/no-match/long result | empty capture plus DOM | PARTIAL |
+| Global Search | initial/loading/error/grouped/truncated-more/keyboard-active/no-match/long result | SSEP2 initial/grouped/active/no-match captures plus DOM | PARTIAL |
 | Task deletion | matrix row 1.24 requires confirmation; runtime currently deletes directly from the edit dialog | no confirm surface exists | NOT REVIEWED |
 
 ## Closure infrastructure and evidence blockers

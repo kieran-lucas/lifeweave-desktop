@@ -49,6 +49,8 @@ export const searchIcon = style({
 
 export const input = style({
   flex: 1,
+  WebkitAppearance: "none",
+  appearance: "none",
   border: 0,
   outline: 0,
   background: "transparent",
@@ -56,6 +58,9 @@ export const input = style({
   fontSize: "1rem",
   lineHeight: 1.4,
   "::placeholder": { color: "var(--text-muted, var(--text-muted))" },
+  selectors: {
+    "&::-webkit-search-cancel-button": { WebkitAppearance: "none", display: "none" },
+  },
 });
 
 export const closeButton = style({

@@ -6,7 +6,7 @@ import { scrollRegion } from "../../app/layout/layout.css";
  * Tag settings owns no page width. It is content inside the Settings STANDARD_PAGE, and its tables
  * own their own horizontal scroll so the page can never be forced sideways (ADR 0044).
  */
-export const root = style({ display: "flex", flexDirection: "column", gap: space.group, minInlineSize: 0 });
+export const root = style({ display: "flex", flexDirection: "column", gap: space.group, minInlineSize: 0, paddingBlockStart: space.x5, borderTop: "1px solid var(--border-subtle)" });
 export const tableScroll = scrollRegion;
 export const createRow = style({ display: "flex", flexWrap: "wrap", gap: space.control, alignItems: "center", minInlineSize: 0 });
 export const input = style({ flex: 1, minInlineSize: 0, boxSizing: "border-box", padding: "7px 10px", border: "1px solid var(--border-subtle, var(--border-subtle))", borderRadius: "var(--radius-small)", fontSize: 14 });

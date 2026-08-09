@@ -82,6 +82,9 @@ export async function findCollisions(screen: string): Promise<Collision[]> {
       for (const node of roots) if (node.children.length >= 2) parents.add(node);
 
       for (const parent of parents) {
+        // Search highlighting deliberately splits one continuous phrase into adjacent span/mark
+        // fragments. Their zero gap is correct text shaping, not two semantic siblings colliding.
+        if (parent.hasAttribute("data-visual-text-run")) continue;
         const style = getComputedStyle(parent);
         const kids = [...parent.children].filter(
           child => visible(child) && (child.textContent ?? "").trim().length > 0,
