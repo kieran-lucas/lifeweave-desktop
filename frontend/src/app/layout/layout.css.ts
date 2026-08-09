@@ -29,7 +29,7 @@ globalStyle("button, select", {
   paddingBlock: space.x2,
   paddingInline: space.x3,
   border: "1px solid var(--glass-border)",
-  borderRadius: 8,
+  borderRadius: "var(--radius-control)",
   background: "var(--glass-surface)",
   color: "var(--text-primary)",
   cursor: "pointer",
@@ -43,7 +43,7 @@ globalStyle("button:disabled, select:disabled", { cursor: "not-allowed", opacity
 /* Inputs join the same material so a form does not mix two centuries of control design. */
 globalStyle("input, textarea", {
   border: "1px solid var(--glass-border)",
-  borderRadius: 8,
+  borderRadius: "var(--radius-control)",
   background: "var(--glass-surface-strong)",
   color: "var(--text-primary)",
 });
@@ -56,7 +56,7 @@ globalStyle("textarea", { padding: space.control });
  */
 globalStyle("fieldset", {
   border: "1px solid var(--glass-border)",
-  borderRadius: 10,
+  borderRadius: "var(--radius-control)",
   background: "var(--glass-surface)",
 });
 globalStyle("legend", { padding: `0 ${space.x2}`, color: "var(--text-muted)", fontWeight: 600 });
@@ -173,7 +173,7 @@ const dialogSurfaceBase = style([glassStrong,{
    * `glassStrong` because dialogs carry forms and dense prose; the tint stays high so reading is
    * unaffected and the blur is only ever an enhancement.
    */
-  borderRadius: 16,
+  borderRadius: "var(--radius-surface)",
   color: "var(--text-primary)",
   containerType: "inline-size",
   containerName: "dialog",
@@ -280,7 +280,7 @@ export const fieldGroup = style({
   margin: 0,
   padding: space.field,
   border: "1px solid var(--border-subtle)",
-  borderRadius: 12,
+  borderRadius: "var(--radius-surface)",
 });
 
 /** A row of compact related controls that legitimately share one line. */

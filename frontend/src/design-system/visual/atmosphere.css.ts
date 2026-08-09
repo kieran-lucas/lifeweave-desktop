@@ -130,14 +130,14 @@ export const progressBar = style({
   appearance: "none",
   WebkitAppearance: "none",
   border: 0,
-  borderRadius: 999,
+  borderRadius: "var(--radius-full)",
   overflow: "hidden",
   accentColor: "var(--accent)",
   background: "var(--border-subtle)",
   color: "var(--accent)",
   selectors: {
-    "&::-webkit-progress-bar": { background: "var(--border-subtle)", borderRadius: 999 },
-    "&::-webkit-progress-value": { background: "var(--accent)", borderRadius: 999 },
-    "&::-moz-progress-bar": { background: "var(--accent)", borderRadius: 999 },
+    "&::-webkit-progress-bar": { background: "var(--border-subtle)", borderRadius: "var(--radius-full)" },
+    "&::-webkit-progress-value": { background: "var(--accent)", borderRadius: "var(--radius-full)" },
+    "&::-moz-progress-bar": { background: "var(--accent)", borderRadius: "var(--radius-full)" },
   },
 });

@@ -26,7 +26,7 @@ const base = style({
   minHeight: 32,
   padding: "0 13px",
   border: "1px solid transparent",
-  borderRadius: 8,
+  borderRadius: "var(--radius-control)",
   fontFamily: text.button.fontFamily,
   fontSize: text.button.fontSize,
   fontWeight: text.button.fontWeight,
@@ -147,8 +147,8 @@ export const button = styleVariants({
  */
 export const iconButton = style([
   base,
-  { minWidth: 32, width: 32, height: 32, padding: 0, borderRadius: 8 },
+  { minWidth: 32, width: 32, height: 32, padding: 0, borderRadius: "var(--radius-control)" },
 ]);
 
 /** A denser button for inline row actions, where 32px would dominate a 21px line. */
-export const compact = style({ minHeight: 26, padding: "0 9px", fontSize: 12.5, borderRadius: 7 });
+export const compact = style({ minHeight: 26, padding: "0 9px", fontSize: 12.5, borderRadius: "var(--radius-small)" });

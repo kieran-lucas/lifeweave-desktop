@@ -50,7 +50,7 @@ export const actionButton = style({
   minWidth: 32,
   paddingInline: 10,
   border: "1px solid var(--border-subtle)",
-  borderRadius: 8,
+  borderRadius: "var(--radius-control)",
   background: "transparent",
   color: "var(--text-muted)",
   fontSize: "0.8125rem",
@@ -68,7 +68,7 @@ export const actionButton = style({
  */
 export const grid = style([
   glassStrong,
-  { display: "grid", borderRadius: 12, overflow: "hidden", minInlineSize: 0 },
+  { display: "grid", borderRadius: "var(--radius-surface)", overflow: "hidden", minInlineSize: 0 },
 ]);
 
 export const weekdays = style({
@@ -135,7 +135,7 @@ export const dayNumber = style({
   placeItems: "center",
   inlineSize: 24,
   blockSize: 24,
-  borderRadius: 999,
+  borderRadius: "var(--radius-full)",
   fontSize: "0.8125rem",
   fontWeight: 600,
   fontVariantNumeric: "tabular-nums",
@@ -189,7 +189,7 @@ export const missed = style({
   placeItems: "center",
   width: 15,
   height: 15,
-  borderRadius: "50%",
+  borderRadius: "var(--radius-full)",
   background: "var(--icon-background)",
   color: "#a34b24",
   fontSize: "0.625rem",

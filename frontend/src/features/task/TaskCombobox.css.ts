@@ -22,7 +22,7 @@ export const listbox = style({
   overflowY: "auto",
   minInlineSize: 0,
   border: "1px solid var(--border-subtle)",
-  borderRadius: 10,
+  borderRadius: "var(--radius-control)",
   background: "var(--surface)",
 });
 
@@ -32,7 +32,7 @@ export const option = style({
   alignItems: "baseline",
   gap: space.control,
   padding: `${space.x1} ${space.control}`,
-  borderRadius: 7,
+  borderRadius: "var(--radius-small)",
   cursor: "pointer",
   minInlineSize: 0,
   selectors: {
@@ -49,7 +49,7 @@ export const empty = style({ padding: `${space.x1} ${space.control}`, color: "va
 export const clear = style({
   alignSelf: "flex-start",
   border: "1px solid var(--border-subtle)",
-  borderRadius: 8,
+  borderRadius: "var(--radius-control)",
   background: "transparent",
   color: "inherit",
   padding: `${space.x1} ${space.control}`,
@@ -64,7 +64,7 @@ export const input = style({
   minBlockSize: 40,
   padding: `${space.control} ${space.x3}`,
   border: "1px solid var(--border-subtle)",
-  borderRadius: 8,
+  borderRadius: "var(--radius-control)",
   background: "var(--surface)",
   color: "inherit",
   font: "inherit",

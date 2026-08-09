@@ -214,7 +214,7 @@ def check(errors: list[str]) -> None:
 # Residue can therefore only ever decrease, and the file records honestly how much is left.
 MAX_RESIDUE = {
     "hex": 13,        # hardcoded colour literals in feature *.css.ts
-    "radius": 125,    # raw border-radius literals not resolved through vars.radius
+    "radius": 0,    # raw border-radius literals not resolved through vars.radius
     "shadow": 14,     # raw box-shadow literals not resolved through vars.elevation
 }
 
@@ -228,7 +228,9 @@ FONT_FACE_DECLARATION = re.compile(r"@font-face\s*\{|\bglobalFontFace\(|\bfontFa
 RESIDUE_EXEMPT = ("life/narrative/NarrativeVisualWorld.css.ts",)
 
 HEX = re.compile(r"#[0-9a-fA-F]{3,8}\b")
-RAW_RADIUS = re.compile(r"borderRadius:\s*(?!.*vars\.radius)[\"']?[\d.]+")
+# A resolved radius is `vars.radius.*` or the `--radius-*` custom property. `borderRadius: 0` is
+# deliberate squareness — a declaration, not an unscaled literal — so it is not counted as residue.
+RAW_RADIUS = re.compile(r"borderRadius:\s*(?!.*(?:vars\.radius|--radius-))[\"']?(?!0\s*[,}])[\d.]+")
 RAW_SHADOW = re.compile(r"boxShadow:\s*(?!.*vars\.elevation)[\"'][^\"']*\d")
 
 

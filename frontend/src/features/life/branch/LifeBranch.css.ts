@@ -3,7 +3,7 @@ import { dialogBackdrop, dialogSurface } from "../../../app/layout/layout.css";
 
 export const controls = style({ display: "grid", gap: "0.5rem", marginBlock: "0.7rem" });
 export const actions = style({ display: "flex", flexWrap: "wrap", gap: "0.5rem", alignItems: "center" });
-export const button = style({ border: "1px solid currentColor", borderRadius: "0.55rem", background: "transparent", color: "inherit", padding: "0.5rem 0.75rem", cursor: "pointer", selectors: { "&:disabled": { cursor: "not-allowed", opacity: 0.6 } } });
+export const button = style({ border: "1px solid currentColor", borderRadius: "var(--radius-control)", background: "transparent", color: "inherit", padding: "0.5rem 0.75rem", cursor: "pointer", selectors: { "&:disabled": { cursor: "not-allowed", opacity: 0.6 } } });
 export const fileLabel = style([button, { display: "inline-flex" }]);
 export const hiddenFile = style({ position: "absolute", inlineSize: "1px", blockSize: "1px", overflow: "hidden", clipPath: "inset(50%)" });
 export const reason = style({ margin: 0, opacity: 0.85 });

@@ -65,11 +65,12 @@ export const darkValues = {
     backdrop: "oklch(10% 0.006 264 / 0.6)",
   },
 
+  /* Radius is theme-invariant; both themes state it so the contract stays fully implemented. */
   radius: {
-    small: "4px",
-    control: "8px",
-    surface: "12px",
-    floating: "14px",
+    small: "6px",
+    control: "10px",
+    surface: "14px",
+    floating: "18px",
     full: "999px",
   },
 

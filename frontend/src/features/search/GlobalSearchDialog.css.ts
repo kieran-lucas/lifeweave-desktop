@@ -26,7 +26,7 @@ export const card = style([
     padding: 0,
     gap: 0,
     background: "var(--sidebar-background, #fff)",
-    borderRadius: 14,
+    borderRadius: "var(--radius-surface)",
     boxShadow: "0 8px 40px rgba(0,0,0,0.18)",
   },
 ]);
@@ -66,7 +66,7 @@ export const closeButton = style({
   cursor: "pointer",
   fontSize: "0.85rem",
   padding: "4px 8px",
-  borderRadius: 6,
+  borderRadius: "var(--radius-small)",
   selectors: {
     "&:focus-visible": { outline: "3px solid var(--focus-ring, #0078d4)", outlineOffset: 2 },
     "&:hover": { background: "var(--active-background, var(--icon-background))" },

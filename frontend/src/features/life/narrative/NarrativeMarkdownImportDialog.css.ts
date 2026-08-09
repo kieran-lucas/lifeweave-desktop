@@ -34,7 +34,7 @@ export const warnings = style({
   gap: 6,
   padding: "10px 14px",
   border: "1px solid var(--focus-ring)",
-  borderRadius: 8,
+  borderRadius: "var(--radius-control)",
   background: "var(--active-background)",
   fontSize: "0.85rem",
 });
@@ -50,7 +50,7 @@ export const actions = style({
 
 export const button = style({
   border: "1px solid var(--border-subtle)",
-  borderRadius: 9,
+  borderRadius: "var(--radius-control)",
   padding: "8px 16px",
   background: "var(--surface)",
   color: "var(--text-primary)",
@@ -70,7 +70,7 @@ export const primary = style([
 export const errorMsg = style({
   color: "var(--text-muted)",
   border: "1px dashed var(--border-subtle)",
-  borderRadius: 8,
+  borderRadius: "var(--radius-control)",
   padding: 10,
   fontSize: "0.85rem",
   margin: 0,

@@ -62,6 +62,18 @@ globalStyle(":root", {
      * foundation, plan, link and saved-view surfaces. Declaring them here is what lets those
      * literals be deleted rather than merely tidied.
      */
+    /*
+     * The radius scale, exposed as custom properties for the same reason the colours are: feature
+     * CSS had 29 distinct authored radii, and the cheapest way to collapse them is a name every
+     * file can already use. A file that is being reworked anyway should prefer `vars.radius.*`,
+     * which is type-checked; these exist so the other 120 call sites can converge today.
+     */
+    "--radius-small": vars.radius.small,
+    "--radius-control": vars.radius.control,
+    "--radius-surface": vars.radius.surface,
+    "--radius-floating": vars.radius.floating,
+    "--radius-full": vars.radius.full,
+
     "--danger": vars.color.danger,
     "--error": vars.color.danger,
     "--color-error": vars.color.danger,

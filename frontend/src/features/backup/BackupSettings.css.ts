@@ -8,14 +8,14 @@ import { dialogBackdrop, dialogSurface, scrollRegion } from "../../app/layout/la
  * spacing comes from the page rhythm, and its confirmation dialog uses the shared modal geometry
  * (ADR 0044).
  */
-export const panel = style({ display: "flex", flexDirection: "column", gap: space.group, padding: space.x5, border: "1px solid var(--border-subtle)", borderRadius: "16px", background: "var(--surface)", minInlineSize: 0 });
+export const panel = style({ display: "flex", flexDirection: "column", gap: space.group, padding: space.x5, border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-surface)", background: "var(--surface)", minInlineSize: 0 });
 export const headingRow = style({ display: "flex", alignItems: "start", justifyContent: "space-between", gap: "16px", flexWrap: "wrap" });
 export const heading = style({ margin: 0, fontSize: "1.25rem" });
 export const intro = style({ margin: "6px 0 0", color: "var(--text-muted, var(--text-muted))" });
 export const subheading = style({ margin: 0, fontSize: "1rem" });
 export const policy = style({ maxWidth: "72ch", lineHeight: 1.55 });
-export const primaryButton = style({ padding: "8px 16px", border: 0, borderRadius: "8px", background: "var(--accent)", color: "#fff", fontWeight: 700, cursor: "pointer", selectors: { "&:disabled": { opacity: 0.55, cursor: "not-allowed" } } });
-export const secondaryButton = style({ padding: "6px 10px", border: "1px solid var(--border-subtle)", borderRadius: "7px", background: "transparent", color: "inherit", cursor: "pointer", selectors: { "&:disabled": { opacity: 0.5, cursor: "not-allowed" } } });
+export const primaryButton = style({ padding: "8px 16px", border: 0, borderRadius: "var(--radius-control)", background: "var(--accent)", color: "#fff", fontWeight: 700, cursor: "pointer", selectors: { "&:disabled": { opacity: 0.55, cursor: "not-allowed" } } });
+export const secondaryButton = style({ padding: "6px 10px", border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-small)", background: "transparent", color: "inherit", cursor: "pointer", selectors: { "&:disabled": { opacity: 0.5, cursor: "not-allowed" } } });
 export const tableScroll = scrollRegion;
 export const table = style({ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" });
 globalStyle(`${table} th`, { textAlign: "left", padding: "8px", borderBottom: "1px solid var(--border-subtle)" });

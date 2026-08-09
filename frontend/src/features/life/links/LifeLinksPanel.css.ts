@@ -17,7 +17,7 @@ export const heading = style({ margin: 0 });
 export const subheading = style({ margin: "24px 0 10px", fontSize: "1rem" });
 export const button = style({
   border: "1px solid var(--border-subtle)",
-  borderRadius: 9,
+  borderRadius: "var(--radius-control)",
   padding: "7px 11px",
   background: "var(--surface)",
   color: "var(--text-primary)",
@@ -44,7 +44,7 @@ export const row = style({
   gap: 12,
   padding: 12,
   border: "1px solid var(--border-subtle)",
-  borderRadius: 12,
+  borderRadius: "var(--radius-surface)",
 });
 export const rowBody = style({ minWidth: 0, flex: 1 });
 export const linkButton = style({
@@ -68,7 +68,7 @@ export const state = style({
   marginLeft: 8,
   padding: "2px 7px",
   border: "1px solid var(--border-subtle)",
-  borderRadius: 999,
+  borderRadius: "var(--radius-full)",
   color: "var(--text-muted)",
   fontSize: 12,
 });
@@ -76,7 +76,7 @@ export const state = style({
 export const overlay = dialogBackdrop;
 export const dialog = style([
   dialogSurface.standard,
-  { borderRadius: 18, boxShadow: "0 24px 80px rgba(0,0,0,.28)" },
+  { borderRadius: "var(--radius-floating)", boxShadow: "0 24px 80px rgba(0,0,0,.28)" },
 ]);
 export const field = style({ display: "grid", gap: 6, marginTop: 18 });
 export const searchRow = style({ display: "flex", flexWrap: "wrap", gap: 8, minInlineSize: 0 });
@@ -84,7 +84,7 @@ export const input = style({
   minWidth: 0,
   flex: 1,
   border: "1px solid var(--border-subtle)",
-  borderRadius: 9,
+  borderRadius: "var(--radius-control)",
   padding: "9px 11px",
   background: "var(--app-background)",
   color: "var(--text-primary)",
@@ -95,7 +95,7 @@ export const result = style({
   gap: 10,
   padding: 11,
   border: "1px solid var(--border-subtle)",
-  borderRadius: 11,
+  borderRadius: "var(--radius-control)",
   cursor: "pointer",
 });
 export const actions = style({

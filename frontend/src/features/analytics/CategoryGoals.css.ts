@@ -40,7 +40,7 @@ export const duration = style({
   margin: 0,
   padding: space.x3,
   border: "1px solid var(--border-subtle)",
-  borderRadius: 10,
+  borderRadius: "var(--radius-control)",
   minInlineSize: 0,
 });
 
@@ -60,7 +60,7 @@ export const number = style({
   minBlockSize: 36,
   padding: `${space.x1} ${space.control}`,
   border: "1px solid var(--border-subtle)",
-  borderRadius: 8,
+  borderRadius: "var(--radius-control)",
   background: "var(--surface)",
   color: "inherit",
   font: "inherit",
@@ -71,7 +71,7 @@ export const save = style({
   minBlockSize: 38,
   padding: `${space.control} ${space.field}`,
   border: "1px solid var(--border-subtle)",
-  borderRadius: 10,
+  borderRadius: "var(--radius-control)",
   background: "transparent",
   color: "inherit",
   cursor: "pointer",

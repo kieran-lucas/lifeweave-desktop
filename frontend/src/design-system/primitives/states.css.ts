@@ -41,7 +41,7 @@ export const emptyMark = style({
   placeItems: "center",
   inlineSize: 40,
   blockSize: 40,
-  borderRadius: 999,
+  borderRadius: "var(--radius-full)",
   background: "color-mix(in srgb, var(--accent) 9%, transparent)",
   color: "var(--accent)",
   marginBlockEnd: 2,
@@ -77,7 +77,7 @@ const shimmer = keyframes({
  */
 export const skeleton = style({
   blockSize: 12,
-  borderRadius: 6,
+  borderRadius: "var(--radius-small)",
   background: `linear-gradient(
     90deg,
     var(--border-subtle) 0%,
@@ -141,7 +141,7 @@ const spin = keyframes({ to: { transform: "rotate(360deg)" } });
 export const spinner = style({
   inlineSize: 15,
   blockSize: 15,
-  borderRadius: 999,
+  borderRadius: "var(--radius-full)",
   border: "2px solid color-mix(in srgb, var(--accent) 22%, transparent)",
   borderTopColor: "var(--accent)",
   animation: `${spin} 620ms linear infinite`,

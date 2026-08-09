@@ -22,9 +22,9 @@ export const appRoot = style({ display: "grid", gridTemplateColumns: "260px minm
 export const sidebar = style({ display: "flex", flexDirection: "column", minWidth: 0, padding: "18px 14px", borderRight: "1px solid var(--glass-border)", background: "color-mix(in srgb, var(--sidebar-background) 82%, transparent)", position: "relative", zIndex: 1, transition: "width 160ms ease, padding 160ms ease" });
 export const brand = style({ display: "flex", alignItems: "center", gap: 10, minHeight: 34, padding: "0 10px", marginBottom: 18, fontWeight: 650, fontSize: "0.9rem", letterSpacing: "-0.01em", color: "var(--text-primary)" });
 /** The product mark. A filled accent disc, as in the v2 reference — not a letter in a grey tile. */
-export const brandMark = style({ display: "grid", placeItems: "center", width: 24, height: 24, flexShrink: 0, borderRadius: 999, background: "var(--accent)", color: "#fff" });
+export const brandMark = style({ display: "grid", placeItems: "center", width: 24, height: 24, flexShrink: 0, borderRadius: "var(--radius-full)", background: "var(--accent)", color: "#fff" });
 export const navGroup = style({ display: "grid", gap: 2 });
-export const navButton = style({ display: "flex", alignItems: "center", gap: 12, minHeight: 44, width: "100%", padding: "8px 10px", border: 0, borderRadius: 8, background: "transparent", color: "var(--text-muted)", fontSize: "0.875rem", fontWeight: 500, textAlign: "left", cursor: "pointer", transition: "background-color 100ms cubic-bezier(0.2,0,0,1), color 100ms cubic-bezier(0.2,0,0,1)", selectors: { "&[aria-current=page]": { background: "var(--active-background)", color: "var(--text-primary)", fontWeight: 600 }, "&:hover": { background: "var(--active-background)" }, "&:focus-visible": { outline: "2px solid var(--focus-ring)", outlineOffset: 2 } } });
+export const navButton = style({ display: "flex", alignItems: "center", gap: 12, minHeight: 44, width: "100%", padding: "8px 10px", border: 0, borderRadius: "var(--radius-control)", background: "transparent", color: "var(--text-muted)", fontSize: "0.875rem", fontWeight: 500, textAlign: "left", cursor: "pointer", transition: "background-color 100ms cubic-bezier(0.2,0,0,1), color 100ms cubic-bezier(0.2,0,0,1)", selectors: { "&[aria-current=page]": { background: "var(--active-background)", color: "var(--text-primary)", fontWeight: 600 }, "&:hover": { background: "var(--active-background)" }, "&:focus-visible": { outline: "2px solid var(--focus-ring)", outlineOffset: 2 } } });
 /**
  * v2 replaces the grey letter tile with a real 20 px outline icon that takes the accent when its
  * destination is current. The tile was the single most dated element in the shell: it put a filled
@@ -63,9 +63,9 @@ export const lede = style({ margin: 0, color: "var(--text-muted)", fontSize: "0.
  * Settings sits at the quiet end of the art scale, but quiet is not dead: each section becomes a
  * soft material region so the page reads as composed rather than as a form dumped on a background.
  */
-export const settingsSection = style([glass, { display: "flex", flexDirection: "column", gap: space.group, minInlineSize: 0, padding: space.x5, borderRadius: 12 }]);
+export const settingsSection = style([glass, { display: "flex", flexDirection: "column", gap: space.group, minInlineSize: 0, padding: space.x5, borderRadius: "var(--radius-surface)" }]);
 export const coreStatus = style({ color: "var(--text-muted)" });
 export const shortcutList = style({ display: "grid", gridTemplateColumns: "1fr auto", gap: `${space.control} ${space.field}`, margin: 0, alignItems: "center" });
 globalStyle(`${shortcutList} dd`, { margin: 0, justifySelf: "end" });
-export const shortcutChord = style({ padding: "3px 8px", borderRadius: 6, border: "1px solid var(--border-subtle)", background: "var(--icon-background)", fontFamily: "inherit", fontSize: "0.9rem", fontWeight: 700, whiteSpace: "nowrap" });
-export const dialogButton = style({ minHeight: 36, padding: "8px 14px", borderRadius: 8, border: "1px solid var(--border-subtle)", background: "transparent", color: "var(--text-primary)", cursor: "pointer", selectors: { "&:focus-visible": { outline: "2px solid var(--focus-ring)", outlineOffset: 2 } } });
+export const shortcutChord = style({ padding: "3px 8px", borderRadius: "var(--radius-small)", border: "1px solid var(--border-subtle)", background: "var(--icon-background)", fontFamily: "inherit", fontSize: "0.9rem", fontWeight: 700, whiteSpace: "nowrap" });
+export const dialogButton = style({ minHeight: 36, padding: "8px 14px", borderRadius: "var(--radius-control)", border: "1px solid var(--border-subtle)", background: "transparent", color: "var(--text-primary)", cursor: "pointer", selectors: { "&:focus-visible": { outline: "2px solid var(--focus-ring)", outlineOffset: 2 } } });

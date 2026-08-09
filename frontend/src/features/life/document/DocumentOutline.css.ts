@@ -6,7 +6,7 @@ export const heading = style({ margin: "0 0 8px", fontSize: "0.75rem", fontWeigh
 
 export const disclosureToggle = style({
   display: "flex", alignItems: "center", gap: 6, width: "100%",
-  border: "1px solid var(--border-subtle)", borderRadius: 9, padding: "7px 11px",
+  border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-control)", padding: "7px 11px",
   background: "var(--surface)", color: "var(--text-primary)", fontWeight: 700,
   cursor: "pointer", marginBottom: 8, textAlign: "left",
   "@container": { "(min-width: 520px)": { display: "none" } },
@@ -18,7 +18,7 @@ export const list = style({ listStyle: "none", padding: 0, margin: 0, display: "
 export const listHiddenNarrow = style({ "@container": { "(max-width: 519px)": { display: "none" } } });
 
 export const entryButton = style({
-  display: "block", width: "100%", border: 0, borderRadius: 7,
+  display: "block", width: "100%", border: 0, borderRadius: "var(--radius-small)",
   padding: "5px 8px", background: "transparent", color: "var(--text-muted)",
   textAlign: "left", cursor: "pointer", lineHeight: 1.4, wordBreak: "break-word",
   selectors: {

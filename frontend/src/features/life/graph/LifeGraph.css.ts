@@ -24,7 +24,7 @@ export const canvasViewport = style({
   minHeight: 520,
   overflow: "auto",
   border: "1px solid var(--glass-border)",
-  borderRadius: 18,
+  borderRadius: "var(--radius-floating)",
   background: "color-mix(in srgb, var(--surface) 75%, var(--app-background))",
   scrollbarGutter: "stable",
 });
@@ -53,7 +53,7 @@ export const nodeMark = style({
   minHeight: 52,
   padding: "8px 9px",
   border: "1px solid var(--glass-border)",
-  borderRadius: 12,
+  borderRadius: "var(--radius-surface)",
   background: "var(--glass-surface-strong)",
   color: "var(--text-primary)",
   textAlign: "left",
@@ -80,7 +80,7 @@ export const inspector = style({
   gap: 12,
   padding: 16,
   border: "1px solid var(--glass-border)",
-  borderRadius: 16,
+  borderRadius: "var(--radius-surface)",
   background: "var(--glass-surface-strong)",
 });
 export const inspectorTitle = style({ margin: 0, fontSize: "1.02rem" });
@@ -105,7 +105,7 @@ export const connectionList = style({
 export const connectionButton = style({
   width: "100%",
   border: "1px solid var(--glass-border)",
-  borderRadius: 9,
+  borderRadius: "var(--radius-control)",
   padding: "6px 9px",
   background: "var(--app-background)",
   color: "var(--text-primary)",
@@ -121,7 +121,7 @@ export const select = style({
   width: "100%",
   minWidth: 0,
   border: "1px solid var(--glass-border)",
-  borderRadius: 9,
+  borderRadius: "var(--radius-control)",
   padding: "8px 10px",
   background: "var(--app-background)",
   color: "var(--text-primary)",
@@ -134,7 +134,7 @@ export const allLinks = style({
   gap: 8,
   padding: 16,
   border: "1px solid var(--glass-border)",
-  borderRadius: 16,
+  borderRadius: "var(--radius-surface)",
   background: "var(--glass-surface-strong)",
 });
 export const tableScroll = style({ overflowX: "auto" });
@@ -147,7 +147,7 @@ export const table = style({
 export const actions = style({ display: "flex", gap: 7, flexWrap: "wrap" });
 export const button = style({
   border: "1px solid var(--glass-border)",
-  borderRadius: 9,
+  borderRadius: "var(--radius-control)",
   padding: "7px 10px",
   background: "var(--app-background)",
   color: "var(--text-primary)",
@@ -161,7 +161,7 @@ export const notice = style({
   gap: 8,
   padding: 16,
   border: "1px solid var(--glass-border)",
-  borderRadius: 16,
+  borderRadius: "var(--radius-surface)",
   background: "var(--glass-surface-strong)",
   color: "var(--text-primary)",
 });
