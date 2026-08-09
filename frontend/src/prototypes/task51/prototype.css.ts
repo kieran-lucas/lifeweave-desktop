@@ -31,7 +31,7 @@ export const shell = style({
   overflow: "hidden",
   background: vars.color.canvas,
   color: vars.color.textPrimary,
-  fontFamily: family.ui,
+  fontFamily: family.uiText,
   // Degradation preserves the visual DNA rather than the column count (spec §4). The inspector
   // narrows first, then leaves the flow entirely; the task area is never the thing that shrinks.
   "@media": {
@@ -92,7 +92,7 @@ export const brandMark = style({
   flexShrink: 0,
 });
 
-export const brandName = style({ ...text.control, fontWeight: 600, letterSpacing: "-0.01em" });
+export const brandName = style({ ...text.button, fontWeight: 600, letterSpacing: "-0.01em" });
 
 export const navGroup = style({ display: "flex", flexDirection: "column", gap: 2 });
 
@@ -113,7 +113,7 @@ export const navItem = style({
   color: vars.color.textSecondary,
   textAlign: "left",
   cursor: "pointer",
-  ...text.control,
+  ...text.button,
   transition: `background-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}`,
   selectors: {
     "&:hover": { background: vars.color.surfaceHover },
@@ -203,8 +203,8 @@ export const pageHeader = style({
 });
 
 export const pageTitle = style({ ...text.pageTitle, margin: 0, color: vars.color.textPrimary });
-export const pageDate = style({ ...text.pageDate, margin: "6px 0 0", color: vars.color.accent });
-export const pageSummary = style({ ...text.pageSummary, margin: "6px 0 0", color: vars.color.textTertiary });
+export const pageDate = style({ ...text.bodyStrong, margin: "6px 0 0", color: vars.color.accent });
+export const pageSummary = style({ ...text.metadata, margin: "6px 0 0", color: vars.color.textTertiary });
 
 export const dateNav = style({ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 });
 
@@ -221,7 +221,7 @@ export const quietButton = style({
   background: vars.color.surfaceRaised,
   color: vars.color.textSecondary,
   cursor: "pointer",
-  ...text.control,
+  ...text.button,
   transition: `background-color ${duration.state} ${easing.standard}`,
   selectors: {
     "&:hover": { background: vars.color.surfaceHover },
@@ -261,11 +261,11 @@ export const periodHeading = style({
 });
 
 export const periodIcon = style({ color: vars.color.warning, flexShrink: 0 });
-export const periodName = style({ ...text.sectionHeading, color: vars.color.textPrimary });
-export const periodRange = style({ ...text.sectionMeta, color: vars.color.textTertiary });
+export const periodName = style({ ...text.cardTitle, color: vars.color.textPrimary });
+export const periodRange = style({ ...text.numeric, color: vars.color.textTertiary });
 
 export const periodCount = style({
-  ...text.micro,
+  ...text.eyebrow,
   display: "inline-grid",
   placeItems: "center",
   minInlineSize: 20,
@@ -424,7 +424,7 @@ export const rowMeta = style({
   alignItems: "center",
   gap: 8,
   minInlineSize: 0,
-  ...text.meta,
+  ...text.metadata,
   color: vars.color.textTertiary,
 });
 
@@ -447,7 +447,7 @@ export const chip = style({
   textOverflow: "ellipsis",
   whiteSpace: "nowrap",
   border: 0,
-  ...text.meta,
+  ...text.metadata,
 });
 
 export const chipAccent = style({ background: vars.color.accentSoft, color: vars.color.accent });
@@ -459,7 +459,7 @@ export const rowFlag = style({ color: vars.color.warning, flexShrink: 0 });
 
 /** A running timer is text plus tone, never colour alone. */
 export const rowTimer = style({
-  ...text.meta,
+  ...text.metadata,
   display: "inline-flex",
   alignItems: "center",
   gap: 5,
@@ -488,7 +488,7 @@ export const workspaceFooter = style({
   gap: 16,
   padding: "12px 36px",
   borderBlockStart: vars.hairline.structural,
-  ...text.meta,
+  ...text.metadata,
   color: vars.color.textTertiary,
   background: vars.color.canvas,
   // Matches the timeline's bounded measure plus its padding, so the footer's two ends align with
@@ -539,7 +539,7 @@ export const inspectorHeader = style({
 });
 
 export const inspectorContext = style({
-  ...text.meta,
+  ...text.metadata,
   display: "inline-flex",
   alignItems: "center",
   gap: 6,
@@ -589,7 +589,7 @@ export const tab = style({
   background: "transparent",
   color: vars.color.textTertiary,
   cursor: "pointer",
-  ...text.control,
+  ...text.button,
   transition: `color ${duration.state} ${easing.standard}, border-color ${duration.state} ${easing.standard}`,
   selectors: {
     "&:hover": { color: vars.color.textSecondary },
@@ -598,7 +598,7 @@ export const tab = style({
   },
 });
 
-export const tabCount = style({ ...text.meta, color: vars.color.textTertiary });
+export const tabCount = style({ ...text.metadata, color: vars.color.textTertiary });
 
 export const note = style({ ...text.body, color: vars.color.textSecondary, margin: "18px 0 0" });
 
@@ -626,14 +626,14 @@ export const metaGrid = style({
 });
 
 export const metaLabel = style({
-  ...text.meta,
+  ...text.metadata,
   display: "inline-flex",
   alignItems: "center",
   gap: 8,
   color: vars.color.textTertiary,
 });
 
-export const metaValue = style({ ...text.meta, color: vars.color.textPrimary, minInlineSize: 0 });
+export const metaValue = style({ ...text.metadata, color: vars.color.textPrimary, minInlineSize: 0 });
 
 export const metaDot = style({
   display: "inline-block",
@@ -667,7 +667,7 @@ export const lifePreviewHead = style({
   alignItems: "center",
   gap: 6,
   marginBlockEnd: 10,
-  ...text.meta,
+  ...text.metadata,
   color: vars.color.textSecondary,
 });
 
@@ -680,7 +680,7 @@ export const lifePreviewOpen = style({
   background: "transparent",
   color: vars.color.accent,
   cursor: "pointer",
-  ...text.meta,
+  ...text.metadata,
   selectors: { "&:focus-visible": { outline: `2px solid ${vars.color.focusRing}`, outlineOffset: 2 } },
 });
 
@@ -692,7 +692,7 @@ export const lifeNode = style({
   maxInlineSize: 116,
   padding: "7px 9px",
   borderRadius: vars.radius.control,
-  ...text.meta,
+  ...text.metadata,
   color: vars.color.textSecondary,
   textAlign: "center",
   lineHeight: "15px",
@@ -913,7 +913,7 @@ export const harness = style({
 });
 
 export const harnessButton = style({
-  ...text.meta,
+  ...text.metadata,
   padding: "5px 10px",
   border: 0,
   borderRadius: vars.radius.control,

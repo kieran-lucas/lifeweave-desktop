@@ -82,6 +82,9 @@ export async function findCollisions(screen: string): Promise<Collision[]> {
       for (const node of roots) if (node.children.length >= 2) parents.add(node);
 
       for (const parent of parents) {
+        // Search highlighting deliberately splits one continuous phrase into adjacent span/mark
+        // fragments. Their zero gap is correct text shaping, not two semantic siblings colliding.
+        if (parent.hasAttribute("data-visual-text-run")) continue;
         const style = getComputedStyle(parent);
         const kids = [...parent.children].filter(
           child => visible(child) && (child.textContent ?? "").trim().length > 0,
@@ -312,8 +315,16 @@ export function requestedViewport(): { width: number; height: number } | null {
  * the walk then re-maximized after its fixture reload and silently measured a maximized window
  * while claiming to test 1280×800. This function fails loudly instead.
  */
-export async function enterAuditViewport() {
-  const requested = requestedViewport();
+export type AuditViewportRequest = { width: number; height: number } | null;
+
+/**
+ * Enter one measured viewport for a native geometry gate.
+ *
+ * `task50b` obtains the request from the environment, while the release gate owns a fixed matrix.
+ * Both must use the same chrome compensation and achieved-size verification so neither can report
+ * a requested outer-window size as though it were the WebView's inner viewport.
+ */
+export async function enterMeasuredViewport(requested: AuditViewportRequest) {
   if (!requested) {
     await browser.maximizeWindow();
     await browser.pause(500);
@@ -375,6 +386,10 @@ export async function enterAuditViewport() {
   }
 
   return { mode: "explicit" as const, requested, ...achieved };
+}
+
+export async function enterAuditViewport() {
+  return enterMeasuredViewport(requestedViewport());
 }
 
 /** Canonical maximize. Retained for callers that always want the maximized presentation. */

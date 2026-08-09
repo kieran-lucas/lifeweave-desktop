@@ -38,11 +38,13 @@ import {
   iconAnalytics,
   iconCalendar,
   iconLife,
+  iconPanelLeft,
   iconPlans,
   iconSearch,
   iconSettings,
   iconToday,
 } from "../design-system/visual/icons";
+import { LoadingRow } from "../design-system/primitives/States";
 import { Atmosphere } from "../design-system/visual/Atmosphere";
 import * as styles from "./App.css";
 import { PageFrame, PageHeader } from "./layout/PageFrame";
@@ -334,7 +336,12 @@ export function App() {
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           aria-pressed={taskSidebarMode === "collapsed"}
         >
-          {collapsed ? "→" : "←"}
+          {/*
+            Was a bare "→"/"←" text glyph: the last place in the shell where an icon was a
+            character rather than a drawing, so it carried the text baseline and the font's stroke
+            weight instead of the icon vocabulary's.
+          */}
+          <Icon d={iconPanelLeft} className={styles.navIcon} />
           <span className={styles.navLabel}>
             {collapsed ? "Expand" : "Collapse"}
           </span>
@@ -373,10 +380,10 @@ export function App() {
                   </p>
                 </PageHeader>
                 <CategoryGoals />
-                <Suspense fallback={<p>Loading tag settings…</p>}>
+                <Suspense fallback={<LoadingRow label="Loading tag settings…" />}>
                   <TagSettings />
                 </Suspense>
-                <Suspense fallback={<p>Loading backup settings…</p>}>
+                <Suspense fallback={<LoadingRow label="Loading backup settings…" />}>
                   <BackupSettings onDatabaseRestored={() => queryClient.clear()} />
                 </Suspense>
                 <section
@@ -459,7 +466,7 @@ export function App() {
                   headingRef.current = node;
                 }}
               >
-                <Suspense fallback={<p>Loading plans…</p>}>
+                <Suspense fallback={<LoadingRow label="Loading plans…" />}>
                   <FocusPlansScreen
                     entryRequest={focusPlanEntryRequest}
                     onEntryRequestSettled={settleNavigationRequest}

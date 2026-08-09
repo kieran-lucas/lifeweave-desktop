@@ -6,6 +6,7 @@ import { getMonthProjection } from "../../ipc/commands";
 import { CategoryIcon } from "../task/categoryIcons";
 import * as styles from "./CalendarScreen.css";
 import { PageFrame, PageHeader } from "../../app/layout/PageFrame";
+import { LoadingRow } from "../../design-system/primitives/States";
 
 type Props = { selectedDate: string; today: string; onActivateDate: (date: string) => void };
 
@@ -39,7 +40,7 @@ export function CalendarScreen({ selectedDate, today, onActivateDate }: Props) {
       <p className={styles.eyebrow}>Schedule projection · algorithm v{query.data?.algorithm_version??1}</p><h1 id="calendar-heading" tabIndex={-1}>Calendar</h1>
     </PageHeader>
     {query.isError&&<p role="alert">Unable to load the calendar projection.</p>}
-    {query.isLoading&&<p aria-live="polite">Loading calendar…</p>}
+    {query.isLoading&&<LoadingRow label="Loading calendar…" />}
     <div role="grid" aria-label={monthLabel} aria-busy={query.isFetching} className={styles.grid}>
       <div role="row" className={styles.weekdays}>{weekday.map((label,index)=><div role="columnheader" key={`${label}-${index}`}>{label}</div>)}</div>
       {Array.from({length:grid.length/7},(_,week)=><div role="row" className={styles.week} key={week}>{grid.slice(week*7,week*7+7).map(date=>{

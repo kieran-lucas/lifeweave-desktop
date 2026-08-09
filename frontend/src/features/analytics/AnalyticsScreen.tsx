@@ -8,6 +8,8 @@ import { CategoryIcon } from "../task/categoryIcons";
 import * as styles from "./AnalyticsScreen.css";
 import { PageFrame, PageHeader } from "../../app/layout/PageFrame";
 import { actualTimeVariance, formatActualTime, scheduledDuration } from "./format";
+import { EmptyState, LoadingRow } from "../../design-system/primitives/States";
+import { iconAnalytics } from "../../design-system/visual/icons";
 
 export { actualTimeVariance, formatActualTime } from "./format";
 
@@ -106,30 +108,32 @@ export function AnalyticsScreen({
           <button onClick={() => setAnchor(today)}>Current period</button>
         </div>
       </div>
-      {query.isLoading && <p aria-live="polite">Loading objective Analytics…</p>}
+      {query.isLoading && <LoadingRow label="Loading objective Analytics…" />}
       {query.isError && <p role="alert">Unable to load objective Analytics.</p>}
       {data && (
         <>
           <section className={styles.section} aria-labelledby="scheduled-overview">
             <h2 id="scheduled-overview">Scheduled overview</h2>
-            <p className={styles.primary}>
-              <strong>{scheduledDuration(data.scheduled_minutes)}</strong>
-              <span>Scheduled time</span>
-            </p>
-            <dl className={styles.facts}>
-              <div>
-                <dt>Scheduled tasks</dt>
-                <dd>{data.task_count}</dd>
-              </div>
-              <div>
-                <dt>Evaluated</dt>
-                <dd>{data.evaluated_count}</dd>
-              </div>
-              <div>
-                <dt>Missed</dt>
-                <dd>{data.missed_count}</dd>
-              </div>
-            </dl>
+            <div className={styles.summary}>
+              <p className={styles.primary}>
+                <strong>{scheduledDuration(data.scheduled_minutes)}</strong>
+                <span>Scheduled time</span>
+              </p>
+              <dl className={styles.summaryFacts}>
+                <div>
+                  <dt>Scheduled tasks</dt>
+                  <dd>{data.task_count}</dd>
+                </div>
+                <div>
+                  <dt>Evaluated</dt>
+                  <dd>{data.evaluated_count}</dd>
+                </div>
+                <div>
+                  <dt>Missed</dt>
+                  <dd>{data.missed_count}</dd>
+                </div>
+              </dl>
+            </div>
           </section>
 
           <section className={styles.section} aria-labelledby="recorded-actual-time">
@@ -168,7 +172,7 @@ export function AnalyticsScreen({
           <section className={styles.section} aria-labelledby="category-time">
             <h2 id="category-time">Category scheduled time</h2>
             {data.categories.length === 0 ? (
-              <p>No scheduled tasks in this period.</p>
+              <EmptyState compact icon={iconAnalytics} title="No scheduled tasks in this period." body="Schedule work to see it summarised here." />
             ) : (
               <ul className={styles.categories}>
                 {data.categories.map((category) => (
@@ -239,7 +243,7 @@ export function AnalyticsScreen({
           <section className={styles.section} aria-labelledby="objective-streaks">
             <h2 id="objective-streaks">Objective streaks</h2>
             {data.streaks.length === 0 ? (
-              <p>No configured completed-week streaks yet.</p>
+              <EmptyState compact title="No configured completed-week streaks yet." body="Set a category goal to start tracking streaks." />
             ) : (
               <ul>
                 {data.streaks.map((streak) => (
@@ -255,7 +259,7 @@ export function AnalyticsScreen({
           <section className={styles.section} aria-labelledby="completion-distribution">
             <h2 id="completion-distribution">Completion distribution</h2>
             {data.completion_distribution.length === 0 ? (
-              <p>No evaluations in this period.</p>
+              <EmptyState compact title="No evaluations in this period." body="Evaluated tasks appear here once you assess them." />
             ) : (
               <>
                 <div className={styles.distribution} aria-hidden="true">
@@ -291,7 +295,7 @@ export function AnalyticsScreen({
             )}
           </section>
 
-          <Suspense fallback={<p role="status">Loading Focus Plan activity…</p>}>
+          <Suspense fallback={<LoadingRow label="Loading Focus Plan activity…" />}>
             <FocusPlanAnalyticsSection
               periodKind={kind}
               anchorLocalDate={anchor}

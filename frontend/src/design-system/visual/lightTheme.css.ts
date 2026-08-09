@@ -16,7 +16,7 @@ import { vars } from "./contract.css";
  * Measured contrast is recorded beside each role. Two roles deviate from the sampled anchor because
  * the anchor cannot carry its job accessibly; both are marked DEVIATION.
  */
-export const lightTheme = createTheme(vars, {
+export const lightValues = {
   color: {
     /*
      * Three near-white planes, separated by ~0.5% lightness each. The whole hierarchy lives in that
@@ -99,15 +99,32 @@ export const lightTheme = createTheme(vars, {
     ambientAura: "oklch(98.8% 0.003 264)",
 
     focusRing: "oklch(49.4% 0.1959 260.92)",
-    backdrop: "oklch(25.42% 0.0111 254.04 / 0.4)",
+    /*
+     * The backdrop dims the world rather than covering it. Rendered against the dialog grammar the
+     * old value read as flat neutral grey; carrying real chroma at the accent's hue makes the
+     * dimming feel like this application's own atmosphere closing over the page.
+     */
+    backdrop: "oklch(27% 0.045 252 / 0.42)",
   },
 
+  /*
+   * The radius scale, re-derived under ADR 0045's Craft-class benchmark.
+   *
+   * Feature CSS had authored **29 distinct radii** — 0, 4, 6, 7, 8, 9, 10, 11, 12, 14, 15, 16, 18,
+   * 20, 24, 50%, 999 and five rem values that resolved between them. The previous 4/8/12/14 scale
+   * was the right *shape* and slightly too tight: consistent, generous corner treatment is most of
+   * what makes a soft interface read as soft rather than as a rounded rectangle.
+   *
+   * A uniform +4 step keeps the progression legible at every size, and the ratio to the object is
+   * what matters — a 6px radius on a 20px chip is proportionally the same softness as 18px on a
+   * dialog. Radius never sets geometry, so nothing here can move a page edge.
+   */
   radius: {
-    small: "4px",
-    control: "8px",
-    surface: "12px",
-    floating: "14px",
-    full: "999px",
+    small: "6px", //     chips, tags, inline code, small marks
+    control: "10px", //  buttons, inputs, selects, rows
+    surface: "14px", //  cards, panels, grouped regions
+    floating: "18px", // dialogs, popovers, menus
+    full: "999px", //    pills, discs, avatars
   },
 
   /*
@@ -125,4 +142,12 @@ export const lightTheme = createTheme(vars, {
     structural: "1px solid oklch(94.92% 0.0042 271.37)",
     subtle: "1px solid oklch(97.2% 0.003 271)",
   },
-});
+};
+
+/**
+ * The values above are exported separately from the class below because production assigns them to
+ * `:root` through `theme.css.ts` — a class would have to be put on an element and toggled by script,
+ * where `prefers-color-scheme` needs neither. The class is retained for the prototype, which forces
+ * a theme regardless of the system preference so both can be captured.
+ */
+export const lightTheme = createTheme(vars, lightValues);

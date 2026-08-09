@@ -6,6 +6,7 @@ import { confirmPortablePackageImport, discardPortablePackageImport, preparePort
 import { operationId } from "../document/schema";
 import { invalidateLifeLinkLifecycle } from "../links/lifeLinkQueries";
 import * as styles from "./PortablePackage.css";
+import { LoadingRow } from "../../../design-system/primitives/States";
 
 const ImportDialog = lazy(() => import("./PortablePackageImportDialog").then(module => ({ default: module.PortablePackageImportDialog })));
 const MAX_BYTES = 64 * 1024 * 1024;
@@ -89,6 +90,6 @@ export function PortablePackageControls({ nodeId, documentKind, documentId, hasD
     {hasDraft && <p className={styles.note} role="note">The portable package includes the committed document only. The recoverable draft is not included.</p>}
     {notice && <p role="status" aria-live="polite">{notice}</p>}
     {error && !preview && <p className={styles.error} role="alert">{error}</p>}
-    {preview && <Suspense fallback={<p role="status">Loading package preview…</p>}><ImportDialog preview={preview} pending={pending} {...(error ? { error } : {})} onConfirm={() => void confirm()} onCancel={() => void discard()} /></Suspense>}
+    {preview && <Suspense fallback={<LoadingRow label="Loading package preview…" />}><ImportDialog preview={preview} pending={pending} {...(error ? { error } : {})} onConfirm={() => void confirm()} onCancel={() => void discard()} /></Suspense>}
   </section>;
 }

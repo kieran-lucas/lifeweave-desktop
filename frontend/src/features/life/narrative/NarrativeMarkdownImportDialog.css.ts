@@ -6,7 +6,7 @@ export const overlay = dialogBackdrop;
 
 export const dialog = style([
   dialogSurface.compact,
-  { boxShadow: "0 8px 40px rgba(0,0,0,0.18)" },
+  { boxShadow: "var(--elevation-modal)" },
 ]);
 
 export const title = style({ fontWeight: 700, fontSize: "1.1rem", margin: 0 });
@@ -34,7 +34,7 @@ export const warnings = style({
   gap: 6,
   padding: "10px 14px",
   border: "1px solid var(--focus-ring)",
-  borderRadius: 8,
+  borderRadius: "var(--radius-control)",
   background: "var(--active-background)",
   fontSize: "0.85rem",
 });
@@ -50,7 +50,7 @@ export const actions = style({
 
 export const button = style({
   border: "1px solid var(--border-subtle)",
-  borderRadius: 9,
+  borderRadius: "var(--radius-control)",
   padding: "8px 16px",
   background: "var(--surface)",
   color: "var(--text-primary)",
@@ -64,13 +64,13 @@ export const button = style({
 
 export const primary = style([
   button,
-  { background: "var(--accent)", color: "var(--accent-contrast, white)", borderColor: "transparent" },
+  { background: "var(--accent)", color: "var(--accent-contrast)", borderColor: "transparent" },
 ]);
 
 export const errorMsg = style({
   color: "var(--text-muted)",
   border: "1px dashed var(--border-subtle)",
-  borderRadius: 8,
+  borderRadius: "var(--radius-control)",
   padding: 10,
   fontSize: "0.85rem",
   margin: 0,

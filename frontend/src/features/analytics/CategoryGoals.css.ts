@@ -16,11 +16,21 @@ export const list = style({
   minInlineSize: 0,
 });
 
+export const root = style({
+  display: "flex",
+  flexDirection: "column",
+  gap: space.group,
+  minInlineSize: 0,
+});
+
 export const editor = style({
   display: "flex",
   flexDirection: "column",
   gap: space.field,
   minInlineSize: 0,
+  selectors: {
+    "& + &": { borderTop: "1px solid var(--border-subtle)", paddingTop: space.x5 },
+  },
 });
 
 export const heading = style({ margin: 0 });
@@ -38,9 +48,10 @@ export const duration = style({
   alignItems: "flex-end",
   gap: space.field,
   margin: 0,
+  inlineSize: "min(100%, 520px)",
   padding: space.x3,
   border: "1px solid var(--border-subtle)",
-  borderRadius: 10,
+  borderRadius: "var(--radius-control)",
   minInlineSize: 0,
 });
 
@@ -60,7 +71,7 @@ export const number = style({
   minBlockSize: 36,
   padding: `${space.x1} ${space.control}`,
   border: "1px solid var(--border-subtle)",
-  borderRadius: 8,
+  borderRadius: "var(--radius-control)",
   background: "var(--surface)",
   color: "inherit",
   font: "inherit",
@@ -71,7 +82,7 @@ export const save = style({
   minBlockSize: 38,
   padding: `${space.control} ${space.field}`,
   border: "1px solid var(--border-subtle)",
-  borderRadius: 10,
+  borderRadius: "var(--radius-control)",
   background: "transparent",
   color: "inherit",
   cursor: "pointer",

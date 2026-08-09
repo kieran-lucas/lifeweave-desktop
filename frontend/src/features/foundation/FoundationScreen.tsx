@@ -10,6 +10,7 @@ import {
   updateFoundationRecord,
 } from "../../ipc/commands";
 import * as styles from "./FoundationScreen.css";
+import { EmptyState } from "../../design-system/primitives/States";
 
 type EditState = { id: string; label: string; revision: number } | null;
 
@@ -207,7 +208,7 @@ export function FoundationScreen() {
       </form>
 
       {active.length === 0 && archived.length === 0 && (
-        <p className={styles.statusText}>No records yet. Add one above.</p>
+        <EmptyState compact title="No records yet. Add one above." />
       )}
 
       {active.length > 0 && (

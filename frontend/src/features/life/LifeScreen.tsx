@@ -16,6 +16,8 @@ import { TagChipList } from "../tag/TagChipList";
 import { LifeEditWorkspace } from "./LifeEditWorkspace";
 import { BasicLeafReader } from "./document/BasicLeafReader";
 import { RelatedTasksPanel } from "./RelatedTasksPanel";
+import { EmptyState, LoadingRow, SkeletonList } from "../../design-system/primitives/States";
+import { Icon, iconChevronLeft, iconLife, iconNote } from "../../design-system/visual/icons";
 
 type Mode = "browse" | "edit" | "pinned" | "reader";
 type HistoryEntry = {
@@ -38,7 +40,7 @@ const LifeGraphWorkspace = lazy(() => import("./graph/LifeGraphWorkspace"));
 function NodeIcon({ iconKey }: { iconKey: string }) {
   return (
     <span className={styles.icon} aria-hidden="true">
-      {iconKey === "life-leaf" || iconKey === "life-note" ? "◇" : "⌁"}
+      <Icon d={iconKey === "life-leaf" || iconKey === "life-note" ? iconNote : iconLife} size={17} />
     </span>
   );
 }
@@ -445,7 +447,7 @@ export function LifeScreen({
     return (
       <PageFrame as="section" type="reading" aria-labelledby="life-reader-title">
         <button className={styles.quietButton} onClick={back}>
-          ← Back to Life Browse
+          <Icon d={iconChevronLeft} size={16} /> Back to Life Browse
         </button>
         <motion.div
           layoutId={`life-node-${readerId}`}
@@ -458,7 +460,7 @@ export function LifeScreen({
           <p className={styles.nodeDescription}>{reader.short_description}</p>
           <TagChipList tags={reader.tags} maxVisible={12} />
           <BasicLeafReader nodeId={readerId} />
-          <Suspense fallback={<p aria-live="polite">Loading links…</p>}>
+          <Suspense fallback={<LoadingRow label="Loading links…" />}>
             <LifeLinksPanel nodeId={readerId} onNavigate={openLinkedReader} />
           </Suspense>
           <RelatedTasksPanel nodeId={readerId} anchorLocalDate={anchorLocalDate} onNavigate={onTaskNavigate} />
@@ -529,7 +531,7 @@ export function LifeScreen({
         </p>
       </PageHeader>
       {graphOpen ? (
-        <Suspense fallback={<p aria-live="polite">Loading the Life graph…</p>}>
+        <Suspense fallback={<LoadingRow label="Loading the Life graph…" />}>
           {graphError && (
             <p role="alert" className={styles.unavailable}>
               That Life node is unavailable. Refresh the graph and try again.
@@ -570,7 +572,7 @@ export function LifeScreen({
               onClick={back}
               disabled={history.length === 0 && !projection.parent}
             >
-              ← Back
+              <Icon d={iconChevronLeft} size={15} /> Back
             </button>
             <nav className={styles.breadcrumb} aria-label="Life breadcrumb">
               {projection.breadcrumb.map((item, index) => (
@@ -644,7 +646,7 @@ export function LifeScreen({
             {projection.children.length === 0 ? (
               <div className={styles.empty}>
                 <h3>This branch is ready</h3>
-                <p>No child nodes have been added yet.</p>
+                <EmptyState compact icon={iconLife} title="No child nodes have been added yet." body="Add a child to grow this part of your Life tree." />
               </div>
             ) : (
               <ul
@@ -690,7 +692,7 @@ export function LifeScreen({
                         pin.mutate({ id: child.id, pinned: child.is_pinned })
                       }
                     >
-                      {child.is_pinned ? "●" : "○"}
+                      {child.is_pinned ? "Pinned" : "Pin"}
                     </button>
                   </li>
                 ))}
@@ -747,7 +749,7 @@ function PinnedView({
   onActivate: (node: PinnedLifeNodeView) => void;
   onUnpin: (id: string) => void;
 }) {
-  if (loading) return <p aria-live="polite">Loading pinned nodes…</p>;
+  if (loading) return <SkeletonList rows={4} label="Loading pinned nodes…" />;
   if (items.length === 0)
     return (
       <div className={styles.empty}>
@@ -788,7 +790,7 @@ function PinnedView({
             aria-label={`Unpin ${item.title}`}
             onClick={() => onUnpin(item.node_id)}
           >
-            ●
+            Unpin
           </button>
         </li>
       ))}

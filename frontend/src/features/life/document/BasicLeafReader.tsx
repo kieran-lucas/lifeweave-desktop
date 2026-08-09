@@ -14,6 +14,7 @@ import { NarrativeCanvasReader, narrativeKey } from "../narrative/NarrativeCanva
 import { NarrativeTemplateChooser } from "../narrative/NarrativeTemplateChooser";
 import { PortablePackageControls } from "../portable/PortablePackageControls";
 import { invalidateLifeLinkLifecycle } from "../links/lifeLinkQueries";
+import { LoadingRow } from "../../../design-system/primitives/States";
 
 const BasicLeafEditor = lazy(() => import("./BasicLeafEditor"));
 export const documentKey = (nodeId: string) => ["life", "document", nodeId] as const;
@@ -42,7 +43,7 @@ export function BasicLeafReader({ nodeId }: { nodeId: string }) {
   });
 
   if (query.isLoading || narrativeQuery.isLoading) {
-    return <div className={styles.shell}><h2>Reader</h2><p className={styles.status} aria-live="polite">Loading document…</p></div>;
+    return <div className={styles.shell}><h2>Reader</h2><LoadingRow label="Loading document…" /></div>;
   }
   if (query.isError || !query.data) {
     return <div className={styles.shell}><h2>Reader</h2><div className={styles.missing} role="alert">This document could not be opened. Life navigation is still available.</div></div>;
@@ -142,7 +143,7 @@ export function BasicLeafReader({ nodeId }: { nodeId: string }) {
 
   if (editing) {
     return (
-      <Suspense fallback={<p className={styles.status}>Loading focused editor…</p>}>
+      <Suspense fallback={<LoadingRow label="Loading focused editor…" />}>
         <BasicLeafEditor document={document} initialJson={projection.draft_state === "available" ? projection.draft_json : null} onCommitted={committed} onCancel={() => setEditing(false)} />
       </Suspense>
     );

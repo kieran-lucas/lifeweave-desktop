@@ -30,6 +30,78 @@ const label =
   (viewport ? `${viewport.width}x${viewport.height}` : "pass1");
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const outputRoot = join(repoRoot, "target", "e2e-artifacts", "task-50b", label);
+const visualRegression = process.env.LIFEWEAVE_VISUAL_REGRESSION === "1";
+const requestedTheme = process.env.LIFEWEAVE_AUDIT_THEME ?? "light";
+if (requestedTheme !== "light" && requestedTheme !== "dark")
+  throw new Error(`Unsupported LIFEWEAVE_AUDIT_THEME: ${requestedTheme}`);
+const forcedColors = process.env.LIFEWEAVE_AUDIT_FORCED_COLORS === "1";
+const reducedMotion = process.env.LIFEWEAVE_AUDIT_REDUCED_MOTION === "1";
+if ([requestedTheme === "dark", forcedColors, reducedMotion].filter(Boolean).length > 1)
+  throw new Error("Dark, forced-colors, and reduced-motion audits must run independently");
+const mediaMode = requestedTheme === "dark"
+  ? "dark"
+  : forcedColors
+    ? "forced-colors"
+    : reducedMotion
+      ? "reduced-motion"
+      : "light";
+const lightVisualSnapshotFiles = new Set([
+  "01-today",
+  "02-task-create",
+  "09-calendar",
+  "10-analytics",
+  "11-plans",
+  "12-life-browse",
+  "13-life-edit",
+  "14-life-pinned",
+  "15-life-graph",
+  "16-life-reader",
+  "17-basic-editor",
+  "17b-basic-editor-link-dialog",
+  "18-narrative-reader",
+  "19-narrative-studio",
+  "19b-narrative-only-block-dialog",
+  "18-settings",
+  "21b-search-results",
+  "21c-search-no-results",
+  "22-keyboard-help",
+]);
+const darkVisualSnapshotFiles = new Set([
+  "01-today",
+  "02-task-create",
+  "09-calendar",
+  "10-analytics",
+  "11-plans",
+  "12-life-browse",
+  "15-life-graph",
+  "16-life-reader",
+  "17-basic-editor",
+  "17b-basic-editor-link-dialog",
+  "18-narrative-reader",
+  "19-narrative-studio",
+  "18-settings",
+  "21b-search-results",
+  "22-keyboard-help",
+]);
+const forcedColorsVisualSnapshotFiles = new Set([
+  "01-today",
+  "02-task-create",
+  "09-calendar",
+  "10-analytics",
+  "15-life-graph",
+  "16-life-reader",
+  "17b-basic-editor-link-dialog",
+  "18-settings",
+  "21b-search-results",
+  "22-keyboard-help",
+]);
+const reducedMotionVisualSnapshotFiles = new Set([
+  "01-today",
+  "02-task-create",
+  "09-calendar",
+  "15-life-graph",
+  "19-narrative-studio",
+]);
 
 type ScreenRecord = {
   screen: string;
@@ -40,6 +112,63 @@ type ScreenRecord = {
 
 const records: ScreenRecord[] = [];
 let environment: Awaited<ReturnType<typeof enterAuditViewport>> | null = null;
+let lifeAreaId = "";
+const CONTROL = "\uE009";
+let lifeDocumentedChildId = "";
+let lifeNarrativeChildId = "";
+let mediaEmulationSocket: WebSocket | null = null;
+
+type DevToolsTarget = {
+  type: string;
+  url: string;
+  webSocketDebuggerUrl: string;
+};
+
+async function emulateMediaFeatures(features: Array<{ name: string; value: string }>) {
+  const edgeOptions = browser.capabilities["ms:edgeOptions"] as
+    | { debuggerAddress?: string }
+    | undefined;
+  const address = edgeOptions?.debuggerAddress;
+  if (!address) throw new Error("WebView2 session did not expose a DevTools debugger address");
+
+  const response = await fetch(`http://${address}/json/list`);
+  if (!response.ok) throw new Error(`WebView2 DevTools target list failed: ${response.status}`);
+  const targets = await response.json() as DevToolsTarget[];
+  const target = targets.find(candidate =>
+    candidate.type === "page" && candidate.url.startsWith("http://tauri.localhost"),
+  );
+  if (!target?.webSocketDebuggerUrl)
+    throw new Error(`WebView2 app target was not found: ${JSON.stringify(targets)}`);
+
+  const socket = new WebSocket(target.webSocketDebuggerUrl);
+  await new Promise<void>((resolve, reject) => {
+    socket.addEventListener("open", () => resolve(), { once: true });
+    socket.addEventListener("error", () => reject(new Error("WebView2 DevTools socket failed")), {
+      once: true,
+    });
+  });
+  const commandId = 1;
+  await new Promise<void>((resolve, reject) => {
+    socket.addEventListener("message", event => {
+      const message = JSON.parse(String(event.data)) as {
+        id?: number;
+        error?: { message?: string };
+      };
+      if (message.id !== commandId) return;
+      if (message.error) reject(new Error(message.error.message ?? "DevTools media emulation failed"));
+      else resolve();
+    });
+    socket.send(JSON.stringify({
+      id: commandId,
+      method: "Emulation.setEmulatedMedia",
+      params: {
+        media: "",
+        features,
+      },
+    }));
+  });
+  mediaEmulationSocket = socket;
+}
 
 const shot = async (name: string) => {
   await browser.saveScreenshot(join(outputRoot, `${name}.png`));
@@ -55,6 +184,19 @@ async function capture(screen: string, file: string, note?: string) {
   if (note) record.note = note;
   records.push(record);
   await shot(file);
+  const visualSnapshotFiles = mediaMode === "dark"
+    ? darkVisualSnapshotFiles
+    : mediaMode === "forced-colors"
+      ? forcedColorsVisualSnapshotFiles
+      : mediaMode === "reduced-motion"
+        ? reducedMotionVisualSnapshotFiles
+        : lightVisualSnapshotFiles;
+  if (visualRegression && visualSnapshotFiles.has(file)) {
+    const tag = mediaMode === "light" ? file : `${file}-${mediaMode}`;
+    const result = await browser.checkScreen(tag);
+    const mismatch = typeof result === "number" ? result : result.misMatchPercentage;
+    if (mismatch !== 0) throw new Error(`${tag} visual mismatch: ${mismatch}%`);
+  }
 }
 
 const go = async (destination: string, heading: string) => {
@@ -96,6 +238,9 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
     environment = await enterAuditViewport();
     const seeded = await seedLayoutFixture(await appLocalDate());
     if (!seeded.ok) throw new Error(`fixture seeding failed at ${seeded.stage}: ${seeded.error}`);
+    lifeAreaId = seeded.lifeRootChildId;
+    lifeDocumentedChildId = seeded.lifeDocumentedChildId;
+    lifeNarrativeChildId = seeded.lifeNarrativeChildId;
     await browser.url("http://tauri.localhost");
     await browser.pause(700);
     /*
@@ -107,13 +252,39 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
      * reporting a small one.
      */
     environment = await enterAuditViewport();
+    const mediaFeatures = [
+      ...(requestedTheme === "dark"
+        ? [{ name: "prefers-color-scheme", value: "dark" }]
+        : []),
+      ...(forcedColors ? [{ name: "forced-colors", value: "active" }] : []),
+      ...(reducedMotion ? [{ name: "prefers-reduced-motion", value: "reduce" }] : []),
+    ];
+    if (mediaFeatures.length > 0) {
+      await emulateMediaFeatures(mediaFeatures);
+      await browser.pause(150);
+    }
+    const mediaMatches = await browser.execute(() => ({
+      dark: window.matchMedia("(prefers-color-scheme: dark)").matches,
+      forcedColors: window.matchMedia("(forced-colors: active)").matches,
+      reducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    }));
+    if (
+      mediaMatches.dark !== (requestedTheme === "dark") ||
+      mediaMatches.forcedColors !== forcedColors ||
+      mediaMatches.reducedMotion !== reducedMotion
+    )
+      throw new Error(
+        `Media precondition failed: requested=${mediaMode}, actual=${JSON.stringify(mediaMatches)}`,
+      );
   });
 
   after(() => {
+    mediaEmulationSocket?.close();
+    mediaEmulationSocket = null;
     const collisions = records.flatMap(r => r.collisions);
     writeFileSync(
       join(outputRoot, "audit.json"),
-      `${JSON.stringify({ label, environment, records }, null, 2)}\n`,
+      `${JSON.stringify({ label, theme: requestedTheme, mediaMode, environment, records }, null, 2)}\n`,
       "utf8",
     );
     const byKind = collisions.reduce<Record<string, number>>((acc, c) => {
@@ -128,6 +299,7 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
       }  achieved: ${environment?.innerWidth}x${environment?.innerHeight} @ DPR ${environment?.devicePixelRatio}`,
     );
     console.log(`environment: ${JSON.stringify(environment)}`);
+    console.log(`theme: ${requestedTheme}  media: ${mediaMode}`);
     console.log(`screens: ${records.length}  collisions: ${collisions.length} ${JSON.stringify(byKind)}`);
     for (const record of records) {
       const u = record.utilization;
@@ -197,7 +369,15 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
 
     if (await tryClick("button[aria-label='Create task']")) {
       await capture("task-create", "02-task-create");
-      if (await tryClick("[data-dialog-surface] fieldset input[type='checkbox']"))
+      // Activate recurrence through its visible label. In forced-colors mode WebView2 hands the
+      // checkbox back to the native renderer; the input remains correctly labelled, but its native
+      // hit-test box is not exposed to WebDriver. Clicking the label is the real accessible target
+      // and works for pointer, touch, and high-contrast users alike.
+      if (
+        await tryClick(
+          "//fieldset[legend[normalize-space()='Recurring']]//label[normalize-space()='Repeat task']",
+        )
+      )
         await capture("task-recurring", "03-task-recurring");
       await dismiss();
     }
@@ -224,6 +404,20 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
 
     await go("Plans", "h1#plans-heading");
     await capture("plans", "11-plans");
+    const seededPlan = $("aside[aria-label='active plans'] button");
+    if (await seededPlan.isExisting()) {
+      await seededPlan.waitForEnabled({ timeout: 15_000 });
+      await seededPlan.click();
+      await $("fieldset").waitForDisplayed({ timeout: 15_000 });
+      await capture("plans--selected", "11b-plans-selected");
+    } else {
+      records.push({
+        screen: "plans--selected",
+        utilization: null,
+        collisions: [],
+        note: "NOT TESTED: seeded active plan was not reachable",
+      });
+    }
 
     await go("Life System", "h1#life-heading");
     await capture("life-browse", "12-life-browse");
@@ -235,27 +429,54 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
         await tryClick("button=Graph");
       }
     }
-    // A documented leaf opens the Reader, which is the reading frame. Child cards carry their node
-    // id, so the leaf is reached by data attribute rather than by matching card prose.
-    const leaf = await browser.execute(() => {
-      for (const node of document.querySelectorAll<HTMLElement>("[data-life-id]"))
-        if ((node.textContent ?? "").includes("Layout Child One")) return node.dataset.lifeId ?? "";
-      return "";
-    });
-    if (leaf && (await tryClick(`[data-life-id='${leaf}']`))) {
-      await browser.pause(800);
-      await capture("life-reader", "16-life-reader");
-      if (await tryClick("button=Edit document")) {
-        await browser.pause(1200);
-        await capture("basic-editor", "17-basic-editor");
-        await tryClick("button=Back to Reader");
-        await browser.pause(500);
-      }
-      await tryClick("button*=Back to Life Browse");
-      await browser.pause(500);
-    } else {
-      records.push({ screen: "life-reader", utilization: null, collisions: [], note: "leaf card not reachable" });
-    }
+    /*
+     * The documented leaf is a child of the seeded Layout Area, not a direct child of `life-root`.
+     * Browse intentionally renders only the focal node and its direct children, so the audit must
+     * traverse both real UI levels. The fixture returns both stable IDs; no title matching or raw
+     * navigation shortcut can accidentally bypass the production Browse interaction.
+     */
+    const areaCard = $(`[data-life-id='${lifeAreaId}']`);
+    await areaCard.waitForDisplayed({ timeout: 15_000 });
+    await areaCard.click();
+    const leafCard = $(`[data-life-id='${lifeDocumentedChildId}']`);
+    await leafCard.waitForDisplayed({ timeout: 15_000 });
+    await leafCard.waitForEnabled({ timeout: 15_000 });
+    await leafCard.click();
+    await $("h1#life-reader-title").waitForDisplayed({ timeout: 15_000 });
+    await capture("life-reader", "16-life-reader");
+
+    // Enter and leave without editing or saving; this exercises only presentation/navigation.
+    await $("button=Edit document").click();
+    await $("section[aria-label='Document editor']").waitForDisplayed({ timeout: 30_000 });
+    await capture("basic-editor", "17-basic-editor");
+    const editorSurface = $("section[aria-label='Document editor']");
+    await editorSurface.$("button=Link").click();
+    await $("[role='dialog']").waitForDisplayed({ timeout: 15_000 });
+    await capture("basic-editor--link-dialog", "17b-basic-editor-link-dialog");
+    await browser.keys(ESCAPE);
+    await editorSurface.$("button=Link").waitForDisplayed({ timeout: 15_000 });
+    await $("button=Back to Reader").click();
+    await $("button=Edit document").waitForDisplayed({ timeout: 15_000 });
+    await $("button*=Back to Life Browse").click();
+    await $("h1#life-heading").waitForDisplayed({ timeout: 15_000 });
+
+    const narrativeCard = $(`[data-life-id='${lifeNarrativeChildId}']`);
+    await narrativeCard.waitForDisplayed({ timeout: 15_000 });
+    await narrativeCard.waitForEnabled({ timeout: 15_000 });
+    await narrativeCard.click();
+    await $("#nc-canvas-title").waitForDisplayed({ timeout: 30_000 });
+    await capture("narrative-reader", "18-narrative-reader");
+    await $("button=Edit canvas").click();
+    await $("#nc-title").waitForDisplayed({ timeout: 30_000 });
+    await capture("narrative-studio", "19-narrative-studio");
+    await $("button[aria-label='Delete block']").click();
+    await $("[role='dialog']").waitForDisplayed({ timeout: 15_000 });
+    await capture("narrative-studio--only-block-dialog", "19b-narrative-only-block-dialog");
+    await browser.keys(ESCAPE);
+    await $("button=Back").click();
+    await $("button=Edit canvas").waitForDisplayed({ timeout: 15_000 });
+    await $("button*=Back to Life Browse").click();
+    await $("h1#life-heading").waitForDisplayed({ timeout: 15_000 });
 
     await go("Settings", "h1#settings-heading");
     await capture("settings-top", "18-settings");
@@ -276,16 +497,27 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
 
     if (await tryClick("button[aria-label^='Search']")) {
       await capture("search", "21-search");
+      const searchInput = $("input[aria-label='Search tasks, life nodes, and documents']");
+      await searchInput.setValue("Layout");
+      await $("[role='option']").waitForDisplayed({ timeout: 15_000 });
+      await capture("search--results", "21b-search-results");
+      await searchInput.setValue("task51-no-result-sentinel");
+      await $("p=No results.").waitForDisplayed({ timeout: 15_000 });
+      await capture("search--no-results", "21c-search-no-results");
       await tryClick("button[aria-label='Close search']");
-    }
-    if (await tryClick("button=Keyboard shortcuts")) {
-      await capture("keyboard-help", "22-keyboard-help");
-      await dismiss();
     }
     if (await tryClick("button=Create backup")) {
       await browser.pause(3000);
       await capture("backup-settings", "23-backup");
     }
+
+    // Keep the visual golden independent from backup timestamps in Settings. The shortcut is the
+    // production entry path and Today is a deterministic fixture-backed backdrop for the dialog.
+    await go("Today", "h1#today-heading");
+    await browser.keys([CONTROL, "/"]);
+    await $("[role='dialog'][aria-modal='true']").waitForDisplayed({ timeout: 10_000 });
+    await capture("keyboard-help", "22-keyboard-help");
+    await dismiss();
 
     // Collapsed sidebar is the second canonical shell state.
     await tryClick("button[aria-label='Collapse sidebar']");

@@ -1,0 +1,61 @@
+{
+  "capturedAt": "2026-08-09",
+  "platform": "Windows",
+  "runtime": {
+    "name": "WebView2",
+    "version": "151.0.4129.72",
+    "driverVersion": "151.0.4129.72"
+  },
+  "devicePixelRatio": 1.25,
+  "themes": ["light", "dark"],
+  "darkThemeProof": "WebView2 DevTools Emulation.setEmulatedMedia plus production matchMedia assertion",
+  "accessibilityMedia": {
+    "forcedColors": "10 tracked goldens; DevTools Emulation.setEmulatedMedia plus production matchMedia assertion",
+    "reducedMotion": "36-state native walk; production matchMedia assertion; 5 representative static captures matched light goldens byte-for-byte"
+  },
+  "viewports": [
+    {
+      "mode": "canonical-maximized",
+      "innerWidth": 1536,
+      "innerHeight": 794,
+      "formatNameWidth": 1522,
+      "formatNameHeight": 779,
+      "physicalPngWidth": 1920,
+      "physicalPngHeight": 992
+    },
+    {
+      "mode": "explicit-minimum",
+      "requestedWidth": 960,
+      "requestedHeight": 640,
+      "innerWidth": 959,
+      "innerHeight": 639,
+      "formatNameWidth": 960,
+      "formatNameHeight": 640,
+      "physicalPngWidth": 1199,
+      "physicalPngHeight": 799
+    }
+  ],
+  "motion": {
+    "cssAnimationsDisabledByVisualService": true,
+    "blinkingCursorDisabledByVisualService": true,
+    "reducedMotionAudit": "target/e2e-artifacts/task-50b/task51-visual-baseline-generate-reduced-motion-1536-20260809/"
+  },
+  "fixture": {
+    "spec": "task50b-maximized-audit.e2e.ts",
+    "seed": "seedLayoutFixture",
+    "fixtureCheckpoint": "be71661"
+  },
+  "sourceTreeCheckpoints": ["e2818cf", "fe2903b", "ddf8980", "ab9333c"],
+  "snapshotCount": 63,
+  "comparison": {
+    "mismatchPercentage": 0,
+    "autoAcceptanceDefault": false,
+    "evidence": [
+      "target/e2e-artifacts/task-50b/task51-visual-baseline-verify2-1536-20260809/",
+      "target/e2e-artifacts/task-50b/task51-visual-baseline-verify-960-20260809/",
+      "target/e2e-artifacts/task-50b/task51-visual-baseline-verify-dark-1536-20260809/",
+      "target/e2e-artifacts/task-50b/task51-visual-baseline-verify-forced-colors-1536-20260809/",
+      "target/e2e-artifacts/task-50b/task51-visual-baseline-generate-reduced-motion-1536-20260809/"
+    ]
+  }
+}

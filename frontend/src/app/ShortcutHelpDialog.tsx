@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useId, useRef, type MouseEvent } from "react";
+import { Fragment, useId, useRef, type MouseEvent } from "react";
 
 import { shortcutCommands } from "./keyboardShortcuts";
 import * as styles from "./App.css";
@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogSurface,
 } from "./layout/DialogSurface";
+import { useModalFocusTrap } from "./useModalFocusTrap";
 
 /**
  * The read-only Keyboard shortcuts dialog (ADR 0039).
@@ -27,36 +28,7 @@ export function ShortcutHelpDialog({ onClose }: { onClose: () => void }) {
   const titleId = useId();
   const descriptionId = useId();
 
-  useEffect(() => {
-    heading.current?.focus();
-  }, []);
-
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        onClose();
-        return;
-      }
-      if (event.key === "Tab") {
-        const controls = Array.from(
-          dialog.current?.querySelectorAll<HTMLElement>("button:not(:disabled)") ?? [],
-        );
-        const first = controls[0];
-        const last = controls.at(-1);
-        const active = document.activeElement;
-        if (event.shiftKey && (active === heading.current || active === first)) {
-          event.preventDefault();
-          last?.focus();
-        } else if (!event.shiftKey && active === last) {
-          event.preventDefault();
-          first?.focus();
-        }
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  useModalFocusTrap({ container: dialog, initialFocus: heading, onEscape: onClose });
 
   return (
     <DialogBackdrop

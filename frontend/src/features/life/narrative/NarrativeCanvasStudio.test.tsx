@@ -209,25 +209,26 @@ describe("NarrativeCanvasStudio", () => {
     expect(onCancel).toHaveBeenCalledOnce();
   });
 
-  it("Back button shows confirm when dirty", () => {
+  it("Back button uses the shared decision dialog when dirty", () => {
     const onCancel = vi.fn();
-    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
     mount({ onCancel });
     const input = screen.getByLabelText("Canvas title");
     fireEvent.change(input, { target: { value: "Changed" } });
     fireEvent.click(screen.getByRole("button", { name: "Back" }));
-    expect(confirmSpy).toHaveBeenCalled();
+    expect(screen.getByRole("dialog", { name: "Leave editor?" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
     expect(onCancel).not.toHaveBeenCalled();
-    confirmSpy.mockRestore();
+    expect(screen.getByRole("button", { name: "Back" })).toHaveFocus();
   });
 
   it("delete block protection: final block cannot be deleted", () => {
-    const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
     mount();
     const deleteBtn = screen.getByRole("button", { name: "Delete block" });
     fireEvent.click(deleteBtn);
-    expect(alertSpy).toHaveBeenCalled();
-    alertSpy.mockRestore();
+    expect(screen.getByRole("dialog", { name: "Keep at least one block" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Cancel" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Got it" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
   it("onCommitted is called with the saved document after Publish", async () => {
@@ -554,12 +555,11 @@ describe("NarrativeCanvasStudio multi-scene", () => {
   });
 
   it("Delete scene removes the active scene", () => {
-    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
     mountWith(twoSceneJson);
     fireEvent.click(screen.getByRole("tab", { name: "Scene Two" }));
     fireEvent.click(screen.getByRole("button", { name: "Delete scene" }));
+    fireEvent.click(screen.getAllByRole("button", { name: "Delete scene" })[1]!);
     expect(screen.queryByRole("tab", { name: "Scene Two" })).not.toBeInTheDocument();
-    confirmSpy.mockRestore();
   });
 
   it("Rename scene updates the tab label", () => {
@@ -667,8 +667,6 @@ describe("NarrativeCanvasStudio multi-scene", () => {
 
     const liveContent: unknown = { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "Live text — user will cancel delete" }] }] };
     tiptapMock.getJSON.mockReturnValue(liveContent);
-    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
-
     mountWith(twoScenesJson);
     // Go to second scene
     fireEvent.click(screen.getByRole("tab", { name: "Scene Two" }));
@@ -677,7 +675,8 @@ describe("NarrativeCanvasStudio multi-scene", () => {
     act(() => tiptapMock.onUpdate?.({ editor: { getJSON: () => liveContent } }));
     // Click delete — should prompt (even though block is initially empty)
     fireEvent.click(screen.getByRole("button", { name: "Delete scene" }));
-    expect(confirmSpy).toHaveBeenCalledWith("Delete this scene and all its blocks?");
+    expect(screen.getByRole("dialog", { name: "Delete scene?" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
     // User cancels
     // Publish and verify live text is retained
     fireEvent.click(screen.getByRole("button", { name: "Publish" }));
@@ -686,7 +685,6 @@ describe("NarrativeCanvasStudio multi-scene", () => {
       expect(saved.scenes).toHaveLength(2);
       expect(saved.scenes[1].blocks[0].content.content[0].content[0].text).toBe("Live text — user will cancel delete");
     });
-    confirmSpy.mockRestore();
   });
 
   it("Undo then Redo preserves live Tiptap content in removed then restored scene", async () => {

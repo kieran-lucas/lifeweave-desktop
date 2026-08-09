@@ -261,7 +261,7 @@ describe("Life Browse", () => {
     expect(await screen.findByRole("heading", { name: "Life" })).toBeInTheDocument();
     const branchButton = screen.getByText("Branch").closest("button")!;
     const browseControlsWereEnabled = !branchButton.disabled;
-    const browseBackWasDisabled = screen.getByRole("button", { name: /^← Back$/ }).hasAttribute("disabled");
+    const browseBackWasDisabled = screen.getByRole("button", { name: /^Back$/ }).hasAttribute("disabled");
 
     await act(async () => remote.resolve(projection(remoteLeaf, [])));
     await waitFor(() =>
@@ -271,7 +271,7 @@ describe("Life Browse", () => {
     expect(document.activeElement).not.toHaveTextContent("Remote Leaf");
     expect(browseControlsWereEnabled).toBe(true);
     expect(browseBackWasDisabled).toBe(true);
-    expect(screen.getByRole("button", { name: /^← Back$/ })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /^Back$/ })).toBeDisabled();
   });
   it("keeps a newer Browse destination when a stale linked Reader projection resolves", async () => {
     const remote = deferred<LifeBrowseProjection>();
@@ -875,7 +875,7 @@ describe("Life Graph", () => {
   it("opens a documented leaf in the Reader without appending linked-Reader history", async () => {
     renderLife();
     await screen.findByRole("heading", { name: "Life System" });
-    expect(screen.getByRole("button", { name: "← Back" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Back" })).toBeDisabled();
 
     fireEvent.click(screen.getByRole("button", { name: "Graph" }));
     await screen.findByRole("heading", { name: "Life graph" });
@@ -889,13 +889,13 @@ describe("Life Graph", () => {
     // Graph is top-level navigation: leaving the Reader must not unwind into a graph entry.
     fireEvent.click(screen.getByRole("button", { name: /Back to Life Browse/ }));
     await screen.findByRole("button", { name: "Pinned" });
-    expect(screen.getByRole("button", { name: "← Back" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Back" })).toBeDisabled();
   });
 
   it("opens a branch in Browse without appending Life history", async () => {
     renderLife();
     await screen.findByRole("heading", { name: "Life System" });
-    expect(screen.getByRole("button", { name: "← Back" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Back" })).toBeDisabled();
 
     fireEvent.click(screen.getByRole("button", { name: "Graph" }));
     await screen.findByRole("heading", { name: "Life graph" });
@@ -911,14 +911,14 @@ describe("Life Graph", () => {
     // Graph pushes no history entry, so Back ascends to the parent rather than unwinding a graph
     // step. Asserting the destination is load-bearing; Back is legitimately enabled on a branch
     // because it always has a parent.
-    fireEvent.click(screen.getByRole("button", { name: "← Back" }));
+    fireEvent.click(screen.getByRole("button", { name: "Back" }));
     expect(await screen.findByRole("heading", { name: "Life" })).toBeInTheDocument();
   });
 
   it("fails safely when a Browse target no longer resolves to the requested node", async () => {
     renderLife();
     await screen.findByRole("heading", { name: "Life System" });
-    expect(screen.getByRole("button", { name: "← Back" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Back" })).toBeDisabled();
 
     fireEvent.click(screen.getByRole("button", { name: "Graph" }));
     await screen.findByRole("heading", { name: "Life graph" });
@@ -936,7 +936,7 @@ describe("Life Graph", () => {
 
     // Closing the graph reveals the untouched Life state: still the root, and no history entry.
     fireEvent.click(screen.getByRole("button", { name: "Close graph" }));
-    expect(await screen.findByRole("button", { name: "← Back" })).toBeDisabled();
+    expect(await screen.findByRole("button", { name: "Back" })).toBeDisabled();
     expect(screen.getByRole("heading", { name: "Life" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Branch" })).not.toBeInTheDocument();
   });

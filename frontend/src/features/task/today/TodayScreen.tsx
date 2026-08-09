@@ -8,6 +8,7 @@ import {
   type FormEvent,
 } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useModalFocusTrap } from "../../../app/useModalFocusTrap";
 import type { OccurrenceEditScope } from "../../../ipc/generated/OccurrenceEditScope";
 import type { TaskCategoryView } from "../../../ipc/generated/TaskCategoryView";
 import type { TodayItemView } from "../../../ipc/generated/TodayItemView";
@@ -52,6 +53,8 @@ import { TagChipList } from "../../tag/TagChipList";
 import { TagPicker } from "../../tag/TagPicker";
 import type { TagSummaryView } from "../../../ipc/generated/TagSummaryView";
 import { invalidateTaskSavedViewProjections } from "../saved-views/savedViewQueries";
+import { iconToday } from "../../../design-system/visual/icons";
+import { EmptyState, LoadingRow, SkeletonList } from "../../../design-system/primitives/States";
 
 /*
  * The inspector mounts only when a task is selected, so it stays out of the Today startup chunk.
@@ -270,6 +273,7 @@ export function TodayScreen({
     client = useQueryClient(),
     trigger = useRef<HTMLButtonElement>(null),
     dialog = useRef<HTMLDivElement>(null),
+    dialogInitial = useRef<HTMLInputElement>(null),
     returnFocus = useRef<HTMLElement | null>(null);
   const planningAnchor = anchorLocalDate ?? today;
   const [workspaceMode, setWorkspaceMode] = useState<TaskWorkspaceMode>("today");
@@ -674,31 +678,7 @@ export function TodayScreen({
     open,
     workspaceMode,
   ]);
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") closeDialog();
-      if (e.key === "Tab" && dialog.current) {
-        const controls = [
-          ...dialog.current.querySelectorAll<HTMLElement>(
-            "button,input,textarea,select",
-          ),
-        ].filter((x) => !x.hasAttribute("disabled"));
-        if (
-          controls.length &&
-          (e.shiftKey
-            ? document.activeElement === controls[0]
-            : document.activeElement === controls.at(-1))
-        ) {
-          e.preventDefault();
-          (e.shiftKey ? controls.at(-1) : controls[0])?.focus();
-        }
-      }
-    };
-    document.addEventListener("keydown", handler);
-    dialog.current?.querySelector<HTMLElement>("input")?.focus();
-    return () => document.removeEventListener("keydown", handler);
-  }, [open]);
+  useModalFocusTrap({ container: dialog, initialFocus: dialogInitial, onEscape: closeDialog, active: workspaceMode === "today" && open });
   /*
     The inspector reads the same `items` projection the timeline renders, so opening it costs no
     query, no IPC command and no new projection — only a lookup.
@@ -821,7 +801,7 @@ export function TodayScreen({
       {/* Outside the Today tabpanel on purpose: one globally active session stays visible while
           the user changes date or switches workspace tab. */}
       {activeTimer.data && (
-        <Suspense fallback={<p role="status">Loading timer…</p>}>
+        <Suspense fallback={<LoadingRow label="Loading timer…" />}>
         <ActiveTimerStrip
           active={activeTimer.data}
           pending={timer.isPending}
@@ -900,7 +880,7 @@ export function TodayScreen({
       <div className={selectedItem ? layout.splitWorkspace : undefined}>
       <div className={styles.timelineColumn}>
       {items.isLoading ? (
-        <p aria-live="polite">Loading tasks…</p>
+        <SkeletonList rows={5} label="Loading tasks…" />
       ) : items.isError ? (
         <p role="alert">Unable to load tasks.</p>
       ) : (
@@ -923,7 +903,12 @@ export function TodayScreen({
                 </span>
               </h2>
               {period.groups.length === 0 ? (
-                <p className={styles.empty}>No tasks scheduled.</p>
+                <EmptyState
+                  compact
+                  icon={iconToday}
+                  title="No tasks scheduled."
+                  body="Nothing is planned for this part of the day."
+                />
               ) : (
                 /*
                   One bounded group per period, as baseline v2 measures. The time-column rows sit
@@ -1045,9 +1030,18 @@ export function TodayScreen({
                             auto column appeared whenever a Task carried actual time.
                           */}
                           <div className={styles.rowActions}>
-                          <span aria-label={`Priority ${item.priority}`}>
-                            •
-                          </span>
+                          {/*
+                            `role="img"`, not a bare span. `aria-label` is prohibited on an element
+                            with the implicit `generic` role, and the previous markup only escaped
+                            that because it had "•" as text content to name itself with. An empty
+                            drawn dot has none, so it must declare what it is — axe caught exactly
+                            this.
+                          */}
+                          <span
+                            role="img"
+                            className={styles.priorityDot}
+                            aria-label={`Priority ${item.priority}`}
+                          />
                           {/*
                             The visible edit path. Double-click and Enter still work, but neither
                             advertised itself, which is the one MISSING_USER_SURFACE the Task 50
@@ -1146,7 +1140,7 @@ export function TodayScreen({
       </div>
       ) : (
         <div role="tabpanel" id={`task-panel-${workspaceMode}`} aria-labelledby={`task-tab-${workspaceMode}`}>
-          <Suspense fallback={<p role="status">Loading {workspaceMode} tasks…</p>}>
+          <Suspense fallback={<SkeletonList rows={5} label={`Loading ${workspaceMode} tasks…`} />}>
             {workspaceMode === "views" ? (
               <TaskSavedViewsPanel anchorLocalDate={planningAnchor} onOpenItem={openPlanningItem} onFocusPlanNavigate={onFocusPlanNavigate} />
             ) : workspaceMode === "deadlines" ? (
@@ -1221,6 +1215,7 @@ export function TodayScreen({
               <label className={`${layout.field} ${layout.fieldSpan.full}`}>
                 Title
                 <input
+                  ref={dialogInitial}
                   className={layout.fieldControl}
                   value={draft.title}
                   aria-describedby={error ? "task-error" : undefined}

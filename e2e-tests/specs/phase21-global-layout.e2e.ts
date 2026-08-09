@@ -4,7 +4,6 @@ import {
   DIALOG_SURFACE,
   PAGE_FRAME,
   VIEWPORT,
-  VIEWPORT_MATRIX,
   assertCentered,
   assertLocalScrollOwnership,
   assertNoHorizontalOverflow,
@@ -13,9 +12,14 @@ import {
   assertWithinViewport,
   controlRects,
   rect,
-  useViewport,
 } from "../support/layoutGeometry.js";
 import { appLocalDate, seedLayoutFixture } from "../support/layoutFixture.js";
+import {
+  enterMeasuredViewport,
+  findCollisions,
+  utilization,
+  type AuditViewportRequest,
+} from "../support/spacingAudit.js";
 
 /**
  * Phase 21 — global layout invariants (ADR 0044).
@@ -33,10 +37,36 @@ import { appLocalDate, seedLayoutFixture } from "../support/layoutFixture.js";
 /** WebDriver Escape, built from its code point so no invisible character enters the source. */
 const ESCAPE = String.fromCharCode(0xe00c);
 
+const VIEWPORT_MATRIX: Array<{ label: string; request: AuditViewportRequest }> = [
+  { label: "maximized", request: null },
+  { label: "1280x800", request: { width: 1280, height: 800 } },
+  { label: "1280x720", request: { width: 1280, height: 720 } },
+  { label: "960x640", request: { width: 960, height: 640 } },
+];
+
+async function assertGeometryClean(label: string) {
+  const measured = await utilization();
+  if (!measured) throw new Error(`${label}: page utilization could not be measured`);
+  expect(measured.documentOverflow).toBe(0);
+  expect(measured.viewportOverflow).toBe(0);
+
+  const collisions = await findCollisions(label);
+  if (collisions.length > 0)
+    throw new Error(
+      `${label}: ${collisions.length} semantic collision(s): ${collisions
+        .slice(0, 8)
+        .map(collision =>
+          `[${collision.kind}] gap=${collision.gap} ${collision.first} | ${collision.second} @ ${collision.path}`,
+        )
+        .join("; ")}`,
+    );
+}
+
 const go = async (destination: string, heading: string) => {
   await $(`button[aria-label='${destination}']`).click();
   await $(heading).waitForDisplayed({ timeout: 30_000 });
   await browser.pause(250);
+  await assertGeometryClean(destination);
 };
 
 const dismissDialog = async () => {
@@ -64,13 +94,12 @@ describe("Global layout invariants", () => {
     await browser.pause(600);
   });
 
-  for (const [width, height] of VIEWPORT_MATRIX) {
-    const viewport = `${width}x${height}`;
+  for (const { label: viewport, request } of VIEWPORT_MATRIX) {
 
     describe(`at ${viewport}`, () => {
       before(async () => {
         await browser.url("http://tauri.localhost");
-        await useViewport(width, height);
+        await enterMeasuredViewport(request);
       });
 
       it("keeps every ordinary screen horizontally stable, expanded and collapsed", async () => {
@@ -125,41 +154,59 @@ describe("Global layout invariants", () => {
         }
       });
 
-      it("gives the four standard pages one frame geometry", async () => {
-        const widths: Array<{ page: string; frame: number; inner: number }> = [];
-        for (const [destination, heading] of [
-          ["Today", "h1#today-heading"],
-          ["Analytics", "h1#analytics-heading"],
-          ["Plans", "h1#plans-heading"],
-          ["Settings", "h1#settings-heading"],
-        ] as Array<[string, string]>) {
-          await go(destination, heading);
-          const type = await browser.execute(
-            () => document.querySelector("[data-page-frame]")?.getAttribute("data-page-type") ?? "",
-          );
-          expect(type).toBe("standard");
-          widths.push({
-            page: destination,
-            frame: (await rect(PAGE_FRAME)).width,
-            inner: await innerWidth(),
-          });
+      it("gives each page family one frame geometry", async () => {
+        const families: Array<{
+          type: "wide" | "standard";
+          pages: Array<[destination: string, heading: string]>;
+        }> = [
+          {
+            type: "wide",
+            pages: [
+              ["Today", "h1#today-heading"],
+              ["Calendar", "h1#calendar-heading"],
+            ],
+          },
+          {
+            type: "standard",
+            pages: [
+              ["Analytics", "h1#analytics-heading"],
+              ["Plans", "h1#plans-heading"],
+              ["Settings", "h1#settings-heading"],
+            ],
+          },
+        ];
+
+        for (const family of families) {
+          const widths: Array<{ page: string; frame: number; inner: number }> = [];
+          for (const [destination, heading] of family.pages) {
+            await go(destination, heading);
+            const type = await browser.execute(
+              () => document.querySelector("[data-page-frame]")?.getAttribute("data-page-type") ?? "",
+            );
+            expect(type).toBe(family.type);
+            widths.push({
+              page: destination,
+              frame: (await rect(PAGE_FRAME)).width,
+              inner: await innerWidth(),
+            });
+          }
+          // Comparing across pages is only meaningful at the same measured inner width; the
+          // requested window size is never evidence of the size actually rendered.
+          const inner = new Set(widths.map(entry => entry.inner));
+          if (inner.size !== 1)
+            throw new Error(
+              `${family.type} pages were measured at different inner widths: ${widths
+                .map(entry => `${entry.page}=${entry.inner}`)
+                .join(", ")}`,
+            );
+          const distinct = new Set(widths.map(entry => Math.round(entry.frame)));
+          if (distinct.size !== 1)
+            throw new Error(
+              `${family.type} pages disagree on frame width: ${widths
+                .map(entry => `${entry.page}=${Math.round(entry.frame)}`)
+                .join(", ")}`,
+            );
         }
-        // Comparing across pages is only meaningful at the same measured inner width; the baseline
-        // capture showed the requested window size is not evidence of the size actually rendered.
-        const inner = new Set(widths.map(entry => entry.inner));
-        if (inner.size !== 1)
-          throw new Error(
-            `pages were measured at different inner widths: ${widths
-              .map(entry => `${entry.page}=${entry.inner}`)
-              .join(", ")}`,
-          );
-        const distinct = new Set(widths.map(entry => Math.round(entry.frame)));
-        if (distinct.size !== 1)
-          throw new Error(
-            `standard pages disagree on frame width: ${widths
-              .map(entry => `${entry.page}=${Math.round(entry.frame)}`)
-              .join(", ")}`,
-          );
       });
 
       it("contains the Task dialog and lets no two of its controls overlap", async () => {
@@ -171,6 +218,7 @@ describe("Global layout invariants", () => {
         await assertWithinViewport(DIALOG_SURFACE);
         await assertNoHorizontalOverflow(DIALOG_SURFACE, `Create task (${viewport})`);
         assertNoOverlap(await controlRects(DIALOG_SURFACE), `Create task (${viewport})`);
+        await assertGeometryClean(`Create task (${viewport})`);
 
         // Recurrence expands the form the most, so it is the hardest containment case.
         await $(`${DIALOG_SURFACE} fieldset input[type='checkbox']`).click();
@@ -181,6 +229,7 @@ describe("Global layout invariants", () => {
           await controlRects(DIALOG_SURFACE),
           `Create recurring task (${viewport})`,
         );
+        await assertGeometryClean(`Create recurring task (${viewport})`);
 
         // The surface owns its scroll, so heading and footer stay reachable rather than the page
         // becoming the workaround scroll surface.
@@ -213,6 +262,7 @@ describe("Global layout invariants", () => {
         await browser.pause(250);
         await assertWithinViewport(DIALOG_SURFACE);
         assertNoOverlap(await controlRects(DIALOG_SURFACE), `Edit task (${viewport})`);
+        await assertGeometryClean(`Edit task (${viewport})`);
         await dismissDialog();
       });
 
@@ -228,6 +278,7 @@ describe("Global layout invariants", () => {
             `Life edit canvas (${viewport})`,
           );
           await expect($("[aria-label='Life node inspector']")).toBeDisplayed();
+          await assertGeometryClean(`Life edit (${viewport})`);
         }
 
         const browseButton = $("button=Browse");
@@ -244,6 +295,7 @@ describe("Global layout invariants", () => {
             () => document.querySelector("[data-page-frame]")?.getAttribute("data-page-type") ?? "",
           );
           expect(type).toBe("wide");
+          await assertGeometryClean(`Life graph (${viewport})`);
           await graphButton.click();
         }
       });
@@ -253,12 +305,14 @@ describe("Global layout invariants", () => {
         await $("button[aria-label^='Search']").click();
         await $("div[role='dialog'][aria-label='Search']").waitForDisplayed({ timeout: 10_000 });
         await assertWithinViewport("div[role='dialog'][aria-label='Search']");
+        await assertGeometryClean(`Search dialog (${viewport})`);
         await $("button[aria-label='Close search']").click();
         await browser.pause(250);
 
         await $("button=Keyboard shortcuts").click();
         await $(DIALOG_SURFACE).waitForDisplayed({ timeout: 10_000 });
         await assertWithinViewport(DIALOG_SURFACE);
+        await assertGeometryClean(`Shortcut dialog (${viewport})`);
         await $(`${DIALOG_SURFACE} button`).click();
         await browser.pause(250);
         await assertPageHorizontallyStable(`after dialogs (${viewport})`);
@@ -268,7 +322,7 @@ describe("Global layout invariants", () => {
 
   it("leaves no stale geometry behind a sidebar transition", async () => {
     await browser.url("http://tauri.localhost");
-    await useViewport(1440, 900);
+    await enterMeasuredViewport(null);
     await go("Analytics", "h1#analytics-heading");
     const expanded = await rect(PAGE_FRAME);
 
@@ -276,6 +330,7 @@ describe("Global layout invariants", () => {
     await browser.pause(600);
     const collapsed = await rect(PAGE_FRAME);
     await assertPageHorizontallyStable("Analytics collapsed");
+    await assertGeometryClean("Analytics collapsed");
     // The collapsed rail is 152px narrower, so the frame must actually have re-laid out rather
     // than keeping a stale width.
     expect(collapsed.width).toBeGreaterThan(expanded.width - 1);
@@ -283,6 +338,7 @@ describe("Global layout invariants", () => {
     await $("button[aria-label='Expand sidebar']").click();
     await browser.pause(600);
     await assertPageHorizontallyStable("Analytics re-expanded");
+    await assertGeometryClean("Analytics re-expanded");
     const restored = await rect(PAGE_FRAME);
     expect(Math.abs(restored.width - expanded.width)).toBeLessThanOrEqual(1);
   });

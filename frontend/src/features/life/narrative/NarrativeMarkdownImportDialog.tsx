@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
+import { useModalFocusTrap } from "../../../app/useModalFocusTrap";
 import { importNarrativeMarkdown } from "../../../ipc/commands";
 import type { NarrativeDocumentView } from "../../../ipc/generated/NarrativeDocumentView";
 import type { NarrativeMarkdownPreview } from "../../../ipc/generated/NarrativeMarkdownPreview";
@@ -26,50 +27,8 @@ export function NarrativeMarkdownImportDialog({
   const confirmRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const operationIdRef = useRef(operationId("md-import"));
-  const priorFocusRef = useRef<Element | null>(null);
-
-  useEffect(() => {
-    priorFocusRef.current = document.activeElement;
-    confirmRef.current?.focus();
-    return () => {
-      if (priorFocusRef.current instanceof HTMLElement) {
-        priorFocusRef.current.focus();
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && status !== "pending") {
-        onCancel();
-        return;
-      }
-      if (e.key === "Tab" && dialogRef.current) {
-        const focusable = Array.from(
-          dialogRef.current.querySelectorAll<HTMLElement>(
-            'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])',
-          ),
-        );
-        if (focusable.length === 0) return;
-        const first = focusable[0];
-        const last = focusable[focusable.length - 1];
-        if (!first || !last) return;
-        if (e.shiftKey) {
-          if (document.activeElement === first) {
-            e.preventDefault();
-            last.focus();
-          }
-        } else {
-          if (document.activeElement === last) {
-            e.preventDefault();
-            first.focus();
-          }
-        }
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [onCancel, status]);
+  const priorFocusRef = useRef(document.activeElement instanceof HTMLElement ? document.activeElement : null);
+  useModalFocusTrap({ container: dialogRef, initialFocus: confirmRef, onEscape: onCancel, escapeEnabled: status !== "pending", returnFocus: priorFocusRef.current });
 
   const handleConfirm = async () => {
     setStatus("pending");

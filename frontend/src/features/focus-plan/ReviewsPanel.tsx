@@ -3,6 +3,10 @@ import { useEffect, useRef, useState } from "react";
 
 import { createFocusPlanReview, listFocusPlanReviews } from "../../ipc/commands";
 import type { FocusPlanReviewHistoryView } from "../../ipc/generated/FocusPlanReviewHistoryView";
+import { EmptyState } from "../../design-system/primitives/States";
+import { button } from "../../design-system/primitives/controls.css";
+import { iconNote } from "../../design-system/visual/icons";
+
 import * as styles from "./FocusPlansScreen.css";
 
 function messageFrom(cause: unknown): string {
@@ -151,7 +155,7 @@ export function ReviewsPanel({
           <div className={styles.actions}>
             <button
               type="submit"
-              className={styles.primaryButton}
+              className={button.primary}
               disabled={!reflection.trim() || pending || disabled}
             >
               {pending ? "Saving review…" : "Save review"}
@@ -170,7 +174,7 @@ export function ReviewsPanel({
         </p>
       )}
       {status === "ready" && history && history.reviews.length === 0 && (
-        <p className={styles.muted}>No reviews recorded yet.</p>
+        <EmptyState compact icon={iconNote} title="No reviews recorded yet." body="Record a review to keep a history of how this Plan is going." />
       )}
       {status === "ready" && history && history.reviews.length > 0 && (
         <ol className={styles.planList} aria-label="Review history">

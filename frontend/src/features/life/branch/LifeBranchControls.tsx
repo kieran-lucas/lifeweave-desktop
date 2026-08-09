@@ -11,6 +11,7 @@ import {
 import { invalidateLifeBranchImport } from "./lifeBranchQueries";
 import * as styles from "./LifeBranch.css";
 import { LifeTreeControls } from "../tree/LifeTreeControls";
+import { LoadingRow } from "../../../design-system/primitives/States";
 
 const ImportDialog = lazy(() => import("./LifeBranchImportDialog"));
 const MAX_BYTES = 64 * 1024 * 1024;
@@ -146,7 +147,7 @@ export function LifeBranchControls({ nodeId, nodeTitle, parentId, childCount, ha
     {blocked && <p className={styles.reason}>{blocked}</p>}
     {notice && <p role="status" aria-live="polite">{notice}</p>}
     {error && !preview && <p className={styles.error} role="alert">{error}</p>}
-    {preview && <Suspense fallback={<p role="status">Loading branch preview…</p>}>
+    {preview && <Suspense fallback={<LoadingRow label="Loading branch preview…" />}>
       <ImportDialog
         preview={preview}
         destinationTitle={nodeTitle}

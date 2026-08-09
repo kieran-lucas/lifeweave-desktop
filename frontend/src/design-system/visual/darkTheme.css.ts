@@ -17,7 +17,7 @@ import { vars } from "./contract.css";
  *   - a raised surface gets *lighter* here, where in light it gets whiter and keeps no shadow;
  *   - completion is blue in both themes.
  */
-export const darkTheme = createTheme(vars, {
+export const darkValues = {
   color: {
     canvas: "oklch(17.5% 0.008 264)",
     surface: "oklch(15.5% 0.008 264)", //  the sidebar sits *below* the canvas here, as in light
@@ -62,14 +62,15 @@ export const darkTheme = createTheme(vars, {
     ambientAura: "oklch(20% 0.01 264)",
 
     focusRing: "oklch(80% 0.13 258)",
-    backdrop: "oklch(10% 0.006 264 / 0.6)",
+    backdrop: "oklch(9% 0.02 258 / 0.62)",
   },
 
+  /* Radius is theme-invariant; both themes state it so the contract stays fully implemented. */
   radius: {
-    small: "4px",
-    control: "8px",
-    surface: "12px",
-    floating: "14px",
+    small: "6px",
+    control: "10px",
+    surface: "14px",
+    floating: "18px",
     full: "999px",
   },
 
@@ -83,4 +84,7 @@ export const darkTheme = createTheme(vars, {
     structural: "1px solid oklch(26% 0.008 264)",
     subtle: "1px solid oklch(22% 0.008 264)",
   },
-});
+};
+
+/** See `lightTheme.css.ts` for why the values and the class are exported separately. */
+export const darkTheme = createTheme(vars, darkValues);

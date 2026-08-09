@@ -11,6 +11,7 @@ import {
 import type { TagView } from "../../ipc/generated/TagView";
 import * as styles from "./TagSettings.css";
 import { invalidateTaskSavedViewReferenceData } from "../task/saved-views/savedViewQueries";
+import { SkeletonList } from "../../design-system/primitives/States";
 
 export function TagSettings() {
   const [createName, setCreateName] = useState("");
@@ -164,7 +165,7 @@ export function TagSettings() {
       )}
       </section>
 
-      {tagsQuery.isLoading && <p>Loading tags…</p>}
+      {tagsQuery.isLoading && <SkeletonList rows={4} label="Loading tags…" />}
       {tagsQuery.isError && (
         <div role="alert">
           <p className={styles.warning}>Failed to load tags.</p>
@@ -303,7 +304,7 @@ export function TagSettings() {
                 <option key={t.id} value={t.id}>{t.name}</option>
               ))}
             </select>
-            <span aria-hidden="true">→</span>
+            <span>into</span>
             <select
               className={styles.select}
               value={mergeTargetId}
@@ -407,7 +408,7 @@ function TagRow({
             {tag.name}
             {isMerged && tag.merged_into && (
               <span className={styles.mergedAlias}>
-                → {tag.merged_into.name}
+                Merged into {tag.merged_into.name}
               </span>
             )}
           </>

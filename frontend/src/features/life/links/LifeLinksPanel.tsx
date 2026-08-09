@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createLifeLink,
@@ -13,6 +13,9 @@ import {
   lifeLinkKeys,
 } from "./lifeLinkQueries";
 import * as styles from "./LifeLinksPanel.css";
+import { EmptyState, LoadingRow } from "../../../design-system/primitives/States";
+import { Icon, iconNote, iconSearch } from "../../../design-system/visual/icons";
+import { useModalFocusTrap } from "../../../app/useModalFocusTrap";
 
 const errorText = (error: unknown, fallback: string) =>
   error instanceof Error ? error.message : fallback;
@@ -50,7 +53,7 @@ function LinkRows({
                 onClick={() => void onNavigate(row.endpoint_node_id)}
                 aria-label={active ? `Open ${row.title} in Life Reader` : `${row.title} is ${state?.toLowerCase()}`}
               >
-                <span aria-hidden="true">◇ </span>{row.title}
+                <Icon d={iconNote} size={14} /> {row.title}
               </button>
               {state && <span className={styles.state}>{state}</span>}
               <p className={styles.meta}>{row.breadcrumb || "Life"} · {documentKind(row.document_kind)}</p>
@@ -107,25 +110,7 @@ function AddLinkDialog({
     },
     onError: (error) => setMessage(errorText(error, "The link could not be created.")),
   });
-  useEffect(() => { inputRef.current?.focus(); }, []);
-  const handleKeys = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      if (!create.isPending) onClose();
-      return;
-    }
-    if (event.key !== "Tab") return;
-    const nodes = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>(
-      'button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])',
-    ) ?? []).filter((node) => !node.hasAttribute("hidden"));
-    if (!nodes.length) return;
-    const first = nodes[0]!, last = nodes[nodes.length - 1]!;
-    if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault(); last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault(); first.focus();
-    }
-  };
+  useModalFocusTrap({ container: dialogRef, initialFocus: inputRef, onEscape: onClose, escapeEnabled: !create.isPending });
   const runSearch = (event: React.FormEvent) => {
     event.preventDefault();
     const next = query.trim();
@@ -147,7 +132,6 @@ function AddLinkDialog({
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={descriptionId}
-        onKeyDown={handleKeys}
       >
         <h2 id={titleId}>Add link from {sourceTitle}</h2>
         <p id={descriptionId} className={styles.muted}>Search eligible committed Life leaves, select one result, then confirm.</p>
@@ -199,7 +183,7 @@ function AddLinkDialog({
                 ))}
               </ul>
             </fieldset>
-          ) : <p>No eligible targets matched this query.</p>
+          ) : <EmptyState compact icon={iconSearch} title="No eligible targets matched this query." body="Try a shorter or different search term." />
         )}
         <div className={styles.actions}>
           <button type="button" className={styles.button} onClick={onClose} disabled={create.isPending}>Cancel</button>
@@ -247,7 +231,7 @@ export function LifeLinksPanel({
     }
   };
   if (panel.isLoading)
-    return <section className={styles.panel} aria-labelledby="life-links-heading"><h2 id="life-links-heading">Links</h2><p aria-live="polite">Loading links…</p></section>;
+    return <section className={styles.panel} aria-labelledby="life-links-heading"><h2 id="life-links-heading">Links</h2><LoadingRow label="Loading links…" /></section>;
   if (panel.isError || !panel.data)
     return <section className={styles.panel} aria-labelledby="life-links-heading"><h2 id="life-links-heading">Links</h2><p role="alert">Links could not be loaded.</p></section>;
   const value = panel.data;

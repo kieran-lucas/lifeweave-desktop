@@ -28,7 +28,7 @@ export const period=style({display:"flex",flexDirection:"column",gap:space.contr
  * at its edges. The border and highlight come from the shared material, so it cannot drift from the
  * inspector, Calendar or the dialogs.
  */
-export const group_=style([glassStrong,{borderRadius:12,overflow:"hidden",minInlineSize:0}]);
+export const group_=style([glassStrong,{borderRadius:"var(--radius-surface)",overflow:"hidden",minInlineSize:0}]);
 /** Name and range are two spaced boxes; the separation is layout, never a literal space in text. */
 export const periodHeading=style({display:"flex",flexWrap:"wrap",alignItems:"baseline",gap:space.control,margin:0,minInlineSize:0});
 export const periodRange=style({fontVariantNumeric:"tabular-nums",fontWeight:400,color:"var(--text-muted)",fontSize:"1rem"});
@@ -40,7 +40,7 @@ export const time=style({fontVariantNumeric:"tabular-nums",color:"var(--text-mut
  * the row can never grow an undeclared implicit column the way it did with three tracks and four
  * children.
  */
-export const row=style({display:"grid",gridTemplateColumns:"minmax(0,1fr) auto",gap:space.x3,alignItems:"start",padding:"8px 0",cursor:"pointer",minInlineSize:0,borderRadius:8,transition:"background-color 100ms cubic-bezier(0.2,0,0,1)",selectors:{"&:hover":{background:"var(--icon-background)"}}});
+export const row=style({display:"grid",gridTemplateColumns:"minmax(0,1fr) auto",gap:space.x3,alignItems:"start",padding:"8px 0",cursor:"pointer",minInlineSize:0,borderRadius:"var(--radius-control)",transition:"background-color 100ms cubic-bezier(0.2,0,0,1)",selectors:{"&:hover":{background:"var(--icon-background)"}}});
 /*
  * The row's content column. Title, description, metadata and tags are four stacked units; the
  * metadata itself is a wrapping group with a parent gap, so the category can never run into the
@@ -55,9 +55,25 @@ export const rowMeta=style({display:"flex",flexWrap:"wrap",alignItems:"center",g
  * title stays fully readable, which an ellipsis would have taken away from sighted users even
  * though the accessible name kept it.
  */
-export const rowChip=style({maxInlineSize:"28rem",textAlign:"left",overflowWrap:"anywhere",border:0,borderRadius:"0.375rem",background:"var(--active-background)",color:"var(--accent)",fontSize:"0.8125rem",padding:"0.2rem 0.5rem",cursor:"pointer",selectors:{"&:focus-visible":{outline:"3px solid var(--focus-ring)",outlineOffset:2}}});
+/*
+ * The Focus Plan chip.
+ *
+ * Rendered against real data it was the loudest thing in the row: a saturated 448px fill wrapping
+ * onto two lines, so a Plan name outweighed the task title it belonged to. Task 50 chose wrapping
+ * over truncation deliberately, so no information is lost — that decision stands. What changes is
+ * the *material*: a quiet hairline chip with accent text instead of a filled panel, and a narrower
+ * cap so it reads as an annotation on the row rather than as a second heading.
+ */
+export const rowChip=style({maxInlineSize:"22rem",textAlign:"left",overflowWrap:"anywhere",border:"1px solid color-mix(in srgb, var(--accent) 22%, transparent)",borderRadius:"var(--radius-small)",background:"transparent",color:"var(--accent)",fontSize:"0.8125rem",lineHeight:1.35,padding:"0.15rem 0.45rem",cursor:"pointer",transition:"background-color 110ms cubic-bezier(0.2,0,0,1)",selectors:{"&:hover":{background:"color-mix(in srgb, var(--accent) 8%, transparent)"},"&:focus-visible":{outline:"2px solid var(--focus-ring)",outlineOffset:2}}});
+
+/*
+ * The priority indicator was a literal "•" character, so it carried the document font's weight and
+ * baseline rather than the icon vocabulary's — the one text-glyph icon left in a task row. It is now
+ * a drawn dot. The accessible name it already had is unchanged, so this is presentation only.
+ */
+export const priorityDot=style({display:"inline-block",inlineSize:6,blockSize:6,borderRadius:"var(--radius-full)",background:"var(--text-muted)",flexShrink:0});
 export const rowActions=style({display:"flex",flexWrap:"wrap",alignItems:"center",justifyContent:"flex-end",gap:space.control,minInlineSize:0});
-export const rowEditButton=style({border:0,borderRadius:"0.375rem",background:"transparent",color:"var(--text-muted)",fontSize:"0.8125rem",padding:"0.25rem 0.5rem",cursor:"pointer",whiteSpace:"nowrap",selectors:{"&:focus-visible":{outline:"3px solid var(--focus-ring)",outlineOffset:2}}});
+export const rowEditButton=style({border:0,borderRadius:"var(--radius-small)",background:"transparent",color:"var(--text-muted)",fontSize:"0.8125rem",padding:"0.25rem 0.5rem",cursor:"pointer",whiteSpace:"nowrap",selectors:{"&:focus-visible":{outline:"3px solid var(--focus-ring)",outlineOffset:2}}});
 /**
  * v2 selection is a pale blue fill, not an outline. The 2 px focus-ring outline this used to draw
  * made a selected row read as a focused control, and stacked a hard edge on top of a hairline the
@@ -75,7 +91,7 @@ export const category=style({color:"var(--text-muted)",fontSize:12});
 export const wheel=style({display:"flex",alignItems:"center",gap:space.x1,minInlineSize:0});
 export const wheelPart=style({display:"flex",flex:1,minInlineSize:0});
 export const legend=style({padding:`0 ${space.x1}`,fontWeight:700});
-export const subGroup=style({display:"flex",flexDirection:"column",gap:space.control,margin:0,padding:space.x3,border:"1px solid var(--border-subtle)",borderRadius:10,minInlineSize:0});
+export const subGroup=style({display:"flex",flexDirection:"column",gap:space.control,margin:0,padding:space.x3,border:"1px solid var(--border-subtle)",borderRadius:"var(--radius-control)",minInlineSize:0});
 export const checkLabel=style({display:"inline-flex",alignItems:"center",gap:space.x1,minInlineSize:0});
 export const scopeList=style({display:"flex",flexDirection:"column",gap:space.control,minInlineSize:0});
 export const previewList=style({display:"flex",flexDirection:"column",gap:space.x1,margin:0,paddingInlineStart:space.x5,color:"var(--text-muted)"});
@@ -87,17 +103,17 @@ export const undo=style({margin:0,color:"var(--text-muted)"});
 export const seriesTagsNote=style({fontSize:11,color:"var(--text-muted, var(--text-muted))",margin:"4px 0 0"});
 
 // ── Actual time (Task 43). Running state is conveyed by text and a border, never colour alone.
-export const timerStrip = style({ display: "flex", flexWrap: "wrap", gap: "0.6rem", alignItems: "center", marginBlock: "0.6rem", padding: "0.55rem 0.75rem", border: "1px solid currentColor", borderRadius: "0.6rem" });
-export const timerRunning = style({ fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", fontSize: "0.75rem", border: "1px solid currentColor", borderRadius: "0.4rem", padding: "0.1rem 0.4rem" });
+export const timerStrip = style({ display: "flex", flexWrap: "wrap", gap: "0.6rem", alignItems: "center", marginBlock: "0.6rem", padding: "0.55rem 0.75rem", border: "1px solid currentColor", borderRadius: "var(--radius-control)" });
+export const timerRunning = style({ fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", fontSize: "0.75rem", border: "1px solid currentColor", borderRadius: "var(--radius-small)", padding: "0.1rem 0.4rem" });
 export const timerTitle = style({ fontWeight: 600 });
 export const timerDate = style({ opacity: 0.8 });
 export const timerCounter = style({ fontVariantNumeric: "tabular-nums", fontSize: "1.1rem", fontWeight: 700, marginInlineStart: "auto" });
 export const timerTotal = style({ opacity: 0.8, fontVariantNumeric: "tabular-nums" });
-export const timerButton = style({ border: "1px solid currentColor", borderRadius: "0.5rem", background: "transparent", color: "inherit", padding: "0.35rem 0.7rem", cursor: "pointer", selectors: { "&:disabled": { cursor: "not-allowed", opacity: 0.6 } } });
+export const timerButton = style({ border: "1px solid currentColor", borderRadius: "var(--radius-control)", background: "transparent", color: "inherit", padding: "0.35rem 0.7rem", cursor: "pointer", selectors: { "&:disabled": { cursor: "not-allowed", opacity: 0.6 } } });
 export const timerError = style({ margin: 0, border: "2px solid currentColor", padding: "0.5rem" });
 export const rowTimer = style({ display: "inline-flex", gap: "0.4rem", alignItems: "center" });
 export const rowTimerTotal = style({ fontVariantNumeric: "tabular-nums", opacity: 0.85 });
-export const rowTimerButton = style({ border: "1px solid currentColor", borderRadius: "0.5rem", background: "transparent", color: "inherit", padding: "0.25rem 0.55rem", cursor: "pointer", selectors: { "&:disabled": { cursor: "not-allowed", opacity: 0.5 } } });
+export const rowTimerButton = style({ border: "1px solid currentColor", borderRadius: "var(--radius-control)", background: "transparent", color: "inherit", padding: "0.25rem 0.55rem", cursor: "pointer", selectors: { "&:disabled": { cursor: "not-allowed", opacity: 0.5 } } });
 export const srOnly = style({ position: "absolute", inlineSize: "1px", blockSize: "1px", overflow: "hidden", clipPath: "inset(50%)" });
 /** The timeline half of the master/detail split. */
 export const timelineColumn=style({display:"flex",flexDirection:"column",gap:space.section,minInlineSize:0});

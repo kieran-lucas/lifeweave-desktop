@@ -3,9 +3,15 @@ import { createRoot } from "react-dom/client";
 
 import { darkTheme } from "../../design-system/visual/darkTheme.css";
 import { lightTheme } from "../../design-system/visual/lightTheme.css";
+import { ControlGallery } from "./ControlGallery";
 import { exposeForCapture } from "./instrumentation";
 import * as s from "./prototype.css";
 import { TodayPrototype, type LockState } from "./TodayPrototype";
+// The gallery is only evidence if it loads what production loads: the contract on :root, the
+// type layer, and the global control material.
+import "../../design-system/global.css";
+import "../../design-system/visual/globalType.css";
+import "../../app/layout/layout.css";
 import "./prototypeGlobal.css";
 
 // Motion measurements are read by `task51-motion-lock-capture.e2e.ts` from the real WebView.
@@ -32,9 +38,24 @@ const states: { id: LockState; label: string }[] = [
 ];
 
 function Prototype() {
-  const initial = (new URLSearchParams(location.search).get("state") as LockState) ?? "selected";
-  const [state, setState] = useState<LockState>(states.some((s) => s.id === initial) ? initial : "selected");
+  const params = new URLSearchParams(location.search);
+  /*
+   * `?gallery` renders the control state matrix instead of the Today composition. It is the
+   * evidence surface for ADR 0045 §40 — every primitive in every state, in both themes — and lives
+   * behind the same excluded entry, so proving the system costs the shipped bundle nothing.
+   */
+  const initial = (params.get("state") as LockState) ?? "selected";
+  const [state, setState] = useState<LockState>(states.some((item) => item.id === initial) ? initial : "selected");
   const dark = state === "dark-selected";
+
+  // Placed after the hook, never before it: an early return above `useState` is a conditional hook.
+  if (params.has("gallery")) {
+    return (
+      <div className={`${params.get("gallery") === "dark" ? darkTheme : lightTheme} ${s.fill}`}>
+        <ControlGallery />
+      </div>
+    );
+  }
 
   return (
     <div className={`${dark ? darkTheme : lightTheme} ${s.fill}`}>

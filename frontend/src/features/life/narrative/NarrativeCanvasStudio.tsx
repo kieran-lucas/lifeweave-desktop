@@ -46,6 +46,7 @@ import * as styles from "./NarrativeCanvas.css";
 import { visualWorlds } from "./visualWorlds";
 import { NarrativeVisualWorld } from "./NarrativeVisualWorld";
 import * as worldStyles from "./NarrativeVisualWorld.css";
+import { DecisionDialog } from "../../../app/layout/DialogSurface";
 
 // ---------------------------------------------------------------------------
 // Structural history (max 50 snapshots — Tiptap keystrokes do NOT push here)
@@ -385,17 +386,17 @@ function SortableTimelineItem({
           type="button"
           tabIndex={0}
         >
-          ⠿
+          Drag
         </button>
         <span className={styles.studioBlockKind}>Item {index + 1}</span>
         <button
-          className={styles.button}
+          className={styles.studioButton}
           onClick={onDelete}
           disabled={total <= 1}
           aria-label={`Remove timeline item ${index + 1}`}
           type="button"
         >
-          ✕
+          Delete
         </button>
       </div>
       <label
@@ -530,7 +531,7 @@ type SortableBlockEditorProps = {
   activeContentRef: React.MutableRefObject<RichTextContent | null>;
   onActivate: () => void;
   onUpdate: (block: NarrativeBlock) => void;
-  onDelete: () => void;
+  onDelete: (invoker: HTMLElement) => void;
   onMoveUp: () => void;
   onMoveDown: () => void;
   onDirty: () => void;
@@ -674,35 +675,35 @@ function SortableBlockEditor({
           type="button"
           tabIndex={0}
         >
-          ⠿
+          Drag
         </button>
         <span className={styles.studioBlockKind}>{kindLabel}</span>
         <div className={styles.studioBlockActions}>
           <button
-            className={styles.button}
+            className={styles.studioButton}
             onClick={onMoveUp}
             disabled={index === 0}
             aria-label="Move block up"
             type="button"
           >
-            ↑
+            Up
           </button>
           <button
-            className={styles.button}
+            className={styles.studioButton}
             onClick={onMoveDown}
             disabled={index === total - 1}
             aria-label="Move block down"
             type="button"
           >
-            ↓
+            Down
           </button>
           <button
-            className={styles.button}
-            onClick={onDelete}
+            className={styles.studioButton}
+            onClick={event => onDelete(event.currentTarget)}
             aria-label="Delete block"
             type="button"
           >
-            ✕
+            Delete
           </button>
         </div>
       </div>
@@ -720,6 +721,15 @@ type Props = {
   initialJson: string | null | undefined;
   onCommitted: (value: NarrativeDocumentView) => void;
   onCancel: () => void;
+};
+
+type StudioDecision = {
+  title: string;
+  description: string;
+  confirmLabel: string;
+  destructive: boolean;
+  invoker: HTMLElement;
+  action?: () => void;
 };
 
 // ---------------------------------------------------------------------------
@@ -770,6 +780,7 @@ export default function NarrativeCanvasStudio({
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState("Saved");
   const [message, setMessage] = useState<string>();
+  const [decision, setDecision] = useState<StudioDecision | null>(null);
 
   // ---- dnd-kit sensors ----
   const sensors = useSensors(
@@ -888,29 +899,8 @@ export default function NarrativeCanvasStudio({
     [materializeCurrentDocument, applyStructural, activeSceneId],
   );
 
-  const deleteBlock = useCallback(
-    (blockIndex: number) => {
-      const total = scene.blocks.length;
-      if (total <= 1) {
-        window.alert("Cannot delete the only block. Add another block first.");
-        return;
-      }
+  const commitBlockDelete = (blockIndex: number) => {
       const block = scene.blocks[blockIndex];
-      if (block) {
-        const isEmpty = isBlockEmpty(block);
-        if (!isEmpty) {
-          const confirmed = window.confirm(
-            "Delete this block? This cannot be undone.",
-          );
-          if (!confirmed) return;
-        }
-      } else {
-        const confirmed = window.confirm(
-          "Delete this block? This cannot be undone.",
-        );
-        if (!confirmed) return;
-      }
-
       // If deleting the active block, deactivate first (discard its content)
       if (block && !isUnknownBlock(block) && block.id === activeBlockId) {
         activeContentRef.current = null;
@@ -930,9 +920,21 @@ export default function NarrativeCanvasStudio({
         ...doc,
         scenes: doc.scenes.map((s, i) => i === activeSceneIdx ? { ...s, blocks: newBlocks } : s) as [NarrativeScene, ...NarrativeScene[]],
       });
-    },
-    [scene, doc, activeSceneIdx, activeBlockId, applyStructural],
-  );
+      requestAnimationFrame(() => globalThis.document.querySelectorAll<HTMLButtonElement>("[aria-label='Delete block']")[Math.max(0, blockIndex - 1)]?.focus());
+  };
+
+  const deleteBlock = (blockIndex: number, invoker: HTMLElement) => {
+    if (scene.blocks.length <= 1) {
+      setDecision({ title: "Keep at least one block", description: "Add another block before deleting this one.", confirmLabel: "Got it", destructive: false, invoker });
+      return;
+    }
+    const block = scene.blocks[blockIndex];
+    if (block && isBlockEmpty(block)) {
+      commitBlockDelete(blockIndex);
+      return;
+    }
+    setDecision({ title: "Delete block?", description: "This block will be removed and cannot be restored after publishing.", confirmLabel: "Delete block", destructive: true, invoker, action: () => commitBlockDelete(blockIndex) });
+  };
 
   const moveBlock = useCallback(
     (from: number, to: number) => {
@@ -1039,23 +1041,27 @@ export default function NarrativeCanvasStudio({
     setActiveSceneId(newId);
   }, [doc, snapshotCurrentDocument, commitSceneStructuralChange]);
 
-  const handleDeleteScene = useCallback(() => {
+  const commitSceneDelete = (snapshot: ParsedNarrativeDocument, idx: number) => {
+    const newScenes = snapshot.scenes.filter((_, i) => i !== idx) as [NarrativeScene, ...NarrativeScene[]];
+    const newActiveId = (newScenes[idx] ?? newScenes[idx - 1] ?? newScenes[0])!.id;
+    commitSceneStructuralChange({ ...snapshot, scenes: newScenes });
+    setActiveSceneId(newActiveId);
+    requestAnimationFrame(() => sceneTabRefs.current.get(newActiveId)?.focus());
+  };
+
+  const handleDeleteScene = (invoker: HTMLElement) => {
     if (doc.scenes.length <= 1) return;
     // Snapshot live content WITHOUT clearing editor state
     const snapshot = snapshotCurrentDocument();
     const idx = Math.max(0, snapshot.scenes.findIndex(s => s.id === activeSceneId));
     const isEmpty = snapshot.scenes[idx]!.blocks.every(b => isBlockEmpty(b));
-    // Ask for confirmation BEFORE clearing anything
-    if (!isEmpty && !window.confirm("Delete this scene and all its blocks?")) {
-      // User cancelled — nothing was cleared, editor is still active
+    // Keep the live snapshot intact until the shared confirmation resolves.
+    if (!isEmpty) {
+      setDecision({ title: "Delete scene?", description: "This scene and all of its blocks will be removed.", confirmLabel: "Delete scene", destructive: true, invoker, action: () => commitSceneDelete(snapshot, idx) });
       return;
     }
-    // User confirmed — now commit the change (this clears editor state)
-    const newScenes = snapshot.scenes.filter((_, i) => i !== idx) as [NarrativeScene, ...NarrativeScene[]];
-    const newActiveId = (newScenes[idx] ?? newScenes[idx - 1] ?? newScenes[0])!.id;
-    commitSceneStructuralChange({ ...snapshot, scenes: newScenes });
-    setActiveSceneId(newActiveId);
-  }, [doc, activeSceneId, snapshotCurrentDocument, commitSceneStructuralChange]);
+    commitSceneDelete(snapshot, idx);
+  };
 
   const handleRenameScene = useCallback((title: string) => {
     const materialized = materializeCurrentDocument();
@@ -1187,16 +1193,18 @@ export default function NarrativeCanvasStudio({
 
   // ---- Back with dirty confirmation ----
 
-  const handleBack = () => {
-    if (
-      dirty &&
-      !window.confirm(
-        "Leave editor? Your draft is saved and can be recovered.",
-      )
-    ) {
+  const handleBack = (invoker: HTMLElement) => {
+    if (dirty) {
+      setDecision({ title: "Leave editor?", description: "Your recoverable draft will be kept, but these changes are not yet published.", confirmLabel: "Leave editor", destructive: true, invoker, action: onCancel });
       return;
     }
     onCancel();
+  };
+
+  const confirmDecision = () => {
+    const action = decision?.action;
+    setDecision(null);
+    action?.();
   };
 
   const handleDiscard = async () => {
@@ -1302,11 +1310,12 @@ export default function NarrativeCanvasStudio({
   };
 
   return (
-    <NarrativeVisualWorld id={doc.visualWorldId}><div className={styles.shell}>
-      <h2>Narrative Canvas — Studio</h2>
-      <div className={styles.actions}>
+    <NarrativeVisualWorld id={doc.visualWorldId}><div className={styles.studioShell}>
+      <header className={styles.studioHeader}>
+      <h2 className={styles.studioHeading}>Narrative Canvas — Studio</h2>
+      <div className={styles.studioActions}>
         <button
-          className={styles.primary}
+          className={styles.studioPrimary}
           onClick={() => void commit()}
           disabled={saving}
           type="button"
@@ -1314,7 +1323,7 @@ export default function NarrativeCanvasStudio({
           {saving ? "Saving…" : "Publish"}
         </button>
         <button
-          className={styles.button}
+          className={styles.studioButton}
           onClick={handleUndo}
           disabled={history.past.length === 0 || saving}
           type="button"
@@ -1322,7 +1331,7 @@ export default function NarrativeCanvasStudio({
           Undo
         </button>
         <button
-          className={styles.button}
+          className={styles.studioButton}
           onClick={handleRedo}
           disabled={history.future.length === 0 || saving}
           type="button"
@@ -1330,14 +1339,14 @@ export default function NarrativeCanvasStudio({
           Redo
         </button>
         <button
-          className={styles.button}
-          onClick={handleBack}
+          className={styles.studioButton}
+          onClick={event => handleBack(event.currentTarget)}
           type="button"
         >
           Back
         </button>
         <button
-          className={styles.button}
+          className={styles.studioButton}
           onClick={() => void handleDiscard()}
           type="button"
         >
@@ -1347,6 +1356,7 @@ export default function NarrativeCanvasStudio({
           {status}
         </span>
       </div>
+      </header>
 
       {message && (
         <p role="alert" className={styles.status}>
@@ -1354,7 +1364,7 @@ export default function NarrativeCanvasStudio({
         </p>
       )}
 
-      <label className={styles.fieldLabel} htmlFor="nc-title">
+      <div className={styles.studioTitleField}><label className={styles.fieldLabel} htmlFor="nc-title">
         Canvas title
       </label>
       <input
@@ -1364,7 +1374,7 @@ export default function NarrativeCanvasStudio({
         onChange={e => {
           applyStructural({ ...materializeCurrentDocument(), title: e.currentTarget.value });
         }}
-      />
+      /></div>
 
       <fieldset className={worldStyles.selector}>
         <legend>Visual world</legend>
@@ -1413,7 +1423,7 @@ export default function NarrativeCanvasStudio({
             onClick={handleAddScene}
             aria-label="Add scene"
           >
-            +
+            Add scene
           </button>
         )}
       </div>
@@ -1426,27 +1436,27 @@ export default function NarrativeCanvasStudio({
           onChange={e => handleRenameScene(e.currentTarget.value)}
         />
         <button
-          className={styles.button}
+          className={styles.studioButton}
           type="button"
           onClick={() => handleMoveScene("left")}
           disabled={activeSceneIdx === 0}
           aria-label="Move scene left"
         >
-          ←
+          Left
         </button>
         <button
-          className={styles.button}
+          className={styles.studioButton}
           type="button"
           onClick={() => handleMoveScene("right")}
           disabled={activeSceneIdx === doc.scenes.length - 1}
           aria-label="Move scene right"
         >
-          →
+          Right
         </button>
         <button
-          className={styles.button}
+          className={styles.studioButton}
           type="button"
-          onClick={handleDeleteScene}
+          onClick={event => handleDeleteScene(event.currentTarget)}
           disabled={doc.scenes.length <= 1}
           aria-label="Delete scene"
         >
@@ -1477,7 +1487,7 @@ export default function NarrativeCanvasStudio({
                   activeContentRef={activeContentRef}
                   onActivate={() => { if (!isUnknownBlock(block)) activateBlock(block.id); }}
                   onUpdate={updated => updateBlock(i, updated)}
-                  onDelete={() => deleteBlock(i)}
+                  onDelete={invoker => deleteBlock(i, invoker)}
                   onMoveUp={() => moveBlock(i, i - 1)}
                   onMoveDown={() => moveBlock(i, i + 1)}
                   onDirty={markDirty}
@@ -1527,6 +1537,16 @@ export default function NarrativeCanvasStudio({
         </button>
       </div>
       </div>
+      {decision ? <DecisionDialog
+        title={decision.title}
+        description={decision.description}
+        confirmLabel={decision.confirmLabel}
+        cancelLabel={decision.destructive ? "Cancel" : null}
+        destructive={decision.destructive}
+        returnFocus={decision.invoker}
+        onCancel={() => setDecision(null)}
+        onConfirm={confirmDecision}
+      /> : null}
     </div></NarrativeVisualWorld>
   );
 }

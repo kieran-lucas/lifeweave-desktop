@@ -26,8 +26,8 @@ export const card = style([
     padding: 0,
     gap: 0,
     background: "var(--sidebar-background, #fff)",
-    borderRadius: 14,
-    boxShadow: "0 8px 40px rgba(0,0,0,0.18)",
+    borderRadius: "var(--radius-surface)",
+    boxShadow: "var(--elevation-modal)",
   },
 ]);
 
@@ -49,6 +49,8 @@ export const searchIcon = style({
 
 export const input = style({
   flex: 1,
+  WebkitAppearance: "none",
+  appearance: "none",
   border: 0,
   outline: 0,
   background: "transparent",
@@ -56,6 +58,9 @@ export const input = style({
   fontSize: "1rem",
   lineHeight: 1.4,
   "::placeholder": { color: "var(--text-muted, var(--text-muted))" },
+  selectors: {
+    "&::-webkit-search-cancel-button": { WebkitAppearance: "none", display: "none" },
+  },
 });
 
 export const closeButton = style({
@@ -66,7 +71,7 @@ export const closeButton = style({
   cursor: "pointer",
   fontSize: "0.85rem",
   padding: "4px 8px",
-  borderRadius: 6,
+  borderRadius: "var(--radius-small)",
   selectors: {
     "&:focus-visible": { outline: "3px solid var(--focus-ring, #0078d4)", outlineOffset: 2 },
     "&:hover": { background: "var(--active-background, var(--icon-background))" },

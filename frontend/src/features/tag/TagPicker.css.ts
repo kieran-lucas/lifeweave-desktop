@@ -2,7 +2,7 @@ import { style } from "@vanilla-extract/css";
 
 export const fieldset = style({
   border: "1px solid var(--border-subtle, var(--border-subtle))",
-  borderRadius: 6,
+  borderRadius: "var(--radius-small)",
   padding: "6px 10px 8px",
   margin: 0,
   position: "relative",
@@ -21,7 +21,7 @@ export const trigger = style({
   fontSize: 12,
   padding: "3px 10px",
   border: "1px solid var(--border-subtle, var(--border-subtle))",
-  borderRadius: 4,
+  borderRadius: "var(--radius-small)",
   background: "transparent",
   cursor: "pointer",
   color: "var(--text-muted, var(--text-muted))",
@@ -48,7 +48,7 @@ export const search = style({
   width: "100%",
   padding: "6px 8px",
   border: "1px solid var(--border-subtle, var(--border-subtle))",
-  borderRadius: 4,
+  borderRadius: "var(--radius-small)",
   fontSize: 13,
   boxSizing: "border-box",
 });
@@ -75,11 +75,11 @@ export const checkLabel = style({
   alignItems: "center",
   gap: 6,
   padding: "5px 8px",
-  borderRadius: 4,
+  borderRadius: "var(--radius-small)",
   fontSize: 13,
   cursor: "pointer",
   selectors: {
-    "&:hover": { background: "var(--surface-raised, var(--icon-background))" },
+    "&:hover": { background: "var(--surface-raised)" },
   },
 });
 
@@ -95,7 +95,7 @@ export const selectedCount = style({
 
 export const limitWarning = style({
   fontSize: 11,
-  color: "var(--color-error, #c00)",
+  color: "var(--danger)",
   fontWeight: 600,
 });
 
@@ -103,10 +103,10 @@ export const createButton = style({
   fontSize: 12,
   padding: "4px 10px",
   border: "1px dashed var(--border-subtle, var(--border-subtle))",
-  borderRadius: 4,
+  borderRadius: "var(--radius-small)",
   background: "transparent",
   cursor: "pointer",
-  color: "var(--color-accent, #2563eb)",
+  color: "var(--accent)",
   textAlign: "left",
 });
 
@@ -123,14 +123,14 @@ export const doneButton = style({
   fontSize: 12,
   padding: "3px 12px",
   border: "1px solid var(--border-subtle, var(--border-subtle))",
-  borderRadius: 4,
+  borderRadius: "var(--radius-small)",
   background: "transparent",
   cursor: "pointer",
 });
 
 export const errorMsg = style({
   fontSize: 11,
-  color: "var(--color-error, #c00)",
+  color: "var(--danger)",
   marginTop: 2,
 });
 
@@ -138,7 +138,7 @@ export const retryButton = style({
   fontSize: 11,
   padding: "2px 8px",
   border: "1px solid var(--border-subtle, var(--border-subtle))",
-  borderRadius: 4,
+  borderRadius: "var(--radius-small)",
   background: "transparent",
   cursor: "pointer",
   marginTop: 2,

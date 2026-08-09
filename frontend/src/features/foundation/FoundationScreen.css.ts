@@ -31,7 +31,7 @@ export const input = style({
   boxSizing: "border-box",
   padding: "8px 12px",
   border: "1px solid var(--border-subtle)",
-  borderRadius: "8px",
+  borderRadius: "var(--radius-control)",
   fontSize: "1rem",
   background: "var(--surface)",
   color: "inherit",
@@ -39,7 +39,7 @@ export const input = style({
 
 export const button = style({
   padding: "8px 16px",
-  borderRadius: "8px",
+  borderRadius: "var(--radius-control)",
   border: "none",
   background: "var(--accent)",
   color: "#fff",
@@ -56,7 +56,7 @@ export const button = style({
 
 export const secondaryButton = style({
   padding: "4px 10px",
-  borderRadius: "6px",
+  borderRadius: "var(--radius-small)",
   border: "1px solid var(--border-subtle)",
   background: "transparent",
   cursor: "pointer",
@@ -65,7 +65,7 @@ export const secondaryButton = style({
 });
 
 export const errorText = style({
-  color: "var(--error, #c0392b)",
+  color: "var(--danger)",
   fontSize: "0.875rem",
   marginTop: "4px",
   marginBottom: "8px",
@@ -86,7 +86,7 @@ export const item = style({
   gap: "8px",
   padding: "10px 14px",
   border: "1px solid var(--border-subtle)",
-  borderRadius: "10px",
+  borderRadius: "var(--radius-control)",
   background: "var(--surface)",
 });
 
