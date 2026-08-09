@@ -30,6 +30,7 @@ export type SeedResult = {
   taskCount: number;
   planId: string;
   lifeRootChildId: string;
+  lifeDocumentedChildId: string;
 };
 
 export async function seedLayoutFixture(localDate: string): Promise<SeedResult> {
@@ -354,6 +355,7 @@ export async function seedLayoutFixture(localDate: string): Promise<SeedResult> 
           taskCount: created.length,
           planId,
           lifeRootChildId: area,
+          lifeDocumentedChildId: documented,
         };
       } catch (error) {
         return {
@@ -363,6 +365,7 @@ export async function seedLayoutFixture(localDate: string): Promise<SeedResult> 
           taskCount: 0,
           planId: "",
           lifeRootChildId: "",
+          lifeDocumentedChildId: "",
         };
       }
     },

@@ -40,6 +40,8 @@ type ScreenRecord = {
 
 const records: ScreenRecord[] = [];
 let environment: Awaited<ReturnType<typeof enterAuditViewport>> | null = null;
+let lifeAreaId = "";
+let lifeDocumentedChildId = "";
 
 const shot = async (name: string) => {
   await browser.saveScreenshot(join(outputRoot, `${name}.png`));
@@ -96,6 +98,8 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
     environment = await enterAuditViewport();
     const seeded = await seedLayoutFixture(await appLocalDate());
     if (!seeded.ok) throw new Error(`fixture seeding failed at ${seeded.stage}: ${seeded.error}`);
+    lifeAreaId = seeded.lifeRootChildId;
+    lifeDocumentedChildId = seeded.lifeDocumentedChildId;
     await browser.url("http://tauri.localhost");
     await browser.pause(700);
     /*
@@ -235,27 +239,30 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
         await tryClick("button=Graph");
       }
     }
-    // A documented leaf opens the Reader, which is the reading frame. Child cards carry their node
-    // id, so the leaf is reached by data attribute rather than by matching card prose.
-    const leaf = await browser.execute(() => {
-      for (const node of document.querySelectorAll<HTMLElement>("[data-life-id]"))
-        if ((node.textContent ?? "").includes("Layout Child One")) return node.dataset.lifeId ?? "";
-      return "";
-    });
-    if (leaf && (await tryClick(`[data-life-id='${leaf}']`))) {
-      await browser.pause(800);
-      await capture("life-reader", "16-life-reader");
-      if (await tryClick("button=Edit document")) {
-        await browser.pause(1200);
-        await capture("basic-editor", "17-basic-editor");
-        await tryClick("button=Back to Reader");
-        await browser.pause(500);
-      }
-      await tryClick("button*=Back to Life Browse");
-      await browser.pause(500);
-    } else {
-      records.push({ screen: "life-reader", utilization: null, collisions: [], note: "leaf card not reachable" });
-    }
+    /*
+     * The documented leaf is a child of the seeded Layout Area, not a direct child of `life-root`.
+     * Browse intentionally renders only the focal node and its direct children, so the audit must
+     * traverse both real UI levels. The fixture returns both stable IDs; no title matching or raw
+     * navigation shortcut can accidentally bypass the production Browse interaction.
+     */
+    const areaCard = $(`[data-life-id='${lifeAreaId}']`);
+    await areaCard.waitForDisplayed({ timeout: 15_000 });
+    await areaCard.click();
+    const leafCard = $(`[data-life-id='${lifeDocumentedChildId}']`);
+    await leafCard.waitForDisplayed({ timeout: 15_000 });
+    await leafCard.waitForEnabled({ timeout: 15_000 });
+    await leafCard.click();
+    await $("h1#life-reader-title").waitForDisplayed({ timeout: 15_000 });
+    await capture("life-reader", "16-life-reader");
+
+    // Enter and leave without editing or saving; this exercises only presentation/navigation.
+    await $("button=Edit document").click();
+    await $("section[aria-label='Document editor']").waitForDisplayed({ timeout: 30_000 });
+    await capture("basic-editor", "17-basic-editor");
+    await $("button=Back to Reader").click();
+    await $("button=Edit document").waitForDisplayed({ timeout: 15_000 });
+    await $("button*=Back to Life Browse").click();
+    await $("h1#life-heading").waitForDisplayed({ timeout: 15_000 });
 
     await go("Settings", "h1#settings-heading");
     await capture("settings-top", "18-settings");
