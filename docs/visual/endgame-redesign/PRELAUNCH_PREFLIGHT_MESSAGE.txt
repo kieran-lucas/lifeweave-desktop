@@ -1,0 +1,122 @@
+PRELAUNCH VERIFICATION ONLY — DO NOT IMPLEMENT.
+
+The Product Owner intends to run the Lifeweave Endgame Visual Redesign unattended, directly from local `main`.
+
+Do not modify any working-tree file, stage files, commit, switch branches, reset, rebase, cherry-pick, update the execution ledger, or start F0. Read-only inspection and `git fetch --prune origin` are allowed.
+
+Canonical root:
+`docs/visual/endgame-redesign`
+
+Planning baseline:
+`a1078c1f91c251aaa7a453ef1e8a5108551c852d`
+
+Run this preflight deterministically and stop after reporting PASS or one exact blocker.
+
+1. REPOSITORY / REMOTE
+- Resolve `git rev-parse --show-toplevel`; it must be the Lifeweave repository containing root `AGENTS.md` and `AI_CONSTITUTION.md`.
+- Run `git fetch --prune origin`. If it fails, BLOCK: remote freshness cannot be verified.
+- Current branch must be exactly `main`.
+- `HEAD` must equal `origin/main`.
+- `git status --porcelain=v1 --untracked-files=all` must be empty.
+- `git merge-base --is-ancestor a1078c1f91c251aaa7a453ef1e8a5108551c852d HEAD` must exit 0.
+- Do not require HEAD to equal the frozen planning baseline; HEAD must be its clean descendant containing the canonical pack.
+
+2. CANONICAL PACK LOCATION / TRACKING
+Verify all required canonical paths are tracked under `docs/visual/endgame-redesign/`, not under a wrapper folder:
+- `00_OWNER_EXECUTION_AUTHORIZATION.md`
+- `00_MASTER_EXECUTION_SPEC.md`
+- `01_DESIGN_SYSTEM_AUTHORITY.md`
+- `02_SURFACE_MANIFEST.md`
+- `03_MIGRATION_DAG.md`
+- `04_TEST_AND_VERIFICATION_POLICY.md`
+- `05_UNATTENDED_EXECUTION_POLICY.md`
+- `06_APPROVED_EXCEPTIONS.md`
+- `07_REFERENCE_AUTHORITY.md`
+- `08_CODEX_LAUNCH_AND_RECOVERY.md`
+- `BOOT_GOAL.txt`
+- `PRELAUNCH_PREFLIGHT_MESSAGE.txt`
+- `PHASE_8_VALIDATION_REPORT.md`
+- `PACK_MANIFEST.sha256`
+- `state/EXECUTION_LEDGER.md`
+
+The root-level wrapper `LIFEWEAVE_PHASE_8_CANONICAL_EXECUTION_PACK/` must NOT exist.
+
+3. FINITE EXECUTION PACK
+Verify exact packet identities exist:
+- stages: `F0.md`, `S01.md` … `S12.md` (13 total);
+- checkpoints: `Q1.md` … `Q5.md`, `FINAL.md` (6 total);
+- surfaces: `calendar-analytics.md`, `cross-surface-rules.md`, `focus-plans.md`, `interchange.md`, `life-spatial.md`, `narrative.md`, `reader-editor-links.md`, `settings.md`, `shell-global.md`, `today-task.md` (10 total).
+
+Do not recompute the 109-row design program or reread all stage contents during preflight; Phase 8 compile-time validation is canonical unless a required file is missing.
+
+4. VISUAL REFERENCES
+Verify these six exact files exist and are tracked:
+- `01-today-approved-direction.png`
+- `02-calendar-approved-direction.png`
+- `03-analytics-direction.png`
+- `04-focus-plans-direction.png`
+- `05-life-direction.png`
+- `06-reader-direction.png`
+
+Also confirm the current chat received all six as model-visible image inputs. File existence alone is not sufficient for this preflight. If the six images are not model-visible, BLOCK and request relaunch with the six `-i/--image` inputs; do not continue with reduced visual evidence.
+
+5. RESEARCH ARCHIVE
+Check filenames only; do NOT read report contents.
+`research-archive/` must contain its README plus these eight reports:
+- `LIFEWEAVE_PHASE_1_2_REPO_ARCHITECTURE_TRACE.md`
+- `LIFEWEAVE_PHASE_3_VISUAL_EVIDENCE_AUDIT.md`
+- `LIFEWEAVE_PHASE_4_CONVERGENCE_BLUEPRINT.md`
+- `LIFEWEAVE_PHASE_5_NORTH_STAR_CONVERGENCE.md`
+- `LIFEWEAVE_PHASE_6_ENDGAME_DESIGN_SPECIFICATION.md`
+- `LIFEWEAVE_PHASE_6_UI_SURFACE_CONTROL_LEDGER.md`
+- `LIFEWEAVE_PHASE_7_MIGRATION_DAG_AND_COVERAGE_LEDGER.md`
+- `LIFEWEAVE_PHASE_7_CODEX_CLI_EXECUTION_AND_TEST_ARCHITECTURE.md`
+
+Reject duplicate/download-residue names such as `...(1).md`.
+
+6. AUTHORITY / LEDGER
+Read only:
+- root `AGENTS.md`;
+- root `AI_CONSTITUTION.md`;
+- `00_OWNER_EXECUTION_AUTHORIZATION.md`;
+- `00_MASTER_EXECUTION_SPEC.md`;
+- `05_UNATTENDED_EXECUTION_POLICY.md`;
+- `07_REFERENCE_AUTHORITY.md`;
+- `state/EXECUTION_LEDGER.md`.
+
+Verify:
+- no unresolved instruction conflict prevents this authorized frontend-only unattended redesign;
+- the owner authorization is sufficient for reversible in-scope frontend decisions;
+- backend/schema/domain/generated IPC/workflow seal remain forbidden;
+- ledger is still pre-execution: `CURRENT_PACKET: F0`, `CURRENT_STATUS: PENDING`, `PROGRAM_STATUS: PENDING`, `FINAL_REVIEW_DONE: false`;
+- `EXECUTION_START_SHA` may still be unfilled and must be populated by F0, not by preflight.
+
+Do not preload `research-archive/`. Do not retrace the repository. Do not judge visual quality yet.
+
+If every check passes, reply ONLY in this compact form:
+
+PREFLIGHT PASS
+ROOT: <absolute root>
+BRANCH: main
+HEAD: <sha>
+ORIGIN_MAIN: <sha>
+BASELINE_ANCESTRY: PASS
+WORKTREE: CLEAN
+PACK: PASS
+PACKETS: 13 stages / 6 checkpoints / 10 surface specs
+REFERENCES: 6/6 tracked + 6/6 model-visible
+ARCHIVE: 8/8 + README
+LEDGER: PENDING / F0
+AUTHORITY: RESOLVED
+READY_FOR_GOAL: YES
+FILES_MODIFIED: NO
+
+If anything fails, reply ONLY:
+
+PREFLIGHT BLOCKER
+CHECK: <failed check>
+EVIDENCE: <minimal exact evidence>
+SMALLEST_SAFE_CORRECTION: <one correction>
+FILES_MODIFIED: NO
+
+Do not auto-correct a blocker.

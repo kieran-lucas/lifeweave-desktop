@@ -1,0 +1,33 @@
+Execute the complete Lifeweave Endgame Visual Redesign as ONE finite unattended top-level Goal under `docs/visual/endgame-redesign/`.
+
+PRECONDITION: this chat’s preflight already passed on clean `main`. `00_MASTER_EXECUTION_SPEC.md` is normative; this Goal only orchestrates it. Read root `AGENTS.md` and `AI_CONSTITUTION.md`, then the owner authorization, Master, current ledger, and only the files routed by the current packet. Do not preload `research-archive/`. Planning is already complete: do not enter Plan mode or wait for plan approval.
+
+Start at F0. Before implementation mutation, F0 records the actual starting HEAD as `EXECUTION_START_SHA`.
+
+Execute exactly:
+F0 → S01 → S02 → S03 → S04 → Q1 → S05 → S06 → Q2 → S07 → S08 → S09 → Q3 → S10 → S11 → Q4 → S12 → Q5 → FINAL.
+
+For each packet:
+- read only its packet, current ledger, and routed authority;
+- inspect production source as capability truth;
+- implement exactly its fixed rows;
+- use the prescribed cheapest-to-most-expensive verification funnel/test budget;
+- perform exactly one bounded self-review of that packet’s diff, freeze its in-scope finding set, resolve that fixed set, and rerun only affected checks;
+- persist evidence/decisions/debt/state;
+- stage only packet-owned files, create the prescribed LOCAL checkpoint commit, close that packet’s search space, then continue automatically.
+
+Packet `STOP` means stop that packet’s search/improvement loop, NOT this top-level Goal. Do not wait for another user prompt.
+
+The Product Owner is intentionally unavailable. Auto-decide reversible in-scope frontend presentation/implementation choices using the authority hierarchy. For risky ambiguity, apply `05_UNATTENDED_EXECUTION_POLICY.md` safe fallbacks. Never ask routine confirmation. Never push or force-push.
+
+Hard boundaries: no backend/domain/schema/database/migration/generated-IPC changes; no workflow/seal changes; no invented capability; no convenience dependency; no performance-ceiling increase; no overwrite of unrelated work; no blanket golden refresh.
+
+No recursive perfection: do not reopen closed rows for taste, do not repeat unchanged failures without new diagnostic information, and do not run whole-app review/fix/review loops. Old Light goldens may change only through the staged reviewed-baseline protocol. Later packets reopen closed work only for reproducible causal regression.
+
+Context economy is mandatory. In a continuous context, do not reread unchanged global authorities; at transitions load the new packet + relevant surface spec + current ledger. After compaction/restart, reload only the minimum authority needed to resume. Ledger + commits are durable memory.
+
+If a true hard blocker has no safe in-scope route, record exact evidence and affected rows, continue only dependency-independent work, and never spin. If dependencies prevent further safe progress, stop with the blocker rather than guess.
+
+Complete ONLY when the Master terminal predicate is true: F0, S01–S12 and Q1–Q5 closed; all 109 rows VERIFIED or explicitly accepted nondiagnostic VERIFICATION_DEBT; mandatory final gates + required Light visual matrix satisfied; exactly one whole-app adversarial/coherence pass creates fixed `F_final`; `F_final` resolved; no second whole-app adversarial pass; final ledger/evidence and auditable local commit state persisted.
+
+Then STOP and report exact evidence. Do not polish after completion.
