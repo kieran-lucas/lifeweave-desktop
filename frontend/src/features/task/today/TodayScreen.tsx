@@ -8,6 +8,7 @@ import {
   type FormEvent,
 } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useModalFocusTrap } from "../../../app/useModalFocusTrap";
 import type { OccurrenceEditScope } from "../../../ipc/generated/OccurrenceEditScope";
 import type { TaskCategoryView } from "../../../ipc/generated/TaskCategoryView";
 import type { TodayItemView } from "../../../ipc/generated/TodayItemView";
@@ -272,6 +273,7 @@ export function TodayScreen({
     client = useQueryClient(),
     trigger = useRef<HTMLButtonElement>(null),
     dialog = useRef<HTMLDivElement>(null),
+    dialogInitial = useRef<HTMLInputElement>(null),
     returnFocus = useRef<HTMLElement | null>(null);
   const planningAnchor = anchorLocalDate ?? today;
   const [workspaceMode, setWorkspaceMode] = useState<TaskWorkspaceMode>("today");
@@ -676,31 +678,7 @@ export function TodayScreen({
     open,
     workspaceMode,
   ]);
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") closeDialog();
-      if (e.key === "Tab" && dialog.current) {
-        const controls = [
-          ...dialog.current.querySelectorAll<HTMLElement>(
-            "button,input,textarea,select",
-          ),
-        ].filter((x) => !x.hasAttribute("disabled"));
-        if (
-          controls.length &&
-          (e.shiftKey
-            ? document.activeElement === controls[0]
-            : document.activeElement === controls.at(-1))
-        ) {
-          e.preventDefault();
-          (e.shiftKey ? controls.at(-1) : controls[0])?.focus();
-        }
-      }
-    };
-    document.addEventListener("keydown", handler);
-    dialog.current?.querySelector<HTMLElement>("input")?.focus();
-    return () => document.removeEventListener("keydown", handler);
-  }, [open]);
+  useModalFocusTrap({ container: dialog, initialFocus: dialogInitial, onEscape: closeDialog, active: workspaceMode === "today" && open });
   /*
     The inspector reads the same `items` projection the timeline renders, so opening it costs no
     query, no IPC command and no new projection — only a lookup.
@@ -1237,6 +1215,7 @@ export function TodayScreen({
               <label className={`${layout.field} ${layout.fieldSpan.full}`}>
                 Title
                 <input
+                  ref={dialogInitial}
                   className={layout.fieldControl}
                   value={draft.title}
                   aria-describedby={error ? "task-error" : undefined}

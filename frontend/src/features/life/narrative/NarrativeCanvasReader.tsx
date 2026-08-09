@@ -284,11 +284,13 @@ export function NarrativeCanvasReader({ nodeId }: { nodeId: string }) {
           </div>
         </section>
       )}
-      <div className={styles.actions}>
-        <button className={styles.primary} onClick={() => setEditing(true)}>Edit canvas</button>
-        <NarrativeMarkdownExportButton documentId={document.id} />
+      <div className={styles.readerTools}>
+        <div><button className={styles.primary} onClick={() => setEditing(true)}>Edit canvas</button></div>
+        <div className={styles.readerUtilityGrid}>
+          <NarrativeMarkdownExportButton documentId={document.id} />
+          <PortablePackageControls nodeId={nodeId} documentKind="narrative_canvas" documentId={document.id} hasDraft={projection.draft_state !== "none"} />
+        </div>
       </div>
-      <PortablePackageControls nodeId={nodeId} documentKind="narrative_canvas" documentId={document.id} hasDraft={projection.draft_state !== "none"} />
       {notice && <p role="status" aria-live="polite">{notice}</p>}
       <StaticCanvasView doc={parsed} />
     </div>

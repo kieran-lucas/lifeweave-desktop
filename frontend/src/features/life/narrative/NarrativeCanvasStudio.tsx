@@ -390,7 +390,7 @@ function SortableTimelineItem({
         </button>
         <span className={styles.studioBlockKind}>Item {index + 1}</span>
         <button
-          className={styles.button}
+          className={styles.studioButton}
           onClick={onDelete}
           disabled={total <= 1}
           aria-label={`Remove timeline item ${index + 1}`}
@@ -680,7 +680,7 @@ function SortableBlockEditor({
         <span className={styles.studioBlockKind}>{kindLabel}</span>
         <div className={styles.studioBlockActions}>
           <button
-            className={styles.button}
+            className={styles.studioButton}
             onClick={onMoveUp}
             disabled={index === 0}
             aria-label="Move block up"
@@ -689,7 +689,7 @@ function SortableBlockEditor({
             Up
           </button>
           <button
-            className={styles.button}
+            className={styles.studioButton}
             onClick={onMoveDown}
             disabled={index === total - 1}
             aria-label="Move block down"
@@ -698,7 +698,7 @@ function SortableBlockEditor({
             Down
           </button>
           <button
-            className={styles.button}
+            className={styles.studioButton}
             onClick={event => onDelete(event.currentTarget)}
             aria-label="Delete block"
             type="button"
@@ -1310,11 +1310,12 @@ export default function NarrativeCanvasStudio({
   };
 
   return (
-    <NarrativeVisualWorld id={doc.visualWorldId}><div className={styles.shell}>
-      <h2>Narrative Canvas — Studio</h2>
-      <div className={styles.actions}>
+    <NarrativeVisualWorld id={doc.visualWorldId}><div className={styles.studioShell}>
+      <header className={styles.studioHeader}>
+      <h2 className={styles.studioHeading}>Narrative Canvas — Studio</h2>
+      <div className={styles.studioActions}>
         <button
-          className={styles.primary}
+          className={styles.studioPrimary}
           onClick={() => void commit()}
           disabled={saving}
           type="button"
@@ -1322,7 +1323,7 @@ export default function NarrativeCanvasStudio({
           {saving ? "Saving…" : "Publish"}
         </button>
         <button
-          className={styles.button}
+          className={styles.studioButton}
           onClick={handleUndo}
           disabled={history.past.length === 0 || saving}
           type="button"
@@ -1330,7 +1331,7 @@ export default function NarrativeCanvasStudio({
           Undo
         </button>
         <button
-          className={styles.button}
+          className={styles.studioButton}
           onClick={handleRedo}
           disabled={history.future.length === 0 || saving}
           type="button"
@@ -1338,14 +1339,14 @@ export default function NarrativeCanvasStudio({
           Redo
         </button>
         <button
-          className={styles.button}
+          className={styles.studioButton}
           onClick={event => handleBack(event.currentTarget)}
           type="button"
         >
           Back
         </button>
         <button
-          className={styles.button}
+          className={styles.studioButton}
           onClick={() => void handleDiscard()}
           type="button"
         >
@@ -1355,6 +1356,7 @@ export default function NarrativeCanvasStudio({
           {status}
         </span>
       </div>
+      </header>
 
       {message && (
         <p role="alert" className={styles.status}>
@@ -1362,7 +1364,7 @@ export default function NarrativeCanvasStudio({
         </p>
       )}
 
-      <label className={styles.fieldLabel} htmlFor="nc-title">
+      <div className={styles.studioTitleField}><label className={styles.fieldLabel} htmlFor="nc-title">
         Canvas title
       </label>
       <input
@@ -1372,7 +1374,7 @@ export default function NarrativeCanvasStudio({
         onChange={e => {
           applyStructural({ ...materializeCurrentDocument(), title: e.currentTarget.value });
         }}
-      />
+      /></div>
 
       <fieldset className={worldStyles.selector}>
         <legend>Visual world</legend>
@@ -1434,7 +1436,7 @@ export default function NarrativeCanvasStudio({
           onChange={e => handleRenameScene(e.currentTarget.value)}
         />
         <button
-          className={styles.button}
+          className={styles.studioButton}
           type="button"
           onClick={() => handleMoveScene("left")}
           disabled={activeSceneIdx === 0}
@@ -1443,7 +1445,7 @@ export default function NarrativeCanvasStudio({
           Left
         </button>
         <button
-          className={styles.button}
+          className={styles.studioButton}
           type="button"
           onClick={() => handleMoveScene("right")}
           disabled={activeSceneIdx === doc.scenes.length - 1}
@@ -1452,7 +1454,7 @@ export default function NarrativeCanvasStudio({
           Right
         </button>
         <button
-          className={styles.button}
+          className={styles.studioButton}
           type="button"
           onClick={event => handleDeleteScene(event.currentTarget)}
           disabled={doc.scenes.length <= 1}

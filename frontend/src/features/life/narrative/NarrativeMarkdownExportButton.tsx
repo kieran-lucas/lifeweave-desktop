@@ -26,7 +26,7 @@ export function NarrativeMarkdownExportButton({ documentId }: { documentId: stri
   };
 
   return (
-    <div>
+    <div className={styles.exportControl}>
       <p role="note" className={styles.status} id="nc-export-warning">
         {LOSSINESS_WARNING}
       </p>

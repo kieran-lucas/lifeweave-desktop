@@ -1,12 +1,15 @@
 import { globalStyle, style } from "@vanilla-extract/css";
+import { button as sharedButton, compact } from "../../../design-system/primitives/controls.css";
 
 export const shell = style({ marginTop: 30, borderTop: "1px solid var(--border-subtle)", paddingTop: 24 });
 export const title = style({ fontSize: "1.5rem", fontWeight: 700, marginBottom: 8, color: "var(--text-primary)" });
 export const sceneTitle = style({ fontSize: "1.1rem", fontWeight: 600, color: "var(--text-muted)", marginBottom: 16 });
 export const blockList = style({ display: "flex", flexDirection: "column", gap: 20, marginBottom: 24 });
 
-export const button = style({ border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-control)", padding: "8px 13px", background: "var(--surface)", color: "var(--text-primary)", fontWeight: 700, cursor: "pointer", selectors: { "&:disabled": { opacity: .55, cursor: "default" }, "&:focus-visible": { outline: "3px solid var(--focus-ring)", outlineOffset: 2 } } });
-export const primary = style([button, { background: "var(--accent)", color: "var(--accent-contrast)", borderColor: "transparent" }]);
+export const button = sharedButton.secondary;
+export const primary = sharedButton.primary;
+export const studioButton = style([sharedButton.secondary, compact]);
+export const studioPrimary = style([sharedButton.primary, compact]);
 export const actions = style({ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginBottom: 20 });
 export const status = style({ color: "var(--text-muted)", minHeight: 24 });
 export const recovery = style({ border: "1px solid var(--focus-ring)", borderRadius: "var(--radius-surface)", padding: 16, marginBottom: 20, background: "var(--active-background)" });
@@ -33,6 +36,17 @@ export const image = style({ display: "block", maxWidth: "100%", height: "auto",
 
 export const richText = style({ lineHeight: 1.72, color: "var(--text-primary)", overflowWrap: "anywhere" });
 
+export const readerTools = style({ display: "grid", gap: 14, paddingBlock: 16, marginBlock: "8px 22px", borderBlock: "1px solid var(--border-subtle)" });
+export const readerUtilityGrid = style({ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 24, alignItems: "start", "@media": { "screen and (max-width: 720px)": { gridTemplateColumns: "1fr" } } });
+export const exportControl = style({ display: "grid", gap: 8, alignContent: "start", justifyItems: "start" });
+globalStyle(`${readerUtilityGrid} > section`, { margin: 0, alignContent: "start" });
+
+export const studioShell = style({ display: "grid", gap: 12 });
+export const studioHeader = style({ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 14, flexWrap: "wrap", paddingBottom: 12, borderBottom: "1px solid var(--border-subtle)" });
+export const studioHeading = style({ margin: 0, fontSize: "1.4rem" });
+export const studioActions = style({ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" });
+export const studioTitleField = style({ display: "grid", gap: 5 });
+
 export const studioBlock = style({ border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-surface)", padding: 16, background: "var(--surface)", display: "flex", flexDirection: "column", gap: 10 });
 export const studioBlockHeader = style({ display: "flex", justifyContent: "space-between", alignItems: "center" });
 export const studioBlockKind = style({ fontWeight: 700, fontSize: "0.8rem", textTransform: "uppercase", color: "var(--text-muted)" });
@@ -44,8 +58,8 @@ export const editorWrap = style({ border: "1px solid var(--border-subtle)", bord
 globalStyle(`${editorWrap} .tiptap`, { minHeight: 100, outline: "none" });
 
 export const addBlockBar = style({ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 });
-export const addBlockButton = style([button, { fontSize: "0.85rem", padding: "6px 12px" }]);
-export const dragHandle = style([button, { cursor: "grab", fontSize: "1rem", padding: "4px 8px", selectors: { "&:active": { cursor: "grabbing" } } }]);
+export const addBlockButton = studioButton;
+export const dragHandle = style([studioButton, { cursor: "grab", selectors: { "&:active": { cursor: "grabbing" } } }]);
 export const staticPreview = style({ width: "100%", textAlign: "left", border: "1px dashed var(--border-subtle)", borderRadius: "var(--radius-control)", padding: "10px 14px", minHeight: 48, background: "var(--app-background)", color: "var(--text-muted)", cursor: "text", fontSize: "0.9rem" });
 export const importButton = style([button, { marginBottom: 8 }]);
 export const previewImage = style([image, { maxHeight: 200, marginTop: 8 }]);

@@ -12,8 +12,8 @@ export const paper = worldStyle(visualWorlds[0].light, visualWorlds[0].dark);
 export const sakura = worldStyle(visualWorlds[1].light, visualWorlds[1].dark);
 export const aurora = worldStyle(visualWorlds[2].light, visualWorlds[2].dark);
 export const nocturne = worldStyle(visualWorlds[3].light, visualWorlds[3].dark);
-export const selector = style({ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(13rem,1fr))", gap:8, border:0, padding:0, margin:"12px 0" });
-export const option = style({ display:"grid", gridTemplateColumns:"auto 1fr", gap:8, padding:10, border:"1px solid var(--border-subtle)", borderRadius:"var(--radius-control)", background:"var(--surface)", selectors:{ "&:has(input:checked)": { borderColor: worldTokens.accent, background: worldTokens.accentSoft, fontWeight: 700 } } });
+export const selector = style({ display:"grid", gridTemplateColumns:"repeat(4,minmax(0,1fr))", gap:0, border:"1px solid var(--border-subtle)", borderRadius:"var(--radius-control)", padding:0, margin:"4px 0 8px", overflow:"hidden", "@media": { "screen and (max-width: 720px)": { gridTemplateColumns:"repeat(2,minmax(0,1fr))" } } });
+export const option = style({ display:"grid", gridTemplateColumns:"auto 1fr", alignContent:"start", gap:"5px 7px", minWidth:0, padding:"9px 10px", border:0, borderInlineEnd:"1px solid var(--border-subtle)", background:"transparent", fontSize:"0.78rem", lineHeight:1.35, selectors:{ "&:has(input:checked)": { boxShadow:`inset 0 3px 0 ${worldTokens.accent}`, background:worldTokens.accentSoft }, "&:focus-within": { outline:"2px solid var(--focus-ring)", outlineOffset:-2 } } });
 export const chips = style({ display:"flex", gap:3, gridColumn:"2" });
 export const chip = style({
   width: 14,

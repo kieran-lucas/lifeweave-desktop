@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useModalFocusTrap } from "../../../app/useModalFocusTrap";
 
 import {
   archiveTaskSavedView,
@@ -267,6 +268,7 @@ export default function TaskSavedViewsPanel({
   const [saveError, setSaveError] = useState<string | null>(null);
   const errorRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<HTMLDivElement>(null);
+  const nameRef = useRef<HTMLInputElement>(null);
   const returnFocus = useRef<HTMLElement | null>(null);
 
   const active = useQuery({ queryKey: taskSavedViewKeys.active, queryFn: listTaskSavedViews });
@@ -292,24 +294,7 @@ export default function TaskSavedViewsPanel({
     requestAnimationFrame(() => returnFocus.current?.focus({ preventScroll: true }));
   };
 
-  const handleEditorKeyDown = (event: React.KeyboardEvent) => {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      closeEditor();
-      return;
-    }
-    if (event.key !== "Tab" || !editorRef.current) return;
-    const controls = [...editorRef.current.querySelectorAll<HTMLElement>("button,input,select")]
-      .filter((control) => !control.hasAttribute("disabled"));
-    if (!controls.length) return;
-    const first = controls[0]!;
-    const last = controls.at(-1)!;
-    if ((event.shiftKey && document.activeElement === first) ||
-        (!event.shiftKey && document.activeElement === last)) {
-      event.preventDefault();
-      (event.shiftKey ? last : first).focus();
-    }
-  };
+  useModalFocusTrap({ container: editorRef, initialFocus: nameRef, onEscape: closeEditor, active: editor !== null });
 
   const refreshLifecycle = async () => {
     await Promise.all([
@@ -450,13 +435,12 @@ export default function TaskSavedViewsPanel({
             role="dialog"
             aria-modal="true"
             aria-labelledby="saved-view-editor-heading"
-            onKeyDown={handleEditorKeyDown}
           >
             <form onSubmit={(event) => { event.preventDefault(); setSaveError(null); save.mutate(); }}>
               <h2 id="saved-view-editor-heading">{editor.mode === "create" ? "Create Saved View" : "Edit Saved View"}</h2>
               {editor.unsupported && <p className={styles.notice}>This view has an unsupported stored filter. Saving replaces it with the typed controls below.</p>}
               {saveError && <div ref={errorRef} tabIndex={-1} role="alert">{saveError}</div>}
-              <label className={styles.field}>Name<input autoFocus value={draft.name} maxLength={80} onChange={(event) => setDraft({ ...draft, name: event.target.value })} /></label>
+              <label className={styles.field}>Name<input ref={nameRef} value={draft.name} maxLength={80} onChange={(event) => setDraft({ ...draft, name: event.target.value })} /></label>
               <div className={styles.fieldRow}>
                 <label className={styles.field}>Base scope<select value={draft.base_scope} onChange={(event) => setDraft({ ...draft, base_scope: event.target.value as TaskSavedViewBaseScope })}><option value="today">Today</option><option value="upcoming">Upcoming</option><option value="overdue">Overdue</option><option value="deadlines">Deadlines</option></select></label>
                 <label className={styles.field}>Sort<select value={draft.sort_mode} onChange={(event) => setDraft({ ...draft, sort_mode: event.target.value as TaskSavedViewSortMode })}><option value="base_default">Base default</option><option value="scheduled_ascending">Scheduled ascending</option><option value="priority_then_scheduled">Priority, then scheduled</option><option value="title_ascending">Title ascending</option></select></label>

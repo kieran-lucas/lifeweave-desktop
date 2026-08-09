@@ -19,7 +19,7 @@ Evidence shorthand:
 - `R960` — `target/e2e-artifacts/task-50b/task51-recovery-960-20260809/`
 - `RPR` — `target/e2e-artifacts/task-50b/task51-plans-reader-pass1-20260809/`
 - `RDL` — `target/e2e-artifacts/task-50b/task51-reader-dialog-pass2-20260809/`
-- `RNA` — `target/e2e-artifacts/task-50b/task51-narrative-pass2-20260809/`
+- `RNA` — `target/e2e-artifacts/task-50b/task51-narrative-pass3-20260809/`
 - `DOM` — focused React/Vitest behavior and accessibility contracts
 - `GEO` — real WebView spacing audit; collisions/document overflow/viewport overflow
 
@@ -75,8 +75,8 @@ Evidence shorthand:
 
 | Surface / entry | Primary states and nested UI | Shared primitives | L/D/N/K/F | Evidence | Status | Defects / next proof |
 |---|---|---|---|---|---|---|
-| Narrative Reader — open Narrative leaf | multi-scene reader, timeline/image/rich-text blocks, long/empty/error | reading frame, editorial type, world chrome | Y/N/N/P/N | RNA `18-narrative-reader.png`; DOM; GEO | PARTIAL | Deterministic Narrative entry now exists. The loose vertical export/action stack fragments the reading composition; populated multi-block, long/error and dark/narrow/FC remain. |
-| Narrative Studio — Reader edit | scene navigation, block editors/controls, template chooser, save/error | editor controls, tabs, fields, drag controls | Y/N/N/P/N | RNA `19-narrative-studio.png`, `19b-narrative-only-block-dialog.png`; DOM 70-test Narrative subset; GEO | PARTIAL | Browser-owned decisions and character-icons are removed. Studio remains visually heavy: oversized action controls, card-dense world selector and weak hierarchy need a flagship composition pass; populated blocks, save/error and dark/narrow/FC remain. |
+| Narrative Reader — open Narrative leaf | multi-scene reader, timeline/image/rich-text blocks, long/empty/error | reading frame, editorial type, world chrome | Y/N/N/P/N | RNA `18-narrative-reader.png`; DOM; GEO | PARTIAL | Deterministic Narrative entry and first composition pass now exist; export tools form one editorial utility band. Populated multi-block, long/error and dark/narrow/FC remain. |
+| Narrative Studio — Reader edit | scene navigation, block editors/controls, template chooser, save/error | editor controls, tabs, fields, drag controls | Y/N/N/P/N | RNA `19-narrative-studio.png`, `19b-narrative-only-block-dialog.png`; DOM 91-test Narrative/Saved View subset; GEO | PARTIAL | Compact shared controls, low-chrome four-world selector, coherent command header, text actions and shared decisions now render. Populated block types, drag, save/error, all world variants and dark/narrow/FC remain. |
 | Narrative markdown import/export | import dialog, preview/warnings/errors, export | modal grammar, file controls, buttons | N/N/N/P/N | DOM/native functional tests only | NOT REVIEWED | Add real preview capture and keyboard/focus proof. |
 | Visual Worlds — Reader/Studio appearance | Paper/Sakura/Aurora/Nocturne × light/dark | semantic world palette + shared radius/elevation/type/motion | N/N/N/P/N | palette tests only | NOT REVIEWED | Harmonize chrome without deleting approved world semantics; capture all eight variants. |
 
