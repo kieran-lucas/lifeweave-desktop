@@ -1,4 +1,5 @@
 import { style } from "@vanilla-extract/css";
+import { duration, easing } from "../../../design-system/visual/motion.css";
 
 export const nav = style({ color: "var(--text-primary)", fontSize: "0.875rem" });
 
@@ -11,6 +12,20 @@ export const disclosureToggle = style({
   cursor: "pointer", marginBottom: 8, textAlign: "left",
   "@container": { "(min-width: 520px)": { display: "none" } },
   selectors: { "&:focus-visible": { outline: "3px solid var(--focus-ring)", outlineOffset: 2 } },
+});
+
+export const disclosureIcon = style({
+  flexShrink: 0,
+  width: 7,
+  height: 7,
+  borderRight: "1.5px solid currentColor",
+  borderBottom: "1.5px solid currentColor",
+  transform: "rotate(-45deg)",
+  transition: `transform ${duration.state} ${easing.standard}`,
+  selectors: {
+    [`${disclosureToggle}[aria-expanded='true'] &`]: { transform: "rotate(45deg)" },
+  },
+  "@media": { "(prefers-reduced-motion: reduce)": { transition: "none" } },
 });
 
 export const list = style({ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 1 });

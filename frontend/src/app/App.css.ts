@@ -5,6 +5,7 @@ import { globalStyle, style } from "@vanilla-extract/css";
 // prototype entry, so the scale shipped to nothing.
 import "../design-system/visual/globalType.css";
 import { text } from "../design-system/visual/typography.css";
+import { duration, easing } from "../design-system/visual/motion.css";
 import { gutter, space } from "./layout/tokens.css";
 
 /**
@@ -19,12 +20,12 @@ import { gutter, space } from "./layout/tokens.css";
  * fed each other. Measured evidence is in `docs/audits/task-50-layout-baseline.md` §2.1.
  */
 export const appRoot = style({ display: "grid", gridTemplateColumns: "260px minmax(0, 1fr)", inlineSize: "100%", blockSize: "100%", overflow: "hidden", background: "transparent", selectors: { "&[data-sidebar-mode=collapsed]": { gridTemplateColumns: "68px minmax(0, 1fr)" } } });
-export const sidebar = style({ display: "flex", flexDirection: "column", minWidth: 0, padding: "18px 14px", borderRight: "1px solid var(--glass-border)", background: "color-mix(in srgb, var(--sidebar-background) 82%, transparent)", position: "relative", zIndex: 1, transition: "width 160ms ease, padding 160ms ease" });
+export const sidebar = style({ display: "flex", flexDirection: "column", minWidth: 0, padding: "18px 14px", borderRight: "1px solid var(--glass-border)", background: "color-mix(in srgb, var(--sidebar-background) 82%, transparent)", position: "relative", zIndex: 1, transition: `width ${duration.inspectorState} ${easing.standard}, padding ${duration.inspectorState} ${easing.standard}` });
 export const brand = style({ display: "flex", alignItems: "center", gap: 10, minHeight: 34, padding: "0 10px", marginBottom: 18, fontWeight: 650, fontSize: "0.9rem", letterSpacing: "-0.01em", color: "var(--text-primary)" });
 /** The product mark. A filled accent disc, as in the v2 reference — not a letter in a grey tile. */
-export const brandMark = style({ display: "grid", placeItems: "center", width: 24, height: 24, flexShrink: 0, borderRadius: "var(--radius-full)", background: "var(--accent)", color: "#fff" });
+export const brandMark = style({ display: "grid", placeItems: "center", width: 24, height: 24, flexShrink: 0, borderRadius: "var(--radius-full)", background: "var(--accent)", color: "var(--accent-contrast)" });
 export const navGroup = style({ display: "grid", gap: 2 });
-export const navButton = style({ display: "flex", alignItems: "center", gap: 12, minHeight: 44, width: "100%", padding: "8px 10px", border: 0, borderRadius: "var(--radius-control)", background: "transparent", color: "var(--text-muted)", fontSize: "0.875rem", fontWeight: 500, textAlign: "left", cursor: "pointer", transition: "background-color 100ms cubic-bezier(0.2,0,0,1), color 100ms cubic-bezier(0.2,0,0,1)", selectors: { "&[aria-current=page]": { background: "var(--active-background)", color: "var(--text-primary)", fontWeight: 600 }, "&:hover": { background: "var(--active-background)" }, "&:focus-visible": { outline: "2px solid var(--focus-ring)", outlineOffset: 2 } } });
+export const navButton = style({ display: "flex", alignItems: "center", gap: 12, minHeight: 44, width: "100%", padding: "8px 10px", border: 0, borderRadius: "var(--radius-control)", background: "transparent", color: "var(--text-muted)", fontSize: "0.875rem", fontWeight: 500, textAlign: "left", cursor: "pointer", transition: `background-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}`, selectors: { "&[aria-current=page]": { background: "var(--active-background)", color: "var(--text-primary)", fontWeight: 600 }, "&:hover": { background: "var(--active-background)" }, "&:focus-visible": { outline: "2px solid var(--focus-ring)", outlineOffset: 2 } } });
 /**
  * v2 replaces the grey letter tile with a real 20 px outline icon that takes the accent when its
  * destination is current. The tile was the single most dated element in the shell: it put a filled

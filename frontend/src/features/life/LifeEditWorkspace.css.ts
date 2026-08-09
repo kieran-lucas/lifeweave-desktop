@@ -29,6 +29,6 @@ export const status=style({gridColumn:"1/-1",minHeight:24,color:"var(--text-mute
 export const instructions=style({fontSize:12,color:"var(--text-muted)",lineHeight:1.45});
 export const overlay=style({width:164,padding:10,border:"2px solid var(--focus-ring)",borderRadius:"var(--radius-surface)",background:"var(--glass-surface-strong)",boxShadow: "var(--elevation-modal)",color:"var(--text-primary)",fontWeight:750});
 export const preview=style({stroke:"var(--focus-ring)",strokeWidth:2,strokeDasharray:"5 4",fill:"none"});
-globalStyle(`${links} path`,{stroke:"var(--border-subtle)",strokeWidth:1.25,fill:"none",transition:"d 360ms cubic-bezier(.2,.8,.2,1)"});
+globalStyle(`${links} path`,{stroke:"var(--border-subtle)",strokeWidth:1.25,fill:"none"});
 globalStyle(`${workspace} textarea`,{resize:"vertical"});
 globalStyle(`${workspace} button:focus-visible`,{outline:"3px solid var(--focus-ring)",outlineOffset:2});

@@ -10,7 +10,7 @@ import { dialogSurface } from "../../app/layout/layout.css";
 export const overlay = style({
   position: "fixed",
   inset: 0,
-  background: "rgba(0,0,0,0.45)",
+  background: "var(--backdrop)",
   display: "flex",
   alignItems: "flex-start",
   justifyContent: "center",

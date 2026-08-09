@@ -22,6 +22,7 @@ Evidence shorthand:
 - `RNA` — `target/e2e-artifacts/task-50b/task51-narrative-pass3-20260809/`
 - `LIFEP3` — `target/e2e-artifacts/task-50b/task51-life-family-pass3-20260809/`
 - `SSEP2` — `target/e2e-artifacts/task-50b/task51-settings-search-pass2-20260809/`
+- `MCL` — `target/e2e-artifacts/task-50b/task51-motion-contract-light-pass1-20260810/`
 - `VR` — 97 tracked light/maximized, light/minimum, dark/maximized, forced-colors and Vietnamese goldens under
   `e2e-tests/visual-baselines/windows-webview2/` plus their zero-diff comparison evidence under
   `target/e2e-artifacts/task-50b/`
@@ -135,7 +136,7 @@ These are part of Task 51's completion contract, not optional follow-up work.
 | Production dark / forced-colors / reduced-motion | The DevTools-scoped WebView2 media override independently hard-asserts production `matchMedia` for all three axes. Dark supplies 15 inspected zero-diff goldens; forced colors supplies 10 inspected zero-diff goldens covering structure, native controls, graph, editor/dialog, Settings, Search and Keyboard Help. Reduced motion passed the full 36-state interaction/geometry walk; its five representative static captures matched the light goldens byte-for-byte and therefore are retained as labeled runtime evidence rather than duplicate tracked PNGs. | VERIFIED | Keep all media preconditions and exact-zero comparisons green. |
 | Vietnamese typography evidence | `docs/audits/task-51-typography.md` restores the ADR evidence link without reopening selection. Four inspected, exact-zero production goldens cover dense Segoe Task/Search UI and Literata Reader/Editor title, uppercase H2, H3, body, bold, italic and lists; the full native walk is geometry-clean. | VERIFIED | Keep the dedicated Vietnamese fixture and zero-diff pass green. |
 | Narrator and physical DPI | No truthful current manual evidence exists. | NOT REVIEWED | Run the repository's manual Windows protocol where the environment permits and record exact observations; retain an explicit external limitation instead of claiming a pass if unavailable. |
-| Static visual residue | Feature CSS now has zero raw hex, radius, or elevation values under the enforced ratchet. Fourteen literal feature transitions, 27 candidate glyph-icon lines, prototype-only shared button recipes, duplicate tabs/comboboxes, and native select/search affordance questions remain under review. | PARTIAL | Migrate or explicitly justify every remaining hit, add static guards where appropriate, and render the production control matrix on WebView2. |
+| Static visual residue | The enforced production ratchet is zero for raw colour, radius, elevation and motion literals. Production TSX has zero banned Unicode glyph-icon literals; the narrow Reader outline now uses a contract-backed drawn disclosure mark. Calendar's labelled exclamation mark remains an intentional warning character, not an unlabeled control icon. Prototype-only recipes, duplicate tabs/comboboxes and native select/search affordance questions remain under review. | PARTIAL | Finish primitive consolidation and render the production control matrix on WebView2. |
 
 ## Intentionally non-production
 
@@ -153,6 +154,7 @@ light 1536×794       51 states   0 collisions   0 document overflow   0 viewpor
 dark  1536×794       51 states   0 collisions   0 document overflow   0 viewport overflow
 tracked visual set   97 exact-zero goldens across all established axes
 restore path          real managed backup → confirmation → cancel; no restore performed
+motion contract       MCL 51-state native light walk; 0 collision/overflow; Search dark no-result exact-zero
 ```
 
 The ledger is intentionally not a closure claim. `PARTIAL` and `NOT REVIEWED` rows are active work,

@@ -1,6 +1,7 @@
 import { globalStyle, keyframes, style, styleVariants } from "@vanilla-extract/css";
 
 import { glassStrong } from "../../design-system/visual/atmosphere.css";
+import { duration, easing, reduced } from "../../design-system/visual/motion.css";
 import { dialogInset, dialogWidth, frame, space } from "./tokens.css";
 
 /* ── Baseline native-control geometry ────────────────────────────────────────────────────────
@@ -33,7 +34,7 @@ globalStyle("button, select", {
   background: "var(--glass-surface)",
   color: "var(--text-primary)",
   cursor: "pointer",
-  transition: "background-color 100ms cubic-bezier(0.2,0,0,1), border-color 100ms cubic-bezier(0.2,0,0,1)",
+  transition: `background-color ${duration.state} ${easing.standard}, border-color ${duration.state} ${easing.standard}`,
 });
 globalStyle("button:hover, select:hover", {
   background: "var(--glass-surface-strong)",
@@ -56,7 +57,7 @@ globalStyle("input:not([type=checkbox]):not([type=radio]):not([type=range]), tex
   borderRadius: "var(--radius-control)",
   background: "var(--glass-surface-strong)",
   color: "var(--text-primary)",
-  transition: "border-color 110ms cubic-bezier(0.2,0,0,1), box-shadow 110ms cubic-bezier(0.2,0,0,1)",
+  transition: `border-color ${duration.state} ${easing.standard}, box-shadow ${duration.state} ${easing.standard}`,
 });
 /*
  * The gallery also caught this: `input` had a border, a radius and a background but **no padding**,
@@ -93,7 +94,7 @@ globalStyle("input[type=checkbox], input[type=radio]", {
   border: "1.5px solid var(--border-strong, var(--border-subtle))",
   background: "var(--surface)",
   cursor: "pointer",
-  transition: "background-color 110ms cubic-bezier(0.2,0,0,1), border-color 110ms cubic-bezier(0.2,0,0,1)",
+  transition: `background-color ${duration.state} ${easing.standard}, border-color ${duration.state} ${easing.standard}`,
 });
 globalStyle("input[type=checkbox]", { borderRadius: "var(--radius-small)" });
 globalStyle("input[type=radio]", { borderRadius: "var(--radius-full)" });
@@ -260,9 +261,9 @@ export const dialogBackdrop = style({
   background: "var(--backdrop)",
   backdropFilter: "blur(3px)",
   WebkitBackdropFilter: "blur(3px)",
-  animation: `${backdropIn} 140ms cubic-bezier(0.2,0,0,1)`,
+  animation: `${backdropIn} ${duration.popover} ${easing.standard}`,
   "@media": {
-    "(prefers-reduced-motion: reduce)": { animation: `${backdropIn} 80ms linear` },
+    "(prefers-reduced-motion: reduce)": { animation: `${backdropIn} ${reduced.duration} linear` },
     "(forced-colors: active)": { background: "Canvas", backdropFilter: "none" },
   },
 });
@@ -312,10 +313,10 @@ const dialogSurfaceBase = style([glassStrong,{
   color: "var(--text-primary)",
   containerType: "inline-size",
   containerName: "dialog",
-  animation: `${dialogIn} 190ms cubic-bezier(0.2,0,0,1)`,
+  animation: `${dialogIn} ${duration.inspector} ${easing.standard}`,
   "@media": {
     "(prefers-reduced-motion: reduce)": {
-      animation: `${backdropIn} 80ms linear`,
+      animation: `${backdropIn} ${reduced.duration} linear`,
     },
   },
 }]);

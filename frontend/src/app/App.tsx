@@ -337,7 +337,7 @@ export function App() {
           aria-pressed={taskSidebarMode === "collapsed"}
         >
           {/*
-            Was a bare "→"/"←" text glyph: the last place in the shell where an icon was a
+            Was a pair of bare text arrows: the last place in the shell where an icon was a
             character rather than a drawing, so it carried the text baseline and the font's stroke
             weight instead of the icon vocabulary's.
           */}
