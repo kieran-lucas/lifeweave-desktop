@@ -40,14 +40,113 @@ globalStyle("button:hover, select:hover", {
   borderColor: "color-mix(in srgb, var(--accent) 28%, var(--border-subtle))",
 });
 globalStyle("button:disabled, select:disabled", { cursor: "not-allowed", opacity: 0.55 });
-/* Inputs join the same material so a form does not mix two centuries of control design. */
-globalStyle("input, textarea", {
+/*
+ * Inputs join the same material so a form does not mix two centuries of control design.
+ *
+ * `:not([type=checkbox]):not([type=radio])` is load-bearing. The bare `input` selector also matched
+ * checkboxes and radios, so every one of them was being given a 10px radius and a glass fill on top
+ * of its native box — the control gallery rendered that and it is why they are excluded here and
+ * designed explicitly below.
+ */
+globalStyle("input:not([type=checkbox]):not([type=radio]):not([type=range]), textarea", {
+  minBlockSize: 34,
+  paddingBlock: space.x2,
+  paddingInline: space.x3,
   border: "1px solid var(--glass-border)",
   borderRadius: "var(--radius-control)",
   background: "var(--glass-surface-strong)",
   color: "var(--text-primary)",
+  transition: "border-color 110ms cubic-bezier(0.2,0,0,1), box-shadow 110ms cubic-bezier(0.2,0,0,1)",
 });
-globalStyle("textarea", { padding: space.control });
+/*
+ * The gallery also caught this: `input` had a border, a radius and a background but **no padding**,
+ * so every text field in the product sat on the user-agent default of roughly 1px and read as
+ * cramped against its own edge. Only `textarea` had ever been given any.
+ */
+globalStyle("textarea", { padding: space.control, minBlockSize: 68 });
+
+/* A field that is being edited earns a quiet ring rather than a heavier border. */
+globalStyle("input:focus-visible, textarea:focus-visible, select:focus-visible", {
+  borderColor: "var(--accent)",
+});
+globalStyle("input[aria-invalid=true], textarea[aria-invalid=true]", {
+  borderColor: "var(--danger)",
+});
+globalStyle("input:disabled, textarea:disabled", { cursor: "not-allowed", opacity: 0.55 });
+
+/*
+ * Selection controls, drawn rather than inherited.
+ *
+ * These were the last genuinely native Windows controls in the product. `accent-color` alone gets
+ * the tick blue but leaves the box drawn by the platform, at the platform's radius and border
+ * weight, which is visibly not the rest of this interface.
+ */
+globalStyle("input[type=checkbox], input[type=radio]", {
+  appearance: "none",
+  WebkitAppearance: "none",
+  inlineSize: 17,
+  blockSize: 17,
+  margin: 0,
+  flexShrink: 0,
+  display: "grid",
+  placeItems: "center",
+  border: "1.5px solid var(--border-strong, var(--border-subtle))",
+  background: "var(--surface)",
+  cursor: "pointer",
+  transition: "background-color 110ms cubic-bezier(0.2,0,0,1), border-color 110ms cubic-bezier(0.2,0,0,1)",
+});
+globalStyle("input[type=checkbox]", { borderRadius: "var(--radius-small)" });
+globalStyle("input[type=radio]", { borderRadius: "var(--radius-full)" });
+globalStyle("input[type=checkbox]:hover:not(:disabled), input[type=radio]:hover:not(:disabled)", {
+  borderColor: "var(--accent)",
+});
+globalStyle("input[type=checkbox]:checked, input[type=radio]:checked", {
+  background: "var(--accent)",
+  borderColor: "var(--accent)",
+});
+/*
+ * The mark is drawn with a mask rather than a pseudo-element glyph, so it scales with the box and
+ * carries no font dependency — a text tick inherits the document family and would change shape with
+ * the type system.
+ */
+globalStyle("input[type=checkbox]:checked::after", {
+  content: '""',
+  inlineSize: 11,
+  blockSize: 11,
+  background: "var(--accent-contrast)",
+  clipPath:
+    'polygon(41% 71%, 16% 47%, 9% 54%, 41% 85%, 92% 33%, 85% 26%)',
+});
+globalStyle("input[type=radio]:checked::after", {
+  content: '""',
+  inlineSize: 7,
+  blockSize: 7,
+  borderRadius: "var(--radius-full)",
+  background: "var(--accent-contrast)",
+});
+globalStyle("input[type=checkbox]:disabled, input[type=radio]:disabled", {
+  cursor: "not-allowed",
+  opacity: 0.5,
+});
+globalStyle("input[type=checkbox], input[type=radio], input[type=range], progress", {
+  accentColor: "var(--accent)",
+});
+/*
+ * Forced colors: hand the drawing back to the platform rather than keeping a tinted approximation.
+ * `appearance: none` plus a `background` means nothing in a high-contrast palette, and the user has
+ * asked the OS for exactly the native rendering we removed.
+ */
+globalStyle("input[type=checkbox], input[type=radio]", {
+  "@media": {
+    "(forced-colors: active)": {
+      appearance: "auto",
+      border: 0,
+      background: "none",
+      inlineSize: "auto",
+      blockSize: "auto",
+    },
+  },
+});
 /*
  * `<fieldset>` is the last native element that still drew its own century-old chrome: a thin inset
  * groove with a notch cut for the legend. It appears in Settings' goal editors, the Task dialog's

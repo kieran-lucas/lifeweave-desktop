@@ -1,5 +1,9 @@
 import { globalStyle, keyframes, style } from "@vanilla-extract/css";
 
+// Side-effect import: a primitive must carry its own palette. Without this these classes
+// resolve `var(--accent)` against whatever happened to load first, and the control
+// gallery caught the consequence — the primary button rendered white-on-white.
+import "../visual/theme.css";
 import { text } from "../visual/typography.css";
 
 /**

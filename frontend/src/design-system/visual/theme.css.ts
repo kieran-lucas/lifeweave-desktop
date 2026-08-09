@@ -46,6 +46,7 @@ globalStyle(":root", {
     "--surface-primary": vars.color.surfaceRaised,
     "--sidebar-surface": vars.color.surface,
     "--border-subtle": vars.color.borderHairline,
+    "--border-strong": vars.color.borderStrong,
     "--text-primary": vars.color.textPrimary,
     "--text-muted": vars.color.textTertiary,
     "--accent": vars.color.accent,
