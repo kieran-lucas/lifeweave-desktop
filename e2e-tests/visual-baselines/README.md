@@ -31,6 +31,22 @@ Remove-Item Env:LIFEWEAVE_ACCEPT_VISUAL_BASELINES -ErrorAction SilentlyContinue
 .\scripts\run_windows_e2e.ps1 -Phases 'task50b-maximized-audit.e2e.ts'
 ```
 
+Forced-colors uses the same scoped DevTools connection and production precondition. Its ten
+tracked goldens cover the shell, native controls, Calendar, Analytics, Graph, Reader, a focused
+editor dialog, Settings, Search, and Keyboard Help.
+
+```powershell
+$env:LIFEWEAVE_AUDIT_FORCED_COLORS = '1'
+$env:LIFEWEAVE_VISUAL_REGRESSION = '1'
+Remove-Item Env:LIFEWEAVE_ACCEPT_VISUAL_BASELINES -ErrorAction SilentlyContinue
+.\scripts\run_windows_e2e.ps1 -Phases 'task50b-maximized-audit.e2e.ts'
+```
+
+Reduced motion is asserted independently with `LIFEWEAVE_AUDIT_REDUCED_MOTION=1`. The production
+walk exercises all 36 states under `prefers-reduced-motion: reduce`. Its five representative static
+captures are byte-for-byte identical to the light goldens, so duplicate PNGs are not tracked; the
+labeled native audit artifacts are the durable execution evidence.
+
 Before accepting a new or replaced PNG:
 
 1. run the comparison without acceptance and inspect `target/visual-regression/diff/`;

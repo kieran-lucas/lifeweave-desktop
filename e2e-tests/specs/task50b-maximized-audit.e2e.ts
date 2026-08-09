@@ -34,6 +34,17 @@ const visualRegression = process.env.LIFEWEAVE_VISUAL_REGRESSION === "1";
 const requestedTheme = process.env.LIFEWEAVE_AUDIT_THEME ?? "light";
 if (requestedTheme !== "light" && requestedTheme !== "dark")
   throw new Error(`Unsupported LIFEWEAVE_AUDIT_THEME: ${requestedTheme}`);
+const forcedColors = process.env.LIFEWEAVE_AUDIT_FORCED_COLORS === "1";
+const reducedMotion = process.env.LIFEWEAVE_AUDIT_REDUCED_MOTION === "1";
+if ([requestedTheme === "dark", forcedColors, reducedMotion].filter(Boolean).length > 1)
+  throw new Error("Dark, forced-colors, and reduced-motion audits must run independently");
+const mediaMode = requestedTheme === "dark"
+  ? "dark"
+  : forcedColors
+    ? "forced-colors"
+    : reducedMotion
+      ? "reduced-motion"
+      : "light";
 const lightVisualSnapshotFiles = new Set([
   "01-today",
   "02-task-create",
@@ -72,6 +83,25 @@ const darkVisualSnapshotFiles = new Set([
   "21b-search-results",
   "22-keyboard-help",
 ]);
+const forcedColorsVisualSnapshotFiles = new Set([
+  "01-today",
+  "02-task-create",
+  "09-calendar",
+  "10-analytics",
+  "15-life-graph",
+  "16-life-reader",
+  "17b-basic-editor-link-dialog",
+  "18-settings",
+  "21b-search-results",
+  "22-keyboard-help",
+]);
+const reducedMotionVisualSnapshotFiles = new Set([
+  "01-today",
+  "02-task-create",
+  "09-calendar",
+  "15-life-graph",
+  "19-narrative-studio",
+]);
 
 type ScreenRecord = {
   screen: string;
@@ -86,7 +116,7 @@ let lifeAreaId = "";
 const CONTROL = "\uE009";
 let lifeDocumentedChildId = "";
 let lifeNarrativeChildId = "";
-let darkThemeSocket: WebSocket | null = null;
+let mediaEmulationSocket: WebSocket | null = null;
 
 type DevToolsTarget = {
   type: string;
@@ -94,7 +124,7 @@ type DevToolsTarget = {
   webSocketDebuggerUrl: string;
 };
 
-async function emulateDarkColorScheme() {
+async function emulateMediaFeatures(features: Array<{ name: string; value: string }>) {
   const edgeOptions = browser.capabilities["ms:edgeOptions"] as
     | { debuggerAddress?: string }
     | undefined;
@@ -133,11 +163,11 @@ async function emulateDarkColorScheme() {
       method: "Emulation.setEmulatedMedia",
       params: {
         media: "",
-        features: [{ name: "prefers-color-scheme", value: "dark" }],
+        features,
       },
     }));
   });
-  darkThemeSocket = socket;
+  mediaEmulationSocket = socket;
 }
 
 const shot = async (name: string) => {
@@ -154,11 +184,15 @@ async function capture(screen: string, file: string, note?: string) {
   if (note) record.note = note;
   records.push(record);
   await shot(file);
-  const visualSnapshotFiles = requestedTheme === "dark"
+  const visualSnapshotFiles = mediaMode === "dark"
     ? darkVisualSnapshotFiles
-    : lightVisualSnapshotFiles;
+    : mediaMode === "forced-colors"
+      ? forcedColorsVisualSnapshotFiles
+      : mediaMode === "reduced-motion"
+        ? reducedMotionVisualSnapshotFiles
+        : lightVisualSnapshotFiles;
   if (visualRegression && visualSnapshotFiles.has(file)) {
-    const tag = requestedTheme === "dark" ? `${file}-dark` : file;
+    const tag = mediaMode === "light" ? file : `${file}-${mediaMode}`;
     const result = await browser.checkScreen(tag);
     const mismatch = typeof result === "number" ? result : result.misMatchPercentage;
     if (mismatch !== 0) throw new Error(`${tag} visual mismatch: ${mismatch}%`);
@@ -218,26 +252,39 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
      * reporting a small one.
      */
     environment = await enterAuditViewport();
-    if (requestedTheme === "dark") {
-      await emulateDarkColorScheme();
+    const mediaFeatures = [
+      ...(requestedTheme === "dark"
+        ? [{ name: "prefers-color-scheme", value: "dark" }]
+        : []),
+      ...(forcedColors ? [{ name: "forced-colors", value: "active" }] : []),
+      ...(reducedMotion ? [{ name: "prefers-reduced-motion", value: "reduce" }] : []),
+    ];
+    if (mediaFeatures.length > 0) {
+      await emulateMediaFeatures(mediaFeatures);
       await browser.pause(150);
     }
-    const darkMediaMatches = await browser.execute(
-      () => window.matchMedia("(prefers-color-scheme: dark)").matches,
-    );
-    if (darkMediaMatches !== (requestedTheme === "dark"))
+    const mediaMatches = await browser.execute(() => ({
+      dark: window.matchMedia("(prefers-color-scheme: dark)").matches,
+      forcedColors: window.matchMedia("(forced-colors: active)").matches,
+      reducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    }));
+    if (
+      mediaMatches.dark !== (requestedTheme === "dark") ||
+      mediaMatches.forcedColors !== forcedColors ||
+      mediaMatches.reducedMotion !== reducedMotion
+    )
       throw new Error(
-        `Theme precondition failed: requested=${requestedTheme}, prefers-dark=${darkMediaMatches}`,
+        `Media precondition failed: requested=${mediaMode}, actual=${JSON.stringify(mediaMatches)}`,
       );
   });
 
   after(() => {
-    darkThemeSocket?.close();
-    darkThemeSocket = null;
+    mediaEmulationSocket?.close();
+    mediaEmulationSocket = null;
     const collisions = records.flatMap(r => r.collisions);
     writeFileSync(
       join(outputRoot, "audit.json"),
-      `${JSON.stringify({ label, theme: requestedTheme, environment, records }, null, 2)}\n`,
+      `${JSON.stringify({ label, theme: requestedTheme, mediaMode, environment, records }, null, 2)}\n`,
       "utf8",
     );
     const byKind = collisions.reduce<Record<string, number>>((acc, c) => {
@@ -252,7 +299,7 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
       }  achieved: ${environment?.innerWidth}x${environment?.innerHeight} @ DPR ${environment?.devicePixelRatio}`,
     );
     console.log(`environment: ${JSON.stringify(environment)}`);
-    console.log(`theme: ${requestedTheme}`);
+    console.log(`theme: ${requestedTheme}  media: ${mediaMode}`);
     console.log(`screens: ${records.length}  collisions: ${collisions.length} ${JSON.stringify(byKind)}`);
     for (const record of records) {
       const u = record.utilization;
@@ -322,7 +369,15 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
 
     if (await tryClick("button[aria-label='Create task']")) {
       await capture("task-create", "02-task-create");
-      if (await tryClick("[data-dialog-surface] fieldset input[type='checkbox']"))
+      // Activate recurrence through its visible label. In forced-colors mode WebView2 hands the
+      // checkbox back to the native renderer; the input remains correctly labelled, but its native
+      // hit-test box is not exposed to WebDriver. Clicking the label is the real accessible target
+      // and works for pointer, touch, and high-contrast users alike.
+      if (
+        await tryClick(
+          "//fieldset[legend[normalize-space()='Recurring']]//label[normalize-space()='Repeat task']",
+        )
+      )
         await capture("task-recurring", "03-task-recurring");
       await dismiss();
     }
