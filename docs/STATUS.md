@@ -265,8 +265,39 @@ Layer 4  luminous     selected and focused states
   (`glassStrong`, the densest text), Calendar's month grid (`glassStrong`), and the Today inspector
   (`glass` — it was a bare column with a leading hairline, the clearest remaining "stiff" surface).
 
-**Not yet given the art pass** — these have the v2 palette and, in Today's and Calendar's case, v2
-composition, but have not been through the material/atmosphere treatment:
+### Art system — applied app-wide
+
+Three systemic moves carried the material to every surface at once, rather than screen by screen:
+
+1. **The shared modal grammar became glass.** Every dialog in the product takes its surface from
+   `layout.css.ts`'s `dialogSurfaceBase`, so one change migrated the Task dialog, Search, shortcut
+   help, the restore confirmation, the Saved View editor, Life links and all four import previews —
+   the edge flows that would otherwise have kept the old flat look longest. The backdrop became part
+   of the world rather than a flat black wash.
+2. **Native controls got the material.** Task 50 deliberately gave `button`/`select` geometry but no
+   appearance, because art direction was unallocated then. Rendering the art pass showed the
+   consequence: dozens of controls across Analytics, tag settings, the plan table, Foundation tools
+   and every `<select>` in the Task dialog still drew as grey Windows buttons on a luminous page.
+   The base element now carries the low-chrome material at specificity 0-0-1, so every component
+   that already made its own decision is untouched. `input`, `textarea`, `fieldset` and `legend`
+   followed — `<fieldset>` was the last element still drawing a century-old inset groove.
+3. **One shared `progressBar` material.** `accent-color` is unreliable on `<progress>`: any geometry
+   that moves Chromium off the native control path falls back to user-agent rendering and paints
+   **green**. Calendar shipped that on every day of the month and Analytics carried the same
+   pattern. The material now lives in `atmosphere.css.ts` so no future progress bar can regress.
+
+**Analytics** was recomposed as calm evidence: a glass period-control module that visibly governs
+the summary, a large tabular headline metric on its own module, and the facts grouped on **one**
+glass surface separated by hairlines rather than one card per number. **Settings** sections and
+**Life** surfaces took the material; Life Graph, Reader/Editor, Narrative, Search and Focus Plans
+have the palette and control material but have **not** had a deliberate composition pass.
+
+Adversarial review caught the control material introducing **7 `edge` collisions**: the low-chrome
+tabs opened with zero top padding, so their labels sat flush against their own content-box top the
+moment the base element gained a box. Fixed with real padding — back to 0 collisions.
+
+**Not yet given a deliberate composition pass** — these have the v2 palette, the control material
+and, where applicable, glass on their card surfaces, but have not been individually recomposed:
 Analytics, Focus Plans, Life/Graph, Reader/Editor, Narrative, Search, Settings and the dialog set.
 Visual-regression goldens for v2 are not yet established, and the whole-app coherence pass has not
 been run.
