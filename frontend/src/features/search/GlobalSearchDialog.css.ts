@@ -25,7 +25,7 @@ export const card = style([
     maxBlockSize: "min(560px, calc(100dvh - clamp(48px, 12vh, 120px) - var(--lw-space-5)))",
     padding: 0,
     gap: 0,
-    background: "var(--sidebar-background, #fff)",
+    background: "var(--sidebar-background)",
     borderRadius: "var(--radius-surface)",
     boxShadow: "var(--elevation-modal)",
   },
@@ -54,7 +54,7 @@ export const input = style({
   border: 0,
   outline: 0,
   background: "transparent",
-  color: "var(--text-primary, #000)",
+  color: "var(--text-primary)",
   fontSize: "1rem",
   lineHeight: 1.4,
   "::placeholder": { color: "var(--text-muted, var(--text-muted))" },
@@ -73,7 +73,7 @@ export const closeButton = style({
   padding: "4px 8px",
   borderRadius: "var(--radius-small)",
   selectors: {
-    "&:focus-visible": { outline: "3px solid var(--focus-ring, #0078d4)", outlineOffset: 2 },
+    "&:focus-visible": { outline: "3px solid var(--focus-ring)", outlineOffset: 2 },
     "&:hover": { background: "var(--active-background, var(--icon-background))" },
   },
 });
@@ -118,7 +118,7 @@ export const option = style({
 
 export const optionTitle = style({
   display: "block",
-  color: "var(--text-primary, #000)",
+  color: "var(--text-primary)",
   fontWeight: 500,
   fontSize: "0.95rem",
   overflow: "hidden",
@@ -147,7 +147,7 @@ export const optionSnippet = style({
 
 export const mark = style({
   background: "transparent",
-  color: "var(--text-primary, #000)",
+  color: "var(--text-primary)",
   fontWeight: 700,
 });
 

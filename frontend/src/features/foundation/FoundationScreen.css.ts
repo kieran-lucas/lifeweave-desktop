@@ -42,7 +42,7 @@ export const button = style({
   borderRadius: "var(--radius-control)",
   border: "none",
   background: "var(--accent)",
-  color: "#fff",
+  color: "var(--accent-contrast)",
   fontWeight: 600,
   cursor: "pointer",
   fontSize: "0.9rem",

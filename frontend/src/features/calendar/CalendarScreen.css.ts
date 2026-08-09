@@ -142,7 +142,7 @@ export const dayNumber = style({
   selectors: {
     [`${cellButton}[aria-current=date] &`]: {
       background: "var(--accent)",
-      color: "#fff",
+      color: "var(--accent-contrast)",
     },
     [`${cellButton}[data-outside] &`]: { fontWeight: 400 },
   },
@@ -197,7 +197,7 @@ export const missed = style({
   height: 15,
   borderRadius: "var(--radius-full)",
   background: "var(--icon-background)",
-  color: "#a34b24",
+  color: "var(--danger)",
   fontSize: "0.625rem",
   fontWeight: 700,
 });
