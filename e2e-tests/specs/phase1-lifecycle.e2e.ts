@@ -7,6 +7,18 @@ describe("Phase 1 — current task lifecycle", () => {
     await browser.url("http://tauri.localhost");
     await expect($("h1=Today")).toBeDisplayed();
 
+    const initialWindow = await browser.execute(() => ({
+      innerWidth: window.innerWidth,
+      innerHeight: window.innerHeight,
+      availableWidth: window.screen.availWidth,
+      availableHeight: window.screen.availHeight,
+    }));
+    // A decorated maximized window fills the work-area width while its WebView height excludes the
+    // native titlebar. This distinguishes the previous 1280×800 startup without assuming a fixed
+    // Windows titlebar size or hiding the native controls.
+    expect(Math.abs(initialWindow.innerWidth - initialWindow.availableWidth)).toBeLessThanOrEqual(2);
+    expect(initialWindow.innerHeight).toBeGreaterThanOrEqual(initialWindow.availableHeight - 64);
+
     await $("button[aria-label='Create task']").click();
     await expect($("h2=Create task")).toBeDisplayed();
     await $("input").setValue("E2E Alpha");

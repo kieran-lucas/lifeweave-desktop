@@ -9,10 +9,15 @@ explicit action and is disabled by default.
 
 The native runner pins the E2E presentation date to the baseline date while preserving the real
 native date for concurrency-sensitive fixture commands. The visual service suppresses blinking
-carets where the engine permits; the audit additionally blurs and restores a focused text-editable
-for the comparison frame because WebView2 otherwise retains a 27-pixel native caret. Actual
+carets where the engine permits; the audit additionally makes a focused text-editable caret
+transparent only for the comparison frame because WebView2 otherwise retains a 27-pixel native
+caret. This preserves expanded combobox state and focus while eliminating pixel drift. Actual
 comparison frames are saved under `target` for deterministic failure diagnosis;
 normal audit screenshots retain the real focused-control caret.
+
+At the governed minimum, Windows' 125% DPI rounding alternates a nominal `960×640` request between
+959 and 960 CSS pixels. Pixel-comparison runs therefore target the metadata's established achieved
+`959×639` WebView explicitly; geometry-only audits continue to request and report `960×640`.
 
 ```powershell
 # Compare only. Missing or changed baselines fail; nothing is accepted.
@@ -38,7 +43,7 @@ Remove-Item Env:LIFEWEAVE_ACCEPT_VISUAL_BASELINES -ErrorAction SilentlyContinue
 .\scripts\run_windows_e2e.ps1 -Phases 'task50b-maximized-audit.e2e.ts'
 ```
 
-Forced-colors uses the same scoped DevTools connection and production precondition. Its ten
+Forced-colors uses the same scoped DevTools connection and production precondition. Its twelve
 tracked goldens cover the shell, native controls, Calendar, Analytics, Graph, Reader, a focused
 editor dialog, Settings, Search, and Keyboard Help.
 

@@ -69,6 +69,8 @@ const lightVisualSnapshotFiles = new Set([
   "01e-today-assessment",
   "02-task-create",
   "02b-task-tags",
+  "02c-task-life-area",
+  "02d-task-focus-plan",
   "09-calendar",
   "10-analytics",
   "11-plans",
@@ -105,6 +107,8 @@ const darkVisualSnapshotFiles = new Set([
   "01e-today-assessment",
   "02-task-create",
   "02b-task-tags",
+  "02c-task-life-area",
+  "02d-task-focus-plan",
   "09-calendar",
   "10-analytics",
   "11-plans",
@@ -134,6 +138,8 @@ const darkVisualSnapshotFiles = new Set([
 const forcedColorsVisualSnapshotFiles = new Set([
   "01-today",
   "02-task-create",
+  "02c-task-life-area",
+  "02d-task-focus-plan",
   "09-calendar",
   "10-analytics",
   "15-life-graph",
@@ -308,18 +314,19 @@ async function capture(screen: string, file: string, note?: string) {
       : mediaMode === "light"
         ? file
         : `${file}-${mediaMode}`;
-    const restoreTextFocus = await browser.execute(() => {
+    const restoreCaret = await browser.execute(() => {
       const active = document.activeElement;
       if (!(active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement || active instanceof HTMLElement && active.isContentEditable)) return false;
-      active.setAttribute("data-visual-restore-focus", "");
-      active.blur();
+      active.setAttribute("data-visual-restore-caret", active.style.caretColor);
+      active.style.caretColor = "transparent";
       return true;
     });
     const result = await browser.checkScreen(tag);
-    if (restoreTextFocus) await browser.execute(() => {
-      const target = document.querySelector<HTMLElement>("[data-visual-restore-focus]");
-      target?.removeAttribute("data-visual-restore-focus");
-      target?.focus({ preventScroll: true });
+    if (restoreCaret) await browser.execute(() => {
+      const target = document.querySelector<HTMLElement>("[data-visual-restore-caret]");
+      if (!target) return;
+      target.style.caretColor = target.getAttribute("data-visual-restore-caret") ?? "";
+      target.removeAttribute("data-visual-restore-caret");
     });
     const mismatch = typeof result === "number" ? result : result.misMatchPercentage;
     if (mismatch !== 0) throw new Error(`${tag} visual mismatch: ${mismatch}%`);
@@ -520,6 +527,21 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
 
     if (await tryClick("button[aria-label='Create task']")) {
       await capture("task-create", "02-task-create");
+      for (const field of ["Life area", "Focus Plan"]) {
+        const input = $(`//label[normalize-space()='${field}']/following-sibling::input[@role='combobox'][1]`);
+        if (await input.isExisting()) {
+          await input.click();
+          const listboxId = await input.getAttribute("aria-controls");
+          if (!listboxId) throw new Error(`${field} combobox did not expose aria-controls`);
+          await $(`#${listboxId}[role='listbox']`).waitForDisplayed({ timeout: 15_000 });
+          const suffix = field === "Life area" ? "life-area" : "focus-plan";
+          const file = field === "Life area" ? "02c-task-life-area" : "02d-task-focus-plan";
+          await capture(`task-create--${suffix}`, file);
+          await browser.keys(ESCAPE);
+          await $(`#${listboxId}[role='listbox']`).waitForDisplayed({ reverse: true, timeout: 15_000 });
+          await $("[role='dialog']").waitForDisplayed({ timeout: 15_000 });
+        }
+      }
       const tagPicker = $("button=Add tags");
       if (await tagPicker.isExisting()) {
         await tagPicker.waitForEnabled({ timeout: 15_000 });
@@ -700,7 +722,10 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
       ["aurora", "19e-narrative-aurora"],
       ["nocturne", "19f-narrative-nocturne"],
     ] as const) {
-      await $(`input[name='visual-world'][value='${world}']`).click();
+      // Forced colors delegates radios to WebView2's native renderer, whose input hit target is not
+      // exposed to WebDriver. The wrapping label is the production pointer/touch target in every
+      // mode and keeps this audit aligned with the accessible interaction path.
+      await $(`//label[input[@name='visual-world' and @value='${world}']]`).click();
       await browser.pause(150);
       await capture(`narrative-studio--${world}`, file);
     }

@@ -24,7 +24,19 @@ export const listbox = style({
   border: "1px solid var(--border-subtle)",
   borderRadius: "var(--radius-control)",
   background: "var(--surface)",
+  "@media": {
+    "screen and (max-width: 65rem)": {
+      position: "absolute",
+      insetInline: 0,
+      insetBlockEnd: `calc(100% + ${space.x1})`,
+      zIndex: "var(--layer-overlay)",
+      inlineSize: "100%",
+      boxSizing: "border-box",
+    },
+  },
 });
+
+export const root = style({ position: "relative" });
 
 export const option = style({
   display: "flex",
