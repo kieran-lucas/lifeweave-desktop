@@ -86,3 +86,14 @@ export const numeric = style({ ...text.numeric, margin: 0, color: "var(--text-pr
 export const metric = style({ ...text.numericMetric, ...roleBase });
 export const code = style({ ...text.code, margin: 0, color: "var(--text-primary)" });
 export const editorBody = style({ ...text.editorBody, ...roleBase, maxInlineSize: "62ch" });
+
+export const settingsStack = style({ display: "flex", flexDirection: "column", gap: 16, minInlineSize: 0 });
+
+/* A stage so the dialog surface can be seen in place without opening a real modal. */
+export const dialogStage = style({
+  display: "grid",
+  placeItems: "center",
+  padding: 22,
+  borderRadius: "var(--radius-surface)",
+  background: "var(--backdrop)",
+});

@@ -5,6 +5,7 @@ import { glass, aboveAtmosphere } from "../design-system/visual/atmosphere.css";
 // production bundle. Before it, `visual/typography.css.ts` was reachable only from the excluded
 // prototype entry, so the scale shipped to nothing.
 import "../design-system/visual/globalType.css";
+import { text } from "../design-system/visual/typography.css";
 import { gutter, space } from "./layout/tokens.css";
 
 /**
@@ -62,8 +63,26 @@ export const lede = style({ margin: 0, color: "var(--text-muted)", fontSize: "0.
 /*
  * Settings sits at the quiet end of the art scale, but quiet is not dead: each section becomes a
  * soft material region so the page reads as composed rather than as a form dumped on a background.
+ *
+ * The rhythm is deliberately uneven. Rendering the section stack showed title, description and
+ * controls all separated by the same `group` gap, so nothing grouped: a heading floated as far from
+ * its own description as from the controls below it. Title and description are now one unit with a
+ * tight gap, and the content is pushed away from both.
  */
-export const settingsSection = style([glass, { display: "flex", flexDirection: "column", gap: space.group, minInlineSize: 0, padding: space.x5, borderRadius: "var(--radius-surface)" }]);
+export const settingsSection = style([glass, { display: "flex", flexDirection: "column", gap: space.x2, minInlineSize: 0, padding: space.x5, borderRadius: "var(--radius-surface)" }]);
+
+/*
+ * A settings heading is `sectionTitle`, not the global `h2` role.
+ *
+ * The global rule sets every `h2` to the 23px object title, which is right for the one heading that
+ * names an object and wrong for six stacked settings groups — the rendered stack read as a sequence
+ * of headlines rather than as a page with sections.
+ */
+globalStyle(`${settingsSection} > h2`, { ...text.sectionTitle, margin: 0 });
+/* The description belongs to its heading, so it carries no top gap of its own. */
+globalStyle(`${settingsSection} > h2 + p`, { ...text.compactBody, margin: 0, color: "var(--text-muted)", maxInlineSize: "72ch" });
+/* Everything after the description is content, and content gets air. */
+globalStyle(`${settingsSection} > h2 + p + *`, { marginBlockStart: space.x3 });
 export const coreStatus = style({ color: "var(--text-muted)" });
 export const shortcutList = style({ display: "grid", gridTemplateColumns: "1fr auto", gap: `${space.control} ${space.field}`, margin: 0, alignItems: "center" });
 globalStyle(`${shortcutList} dd`, { margin: 0, justifySelf: "end" });

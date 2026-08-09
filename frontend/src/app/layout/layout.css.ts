@@ -1,4 +1,4 @@
-import { globalStyle, style, styleVariants } from "@vanilla-extract/css";
+import { globalStyle, keyframes, style, styleVariants } from "@vanilla-extract/css";
 
 import { glassStrong } from "../../design-system/visual/atmosphere.css";
 import { dialogInset, dialogWidth, frame, space } from "./tokens.css";
@@ -239,6 +239,17 @@ export const groupStack = style({
 
 /* ── Modal geometry ──────────────────────────────────────────────────────────────────────── */
 
+/*
+ * The backdrop is part of the world, not a flat black wash over it. It takes the contract's own
+ * `backdrop` role — a deep tint of the text colour rather than raw black — so the page beneath
+ * recedes without being extinguished, and the same rule reads correctly in both themes.
+ *
+ * The fade is the only thing that animates. Blur is not transitioned: interpolating a backdrop
+ * filter is real per-frame GPU work on integrated graphics, which is exactly the cost ADR 0045 §8
+ * rules out on an interaction path.
+ */
+const backdropIn = keyframes({ from: { opacity: 0 }, to: { opacity: 1 } });
+
 export const dialogBackdrop = style({
   position: "fixed",
   inset: 0,
@@ -246,8 +257,27 @@ export const dialogBackdrop = style({
   display: "grid",
   placeItems: "center",
   padding: space.group,
-  background: "color-mix(in srgb, var(--app-background) 55%, rgba(12,18,32,0.55))",
-  backdropFilter: "blur(2px)",
+  background: "var(--backdrop)",
+  backdropFilter: "blur(3px)",
+  WebkitBackdropFilter: "blur(3px)",
+  animation: `${backdropIn} 140ms cubic-bezier(0.2,0,0,1)`,
+  "@media": {
+    "(prefers-reduced-motion: reduce)": { animation: `${backdropIn} 80ms linear` },
+    "(forced-colors: active)": { background: "Canvas", backdropFilter: "none" },
+  },
+});
+
+/*
+ * A dialog arrives from slightly below and slightly small — 8px and 2% — which reads as the surface
+ * settling into place rather than as a card being pasted onto the screen. The travel is deliberately
+ * tiny: anything larger becomes a transition the user waits through.
+ *
+ * Reduced motion keeps the fade and drops the travel and the scale, so the change is still perceived
+ * without any movement across the field.
+ */
+const dialogIn = keyframes({
+  from: { opacity: 0, transform: "translateY(8px) scale(0.98)" },
+  to: { opacity: 1, transform: "none" },
 });
 
 const dialogSurfaceBase = style([glassStrong,{
@@ -272,10 +302,22 @@ const dialogSurfaceBase = style([glassStrong,{
    * `glassStrong` because dialogs carry forms and dense prose; the tint stays high so reading is
    * unaffected and the blur is only ever an enhancement.
    */
-  borderRadius: "var(--radius-surface)",
+  /*
+   * `floating`, not `surface`. A dialog is the largest object that ever leaves the page plane, and
+   * corner softness reads in proportion to the object — the same radius that suits a 200px card
+   * looks tight on a 720px surface.
+   */
+  borderRadius: "var(--radius-floating)",
+  boxShadow: "var(--elevation-modal)",
   color: "var(--text-primary)",
   containerType: "inline-size",
   containerName: "dialog",
+  animation: `${dialogIn} 190ms cubic-bezier(0.2,0,0,1)`,
+  "@media": {
+    "(prefers-reduced-motion: reduce)": {
+      animation: `${backdropIn} 80ms linear`,
+    },
+  },
 }]);
 
 export const dialogSurface = styleVariants({

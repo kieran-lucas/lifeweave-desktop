@@ -55,6 +55,7 @@ globalStyle(":root", {
     "--active-background": vars.color.surfaceSelectedNav,
     "--icon-background": vars.color.surfaceSelected,
     "--focus-ring": vars.color.focusRing,
+    "--backdrop": vars.color.backdrop,
 
     /*
      * These eight names were **consumed but never declared** — 21 references that survived only on

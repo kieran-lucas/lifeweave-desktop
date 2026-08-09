@@ -62,7 +62,7 @@ export const darkValues = {
     ambientAura: "oklch(20% 0.01 264)",
 
     focusRing: "oklch(80% 0.13 258)",
-    backdrop: "oklch(10% 0.006 264 / 0.6)",
+    backdrop: "oklch(9% 0.02 258 / 0.62)",
   },
 
   /* Radius is theme-invariant; both themes state it so the contract stays fully implemented. */

@@ -1,3 +1,6 @@
+import type { ReactNode } from "react";
+import * as app from "../../app/App.css";
+import * as layout from "../../app/layout/layout.css";
 import * as controls from "../../design-system/primitives/controls.css";
 import { EmptyState, LoadingRow, SkeletonList } from "../../design-system/primitives/States";
 import { iconDismiss, iconFlag, iconMore, iconSearch, iconToday } from "../../design-system/visual/icons";
@@ -14,17 +17,35 @@ import * as g from "./gallery.css";
  * Lives in the prototype entry, which the production build excludes, so proving the system costs
  * the shipped bundle nothing.
  */
+const ONLY = new URLSearchParams(location.search).get("only");
+
+/**
+ * One section, skippable.
+ *
+ * `?only=<id>` renders a single section on its own. Capturing a whole scrolling page as one image
+ * and reading a detail out of it does not work; a scoped capture is also the shape the visual
+ * goldens will need, so it lives here rather than in a screenshot script.
+ */
+function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
+  if (ONLY && ONLY !== id) return null;
+  return (
+    <section className={g.section} id={id}>
+      <h2 className={g.sectionTitle}>{title}</h2>
+      {children}
+    </section>
+  );
+}
+
 export function ControlGallery() {
   return (
     <div className={g.page}>
-      <h1 className={g.pageTitle}>Control state matrix</h1>
-      <p className={g.lede}>
+      {ONLY ? null : <h1 className={g.pageTitle}>Control state matrix</h1>}
+      {ONLY ? null : <p className={g.lede}>
         Every shared primitive, every state. Hover and press are shown as forced classes as well as
         live, because a screenshot cannot hover. Vietnamese is included in every text role.
-      </p>
+      </p>}
 
-      <section className={g.section}>
-        <h2 className={g.sectionTitle}>Buttons</h2>
+      <Section id="buttons" title="Buttons">
         <div className={g.row}>
           <button type="button" className={controls.button.primary}>Lưu thay đổi</button>
           <button type="button" className={controls.button.secondary}>Secondary</button>
@@ -39,10 +60,9 @@ export function ControlGallery() {
             <Icon d={iconDismiss} />
           </button>
         </div>
-      </section>
+      </Section>
 
-      <section className={g.section}>
-        <h2 className={g.sectionTitle}>Inputs</h2>
+      <Section id="inputs" title="Inputs">
         <div className={g.grid}>
           <label className={g.field}>
             <span>Text</span>
@@ -84,10 +104,9 @@ export function ControlGallery() {
           <span>Textarea</span>
           <textarea rows={2} defaultValue="Buổi sáng dành cho việc khó nhất." />
         </label>
-      </section>
+      </Section>
 
-      <section className={g.section}>
-        <h2 className={g.sectionTitle}>Selection controls</h2>
+      <Section id="selection" title="Selection controls">
         <div className={g.row}>
           <label className={g.check}><input type="checkbox" defaultChecked /> Đã hoàn thành</label>
           <label className={g.check}><input type="checkbox" /> Unchecked</label>
@@ -105,10 +124,9 @@ export function ControlGallery() {
             <progress max={1} value={0.62} />
           </label>
         </div>
-      </section>
+      </Section>
 
-      <section className={g.section}>
-        <h2 className={g.sectionTitle}>States</h2>
+      <Section id="states" title="States">
         <div className={g.stateGrid}>
           <div className={g.stateCell}>
             <EmptyState compact icon={iconToday} title="No tasks scheduled." body="Nothing is planned for this part of the day." />
@@ -119,10 +137,9 @@ export function ControlGallery() {
           <div className={g.stateCell}><SkeletonList rows={4} label="Loading tasks…" /></div>
           <div className={g.stateCell}><LoadingRow label="Đang tải kế hoạch…" /></div>
         </div>
-      </section>
+      </Section>
 
-      <section className={g.section}>
-        <h2 className={g.sectionTitle}>Typography roles</h2>
+      <Section id="typography" title="Typography roles">
         <p className={g.display}>Display 40 — Hôm nay</p>
         <p className={g.h1}>Page title 30 — Đường đến sự tập trung</p>
         <p className={g.h2}>Object title 23 — Deep work: Lifeweave</p>
@@ -137,16 +154,56 @@ export function ControlGallery() {
           Editor body 17 — Deep work rewards uninterrupted hours. Những buổi chiều yên tĩnh, kế
           hoạch tuần, đánh giá, và thời gian thực tế đã ghi nhận. <em>Nghiêng.</em>
         </p>
-      </section>
+      </Section>
 
-      <section className={g.section}>
-        <h2 className={g.sectionTitle}>Icons — one stroke, one optical size</h2>
+      {/*
+        The real Settings and dialog classes, not a mock-up. Settings needs the Tauri backend to
+        render its own content, so composing it here from `App.css.ts` and `layout.css.ts` is the
+        only way to see the section rhythm and the floating grammar without the app core.
+      */}
+      <Section id="settings" title="Settings section rhythm">
+        <div className={g.settingsStack}>
+          <section className={app.settingsSection}>
+            <h2>Category goals</h2>
+            <p className={app.lede}>How many hours you intend to give each category per week.</p>
+            <div className={g.row}>
+              <label className={g.field}><span>Hours</span><input type="number" defaultValue={8} /></label>
+              <label className={g.field}><span>Minutes</span><input type="number" defaultValue={30} /></label>
+              <button type="button" className={controls.button.primary}>Save</button>
+            </div>
+          </section>
+          <section className={app.settingsSection}>
+            <h2>Keyboard</h2>
+            <p className={app.lede}>Review the eight global shortcuts.</p>
+            <div className={g.row}>
+              <button type="button" className={controls.button.secondary}>Ctrl + /</button>
+            </div>
+          </section>
+        </div>
+      </Section>
+
+      <Section id="dialog" title="Floating surface — dialog grammar">
+        <div className={g.dialogStage}>
+          <div className={layout.dialogSurface.compact}>
+            <div className={layout.dialogHeader}>
+              <h2>Xoá Saved View?</h2>
+              <p className={app.lede}>This cannot be undone.</p>
+            </div>
+            <div className={g.row}>
+              <button type="button" className={controls.button.destructive}>Xoá</button>
+              <button type="button" className={controls.button.secondary}>Huỷ</button>
+            </div>
+          </div>
+        </div>
+      </Section>
+
+      <Section id="icons" title="Icons — one stroke, one optical size">
         <div className={g.row}>
           {[iconToday, iconSearch, iconFlag, iconMore, iconDismiss].map((d, i) => (
             <span key={i} className={g.iconCell}><Icon d={d} /></span>
           ))}
         </div>
-      </section>
+      </Section>
     </div>
   );
 }

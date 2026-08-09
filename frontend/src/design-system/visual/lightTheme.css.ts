@@ -99,7 +99,12 @@ export const lightValues = {
     ambientAura: "oklch(98.8% 0.003 264)",
 
     focusRing: "oklch(49.4% 0.1959 260.92)",
-    backdrop: "oklch(25.42% 0.0111 254.04 / 0.4)",
+    /*
+     * The backdrop dims the world rather than covering it. Rendered against the dialog grammar the
+     * old value read as flat neutral grey; carrying real chroma at the accent's hue makes the
+     * dimming feel like this application's own atmosphere closing over the page.
+     */
+    backdrop: "oklch(27% 0.045 252 / 0.42)",
   },
 
   /*
