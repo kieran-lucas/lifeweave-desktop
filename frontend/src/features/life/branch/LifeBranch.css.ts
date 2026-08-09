@@ -2,7 +2,7 @@ import { globalStyle, style } from "@vanilla-extract/css";
 import { dialogBackdrop, dialogSurface } from "../../../app/layout/layout.css";
 
 export const controls = style({ display: "grid", gap: "0.5rem", marginBlock: "0.7rem" });
-export const actions = style({ display: "flex", flexWrap: "wrap", gap: "0.5rem", alignItems: "center" });
+export const actions = style({ display: "flex", flexWrap: "wrap", justifyContent: "flex-end", gap: "0.5rem", alignItems: "center" });
 export const button = style({ border: "1px solid currentColor", borderRadius: "var(--radius-control)", background: "transparent", color: "inherit", padding: "0.5rem 0.75rem", cursor: "pointer", selectors: { "&:disabled": { cursor: "not-allowed", opacity: 0.6 } } });
 export const fileLabel = style([button, { display: "inline-flex" }]);
 export const hiddenFile = style({ position: "absolute", inlineSize: "1px", blockSize: "1px", overflow: "hidden", clipPath: "inset(50%)" });
@@ -25,6 +25,14 @@ export const dialog = style([
     },
   },
 ]);
+/*
+ * Native heading and paragraph margins used to stack on top of the shared dialog gap. The tree
+ * preview has two explanatory paragraphs and a full package inventory, so that accidental spacing
+ * pushed its confirmation controls below the first viewport even at the maximized audit size.
+ * The dialog's flex gap remains the single rhythm authority.
+ */
+globalStyle(`${dialog} > h2`, { margin: 0 });
+globalStyle(`${dialog} > p`, { margin: 0, lineHeight: 1.5 });
 export const metadata = style({ display: "grid", gridTemplateColumns: "max-content 1fr", gap: "0.35rem 0.8rem" });
 globalStyle(`${metadata} dt`, { fontWeight: 700 });
 globalStyle(`${metadata} dd`, { margin: 0, overflowWrap: "anywhere" });

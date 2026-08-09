@@ -73,6 +73,7 @@ export type SeedResult = {
   lifeRootChildId: string;
   lifeDocumentedChildId: string;
   lifeNarrativeChildId: string;
+  lifeEmptyChildId: string;
 };
 
 export async function seedLayoutFixture(
@@ -443,6 +444,7 @@ export async function seedLayoutFixture(
           lifeRootChildId: area,
           lifeDocumentedChildId: documented,
           lifeNarrativeChildId: narrative,
+          lifeEmptyChildId: childIds[2]!,
         };
       } catch (error) {
         return {
@@ -454,6 +456,7 @@ export async function seedLayoutFixture(
           lifeRootChildId: "",
           lifeDocumentedChildId: "",
           lifeNarrativeChildId: "",
+          lifeEmptyChildId: "",
         };
       }
     },

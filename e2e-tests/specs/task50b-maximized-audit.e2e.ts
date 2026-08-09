@@ -5,6 +5,16 @@ import { fileURLToPath } from "node:url";
 
 import { appLocalDate, seedLayoutFixture } from "../support/layoutFixture.js";
 import {
+  capturedBranchDownload,
+  chooseBranchFile,
+  installBranchDownloadCapture,
+} from "../support/lifeBranch.js";
+import {
+  capturedTreeDownload,
+  chooseTreeFile,
+  installTreeDownloadCapture,
+} from "../support/lifeTree.js";
+import {
   enterAuditViewport,
   findCollisions,
   requestedViewport,
@@ -31,6 +41,9 @@ const label =
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const outputRoot = join(repoRoot, "target", "e2e-artifacts", "task-50b", label);
 const visualRegression = process.env.LIFEWEAVE_VISUAL_REGRESSION === "1";
+const visualTagFilter = process.env.LIFEWEAVE_VISUAL_TAGS
+  ? new Set(process.env.LIFEWEAVE_VISUAL_TAGS.split(",").map(tag => tag.trim()).filter(Boolean))
+  : null;
 const requestedTheme = process.env.LIFEWEAVE_AUDIT_THEME ?? "light";
 if (requestedTheme !== "light" && requestedTheme !== "dark")
   throw new Error(`Unsupported LIFEWEAVE_AUDIT_THEME: ${requestedTheme}`);
@@ -61,10 +74,15 @@ const lightVisualSnapshotFiles = new Set([
   "11-plans",
   "12-life-browse",
   "13-life-edit",
+  "13b-life-tree-import",
+  "13c-life-branch-import",
   "14-life-pinned",
   "15-life-graph",
   "16-life-reader",
   "16b-life-link-dialog",
+  "16c-life-empty",
+  "16d-markdown-import",
+  "16e-portable-import",
   "17-basic-editor",
   "17b-basic-editor-link-dialog",
   "18-narrative-reader",
@@ -91,9 +109,14 @@ const darkVisualSnapshotFiles = new Set([
   "10-analytics",
   "11-plans",
   "12-life-browse",
+  "13b-life-tree-import",
+  "13c-life-branch-import",
   "15-life-graph",
   "16-life-reader",
   "16b-life-link-dialog",
+  "16c-life-empty",
+  "16d-markdown-import",
+  "16e-portable-import",
   "17-basic-editor",
   "17b-basic-editor-link-dialog",
   "18-narrative-reader",
@@ -147,6 +170,8 @@ let lifeAreaId = "";
 const CONTROL = "\uE009";
 let lifeDocumentedChildId = "";
 let lifeNarrativeChildId = "";
+let lifeEmptyChildId = "";
+let portablePackageBytes: number[] = [];
 let mediaEmulationSocket: WebSocket | null = null;
 
 type DevToolsTarget = {
@@ -201,6 +226,59 @@ async function emulateMediaFeatures(features: Array<{ name: string; value: strin
   mediaEmulationSocket = socket;
 }
 
+async function installPortableDownloadCapture() {
+  await browser.execute(() => {
+    const state = window as unknown as {
+      __task51PortableBlob?: Blob;
+      __task51PortableCapture?: boolean;
+    };
+    if (state.__task51PortableCapture) return;
+    state.__task51PortableCapture = true;
+    const originalCreate = URL.createObjectURL.bind(URL);
+    URL.createObjectURL = (object: Blob | MediaSource) => {
+      if (object instanceof Blob) state.__task51PortableBlob = object;
+      return originalCreate(object as Blob);
+    };
+  });
+}
+
+async function capturedPortablePackage(): Promise<number[]> {
+  const result = await browser.execute(async () => {
+    const blob = (window as unknown as { __task51PortableBlob?: Blob }).__task51PortableBlob;
+    return blob ? Array.from(new Uint8Array(await blob.arrayBuffer())) : [];
+  });
+  if (result.length === 0) throw new Error("Portable package export produced no captured bytes");
+  return result;
+}
+
+async function choosePortablePackage(bytes: number[]) {
+  await browser.execute((values: number[]) => {
+    const input = document.querySelector<HTMLInputElement>(
+      "section[aria-label='Lifeweave portable package'] input[type='file']",
+    );
+    if (!input) throw new Error("Portable package input is missing");
+    const transfer = new DataTransfer();
+    transfer.items.add(new File([new Uint8Array(values)], "audit.lifeweave.zip", {
+      type: "application/zip",
+    }));
+    input.files = transfer.files;
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  }, bytes);
+}
+
+async function chooseMarkdownImport() {
+  await browser.execute(() => {
+    const input = [...document.querySelectorAll<HTMLInputElement>("input[type='file']")]
+      .find(candidate => candidate.closest("label")?.textContent?.includes("Import Markdown as Canvas"));
+    if (!input) throw new Error("Narrative Markdown input is missing");
+    const markdown = "# Quarterly reflection\n\nA calm review with **clear priorities**.\n\n## Next steps\n\n- Protect focus time\n- Review progress";
+    const transfer = new DataTransfer();
+    transfer.items.add(new File([markdown], "quarterly-reflection.md", { type: "text/markdown" }));
+    input.files = transfer.files;
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+}
+
 const shot = async (name: string) => {
   await browser.saveScreenshot(join(outputRoot, `${name}.png`));
 };
@@ -224,7 +302,7 @@ async function capture(screen: string, file: string, note?: string) {
       : mediaMode === "reduced-motion"
         ? reducedMotionVisualSnapshotFiles
         : lightVisualSnapshotFiles;
-  if (visualRegression && visualSnapshotFiles.has(file)) {
+  if (visualRegression && visualSnapshotFiles.has(file) && (!visualTagFilter || visualTagFilter.has(file))) {
     const tag = requestedLanguage === "vi"
       ? `${file}-vi`
       : mediaMode === "light"
@@ -280,6 +358,7 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
     lifeAreaId = seeded.lifeRootChildId;
     lifeDocumentedChildId = seeded.lifeDocumentedChildId;
     lifeNarrativeChildId = seeded.lifeNarrativeChildId;
+    lifeEmptyChildId = seeded.lifeEmptyChildId;
     await browser.url("http://tauri.localhost");
     await browser.pause(700);
     /*
@@ -496,7 +575,33 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
 
     await go("Life System", "h1#life-heading");
     await capture("life-browse", "12-life-browse");
-    if (await tryClick("button=Edit")) await capture("life-edit", "13-life-edit");
+    if (await tryClick("button=Edit")) {
+      await capture("life-edit", "13-life-edit");
+
+      // Produce both package previews entirely through the product's own export/import controls,
+      // then cancel. This reviews the real parsing and preview UI without mutating the seeded tree.
+      await installTreeDownloadCapture();
+      const treeControls = $("section[aria-label='Life tree interchange']");
+      await treeControls.$("button=Export Life tree").click();
+      await treeControls.$("[role='status']").waitForDisplayed({ timeout: 30_000 });
+      const treePackage = await capturedTreeDownload();
+      await chooseTreeFile(treePackage.bytes);
+      await $("//section[@role='dialog' and .//h2[normalize-space()='Import Life tree']]").waitForDisplayed({ timeout: 30_000 });
+      await capture("life-edit--tree-import", "13b-life-tree-import");
+      await dismiss();
+
+      await $(`[data-life-edit-id='${lifeAreaId}']`).click();
+      await $("h2=Edit Layout Area").waitForDisplayed({ timeout: 15_000 });
+      await installBranchDownloadCapture();
+      const branchControls = $("section[aria-label='Life branch interchange']");
+      await branchControls.$("button=Export branch").click();
+      await branchControls.$("[role='status']").waitForDisplayed({ timeout: 30_000 });
+      const branchPackage = await capturedBranchDownload();
+      await chooseBranchFile(branchPackage.bytes);
+      await $("//section[@role='dialog' and .//h2[normalize-space()='Import Life branch']]").waitForDisplayed({ timeout: 30_000 });
+      await capture("life-edit--branch-import", "13c-life-branch-import");
+      await dismiss();
+    }
     if (await tryClick("button=Pinned")) await capture("life-pinned", "14-life-pinned");
     if (await tryClick("button=Browse")) {
       if (await tryClick("button=Graph")) {
@@ -523,6 +628,10 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
     await $("[role='dialog'][aria-modal='true']").waitForDisplayed({ timeout: 15_000 });
     await capture("life-reader--add-link", "16b-life-link-dialog");
     await dismiss();
+    await installPortableDownloadCapture();
+    await $("button=Export Lifeweave package").click();
+    await $("section[aria-label='Lifeweave portable package'] [role='status']").waitForDisplayed({ timeout: 30_000 });
+    portablePackageBytes = await capturedPortablePackage();
 
     // Enter and leave without editing or saving; this exercises only presentation/navigation.
     await $("button=Edit document").click();
@@ -536,6 +645,23 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
     await editorSurface.$("button=Link").waitForDisplayed({ timeout: 15_000 });
     await $("button=Back to Reader").click();
     await $("button=Edit document").waitForDisplayed({ timeout: 15_000 });
+    await $("button*=Back to Life Browse").click();
+    await $("h1#life-heading").waitForDisplayed({ timeout: 15_000 });
+
+    const emptyCard = $(`[data-life-id='${lifeEmptyChildId}']`);
+    await emptyCard.waitForDisplayed({ timeout: 15_000 });
+    await emptyCard.waitForEnabled({ timeout: 15_000 });
+    await emptyCard.click();
+    await $("p=This leaf has no document yet.").waitForDisplayed({ timeout: 15_000 });
+    await capture("life-reader--empty", "16c-life-empty");
+    await chooseMarkdownImport();
+    await $("[role='dialog'][aria-labelledby='nc-import-title']").waitForDisplayed({ timeout: 30_000 });
+    await capture("life-reader--markdown-import", "16d-markdown-import");
+    await dismiss();
+    await choosePortablePackage(portablePackageBytes);
+    await $("[role='dialog'][aria-labelledby='portable-dialog-title']").waitForDisplayed({ timeout: 30_000 });
+    await capture("life-reader--portable-import", "16e-portable-import");
+    await dismiss();
     await $("button*=Back to Life Browse").click();
     await $("h1#life-heading").waitForDisplayed({ timeout: 15_000 });
 
@@ -610,6 +736,12 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
     if (await tryClick("button=Create backup")) {
       await browser.pause(3000);
       await capture("backup-settings", "23-backup");
+      const restore = $("//section[@aria-labelledby='backup-settings-heading']//tbody/tr[1]//button[normalize-space()='Restore']");
+      await restore.waitForDisplayed({ timeout: 30_000 });
+      await restore.click();
+      await $("[role='dialog'][aria-labelledby='restore-backup-title']").waitForDisplayed({ timeout: 15_000 });
+      await capture("restore-confirmation", "23b-restore-confirmation", "Timestamped runtime evidence; intentionally not a visual golden.");
+      await dismiss();
     }
 
     // Keep the visual golden independent from backup timestamps in Settings. The shortcut is the

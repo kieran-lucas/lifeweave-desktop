@@ -1,5 +1,6 @@
 {
   "capturedAt": "2026-08-09",
+  "lastExtendedAt": "2026-08-10",
   "platform": "Windows",
   "runtime": {
     "name": "WebView2",
@@ -47,10 +48,10 @@
   "fixture": {
     "spec": "task50b-maximized-audit.e2e.ts",
     "seed": "seedLayoutFixture",
-    "fixtureCheckpoint": "be71661"
+    "fixtureCheckpoint": "be71661 plus the tracked empty-leaf/import extension"
   },
-  "sourceTreeCheckpoints": ["e2818cf", "fe2903b", "ddf8980", "ab9333c", "ad0650b", "1432896"],
-  "snapshotCount": 87,
+  "sourceTreeCheckpoints": ["e2818cf", "fe2903b", "ddf8980", "ab9333c", "ad0650b", "1432896", "60e1eb4"],
+  "snapshotCount": 97,
   "comparison": {
     "mismatchPercentage": 0,
     "autoAcceptanceDefault": false,
@@ -62,7 +63,12 @@
       "target/e2e-artifacts/task-50b/task51-visual-baseline-generate-reduced-motion-1536-20260809/",
       "target/e2e-artifacts/task-50b/task51-visual-baseline-verify-vi2-1536-20260809/",
       "target/e2e-artifacts/task-50b/task51-edge-light-verify-20260809/",
-      "target/e2e-artifacts/task-50b/task51-edge-dark-verify-20260809/"
+      "target/e2e-artifacts/task-50b/task51-edge-dark-verify-20260809/",
+      "target/e2e-artifacts/task-50b/task51-imports-light-verify-20260810/",
+      "target/e2e-artifacts/task-50b/task51-imports-dark-verify-20260810/"
     ]
-  }
+  },
+  "runtimeOnlyEvidence": [
+    "23b-restore-confirmation.png is captured in both 51-state import verification walks but excluded from goldens because the managed-backup timestamp is authoritative runtime data."
+  ]
 }
