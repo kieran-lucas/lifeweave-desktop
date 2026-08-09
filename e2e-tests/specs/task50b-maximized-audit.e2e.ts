@@ -30,6 +30,28 @@ const label =
   (viewport ? `${viewport.width}x${viewport.height}` : "pass1");
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const outputRoot = join(repoRoot, "target", "e2e-artifacts", "task-50b", label);
+const visualRegression = process.env.LIFEWEAVE_VISUAL_REGRESSION === "1";
+const visualSnapshotFiles = new Set([
+  "01-today",
+  "02-task-create",
+  "09-calendar",
+  "10-analytics",
+  "11-plans",
+  "12-life-browse",
+  "13-life-edit",
+  "14-life-pinned",
+  "15-life-graph",
+  "16-life-reader",
+  "17-basic-editor",
+  "17b-basic-editor-link-dialog",
+  "18-narrative-reader",
+  "19-narrative-studio",
+  "19b-narrative-only-block-dialog",
+  "18-settings",
+  "21b-search-results",
+  "21c-search-no-results",
+  "22-keyboard-help",
+]);
 
 type ScreenRecord = {
   screen: string;
@@ -41,6 +63,7 @@ type ScreenRecord = {
 const records: ScreenRecord[] = [];
 let environment: Awaited<ReturnType<typeof enterAuditViewport>> | null = null;
 let lifeAreaId = "";
+const CONTROL = "\uE009";
 let lifeDocumentedChildId = "";
 let lifeNarrativeChildId = "";
 
@@ -58,6 +81,11 @@ async function capture(screen: string, file: string, note?: string) {
   if (note) record.note = note;
   records.push(record);
   await shot(file);
+  if (visualRegression && visualSnapshotFiles.has(file)) {
+    const result = await browser.checkScreen(file);
+    const mismatch = typeof result === "number" ? result : result.misMatchPercentage;
+    if (mismatch !== 0) throw new Error(`${file} visual mismatch: ${mismatch}%`);
+  }
 }
 
 const go = async (destination: string, heading: string) => {
@@ -332,14 +360,18 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
       await capture("search--no-results", "21c-search-no-results");
       await tryClick("button[aria-label='Close search']");
     }
-    if (await tryClick("button=Keyboard shortcuts")) {
-      await capture("keyboard-help", "22-keyboard-help");
-      await dismiss();
-    }
     if (await tryClick("button=Create backup")) {
       await browser.pause(3000);
       await capture("backup-settings", "23-backup");
     }
+
+    // Keep the visual golden independent from backup timestamps in Settings. The shortcut is the
+    // production entry path and Today is a deterministic fixture-backed backdrop for the dialog.
+    await go("Today", "h1#today-heading");
+    await browser.keys([CONTROL, "/"]);
+    await $("[role='dialog'][aria-modal='true']").waitForDisplayed({ timeout: 10_000 });
+    await capture("keyboard-help", "22-keyboard-help");
+    await dismiss();
 
     // Collapsed sidebar is the second canonical shell state.
     await tryClick("button[aria-label='Collapse sidebar']");

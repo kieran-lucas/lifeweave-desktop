@@ -1,0 +1,36 @@
+{
+  "capturedAt": "2026-08-09",
+  "platform": "Windows",
+  "runtime": {
+    "name": "WebView2",
+    "version": "151.0.4129.72",
+    "driverVersion": "151.0.4129.72"
+  },
+  "devicePixelRatio": 1.25,
+  "theme": "light",
+  "viewport": {
+    "mode": "canonical-maximized",
+    "innerWidth": 1536,
+    "innerHeight": 794,
+    "formatNameWidth": 1522,
+    "formatNameHeight": 779,
+    "physicalPngWidth": 1920,
+    "physicalPngHeight": 992
+  },
+  "motion": {
+    "cssAnimationsDisabledByVisualService": true,
+    "blinkingCursorDisabledByVisualService": true
+  },
+  "fixture": {
+    "spec": "task50b-maximized-audit.e2e.ts",
+    "seed": "seedLayoutFixture",
+    "fixtureCheckpoint": "be71661"
+  },
+  "sourceTreeParent": "e2818cf",
+  "snapshotCount": 19,
+  "comparison": {
+    "mismatchPercentage": 0,
+    "autoAcceptanceDefault": false,
+    "evidence": "target/e2e-artifacts/task-50b/task51-visual-baseline-verify2-1536-20260809/"
+  }
+}

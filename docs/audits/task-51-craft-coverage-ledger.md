@@ -22,6 +22,8 @@ Evidence shorthand:
 - `RNA` — `target/e2e-artifacts/task-50b/task51-narrative-pass3-20260809/`
 - `LIFEP3` — `target/e2e-artifacts/task-50b/task51-life-family-pass3-20260809/`
 - `SSEP2` — `target/e2e-artifacts/task-50b/task51-settings-search-pass2-20260809/`
+- `VRMAX` — tracked `e2e-tests/visual-baselines/windows-webview2/` plus comparison evidence
+  `target/e2e-artifacts/task-50b/task51-visual-baseline-verify2-1536-20260809/`
 - `DOM` — focused React/Vitest behavior and accessibility contracts
 - `GEO` — real WebView spacing audit; collisions/document overflow/viewport overflow
 
@@ -126,7 +128,7 @@ These are part of Task 51's completion contract, not optional follow-up work.
 
 | Requirement | Current evidence | Status | Smallest complete correction |
 |---|---|---|---|
-| Deterministic visual regression | `@wdio/visual-service` is installed, but `e2e-tests/wdio.conf.ts` does not register it; production specs contain no `checkScreen`/`checkElement` assertions and no tracked goldens or baseline-update policy exists. | NOT REVIEWED | Wire the service, add a fixture-backed production spec covering the ledger's major families and representative edge/dark/narrow states, track baselines outside ignored runtime artifacts, and prove deliberate drift fails. |
+| Deterministic visual regression | `@wdio/visual-service` now compares 19 tracked, fixture-backed production states at canonical `1536×794`: all major route families, representative task/editor/Narrative decisions, Search results/no-results and Keyboard Help. Acceptance is off by default, runtime diffs are isolated under `target`, environment metadata is tracked, and VRMAX passed a second comparison-only run at exactly 0% mismatch after one timestamp-backed nondeterminism defect was found and corrected. | PARTIAL | Add reviewed narrow and representative dark baselines plus remaining empty/dense and edge-flow coverage; retain zero mismatch and the explicit acceptance policy. |
 | Release geometry assertion | `a78cf58` updates `phase21-global-layout.e2e.ts` to the approved Today/Calendar `wide` taxonomy, reuses one measured inner-viewport helper for all established sizes, and hard-asserts collision/document/viewport-overflow totals. LIFEP3 proves the maximized path at `1536x794`. | PARTIAL | Execute the hardened phase21 release spec across all four achieved viewports after the surface work stabilizes. |
 | Full viewport matrix | Current recovery passes prove achieved `1536x794` and `960x639`; the established `~1280x800` and `1280x720` cases are absent from this checkpoint. | PARTIAL | Capture and inspect the two missing achieved viewports after the surface work stabilizes. |
 | Production dark / forced-colors / reduced-motion | CSS contracts and component tests exist, but current production evidence is light-only; earlier prototype screenshots are not production closure evidence. | NOT REVIEWED | Add production media-emulation passes with `matchMedia` confirmation and representative shell, Today, Calendar, Analytics, Life/Graph, Reader/Editor, Settings, Search/dialog captures. |
