@@ -8,8 +8,16 @@ import { pageFrame } from "../../app/layout/layout.css";
  * container the child grid reflows against (ADR 0044).
  */
 export const heading=style({margin:0,color:"var(--text-primary)",fontSize:"clamp(1.8rem,3vw,2.5rem)",letterSpacing:"-0.04em"});
-export const modes=style({display:"flex",gap:4,padding:4,border:"1px solid var(--glass-border)",borderRadius:12,background:"var(--glass-surface-strong)"});
-export const modeButton=style({border:0,borderRadius:8,padding:"8px 14px",background:"transparent",color:"var(--text-muted)",fontWeight:700,cursor:"pointer",selectors:{"&[aria-pressed=true]":{background:"var(--active-background)",color:"var(--text-primary)"},"&:focus-visible":{outline:"3px solid var(--focus-ring)",outlineOffset:2}}});
+/*
+ * The Life mode switch, finally de-boxed.
+ *
+ * This was the last instance of the anti-pattern the Phase 0 census flagged first: a filled,
+ * bordered segmented container floating above the page's other bordered containers — a box of boxes
+ * on top of a box. It is now the same low-chrome inline navigation the Today workspace tabs and the
+ * inspector facets use, so the three tab strips in the product finally share one language.
+ */
+export const modes=style({display:"flex",flexWrap:"wrap",alignItems:"center",gap:16,borderBottom:"1px solid var(--border-subtle)",minInlineSize:0});
+export const modeButton=style({border:0,borderBottom:"2px solid transparent",borderRadius:0,marginBottom:-1,padding:"8px 8px 10px",minBlockSize:34,background:"transparent",color:"var(--text-muted)",fontSize:"0.875rem",fontWeight:500,cursor:"pointer",transition:"color 100ms cubic-bezier(0.2,0,0,1), border-color 100ms cubic-bezier(0.2,0,0,1)",selectors:{"&:hover":{color:"var(--text-primary)",background:"transparent"},"&[aria-pressed=true]":{color:"var(--accent)",borderBottomColor:"var(--accent)",fontWeight:600},"&:focus-visible":{outline:"2px solid var(--focus-ring)",outlineOffset:2}}});
 export const toolbar=style({display:"flex",flexWrap:"wrap",alignItems:"center",gap:space.control,minBlockSize:40,minInlineSize:0});
 export const quietButton=style({border:"1px solid var(--glass-border)",borderRadius:9,padding:"7px 11px",background:"var(--glass-surface-strong)",color:"var(--text-primary)",cursor:"pointer",selectors:{"&:disabled":{opacity:.45,cursor:"default"},"&:focus-visible":{outline:"3px solid var(--focus-ring)",outlineOffset:2}}});
 export const breadcrumb=style({display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",color:"var(--text-muted)"});
