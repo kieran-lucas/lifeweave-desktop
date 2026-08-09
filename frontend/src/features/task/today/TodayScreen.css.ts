@@ -55,7 +55,23 @@ export const rowMeta=style({display:"flex",flexWrap:"wrap",alignItems:"center",g
  * title stays fully readable, which an ellipsis would have taken away from sighted users even
  * though the accessible name kept it.
  */
-export const rowChip=style({maxInlineSize:"28rem",textAlign:"left",overflowWrap:"anywhere",border:0,borderRadius:"var(--radius-small)",background:"var(--active-background)",color:"var(--accent)",fontSize:"0.8125rem",padding:"0.2rem 0.5rem",cursor:"pointer",selectors:{"&:focus-visible":{outline:"3px solid var(--focus-ring)",outlineOffset:2}}});
+/*
+ * The Focus Plan chip.
+ *
+ * Rendered against real data it was the loudest thing in the row: a saturated 448px fill wrapping
+ * onto two lines, so a Plan name outweighed the task title it belonged to. Task 50 chose wrapping
+ * over truncation deliberately, so no information is lost — that decision stands. What changes is
+ * the *material*: a quiet hairline chip with accent text instead of a filled panel, and a narrower
+ * cap so it reads as an annotation on the row rather than as a second heading.
+ */
+export const rowChip=style({maxInlineSize:"22rem",textAlign:"left",overflowWrap:"anywhere",border:"1px solid color-mix(in srgb, var(--accent) 22%, transparent)",borderRadius:"var(--radius-small)",background:"transparent",color:"var(--accent)",fontSize:"0.8125rem",lineHeight:1.35,padding:"0.15rem 0.45rem",cursor:"pointer",transition:"background-color 110ms cubic-bezier(0.2,0,0,1)",selectors:{"&:hover":{background:"color-mix(in srgb, var(--accent) 8%, transparent)"},"&:focus-visible":{outline:"2px solid var(--focus-ring)",outlineOffset:2}}});
+
+/*
+ * The priority indicator was a literal "•" character, so it carried the document font's weight and
+ * baseline rather than the icon vocabulary's — the one text-glyph icon left in a task row. It is now
+ * a drawn dot. The accessible name it already had is unchanged, so this is presentation only.
+ */
+export const priorityDot=style({display:"inline-block",inlineSize:6,blockSize:6,borderRadius:"var(--radius-full)",background:"var(--text-muted)",flexShrink:0});
 export const rowActions=style({display:"flex",flexWrap:"wrap",alignItems:"center",justifyContent:"flex-end",gap:space.control,minInlineSize:0});
 export const rowEditButton=style({border:0,borderRadius:"var(--radius-small)",background:"transparent",color:"var(--text-muted)",fontSize:"0.8125rem",padding:"0.25rem 0.5rem",cursor:"pointer",whiteSpace:"nowrap",selectors:{"&:focus-visible":{outline:"3px solid var(--focus-ring)",outlineOffset:2}}});
 /**

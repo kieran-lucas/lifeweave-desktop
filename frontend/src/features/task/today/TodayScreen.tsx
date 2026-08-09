@@ -1052,9 +1052,18 @@ export function TodayScreen({
                             auto column appeared whenever a Task carried actual time.
                           */}
                           <div className={styles.rowActions}>
-                          <span aria-label={`Priority ${item.priority}`}>
-                            •
-                          </span>
+                          {/*
+                            `role="img"`, not a bare span. `aria-label` is prohibited on an element
+                            with the implicit `generic` role, and the previous markup only escaped
+                            that because it had "•" as text content to name itself with. An empty
+                            drawn dot has none, so it must declare what it is — axe caught exactly
+                            this.
+                          */}
+                          <span
+                            role="img"
+                            className={styles.priorityDot}
+                            aria-label={`Priority ${item.priority}`}
+                          />
                           {/*
                             The visible edit path. Double-click and Enter still work, but neither
                             advertised itself, which is the one MISSING_USER_SURFACE the Task 50
