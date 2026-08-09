@@ -31,6 +31,7 @@ export type SeedResult = {
   planId: string;
   lifeRootChildId: string;
   lifeDocumentedChildId: string;
+  lifeNarrativeChildId: string;
 };
 
 export async function seedLayoutFixture(localDate: string): Promise<SeedResult> {
@@ -127,6 +128,7 @@ export async function seedLayoutFixture(localDate: string): Promise<SeedResult> 
         ])
           childIds.push(await ensureNode(area, name));
         const documented = childIds[0]!;
+        const narrative = childIds[1]!;
         const readerProjection = await invoke<{ document: { id: string } | null }>(
           "get_reader_document",
           { input: { life_node_id: documented } },
@@ -134,6 +136,14 @@ export async function seedLayoutFixture(localDate: string): Promise<SeedResult> 
         if (!readerProjection.document)
           await invoke("create_reader_document", {
             input: { life_node_id: documented, operation_id: "task50-layout-reader" },
+          });
+        const narrativeProjection = await invoke<{ document: { id: string } | null }>(
+          "get_narrative_document",
+          { input: { life_node_id: narrative } },
+        );
+        if (!narrativeProjection.document)
+          await invoke("create_narrative_document", {
+            input: { life_node_id: narrative, operation_id: "task51-layout-narrative", template_id: "knowledge_dossier" },
           });
         await invoke("pin_life_node", { input: { node_id: area } }).catch(() => undefined);
 
@@ -356,6 +366,7 @@ export async function seedLayoutFixture(localDate: string): Promise<SeedResult> 
           planId,
           lifeRootChildId: area,
           lifeDocumentedChildId: documented,
+          lifeNarrativeChildId: narrative,
         };
       } catch (error) {
         return {
@@ -366,6 +377,7 @@ export async function seedLayoutFixture(localDate: string): Promise<SeedResult> 
           planId: "",
           lifeRootChildId: "",
           lifeDocumentedChildId: "",
+          lifeNarrativeChildId: "",
         };
       }
     },

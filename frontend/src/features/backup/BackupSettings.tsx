@@ -6,6 +6,7 @@ import type { BackupSummary } from "../../ipc/generated/BackupSummary";
 import * as styles from "./BackupSettings.css";
 import { EmptyState, SkeletonList } from "../../design-system/primitives/States";
 import { iconSettings } from "../../design-system/visual/icons";
+import { useModalFocusTrap } from "../../app/useModalFocusTrap";
 
 const compatibilityText: Record<BackupCompatibility, string> = {
   ready: "Ready",
@@ -63,37 +64,13 @@ export function BackupSettings({ onDatabaseRestored }: { onDatabaseRestored: () 
     void loadInventory();
   }, []);
 
-  useEffect(() => {
-    if (confirmation) cancelRef.current?.focus();
-  }, [confirmation?.backup_id]);
-
   function closeConfirmation() {
     if (busy === "restore") return;
     setConfirmation(null);
     requestAnimationFrame(() => restoreTriggerRef.current?.focus());
   }
 
-  function handleDialogKeyDown(event: React.KeyboardEvent<HTMLElement>) {
-    if (event.key === "Escape" && busy !== "restore") {
-      event.preventDefault();
-      closeConfirmation();
-      return;
-    }
-    if (event.key !== "Tab") return;
-    const controls = Array.from(
-      dialogRef.current?.querySelectorAll<HTMLElement>("button:not(:disabled)") ?? [],
-    );
-    if (controls.length === 0) return;
-    const first = controls[0]!;
-    const last = controls.at(-1)!;
-    if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault();
-      first.focus();
-    }
-  }
+  useModalFocusTrap({ container: dialogRef, initialFocus: cancelRef, onEscape: closeConfirmation, escapeEnabled: busy !== "restore", active: confirmation !== null });
 
   async function createBackup() {
     setBusy("create");
@@ -222,7 +199,6 @@ export function BackupSettings({ onDatabaseRestored }: { onDatabaseRestored: () 
             aria-modal="true"
             aria-labelledby="restore-backup-title"
             aria-describedby="restore-backup-description"
-            onKeyDown={handleDialogKeyDown}
           >
             <h2 id="restore-backup-title">Restore managed backup?</h2>
             <div id="restore-backup-description">

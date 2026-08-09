@@ -95,7 +95,7 @@ export function DecisionDialog({
   title: string;
   description: string;
   confirmLabel: string;
-  cancelLabel?: string;
+  cancelLabel?: string | null;
   destructive?: boolean;
   inputLabel?: string;
   inputPlaceholder?: string;
@@ -146,7 +146,7 @@ export function DecisionDialog({
           </div>
         ) : null}
         <div className={styles.dialogFooter}>
-          <button type="button" className={decisionStyles.cancel} onClick={onCancel}>{cancelLabel}</button>
+          {cancelLabel ? <button type="button" className={decisionStyles.cancel} onClick={onCancel}>{cancelLabel}</button> : null}
           <button type="submit" className={destructive ? decisionStyles.destructive : decisionStyles.confirm}>{confirmLabel}</button>
         </div>
       </form>

@@ -19,6 +19,7 @@ Evidence shorthand:
 - `R960` — `target/e2e-artifacts/task-50b/task51-recovery-960-20260809/`
 - `RPR` — `target/e2e-artifacts/task-50b/task51-plans-reader-pass1-20260809/`
 - `RDL` — `target/e2e-artifacts/task-50b/task51-reader-dialog-pass2-20260809/`
+- `RNA` — `target/e2e-artifacts/task-50b/task51-narrative-pass2-20260809/`
 - `DOM` — focused React/Vitest behavior and accessibility contracts
 - `GEO` — real WebView spacing audit; collisions/document overflow/viewport overflow
 
@@ -74,8 +75,8 @@ Evidence shorthand:
 
 | Surface / entry | Primary states and nested UI | Shared primitives | L/D/N/K/F | Evidence | Status | Defects / next proof |
 |---|---|---|---|---|---|---|
-| Narrative Reader — open Narrative leaf | multi-scene reader, timeline/image/rich-text blocks, long/empty/error | reading frame, editorial type, world chrome | N/N/N/P/N | DOM only; absent from current audit | NOT REVIEWED | Establish deterministic runtime entry. |
-| Narrative Studio — Reader edit | scene navigation, block editors/controls, template chooser, save/error | editor controls, tabs, fields, drag controls | N/N/N/P/N | DOM only | NOT REVIEWED | Flagship composition pass and real captures required. |
+| Narrative Reader — open Narrative leaf | multi-scene reader, timeline/image/rich-text blocks, long/empty/error | reading frame, editorial type, world chrome | Y/N/N/P/N | RNA `18-narrative-reader.png`; DOM; GEO | PARTIAL | Deterministic Narrative entry now exists. The loose vertical export/action stack fragments the reading composition; populated multi-block, long/error and dark/narrow/FC remain. |
+| Narrative Studio — Reader edit | scene navigation, block editors/controls, template chooser, save/error | editor controls, tabs, fields, drag controls | Y/N/N/P/N | RNA `19-narrative-studio.png`, `19b-narrative-only-block-dialog.png`; DOM 70-test Narrative subset; GEO | PARTIAL | Browser-owned decisions and character-icons are removed. Studio remains visually heavy: oversized action controls, card-dense world selector and weak hierarchy need a flagship composition pass; populated blocks, save/error and dark/narrow/FC remain. |
 | Narrative markdown import/export | import dialog, preview/warnings/errors, export | modal grammar, file controls, buttons | N/N/N/P/N | DOM/native functional tests only | NOT REVIEWED | Add real preview capture and keyboard/focus proof. |
 | Visual Worlds — Reader/Studio appearance | Paper/Sakura/Aurora/Nocturne × light/dark | semantic world palette + shared radius/elevation/type/motion | N/N/N/P/N | palette tests only | NOT REVIEWED | Harmonize chrome without deleting approved world semantics; capture all eight variants. |
 
@@ -89,7 +90,7 @@ Evidence shorthand:
 | Shortcut help — Settings button or `Ctrl+/` | open/close, eight commands, narrow/long labels | shared dialog, key badges | Y/N/Y/P/N | RMAX/R960 `22-keyboard-help.png`; DOM | PARTIAL | Dark/FC and focus containment/restore current capture remain. |
 | Restore confirmation — Settings `Restore` | destructive confirmation, compatibility warning, failure | shared dialog, danger button, status | N/N/N/P/N | DOM/native functional tests only | NOT REVIEWED | Add safe current real capture without completing restore. |
 | Saved View editor — Today `Views` | create/edit, predicates, validation, archive/restore confirmation | shared dialog, fields/selects/checkboxes | N/N/N/P/N | DOM only | NOT REVIEWED | Add real entry/captures and visual pass. |
-| Editor decision dialogs — Reader/Studio destructive/link actions | Basic link prompt, dirty exits, only-block alert, block/scene delete confirmations | shared decision dialog; remaining Narrative browser dialogs | Y/N/N/Y/N | RDL `17b-basic-editor-link-dialog.png`; DOM | PARTIAL | Basic Editor no longer uses browser prompt/confirm and proves Tab/Escape/focus restoration. HIGH remaining legacy island: replace Narrative `alert`/`confirm`; then render dirty exits plus dark/FC/narrow. |
+| Editor decision dialogs — Reader/Studio destructive/link actions | Basic link prompt, dirty exits, only-block alert, block/scene delete confirmations | shared decision dialog and modal focus trap | Y/N/N/Y/N | RDL `17b-basic-editor-link-dialog.png`; RNA `19b-narrative-only-block-dialog.png`; DOM | PARTIAL | No production browser prompt/alert/confirm remains. Basic Link and Narrative protection dialogs render in the real app; DOM proves dirty exits and destructive cancel/confirm paths. Real dirty/destructive captures plus dark/FC/narrow remain. |
 | Menus/context menus/tooltips/toasts | none | none | — | static census | CLASSIFIED | No production `role=menu`, context-menu owner, tooltip owner, or toast framework exists. Do not invent a primitive without a real use. |
 | Non-modal popups | assessment fan; Life-area/Focus Plan listboxes; TagPicker listbox | listbox/combobox/radial portal | P/N/N/P/N | DOM; static census | NOT REVIEWED | Inventory and capture each open/loading/error/no-match/selection state. |
 

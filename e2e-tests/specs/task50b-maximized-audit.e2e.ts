@@ -42,6 +42,7 @@ const records: ScreenRecord[] = [];
 let environment: Awaited<ReturnType<typeof enterAuditViewport>> | null = null;
 let lifeAreaId = "";
 let lifeDocumentedChildId = "";
+let lifeNarrativeChildId = "";
 
 const shot = async (name: string) => {
   await browser.saveScreenshot(join(outputRoot, `${name}.png`));
@@ -100,6 +101,7 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
     if (!seeded.ok) throw new Error(`fixture seeding failed at ${seeded.stage}: ${seeded.error}`);
     lifeAreaId = seeded.lifeRootChildId;
     lifeDocumentedChildId = seeded.lifeDocumentedChildId;
+    lifeNarrativeChildId = seeded.lifeNarrativeChildId;
     await browser.url("http://tauri.localhost");
     await browser.pause(700);
     /*
@@ -281,6 +283,24 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
     await editorSurface.$("button=Link").waitForDisplayed({ timeout: 15_000 });
     await $("button=Back to Reader").click();
     await $("button=Edit document").waitForDisplayed({ timeout: 15_000 });
+    await $("button*=Back to Life Browse").click();
+    await $("h1#life-heading").waitForDisplayed({ timeout: 15_000 });
+
+    const narrativeCard = $(`[data-life-id='${lifeNarrativeChildId}']`);
+    await narrativeCard.waitForDisplayed({ timeout: 15_000 });
+    await narrativeCard.waitForEnabled({ timeout: 15_000 });
+    await narrativeCard.click();
+    await $("#nc-canvas-title").waitForDisplayed({ timeout: 30_000 });
+    await capture("narrative-reader", "18-narrative-reader");
+    await $("button=Edit canvas").click();
+    await $("#nc-title").waitForDisplayed({ timeout: 30_000 });
+    await capture("narrative-studio", "19-narrative-studio");
+    await $("button[aria-label='Delete block']").click();
+    await $("[role='dialog']").waitForDisplayed({ timeout: 15_000 });
+    await capture("narrative-studio--only-block-dialog", "19b-narrative-only-block-dialog");
+    await browser.keys(ESCAPE);
+    await $("button=Back").click();
+    await $("button=Edit canvas").waitForDisplayed({ timeout: 15_000 });
     await $("button*=Back to Life Browse").click();
     await $("h1#life-heading").waitForDisplayed({ timeout: 15_000 });
 
