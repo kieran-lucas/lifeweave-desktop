@@ -1,6 +1,6 @@
 import { style } from "@vanilla-extract/css";
 import { space } from "../../app/layout/tokens.css";
-import { glassStrong } from "../../design-system/visual/atmosphere.css";
+import { glassStrong, progressBar } from "../../design-system/visual/atmosphere.css";
 
 /*
  * Calendar, composed for Visual Baseline v2.
@@ -177,23 +177,7 @@ export const loads = style({ display: "grid", gridTemplateColumns: "repeat(3, 1f
  * `appearance: none` plus explicit track and value backgrounds removes the ambiguity: the track is
  * the neutral fill, the value is the accent, and no user-agent colour can leak through.
  */
-export const load = style({
-  appearance: "none",
-  WebkitAppearance: "none",
-  width: "100%",
-  height: 3,
-  border: 0,
-  borderRadius: 999,
-  overflow: "hidden",
-  accentColor: "var(--accent)",
-  background: "var(--border-subtle)",
-  color: "var(--accent)",
-  selectors: {
-    "&::-webkit-progress-bar": { background: "var(--border-subtle)", borderRadius: 999 },
-    "&::-webkit-progress-value": { background: "var(--accent)", borderRadius: 999 },
-    "&::-moz-progress-bar": { background: "var(--accent)", borderRadius: 999 },
-  },
-});
+export const load = style([progressBar, { width: "100%", height: 3 }]);
 
 /**
  * Unevaluated past work keeps a distinct semantic colour rather than being folded into the blue

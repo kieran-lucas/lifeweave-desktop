@@ -1,5 +1,6 @@
 import { globalStyle, style, styleVariants } from "@vanilla-extract/css";
 
+import { glassStrong } from "../../design-system/visual/atmosphere.css";
 import { dialogInset, dialogWidth, frame, space } from "./tokens.css";
 
 /* ── Baseline native-control geometry ────────────────────────────────────────────────────────
@@ -106,10 +107,11 @@ export const dialogBackdrop = style({
   display: "grid",
   placeItems: "center",
   padding: space.group,
-  background: "rgba(0, 0, 0, 0.55)",
+  background: "color-mix(in srgb, var(--app-background) 55%, rgba(12,18,32,0.55))",
+  backdropFilter: "blur(2px)",
 });
 
-const dialogSurfaceBase = style({
+const dialogSurfaceBase = style([glassStrong,{
   display: "flex",
   flexDirection: "column",
   gap: space.group,
@@ -120,15 +122,22 @@ const dialogSurfaceBase = style({
   maxBlockSize: `calc(100dvh - ${dialogInset})`,
   overflowY: "auto",
   padding: space.group,
-  // Existing surface/border tokens only — this creates the common region the dialog was missing,
-  // it does not introduce a new visual treatment.
-  border: "1px solid var(--border-subtle)",
+  /*
+   * Task 51: the dialog surface is glass.
+   *
+   * Every modal in the product takes its surface from here, so materialising this one base migrates
+   * the Task dialog, Search, shortcut help, the restore confirmation, the Saved View editor, Life
+   * links and all four import previews at once — the edge flows that would otherwise keep the old
+   * flat look long after the main screens were done.
+   *
+   * `glassStrong` because dialogs carry forms and dense prose; the tint stays high so reading is
+   * unaffected and the blur is only ever an enhancement.
+   */
   borderRadius: 16,
-  background: "var(--surface)",
   color: "var(--text-primary)",
   containerType: "inline-size",
   containerName: "dialog",
-});
+}]);
 
 export const dialogSurface = styleVariants({
   compact: [

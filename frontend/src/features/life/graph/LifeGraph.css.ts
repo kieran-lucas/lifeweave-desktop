@@ -23,7 +23,7 @@ export const canvasViewport = style({
   minWidth: 0,
   minHeight: 520,
   overflow: "auto",
-  border: "1px solid var(--border-subtle)",
+  border: "1px solid var(--glass-border)",
   borderRadius: 18,
   background: "color-mix(in srgb, var(--surface) 75%, var(--app-background))",
   scrollbarGutter: "stable",
@@ -52,9 +52,9 @@ export const nodeMark = style({
   width: 152,
   minHeight: 52,
   padding: "8px 9px",
-  border: "1px solid var(--border-subtle)",
+  border: "1px solid var(--glass-border)",
   borderRadius: 12,
-  background: "var(--surface)",
+  background: "var(--glass-surface-strong)",
   color: "var(--text-primary)",
   textAlign: "left",
   cursor: "pointer",
@@ -79,9 +79,9 @@ export const inspector = style({
   display: "grid",
   gap: 12,
   padding: 16,
-  border: "1px solid var(--border-subtle)",
+  border: "1px solid var(--glass-border)",
   borderRadius: 16,
-  background: "var(--surface)",
+  background: "var(--glass-surface-strong)",
 });
 export const inspectorTitle = style({ margin: 0, fontSize: "1.02rem" });
 export const inspectorMeta = style({
@@ -104,7 +104,7 @@ export const connectionList = style({
 });
 export const connectionButton = style({
   width: "100%",
-  border: "1px solid var(--border-subtle)",
+  border: "1px solid var(--glass-border)",
   borderRadius: 9,
   padding: "6px 9px",
   background: "var(--app-background)",
@@ -120,7 +120,7 @@ export const field = style({ display: "grid", gap: 5, color: "var(--text-muted)"
 export const select = style({
   width: "100%",
   minWidth: 0,
-  border: "1px solid var(--border-subtle)",
+  border: "1px solid var(--glass-border)",
   borderRadius: 9,
   padding: "8px 10px",
   background: "var(--app-background)",
@@ -133,9 +133,9 @@ export const allLinks = style({
   display: "grid",
   gap: 8,
   padding: 16,
-  border: "1px solid var(--border-subtle)",
+  border: "1px solid var(--glass-border)",
   borderRadius: 16,
-  background: "var(--surface)",
+  background: "var(--glass-surface-strong)",
 });
 export const tableScroll = style({ overflowX: "auto" });
 export const table = style({
@@ -146,7 +146,7 @@ export const table = style({
 });
 export const actions = style({ display: "flex", gap: 7, flexWrap: "wrap" });
 export const button = style({
-  border: "1px solid var(--border-subtle)",
+  border: "1px solid var(--glass-border)",
   borderRadius: 9,
   padding: "7px 10px",
   background: "var(--app-background)",
@@ -160,9 +160,9 @@ export const notice = style({
   display: "grid",
   gap: 8,
   padding: 16,
-  border: "1px solid var(--border-subtle)",
+  border: "1px solid var(--glass-border)",
   borderRadius: 16,
-  background: "var(--surface)",
+  background: "var(--glass-surface-strong)",
   color: "var(--text-primary)",
 });
 export const status = style({ gridColumn: "1/-1", minHeight: 24, color: "var(--text-muted)" });

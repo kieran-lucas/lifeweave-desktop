@@ -111,3 +111,33 @@ export const selectedGlow = style({ boxShadow: "var(--glow-selected)" });
  * context above it. Applied at the shell so individual features never have to think about it.
  */
 export const aboveAtmosphere = style({ position: "relative", zIndex: 1 });
+
+/* ── Shared controls ─────────────────────────────────────────────────────────────────────── */
+
+/**
+ * The one progress-bar material in the application.
+ *
+ * `accent-color` alone is not reliable on `<progress>`: as soon as an author sets geometry that
+ * moves Chromium off its native control path, the element falls back to user-agent rendering and
+ * paints the default **green**. Calendar shipped exactly that — a green bar on every day of the
+ * month — and Analytics carried the same pattern.
+ *
+ * Rather than patch each site, the material lives here: `appearance: none` plus explicit track and
+ * value backgrounds, so no user-agent colour can appear regardless of what geometry a consumer adds.
+ * Any future progress bar composes this and inherits the guarantee.
+ */
+export const progressBar = style({
+  appearance: "none",
+  WebkitAppearance: "none",
+  border: 0,
+  borderRadius: 999,
+  overflow: "hidden",
+  accentColor: "var(--accent)",
+  background: "var(--border-subtle)",
+  color: "var(--accent)",
+  selectors: {
+    "&::-webkit-progress-bar": { background: "var(--border-subtle)", borderRadius: 999 },
+    "&::-webkit-progress-value": { background: "var(--accent)", borderRadius: 999 },
+    "&::-moz-progress-bar": { background: "var(--accent)", borderRadius: 999 },
+  },
+});
