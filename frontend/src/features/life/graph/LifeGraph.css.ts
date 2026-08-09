@@ -24,8 +24,8 @@ export const canvasViewport = style({
   minHeight: 520,
   overflow: "auto",
   border: "1px solid var(--glass-border)",
-  borderRadius: "var(--radius-floating)",
-  background: "color-mix(in srgb, var(--surface) 75%, var(--app-background))",
+  borderRadius: "var(--radius-surface)",
+  background: "color-mix(in srgb, var(--surface) 62%, var(--app-background))",
   scrollbarGutter: "stable",
 });
 export const canvas = style({
@@ -61,7 +61,8 @@ export const nodeMark = style({
   selectors: {
     "&[data-selected=true]": {
       borderColor: "var(--focus-ring)",
-      boxShadow: "0 0 0 2px color-mix(in srgb, var(--focus-ring) 25%, transparent)",
+      background: "color-mix(in srgb, var(--active-background) 68%, var(--glass-surface-strong))",
+      boxShadow: "inset 3px 0 0 var(--focus-ring)",
     },
   },
 });
@@ -78,10 +79,9 @@ export const inspector = style({
   top: 0,
   display: "grid",
   gap: 12,
-  padding: 16,
-  border: "1px solid var(--glass-border)",
-  borderRadius: "var(--radius-surface)",
-  background: "var(--glass-surface-strong)",
+  padding: "4px 0 0 18px",
+  borderLeft: "1px solid var(--border-subtle)",
+  background: "transparent",
 });
 export const inspectorTitle = style({ margin: 0, fontSize: "1.02rem" });
 export const inspectorMeta = style({
@@ -104,15 +104,16 @@ export const connectionList = style({
 });
 export const connectionButton = style({
   width: "100%",
-  border: "1px solid var(--glass-border)",
-  borderRadius: "var(--radius-control)",
+  border: 0,
+  borderLeft: "2px solid var(--border-subtle)",
+  borderRadius: 0,
   padding: "6px 9px",
-  background: "var(--app-background)",
+  background: "transparent",
   color: "var(--text-primary)",
   textAlign: "left",
   cursor: "pointer",
   fontSize: 13,
-  selectors: { "&:focus-visible": { outline: "3px solid var(--focus-ring)", outlineOffset: 2 } },
+  selectors: { "&:hover": { background: "var(--active-background)", borderLeftColor: "var(--accent)" }, "&:focus-visible": { outline: "3px solid var(--focus-ring)", outlineOffset: 2 } },
 });
 export const connectionKind = style({ display: "block", fontSize: 11, color: "var(--text-muted)" });
 export const empty = style({ margin: 0, fontSize: 12, color: "var(--text-muted)" });

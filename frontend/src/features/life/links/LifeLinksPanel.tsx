@@ -14,7 +14,7 @@ import {
 } from "./lifeLinkQueries";
 import * as styles from "./LifeLinksPanel.css";
 import { EmptyState, LoadingRow } from "../../../design-system/primitives/States";
-import { iconSearch } from "../../../design-system/visual/icons";
+import { Icon, iconNote, iconSearch } from "../../../design-system/visual/icons";
 import { useModalFocusTrap } from "../../../app/useModalFocusTrap";
 
 const errorText = (error: unknown, fallback: string) =>
@@ -53,7 +53,7 @@ function LinkRows({
                 onClick={() => void onNavigate(row.endpoint_node_id)}
                 aria-label={active ? `Open ${row.title} in Life Reader` : `${row.title} is ${state?.toLowerCase()}`}
               >
-                <span aria-hidden="true">◇ </span>{row.title}
+                <Icon d={iconNote} size={14} /> {row.title}
               </button>
               {state && <span className={styles.state}>{state}</span>}
               <p className={styles.meta}>{row.breadcrumb || "Life"} · {documentKind(row.document_kind)}</p>

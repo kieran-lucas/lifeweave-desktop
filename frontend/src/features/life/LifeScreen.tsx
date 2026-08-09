@@ -17,7 +17,7 @@ import { LifeEditWorkspace } from "./LifeEditWorkspace";
 import { BasicLeafReader } from "./document/BasicLeafReader";
 import { RelatedTasksPanel } from "./RelatedTasksPanel";
 import { EmptyState, LoadingRow, SkeletonList } from "../../design-system/primitives/States";
-import { Icon, iconChevronLeft, iconLife } from "../../design-system/visual/icons";
+import { Icon, iconChevronLeft, iconLife, iconNote } from "../../design-system/visual/icons";
 
 type Mode = "browse" | "edit" | "pinned" | "reader";
 type HistoryEntry = {
@@ -40,7 +40,7 @@ const LifeGraphWorkspace = lazy(() => import("./graph/LifeGraphWorkspace"));
 function NodeIcon({ iconKey }: { iconKey: string }) {
   return (
     <span className={styles.icon} aria-hidden="true">
-      {iconKey === "life-leaf" || iconKey === "life-note" ? "◇" : "⌁"}
+      <Icon d={iconKey === "life-leaf" || iconKey === "life-note" ? iconNote : iconLife} size={17} />
     </span>
   );
 }
@@ -572,7 +572,7 @@ export function LifeScreen({
               onClick={back}
               disabled={history.length === 0 && !projection.parent}
             >
-              ← Back
+              <Icon d={iconChevronLeft} size={15} /> Back
             </button>
             <nav className={styles.breadcrumb} aria-label="Life breadcrumb">
               {projection.breadcrumb.map((item, index) => (
@@ -692,7 +692,7 @@ export function LifeScreen({
                         pin.mutate({ id: child.id, pinned: child.is_pinned })
                       }
                     >
-                      {child.is_pinned ? "●" : "○"}
+                      {child.is_pinned ? "Pinned" : "Pin"}
                     </button>
                   </li>
                 ))}
@@ -790,7 +790,7 @@ function PinnedView({
             aria-label={`Unpin ${item.title}`}
             onClick={() => onUnpin(item.node_id)}
           >
-            ●
+            Unpin
           </button>
         </li>
       ))}

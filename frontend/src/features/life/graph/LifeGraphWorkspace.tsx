@@ -173,7 +173,7 @@ function GraphNodeMark({
     >
       <span className={styles.nodeTitle}>{node.title}</span>
       <span className={styles.nodeMeta}>
-        {nodeKindLabel(node)} · {node.outgoing_link_count}&rarr; · {node.incoming_link_count}&larr;
+        {nodeKindLabel(node)} · {node.outgoing_link_count} out · {node.incoming_link_count} in
       </span>
     </div>
   );

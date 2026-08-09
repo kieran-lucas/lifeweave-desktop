@@ -26,6 +26,7 @@ import { invalidateTaskSavedViewReferenceData } from "../task/saved-views/savedV
 import { invalidateLifeLinkLifecycle } from "./links/lifeLinkQueries";
 import { buildLifeTreeLayout, type LayoutPoint } from "./lifeTreeLayout";
 import { EmptyState, LoadingRow } from "../../design-system/primitives/States";
+import { Icon, iconLife, iconNote } from "../../design-system/visual/icons";
 
 type Point=LayoutPoint;
 const icons=["life-root","life-branch","life-leaf","life-focus","life-note"];
@@ -49,7 +50,7 @@ function Positioner({node,point,selected,onSelect,invalid,active}:{node:LifeEdit
    <button ref={beforeDrop.setNodeRef} className={styles.dropBefore} data-over={beforeDrop.isOver} tabIndex={-1} aria-label={`Insert before ${node.title}`}/>
    <div ref={setRefs} className={styles.dndOwner}>
     <motion.button layout className={styles.nodeCard} onClick={onSelect} {...sortable.attributes} {...sortable.listeners} aria-pressed={selected} data-life-edit-id={node.id}>
-      <span aria-hidden="true">{node.is_leaf?"◇":"⌁"}</span><span><span className={styles.compactTitle}>{node.title}</span><span className={styles.compactMeta}>{node.is_leaf?"Leaf":`${node.child_count} children`}{node.is_pinned?" · Pinned":""}</span><TagChipList tags={node.tags} /></span>
+      <span aria-hidden="true"><Icon d={node.is_leaf?iconNote:iconLife} size={15}/></span><span><span className={styles.compactTitle}>{node.title}</span><span className={styles.compactMeta}>{node.is_leaf?"Leaf":`${node.child_count} children`}{node.is_pinned?" · Pinned":""}</span><TagChipList tags={node.tags} /></span>
     </motion.button>
    </div>
    {parentDrop.isOver&&active&&<span className={styles.compactMeta} role="status">Move into {node.title}</span>}
