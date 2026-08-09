@@ -31,7 +31,10 @@ const label =
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const outputRoot = join(repoRoot, "target", "e2e-artifacts", "task-50b", label);
 const visualRegression = process.env.LIFEWEAVE_VISUAL_REGRESSION === "1";
-const visualSnapshotFiles = new Set([
+const requestedTheme = process.env.LIFEWEAVE_AUDIT_THEME ?? "light";
+if (requestedTheme !== "light" && requestedTheme !== "dark")
+  throw new Error(`Unsupported LIFEWEAVE_AUDIT_THEME: ${requestedTheme}`);
+const lightVisualSnapshotFiles = new Set([
   "01-today",
   "02-task-create",
   "09-calendar",
@@ -52,6 +55,23 @@ const visualSnapshotFiles = new Set([
   "21c-search-no-results",
   "22-keyboard-help",
 ]);
+const darkVisualSnapshotFiles = new Set([
+  "01-today",
+  "02-task-create",
+  "09-calendar",
+  "10-analytics",
+  "11-plans",
+  "12-life-browse",
+  "15-life-graph",
+  "16-life-reader",
+  "17-basic-editor",
+  "17b-basic-editor-link-dialog",
+  "18-narrative-reader",
+  "19-narrative-studio",
+  "18-settings",
+  "21b-search-results",
+  "22-keyboard-help",
+]);
 
 type ScreenRecord = {
   screen: string;
@@ -66,6 +86,59 @@ let lifeAreaId = "";
 const CONTROL = "\uE009";
 let lifeDocumentedChildId = "";
 let lifeNarrativeChildId = "";
+let darkThemeSocket: WebSocket | null = null;
+
+type DevToolsTarget = {
+  type: string;
+  url: string;
+  webSocketDebuggerUrl: string;
+};
+
+async function emulateDarkColorScheme() {
+  const edgeOptions = browser.capabilities["ms:edgeOptions"] as
+    | { debuggerAddress?: string }
+    | undefined;
+  const address = edgeOptions?.debuggerAddress;
+  if (!address) throw new Error("WebView2 session did not expose a DevTools debugger address");
+
+  const response = await fetch(`http://${address}/json/list`);
+  if (!response.ok) throw new Error(`WebView2 DevTools target list failed: ${response.status}`);
+  const targets = await response.json() as DevToolsTarget[];
+  const target = targets.find(candidate =>
+    candidate.type === "page" && candidate.url.startsWith("http://tauri.localhost"),
+  );
+  if (!target?.webSocketDebuggerUrl)
+    throw new Error(`WebView2 app target was not found: ${JSON.stringify(targets)}`);
+
+  const socket = new WebSocket(target.webSocketDebuggerUrl);
+  await new Promise<void>((resolve, reject) => {
+    socket.addEventListener("open", () => resolve(), { once: true });
+    socket.addEventListener("error", () => reject(new Error("WebView2 DevTools socket failed")), {
+      once: true,
+    });
+  });
+  const commandId = 1;
+  await new Promise<void>((resolve, reject) => {
+    socket.addEventListener("message", event => {
+      const message = JSON.parse(String(event.data)) as {
+        id?: number;
+        error?: { message?: string };
+      };
+      if (message.id !== commandId) return;
+      if (message.error) reject(new Error(message.error.message ?? "DevTools media emulation failed"));
+      else resolve();
+    });
+    socket.send(JSON.stringify({
+      id: commandId,
+      method: "Emulation.setEmulatedMedia",
+      params: {
+        media: "",
+        features: [{ name: "prefers-color-scheme", value: "dark" }],
+      },
+    }));
+  });
+  darkThemeSocket = socket;
+}
 
 const shot = async (name: string) => {
   await browser.saveScreenshot(join(outputRoot, `${name}.png`));
@@ -81,10 +154,14 @@ async function capture(screen: string, file: string, note?: string) {
   if (note) record.note = note;
   records.push(record);
   await shot(file);
+  const visualSnapshotFiles = requestedTheme === "dark"
+    ? darkVisualSnapshotFiles
+    : lightVisualSnapshotFiles;
   if (visualRegression && visualSnapshotFiles.has(file)) {
-    const result = await browser.checkScreen(file);
+    const tag = requestedTheme === "dark" ? `${file}-dark` : file;
+    const result = await browser.checkScreen(tag);
     const mismatch = typeof result === "number" ? result : result.misMatchPercentage;
-    if (mismatch !== 0) throw new Error(`${file} visual mismatch: ${mismatch}%`);
+    if (mismatch !== 0) throw new Error(`${tag} visual mismatch: ${mismatch}%`);
   }
 }
 
@@ -141,13 +218,26 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
      * reporting a small one.
      */
     environment = await enterAuditViewport();
+    if (requestedTheme === "dark") {
+      await emulateDarkColorScheme();
+      await browser.pause(150);
+    }
+    const darkMediaMatches = await browser.execute(
+      () => window.matchMedia("(prefers-color-scheme: dark)").matches,
+    );
+    if (darkMediaMatches !== (requestedTheme === "dark"))
+      throw new Error(
+        `Theme precondition failed: requested=${requestedTheme}, prefers-dark=${darkMediaMatches}`,
+      );
   });
 
   after(() => {
+    darkThemeSocket?.close();
+    darkThemeSocket = null;
     const collisions = records.flatMap(r => r.collisions);
     writeFileSync(
       join(outputRoot, "audit.json"),
-      `${JSON.stringify({ label, environment, records }, null, 2)}\n`,
+      `${JSON.stringify({ label, theme: requestedTheme, environment, records }, null, 2)}\n`,
       "utf8",
     );
     const byKind = collisions.reduce<Record<string, number>>((acc, c) => {
@@ -162,6 +252,7 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
       }  achieved: ${environment?.innerWidth}x${environment?.innerHeight} @ DPR ${environment?.devicePixelRatio}`,
     );
     console.log(`environment: ${JSON.stringify(environment)}`);
+    console.log(`theme: ${requestedTheme}`);
     console.log(`screens: ${records.length}  collisions: ${collisions.length} ${JSON.stringify(byKind)}`);
     for (const record of records) {
       const u = record.utilization;

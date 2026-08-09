@@ -19,6 +19,18 @@ $env:LIFEWEAVE_ACCEPT_VISUAL_BASELINES = '1'
 .\scripts\run_windows_e2e.ps1 -Phases 'task50b-maximized-audit.e2e.ts'
 ```
 
+For the tracked dark set, add `LIFEWEAVE_AUDIT_THEME=dark`. The native spec connects to the
+session's WebView2 DevTools target, emulates `prefers-color-scheme: dark`, and hard-asserts the
+production `matchMedia` result before capture. The connection is closed during teardown and does
+not change the Windows theme.
+
+```powershell
+$env:LIFEWEAVE_AUDIT_THEME = 'dark'
+$env:LIFEWEAVE_VISUAL_REGRESSION = '1'
+Remove-Item Env:LIFEWEAVE_ACCEPT_VISUAL_BASELINES -ErrorAction SilentlyContinue
+.\scripts\run_windows_e2e.ps1 -Phases 'task50b-maximized-audit.e2e.ts'
+```
+
 Before accepting a new or replaced PNG:
 
 1. run the comparison without acceptance and inspect `target/visual-regression/diff/`;

@@ -7,7 +7,8 @@
     "driverVersion": "151.0.4129.72"
   },
   "devicePixelRatio": 1.25,
-  "theme": "light",
+  "themes": ["light", "dark"],
+  "darkThemeProof": "WebView2 DevTools Emulation.setEmulatedMedia plus production matchMedia assertion",
   "viewports": [
     {
       "mode": "canonical-maximized",
@@ -39,14 +40,15 @@
     "seed": "seedLayoutFixture",
     "fixtureCheckpoint": "be71661"
   },
-  "sourceTreeCheckpoints": ["e2818cf", "fe2903b"],
-  "snapshotCount": 38,
+  "sourceTreeCheckpoints": ["e2818cf", "fe2903b", "ddf8980"],
+  "snapshotCount": 53,
   "comparison": {
     "mismatchPercentage": 0,
     "autoAcceptanceDefault": false,
     "evidence": [
       "target/e2e-artifacts/task-50b/task51-visual-baseline-verify2-1536-20260809/",
-      "target/e2e-artifacts/task-50b/task51-visual-baseline-verify-960-20260809/"
+      "target/e2e-artifacts/task-50b/task51-visual-baseline-verify-960-20260809/",
+      "target/e2e-artifacts/task-50b/task51-visual-baseline-verify-dark-1536-20260809/"
     ]
   }
 }
