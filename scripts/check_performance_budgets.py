@@ -19,7 +19,11 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_BUDGET = ROOT / "docs" / "audits" / "task-49-performance-budgets.json"
+# Task 51 supersedes Task 49. The only substantive change is the index.js locked ceiling, raised
+# 535,000 -> 550,000 by explicit Product Owner decision on measured evidence; the derivation
+# formulas, rules and the other two locked ceilings are unchanged. The rationale lives in the budget
+# file's `locked_ceilings.note`, not only in this constant.
+DEFAULT_BUDGET = ROOT / "docs" / "audits" / "task-51-performance-budgets.json"
 DEFAULT_ASSETS = ROOT / "frontend" / "dist" / "assets"
 
 BUDGET_VERSION = 2

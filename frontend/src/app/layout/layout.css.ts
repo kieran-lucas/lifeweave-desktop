@@ -1,5 +1,6 @@
 import { globalStyle, style, styleVariants } from "@vanilla-extract/css";
 
+import { glassStrong } from "../../design-system/visual/atmosphere.css";
 import { dialogInset, dialogWidth, frame, space } from "./tokens.css";
 
 /* ── Baseline native-control geometry ────────────────────────────────────────────────────────
@@ -10,15 +11,55 @@ import { dialogInset, dialogWidth, frame, space } from "./tokens.css";
  * saved-view actions, the plan table, and every `<select>` in the Task dialog.
  *
  * These are deliberately **element** selectors, specificity 0-0-1, so any component that already
- * declares its own padding still wins. Nothing here sets colour, border, radius or shadow — the
- * controls keep exactly the appearance they had, at a size that is no longer cramped.
+ * declares its own padding still wins.
+ *
+ * **Task 51 extends this to appearance.** Task 50 deliberately set no colour, border, radius or
+ * shadow here, because art direction was unallocated then. The consequence was visible the moment
+ * the art pass rendered: every control that had never been styled individually — the Analytics
+ * period buttons, the tag actions, the plan table controls, the Foundation tools, every `<select>`
+ * in the Task dialog — still drew as a grey Windows button in the middle of a luminous page. Those
+ * were the last "unstyled enterprise app" surfaces in the product, and there were dozens of them
+ * across screens nobody would think to restyle by hand.
+ *
+ * Giving the base element the low-chrome material lifts all of them at once, and the 0-0-1
+ * specificity means every component that already made its own decision is untouched.
  */
 globalStyle("button, select", {
   minBlockSize: 34,
   paddingBlock: space.x2,
   paddingInline: space.x3,
+  border: "1px solid var(--glass-border)",
+  borderRadius: 8,
+  background: "var(--glass-surface)",
+  color: "var(--text-primary)",
+  cursor: "pointer",
+  transition: "background-color 100ms cubic-bezier(0.2,0,0,1), border-color 100ms cubic-bezier(0.2,0,0,1)",
+});
+globalStyle("button:hover, select:hover", {
+  background: "var(--glass-surface-strong)",
+  borderColor: "color-mix(in srgb, var(--accent) 28%, var(--border-subtle))",
+});
+globalStyle("button:disabled, select:disabled", { cursor: "not-allowed", opacity: 0.55 });
+/* Inputs join the same material so a form does not mix two centuries of control design. */
+globalStyle("input, textarea", {
+  border: "1px solid var(--glass-border)",
+  borderRadius: 8,
+  background: "var(--glass-surface-strong)",
+  color: "var(--text-primary)",
 });
 globalStyle("textarea", { padding: space.control });
+/*
+ * `<fieldset>` is the last native element that still drew its own century-old chrome: a thin inset
+ * groove with a notch cut for the legend. It appears in Settings' goal editors, the Task dialog's
+ * schedule and recurrence groups, and the tag editors, so it gets the material here rather than in
+ * three feature files.
+ */
+globalStyle("fieldset", {
+  border: "1px solid var(--glass-border)",
+  borderRadius: 10,
+  background: "var(--glass-surface)",
+});
+globalStyle("legend", { padding: `0 ${space.x2}`, color: "var(--text-muted)", fontWeight: 600 });
 
 /**
  * The shared layout classes (ADR 0044).
@@ -106,10 +147,11 @@ export const dialogBackdrop = style({
   display: "grid",
   placeItems: "center",
   padding: space.group,
-  background: "rgba(0, 0, 0, 0.55)",
+  background: "color-mix(in srgb, var(--app-background) 55%, rgba(12,18,32,0.55))",
+  backdropFilter: "blur(2px)",
 });
 
-const dialogSurfaceBase = style({
+const dialogSurfaceBase = style([glassStrong,{
   display: "flex",
   flexDirection: "column",
   gap: space.group,
@@ -120,15 +162,22 @@ const dialogSurfaceBase = style({
   maxBlockSize: `calc(100dvh - ${dialogInset})`,
   overflowY: "auto",
   padding: space.group,
-  // Existing surface/border tokens only — this creates the common region the dialog was missing,
-  // it does not introduce a new visual treatment.
-  border: "1px solid var(--border-subtle)",
+  /*
+   * Task 51: the dialog surface is glass.
+   *
+   * Every modal in the product takes its surface from here, so materialising this one base migrates
+   * the Task dialog, Search, shortcut help, the restore confirmation, the Saved View editor, Life
+   * links and all four import previews at once — the edge flows that would otherwise keep the old
+   * flat look long after the main screens were done.
+   *
+   * `glassStrong` because dialogs carry forms and dense prose; the tint stays high so reading is
+   * unaffected and the blur is only ever an enhancement.
+   */
   borderRadius: 16,
-  background: "var(--surface)",
   color: "var(--text-primary)",
   containerType: "inline-size",
   containerName: "dialog",
-});
+}]);
 
 export const dialogSurface = styleVariants({
   compact: [

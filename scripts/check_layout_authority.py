@@ -143,16 +143,59 @@ def check(errors: list[str]) -> None:
     if "scrollbarGutter" not in shell_css:
         errors.append("App.css.ts must reserve the main viewport scrollbar gutter")
 
-    # The palette, font family and focus ring are frozen for Task 50.
+    # ── Task 51 art-direction authority (ADR 0045) ──────────────────────────────────────────
+    #
+    # Task 50 froze the palette, font family and focus ring, because art direction was explicitly
+    # unallocated and deferred to a later Product Owner gate. Task 51 *is* that gate, so the freeze
+    # is replaced rather than deleted: the rules below assert the decisions the gate produced, so a
+    # future change that drifts away from Visual Baseline v2 fails here instead of passing silently.
     global_css = (FRONTEND / "design-system/global.css").read_text(encoding="utf-8")
-    for frozen in (
-        "font-family: Inter,",
-        "--accent: #476dd6;",
-        "--surface: #ffffff;",
-        "--focus-ring: #476dd6;",
+
+    # The v2 anchors, measured from docs/visual/task-51/lifeweave-visual-baseline-v2.png.
+    for required in (
+        '"Segoe UI Variable"',      # platform font; Literata was removed with the serif direction
+        "--accent: #1157ce;",       # the single blue accent, 6.25:1 on canvas
+        "--app-background: #fcfcfd;",
+        "--sidebar-background: #fafafc;",
+        "--focus-ring: #1157ce;",
     ):
-        if frozen not in global_css:
-            errors.append(f"art-direction freeze violated: global.css no longer contains `{frozen}`")
+        if required not in global_css:
+            errors.append(
+                f"art-direction authority violated: global.css must declare `{required}` "
+                "(Visual Baseline v2, ADR 0045)"
+            )
+
+    # Reduced motion is a designed state. Zeroing every duration replaces a movement with a jump,
+    # which docs/ACCESSIBILITY_AND_INPUT.md forbids and Task 51 deliberately undid.
+    # Matched as a declaration, not as a substring: the file's own comment explains what the old
+    # rule did, and a naive search would flag that prose as the defect it describes.
+    if re.search(r"(?:animation|transition)-duration:\s*0\.01ms", global_css):
+        errors.append(
+            "reduced motion must not zero every duration; use a short cross-fade (ADR 0045 §6)"
+        )
+
+    # The editorial serif was removed with v2. Reintroducing a webfont is a Product Owner decision.
+    if "@font-face" in global_css:
+        errors.append("global.css declares an @font-face; v2 uses the platform font only")
+
+    # Colour, radius, elevation and motion belong to the visual contract, not to feature CSS.
+    visual = FRONTEND / "design-system/visual/contract.css.ts"
+    if not visual.is_file():
+        errors.append("create the visual contract at frontend/src/design-system/visual/contract.css.ts")
+    else:
+        contract = visual.read_text(encoding="utf-8")
+        for role in ("accent", "canvas", "surfaceSelected", "textPrimary", "borderHairline"):
+            if f"{role}: null" not in contract:
+                errors.append(f"visual contract must declare the `{role}` role")
+
+    # Green is not task-completion language in v2; completion is blue.
+    for path, source in domain_css():
+        rel = path.relative_to(ROOT).as_posix()
+        for green in ("#7BAC84", "#7bac84", "#93BA9A", "#93ba9a"):
+            if green in source:
+                errors.append(
+                    f"{rel} uses a green completion tone; v2 completion is the blue accent"
+                )
 
 
 def main() -> int:

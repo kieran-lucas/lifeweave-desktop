@@ -121,7 +121,15 @@ describe("Task 50 layout contracts", () => {
     await openEditor();
     const frames = document.querySelectorAll("[data-page-frame]");
     expect(frames).toHaveLength(1);
-    expect(frames[0]).toHaveAttribute("data-page-type", "standard");
+    /*
+     * Today is WIDE_WORKSPACE, not STANDARD_PAGE, from Task 51.
+     *
+     * It carries a master/detail split now — the timeline plus the context inspector — and the
+     * Task 50 taxonomy assigns 1440 to exactly that shape. This is an intentional change to the
+     * layout authority recorded in ADR 0045, not a relaxed assertion: the contract still requires
+     * exactly one frame and still requires it to declare a type from the finite taxonomy.
+     */
+    expect(frames[0]).toHaveAttribute("data-page-type", "wide");
   });
 
   /*
@@ -1518,5 +1526,68 @@ describe("Today recurrence contract", () => {
       expect(alerts).toHaveLength(1);
       expect(alerts[0]).toHaveTextContent("Another task timer is already running.");
     });
+  });
+});
+
+/*
+ * Inspector keyboard semantics.
+ *
+ * The inspector was pointer-only when it landed: the row's `Enter` opens the editor, a Task 50
+ * gesture that must not change, so no key reached the inspector at all. These contracts pin the
+ * behaviour that closed that gap, because it is the kind of thing a later visual refactor silently
+ * removes.
+ */
+describe("Today inspector keyboard semantics", () => {
+  it("opens the inspector with Space and leaves Enter opening the editor", async () => {
+    renderToday();
+    const row = await screen.findByRole("listitem", { name: /Morning review/i }).catch(() => null)
+      ?? (await screen.findAllByRole("listitem"))[0]!;
+
+    fireEvent.keyDown(row, { key: " " });
+    const inspector = await screen.findByRole("complementary", { name: /^Details for/ });
+    expect(inspector).toBeInTheDocument();
+    // The row advertises selection to assistive technology, not only through its tint.
+    expect(row).toHaveAttribute("aria-current", "true");
+  });
+
+  it("moves focus to the inspector heading when opened by keyboard", async () => {
+    renderToday();
+    const row = (await screen.findAllByRole("listitem"))[0]!;
+    fireEvent.keyDown(row, { key: " " });
+    const inspector = await screen.findByRole("complementary", { name: /^Details for/ });
+    const heading = within(inspector).getByRole("heading", { level: 2 });
+    // Programmatic target only: it must never enter the tab order.
+    expect(heading).toHaveAttribute("tabindex", "-1");
+    await waitFor(() => expect(heading).toHaveFocus());
+  });
+
+  it("does not steal focus when opened by pointer", async () => {
+    renderToday();
+    const row = (await screen.findAllByRole("listitem"))[0]!;
+    fireEvent.click(row);
+    const inspector = await screen.findByRole("complementary", { name: /^Details for/ });
+    const heading = within(inspector).getByRole("heading", { level: 2 });
+    expect(heading).not.toHaveFocus();
+  });
+
+  it("restores focus to the originating row when closed", async () => {
+    renderToday();
+    const row = (await screen.findAllByRole("listitem"))[0]!;
+    fireEvent.keyDown(row, { key: " " });
+    const inspector = await screen.findByRole("complementary", { name: /^Details for/ });
+    fireEvent.click(within(inspector).getByRole("button", { name: "Close details" }));
+    await waitFor(() => expect(row).toHaveFocus());
+  });
+
+  it("closes on Escape and restores focus", async () => {
+    renderToday();
+    const row = (await screen.findAllByRole("listitem"))[0]!;
+    fireEvent.keyDown(row, { key: " " });
+    const inspector = await screen.findByRole("complementary", { name: /^Details for/ });
+    fireEvent.keyDown(inspector, { key: "Escape" });
+    await waitFor(() =>
+      expect(screen.queryByRole("complementary", { name: /^Details for/ })).toBeNull(),
+    );
+    await waitFor(() => expect(row).toHaveFocus());
   });
 });

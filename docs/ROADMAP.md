@@ -1,5 +1,55 @@
 # Roadmap
 
+## Slice 041 — Visual Experience Overhaul, "Quiet Luminous Atlas" (active)
+
+Task 51 activates ADR 0045. Task 50 gave Lifeweave exactly one geometry authority and proved it —
+zero overflow and zero semantic collisions across 24 screens at the canonical maximized viewport —
+and said, correctly, that the application would still look plain, because decorating a broken layout
+was the failure mode that ADR existed to prevent. The layout is no longer broken. What remains is
+that Lifeweave has no visual system at all: the entire design system declares thirteen CSS custom
+properties, while the source contains thirty-one distinct border radii, fourteen distinct box
+shadows and twenty-nine distinct hardcoded hex colours, with no scale for elevation, hairline,
+editorial type, icon or motion. That is the same defect Task 50 fixed, one layer up.
+
+Slice 041 adds a second authority beside the geometry one — `frontend/src/design-system/visual/` —
+and replaces those private answers with finite vocabularies: four radii, three elevations, two
+hairlines, one UI and one editorial type family, one motion vocabulary, and semantic colour roles
+derived in `oklch()` so light and dark are two implementations of a single theme contract. The
+twenty-nine hardcoded colours become roles and therefore start participating in dark theme and
+forced colors, which several of them currently do not.
+
+The governing rule is that Lifeweave is one continuous calm surface, articulated by space, type,
+tone, hairline and motion, in that order. Boxes are exceptions, not structure: visible content may
+not exceed two enclosure levels without a recorded reason, elevation is reserved for surfaces that
+genuinely float, and a selected row may not combine a strong border, a saturated fill and a shadow.
+The application shell gains a third column for a context inspector, which is a presentation decision
+Task 50 did not lock.
+
+Appearance is authored against the Product Owner's *Lifeweave Visual Baseline v1* image, which is
+the authority for how the result looks; the ADR is the authority for how that look is expressed. Two
+hard stops divide the work and neither may be inferred — `VISUAL LOCK APPROVED` before any
+production presentation file is overhauled, and `MOTION LOCK APPROVED` before production
+reconstruction begins — because the failure mode being prevented is restyling the sidebar, then the
+buttons, then Today, then discovering the inspector no longer fits.
+
+Motion commits state first and animates afterwards. A click is acknowledged on the next display
+frame where physically possible, direct manipulation stays interruptible and transform-based, and no
+IPC or database work happens per pointer-move frame. Reduced motion becomes a designed state rather
+than a blanket zeroing of every duration, which `docs/ACCESSIBILITY_AND_INPUT.md` already forbids.
+The measured target machine — two cores and integrated graphics — is why blur, glass, Mica, Acrylic,
+WebGL art and per-frame shadow interpolation are excluded on measurement grounds and not only on
+taste.
+
+Task 51 is a presentation slice. Schema stays 27 with no migration, no Rust product change, no new
+IPC command, no new capability and no workflow or seal change, and no product semantics change: no
+category rename, no removed recurrence control, no dropped metadata, and no invented Task facet —
+Lifeweave has no subtasks and no task-to-task links, which the reference inspector displays. Task
+50's geometry invariants remain binding and are re-proven rather than re-argued. Following the Task
+40 and Task 50 precedent it does not advance `latest_feature_task`, which stays at 49.
+
+Work stays local on `task-51-visual-experience` from `43d0d1e822336c97527f85e1ab154fc74a61f058`.
+Nothing is pushed unless the Product Owner explicitly requests it.
+
 ## Slice 040 — Global Layout System + UI Surface Completeness (complete)
 
 Task 50 activates ADR 0044. Forty-nine closed tasks each added a screen and, with it, a private

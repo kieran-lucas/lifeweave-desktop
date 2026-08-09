@@ -1,0 +1,45 @@
+/*
+ * Prototype-only reset. Deliberately NOT `design-system/global.css`, which stays frozen until the
+ * production slice — the layout-authority gate asserts its palette, font family and focus ring are
+ * unchanged, and Task 51 does not touch it before VISUAL LOCK.
+ */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  min-width: 0;
+  margin: 0;
+}
+
+body {
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+/*
+ * Reduced motion as a designed state (ADR 0045 §6), not a blanket zeroing.
+ *
+ * The application's current rule sets every duration to 0.01ms, which replaces a movement with a
+ * jump. Here, travel is removed and a short tonal cross-fade is kept, so a change is still
+ * perceived as a change.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 80ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 80ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -47,9 +47,38 @@ SQLite:
 
 ## JavaScript bundle budget
 
-The bundle gate is versioned. `docs/audits/task-40-performance-budgets.json` (budget v2) is the
-authority; `docs/audits/task-16-performance-budgets.json` is preserved as history and is no longer
-read.
+The bundle gate is versioned. **`docs/audits/task-51-performance-budgets.json` (budget v2) is the
+current authority**; earlier budget files are preserved as history and are no longer read.
+
+### Locked ceiling change — Task 51
+
+```text
+index.js            535,000  ->  550,000     raised
+BasicLeafEditor.js  490,000               unchanged
+markdown.js         129,000               unchanged
+```
+
+Authorized by the Product Owner on measured evidence. The canonical Visual Baseline v2 Today
+composition includes a context inspector, and its shared split wiring left `index.js` 381 bytes over
+the old ceiling **after** three legitimate reclaims were applied first:
+
+```text
+tree-shakeable named icon exports   -3,438
+lazy-loaded inspector component     -6,151
+co-located inspector styles           -426
+```
+
+The inspector itself is deferred — `TaskInspector.js` 7.34 kB and `TaskInspector.css` 2.86 kB load
+only when a task is selected — so the net eager cost of the whole feature is **+2,268 bytes**.
+
+The ceiling was raised because the old number was a governance guardrail rather than a product goal
+outranking the user experience. It was **not** raised to silence a red gate: the gate stayed red
+while the decision was requested, and the rationale is recorded in the budget file's
+`locked_ceilings.note` rather than only in a constant.
+
+Headroom at the change is **14,619 bytes**, and it is not free space. Tree shaking, named imports,
+lazy secondary surfaces, and no eager Narrative/Life/editor/art engines on the Today startup path
+all remain required. Raising a maximum again requires another measured Product Owner decision.
 
 Run it with:
 
@@ -76,10 +105,11 @@ total_gzip_maximum  = final + max(4096, ceil(final * 0.0100))
 chunk_maximum       = final + max(1024, ceil(final * 0.0200))
 ```
 
-each additionally clamped by its locked ceiling (`index.js` 535,000; `BasicLeafEditor.js` 490,000;
-`markdown.js` 129,000). Raising a maximum is a Product Owner decision supported by measurement, not
-a response to a red gate. `docs/audits/task-40-performance-baseline.json` records the inventory and
-the optimization findings the budget was frozen against.
+each additionally clamped by its locked ceiling (`index.js` **550,000** since Task 51;
+`BasicLeafEditor.js` 490,000; `markdown.js` 129,000). Raising a maximum is a Product Owner decision
+supported by measurement, not a response to a red gate — see the Task 51 change recorded above.
+`docs/audits/task-40-performance-baseline.json` records the inventory and the optimization findings
+the original budget was frozen against.
 
 ## Performance gate
 

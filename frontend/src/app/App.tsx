@@ -33,6 +33,17 @@ const BackupSettings = lazy(() =>
 import { localToday } from "../features/calendar/date";
 import { useLocalDateRollover } from "../features/calendar/useLocalDateRollover";
 import type { SearchNavigationTarget } from "../ipc/generated/SearchNavigationTarget";
+import {
+  Icon,
+  iconAnalytics,
+  iconCalendar,
+  iconLife,
+  iconPlans,
+  iconSearch,
+  iconSettings,
+  iconToday,
+} from "../design-system/visual/icons";
+import { Atmosphere } from "../design-system/visual/Atmosphere";
 import * as styles from "./App.css";
 import { PageFrame, PageHeader } from "./layout/PageFrame";
 import { RouteErrorBoundary } from "./RouteErrorBoundary";
@@ -49,6 +60,22 @@ import {
 const GlobalSearchDialog = lazy(
   () => import("../features/search/GlobalSearchDialog"),
 );
+
+/**
+ * The v2 icon vocabulary for the shell.
+ *
+ * Before this, every destination rendered its own first letter in a filled grey tile. The tile is
+ * gone: these are 20 px outline marks that take the accent when their destination is current, which
+ * is what `image1.png` shows.
+ */
+const destinationIcons: Record<Destination, string> = {
+  today: iconToday,
+  calendar: iconCalendar,
+  analytics: iconAnalytics,
+  plans: iconPlans,
+  life: iconLife,
+  settings: iconSettings,
+};
 
 type SidebarMode = "expanded" | "collapsed";
 type SearchNavRequest = {
@@ -247,9 +274,7 @@ export function App() {
       aria-label={command.label}
       aria-keyshortcuts={command.ariaKeyShortcuts}
     >
-      <span aria-hidden="true" className={styles.navIcon}>
-        {command.label.slice(0, 1)}
-      </span>
+      <Icon d={destinationIcons[command.destination]} className={styles.navIcon} />
       <span className={styles.navLabel}>{command.label}</span>
     </button>
   );
@@ -266,8 +291,19 @@ export function App() {
       className={styles.appRoot}
       data-sidebar-mode={collapsed ? "collapsed" : "expanded"}
     >
+      {/*
+        Layer 0, mounted exactly once. Every page in the product sits on this one field, which is
+        what keeps the art a system rather than per-screen decoration — and means there is a single
+        place to tune the mood.
+      */}
+      <Atmosphere />
       <nav className={styles.sidebar} aria-label="Primary navigation">
-        <div className={styles.brand}>Lifeweave</div>
+        <div className={styles.brand}>
+          <span className={styles.brandMark} aria-hidden="true">
+            <Icon d={iconLife} size={14} />
+          </span>
+          <span className={styles.navLabel}>Lifeweave</span>
+        </div>
         <div className={styles.navGroup}>
           {destinationShortcuts.slice(0, 4).map(renderDestination)}
           <div className={styles.divider} />
@@ -283,9 +319,7 @@ export function App() {
             aria-label={`${searchShortcut.label} (${searchShortcut.chord})`}
             aria-keyshortcuts={searchShortcut.ariaKeyShortcuts}
           >
-            <span aria-hidden="true" className={styles.navIcon}>
-              ⌕
-            </span>
+            <Icon d={iconSearch} className={styles.navIcon} />
             <span className={styles.navLabel}>{searchShortcut.label}</span>
           </button>
         </div>

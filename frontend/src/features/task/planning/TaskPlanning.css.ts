@@ -1,21 +1,46 @@
 import { style } from "@vanilla-extract/css";
 import { space } from "../../../app/layout/tokens.css";
 
-/* One tab geometry for all five workspace views; it wraps rather than forcing the page sideways. */
+/*
+ * The five workspace views, composed for Visual Baseline v2.
+ *
+ * These are low-chrome inline navigation, not a boxed strip: text, a tonal hover, and a 2 px accent
+ * underline on the active view. The container's only line is the hairline it sits on, so the strip
+ * never reads as a bordered block stacked above the page's other bordered blocks — the
+ * "boxed horizontal navigation under another boxed region" the design law rules out.
+ *
+ * It still wraps rather than forcing the page sideways, which is what keeps the Task 50
+ * no-horizontal-overflow invariant true at narrow widths.
+ */
 export const tabs = style({
   display: "flex",
   flexWrap: "wrap",
-  gap: space.x1,
+  alignItems: "center",
+  gap: space.x4,
   borderBottom: "1px solid var(--border-subtle)",
   minInlineSize: 0,
 });
 export const tab = style({
-  padding: "10px 16px",
+  padding: "8px 8px 10px",
+  minBlockSize: 34,
   border: 0,
   borderBottom: "2px solid transparent",
+  marginBottom: -1,
   background: "transparent",
-  selectors: { '&[aria-selected="true"]': { borderBottomColor: "var(--focus-ring)" } },
-  '@media': { '(prefers-reduced-motion: no-preference)': { transition: "border-color 120ms ease" } },
+  color: "var(--text-muted)",
+  fontSize: "0.875rem",
+  fontWeight: 500,
+  cursor: "pointer",
+  selectors: {
+    "&:hover": { color: "var(--text-primary)" },
+    '&[aria-selected="true"]': { color: "var(--accent)", borderBottomColor: "var(--accent)", fontWeight: 600 },
+    "&:focus-visible": { outline: "2px solid var(--focus-ring)", outlineOffset: 2 },
+  },
+  '@media': {
+    '(prefers-reduced-motion: no-preference)': {
+      transition: "border-color 100ms cubic-bezier(0.2,0,0,1), color 100ms cubic-bezier(0.2,0,0,1)",
+    },
+  },
 });
 export const panelBody = style({ display: "flex", flexDirection: "column", gap: space.group, minInlineSize: 0 });
 export const empty = style({ color: "var(--text-muted)" });

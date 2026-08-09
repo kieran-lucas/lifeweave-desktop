@@ -14,12 +14,39 @@
 
 - Latest closed task: **50/60**
 - Latest closed slice: **040 — Global Layout System + UI Surface Completeness**
-- Active task: **none**
-- Active implementation specification: **none**
+- Active task: **51 — Visual Experience Overhaul (Quiet Luminous Atlas)**
+- Active implementation specification: **`specs/041-visual-experience-overhaul/`**
 - Latest feature checkpoint: **Task 49 — Focus Plan Activity Analytics Core** (`7622db3d8b2b42d69c8f497b6899c5be82e9f9a9`)
 - Database schema: **27**
-- Next action: **Product Owner gate**
-- Task 51: **prohibited, unstarted, unallocated, and unrecommended**
+- Next action: **Implement active spec**
+
+## Task 51 activation
+
+Task 50 closed with art direction explicitly unallocated and deferred "to a later Product Owner
+gate". Task 51 is that gate, activated by explicit Product Owner authorization from baseline
+`43d0d1e822336c97527f85e1ab154fc74a61f058` under
+[ADR 0045](docs/adr/0045-visual-experience-overhaul.md).
+
+Until this activation, `START_HERE.md`, `docs/STATUS.md` and `specs/040-global-layout-system/`
+recorded Task 51 as *prohibited, unstarted, unallocated, and unrecommended*. That was correct at
+Task 50 closure. The activation prompt is an explicit later Product Owner decision, which
+`AI_CONSTITUTION.md` §1 ranks above those files, so the contradiction is recorded rather than
+silently reconciled — see ADR 0045 § "Authorization and the contradiction it resolves" and
+`docs/audits/task-51-visual-baseline.md` §6.3.
+
+Task 51 is a **presentation slice**. It adds a visual authority beside Task 50's geometry authority,
+replaces 31 border radii, 14 shadows and 29 hardcoded hex colours with finite semantic vocabularies,
+and reconstructs the application's appearance toward the Product Owner's *Lifeweave Visual
+Baseline v1* reference image. Schema stays 27 with no migration, no Rust product change, no new IPC
+command, no new capability and no workflow or seal change, and no product semantics change.
+
+Two hard stops divide the work, and neither may be inferred: `VISUAL LOCK APPROVED` before any
+production presentation file is overhauled, and `MOTION LOCK APPROVED` before production
+reconstruction begins. Work stays local on branch `task-51-visual-experience` and is not pushed
+unless the Product Owner explicitly asks.
+
+Following the Task 40 and Task 50 precedent, Task 51 does not advance `latest_feature_task`, which
+stays at 49.
 
 ## Task 50 closure
 

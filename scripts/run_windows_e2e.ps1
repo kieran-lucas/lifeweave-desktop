@@ -57,7 +57,11 @@ $allPhases = @(
 # rather than to the release gate the default full run represents.
 $auxiliaryPhases = @(
   'task50-layout-capture.e2e.ts',
-  'task50b-maximized-audit.e2e.ts'
+  'task50b-maximized-audit.e2e.ts',
+  # Task 51 renders the isolated visual prototype at /prototype.html, so it needs a build produced
+  # with LIFEWEAVE_PROTOTYPE=1. It reports rather than asserts, like the Task 50 audit.
+  'task51-visual-lock-capture.e2e.ts',
+  'task51-motion-lock-capture.e2e.ts'
 )
 if (-not $Phases -or $Phases.Count -eq 0) { $Phases = $allPhases }
 foreach ($phase in $Phases) {

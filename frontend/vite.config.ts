@@ -13,6 +13,18 @@ export default defineConfig({
   build: {
     target: "es2022",
     sourcemap: true,
+    /*
+     * The Task 51 visual prototype is a second HTML entry. It is added to the production build
+     * **only** when LIFEWEAVE_PROTOTYPE=1, so an ordinary `pnpm build` emits exactly the chunks it
+     * emitted before Task 51 and `pnpm hardening:performance` keeps measuring the real application
+     * rather than the application plus a prototype.
+     *
+     * The dev server serves `/prototype.html` regardless, which is how the prototype is normally
+     * viewed; the flag exists for producing a real WebView2 build to capture from.
+     */
+    ...(process.env.LIFEWEAVE_PROTOTYPE
+      ? { rollupOptions: { input: { index: "index.html", prototype: "prototype.html" } } }
+      : {}),
   },
   test: {
     environment: "jsdom",
