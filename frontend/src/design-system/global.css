@@ -13,7 +13,17 @@
  * links and actions, and completed tasks.
  */
 :root {
-  font-family: "Segoe UI Variable", "Segoe UI", Inter, system-ui, sans-serif;
+  /*
+   * `"Segoe UI Variable"` was declared here and never resolved: DirectWrite exposes SegUIVar.ttf as
+   * three optical-size families, not under the umbrella name, so this stack silently fell through to
+   * static Segoe UI on every surface. Probed on the target WebView2 build against three independent
+   * fallback baselines — see `design-system/visual/typography.css.ts` for the measurements.
+   *
+   * `Text` is the correct default: it is the optical size drawn for 13–18px, which is where almost
+   * every string in this application sits. Roles that sit outside that band select `Small` or
+   * `Display` explicitly through the type scale.
+   */
+  font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
   color: #1f2328;
   background: #fcfcfd;
   font-synthesis: none;

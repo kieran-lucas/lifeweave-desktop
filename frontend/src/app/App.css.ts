@@ -1,6 +1,10 @@
 import { globalStyle, style } from "@vanilla-extract/css";
 
 import { glass, aboveAtmosphere } from "../design-system/visual/atmosphere.css";
+// Side-effect import: this is what puts the type system and its one authorized @font-face into the
+// production bundle. Before it, `visual/typography.css.ts` was reachable only from the excluded
+// prototype entry, so the scale shipped to nothing.
+import "../design-system/visual/globalType.css";
 import { gutter, space } from "./layout/tokens.css";
 
 /**

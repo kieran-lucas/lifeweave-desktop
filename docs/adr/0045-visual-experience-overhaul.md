@@ -294,6 +294,94 @@ palette, type and ornament — not structure.
   cannot cover a palette and type system it did not show. Structure remains locked; appearance
   requires re-approval.
 
+## Superseding authority: Craft-class craftsmanship benchmark
+
+The Product Owner issued a full-application visual reconstruction brief and, when the conflict with
+the locked v2 direction was put to them explicitly, recorded two overrides. Both are later Product
+Owner decisions, which `AI_CONSTITUTION.md` §1 ranks above this ADR and above Slice 041. The
+contradiction is recorded here rather than reconciled silently, as §1 requires.
+
+### Override 1 — Craft is the benchmark; v2 is not a ceiling
+
+> "Craft is now the craftsmanship benchmark for the ENTIRE application. V2 remains authoritative only
+> for product semantics, proven geometry, the blue identity, and any implementation that is
+> objectively still the best option. It is NOT a ceiling on visual quality. Reopen and re-review ALL
+> production surfaces, including already-approved Shell, Today, Calendar, Inspector, and every shared
+> primitive. Nothing is exempt because it was previously visually locked. […] Do not require a new
+> Product Owner visual-lock gate. Make the strongest reversible decision yourself, render it, compare
+> it, test it, and proceed. Do not preserve a weaker design merely because it was previously
+> approved."
+
+Consequences:
+
+- **§4's "full-screen lock before production edit" is discharged**, not deleted. Spec 041 §12's
+  `VISUAL LOCK` / `MOTION LOCK` sequence was a control on unreviewed production edits; the Product
+  Owner has replaced it with a standing authorization plus an evidence duty. Rendered comparison is
+  still mandatory — the gate moved from *approval* to *evidence*.
+- **The v2 reference image no longer bounds visual quality.** It remains authoritative for product
+  semantics, for the Task 50 geometry invariants, for the blue identity, and wherever its
+  implementation is still objectively best. It is no longer a reason to reject a better result.
+- **Every previously migrated surface is reopened**, including the shell, Today, Calendar and the
+  inspector, plus every shared primitive.
+- The final authority is: Craft-class craftsmanship + Lifeweave's blue identity + real product
+  semantics + accessibility + measured responsive and runtime quality.
+
+Craft is used as a **quality and design-language reference only**. No Craft logo, wordmark,
+illustration, branded icon, image asset or proprietary font is copied. What is reproduced is design
+quality — softness, spacing, card craftsmanship, typographic hierarchy, material depth, interaction
+polish, and the principle that content and application chrome form one visual system rather than
+unrelated layers.
+
+### Override 2 — one editorial webfont is authorized
+
+> "Lift the @font-face prohibition for one self-hosted variable editorial/display family only. Keep
+> Segoe UI Variable as the default dense UI/control/navigation typeface unless rendered comparison
+> proves another legally usable font is materially better on Windows. You are explicitly required to
+> rebuild the ENTIRE typography system regardless […] One editorial webfont family is authorized.
+> Subset it intelligently and measure the final asset cost."
+
+This reverses the v2 consequence recorded above ("Literata is now unused"), which had left the
+question open for exactly this decision. `scripts/check_layout_authority.py` is amended accordingly:
+it no longer fails on any `@font-face`, and instead **fails on any `@font-face` that is not the one
+authorized family**, so the prohibition is narrowed rather than removed.
+
+### Selection evidence — Literata
+
+Six legally usable variable families with genuine Vietnamese coverage were rendered and compared on
+the target engine (Edge/Chromium **151.0.4129.72**, the same build as the app's WebView2) at DPR
+1.25 and 1.5, against English, Vietnamese in both cases, stacked diacritics, tabular numerals, dates,
+durations and long titles. Captures are in `docs/audits/task-51-typography.md`.
+
+| Candidate | Axes | latin+vi bytes | Outcome |
+|---|---|---|---|
+| **Literata** | opsz 7–72 · wght 200–900 · ital | **63,904** | **selected** |
+| Newsreader | opsz 6–72 · wght 200–800 · ital | 70,016 | rejected — smallest x-height of the set; body text reads cramped at 17 px, a real cost on a long-form reading surface |
+| Source Serif 4 | opsz 8–60 · wght 200–900 · ital | 64,272 | rejected — widest of the set (3 lines where Literata takes 2); competent but characterless |
+| Fraunces | opsz 9–144 · wght 100–900 · SOFT · WONK | 48,192 | rejected — warm and quirky; fights the cool luminous blue identity, and too characterful for hours-long use |
+| Bricolage Grotesque | opsz · wdth · wght 200–800 | 49,952 | rejected — a sans; would compete with Segoe UI Variable rather than complement it |
+| Playfair Display | wght 400–900, **no opsz** | 47,516 | rejected — no optical-size axis, and didone contrast thins Vietnamese diacritics at reading size |
+
+Literata wins on the criteria that matter for this product: the most generous x-height and the most
+comfortable reading colour at 17 px, crisp Vietnamese in both upper and lower case, the strongest
+numerals, the widest weight range, and the lowest byte cost among the serious contenders. That it is
+the family v2 removed is not an argument against it — it was dropped because the *serif direction*
+was dropped, not because the face failed; Override 1 restores that direction on rendered evidence.
+
+Segoe UI Variable is **retained** as the dense UI, control and navigation face: it rendered
+excellently on the same proof, ships with the platform at zero bytes, and carries full Vietnamese.
+
+Cost is bounded by subsetting to what the product actually needs:
+
+```text
+eager   latin + vietnamese, normal      63,904 bytes   titles, headings, metrics
+lazy    latin + vietnamese, italic      64,976 bytes   Reader/Editor chunk only
+dropped latin-ext                       85,912 bytes saved — every Vietnamese codepoint
+                                                       lives in the `vietnamese` subset
+```
+
+Font bytes are separate assets and do not consume the `index.js` startup ceiling. The application is
+local-first, so these load from disk with no network transfer.
+
 ## Consequences
 
 - `frontend/src/design-system/visual/` becomes the single answer to "what colour, radius, weight or

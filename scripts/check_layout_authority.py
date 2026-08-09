@@ -143,27 +143,19 @@ def check(errors: list[str]) -> None:
     if "scrollbarGutter" not in shell_css:
         errors.append("App.css.ts must reserve the main viewport scrollbar gutter")
 
-    # ── Task 51 art-direction authority (ADR 0045) ──────────────────────────────────────────
+    # ── Task 51 visual authority (ADR 0045) ─────────────────────────────────────────────────
     #
     # Task 50 froze the palette, font family and focus ring, because art direction was explicitly
     # unallocated and deferred to a later Product Owner gate. Task 51 *is* that gate, so the freeze
-    # is replaced rather than deleted: the rules below assert the decisions the gate produced, so a
-    # future change that drifts away from Visual Baseline v2 fails here instead of passing silently.
+    # is replaced rather than deleted.
+    #
+    # These rules deliberately assert **invariants**, not sampled literals. An earlier revision
+    # pinned exact v2 hex strings in global.css; under ADR 0045's "Craft-class craftsmanship
+    # benchmark" override the palette is re-derived from rendered evidence, so pinning the old
+    # measurement would forbid the improvement the Product Owner ordered. What must not regress is
+    # the *identity* — one blue accent, a near-neutral plane, a designed reduced-motion state, and a
+    # single typed authority for colour, radius, elevation and motion.
     global_css = (FRONTEND / "design-system/global.css").read_text(encoding="utf-8")
-
-    # The v2 anchors, measured from docs/visual/task-51/lifeweave-visual-baseline-v2.png.
-    for required in (
-        '"Segoe UI Variable"',      # platform font; Literata was removed with the serif direction
-        "--accent: #1157ce;",       # the single blue accent, 6.25:1 on canvas
-        "--app-background: #fcfcfd;",
-        "--sidebar-background: #fafafc;",
-        "--focus-ring: #1157ce;",
-    ):
-        if required not in global_css:
-            errors.append(
-                f"art-direction authority violated: global.css must declare `{required}` "
-                "(Visual Baseline v2, ADR 0045)"
-            )
 
     # Reduced motion is a designed state. Zeroing every duration replaces a movement with a jump,
     # which docs/ACCESSIBILITY_AND_INPUT.md forbids and Task 51 deliberately undid.
@@ -174,9 +166,22 @@ def check(errors: list[str]) -> None:
             "reduced motion must not zero every duration; use a short cross-fade (ADR 0045 §6)"
         )
 
-    # The editorial serif was removed with v2. Reintroducing a webfont is a Product Owner decision.
-    if "@font-face" in global_css:
-        errors.append("global.css declares an @font-face; v2 uses the platform font only")
+    # ADR 0045 Override 2 authorizes exactly **one** self-hosted editorial family. The prohibition is
+    # narrowed, not removed: any other @font-face is still a governance failure, so a second family
+    # cannot arrive without a new Product Owner decision.
+    # Matched as a real declaration, not as a substring. `typography.css.ts` discusses `@font-face`
+    # in prose, and a naive search flags that commentary as the defect it describes — the same trap
+    # the reduced-motion rule above already documents.
+    for path in sorted(FRONTEND.rglob("*.css")) + sorted(FRONTEND.rglob("*.css.ts")):
+        source = path.read_text(encoding="utf-8")
+        for match in FONT_FACE_DECLARATION.finditer(source):
+            window = source[match.start(): match.start() + 400]
+            if AUTHORIZED_EDITORIAL_FAMILY.lower() not in window.lower():
+                errors.append(
+                    f"{path.relative_to(ROOT).as_posix()} declares an @font-face that is not "
+                    f"`{AUTHORIZED_EDITORIAL_FAMILY}`; ADR 0045 authorizes exactly one editorial "
+                    "family"
+                )
 
     # Colour, radius, elevation and motion belong to the visual contract, not to feature CSS.
     visual = FRONTEND / "design-system/visual/contract.css.ts"
@@ -188,14 +193,66 @@ def check(errors: list[str]) -> None:
             if f"{role}: null" not in contract:
                 errors.append(f"visual contract must declare the `{role}` role")
 
-    # Green is not task-completion language in v2; completion is blue.
+    # Green is not task-completion language; completion is blue.
     for path, source in domain_css():
         rel = path.relative_to(ROOT).as_posix()
         for green in ("#7BAC84", "#7bac84", "#93BA9A", "#93ba9a"):
             if green in source:
-                errors.append(
-                    f"{rel} uses a green completion tone; v2 completion is the blue accent"
-                )
+                errors.append(f"{rel} uses a green completion tone; completion is the blue accent")
+
+    check_visual_residue(errors)
+
+
+# ── Ratcheting residue budget ───────────────────────────────────────────────────────────────
+#
+# Feature CSS must resolve colour, radius and elevation through the typed visual contract. It does
+# not yet: the Task 51 foundation landed before the surfaces migrated. Failing outright would leave
+# `pnpm verify` red for the whole migration, which teaches the gate to be ignored.
+#
+# So the budget ratchets instead. Each number is the count measured at the last commit; the check
+# fails when a count *rises*, and fails again when a count falls without the budget being lowered.
+# Residue can therefore only ever decrease, and the file records honestly how much is left.
+MAX_RESIDUE = {
+    "hex": 22,        # hardcoded colour literals in feature *.css.ts
+    "radius": 125,    # raw border-radius literals not resolved through vars.radius
+    "shadow": 14,     # raw box-shadow literals not resolved through vars.elevation
+}
+
+AUTHORIZED_EDITORIAL_FAMILY = "Literata"
+
+# A real at-rule or a vanilla-extract font-face call — never prose that merely names the construct.
+FONT_FACE_DECLARATION = re.compile(r"@font-face\s*\{|\bglobalFontFace\(|\bfontFace\(")
+
+# The four Narrative Visual Worlds are an approved per-world palette (ADR 0022), not stray colour.
+# They are exempt from the hex budget and harmonised rather than deleted.
+RESIDUE_EXEMPT = ("life/narrative/NarrativeVisualWorld.css.ts",)
+
+HEX = re.compile(r"#[0-9a-fA-F]{3,8}\b")
+RAW_RADIUS = re.compile(r"borderRadius:\s*(?!.*vars\.radius)[\"']?[\d.]+")
+RAW_SHADOW = re.compile(r"boxShadow:\s*(?!.*vars\.elevation)[\"'][^\"']*\d")
+
+
+def check_visual_residue(errors: list[str]) -> None:
+    counts = {"hex": 0, "radius": 0, "shadow": 0}
+    for path, source in domain_css():
+        if path.relative_to(FEATURES).as_posix() in RESIDUE_EXEMPT:
+            continue
+        counts["hex"] += len(HEX.findall(source))
+        counts["radius"] += len(RAW_RADIUS.findall(source))
+        counts["shadow"] += len(RAW_SHADOW.findall(source))
+
+    for kind, found in counts.items():
+        budget = MAX_RESIDUE[kind]
+        if found > budget:
+            errors.append(
+                f"visual residue increased: {found} raw {kind} values in feature CSS, budget "
+                f"{budget}. Resolve them through the visual contract rather than raising the budget."
+            )
+        elif found < budget:
+            errors.append(
+                f"visual residue budget is stale: {found} raw {kind} values remain but the budget "
+                f"is {budget}. Lower MAX_RESIDUE['{kind}'] to {found} so the ratchet holds."
+            )
 
 
 def main() -> int:
