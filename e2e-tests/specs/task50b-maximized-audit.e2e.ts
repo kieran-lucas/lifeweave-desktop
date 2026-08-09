@@ -273,6 +273,12 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
     await $("button=Edit document").click();
     await $("section[aria-label='Document editor']").waitForDisplayed({ timeout: 30_000 });
     await capture("basic-editor", "17-basic-editor");
+    const editorSurface = $("section[aria-label='Document editor']");
+    await editorSurface.$("button=Link").click();
+    await $("[role='dialog']").waitForDisplayed({ timeout: 15_000 });
+    await capture("basic-editor--link-dialog", "17b-basic-editor-link-dialog");
+    await browser.keys(ESCAPE);
+    await editorSurface.$("button=Link").waitForDisplayed({ timeout: 15_000 });
     await $("button=Back to Reader").click();
     await $("button=Edit document").waitForDisplayed({ timeout: 15_000 });
     await $("button*=Back to Life Browse").click();

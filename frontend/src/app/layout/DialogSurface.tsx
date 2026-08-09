@@ -1,5 +1,7 @@
-import type { ReactNode, Ref } from "react";
+import { useId, useRef, type FormEvent, type ReactNode, type Ref } from "react";
 
+import * as decisionStyles from "../DecisionDialog.css";
+import { useModalFocusTrap } from "../useModalFocusTrap";
 import * as styles from "./layout.css";
 
 /**
@@ -76,4 +78,78 @@ export function DialogBody({ children }: { children: ReactNode }) {
 
 export function DialogFooter({ children }: { children: ReactNode }) {
   return <div className={styles.dialogFooter}>{children}</div>;
+}
+
+export function DecisionDialog({
+  title,
+  description,
+  confirmLabel,
+  cancelLabel = "Cancel",
+  destructive = false,
+  inputLabel,
+  inputPlaceholder,
+  returnFocus,
+  onConfirm,
+  onCancel,
+}: {
+  title: string;
+  description: string;
+  confirmLabel: string;
+  cancelLabel?: string;
+  destructive?: boolean;
+  inputLabel?: string;
+  inputPlaceholder?: string;
+  returnFocus?: HTMLElement | null;
+  onConfirm: (value: string) => void;
+  onCancel: () => void;
+}) {
+  const titleId = useId();
+  const descriptionId = useId();
+  const inputId = useId();
+  const dialog = useRef<HTMLFormElement>(null);
+  const heading = useRef<HTMLHeadingElement>(null);
+  const input = useRef<HTMLInputElement>(null);
+
+  useModalFocusTrap({
+    container: dialog,
+    initialFocus: inputLabel ? input : heading,
+    onEscape: onCancel,
+    returnFocus,
+  });
+
+  return (
+    <div className={styles.dialogBackdrop} role="presentation">
+      <form
+        ref={dialog}
+        data-dialog-surface=""
+        data-dialog-width="compact"
+        className={styles.dialogSurface.compact}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={descriptionId}
+        onSubmit={(event: FormEvent) => {
+          event.preventDefault();
+          onConfirm(input.current?.value ?? "");
+        }}
+      >
+        <div className={styles.dialogHeader}>
+          <h2 id={titleId} ref={heading} tabIndex={-1}>{title}</h2>
+          <p id={descriptionId} className={decisionStyles.description}>{description}</p>
+        </div>
+        {inputLabel ? (
+          <div className={styles.dialogBody}>
+            <label className={decisionStyles.field} htmlFor={inputId}>
+              {inputLabel}
+              <input ref={input} id={inputId} className={decisionStyles.input} inputMode="url" placeholder={inputPlaceholder} />
+            </label>
+          </div>
+        ) : null}
+        <div className={styles.dialogFooter}>
+          <button type="button" className={decisionStyles.cancel} onClick={onCancel}>{cancelLabel}</button>
+          <button type="submit" className={destructive ? decisionStyles.destructive : decisionStyles.confirm}>{confirmLabel}</button>
+        </div>
+      </form>
+    </div>
+  );
 }

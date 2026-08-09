@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
+import { useModalFocusTrap } from "../../../app/useModalFocusTrap";
 import type { PortablePackageImportPreview } from "../../../ipc/generated/PortablePackageImportPreview";
 import * as styles from "./PortablePackage.css";
 
@@ -13,19 +14,7 @@ export function PortablePackageImportDialog({ preview, pending, error, onConfirm
 }) {
   const heading = useRef<HTMLHeadingElement>(null);
   const dialog = useRef<HTMLElement>(null);
-  useEffect(() => { heading.current?.focus(); }, []);
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !pending) { event.preventDefault(); onCancel(); return; }
-      if (event.key === "Tab") {
-        const controls = Array.from(dialog.current?.querySelectorAll<HTMLElement>("button:not(:disabled)") ?? []);
-        const first = controls[0]; const last = controls.at(-1); const active = document.activeElement;
-        if (event.shiftKey && (active === heading.current || active === first)) { event.preventDefault(); last?.focus(); }
-        else if (!event.shiftKey && active === last) { event.preventDefault(); first?.focus(); }
-      }
-    };
-    window.addEventListener("keydown", onKey); return () => window.removeEventListener("keydown", onKey);
-  }, [onCancel, pending]);
+  useModalFocusTrap({ container: dialog, initialFocus: heading, onEscape: onCancel, escapeEnabled: !pending });
   return <div className={styles.backdrop} role="presentation" onMouseDown={event => { if (event.target === event.currentTarget && !pending) onCancel(); }}>
     <section ref={dialog} className={styles.dialog} role="dialog" aria-modal="true" aria-labelledby="portable-dialog-title" aria-describedby="portable-dialog-description">
       <h2 id="portable-dialog-title" tabIndex={-1} ref={heading}>Import Lifeweave package</h2>
