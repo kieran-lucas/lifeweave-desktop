@@ -76,7 +76,7 @@ export const state = style({
 export const overlay = dialogBackdrop;
 export const dialog = style([
   dialogSurface.standard,
-  { borderRadius: "var(--radius-floating)", boxShadow: "0 24px 80px rgba(0,0,0,.28)" },
+  { borderRadius: "var(--radius-floating)", boxShadow: "var(--elevation-modal)" },
 ]);
 export const field = style({ display: "grid", gap: 6, marginTop: 18 });
 export const searchRow = style({ display: "flex", flexWrap: "wrap", gap: 8, minInlineSize: 0 });

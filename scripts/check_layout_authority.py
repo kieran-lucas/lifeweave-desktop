@@ -215,7 +215,7 @@ def check(errors: list[str]) -> None:
 MAX_RESIDUE = {
     "hex": 13,        # hardcoded colour literals in feature *.css.ts
     "radius": 0,    # raw border-radius literals not resolved through vars.radius
-    "shadow": 14,     # raw box-shadow literals not resolved through vars.elevation
+    "shadow": 0,     # raw box-shadow literals not resolved through vars.elevation
 }
 
 AUTHORIZED_EDITORIAL_FAMILY = "Literata"
@@ -231,7 +231,13 @@ HEX = re.compile(r"#[0-9a-fA-F]{3,8}\b")
 # A resolved radius is `vars.radius.*` or the `--radius-*` custom property. `borderRadius: 0` is
 # deliberate squareness — a declaration, not an unscaled literal — so it is not counted as residue.
 RAW_RADIUS = re.compile(r"borderRadius:\s*(?!.*(?:vars\.radius|--radius-))[\"']?(?!0\s*[,}])[\d.]+")
-RAW_SHADOW = re.compile(r"boxShadow:\s*(?!.*vars\.elevation)[\"'][^\"']*\d")
+# Elevation must resolve through the contract. A *ring* is not elevation: `0 0 0 Npx` draws a
+# border-like halo for focus or selection and has no depth, and neither does an `inset` highlight —
+# so both are declarations rather than unscaled literals, exactly like `borderRadius: 0`.
+RAW_SHADOW = re.compile(
+    r"boxShadow:\s*(?!.*(?:vars\.elevation|--elevation-|--glow-|--world-shadow))"
+    r"[\"'](?!none|inset|0 0 0)[^\"']*\d"
+)
 
 
 def check_visual_residue(errors: list[str]) -> None:

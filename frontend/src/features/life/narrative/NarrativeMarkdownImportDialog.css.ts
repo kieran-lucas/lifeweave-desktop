@@ -6,7 +6,7 @@ export const overlay = dialogBackdrop;
 
 export const dialog = style([
   dialogSurface.compact,
-  { boxShadow: "0 8px 40px rgba(0,0,0,0.18)" },
+  { boxShadow: "var(--elevation-modal)" },
 ]);
 
 export const title = style({ fontWeight: 700, fontSize: "1.1rem", margin: 0 });

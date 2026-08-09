@@ -74,6 +74,15 @@ globalStyle(":root", {
     "--radius-floating": vars.radius.floating,
     "--radius-full": vars.radius.full,
 
+    /*
+     * Elevation, for the same reason. Feature CSS was drawing its own drop shadows in flat black —
+     * `rgba(0,0,0,0.18)`, `rgba(0,0,0,0.3)` — which is the "black fuzzy rectangle" ADR 0045 §20
+     * rules out. Both roles are tinted with the text colour rather than with black, so a floating
+     * surface reads as lit from the same world as everything under it.
+     */
+    "--elevation-floating": vars.elevation.floating,
+    "--elevation-modal": vars.elevation.modal,
+
     "--danger": vars.color.danger,
     "--error": vars.color.danger,
     "--color-error": vars.color.danger,

@@ -27,7 +27,7 @@ export const archivedList=style({display:"grid",gap:6,listStyle:"none",padding:0
 export const archivedRow=style({display:"flex",justifyContent:"space-between",gap:8,alignItems:"center",fontSize:13});
 export const status=style({gridColumn:"1/-1",minHeight:24,color:"var(--text-muted)"});
 export const instructions=style({fontSize:12,color:"var(--text-muted)",lineHeight:1.45});
-export const overlay=style({width:164,padding:10,border:"2px solid var(--focus-ring)",borderRadius:"var(--radius-surface)",background:"var(--glass-surface-strong)",boxShadow:"0 12px 30px color-mix(in srgb, var(--text-primary) 16%, transparent)",color:"var(--text-primary)",fontWeight:750});
+export const overlay=style({width:164,padding:10,border:"2px solid var(--focus-ring)",borderRadius:"var(--radius-surface)",background:"var(--glass-surface-strong)",boxShadow: "var(--elevation-modal)",color:"var(--text-primary)",fontWeight:750});
 export const preview=style({stroke:"var(--focus-ring)",strokeWidth:2,strokeDasharray:"5 4",fill:"none"});
 globalStyle(`${links} path`,{stroke:"var(--border-subtle)",strokeWidth:1.25,fill:"none",transition:"d 360ms cubic-bezier(.2,.8,.2,1)"});
 globalStyle(`${workspace} textarea`,{resize:"vertical"});

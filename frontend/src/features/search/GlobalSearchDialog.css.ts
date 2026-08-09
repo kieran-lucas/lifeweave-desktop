@@ -27,7 +27,7 @@ export const card = style([
     gap: 0,
     background: "var(--sidebar-background, #fff)",
     borderRadius: "var(--radius-surface)",
-    boxShadow: "0 8px 40px rgba(0,0,0,0.18)",
+    boxShadow: "var(--elevation-modal)",
   },
 ]);
 

@@ -23,6 +23,6 @@ globalStyle(`${table} td`, { padding: "10px 8px", verticalAlign: "top", borderBo
 export const status = style({ marginTop: "16px", color: "var(--text-muted, var(--text-muted))" });
 export const error = style({ marginTop: "16px", color: "var(--danger)" });
 export const backdrop = dialogBackdrop;
-export const dialog = style([dialogSurface.compact, { boxShadow: "0 20px 60px rgba(0,0,0,.35)" }]);
+export const dialog = style([dialogSurface.compact, { boxShadow: "var(--elevation-modal)" }]);
 export const dialogActions = style({ display: "flex", flexWrap: "wrap", justifyContent: "flex-end", alignItems: "center", gap: space.control, minInlineSize: 0 });
 export const visuallyHidden = style({ position: "absolute", width: "1px", height: "1px", padding: 0, margin: "-1px", overflow: "hidden", clip: "rect(0, 0, 0, 0)", whiteSpace: "nowrap", border: 0 });

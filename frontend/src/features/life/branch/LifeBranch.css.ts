@@ -13,7 +13,7 @@ export const reason = style({ margin: 0, opacity: 0.85 });
  * visual treatment stays local.
  */
 export const backdrop = dialogBackdrop;
-export const dialog = style([dialogSurface.standard, { border: "1px solid currentColor", background: "Canvas", color: "CanvasText", boxShadow: "0 1rem 3rem rgba(0,0,0,0.3)" }]);
+export const dialog = style([dialogSurface.standard, { border: "1px solid currentColor", background: "Canvas", color: "CanvasText", boxShadow: "var(--elevation-modal)" }]);
 export const metadata = style({ display: "grid", gridTemplateColumns: "max-content 1fr", gap: "0.35rem 0.8rem" });
 globalStyle(`${metadata} dt`, { fontWeight: 700 });
 globalStyle(`${metadata} dd`, { margin: 0, overflowWrap: "anywhere" });
