@@ -114,24 +114,26 @@ export function AnalyticsScreen({
         <>
           <section className={styles.section} aria-labelledby="scheduled-overview">
             <h2 id="scheduled-overview">Scheduled overview</h2>
-            <p className={styles.primary}>
-              <strong>{scheduledDuration(data.scheduled_minutes)}</strong>
-              <span>Scheduled time</span>
-            </p>
-            <dl className={styles.facts}>
-              <div>
-                <dt>Scheduled tasks</dt>
-                <dd>{data.task_count}</dd>
-              </div>
-              <div>
-                <dt>Evaluated</dt>
-                <dd>{data.evaluated_count}</dd>
-              </div>
-              <div>
-                <dt>Missed</dt>
-                <dd>{data.missed_count}</dd>
-              </div>
-            </dl>
+            <div className={styles.summary}>
+              <p className={styles.primary}>
+                <strong>{scheduledDuration(data.scheduled_minutes)}</strong>
+                <span>Scheduled time</span>
+              </p>
+              <dl className={styles.summaryFacts}>
+                <div>
+                  <dt>Scheduled tasks</dt>
+                  <dd>{data.task_count}</dd>
+                </div>
+                <div>
+                  <dt>Evaluated</dt>
+                  <dd>{data.evaluated_count}</dd>
+                </div>
+                <div>
+                  <dt>Missed</dt>
+                  <dd>{data.missed_count}</dd>
+                </div>
+              </dl>
+            </div>
           </section>
 
           <section className={styles.section} aria-labelledby="recorded-actual-time">

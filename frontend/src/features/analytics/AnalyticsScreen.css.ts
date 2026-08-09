@@ -2,6 +2,7 @@ import { globalStyle, style } from "@vanilla-extract/css";
 import { space } from "../../app/layout/tokens.css";
 import { scrollRegion } from "../../app/layout/layout.css";
 import { glass, glassStrong, progressBar } from "../../design-system/visual/atmosphere.css";
+import { text } from "../../design-system/visual/typography.css";
 
 /*
  * Analytics owns no page width. It is a STANDARD_PAGE and consumes the shared `PageFrame`; what
@@ -27,9 +28,20 @@ export const section=style({display:"flex",flexDirection:"column",gap:space.grou
  * The headline metric is the page's centrepiece: a large tabular number on its own glass module,
  * with its label beneath. Typography carries it — no chart chrome, no card grid.
  */
-export const primary=style([glassStrong,{display:"flex",flexDirection:"column",gap:space.x1,margin:0,padding:`${space.x5} ${space.x5}`,borderRadius:"var(--radius-surface)",minInlineSize:0}]);
-globalStyle(`${primary} strong`,{fontSize:"clamp(2rem,5vw,3.5rem)",fontWeight:700,letterSpacing:"-0.03em",lineHeight:1.05,fontVariantNumeric:"tabular-nums",color:"var(--text-primary)"});
-globalStyle(`${primary} span`,{color:"var(--text-muted)"});
+/*
+ * Rendered against the real surface, the headline sat alone on a 1440px-wide module with the number
+ * left-aligned and the rest of the card empty — the dead card the adversarial review exists to
+ * catch. It is no longer a module of its own: it is the lead of the facts block below it, so the
+ * headline and the numbers that qualify it read as one analytical statement instead of two stacked
+ * rectangles.
+ *
+ * `fit-content` stops the module spanning the frame just because it can. A statement should be as
+ * wide as it needs to be.
+ */
+export const primary=style({display:"flex",flexDirection:"column",gap:space.x1,margin:0,minInlineSize:0});
+/* The measured numeric role, rather than a viewport-scaled clamp that ignored the type system. */
+globalStyle(`${primary} strong`,{...text.numericMetric,color:"var(--text-primary)"});
+globalStyle(`${primary} span`,{...text.metadata,color:"var(--text-muted)"});
 
 /*
  * Facts step 3 → 2 → 1 against the page frame rather than the window, and `auto-fit` means the grid
@@ -43,9 +55,17 @@ globalStyle(`${primary} span`,{color:"var(--text-muted)"});
  * surface and separating them with hairlines makes them read as one analytical statement.
  */
 export const facts=style([glass,{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(180px, 1fr))",gap:0,margin:0,padding:space.x4,borderRadius:"var(--radius-surface)",minInlineSize:0}]);
-globalStyle(`${facts} div`,{padding:`${space.x2} ${space.x4} ${space.x2} 0`,minInlineSize:0});
-globalStyle(`${facts} dt`,{color:"var(--text-muted)",fontSize:"0.8125rem"});
-globalStyle(`${facts} dd`,{margin:0,fontSize:26,fontWeight:600,letterSpacing:"-0.02em",fontVariantNumeric:"tabular-nums",color:"var(--text-primary)"});
+/*
+ * One glass surface carrying the headline and its facts. The headline spans every column so the
+ * facts sit beneath it as qualifiers rather than beside it as peers, and a hairline separates the
+ * two registers without introducing a second box.
+ */
+export const summary=style([glass,{display:"flex",flexDirection:"column",margin:0,padding:space.x4,borderRadius:"var(--radius-surface)",minInlineSize:0}]);
+/* The facts grid, unboxed, because the surface around it is already the box. */
+export const summaryFacts=style({display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(180px, 1fr))",gap:0,margin:0,minInlineSize:0,paddingBlockStart:space.x3,marginBlockStart:space.x3,borderBlockStart:"1px solid var(--border-subtle)"});
+globalStyle(`${facts} div, ${summaryFacts} div`,{padding:`${space.x2} ${space.x4} ${space.x2} 0`,minInlineSize:0});
+globalStyle(`${facts} dt, ${summaryFacts} dt`,{color:"var(--text-muted)",fontSize:"0.8125rem"});
+globalStyle(`${facts} dd, ${summaryFacts} dd`,{margin:0,fontSize:26,fontWeight:600,letterSpacing:"-0.02em",fontVariantNumeric:"tabular-nums",color:"var(--text-primary)"});
 
 export const categories=style([glass,{listStyle:"none",padding:space.x4,margin:0,display:"grid",gap:space.field,borderRadius:"var(--radius-surface)",minInlineSize:0}]);
 globalStyle(`${categories} li`,{minInlineSize:0});
