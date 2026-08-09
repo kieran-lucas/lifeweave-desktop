@@ -8,15 +8,28 @@
   },
   "devicePixelRatio": 1.25,
   "theme": "light",
-  "viewport": {
-    "mode": "canonical-maximized",
-    "innerWidth": 1536,
-    "innerHeight": 794,
-    "formatNameWidth": 1522,
-    "formatNameHeight": 779,
-    "physicalPngWidth": 1920,
-    "physicalPngHeight": 992
-  },
+  "viewports": [
+    {
+      "mode": "canonical-maximized",
+      "innerWidth": 1536,
+      "innerHeight": 794,
+      "formatNameWidth": 1522,
+      "formatNameHeight": 779,
+      "physicalPngWidth": 1920,
+      "physicalPngHeight": 992
+    },
+    {
+      "mode": "explicit-minimum",
+      "requestedWidth": 960,
+      "requestedHeight": 640,
+      "innerWidth": 959,
+      "innerHeight": 639,
+      "formatNameWidth": 960,
+      "formatNameHeight": 640,
+      "physicalPngWidth": 1199,
+      "physicalPngHeight": 799
+    }
+  ],
   "motion": {
     "cssAnimationsDisabledByVisualService": true,
     "blinkingCursorDisabledByVisualService": true
@@ -26,11 +39,14 @@
     "seed": "seedLayoutFixture",
     "fixtureCheckpoint": "be71661"
   },
-  "sourceTreeParent": "e2818cf",
-  "snapshotCount": 19,
+  "sourceTreeCheckpoints": ["e2818cf", "fe2903b"],
+  "snapshotCount": 38,
   "comparison": {
     "mismatchPercentage": 0,
     "autoAcceptanceDefault": false,
-    "evidence": "target/e2e-artifacts/task-50b/task51-visual-baseline-verify2-1536-20260809/"
+    "evidence": [
+      "target/e2e-artifacts/task-50b/task51-visual-baseline-verify2-1536-20260809/",
+      "target/e2e-artifacts/task-50b/task51-visual-baseline-verify-960-20260809/"
+    ]
   }
 }
