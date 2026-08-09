@@ -1,5 +1,7 @@
 import { style } from "@vanilla-extract/css";
-import { dialogSurface } from "../../app/layout/layout.css";
+import { button, compact } from "../../design-system/primitives/controls.css";
+import { text } from "../../design-system/visual/typography.css";
+import { dialogBackdrop, dialogSurface } from "../../app/layout/layout.css";
 
 /*
  * MODAL_SURFACE. Search is the one documented centring exception in the modal family: a global
@@ -7,16 +9,12 @@ import { dialogSurface } from "../../app/layout/layout.css";
  * placement and keeps the result list rooted while it grows. Its width, bounded block size and
  * internal scroll come from the shared modal grammar (ADR 0044).
  */
-export const overlay = style({
-  position: "fixed",
-  inset: 0,
-  background: "var(--backdrop)",
+export const overlay = style([dialogBackdrop, {
   display: "flex",
   alignItems: "flex-start",
   justifyContent: "center",
   paddingTop: "clamp(48px, 12vh, 120px)",
-  zIndex: "var(--layer-overlay)",
-});
+}]);
 
 export const card = style([
   dialogSurface.standard,
@@ -25,9 +23,6 @@ export const card = style([
     maxBlockSize: "min(560px, calc(100dvh - clamp(48px, 12vh, 120px) - var(--lw-space-5)))",
     padding: 0,
     gap: 0,
-    background: "var(--sidebar-background)",
-    borderRadius: "var(--radius-surface)",
-    boxShadow: "var(--elevation-modal)",
   },
 ]);
 
@@ -35,14 +30,13 @@ export const inputRow = style({
   display: "flex",
   alignItems: "center",
   padding: "12px 16px",
-  borderBottom: "1px solid var(--border-subtle, var(--border-subtle))",
+  borderBottom: "1px solid var(--border-subtle)",
   gap: 10,
 });
 
 export const searchIcon = style({
   flexShrink: 0,
-  color: "var(--text-muted, var(--text-muted))",
-  fontSize: 16,
+  color: "var(--text-muted)",
   pointerEvents: "none",
   userSelect: "none",
 });
@@ -55,28 +49,16 @@ export const input = style({
   outline: 0,
   background: "transparent",
   color: "var(--text-primary)",
-  fontSize: "1rem",
-  lineHeight: 1.4,
-  "::placeholder": { color: "var(--text-muted, var(--text-muted))" },
+  ...text.body,
+  "::placeholder": { color: "var(--text-muted)" },
   selectors: {
     "&::-webkit-search-cancel-button": { WebkitAppearance: "none", display: "none" },
   },
 });
 
-export const closeButton = style({
+export const closeButton = style([button.ghost, compact, {
   flexShrink: 0,
-  border: 0,
-  background: "transparent",
-  color: "var(--text-muted, var(--text-muted))",
-  cursor: "pointer",
-  fontSize: "0.85rem",
-  padding: "4px 8px",
-  borderRadius: "var(--radius-small)",
-  selectors: {
-    "&:focus-visible": { outline: "3px solid var(--focus-ring)", outlineOffset: 2 },
-    "&:hover": { background: "var(--active-background, var(--icon-background))" },
-  },
-});
+}]);
 
 export const results = style({
   flex: 1,
@@ -86,17 +68,14 @@ export const results = style({
 
 export const statusLine = style({
   padding: "10px 18px",
-  color: "var(--text-muted, var(--text-muted))",
-  fontSize: "0.9rem",
+  color: "var(--text-muted)",
+  ...text.metadata,
 });
 
 export const groupHeading = style({
   padding: "6px 18px 2px",
-  fontSize: "0.75rem",
-  fontWeight: 700,
-  letterSpacing: "0.06em",
-  textTransform: "uppercase",
-  color: "var(--text-muted, var(--text-muted))",
+  ...text.eyebrow,
+  color: "var(--text-muted)",
 });
 
 export const option = style({
@@ -110,7 +89,7 @@ export const option = style({
   lineHeight: 1.35,
   selectors: {
     "&[aria-selected=true]": {
-      background: "var(--active-background, var(--icon-background))",
+      background: "var(--active-background)",
     },
     "&:focus": { outline: 0 },
   },
@@ -119,8 +98,7 @@ export const option = style({
 export const optionTitle = style({
   display: "block",
   color: "var(--text-primary)",
-  fontWeight: 500,
-  fontSize: "0.95rem",
+  ...text.bodyStrong,
   overflow: "hidden",
   whiteSpace: "nowrap",
   textOverflow: "ellipsis",
@@ -128,8 +106,8 @@ export const optionTitle = style({
 
 export const optionContext = style({
   display: "block",
-  color: "var(--text-muted, var(--text-muted))",
-  fontSize: "0.8rem",
+  color: "var(--text-muted)",
+  ...text.metadata,
   overflow: "hidden",
   whiteSpace: "nowrap",
   textOverflow: "ellipsis",
@@ -137,8 +115,8 @@ export const optionContext = style({
 
 export const optionSnippet = style({
   display: "block",
-  color: "var(--text-muted, var(--text-muted))",
-  fontSize: "0.8rem",
+  color: "var(--text-muted)",
+  ...text.metadata,
   overflow: "hidden",
   whiteSpace: "nowrap",
   textOverflow: "ellipsis",
@@ -153,6 +131,6 @@ export const mark = style({
 
 export const moreNote = style({
   padding: "4px 18px 8px",
-  fontSize: "0.78rem",
-  color: "var(--text-muted, var(--text-muted))",
+  ...text.caption,
+  color: "var(--text-muted)",
 });

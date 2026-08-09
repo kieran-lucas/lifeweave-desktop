@@ -6,10 +6,10 @@
 
 - BASELINE_PLANNING_SHA: `a1078c1f91c251aaa7a453ef1e8a5108551c852d`
 - EXECUTION_START_SHA: `0b3e01d4a8bd9b62c5d786e9b4a4401d72c0edc1`
-- LAST_VERIFIED_COMMIT: `<none>`
-- CURRENT_PACKET: `S01`
+- LAST_VERIFIED_COMMIT: `f4dc93ddd8d7696feedb528232c6710376ef65c6`
+- CURRENT_PACKET: `S02`
 - CURRENT_STATUS: `PENDING`
-- NEXT_PACKET: `S01`
+- NEXT_PACKET: `S02`
 - FINAL_REVIEW_DONE: `false`
 - FINAL_FINDING_SET_FROZEN: `false`
 - PROGRAM_STATUS: `IN_PROGRESS`
@@ -18,8 +18,8 @@
 
 | Packet | Status | Commit | Evidence |
 |---|---|---|---|
-| F0 | CLOSED | checkpoint containing this row | VERIFIED; 109-row crosswalk, foundation gates, and representative native audit passed |
-| S01 | PENDING | — | — |
+| F0 | CLOSED | `f4dc93ddd8d7696feedb528232c6710376ef65c6` | VERIFIED; 109-row crosswalk, foundation gates, and representative native audit passed |
+| S01 | CLOSED | checkpoint containing this row | 8/8 rows LOCAL_VERIFIED; focused semantics and max/min native profiles passed |
 | S02 | PENDING | — | — |
 | S03 | PENDING | — | — |
 | S04 | PENDING | — | — |
@@ -42,14 +42,14 @@
 
 | ID | Stage | Status | Last verified commit | Debt/blocker |
 |---|---|---|---|---|
-| G-01 | S01 | PENDING | — | — |
-| G-02 | S01 | PENDING | — | — |
-| G-03 | S01 | PENDING | — | — |
-| G-04 | S01 | PENDING | — | — |
-| G-05 | S01 | PENDING | — | — |
-| G-06 | S01 | PENDING | — | — |
-| SH-01 | S01 | PENDING | — | — |
-| SH-02 | S01 | PENDING | — | — |
+| G-01 | S01 | LOCAL_VERIFIED | S01 checkpoint | focused App/core-status semantics + native parent-surface evidence |
+| G-02 | S01 | LOCAL_VERIFIED | S01 checkpoint | focused App/core-status semantics + native parent-surface evidence |
+| G-03 | S01 | LOCAL_VERIFIED | S01 checkpoint | focused recovery semantics, heading focus, and page-frame evidence |
+| G-04 | S01 | LOCAL_VERIFIED | S01 checkpoint | search result/no-result max+min visual evidence; focus containment/restoration |
+| G-05 | S01 | LOCAL_VERIFIED | S01 checkpoint | registry-derived 8-row modal max+min visual evidence |
+| G-06 | S01 | LOCAL_VERIFIED | S01 checkpoint | inputless/input/destructive focused dialog tests; shared modal grammar |
+| SH-01 | S01 | LOCAL_VERIFIED | S01 checkpoint | expanded shell max+min visual evidence; current state is not color-only |
+| SH-02 | S01 | LOCAL_VERIFIED | S01 checkpoint | collapsed shell max+min visual evidence; no overflow/collisions |
 | T-01 | S02 | PENDING | — | — |
 | T-02 | S02 | PENDING | — | — |
 | T-03 | S02 | PENDING | — | — |
@@ -209,6 +209,12 @@ Append concise entries:
 - [F0] full-profile static equivalence proof — PASS — 49 capture calls before / 49 after / zero capture-text differences
 - [F0] native `foundation` visual audit — PASS — 45 audit records / zero collisions / 5 WebDriver tests — `target/e2e-artifacts/task-50b/foundation-F0-20260810-062235`
 - [F0] bounded self-review `F_F0` — RESOLVED — persistent segmented selection no longer uses floating elevation; visual-audit wrapper always restores PowerShell error policy; affected parser/layout/type checks passed
+- [S01] `git diff --check` + convergence ratchet — PASS — font-size residue 116 / focus residue 40 / control clones 52; ceilings tightened
+- [S01] `pnpm typecheck` — PASS — frontend project references
+- [S01] focused shell/global tests — PASS — 6 files / 86 tests before review; affected post-review subset 4 files / 32 tests
+- [S01] native Light `shell-task` maximized — PASS — 24 surfaces / zero collisions — `target/e2e-artifacts/task-50b/shell-task-S01-20260810-065333`
+- [S01] native Light `shell-task` 960×640 — PASS — achieved 960×639 / 24 surfaces / zero collisions — `target/e2e-artifacts/task-50b/shell-task-S01-20260810-065519`
+- [S01] bounded self-review `F_S01` — RESOLVED — removed the no-op backdrop filter/compositing path from the now-opaque shared modal; affected static/type/dialog checks passed
 
 ## DECISIONS MADE UNDER UNATTENDED AUTHORITY
 
@@ -217,6 +223,9 @@ Record only material reversible decisions that future stages may need to know.
 - [F0] Productive operational headings use Segoe UI Variable Display; Literata remains restricted to authored Reader/Narrative content.
 - [F0] The generated icon module owns the central Lifeweave infinity mark; no external or duplicated brand asset was introduced.
 - [F0] The full audit profile preserves the pre-F0 49-capture order; packet profiles are selectable bounded subsets and never redefine full-audit coverage.
+- [S01] Search precedes Settings in shell navigation to match the approved information hierarchy without changing destination or shortcut capability.
+- [S01] Shared modal surfaces are opaque raised surfaces with modal-only elevation; Search retains its documented top-anchored placement.
+- [S01] The `shell-task` profile includes Global Search while the `full` profile preserves its original capture order and single-capture identity.
 
 ## FINAL FINDING SET
 

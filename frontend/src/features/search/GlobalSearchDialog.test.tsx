@@ -105,6 +105,29 @@ describe("GlobalSearchDialog", () => {
     expect(document.activeElement).toBe(input);
   });
 
+  it("traps Tab at the dialog boundaries and restores the invoker on unmount", () => {
+    const invokerRef = makeInvoker();
+    const opener = document.createElement("button");
+    document.body.append(opener);
+    invokerRef.current = opener;
+    opener.focus();
+
+    const view = renderDialog({ invokerRef });
+    const input = screen.getByRole("combobox");
+    const close = screen.getByRole("button", { name: "Close search" });
+    expect(input).toHaveFocus();
+
+    close.focus();
+    fireEvent.keyDown(window, { key: "Tab" });
+    expect(input).toHaveFocus();
+    fireEvent.keyDown(window, { key: "Tab", shiftKey: true });
+    expect(close).toHaveFocus();
+
+    view.unmount();
+    expect(opener).toHaveFocus();
+    opener.remove();
+  });
+
   it("shows no results before 2 characters are typed", () => {
     renderDialog();
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "p" } });

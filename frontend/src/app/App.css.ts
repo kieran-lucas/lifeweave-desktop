@@ -4,6 +4,8 @@ import { globalStyle, style } from "@vanilla-extract/css";
 // production bundle. Before it, `visual/typography.css.ts` was reachable only from the excluded
 // prototype entry, so the scale shipped to nothing.
 import "../design-system/visual/globalType.css";
+import { button } from "../design-system/primitives/controls.css";
+import { focusRing } from "../design-system/primitives/utilities.css";
 import { text } from "../design-system/visual/typography.css";
 import { duration, easing } from "../design-system/visual/motion.css";
 import { gutter, space } from "./layout/tokens.css";
@@ -19,25 +21,25 @@ import { gutter, space } from "./layout/tokens.css";
  * space available to it, that horizontal scrollbar shrank the available height, and the two axes
  * fed each other. Measured evidence is in `docs/audits/task-50-layout-baseline.md` §2.1.
  */
-export const appRoot = style({ display: "grid", gridTemplateColumns: "260px minmax(0, 1fr)", inlineSize: "100%", blockSize: "100%", overflow: "hidden", background: "transparent", selectors: { "&[data-sidebar-mode=collapsed]": { gridTemplateColumns: "68px minmax(0, 1fr)" } } });
-export const sidebar = style({ display: "flex", flexDirection: "column", minWidth: 0, padding: "18px 14px", borderRight: "1px solid var(--glass-border)", background: "color-mix(in srgb, var(--sidebar-background) 82%, transparent)", position: "relative", zIndex: 1, transition: `width ${duration.inspectorState} ${easing.standard}, padding ${duration.inspectorState} ${easing.standard}` });
-export const brand = style({ display: "flex", alignItems: "center", gap: 10, minHeight: 34, padding: "0 10px", marginBottom: 18, ...text.bodyStrong, color: "var(--text-primary)" });
+export const appRoot = style({ display: "grid", gridTemplateColumns: "252px minmax(0, 1fr)", inlineSize: "100%", blockSize: "100%", overflow: "hidden", background: "var(--app-background)", selectors: { "&[data-sidebar-mode=collapsed]": { gridTemplateColumns: "68px minmax(0, 1fr)" } } });
+export const sidebar = style({ display: "flex", flexDirection: "column", minWidth: 0, padding: "28px 16px 18px", borderRight: "1px solid var(--border-subtle)", background: "var(--sidebar-background)", position: "relative", zIndex: 1 });
+export const brand = style({ display: "flex", alignItems: "center", gap: 11, minHeight: 36, padding: "0 9px", marginBottom: 28, ...text.objectTitle, color: "var(--text-primary)" });
 /** The centralized product mark: a simple blue infinity without a tile or glow. */
 export const brandMark = style({ display: "grid", placeItems: "center", width: 28, height: 28, flexShrink: 0, color: "var(--accent)" });
 export const brandGlyph = style({ fill: "none", stroke: "currentColor", strokeWidth: 1.65, strokeLinecap: "round" });
-export const navGroup = style({ display: "grid", gap: 2 });
-export const navButton = style({ display: "flex", alignItems: "center", gap: 12, minHeight: 44, width: "100%", padding: "8px 10px", border: 0, borderRadius: "var(--radius-control)", background: "transparent", color: "var(--text-muted)", ...text.navigation, textAlign: "left", cursor: "pointer", transition: `background-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}`, selectors: { "&[aria-current=page]": { background: "var(--active-background)", color: "var(--text-primary)", fontWeight: 600 }, "&:hover": { background: "var(--active-background)" }, "&:focus-visible": { outline: "2px solid var(--focus-ring)", outlineOffset: 2 } } });
+export const navGroup = style({ display: "grid", gap: 3 });
+export const navButton = style([focusRing, { display: "flex", alignItems: "center", gap: 12, minHeight: 42, width: "100%", padding: "8px 11px", border: 0, borderRadius: "var(--radius-control)", background: "transparent", color: "var(--text-muted)", ...text.navigation, textAlign: "left", cursor: "pointer", transition: `background-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}`, selectors: { "&[aria-current=page]": { background: "var(--accent)", color: "var(--accent-contrast)", fontWeight: 600 }, "&:hover:not([aria-current=page])": { background: "var(--active-background)", color: "var(--text-primary)" } } }]);
 /**
  * v2 replaces the grey letter tile with a real 20 px outline icon that takes the accent when its
  * destination is current. The tile was the single most dated element in the shell: it put a filled
  * box behind every navigation row, which is exactly the enclosure the design law removes.
  */
-export const navIcon = style({ flexShrink: 0, width: 20, height: 20, color: "var(--text-muted)", selectors: { [`${navButton}[aria-current=page] &`]: { color: "var(--accent)" } } });
+export const navIcon = style({ flexShrink: 0, width: 20, height: 20, color: "currentColor" });
 export const navLabel = style({ overflow: "hidden", whiteSpace: "nowrap" });
 globalStyle(`${appRoot}[data-sidebar-mode=collapsed] .${navLabel}`, { display: "none" });
-globalStyle(`${appRoot}[data-sidebar-mode=collapsed] .${brand}`, { fontSize: 0, paddingInline: 11 });
-export const divider = style({ height: 1, margin: "12px 10px", background: "var(--border-subtle)" });
-export const collapseButton = style({ marginTop: "auto", display: "flex", gap: 12, alignItems: "center", minHeight: 40, padding: "8px 10px", border: 0, borderTop: "1px solid var(--border-subtle)", borderRadius: 0, paddingTop: 14, background: "transparent", color: "var(--text-muted)", ...text.navigation, cursor: "pointer" });
+globalStyle(`${appRoot}[data-sidebar-mode=collapsed] .${brand}`, { fontSize: 0, paddingInline: 4 });
+export const divider = style({ height: 1, margin: "13px 10px", background: "var(--border-subtle)" });
+export const collapseButton = style([focusRing, { marginTop: "auto", display: "flex", gap: 12, alignItems: "center", minHeight: 40, padding: "10px 11px 8px", border: 0, borderTop: "1px solid var(--border-subtle)", borderRadius: 0, background: "transparent", color: "var(--text-muted)", ...text.navigation, cursor: "pointer", selectors: { "&:hover": { color: "var(--text-primary)" } } }]);
 
 /*
  * The one main viewport. It owns the single responsive gutter and reserves its scrollbar gutter on
@@ -84,8 +86,11 @@ globalStyle(`${settingsSection} > h2`, { ...text.sectionTitle, margin: 0 });
 globalStyle(`${settingsSection} > h2 + p`, { ...text.compactBody, margin: 0, color: "var(--text-muted)", maxInlineSize: "72ch" });
 /* Everything after the description is content, and content gets air. */
 globalStyle(`${settingsSection} > h2 + p + *`, { marginBlockStart: space.x3 });
-export const coreStatus = style({ color: "var(--text-muted)" });
+export const coreStatus = style({ ...text.body, margin: 0, color: "var(--text-muted)" });
+export const recovery = style({ paddingBlockStart: space.x6 });
+export const recoveryCopy = style({ maxInlineSize: "62ch", margin: 0, color: "var(--text-muted)" });
+export const recoveryAction = button.primary;
 export const shortcutList = style({ display: "grid", gridTemplateColumns: "1fr auto", gap: `${space.control} ${space.field}`, margin: 0, alignItems: "center" });
 globalStyle(`${shortcutList} dd`, { margin: 0, justifySelf: "end" });
 export const shortcutChord = style({ padding: "3px 8px", borderRadius: "var(--radius-small)", border: "1px solid var(--border-subtle)", background: "var(--icon-background)", ...text.code, fontWeight: 600, whiteSpace: "nowrap" });
-export const dialogButton = style({ minHeight: 36, padding: "8px 14px", borderRadius: "var(--radius-control)", border: "1px solid var(--border-subtle)", background: "transparent", color: "var(--text-primary)", cursor: "pointer", selectors: { "&:focus-visible": { outline: "2px solid var(--focus-ring)", outlineOffset: 2 } } });
+export const dialogButton = button.secondary;

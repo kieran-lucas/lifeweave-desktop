@@ -13,6 +13,7 @@ describe("RouteErrorBoundary", () => {
     render(<RouteErrorBoundary destination="today"><Broken fail /></RouteErrorBoundary>);
     expect(screen.getByRole("alert")).toHaveTextContent("saved data was not changed");
     expect(screen.queryByText(/private content/)).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "This view could not be displayed" })).toHaveFocus();
     expect(screen.getByRole("button", { name: "Retry view" })).toBeInTheDocument();
   });
 

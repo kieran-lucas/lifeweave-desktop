@@ -312,8 +312,6 @@ export function App() {
           <div className={styles.divider} />
           {destinationShortcuts.slice(4, 5).map(renderDestination)}
           <div className={styles.divider} />
-          {destinationShortcuts.slice(5, 6).map(renderDestination)}
-          <div className={styles.divider} />
           <button
             ref={searchTriggerRef}
             type="button"
@@ -325,6 +323,7 @@ export function App() {
             <Icon d={iconSearch} className={styles.navIcon} />
             <span className={styles.navLabel}>{searchShortcut.label}</span>
           </button>
+          {destinationShortcuts.slice(5, 6).map(renderDestination)}
         </div>
         <button
           type="button"

@@ -769,9 +769,13 @@ describe(`Endgame visual audit (${auditProfile}: ${label})`, () => {
     });
   }
 
-  if (profileIncludes(auditProfile, "settings")) {
+  if (
+    profileIncludes(auditProfile, "settings") ||
+    profileIncludes(auditProfile, "shell-task")
+  ) {
     it("walks Settings, Search, backup, and restore preview surfaces", async function () {
     this.timeout(300_000);
+    if (profileIncludes(auditProfile, "settings")) {
     await go("Settings", "h1#settings-heading");
     await capture("settings-top", "18-settings");
     await browser.execute(() => {
@@ -788,6 +792,7 @@ describe(`Endgame visual audit (${auditProfile}: ${label})`, () => {
       const main = document.querySelector("[data-app-viewport]");
       if (main) main.scrollTop = 0;
     });
+    }
 
     if (await tryClick("button[aria-label^='Search']")) {
       await capture("search", "21-search");
@@ -805,6 +810,7 @@ describe(`Endgame visual audit (${auditProfile}: ${label})`, () => {
       await capture("search--no-results", "21c-search-no-results");
       await tryClick("button[aria-label='Close search']");
     }
+    if (profileIncludes(auditProfile, "settings")) {
     if (await tryClick("button=Create backup")) {
       await browser.pause(3000);
       await capture("backup-settings", "23-backup");
@@ -814,6 +820,7 @@ describe(`Endgame visual audit (${auditProfile}: ${label})`, () => {
       await $("[role='dialog'][aria-labelledby='restore-backup-title']").waitForDisplayed({ timeout: 15_000 });
       await capture("restore-confirmation", "23b-restore-confirmation", "Timestamped runtime evidence; intentionally not a visual golden.");
       await dismiss();
+    }
     }
     });
   }

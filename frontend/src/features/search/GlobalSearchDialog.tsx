@@ -8,6 +8,7 @@ import type { SearchTextFragment } from "../../ipc/generated/SearchTextFragment"
 import { localToday } from "../calendar/date";
 import * as styles from "./GlobalSearchDialog.css";
 import { Icon, iconSearch } from "../../design-system/visual/icons";
+import { useModalFocusTrap } from "../../app/useModalFocusTrap";
 
 type Props = {
   onClose: () => void;
@@ -70,6 +71,7 @@ export default function GlobalSearchDialog({ onClose, onNavigate, invokerRef }: 
   const [activeIndex, setActiveIndex] = useState(-1);
 
   const inputRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
   const sequenceRef = useRef(0);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const listboxId = useId();
@@ -77,9 +79,12 @@ export default function GlobalSearchDialog({ onClose, onNavigate, invokerRef }: 
   const flat = projection ? flattenResults(projection) : [];
   const activeOption = activeIndex >= 0 ? flat[activeIndex] : undefined;
 
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
+  useModalFocusTrap({
+    container: dialogRef,
+    initialFocus: inputRef,
+    onEscape: onClose,
+    returnFocus: invokerRef.current,
+  });
 
   useEffect(() => {
     const q = query.trim();
@@ -115,12 +120,6 @@ export default function GlobalSearchDialog({ onClose, onNavigate, invokerRef }: 
   }, [query]);
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Escape") {
-      e.preventDefault();
-      onClose();
-      requestAnimationFrame(() => invokerRef.current?.focus());
-      return;
-    }
     if (e.key === "ArrowDown") {
       e.preventDefault();
       setActiveIndex((i) => Math.min(i + 1, flat.length - 1));
@@ -156,11 +155,10 @@ export default function GlobalSearchDialog({ onClose, onNavigate, invokerRef }: 
       onClick={(e) => {
         if (e.target === e.currentTarget) {
           onClose();
-          requestAnimationFrame(() => invokerRef.current?.focus());
         }
       }}
     >
-      <div role="dialog" aria-modal="true" aria-label="Search" className={styles.card}>
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Search" className={styles.card}>
         <div className={styles.inputRow}>
           <span className={styles.searchIcon} aria-hidden="true"><Icon d={iconSearch} size={16} /></span>
           <input
@@ -185,10 +183,7 @@ export default function GlobalSearchDialog({ onClose, onNavigate, invokerRef }: 
             type="button"
             className={styles.closeButton}
             aria-label="Close search"
-            onClick={() => {
-              onClose();
-              requestAnimationFrame(() => invokerRef.current?.focus());
-            }}
+            onClick={onClose}
           >
             Esc
           </button>

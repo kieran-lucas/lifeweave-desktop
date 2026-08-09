@@ -1,7 +1,7 @@
 import { globalStyle, keyframes, style, styleVariants } from "@vanilla-extract/css";
 
-import { glassStrong } from "../../design-system/visual/atmosphere.css";
 import { duration, easing, reduced } from "../../design-system/visual/motion.css";
+import { text } from "../../design-system/visual/typography.css";
 import { dialogInset, dialogWidth, frame, space } from "./tokens.css";
 
 /* ── Baseline native-control geometry ────────────────────────────────────────────────────────
@@ -281,7 +281,7 @@ const dialogIn = keyframes({
   to: { opacity: 1, transform: "none" },
 });
 
-const dialogSurfaceBase = style([glassStrong,{
+const dialogSurfaceBase = style({
   display: "flex",
   flexDirection: "column",
   gap: space.group,
@@ -309,6 +309,8 @@ const dialogSurfaceBase = style([glassStrong,{
    * looks tight on a 720px surface.
    */
   borderRadius: "var(--radius-floating)",
+  background: "var(--surface-raised)",
+  border: "1px solid var(--border-strong)",
   boxShadow: "var(--elevation-modal)",
   color: "var(--text-primary)",
   containerType: "inline-size",
@@ -319,7 +321,7 @@ const dialogSurfaceBase = style([glassStrong,{
       animation: `${backdropIn} ${reduced.duration} linear`,
     },
   },
-}]);
+});
 
 export const dialogSurface = styleVariants({
   compact: [
@@ -412,6 +414,8 @@ export const fieldHelp = style({
   // The muted token the application already uses for secondary text throughout.
   color: "var(--text-muted)",
 });
+globalStyle(`${dialogHeader} > h2`, { ...text.objectTitle, margin: 0 });
+globalStyle(`${dialogHeader} > p`, { ...text.compactBody, margin: 0, color: "var(--text-muted)" });
 
 /** A semantic common region — a real Palmer grouping, used only where the group is real. */
 export const fieldGroup = style({
