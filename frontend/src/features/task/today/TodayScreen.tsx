@@ -52,6 +52,8 @@ import { TagChipList } from "../../tag/TagChipList";
 import { TagPicker } from "../../tag/TagPicker";
 import type { TagSummaryView } from "../../../ipc/generated/TagSummaryView";
 import { invalidateTaskSavedViewProjections } from "../saved-views/savedViewQueries";
+import { iconToday } from "../../../design-system/visual/icons";
+import { EmptyState } from "../../../design-system/primitives/States";
 
 /*
  * The inspector mounts only when a task is selected, so it stays out of the Today startup chunk.
@@ -923,7 +925,12 @@ export function TodayScreen({
                 </span>
               </h2>
               {period.groups.length === 0 ? (
-                <p className={styles.empty}>No tasks scheduled.</p>
+                <EmptyState
+                  compact
+                  icon={iconToday}
+                  title="No tasks scheduled."
+                  body="Nothing is planned for this part of the day."
+                />
               ) : (
                 /*
                   One bounded group per period, as baseline v2 measures. The time-column rows sit

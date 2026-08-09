@@ -22,6 +22,9 @@ import { LinkedWorkPanel, type TaskNavigate } from "./LinkedWorkPanel";
 import { ReviewsPanel } from "./ReviewsPanel";
 import { useQueryClient } from "@tanstack/react-query";
 import { invalidateTaskSavedViewReferenceData } from "../task/saved-views/savedViewQueries";
+import { iconPlans } from "../../design-system/visual/icons";
+import { EmptyState } from "../../design-system/primitives/States";
+import { SkeletonList } from "../../design-system/primitives/States";
 
 export type FocusPlanEntryRequest = {
   requestId: string;
@@ -404,8 +407,8 @@ export function FocusPlansScreen({
 
       <div className={styles.workspace}>
         <aside className={styles.listPanel} aria-label={`${portfolio} plans`}>
-          {status === "loading" && plans.length === 0 ? <p className={styles.muted}>Loading plans…</p> : null}
-          {status !== "loading" && plans.length === 0 ? <p className={styles.muted}>No plans in this portfolio.</p> : null}
+          {status === "loading" && plans.length === 0 ? <SkeletonList rows={4} label="Loading plans…" /> : null}
+          {status !== "loading" && plans.length === 0 ? <EmptyState compact icon={iconPlans} title="No plans in this portfolio." body="Create a Plan to group the work that moves one objective forward." /> : null}
           <ul className={styles.planList}>
             {plans.map((plan) => (
               <li key={plan.id}>

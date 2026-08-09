@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createTag, listTags } from "../../ipc/commands";
 import type { TagSummaryView } from "../../ipc/generated/TagSummaryView";
 import * as styles from "./TagPicker.css";
+import { EmptyState } from "../../design-system/primitives/States";
 
 const MAX_TAGS = 12;
 
@@ -244,7 +245,7 @@ export function TagPicker({
               )}
 
               {!tagsQuery.isLoading && !tagsQuery.isError && filtered.length === 0 && !query && (
-                <p className={styles.status}>No tags yet.</p>
+                <EmptyState compact title="No tags yet." body="Tags you create will appear here." />
               )}
 
               {filtered.length > 0 && (
