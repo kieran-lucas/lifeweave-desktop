@@ -52,7 +52,10 @@ if (requestedLanguage === "vi" && mediaMode !== "light")
   throw new Error("The Vietnamese typography audit must run independently in the light theme");
 const lightVisualSnapshotFiles = new Set([
   "01-today",
+  "01d-today-running-timer",
+  "01e-today-assessment",
   "02-task-create",
+  "02b-task-tags",
   "09-calendar",
   "10-analytics",
   "11-plans",
@@ -61,11 +64,18 @@ const lightVisualSnapshotFiles = new Set([
   "14-life-pinned",
   "15-life-graph",
   "16-life-reader",
+  "16b-life-link-dialog",
   "17-basic-editor",
   "17b-basic-editor-link-dialog",
   "18-narrative-reader",
   "19-narrative-studio",
   "19b-narrative-only-block-dialog",
+  "19c-narrative-paper",
+  "19d-narrative-sakura",
+  "19e-narrative-aurora",
+  "19f-narrative-nocturne",
+  "19g-narrative-dirty-exit",
+  "08b-saved-view-editor",
   "18-settings",
   "21b-search-results",
   "21c-search-no-results",
@@ -73,17 +83,27 @@ const lightVisualSnapshotFiles = new Set([
 ]);
 const darkVisualSnapshotFiles = new Set([
   "01-today",
+  "01d-today-running-timer",
+  "01e-today-assessment",
   "02-task-create",
+  "02b-task-tags",
   "09-calendar",
   "10-analytics",
   "11-plans",
   "12-life-browse",
   "15-life-graph",
   "16-life-reader",
+  "16b-life-link-dialog",
   "17-basic-editor",
   "17b-basic-editor-link-dialog",
   "18-narrative-reader",
   "19-narrative-studio",
+  "19c-narrative-paper",
+  "19d-narrative-sakura",
+  "19e-narrative-aurora",
+  "19f-narrative-nocturne",
+  "19g-narrative-dirty-exit",
+  "08b-saved-view-editor",
   "18-settings",
   "21b-search-results",
   "22-keyboard-help",
@@ -336,6 +356,27 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
     await go("Today", "h1#today-heading");
     await capture("today--unselected", "01-today");
 
+    // The fixture's one-off task exposes both of Today's compact edge controls. Exercise the
+    // running strip first because an active timer intentionally disables assessment, then discard
+    // the empty segment so the deterministic fixture is restored before opening the assessment fan.
+    const timerStart = $("button[aria-label^='Start timer for']");
+    if (await timerStart.isExisting()) {
+      await timerStart.waitForEnabled({ timeout: 15_000 });
+      await timerStart.click();
+      await $("section[aria-label='Running task timer']").waitForDisplayed({ timeout: 15_000 });
+      await capture("today--running-timer", "01d-today-running-timer");
+      await $("button=Discard segment").click();
+      await $("section[aria-label='Running task timer']").waitForDisplayed({ reverse: true, timeout: 15_000 });
+    }
+    const assessmentTrigger = $("button[aria-label^='Assess task.']");
+    if (await assessmentTrigger.isExisting()) {
+      await assessmentTrigger.waitForEnabled({ timeout: 15_000 });
+      await assessmentTrigger.click();
+      await $("[role='listbox'][aria-label='Completion assessment']").waitForDisplayed({ timeout: 15_000 });
+      await capture("today--assessment", "01e-today-assessment");
+      await browser.keys(ESCAPE);
+    }
+
     /*
      * Today with the production context inspector open.
      *
@@ -388,6 +429,17 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
 
     if (await tryClick("button[aria-label='Create task']")) {
       await capture("task-create", "02-task-create");
+      const tagPicker = $("button=Add tags");
+      if (await tagPicker.isExisting()) {
+        await tagPicker.waitForEnabled({ timeout: 15_000 });
+        const tagPanelId = await tagPicker.getAttribute("aria-controls");
+        if (!tagPanelId) throw new Error("Tag picker trigger did not expose aria-controls");
+        await tagPicker.click();
+        await $(`#${tagPanelId}[role='region']`).waitForDisplayed({ timeout: 15_000 });
+        await capture("task-create--tags", "02b-task-tags");
+        await browser.keys(ESCAPE);
+        await $(`#${tagPanelId}[role='region']`).waitForDisplayed({ reverse: true, timeout: 15_000 });
+      }
       // Activate recurrence through its visible label. In forced-colors mode WebView2 hands the
       // checkbox back to the native renderer; the input remains correctly labelled, but its native
       // hit-test box is not exposed to WebDriver. Clicking the label is the real accessible target
@@ -413,6 +465,10 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
     await capture("deadlines", "07-deadlines");
     await tab("views");
     await capture("saved-views", "08-saved-views");
+    await $("button=Create view").click();
+    await $("[role='dialog'][aria-labelledby='saved-view-editor-heading']").waitForDisplayed({ timeout: 15_000 });
+    await capture("saved-view-editor", "08b-saved-view-editor");
+    await dismiss();
     await tab("today");
 
     await go("Calendar", "h1#calendar-heading");
@@ -463,6 +519,10 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
     await leafCard.click();
     await $("h1#life-reader-title").waitForDisplayed({ timeout: 15_000 });
     await capture("life-reader", "16-life-reader");
+    await $("button=Add link").click();
+    await $("[role='dialog'][aria-modal='true']").waitForDisplayed({ timeout: 15_000 });
+    await capture("life-reader--add-link", "16b-life-link-dialog");
+    await dismiss();
 
     // Enter and leave without editing or saving; this exercises only presentation/navigation.
     await $("button=Edit document").click();
@@ -492,7 +552,24 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
     await $("[role='dialog']").waitForDisplayed({ timeout: 15_000 });
     await capture("narrative-studio--only-block-dialog", "19b-narrative-only-block-dialog");
     await browser.keys(ESCAPE);
+
+    // Each semantic Visual World is product content, not a cosmetic test theme. Capture all four
+    // from the production radio group, then exercise the shared dirty-exit decision surface created
+    // by those real edits. The confirm path intentionally leaves the recoverable draft unpublished.
+    for (const [world, file] of [
+      ["paper", "19c-narrative-paper"],
+      ["sakura", "19d-narrative-sakura"],
+      ["aurora", "19e-narrative-aurora"],
+      ["nocturne", "19f-narrative-nocturne"],
+    ] as const) {
+      await $(`input[name='visual-world'][value='${world}']`).click();
+      await browser.pause(150);
+      await capture(`narrative-studio--${world}`, file);
+    }
     await $("button=Back").click();
+    await $("[role='dialog'][aria-modal='true']").waitForDisplayed({ timeout: 15_000 });
+    await capture("narrative-studio--dirty-exit", "19g-narrative-dirty-exit");
+    await $("button=Leave editor").click();
     await $("button=Edit canvas").waitForDisplayed({ timeout: 15_000 });
     await $("button*=Back to Life Browse").click();
     await $("h1#life-heading").waitForDisplayed({ timeout: 15_000 });
