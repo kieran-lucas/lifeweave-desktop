@@ -14,8 +14,24 @@ export const note = style({ margin: 0, paddingInlineStart: "0.7rem", borderInlin
  * visual treatment stays local.
  */
 export const backdrop = dialogBackdrop;
-export const dialog = style([dialogSurface.compact, { border: "1px solid currentColor", background: "Canvas", color: "CanvasText", boxShadow: "var(--elevation-modal)" }]);
+export const dialog = style([
+  dialogSurface.compact,
+  {
+    "@media": {
+      "(forced-colors: active)": {
+        border: "1px solid currentColor",
+        background: "Canvas",
+        color: "CanvasText",
+      },
+    },
+  },
+]);
 export const metadata = style({ display: "grid", gridTemplateColumns: "max-content 1fr", gap: "0.35rem 0.8rem" });
 globalStyle(`${metadata} dt`, { fontWeight: 700 });
 globalStyle(`${metadata} dd`, { margin: 0, overflowWrap: "anywhere" });
-export const error = style({ color: "CanvasText", border: "2px solid currentColor", padding: "0.55rem" });
+export const error = style({
+  color: "var(--danger)",
+  border: "2px solid currentColor",
+  padding: "0.55rem",
+  "@media": { "(forced-colors: active)": { color: "CanvasText" } },
+});
