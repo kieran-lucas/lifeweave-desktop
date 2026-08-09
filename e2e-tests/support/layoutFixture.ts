@@ -96,6 +96,9 @@ export async function seedLayoutFixture(
       const invoke = (
         window as unknown as { __TAURI_INTERNALS__: { invoke: Invoke } }
       ).__TAURI_INTERNALS__.invoke;
+      const systemNow = new Date();
+      const pad = (value: number) => String(value).padStart(2, "0");
+      const observedToday = `${systemNow.getFullYear()}-${pad(systemNow.getMonth() + 1)}-${pad(systemNow.getDate())}`;
       let stage = "start";
       try {
         stage = "categories";
@@ -418,7 +421,10 @@ export async function seedLayoutFixture(
               weekly_target_minutes: 300,
               expected_revision: goal.goal_revision,
               operation_id: `task50-layout-goal-${goal.id}`,
-              observed_local_date: today,
+              // Goal revisions are effective against the native clock. The visual fixture date may
+              // be pinned to keep screenshots stable, but this concurrency anchor must remain the
+              // real local date or the backend correctly rejects it as stale.
+              observed_local_date: observedToday,
             },
           }).catch(() => undefined);
 
@@ -475,6 +481,8 @@ export async function seedLayoutFixture(
 
 /** The app's own local date, so seeded Tasks land on the day Today actually renders. */
 export async function appLocalDate(): Promise<string> {
+  const fixed = process.env.LIFEWEAVE_AUDIT_LOCAL_DATE;
+  if (fixed) return fixed;
   return browser.execute(() => {
     const now = new Date();
     const pad = (value: number) => String(value).padStart(2, "0");

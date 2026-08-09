@@ -18,7 +18,7 @@ export const config: Options.Testrunner = {
       screenshotPath: join(e2eRoot, "..", "target", "visual-regression"),
       formatImageName: "{tag}-{width}x{height}",
       autoSaveBaseline: process.env.LIFEWEAVE_ACCEPT_VISUAL_BASELINES === "1",
-      alwaysSaveActualImage: false,
+      alwaysSaveActualImage: true,
       clearRuntimeFolder: true,
       disableBlinkingCursor: true,
       disableCSSAnimation: true,

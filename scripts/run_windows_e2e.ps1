@@ -12,6 +12,7 @@ $artifacts = Join-Path $artifactRoot $runId
 $lock = Join-Path $dataRoot '.e2e.lock'
 $driver = $null
 $success = $false
+$ownsAuditLocalDate = $false
 $allPhases = @(
   'phase1-lifecycle.e2e.ts',
   'phase2-backup-restore.e2e.ts',
@@ -153,6 +154,11 @@ try {
   $env:MSEDGEDRIVER_TELEMETRY_OPTOUT = '1'
   $env:LIFEWEAVE_E2E_APP_DATA_DIR = $run
   $env:LIFEWEAVE_E2E_ROOT = (Resolve-Path $dataRoot).Path
+  if (-not $env:LIFEWEAVE_AUDIT_LOCAL_DATE) {
+    $env:LIFEWEAVE_AUDIT_LOCAL_DATE = '2026-08-09'
+    $ownsAuditLocalDate = $true
+  }
+  $env:VITE_LIFEWEAVE_E2E_LOCAL_DATE = $env:LIFEWEAVE_AUDIT_LOCAL_DATE
   pnpm tauri build --debug --features e2e-test
   if ($LASTEXITCODE -ne 0) { throw 'E2E binary build failed' }
   $env:LIFEWEAVE_E2E_BINARY = (Resolve-Path 'src-tauri\target\debug\lifeweave-desktop.exe').Path
@@ -193,6 +199,10 @@ try {
   }
   Remove-Item Env:LIFEWEAVE_E2E_APP_DATA_DIR -ErrorAction SilentlyContinue
   Remove-Item Env:LIFEWEAVE_E2E_ROOT -ErrorAction SilentlyContinue
+  Remove-Item Env:VITE_LIFEWEAVE_E2E_LOCAL_DATE -ErrorAction SilentlyContinue
+  if ($ownsAuditLocalDate) {
+    Remove-Item Env:LIFEWEAVE_AUDIT_LOCAL_DATE -ErrorAction SilentlyContinue
+  }
   Remove-Item -LiteralPath $lock -Force -ErrorAction SilentlyContinue
   if ($success) {
     Remove-Item -LiteralPath $run -Recurse -Force -ErrorAction SilentlyContinue

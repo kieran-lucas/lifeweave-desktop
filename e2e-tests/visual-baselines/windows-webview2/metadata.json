@@ -42,15 +42,16 @@
   ],
   "motion": {
     "cssAnimationsDisabledByVisualService": true,
-    "blinkingCursorDisabledByVisualService": true,
+    "blinkingCursorStability": "visual service suppression plus explicit focused-text blur/restore for WebView2 native caret",
     "reducedMotionAudit": "target/e2e-artifacts/task-50b/task51-visual-baseline-generate-reduced-motion-1536-20260809/"
   },
   "fixture": {
     "spec": "task50b-maximized-audit.e2e.ts",
     "seed": "seedLayoutFixture",
+    "presentationLocalDate": "2026-08-09; native concurrency commands retain the real local date",
     "fixtureCheckpoint": "be71661 plus the tracked empty-leaf/import extension"
   },
-  "sourceTreeCheckpoints": ["e2818cf", "fe2903b", "ddf8980", "ab9333c", "ad0650b", "1432896", "60e1eb4"],
+  "sourceTreeCheckpoints": ["e2818cf", "fe2903b", "ddf8980", "ab9333c", "ad0650b", "1432896", "60e1eb4", "be8a59a"],
   "snapshotCount": 97,
   "comparison": {
     "mismatchPercentage": 0,
@@ -65,7 +66,8 @@
       "target/e2e-artifacts/task-50b/task51-edge-light-verify-20260809/",
       "target/e2e-artifacts/task-50b/task51-edge-dark-verify-20260809/",
       "target/e2e-artifacts/task-50b/task51-imports-light-verify-20260810/",
-      "target/e2e-artifacts/task-50b/task51-imports-dark-verify-20260810/"
+      "target/e2e-artifacts/task-50b/task51-imports-dark-verify-20260810/",
+      "target/e2e-artifacts/task-50b/task51-deterministic-dark-zero2-20260810/"
     ]
   },
   "runtimeOnlyEvidence": [

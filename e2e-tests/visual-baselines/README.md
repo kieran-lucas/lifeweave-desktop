@@ -7,6 +7,13 @@ goldens, and remain untracked.
 Comparison is opt-in so the normal geometry audit is unchanged. Baseline creation is a separate,
 explicit action and is disabled by default.
 
+The native runner pins the E2E presentation date to the baseline date while preserving the real
+native date for concurrency-sensitive fixture commands. The visual service suppresses blinking
+carets where the engine permits; the audit additionally blurs and restores a focused text-editable
+for the comparison frame because WebView2 otherwise retains a 27-pixel native caret. Actual
+comparison frames are saved under `target` for deterministic failure diagnosis;
+normal audit screenshots retain the real focused-control caret.
+
 ```powershell
 # Compare only. Missing or changed baselines fail; nothing is accepted.
 $env:LIFEWEAVE_VISUAL_REGRESSION = '1'

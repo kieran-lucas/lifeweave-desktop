@@ -308,7 +308,19 @@ async function capture(screen: string, file: string, note?: string) {
       : mediaMode === "light"
         ? file
         : `${file}-${mediaMode}`;
+    const restoreTextFocus = await browser.execute(() => {
+      const active = document.activeElement;
+      if (!(active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement || active instanceof HTMLElement && active.isContentEditable)) return false;
+      active.setAttribute("data-visual-restore-focus", "");
+      active.blur();
+      return true;
+    });
     const result = await browser.checkScreen(tag);
+    if (restoreTextFocus) await browser.execute(() => {
+      const target = document.querySelector<HTMLElement>("[data-visual-restore-focus]");
+      target?.removeAttribute("data-visual-restore-focus");
+      target?.focus({ preventScroll: true });
+    });
     const mismatch = typeof result === "number" ? result : result.misMatchPercentage;
     if (mismatch !== 0) throw new Error(`${tag} visual mismatch: ${mismatch}%`);
   }
