@@ -17,8 +17,14 @@ export const eyebrow=style({margin:0,color:"var(--accent)",fontWeight:600,fontSi
  * The period controls become one glass module that visibly governs the summary beneath them, rather
  * than a bordered strip floating above unrelated content.
  */
-export const periodControls=style([glass,{display:"flex",flexWrap:"wrap",alignItems:"center",justifyContent:"space-between",gap:space.field,padding:space.x4,borderRadius:"var(--radius-surface)",minInlineSize:0}]);
+export const periodControls=style([glass,{display:"flex",inlineSize:"fit-content",maxInlineSize:"100%",flexWrap:"wrap",alignItems:"center",justifyContent:"flex-start",gap:space.field,padding:space.x4,borderRadius:"var(--radius-surface)",minInlineSize:0}]);
 export const periodTabs=style({display:"flex",flexWrap:"wrap",gap:space.x1,minInlineSize:0});
+/*
+ * The period navigation used to be pushed to the far edge of a full-width module, leaving a void
+ * between the Week/Month/Year tabs and it — a toolbar strip stretched for no semantic reason, which
+ * ADR 0045 section 3 rules out. It now sits beside the tabs and the module stops where its content
+ * stops.
+ */
 export const periodNav=style({display:"flex",flexWrap:"wrap",gap:space.x3,alignItems:"center",minInlineSize:0});
 
 /** Every Analytics section shares one internal rhythm. */

@@ -91,7 +91,7 @@ export const week = style({ display: "grid", gridTemplateColumns: "repeat(7, min
  */
 export const cell = style({
   minWidth: 0,
-  minHeight: 112,
+  minHeight: 96,
   borderInlineStart: "1px solid var(--border-subtle)",
   selectors: {
     "&:first-child": { borderInlineStart: 0 },
@@ -109,7 +109,7 @@ export const cell = style({
 export const cellButton = style({
   width: "100%",
   height: "100%",
-  minHeight: 112,
+  minHeight: 96,
   display: "flex",
   flexDirection: "column",
   alignItems: "stretch",
@@ -161,10 +161,16 @@ export const icons = style({ display: "flex", gap: 4, alignItems: "center" });
 /*
  * Period load stays a real three-part reading of morning / afternoon / evening — it is factual
  * schedule information, not decoration, and the accessible summary depends on all three. What
- * changes is its weight: 3 px bars in the neutral track with the accent fill, so a dense month
+ * changes is its weight: 5 px bars in the neutral track with the accent fill, so a dense month
  * reads as texture rather than as colour.
  */
-export const loads = style({ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 3 });
+/*
+ * Morning / afternoon / evening load. At 3px on a 3px gap these read as three faint scratches
+ * rather than as a day's shape; rendered across a full month they were the least legible thing on
+ * the surface. 5px with a wider gap makes the three periods separable at a glance without turning
+ * a calendar cell into a chart.
+ */
+export const loads = style({ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 4 });
 
 /**
  * The load bars are `<progress>` elements and must be styled through their shadow parts.
@@ -177,7 +183,7 @@ export const loads = style({ display: "grid", gridTemplateColumns: "repeat(3, 1f
  * `appearance: none` plus explicit track and value backgrounds removes the ambiguity: the track is
  * the neutral fill, the value is the accent, and no user-agent colour can leak through.
  */
-export const load = style([progressBar, { width: "100%", height: 3 }]);
+export const load = style([progressBar, { width: "100%", height: 5 }]);
 
 /**
  * Unevaluated past work keeps a distinct semantic colour rather than being folded into the blue

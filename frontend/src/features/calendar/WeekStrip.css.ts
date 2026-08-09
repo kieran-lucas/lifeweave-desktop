@@ -34,9 +34,18 @@ export const root = style({
  * `Morning04:00–12:00`. Removing the cell borders made the boxes adjacent in a way the bordered
  * version had hidden.
  */
+/*
+ * The week is a cluster, not a ruler.
+ *
+ * `1fr` columns spread seven days across the whole workspace, so at a maximized 1440px each day sat
+ * ~200px from its neighbour with its label marooned in the middle — the week read as a row of
+ * unrelated buttons rather than as a continuous seven days. Capping the column and centring the
+ * grid keeps them adjacent at any width, and they still compress rather than overflow at 960px.
+ */
 export const days = style({
   display: "grid",
-  gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
+  gridTemplateColumns: "repeat(7, minmax(0, 96px))",
+  justifyContent: "center",
   gap: 8,
 });
 
