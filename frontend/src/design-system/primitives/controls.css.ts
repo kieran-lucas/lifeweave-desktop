@@ -128,12 +128,12 @@ export const button = styleVariants({
     base,
     {
       background: "transparent",
-      borderColor: "color-mix(in srgb, var(--danger, #b42318) 35%, transparent)",
-      color: "var(--danger, #b42318)",
+      borderColor: "color-mix(in srgb, var(--danger) 35%, transparent)",
+      color: "var(--danger)",
       selectors: {
         "&:hover:not(:disabled)": {
-          background: "color-mix(in srgb, var(--danger, #b42318) 8%, transparent)",
-          borderColor: "var(--danger, #b42318)",
+          background: "color-mix(in srgb, var(--danger) 8%, transparent)",
+          borderColor: "var(--danger)",
         },
       },
     },

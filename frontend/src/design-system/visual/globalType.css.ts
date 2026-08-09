@@ -1,5 +1,9 @@
 import { globalStyle } from "@vanilla-extract/css";
 
+// Side-effect import: assigns the visual contract to `:root` and aliases the legacy custom
+// properties through it. Imported here so a single import from the shell brings up both halves of
+// the design system — the palette and the type scale — in a deterministic order.
+import "./theme.css";
 import { family, text } from "./typography.css";
 
 /**

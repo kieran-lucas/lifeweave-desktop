@@ -21,7 +21,7 @@ export const table = style({ width: "100%", borderCollapse: "collapse", fontSize
 globalStyle(`${table} th`, { textAlign: "left", padding: "8px", borderBottom: "1px solid var(--border-subtle)" });
 globalStyle(`${table} td`, { padding: "10px 8px", verticalAlign: "top", borderBottom: "1px solid var(--border-subtle)" });
 export const status = style({ marginTop: "16px", color: "var(--text-muted, var(--text-muted))" });
-export const error = style({ marginTop: "16px", color: "var(--error, #c0392b)" });
+export const error = style({ marginTop: "16px", color: "var(--danger)" });
 export const backdrop = dialogBackdrop;
 export const dialog = style([dialogSurface.compact, { boxShadow: "0 20px 60px rgba(0,0,0,.35)" }]);
 export const dialogActions = style({ display: "flex", flexWrap: "wrap", justifyContent: "flex-end", alignItems: "center", gap: space.control, minInlineSize: 0 });

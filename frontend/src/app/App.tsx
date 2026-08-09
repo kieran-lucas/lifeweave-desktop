@@ -38,6 +38,7 @@ import {
   iconAnalytics,
   iconCalendar,
   iconLife,
+  iconPanelLeft,
   iconPlans,
   iconSearch,
   iconSettings,
@@ -335,7 +336,12 @@ export function App() {
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           aria-pressed={taskSidebarMode === "collapsed"}
         >
-          {collapsed ? "→" : "←"}
+          {/*
+            Was a bare "→"/"←" text glyph: the last place in the shell where an icon was a
+            character rather than a drawing, so it carried the text baseline and the font's stroke
+            weight instead of the icon vocabulary's.
+          */}
+          <Icon d={iconPanelLeft} className={styles.navIcon} />
           <span className={styles.navLabel}>
             {collapsed ? "Expand" : "Collapse"}
           </span>

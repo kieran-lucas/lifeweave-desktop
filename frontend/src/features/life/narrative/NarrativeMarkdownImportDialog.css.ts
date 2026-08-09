@@ -64,7 +64,7 @@ export const button = style({
 
 export const primary = style([
   button,
-  { background: "var(--accent)", color: "var(--accent-contrast, white)", borderColor: "transparent" },
+  { background: "var(--accent)", color: "var(--accent-contrast)", borderColor: "transparent" },
 ]);
 
 export const errorMsg = style({

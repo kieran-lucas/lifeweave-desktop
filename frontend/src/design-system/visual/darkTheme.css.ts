@@ -17,7 +17,7 @@ import { vars } from "./contract.css";
  *   - a raised surface gets *lighter* here, where in light it gets whiter and keeps no shadow;
  *   - completion is blue in both themes.
  */
-export const darkTheme = createTheme(vars, {
+export const darkValues = {
   color: {
     canvas: "oklch(17.5% 0.008 264)",
     surface: "oklch(15.5% 0.008 264)", //  the sidebar sits *below* the canvas here, as in light
@@ -83,4 +83,7 @@ export const darkTheme = createTheme(vars, {
     structural: "1px solid oklch(26% 0.008 264)",
     subtle: "1px solid oklch(22% 0.008 264)",
   },
-});
+};
+
+/** See `lightTheme.css.ts` for why the values and the class are exported separately. */
+export const darkTheme = createTheme(vars, darkValues);

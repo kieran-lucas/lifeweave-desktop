@@ -10,7 +10,7 @@ export const list = style({
 });
 
 export const chip = style({
-  background: "var(--surface-raised, var(--icon-background))",
+  background: "var(--surface-raised)",
   border: "1px solid var(--border-subtle, var(--border-subtle))",
   borderRadius: 999,
   padding: "1px 8px",
@@ -22,7 +22,7 @@ export const chip = style({
 });
 
 export const overflow = style({
-  background: "var(--surface-raised, var(--icon-background))",
+  background: "var(--surface-raised)",
   border: "1px solid var(--border-subtle, var(--border-subtle))",
   borderRadius: 999,
   padding: "1px 8px",

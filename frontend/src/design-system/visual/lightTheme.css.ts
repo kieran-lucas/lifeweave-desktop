@@ -16,7 +16,7 @@ import { vars } from "./contract.css";
  * Measured contrast is recorded beside each role. Two roles deviate from the sampled anchor because
  * the anchor cannot carry its job accessibly; both are marked DEVIATION.
  */
-export const lightTheme = createTheme(vars, {
+export const lightValues = {
   color: {
     /*
      * Three near-white planes, separated by ~0.5% lightness each. The whole hierarchy lives in that
@@ -125,4 +125,12 @@ export const lightTheme = createTheme(vars, {
     structural: "1px solid oklch(94.92% 0.0042 271.37)",
     subtle: "1px solid oklch(97.2% 0.003 271)",
   },
-});
+};
+
+/**
+ * The values above are exported separately from the class below because production assigns them to
+ * `:root` through `theme.css.ts` — a class would have to be put on an element and toggled by script,
+ * where `prefers-color-scheme` needs neither. The class is retained for the prototype, which forces
+ * a theme regardless of the system preference so both can be captured.
+ */
+export const lightTheme = createTheme(vars, lightValues);

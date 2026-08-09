@@ -79,7 +79,7 @@ export const checkLabel = style({
   fontSize: 13,
   cursor: "pointer",
   selectors: {
-    "&:hover": { background: "var(--surface-raised, var(--icon-background))" },
+    "&:hover": { background: "var(--surface-raised)" },
   },
 });
 
@@ -95,7 +95,7 @@ export const selectedCount = style({
 
 export const limitWarning = style({
   fontSize: 11,
-  color: "var(--color-error, #c00)",
+  color: "var(--danger)",
   fontWeight: 600,
 });
 
@@ -106,7 +106,7 @@ export const createButton = style({
   borderRadius: 4,
   background: "transparent",
   cursor: "pointer",
-  color: "var(--color-accent, #2563eb)",
+  color: "var(--accent)",
   textAlign: "left",
 });
 
@@ -130,7 +130,7 @@ export const doneButton = style({
 
 export const errorMsg = style({
   fontSize: 11,
-  color: "var(--color-error, #c00)",
+  color: "var(--danger)",
   marginTop: 2,
 });
 

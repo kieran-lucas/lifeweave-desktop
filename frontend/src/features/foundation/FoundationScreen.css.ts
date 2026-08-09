@@ -65,7 +65,7 @@ export const secondaryButton = style({
 });
 
 export const errorText = style({
-  color: "var(--error, #c0392b)",
+  color: "var(--danger)",
   fontSize: "0.875rem",
   marginTop: "4px",
   marginBottom: "8px",

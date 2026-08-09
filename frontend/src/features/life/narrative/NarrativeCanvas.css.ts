@@ -6,7 +6,7 @@ export const sceneTitle = style({ fontSize: "1.1rem", fontWeight: 600, color: "v
 export const blockList = style({ display: "flex", flexDirection: "column", gap: 20, marginBottom: 24 });
 
 export const button = style({ border: "1px solid var(--border-subtle)", borderRadius: 9, padding: "8px 13px", background: "var(--surface)", color: "var(--text-primary)", fontWeight: 700, cursor: "pointer", selectors: { "&:disabled": { opacity: .55, cursor: "default" }, "&:focus-visible": { outline: "3px solid var(--focus-ring)", outlineOffset: 2 } } });
-export const primary = style([button, { background: "var(--accent)", color: "var(--accent-contrast, white)", borderColor: "transparent" }]);
+export const primary = style([button, { background: "var(--accent)", color: "var(--accent-contrast)", borderColor: "transparent" }]);
 export const actions = style({ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginBottom: 20 });
 export const status = style({ color: "var(--text-muted)", minHeight: 24 });
 export const recovery = style({ border: "1px solid var(--focus-ring)", borderRadius: 12, padding: 16, marginBottom: 20, background: "var(--active-background)" });

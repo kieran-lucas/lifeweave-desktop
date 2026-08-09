@@ -24,7 +24,7 @@ export const notice = style({ borderLeft: "3px solid var(--focus-ring)", padding
 export const dialog = dialogBackdrop;
 export const editor = style([
   dialogSurface.standard,
-  { background: "var(--surface-primary, Canvas)", color: "var(--text-primary, CanvasText)" },
+  { background: "var(--surface-primary)", color: "var(--text-primary, CanvasText)" },
 ]);
 export const field = style({ display: "flex", flexDirection: "column", gap: 6 });
 export const fieldRow = style({ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 12 });

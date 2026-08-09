@@ -1,16 +1,14 @@
 /*
- * Lifeweave global baseline — Visual Baseline v2 (ADR 0045).
+ * Lifeweave global baseline.
  *
- * The legacy custom-property NAMES are deliberately preserved. Thirty domain `*.css.ts` files
- * consume `--surface`, `--text-muted`, `--active-background` and friends; re-pointing their values
- * moves the entire application onto the v2 palette in one step, and lets each feature migrate to
- * the typed visual contract in `design-system/visual/` at its own pace instead of in one
- * unreviewable diff.
+ * **The palette is no longer declared here.** It lived in this file as ~20 hand-maintained custom
+ * properties while a second, typed palette sat unused in `visual/contract.css.ts`, and the two had
+ * to be kept in agreement by hand. `visual/theme.css.ts` now assigns the contract to `:root` and
+ * aliases these legacy names through it, so there is exactly one source of truth and every one of
+ * the ~500 `var(--…)` references across 31 style files resolves from it.
  *
- * Every value below is measured from `docs/visual/task-51/lifeweave-visual-baseline-v2.png`.
- * The composition is neutral first, blue second: the neutral ramp spans barely 5% of lightness, and
- * blue appears only where the reference uses it — active navigation, selection, dates, active tabs,
- * links and actions, and completed tasks.
+ * What remains here is what genuinely belongs to the document rather than to the design system:
+ * resets, the stacking layers, the art-material derivations, and the three accessibility modes.
  */
 :root {
   /*
@@ -24,37 +22,21 @@
    * `Display` explicitly through the type scale.
    */
   font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
-  color: #1f2328;
-  background: #fcfcfd;
+  color: var(--text-primary);
+  background: var(--app-background);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-
-  /* Neutral planes. Sidebar sits lowest, canvas above it, raised surfaces are pure white. */
-  --app-background: #fcfcfd;
-  --sidebar-background: #fafafc;
-  --surface: #ffffff;
-  --border-subtle: #edeef1;
-
-  /* Text. 15.4:1, 10.0:1 and 5.9:1 on the canvas respectively. */
-  --text-primary: #1f2328;
-  --text-muted: #5c636e;
-
-  /* The single accent. 6.25:1 on canvas, so it is safe as text — v2 uses blue *as text*. */
-  --accent: #1157ce;
-  --active-background: #f0f2fa;
-  --icon-background: #f4f7fd;
-  --focus-ring: #1157ce;
 
   --layer-modal: 10;
   --layer-overlay: 40;
 
   /*
-   * ── The art system (Task 51 "Maxping" pass) ─────────────────────────────────────────────
+   * ── The art system ──────────────────────────────────────────────────────────────────────
    *
-   * One material family for the whole application, declared once here so every surface draws from
-   * the same light rather than inventing its own decoration. The identity is anime-blue: cool,
-   * luminous, layered, soft around the product's hard structure.
+   * One material family for the whole application, so every surface draws from the same light
+   * rather than inventing its own decoration. The identity is cool, luminous blue: layered and soft
+   * around the product's hard structure.
    *
    * Layer 0  atmosphere   a single fixed field behind everything
    * Layer 1  page ground  the canvas, above
@@ -63,12 +45,22 @@
    * Layer 4  luminous     selected and focused states
    */
 
-  /* Layer 0 — the aura field. Wide, faint, and static; no animation anywhere in the art system. */
-  --art-aura-primary: oklch(93% 0.055 240);
-  --art-aura-secondary: oklch(94% 0.038 262);
-  --art-aura-cool: oklch(95% 0.032 218);
-  --art-line: oklch(88% 0.045 238);
-  --art-glint: oklch(78% 0.09 238);
+  /*
+   * Layer 0 — the aura field. Wide, faint, and static; no animation anywhere in the art system.
+   *
+   * Pulled back hard after rendering the real shell: at chroma 0.055 the top-right field read as a
+   * saturated gradient wallpaper rather than as air behind the interface — the "is blue overused?"
+   * failure. Chroma is now roughly a third of that and lightness sits much closer to the canvas, so
+   * the field is felt at the periphery and cannot be mistaken for a surface.
+   *
+   * The canvas is oklch(99.13%); these sit within ~1.04:1 of it. Art must never compete with
+   * information.
+   */
+  --art-aura-primary: oklch(97.2% 0.018 240);
+  --art-aura-secondary: oklch(97.6% 0.014 262);
+  --art-aura-cool: oklch(98% 0.011 218);
+  --art-line: oklch(94.5% 0.016 238);
+  --art-glint: oklch(88% 0.035 238);
 
   /*
    * Layer 3 — glass.
@@ -77,9 +69,12 @@
    * correctly where `backdrop-filter` is unavailable or disabled, and text contrast never depends
    * on the blur. 10px is deliberately gentle: this machine has integrated graphics, and a large
    * backdrop blur is real per-frame GPU work.
+   *
+   * Derived from `--surface`, which now resolves through the contract, so the material follows the
+   * palette automatically in both themes instead of being restated per theme.
    */
-  --glass-surface: color-mix(in srgb, #ffffff 78%, transparent);
-  --glass-surface-strong: color-mix(in srgb, #ffffff 88%, transparent);
+  --glass-surface: color-mix(in srgb, var(--surface) 78%, transparent);
+  --glass-surface-strong: color-mix(in srgb, var(--surface) 88%, transparent);
   --glass-border: color-mix(in srgb, var(--accent) 12%, var(--border-subtle));
   --glass-highlight: color-mix(in srgb, #ffffff 70%, transparent);
   --glass-blur: 10px;
@@ -91,36 +86,17 @@
 }
 
 /*
- * Dark is composed against the same axes rather than inverted: the canvas keeps the cool hue at low
- * lightness, tonal steps stay small so regions do not read as stacked panels, and the accent is
- * lifted in lightness and reduced in chroma — a saturated blue on a dark field glows and fatigues
- * over the long sessions this product is built for.
+ * Dark re-derives only the art field. The palette itself is composed — not inverted — in
+ * `visual/darkTheme.css.ts` and selected by the same media query there.
  */
 @media (prefers-color-scheme: dark) {
   :root {
-    color: #f2f3f5;
-    background: #14161a;
-    --app-background: #14161a;
-    --sidebar-background: #111317;
-    --surface: #1b1e23;
-    --border-subtle: #2a2e35;
-    --text-primary: #f2f3f5;
-    --text-muted: #a3abb6;
-    --accent: #8ab4f8;
-    --active-background: #22293a;
-    --icon-background: #1f2531;
-    --focus-ring: #8ab4f8;
-
-    /* The same art family re-derived for a dark field: lower lightness, higher chroma, same hues. */
     --art-aura-primary: oklch(26% 0.06 240);
     --art-aura-secondary: oklch(24% 0.05 262);
     --art-aura-cool: oklch(25% 0.045 218);
     --art-line: oklch(34% 0.06 238);
     --art-glint: oklch(62% 0.1 238);
 
-    --glass-surface: color-mix(in srgb, #202634 72%, transparent);
-    --glass-surface-strong: color-mix(in srgb, #202634 88%, transparent);
-    --glass-border: color-mix(in srgb, var(--accent) 16%, var(--border-subtle));
     --glass-highlight: color-mix(in srgb, #ffffff 8%, transparent);
   }
 }
@@ -182,18 +158,27 @@ select {
   }
 }
 
+/*
+ * Forced colors. This block is deliberately last in source order so it wins the cascade against the
+ * contract assignment, which has identical specificity.
+ */
 @media (forced-colors: active) {
   :root {
     --accent: Highlight;
+    --color-accent: Highlight;
     --focus-ring: Highlight;
     --border-subtle: CanvasText;
     --text-primary: CanvasText;
     --text-muted: CanvasText;
     --surface: Canvas;
+    --surface-raised: Canvas;
     --app-background: Canvas;
     --sidebar-background: Canvas;
     --active-background: Highlight;
     --icon-background: Canvas;
+    --danger: LinkText;
+    --error: LinkText;
+    --color-error: LinkText;
   }
 
   button,

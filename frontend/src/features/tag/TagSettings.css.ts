@@ -16,10 +16,10 @@ globalStyle(`${table} td`, { padding: "6px 8px", borderBottom: "1px solid var(--
 export const archived = style({ color: "var(--text-muted, var(--text-muted))", fontStyle: "italic" });
 export const actions = style({ display: "flex", gap: 6, flexWrap: "wrap" });
 export const toggleRow = style({ display: "flex", alignItems: "center", gap: 8 });
-export const mergePanel = style({ display: "flex", flexDirection: "column", gap: 8, padding: 12, background: "var(--surface-raised, var(--icon-background))", borderRadius: 6, border: "1px solid var(--border-subtle, var(--border-subtle))" });
+export const mergePanel = style({ display: "flex", flexDirection: "column", gap: 8, padding: 12, background: "var(--surface-raised)", borderRadius: 6, border: "1px solid var(--border-subtle, var(--border-subtle))" });
 export const mergeRow = style({ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" });
 export const select = style({ padding: "6px 8px", border: "1px solid var(--border-subtle, var(--border-subtle))", borderRadius: 4, fontSize: 14, background: "var(--surface, #fff)" });
-export const warning = style({ color: "var(--danger, #c00)", fontSize: 13, margin: 0 });
+export const warning = style({ color: "var(--danger)", fontSize: 13, margin: 0 });
 export const mergeConfirm = style({ background: "var(--surface, #fff)", border: "1px solid var(--border-subtle, var(--border-subtle))", borderRadius: 6, padding: 12, display: "flex", flexDirection: "column", gap: 8 });
 export const mergeConfirmText = style({ margin: 0, fontSize: 13 });
 export const mergeConfirmActions = style({ display: "flex", gap: 8 });

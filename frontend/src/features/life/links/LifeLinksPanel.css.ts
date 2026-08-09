@@ -28,7 +28,7 @@ export const button = style({
 });
 export const destructive = style([
   button,
-  { color: "var(--danger, #9f2f2f)", flexShrink: 0 },
+  { color: "var(--danger)", flexShrink: 0 },
 ]);
 export const list = style({
   display: "grid",
