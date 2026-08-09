@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createTag, listTags } from "../../ipc/commands";
 import type { TagSummaryView } from "../../ipc/generated/TagSummaryView";
 import * as styles from "./TagPicker.css";
-import { EmptyState } from "../../design-system/primitives/States";
+import { EmptyState, LoadingRow } from "../../design-system/primitives/States";
 
 const MAX_TAGS = 12;
 
@@ -241,7 +241,7 @@ export function TagPicker({
               )}
 
               {tagsQuery.isLoading && (
-                <p className={styles.status}>Loading…</p>
+                <LoadingRow label="Loading…" />
               )}
 
               {!tagsQuery.isLoading && !tagsQuery.isError && filtered.length === 0 && !query && (

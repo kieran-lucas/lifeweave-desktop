@@ -9,6 +9,7 @@ import type { ReaderDocumentView } from "../../../ipc/generated/ReaderDocumentVi
 import { importDocumentAsset, saveReaderDocument, saveReaderDraft } from "../../../ipc/commands";
 import { operationId } from "./schema";
 import * as styles from "./BasicLeafDocument.css";
+import { LoadingRow } from "../../../design-system/primitives/States";
 
 const Callout = Node.create({
   name: "callout", group: "block", content: "block+", defining: true,
@@ -51,7 +52,7 @@ export default function BasicLeafEditor({ document, initialJson, onCommitted, on
     const commitTimer = window.setTimeout(() => { void commit(); }, 3000);
     return () => { window.clearTimeout(draftTimer); window.clearTimeout(commitTimer); };
   }, [dirty, editor?.state]);
-  if (!editor) return <p className={styles.status} aria-live="polite">Loading focused editor…</p>;
+  if (!editor) return <LoadingRow label="Loading focused editor…" />;
   const addLink = () => { const href = window.prompt("Safe link (https, http or mailto)"); if (href) editor.chain().focus().extendMarkRange("link").setLink({ href }).run(); };
   const addImage = async (file?: File) => { if (!file) return; setStatus("Saving asset"); try { const result = await importDocumentAsset({ original_name: file.name, bytes: Array.from(new Uint8Array(await file.arrayBuffer())) }); editor.chain().focus().setImage({ src: `asset:${result.asset_id}`, assetId: result.asset_id, alt: file.name } as never).run(); setStatus("Saving draft"); } catch { setStatus("Error / recovery required"); setMessage("The image was rejected or could not be stored."); } };
   return <section className={styles.shell} aria-label="Document editor">

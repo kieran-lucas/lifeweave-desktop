@@ -53,7 +53,7 @@ import { TagPicker } from "../../tag/TagPicker";
 import type { TagSummaryView } from "../../../ipc/generated/TagSummaryView";
 import { invalidateTaskSavedViewProjections } from "../saved-views/savedViewQueries";
 import { iconToday } from "../../../design-system/visual/icons";
-import { EmptyState } from "../../../design-system/primitives/States";
+import { EmptyState, LoadingRow, SkeletonList } from "../../../design-system/primitives/States";
 
 /*
  * The inspector mounts only when a task is selected, so it stays out of the Today startup chunk.
@@ -823,7 +823,7 @@ export function TodayScreen({
       {/* Outside the Today tabpanel on purpose: one globally active session stays visible while
           the user changes date or switches workspace tab. */}
       {activeTimer.data && (
-        <Suspense fallback={<p role="status">Loading timer…</p>}>
+        <Suspense fallback={<LoadingRow label="Loading timer…" />}>
         <ActiveTimerStrip
           active={activeTimer.data}
           pending={timer.isPending}
@@ -902,7 +902,7 @@ export function TodayScreen({
       <div className={selectedItem ? layout.splitWorkspace : undefined}>
       <div className={styles.timelineColumn}>
       {items.isLoading ? (
-        <p aria-live="polite">Loading tasks…</p>
+        <SkeletonList rows={5} label="Loading tasks…" />
       ) : items.isError ? (
         <p role="alert">Unable to load tasks.</p>
       ) : (
@@ -1153,7 +1153,7 @@ export function TodayScreen({
       </div>
       ) : (
         <div role="tabpanel" id={`task-panel-${workspaceMode}`} aria-labelledby={`task-tab-${workspaceMode}`}>
-          <Suspense fallback={<p role="status">Loading {workspaceMode} tasks…</p>}>
+          <Suspense fallback={<SkeletonList rows={5} label={`Loading ${workspaceMode} tasks…`} />}>
             {workspaceMode === "views" ? (
               <TaskSavedViewsPanel anchorLocalDate={planningAnchor} onOpenItem={openPlanningItem} onFocusPlanNavigate={onFocusPlanNavigate} />
             ) : workspaceMode === "deadlines" ? (

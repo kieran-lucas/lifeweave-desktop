@@ -16,6 +16,8 @@ import { TagChipList } from "../tag/TagChipList";
 import { LifeEditWorkspace } from "./LifeEditWorkspace";
 import { BasicLeafReader } from "./document/BasicLeafReader";
 import { RelatedTasksPanel } from "./RelatedTasksPanel";
+import { EmptyState, LoadingRow, SkeletonList } from "../../design-system/primitives/States";
+import { iconLife } from "../../design-system/visual/icons";
 
 type Mode = "browse" | "edit" | "pinned" | "reader";
 type HistoryEntry = {
@@ -458,7 +460,7 @@ export function LifeScreen({
           <p className={styles.nodeDescription}>{reader.short_description}</p>
           <TagChipList tags={reader.tags} maxVisible={12} />
           <BasicLeafReader nodeId={readerId} />
-          <Suspense fallback={<p aria-live="polite">Loading links…</p>}>
+          <Suspense fallback={<LoadingRow label="Loading links…" />}>
             <LifeLinksPanel nodeId={readerId} onNavigate={openLinkedReader} />
           </Suspense>
           <RelatedTasksPanel nodeId={readerId} anchorLocalDate={anchorLocalDate} onNavigate={onTaskNavigate} />
@@ -529,7 +531,7 @@ export function LifeScreen({
         </p>
       </PageHeader>
       {graphOpen ? (
-        <Suspense fallback={<p aria-live="polite">Loading the Life graph…</p>}>
+        <Suspense fallback={<LoadingRow label="Loading the Life graph…" />}>
           {graphError && (
             <p role="alert" className={styles.unavailable}>
               That Life node is unavailable. Refresh the graph and try again.
@@ -644,7 +646,7 @@ export function LifeScreen({
             {projection.children.length === 0 ? (
               <div className={styles.empty}>
                 <h3>This branch is ready</h3>
-                <p>No child nodes have been added yet.</p>
+                <EmptyState compact icon={iconLife} title="No child nodes have been added yet." body="Add a child to grow this part of your Life tree." />
               </div>
             ) : (
               <ul
@@ -747,7 +749,7 @@ function PinnedView({
   onActivate: (node: PinnedLifeNodeView) => void;
   onUnpin: (id: string) => void;
 }) {
-  if (loading) return <p aria-live="polite">Loading pinned nodes…</p>;
+  if (loading) return <SkeletonList rows={4} label="Loading pinned nodes…" />;
   if (items.length === 0)
     return (
       <div className={styles.empty}>

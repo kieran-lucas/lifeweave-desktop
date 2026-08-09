@@ -5,6 +5,7 @@ import { CategoryIcon } from "../categoryIcons";
 import type { TaskWorkspaceMode } from "./TaskWorkspaceTabs";
 import * as styles from "./TaskPlanning.css";
 import { TagChipList } from "../../tag/TagChipList";
+import { SkeletonList } from "../../../design-system/primitives/States";
 
 // Deadlines has its own projection and DTOs; excluding it here makes routing it through
 // the schedule-based planning modes a compile error rather than a silent semantic collapse.
@@ -50,7 +51,7 @@ export default function TaskPlanningPanel({
   });
   const name = mode === "upcoming" ? "Upcoming" : "Overdue";
   if (query.isLoading)
-    return <p role="status" aria-live="polite">Loading {mode} tasks…</p>;
+    return <SkeletonList rows={4} label={`Loading ${mode} tasks…`} />;
   if (query.isError)
     return (
       <div role="alert">

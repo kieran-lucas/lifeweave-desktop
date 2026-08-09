@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { createFocusPlanReview, listFocusPlanReviews } from "../../ipc/commands";
 import type { FocusPlanReviewHistoryView } from "../../ipc/generated/FocusPlanReviewHistoryView";
 import * as styles from "./FocusPlansScreen.css";
+import { EmptyState } from "../../design-system/primitives/States";
+import { iconNote } from "../../design-system/visual/icons";
 
 function messageFrom(cause: unknown): string {
   if (cause && typeof cause === "object" && "message" in cause) {
@@ -170,7 +172,7 @@ export function ReviewsPanel({
         </p>
       )}
       {status === "ready" && history && history.reviews.length === 0 && (
-        <p className={styles.muted}>No reviews recorded yet.</p>
+        <EmptyState compact icon={iconNote} title="No reviews recorded yet." body="Record a review to keep a history of how this Plan is going." />
       )}
       {status === "ready" && history && history.reviews.length > 0 && (
         <ol className={styles.planList} aria-label="Review history">

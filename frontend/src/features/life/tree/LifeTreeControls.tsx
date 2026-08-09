@@ -10,6 +10,7 @@ import {
 } from "../../../ipc/commands";
 import { invalidateLifeBranchImport } from "../branch/lifeBranchQueries";
 import * as styles from "../branch/LifeBranch.css";
+import { LoadingRow } from "../../../design-system/primitives/States";
 
 const LifeTreeImportDialog = lazy(() => import("../branch/LifeBranchImportDialog").then(module => ({ default: module.LifeTreeImportDialog })));
 
@@ -136,6 +137,6 @@ export function LifeTreeControls({ nodeId, nodeTitle, parentId, childCount, hasD
     {importBlocked && <p className={styles.reason}>{importBlocked}</p>}
     {notice && <p role="status" aria-live="polite">{notice}</p>}
     {error && !preview && <p className={styles.error} role="alert">{error}</p>}
-    {preview && <Suspense fallback={<p role="status">Loading tree preview…</p>}><LifeTreeImportDialog preview={preview} destinationTitle={nodeTitle} pending={pending} {...(error ? { error } : {})} onConfirm={() => void confirm()} onCancel={() => void discard()}/></Suspense>}
+    {preview && <Suspense fallback={<LoadingRow label="Loading tree preview…" />}><LifeTreeImportDialog preview={preview} destinationTitle={nodeTitle} pending={pending} {...(error ? { error } : {})} onConfirm={() => void confirm()} onCancel={() => void discard()}/></Suspense>}
   </section>;
 }

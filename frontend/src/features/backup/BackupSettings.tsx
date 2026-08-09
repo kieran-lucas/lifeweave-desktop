@@ -4,6 +4,8 @@ import { backupDatabase, listBackups, restoreDatabase } from "../../ipc/commands
 import type { BackupCompatibility } from "../../ipc/generated/BackupCompatibility";
 import type { BackupSummary } from "../../ipc/generated/BackupSummary";
 import * as styles from "./BackupSettings.css";
+import { EmptyState, SkeletonList } from "../../design-system/primitives/States";
+import { iconSettings } from "../../design-system/visual/icons";
 
 const compatibilityText: Record<BackupCompatibility, string> = {
   ready: "Ready",
@@ -161,9 +163,9 @@ export function BackupSettings({ onDatabaseRestored }: { onDatabaseRestored: () 
       </p>
 
       <h3 className={styles.subheading}>Managed backup versions</h3>
-      {backups === null && !loadError && <p aria-live="polite">Loading managed backups…</p>}
+      {backups === null && !loadError && <SkeletonList rows={3} label="Loading managed backups…" />}
       {loadError && <p role="alert" className={styles.error}>{loadError}</p>}
-      {backups?.length === 0 && <p>No managed backups yet.</p>}
+      {backups?.length === 0 && <EmptyState compact icon={iconSettings} title="No managed backups yet." body="Create a backup to keep a restorable copy of your data." />}
       {backups && backups.length > 0 && (
         <div className={styles.tableScroll}>
           <table className={styles.table}>

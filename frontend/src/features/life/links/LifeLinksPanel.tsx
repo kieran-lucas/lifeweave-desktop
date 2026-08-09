@@ -13,6 +13,8 @@ import {
   lifeLinkKeys,
 } from "./lifeLinkQueries";
 import * as styles from "./LifeLinksPanel.css";
+import { EmptyState, LoadingRow } from "../../../design-system/primitives/States";
+import { iconSearch } from "../../../design-system/visual/icons";
 
 const errorText = (error: unknown, fallback: string) =>
   error instanceof Error ? error.message : fallback;
@@ -199,7 +201,7 @@ function AddLinkDialog({
                 ))}
               </ul>
             </fieldset>
-          ) : <p>No eligible targets matched this query.</p>
+          ) : <EmptyState compact icon={iconSearch} title="No eligible targets matched this query." body="Try a shorter or different search term." />
         )}
         <div className={styles.actions}>
           <button type="button" className={styles.button} onClick={onClose} disabled={create.isPending}>Cancel</button>
@@ -247,7 +249,7 @@ export function LifeLinksPanel({
     }
   };
   if (panel.isLoading)
-    return <section className={styles.panel} aria-labelledby="life-links-heading"><h2 id="life-links-heading">Links</h2><p aria-live="polite">Loading links…</p></section>;
+    return <section className={styles.panel} aria-labelledby="life-links-heading"><h2 id="life-links-heading">Links</h2><LoadingRow label="Loading links…" /></section>;
   if (panel.isError || !panel.data)
     return <section className={styles.panel} aria-labelledby="life-links-heading"><h2 id="life-links-heading">Links</h2><p role="alert">Links could not be loaded.</p></section>;
   const value = panel.data;

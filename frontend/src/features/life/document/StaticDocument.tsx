@@ -4,6 +4,7 @@ import type { BasicLeafMark, BasicLeafNode } from "./schema";
 import { safeLink } from "./schema";
 import { headingIdForSourceIndex } from "./outline";
 import * as styles from "./BasicLeafDocument.css";
+import { LoadingRow } from "../../../design-system/primitives/States";
 
 function AssetImage({ assetId, alt }: { assetId: string; alt: string }) {
   const [source, setSource] = useState<string>();
@@ -19,7 +20,7 @@ function AssetImage({ assetId, alt }: { assetId: string; alt: string }) {
     return () => { active = false; if (objectUrl) URL.revokeObjectURL(objectUrl); };
   }, [assetId]);
   if (failed) return <div className={styles.missing} role="img" aria-label={`Missing image: ${alt || "Untitled image"}`}>Image unavailable. Open Edit to repair or remove it.</div>;
-  if (!source) return <p className={styles.status} aria-live="polite">Loading image…</p>;
+  if (!source) return <LoadingRow label="Loading image…" />;
   return <img className={styles.image} src={source} alt={alt} loading="lazy" decoding="async" />;
 }
 

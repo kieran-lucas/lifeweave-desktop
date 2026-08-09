@@ -44,7 +44,7 @@
       "maximum": 389525,
       "derivation": "385429 + max(4096, ceil(385429 * 0.0100))"
     },
-    "expected_chunk_count": 25
+    "expected_chunk_count": 26
   },
   "chunks": {
     "BasicLeafEditor.js": {
@@ -116,6 +116,8 @@
     "The V2 production context inspector is lazy: TaskInspector.js 7.34 kB and TaskInspector.css 2.86 kB load only when a task is selected, so both sit below the 10,000-byte tracking threshold and are reported under untracked_small_chunks.",
     "Net eager cost of the whole inspector feature is +2,268 bytes against the session baseline of 533,113.",
     "Headroom against the new ceiling at this measurement is 550000 - 535381 = 14619 bytes. It is not free space: tree shaking, named imports and lazy secondary surfaces remain required.",
-    "expected_chunk_count 24 -> 25. The added chunk is TaskInspector, the lazily-loaded Today context inspector. A new chunk below the 10,000-byte tracking threshold does not fail the gate on size, but the count is pinned deliberately so an unnoticed extra chunk still does."
+    "expected_chunk_count 24 -> 25. The added chunk is TaskInspector, the lazily-loaded Today context inspector. A new chunk below the 10,000-byte tracking threshold does not fail the gate on size, but the count is pinned deliberately so an unnoticed extra chunk still does.",
+    "expected_chunk_count 25 -> 26. The added chunk is icons.js. The shared state primitives (EmptyState, SkeletonList, LoadingRow) are imported by both eager screens and lazy panels, so the bundler extracted the icon vocabulary they depend on into one shared chunk instead of duplicating it. This is an inventory correction, not a ceiling change: no locked ceiling moved, and every size measurement improved. index.js fell 537,545 -> 533,610, which is 3,935 bytes BELOW the pre-Task-51 session baseline, because replacing 31 hand-written loading paragraphs and 15 empty states with three shared components removed more markup than the components cost.",
+    "Deterministic gzip headroom is now thin: 388,372 against a 389,525 maximum, 1,153 bytes. Raw total is 1,260,842 against 1,263,974, 3,132 bytes. Further surface work should expect to reclaim before it spends."
   ]
 }

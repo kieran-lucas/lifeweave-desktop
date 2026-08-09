@@ -17,6 +17,7 @@ import { getDocumentAsset } from "../../../ipc/commands";
 import { NarrativeVisualWorld } from "./NarrativeVisualWorld";
 import { PortablePackageControls } from "../portable/PortablePackageControls";
 import { invalidateLifeLinkLifecycle } from "../links/lifeLinkQueries";
+import { LoadingRow } from "../../../design-system/primitives/States";
 
 const NarrativeCanvasStudio = lazy(() => import("./NarrativeCanvasStudio"));
 
@@ -38,7 +39,7 @@ function NarrativeAssetImage({ assetId, alt }: { assetId: string; alt: string })
     return () => { active = false; if (objectUrl) URL.revokeObjectURL(objectUrl); };
   }, [assetId]);
   if (failed) return <div className={styles.missing} role="img" aria-label={`Missing image: ${alt || "Untitled"}`}>Image unavailable.</div>;
-  if (!source) return <p className={styles.status} aria-live="polite">Loading image…</p>;
+  if (!source) return <LoadingRow label="Loading image…" />;
   return <img className={styles.image} src={source} alt={alt} loading="lazy" decoding="async" />;
 }
 
@@ -178,7 +179,7 @@ export function NarrativeCanvasReader({ nodeId }: { nodeId: string }) {
     return (
       <div className={styles.shell}>
         <h2>Narrative Canvas</h2>
-        <p className={styles.status} aria-live="polite">Loading canvas…</p>
+        <LoadingRow label="Loading canvas…" />
       </div>
     );
   }
@@ -226,7 +227,7 @@ export function NarrativeCanvasReader({ nodeId }: { nodeId: string }) {
 
   if (editing) {
     return (
-      <Suspense fallback={<p className={styles.status}>Loading studio…</p>}>
+      <Suspense fallback={<LoadingRow label="Loading studio…" />}>
         <NarrativeCanvasStudio
           document={document}
           initialJson={projection.draft_state === "available" ? projection.draft_json : null}

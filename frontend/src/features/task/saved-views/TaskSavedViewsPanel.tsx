@@ -27,6 +27,8 @@ import type { TaskSavedViewPriority } from "../../../ipc/generated/TaskSavedView
 import type { TaskSavedViewTaskKind } from "../../../ipc/generated/TaskSavedViewTaskKind";
 import { taskSavedViewKeys } from "./savedViewQueries";
 import * as styles from "./TaskSavedViews.css";
+import { EmptyState, LoadingRow, SkeletonList } from "../../../design-system/primitives/States";
+import { iconToday } from "../../../design-system/visual/icons";
 
 type ClauseKind = TaskSavedViewClause["kind"];
 type Draft = {
@@ -385,7 +387,7 @@ export default function TaskSavedViewsPanel({
       <aside className={styles.manager} aria-labelledby="saved-view-manager-heading">
         <h2 id="saved-view-manager-heading">Saved Views</h2>
         <button type="button" onClick={(event) => { returnFocus.current = event.currentTarget; setDraft(emptyDraft()); setEditor({ mode: "create", viewId: null, revision: 0, unsupported: false }); setSaveError(null); }}>Create view</button>
-        {active.isLoading ? <p role="status">Loading Saved Views…</p> : active.isError ? <p role="alert">Saved Views could not be loaded.</p> : active.data!.length === 0 ? <p>No active Saved Views.</p> : (
+        {active.isLoading ? <SkeletonList rows={3} label="Loading Saved Views…" /> : active.isError ? <p role="alert">Saved Views could not be loaded.</p> : active.data!.length === 0 ? <EmptyState compact title="No active Saved Views." body="Save a filtered task view to return to it quickly." /> : (
           <ul className={styles.viewList} aria-label="Active Saved Views">
             {active.data!.map((view, index) => (
               <li key={view.id} className={styles.viewLine}>
@@ -405,7 +407,7 @@ export default function TaskSavedViewsPanel({
         )}
         <details>
           <summary>Archived views ({archived.data?.length ?? 0})</summary>
-          {archived.isLoading ? <p role="status">Loading archived views…</p> : archived.isError ? <p role="alert">Archived views could not be loaded.</p> : archived.data!.length === 0 ? <p>No archived Saved Views.</p> : (
+          {archived.isLoading ? <SkeletonList rows={2} label="Loading archived views…" /> : archived.isError ? <p role="alert">Archived views could not be loaded.</p> : archived.data!.length === 0 ? <EmptyState compact title="No archived Saved Views." /> : (
             <ul className={styles.viewList}>
               {(archived.data ?? []).map((view) => <li key={view.id} className={styles.viewLine}><span>{view.name}</span><button type="button" onClick={() => lifecycle.mutate({ action: "restore", view })}>Restore</button></li>)}
             </ul>
@@ -416,13 +418,13 @@ export default function TaskSavedViewsPanel({
 
       <section className={styles.results} aria-labelledby="saved-view-results-heading">
         <h2 id="saved-view-results-heading">Results</h2>
-        {!selectedId ? <p>Select or create a Saved View.</p> : projection.isLoading ? <p role="status">Loading Saved View results…</p> : projection.isError ? <div role="alert"><p>This Saved View could not be executed.</p><button type="button" onClick={() => void projection.refetch()}>Retry</button></div> : projection.data!.unsupported_reason ? (
+        {!selectedId ? <p>Select or create a Saved View.</p> : projection.isLoading ? <LoadingRow label="Loading Saved View results…" /> : projection.isError ? <div role="alert"><p>This Saved View could not be executed.</p><button type="button" onClick={() => void projection.refetch()}>Retry</button></div> : projection.data!.unsupported_reason ? (
           <div role="alert" className={styles.notice}><strong>Unsupported Saved View</strong><p>{projection.data!.unsupported_reason}</p><p>You can edit this view to replace its filter or archive it.</p></div>
         ) : (
           <>
             <p>{projection.data!.total_visible_count} of {projection.data!.total_source_count} source tasks</p>
             {projection.data!.warnings.length > 0 && <div className={styles.notice} role="status"><strong>Reference warnings</strong><ul>{projection.data!.warnings.map((warning, index) => <li key={`${warning.code}-${warning.reference_id}-${index}`}>{warning.message}</li>)}</ul></div>}
-            {projection.data!.total_visible_count === 0 ? <p>No tasks match this view.</p> : projection.data!.groups.map((group) => (
+            {projection.data!.total_visible_count === 0 ? <EmptyState compact icon={iconToday} title="No tasks match this view." body="Adjust the filter to widen what this view returns." /> : projection.data!.groups.map((group) => (
               <section key={group.key} aria-labelledby={`saved-group-${group.key.replace(/[^a-zA-Z0-9_-]/g, "-")}`}>
                 <h3 id={`saved-group-${group.key.replace(/[^a-zA-Z0-9_-]/g, "-")}`}>{group.label} · {group.items.length}</h3>
                 <ul className={styles.resultList}>
@@ -460,7 +462,7 @@ export default function TaskSavedViewsPanel({
                 <label className={styles.field}>Sort<select value={draft.sort_mode} onChange={(event) => setDraft({ ...draft, sort_mode: event.target.value as TaskSavedViewSortMode })}><option value="base_default">Base default</option><option value="scheduled_ascending">Scheduled ascending</option><option value="priority_then_scheduled">Priority, then scheduled</option><option value="title_ascending">Title ascending</option></select></label>
                 <label className={styles.field}>Group<select value={draft.group_mode} onChange={(event) => setDraft({ ...draft, group_mode: event.target.value as TaskSavedViewGroupMode })}><option value="base_default">Base default</option><option value="none">No groups</option><option value="category">Category</option><option value="life_area">Life area</option><option value="focus_plan">Focus Plan</option></select></label>
               </div>
-              <section aria-labelledby="saved-view-filter-heading"><h3 id="saved-view-filter-heading">Filters (all must match)</h3>{options.isLoading ? <p role="status">Loading filter choices…</p> : options.isError ? <p role="alert">Filter choices could not be loaded.</p> : <>{draft.predicate.clauses.map((clause, index) => <ClauseEditor key={clause.kind} clause={clause} options={options.data!} onChange={(next) => setDraft({ ...draft, predicate: { type: "all", clauses: draft.predicate.clauses.map((value, candidate) => candidate === index ? next : value) } })} onRemove={() => setDraft({ ...draft, predicate: { type: "all", clauses: draft.predicate.clauses.filter((_, candidate) => candidate !== index) } })} />)}{unused.length > 0 && <div className={styles.actions}><label>Add filter<select value={addKind} onChange={(event) => setAddKind(event.target.value as ClauseKind)}>{unused.map((kind) => <option key={kind} value={kind}>{clauseLabels[kind]}</option>)}</select></label><button type="button" onClick={() => setDraft({ ...draft, predicate: { type: "all", clauses: [...draft.predicate.clauses, newClause(addKind, options.data)] } })}>Add</button></div>}</>}</section>
+              <section aria-labelledby="saved-view-filter-heading"><h3 id="saved-view-filter-heading">Filters (all must match)</h3>{options.isLoading ? <LoadingRow label="Loading filter choices…" /> : options.isError ? <p role="alert">Filter choices could not be loaded.</p> : <>{draft.predicate.clauses.map((clause, index) => <ClauseEditor key={clause.kind} clause={clause} options={options.data!} onChange={(next) => setDraft({ ...draft, predicate: { type: "all", clauses: draft.predicate.clauses.map((value, candidate) => candidate === index ? next : value) } })} onRemove={() => setDraft({ ...draft, predicate: { type: "all", clauses: draft.predicate.clauses.filter((_, candidate) => candidate !== index) } })} />)}{unused.length > 0 && <div className={styles.actions}><label>Add filter<select value={addKind} onChange={(event) => setAddKind(event.target.value as ClauseKind)}>{unused.map((kind) => <option key={kind} value={kind}>{clauseLabels[kind]}</option>)}</select></label><button type="button" onClick={() => setDraft({ ...draft, predicate: { type: "all", clauses: [...draft.predicate.clauses, newClause(addKind, options.data)] } })}>Add</button></div>}</>}</section>
               <div className={styles.actions}><button type="submit" disabled={save.isPending || options.isLoading}>{save.isPending ? "Saving…" : "Save view"}</button><button type="button" onClick={closeEditor}>Cancel</button></div>
             </form>
           </div>

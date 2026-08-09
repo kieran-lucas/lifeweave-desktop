@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getRelatedTasksForLifeNode } from "../../ipc/commands";
 import type { RelatedTaskView } from "../../ipc/generated/RelatedTaskView";
 import { TagChipList } from "../tag/TagChipList";
+import { EmptyState, SkeletonList } from "../../design-system/primitives/States";
 
 export function RelatedTasksPanel({
   nodeId,
@@ -28,7 +29,7 @@ export function RelatedTasksPanel({
     return (
       <section aria-labelledby="related-tasks-heading">
         <h2 id="related-tasks-heading">Related tasks</h2>
-        <p aria-live="polite">Loading related tasks…</p>
+        <SkeletonList rows={3} label="Loading related tasks…" />
       </section>
     );
   if (query.isError)
@@ -68,7 +69,7 @@ export function RelatedTasksPanel({
         {active.length ? (
           <ul>{active.map(render)}</ul>
         ) : (
-          <p>No active related tasks.</p>
+          <EmptyState compact title="No active related tasks." />
         )}
       </section>
       <section aria-labelledby="related-completed-heading">
@@ -76,7 +77,7 @@ export function RelatedTasksPanel({
         {completed.length ? (
           <ul>{completed.map(render)}</ul>
         ) : (
-          <p>No completed related tasks.</p>
+          <EmptyState compact title="No completed related tasks." />
         )}
       </section>
     </section>

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { getFocusPlanLinkedWork } from "../../ipc/commands";
 import type { FocusPlanLinkedWorkView } from "../../ipc/generated/FocusPlanLinkedWorkView";
 import * as styles from "./FocusPlansScreen.css";
+import { EmptyState } from "../../design-system/primitives/States";
 
 export type TaskNavigate = (
   localDate: string,
@@ -65,7 +66,7 @@ export function LinkedWorkPanel({
             recurring {work.series_count === 1 ? "series" : "series"}.
           </p>
           {work.items.length === 0 ? (
-            <p className={styles.muted}>No Tasks reference this Plan yet.</p>
+            <EmptyState compact title="No Tasks reference this Plan yet." body="Link a Task to this Plan to see it here." />
           ) : (
             <ul className={styles.planList} aria-label="Linked work">
               {work.items.map((item) => (

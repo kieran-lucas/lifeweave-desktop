@@ -6,6 +6,8 @@ import type { FocusPlanAnalyticsPlanView } from "../../ipc/generated/FocusPlanAn
 import type { FocusPlanLifecycle } from "../../ipc/generated/FocusPlanLifecycle";
 import * as styles from "./AnalyticsScreen.css";
 import { actualTimeVariance, formatActualTime, planScheduledDuration } from "./format";
+import { EmptyState, LoadingRow } from "../../design-system/primitives/States";
+import { iconPlans } from "../../design-system/visual/icons";
 
 const lifecycleLabels: Record<FocusPlanLifecycle, string> = {
   draft: "Draft",
@@ -66,7 +68,7 @@ export function FocusPlanAnalyticsSection({
   return (
     <section className={styles.section} aria-labelledby="focus-plan-activity">
       <h2 id="focus-plan-activity">Focus Plan activity</h2>
-      {query.isLoading && <p role="status">Loading Focus Plan activity…</p>}
+      {query.isLoading && <LoadingRow label="Loading Focus Plan activity…" />}
       {query.isError && <p role="alert">Unable to load Focus Plan activity.</p>}
       {data && (
         <>
@@ -102,7 +104,7 @@ export function FocusPlanAnalyticsSection({
           </dl>
 
           {data.plans.length === 0 ? (
-            <p>No Focus Plan-linked work or reviews in this period.</p>
+            <EmptyState compact icon={iconPlans} title="No Focus Plan-linked work or reviews in this period." body="Link a Task to a Plan to see its activity reported here." />
           ) : (
             <div className={styles.planTableWrap}>
               <table className={styles.planTable}>

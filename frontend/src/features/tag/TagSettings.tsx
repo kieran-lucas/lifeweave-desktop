@@ -11,6 +11,7 @@ import {
 import type { TagView } from "../../ipc/generated/TagView";
 import * as styles from "./TagSettings.css";
 import { invalidateTaskSavedViewReferenceData } from "../task/saved-views/savedViewQueries";
+import { SkeletonList } from "../../design-system/primitives/States";
 
 export function TagSettings() {
   const [createName, setCreateName] = useState("");
@@ -164,7 +165,7 @@ export function TagSettings() {
       )}
       </section>
 
-      {tagsQuery.isLoading && <p>Loading tags…</p>}
+      {tagsQuery.isLoading && <SkeletonList rows={4} label="Loading tags…" />}
       {tagsQuery.isError && (
         <div role="alert">
           <p className={styles.warning}>Failed to load tags.</p>
