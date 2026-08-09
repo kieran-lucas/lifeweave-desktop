@@ -1,9 +1,0 @@
-Load the attached Lifeweave visual references and read:
-- `docs/visual/endgame-redesign/00_OWNER_EXECUTION_AUTHORIZATION.md`
-- `docs/visual/endgame-redesign/00_MASTER_EXECUTION_SPEC.md`
-- `docs/visual/endgame-redesign/07_REFERENCE_AUTHORITY.md`
-- `docs/visual/endgame-redesign/state/EXECUTION_LEDGER.md`
-
-Also read repository `AGENTS.md` and `AI_CONSTITUTION.md`.
-
-Do not modify files yet. Verify the workspace root, current HEAD, working-tree state, required canonical pack files, the six reference-image identities, and that no repository instruction conflicts remain unresolved under the stated authority hierarchy. Reply with a compact PRELIGHT PASS or exact blocker only. Do not re-trace the whole repository.
