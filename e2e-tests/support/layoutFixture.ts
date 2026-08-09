@@ -22,6 +22,47 @@ export const LONG_PLAN_TITLE =
 export const LONG_LIFE_TITLE =
   "Long-running professional development and certification track for the coming year";
 export const LONG_TAG = "long-running-preparation-and-review";
+export const VIETNAMESE_TASK_TITLE =
+  "Ưu tiên sức khỏe và hoàn thành kế hoạch quý";
+export const VIETNAMESE_LIFE_TITLE = "Nhịp sống bền vững";
+export const VIETNAMESE_DOCUMENT = {
+  type: "doc",
+  content: [
+    {
+      type: "heading",
+      attrs: { level: 2 },
+      content: [{ type: "text", text: "ĐÁNH GIÁ TIẾN ĐỘ QUÝ" }],
+    },
+    {
+      type: "paragraph",
+      content: [
+        { type: "text", text: "Duy trì nhịp sống cân bằng, chăm sóc " },
+        { type: "text", text: "sức khỏe", marks: [{ type: "bold" }] },
+        { type: "text", text: " và dành khoảng " },
+        { type: "text", text: "tĩnh lặng", marks: [{ type: "italic" }] },
+        { type: "text", text: " để suy ngẫm mỗi ngày." },
+      ],
+    },
+    {
+      type: "heading",
+      attrs: { level: 3 },
+      content: [{ type: "text", text: "Việc cần ghi nhớ" }],
+    },
+    {
+      type: "bulletList",
+      content: [
+        {
+          type: "listItem",
+          content: [{ type: "paragraph", content: [{ type: "text", text: "Ưu tiên điều quan trọng trước." }] }],
+        },
+        {
+          type: "listItem",
+          content: [{ type: "paragraph", content: [{ type: "text", text: "Giữ lời hứa với chính mình." }] }],
+        },
+      ],
+    },
+  ],
+};
 
 export type SeedResult = {
   ok: boolean;
@@ -34,7 +75,10 @@ export type SeedResult = {
   lifeNarrativeChildId: string;
 };
 
-export async function seedLayoutFixture(localDate: string): Promise<SeedResult> {
+export async function seedLayoutFixture(
+  localDate: string,
+  options: { vietnamese?: boolean } = {},
+): Promise<SeedResult> {
   const result = await browser.execute(
     async (
       today: string,
@@ -42,6 +86,10 @@ export async function seedLayoutFixture(localDate: string): Promise<SeedResult> 
       longPlan: string,
       longLife: string,
       longTag: string,
+      includeVietnamese: boolean,
+      vietnameseTask: string,
+      vietnameseLife: string,
+      vietnameseDocument: object,
     ) => {
       type Invoke = <T>(command: string, payload?: unknown) => Promise<T>;
       const invoke = (
@@ -108,7 +156,9 @@ export async function seedLayoutFixture(localDate: string): Promise<SeedResult> 
               },
               parent_id: parentId,
               title,
-              short_description: `${title} — seeded so Browse renders a focal node with a real description block rather than an empty state.`,
+              short_description: title === vietnameseLife
+                ? "Một không gian ghi chép dành cho sức khỏe, ưu tiên và những nhịp điệu bền vững."
+                : `${title} — seeded so Browse renders a focal node with a real description block rather than an empty state.`,
               icon_key: "life-branch",
               theme_variant: "neutral",
             },
@@ -118,24 +168,38 @@ export async function seedLayoutFixture(localDate: string): Promise<SeedResult> 
         const area = await ensureNode("life-root", "Layout Area");
         // Enough children that the Browse child grid fills all four tracks.
         const childIds: string[] = [];
-        for (const name of [
+        const childNames = [
           "Layout Child One",
           "Layout Child Two",
           "Layout Child Three",
           "Layout Child Four",
           "Layout Child Five",
           longLife,
-        ])
+        ];
+        if (includeVietnamese) childNames.push(vietnameseLife);
+        for (const name of childNames)
           childIds.push(await ensureNode(area, name));
-        const documented = childIds[0]!;
+        const documented = includeVietnamese ? childIds.at(-1)! : childIds[0]!;
         const narrative = childIds[1]!;
-        const readerProjection = await invoke<{ document: { id: string } | null }>(
+        const readerProjection = await invoke<{
+          document: { id: string; revision: number; plain_text: string } | null;
+        }>(
           "get_reader_document",
           { input: { life_node_id: documented } },
         );
-        if (!readerProjection.document)
-          await invoke("create_reader_document", {
+        const readerDocument = readerProjection.document ??
+          await invoke<{ id: string; revision: number; plain_text: string }>("create_reader_document", {
             input: { life_node_id: documented, operation_id: "task50-layout-reader" },
+          });
+        if (includeVietnamese && !readerDocument.plain_text.includes("ĐÁNH GIÁ TIẾN ĐỘ QUÝ"))
+          await invoke("save_reader_document", {
+            input: {
+              document_id: readerDocument.id,
+              expected_revision: readerDocument.revision,
+              schema_version: 1,
+              canonical_json: JSON.stringify(vietnameseDocument),
+              operation_id: "task51-vietnamese-reader",
+            },
           });
         const narrativeProjection = await invoke<{ document: { id: string } | null }>(
           "get_narrative_document",
@@ -265,6 +329,16 @@ export async function seedLayoutFixture(localDate: string): Promise<SeedResult> 
           { title: "Errand run", start: 16 * 60, end: 17 * 60, deadline: null, life: null, plan: null, tags: [] },
           { title: "Evening reading", start: 20 * 60, end: 21 * 60, deadline: null, life: area, plan: null, tags: [] },
         ];
+        if (includeVietnamese)
+          seeds.splice(1, 0, {
+            title: vietnameseTask,
+            start: 7 * 60,
+            end: 7 * 60 + 45,
+            deadline: today,
+            life: documented,
+            plan: planId,
+            tags: tagIds.slice(0, 2),
+          });
         const created: string[] = [];
         let index = 0;
         for (const seed of seeds) {
@@ -278,7 +352,9 @@ export async function seedLayoutFixture(localDate: string): Promise<SeedResult> 
             input: {
               title: seed.title,
               description:
-                "Seeded for the Task 50 layout matrix so the timeline renders content rather than an empty state.",
+                seed.title === vietnameseTask
+                  ? "Rà soát tiến độ, điều chỉnh ưu tiên và ghi lại những thay đổi cần thiết."
+                  : "Seeded for the Task 50 layout matrix so the timeline renders content rather than an empty state.",
               local_date: today,
               start_minute: seed.start,
               end_minute: seed.end,
@@ -386,6 +462,10 @@ export async function seedLayoutFixture(localDate: string): Promise<SeedResult> 
     LONG_PLAN_TITLE,
     LONG_LIFE_TITLE,
     LONG_TAG,
+    options.vietnamese === true,
+    VIETNAMESE_TASK_TITLE,
+    VIETNAMESE_LIFE_TITLE,
+    VIETNAMESE_DOCUMENT,
   );
   return result;
 }

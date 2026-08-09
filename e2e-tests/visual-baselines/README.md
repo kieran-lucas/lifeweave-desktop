@@ -47,6 +47,17 @@ walk exercises all 36 states under `prefers-reduced-motion: reduce`. Its five re
 captures are byte-for-byte identical to the light goldens, so duplicate PNGs are not tracked; the
 labeled native audit artifacts are the durable execution evidence.
 
+Vietnamese typography runs independently in light mode with `LIFEWEAVE_AUDIT_LANGUAGE=vi`. It adds
+a real accented Task and documented Life leaf, verifies accent-insensitive Search reaches the Task,
+Life node, and document, and compares four tracked UI/editorial goldens.
+
+```powershell
+$env:LIFEWEAVE_AUDIT_LANGUAGE = 'vi'
+$env:LIFEWEAVE_VISUAL_REGRESSION = '1'
+Remove-Item Env:LIFEWEAVE_ACCEPT_VISUAL_BASELINES -ErrorAction SilentlyContinue
+.\scripts\run_windows_e2e.ps1 -Phases 'task50b-maximized-audit.e2e.ts'
+```
+
 Before accepting a new or replaced PNG:
 
 1. run the comparison without acceptance and inspect `target/visual-regression/diff/`;

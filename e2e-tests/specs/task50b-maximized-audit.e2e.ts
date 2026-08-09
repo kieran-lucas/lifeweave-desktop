@@ -45,6 +45,11 @@ const mediaMode = requestedTheme === "dark"
     : reducedMotion
       ? "reduced-motion"
       : "light";
+const requestedLanguage = process.env.LIFEWEAVE_AUDIT_LANGUAGE ?? "en";
+if (requestedLanguage !== "en" && requestedLanguage !== "vi")
+  throw new Error(`Unsupported LIFEWEAVE_AUDIT_LANGUAGE: ${requestedLanguage}`);
+if (requestedLanguage === "vi" && mediaMode !== "light")
+  throw new Error("The Vietnamese typography audit must run independently in the light theme");
 const lightVisualSnapshotFiles = new Set([
   "01-today",
   "02-task-create",
@@ -101,6 +106,12 @@ const reducedMotionVisualSnapshotFiles = new Set([
   "09-calendar",
   "15-life-graph",
   "19-narrative-studio",
+]);
+const vietnameseVisualSnapshotFiles = new Set([
+  "01-today",
+  "16-life-reader",
+  "17-basic-editor",
+  "21b-search-results",
 ]);
 
 type ScreenRecord = {
@@ -184,7 +195,9 @@ async function capture(screen: string, file: string, note?: string) {
   if (note) record.note = note;
   records.push(record);
   await shot(file);
-  const visualSnapshotFiles = mediaMode === "dark"
+  const visualSnapshotFiles = requestedLanguage === "vi"
+    ? vietnameseVisualSnapshotFiles
+    : mediaMode === "dark"
     ? darkVisualSnapshotFiles
     : mediaMode === "forced-colors"
       ? forcedColorsVisualSnapshotFiles
@@ -192,7 +205,11 @@ async function capture(screen: string, file: string, note?: string) {
         ? reducedMotionVisualSnapshotFiles
         : lightVisualSnapshotFiles;
   if (visualRegression && visualSnapshotFiles.has(file)) {
-    const tag = mediaMode === "light" ? file : `${file}-${mediaMode}`;
+    const tag = requestedLanguage === "vi"
+      ? `${file}-vi`
+      : mediaMode === "light"
+        ? file
+        : `${file}-${mediaMode}`;
     const result = await browser.checkScreen(tag);
     const mismatch = typeof result === "number" ? result : result.misMatchPercentage;
     if (mismatch !== 0) throw new Error(`${tag} visual mismatch: ${mismatch}%`);
@@ -236,7 +253,9 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
     mkdirSync(outputRoot, { recursive: true });
     await browser.url("http://tauri.localhost");
     environment = await enterAuditViewport();
-    const seeded = await seedLayoutFixture(await appLocalDate());
+    const seeded = await seedLayoutFixture(await appLocalDate(), {
+      vietnamese: requestedLanguage === "vi",
+    });
     if (!seeded.ok) throw new Error(`fixture seeding failed at ${seeded.stage}: ${seeded.error}`);
     lifeAreaId = seeded.lifeRootChildId;
     lifeDocumentedChildId = seeded.lifeDocumentedChildId;
@@ -284,7 +303,7 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
     const collisions = records.flatMap(r => r.collisions);
     writeFileSync(
       join(outputRoot, "audit.json"),
-      `${JSON.stringify({ label, theme: requestedTheme, mediaMode, environment, records }, null, 2)}\n`,
+      `${JSON.stringify({ label, theme: requestedTheme, mediaMode, language: requestedLanguage, environment, records }, null, 2)}\n`,
       "utf8",
     );
     const byKind = collisions.reduce<Record<string, number>>((acc, c) => {
@@ -299,7 +318,7 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
       }  achieved: ${environment?.innerWidth}x${environment?.innerHeight} @ DPR ${environment?.devicePixelRatio}`,
     );
     console.log(`environment: ${JSON.stringify(environment)}`);
-    console.log(`theme: ${requestedTheme}  media: ${mediaMode}`);
+    console.log(`theme: ${requestedTheme}  media: ${mediaMode}  language: ${requestedLanguage}`);
     console.log(`screens: ${records.length}  collisions: ${collisions.length} ${JSON.stringify(byKind)}`);
     for (const record of records) {
       const u = record.utilization;
@@ -498,8 +517,13 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
     if (await tryClick("button[aria-label^='Search']")) {
       await capture("search", "21-search");
       const searchInput = $("input[aria-label='Search tasks, life nodes, and documents']");
-      await searchInput.setValue("Layout");
-      await $("[role='option']").waitForDisplayed({ timeout: 15_000 });
+      await searchInput.setValue(requestedLanguage === "vi" ? "suc khoe" : "Layout");
+      if (requestedLanguage === "vi")
+        // The freshly created Task, Life node, and document are indexed through the product's
+        // bounded dirty queue. One option only proves that indexing started; three results proves
+        // the Vietnamese fixture reached its deterministic complete state before capture.
+        await $("p=3 results.").waitForDisplayed({ timeout: 15_000 });
+      else await $("[role='option']").waitForDisplayed({ timeout: 15_000 });
       await capture("search--results", "21b-search-results");
       await searchInput.setValue("task51-no-result-sentinel");
       await $("p=No results.").waitForDisplayed({ timeout: 15_000 });

@@ -13,6 +13,10 @@
     "forcedColors": "10 tracked goldens; DevTools Emulation.setEmulatedMedia plus production matchMedia assertion",
     "reducedMotion": "36-state native walk; production matchMedia assertion; 5 representative static captures matched light goldens byte-for-byte"
   },
+  "languages": {
+    "default": "en",
+    "vietnameseProof": "4 tracked Task/Reader/Editor/Search goldens; complete 3-entity accent-insensitive Search projection"
+  },
   "viewports": [
     {
       "mode": "canonical-maximized",
@@ -45,8 +49,8 @@
     "seed": "seedLayoutFixture",
     "fixtureCheckpoint": "be71661"
   },
-  "sourceTreeCheckpoints": ["e2818cf", "fe2903b", "ddf8980", "ab9333c"],
-  "snapshotCount": 63,
+  "sourceTreeCheckpoints": ["e2818cf", "fe2903b", "ddf8980", "ab9333c", "ad0650b"],
+  "snapshotCount": 67,
   "comparison": {
     "mismatchPercentage": 0,
     "autoAcceptanceDefault": false,
@@ -55,7 +59,8 @@
       "target/e2e-artifacts/task-50b/task51-visual-baseline-verify-960-20260809/",
       "target/e2e-artifacts/task-50b/task51-visual-baseline-verify-dark-1536-20260809/",
       "target/e2e-artifacts/task-50b/task51-visual-baseline-verify-forced-colors-1536-20260809/",
-      "target/e2e-artifacts/task-50b/task51-visual-baseline-generate-reduced-motion-1536-20260809/"
+      "target/e2e-artifacts/task-50b/task51-visual-baseline-generate-reduced-motion-1536-20260809/",
+      "target/e2e-artifacts/task-50b/task51-visual-baseline-verify-vi2-1536-20260809/"
     ]
   }
 }
