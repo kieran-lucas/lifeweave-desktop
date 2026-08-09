@@ -17,7 +17,7 @@ import { LifeEditWorkspace } from "./LifeEditWorkspace";
 import { BasicLeafReader } from "./document/BasicLeafReader";
 import { RelatedTasksPanel } from "./RelatedTasksPanel";
 import { EmptyState, LoadingRow, SkeletonList } from "../../design-system/primitives/States";
-import { iconLife } from "../../design-system/visual/icons";
+import { Icon, iconChevronLeft, iconLife } from "../../design-system/visual/icons";
 
 type Mode = "browse" | "edit" | "pinned" | "reader";
 type HistoryEntry = {
@@ -447,7 +447,7 @@ export function LifeScreen({
     return (
       <PageFrame as="section" type="reading" aria-labelledby="life-reader-title">
         <button className={styles.quietButton} onClick={back}>
-          ← Back to Life Browse
+          <Icon d={iconChevronLeft} size={16} /> Back to Life Browse
         </button>
         <motion.div
           layoutId={`life-node-${readerId}`}

@@ -17,6 +17,7 @@ Evidence shorthand:
 
 - `RMAX` — `target/e2e-artifacts/task-50b/task51-recovery-pass2-20260809/`
 - `R960` — `target/e2e-artifacts/task-50b/task51-recovery-960-20260809/`
+- `RPR` — `target/e2e-artifacts/task-50b/task51-plans-reader-pass1-20260809/`
 - `DOM` — focused React/Vitest behavior and accessibility contracts
 - `GEO` — real WebView spacing audit; collisions/document overflow/viewport overflow
 
@@ -52,8 +53,8 @@ Evidence shorthand:
 
 | Surface / entry | Primary states and nested UI | Shared primitives | L/D/N/K/F | Evidence | Status | Defects / next proof |
 |---|---|---|---|---|---|---|
-| Plans overview — sidebar `Plans` | lifecycle tabs, list, selected/unselected, empty, long names, create | tabs, list selection, input/button, empty state | Y/N/Y/P/N | RMAX/R960 `11-plans.png`; GEO | PARTIAL | Current render has card-inside-card residue and a large dead details panel. Recompose and capture selected/empty. |
-| Plan detail/edit — select plan | variants, phases, lifecycle controls, linked work, reviews/activity, drafts/errors | fields, selects, tabs, tables, chips | P/N/N/P/N | DOM only | NOT REVIEWED | Add reachable real-app selected-plan walk and deliberate render pass. |
+| Plans overview — sidebar `Plans` | lifecycle tabs, list, selected/unselected, empty, long names, create | tabs, list selection, input/button, empty state | Y/N/P/P/N | RPR `11-plans.png`, `11b-plans-selected.png`; GEO | PARTIAL | Card nesting, stretched create group, boxed tabs, dead detail frame and the shared-button edge collision were removed. New narrow, empty-portfolio, keyboard, dark and FC captures remain. |
+| Plan detail/edit — select plan | variants, phases, lifecycle controls, linked work, reviews/activity, drafts/errors | fields, selects, tabs, tables, chips | Y/N/N/P/N | RPR `11b-plans-selected.png`; DOM | PARTIAL | Populated details are now reachable and rendered; capture approaches/phases, linked work, reviews, recovery/error and narrow/dark/FC states. |
 
 ## Life, Graph, Reader, and Editor
 
@@ -63,8 +64,8 @@ Evidence shorthand:
 | Life Edit — `Edit` | tree, selected node inspector, add/update/archive, drag source/target/overlay, undo | local-scroll canvas, select/textarea, tag picker, dnd overlay | Y/N/Y/P/N | RMAX/R960 `13-life-edit.png`; GEO; DOM | PARTIAL | Inspect drag/undo, keyboard parity, dense/deep tree, dark/FC. Reconcile canvas/inspector material. |
 | Life Pinned — `Pinned` | populated/empty, open Browse, unpin | node list/card, empty state | Y/N/Y/P/N | RMAX/R960 `14-life-pinned.png`; GEO | PARTIAL | Current single card floats in a dead field; recompose populated/empty. |
 | Life Graph — `Graph` from Browse | nodes/edges/labels, selection/hover/focus, details, dense graph, relationship table | local-scroll canvas, SVG graph, select, details list | Y/N/Y/P/N | RMAX/R960 `15-life-graph.png`; GEO; DOM | PARTIAL | Current selected outline is heavy and controls/details use a second dialect; add explicit-link/dense/error states. Zoom/pan is `N/A`: no such production behavior exists and Task 51 cannot add Graph semantics. Empty is `N/A`: the projection always contains the Life root. |
-| Basic Leaf Reader — open documented leaf | reading measure, outline, links/related tasks, long/Vietnamese/empty/error | reading page, Literata roles, outline, link panels | N/N/N/P/N | current audit records leaf unreachable | NOT REVIEWED | Fix deterministic fixture entry path, then render flagship reader states. |
-| Basic Leaf Editor — Reader `Edit document` | empty/long document, headings/lists/links/code/quotes, selection/caret, toolbar, outline, save/error | Tiptap, editor toolbar, reading page | N/N/N/P/N | current audit records leaf unreachable; DOM only | NOT REVIEWED | Add real editor walk without changing persistence semantics. |
+| Basic Leaf Reader — open documented leaf | reading measure, outline, links/related tasks, long/Vietnamese/empty/error | reading page, Literata roles, outline, link panels | Y/N/N/P/N | RPR `16-life-reader.png`; DOM; GEO | PARTIAL | Deterministic root → Layout Area → documented-leaf path now works. Back action, type and controls received a first visual pass; long/Vietnamese/outline/empty/error and dark/narrow/FC remain. |
+| Basic Leaf Editor — Reader `Edit document` | empty/long document, headings/lists/links/code/quotes, selection/caret, toolbar, outline, save/error | Tiptap, editor toolbar, reading page | Y/N/N/P/N | RPR `17-basic-editor.png`; DOM 84-test Reader/Life subset; GEO | PARTIAL | Real no-save entry/exit and empty editor now render; toolbar/control grammar was quieted. Authored content, selection/caret, link/dirty-exit dialogs, save/error and dark/narrow/FC remain. |
 | Life Links panel — Reader links action | outgoing/backlinks, search/add/remove, unavailable/archive state | modal surface, search, list buttons | N/N/N/P/N | DOM only | NOT REVIEWED | Add real captures and focus restoration proof. |
 | Life package flows — Life controls | portable, branch, whole-tree export/import previews, warnings/errors/confirmations | modal grammar, file controls, tables/lists | N/N/N/P/N | DOM/native functional tests only | NOT REVIEWED | Add safe fixture-driven preview captures; never mutate user data. |
 

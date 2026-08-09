@@ -23,8 +23,13 @@ import { ReviewsPanel } from "./ReviewsPanel";
 import { useQueryClient } from "@tanstack/react-query";
 import { invalidateTaskSavedViewReferenceData } from "../task/saved-views/savedViewQueries";
 import { iconPlans } from "../../design-system/visual/icons";
-import { EmptyState } from "../../design-system/primitives/States";
-import { SkeletonList } from "../../design-system/primitives/States";
+import { EmptyState, SkeletonList } from "../../design-system/primitives/States";
+import { button as sharedButton, compact } from "../../design-system/primitives/controls.css";
+
+const primaryButton = `${sharedButton.primary} ${styles.primaryButtonSizing}`;
+const secondaryButton = sharedButton.secondary;
+const dangerButton = sharedButton.destructive;
+const compactButton = `${sharedButton.secondary} ${compact}`;
 
 export type FocusPlanEntryRequest = {
   requestId: string;
@@ -390,7 +395,7 @@ export function FocusPlansScreen({
           <form className={styles.createForm} onSubmit={handleCreate}>
             <label className={styles.srOnly} htmlFor="new-plan-title">New plan title</label>
             <input id="new-plan-title" className={styles.createInput} value={createTitle} onChange={(event) => setCreateTitle(event.target.value)} placeholder="New focus plan" />
-            <button className={styles.primaryButton} disabled={status === "saving" || !createTitle.trim()}>Create</button>
+            <button className={primaryButton} disabled={status === "saving" || !createTitle.trim()}>Create</button>
           </form>
         }
       >
@@ -432,7 +437,7 @@ export function FocusPlansScreen({
                   <h2>{selected.title}</h2>
                   <p className={styles.muted}>Revision {selected.revision} · Updated {selected.updated_at}</p>
                 </div>
-                <button type="button" className={styles.dangerButton} disabled={status === "saving"} onClick={() => void runMutation({ action: selected.archived ? "restore_plan" : "archive_plan" })}>{selected.archived ? "Restore plan" : "Archive plan"}</button>
+                <button type="button" className={dangerButton} disabled={status === "saving"} onClick={() => void runMutation({ action: selected.archived ? "restore_plan" : "archive_plan" })}>{selected.archived ? "Restore plan" : "Archive plan"}</button>
               </div>
 
               <fieldset className={styles.fieldset} disabled={status === "saving" || selected.archived}>
@@ -448,29 +453,29 @@ export function FocusPlansScreen({
                 <label>Success criteria, one per line<textarea className={styles.textarea} value={form.criteriaText} onChange={(event) => updateForm("criteriaText", event.target.value)} /></label>
                 <fieldset className={styles.tagFieldset}><legend>Tags</legend>{tags.map((tag) => <label key={tag.id} className={styles.checkLabel}><input type="checkbox" checked={form.tagIds.includes(tag.id)} onChange={(event) => updateForm("tagIds", event.target.checked ? [...form.tagIds, tag.id] : form.tagIds.filter((id) => id !== tag.id))} />{tag.name}</label>)}</fieldset>
                 <div className={styles.actions}>
-                  <button type="button" className={styles.primaryButton} onClick={savePlan}>Save plan</button>
-                  <button type="button" className={styles.secondaryButton} onClick={() => void saveRecoveryDraft()}>Save recovery draft</button>
-                  {selected.recovery_draft && <button type="button" className={styles.secondaryButton} onClick={loadRecoveryDraft}>Load recovery draft</button>}
-                  {selected.recovery_draft && <button type="button" className={styles.secondaryButton} onClick={() => void discardRecoveryDraft()}>Discard recovery draft</button>}
+                  <button type="button" className={primaryButton} onClick={savePlan}>Save plan</button>
+                  <button type="button" className={secondaryButton} onClick={() => void saveRecoveryDraft()}>Save recovery draft</button>
+                  {selected.recovery_draft && <button type="button" className={secondaryButton} onClick={loadRecoveryDraft}>Load recovery draft</button>}
+                  {selected.recovery_draft && <button type="button" className={secondaryButton} onClick={() => void discardRecoveryDraft()}>Discard recovery draft</button>}
                 </div>
                 {selected.recovery_draft && <p className={styles.draftNote}>Recovery draft saved at {selected.recovery_draft.updated_at}{selected.recovery_draft.conflict ? " · revision conflict" : ""}.</p>}
               </fieldset>
 
               <section aria-labelledby="variants-heading">
                 <h3 id="variants-heading">Approaches</h3>
-                <div className={styles.variantTabs}>{selected.variants.map((variant) => <span key={variant.id} className={styles.variantControl}><button type="button" className={styles.tab} aria-pressed={variant.id === selected.selected_variant_id} disabled={variant.archived || status === "saving"} onClick={() => void runMutation({ action: "select_variant", variant_id: variant.id })}>{variant.label}{variant.archived ? " (archived)" : ""}</button>{variant.id !== selected.selected_variant_id && <button type="button" className={styles.iconButton} aria-label={`${variant.archived ? "Restore" : "Archive"} ${variant.label}`} onClick={() => void runMutation({ action: variant.archived ? "restore_variant" : "archive_variant", variant_id: variant.id })}>{variant.archived ? "↺" : "×"}</button>}</span>)}</div>
-                <form className={styles.inlineForm} onSubmit={(event) => { event.preventDefault(); void addVariant(); }}><input className={styles.input} value={newVariantLabel} onChange={(event) => setNewVariantLabel(event.target.value)} placeholder="Alternative approach" /><button className={styles.secondaryButton} disabled={!newVariantLabel.trim() || status === "saving"}>Add approach</button></form>
+                <div className={styles.variantTabs}>{selected.variants.map((variant) => <span key={variant.id} className={styles.variantControl}><button type="button" className={styles.tab} aria-pressed={variant.id === selected.selected_variant_id} disabled={variant.archived || status === "saving"} onClick={() => void runMutation({ action: "select_variant", variant_id: variant.id })}>{variant.label}{variant.archived ? " (archived)" : ""}</button>{variant.id !== selected.selected_variant_id && <button type="button" className={compactButton} onClick={() => void runMutation({ action: variant.archived ? "restore_variant" : "archive_variant", variant_id: variant.id })}>{variant.archived ? "Restore" : "Archive"}</button>}</span>)}</div>
+                <form className={styles.inlineForm} onSubmit={(event) => { event.preventDefault(); void addVariant(); }}><input className={styles.input} value={newVariantLabel} onChange={(event) => setNewVariantLabel(event.target.value)} placeholder="Alternative approach" /><button className={secondaryButton} disabled={!newVariantLabel.trim() || status === "saving"}>Add approach</button></form>
                 {selectedVariant && <div className={styles.variantEditor}>
-                  <div className={styles.inlineForm}><input className={styles.input} value={variantLabel} onChange={(event) => setVariantLabel(event.target.value)} /><button type="button" className={styles.secondaryButton} disabled={!variantLabel.trim()} onClick={() => void runMutation({ action: "rename_variant", variant_id: selectedVariant.id, label: variantLabel.trim() })}>Rename</button></div>
+                  <div className={styles.inlineForm}><input className={styles.input} value={variantLabel} onChange={(event) => setVariantLabel(event.target.value)} /><button type="button" className={secondaryButton} disabled={!variantLabel.trim()} onClick={() => void runMutation({ action: "rename_variant", variant_id: selectedVariant.id, label: variantLabel.trim() })}>Rename</button></div>
                   <label>Approach notes<textarea className={styles.textarea} value={variantBody} onChange={(event) => setVariantBody(event.target.value)} /></label>
-                  <button type="button" className={styles.secondaryButton} onClick={() => void runMutation({ action: "update_variant_body", variant_id: selectedVariant.id, canonical_json: canonicalBody(variantBody), plain_text: variantBody })}>Save approach notes</button>
+                  <button type="button" className={secondaryButton} onClick={() => void runMutation({ action: "update_variant_body", variant_id: selectedVariant.id, canonical_json: canonicalBody(variantBody), plain_text: variantBody })}>Save approach notes</button>
 
                   <h4>Phases</h4>
                   <ol className={styles.phaseList}>{orderedPhases.map((phase, index) => {
                     const activeIndex = activePhaseIds.indexOf(phase.id);
-                    return <li key={phase.id} className={styles.phaseRow}><input key={`${phase.id}:${phase.title}`} className={styles.input} defaultValue={phase.title} disabled={phase.archived} aria-label={`Phase ${index + 1} title`} onBlur={(event) => { const title = event.target.value.trim(); if (title && title !== phase.title) void runMutation({ action: "rename_phase", variant_id: selectedVariant.id, phase_id: phase.id, title }); }} /><button type="button" className={styles.iconButton} aria-label={`Move ${phase.title} up`} disabled={phase.archived || activeIndex <= 0} onClick={() => void runMutation({ action: "move_phase", variant_id: selectedVariant.id, phase_id: phase.id, new_index: activeIndex - 1 })}>↑</button><button type="button" className={styles.iconButton} aria-label={`Move ${phase.title} down`} disabled={phase.archived || activeIndex < 0 || activeIndex >= activePhaseIds.length - 1} onClick={() => void runMutation({ action: "move_phase", variant_id: selectedVariant.id, phase_id: phase.id, new_index: activeIndex + 1 })}>↓</button><button type="button" className={styles.secondaryButton} onClick={() => void runMutation({ action: phase.archived ? "restore_phase" : "archive_phase", variant_id: selectedVariant.id, phase_id: phase.id })}>{phase.archived ? "Restore" : "Archive"}</button></li>;
+                    return <li key={phase.id} className={styles.phaseRow}><input key={`${phase.id}:${phase.title}`} className={styles.input} defaultValue={phase.title} disabled={phase.archived} aria-label={`Phase ${index + 1} title`} onBlur={(event) => { const title = event.target.value.trim(); if (title && title !== phase.title) void runMutation({ action: "rename_phase", variant_id: selectedVariant.id, phase_id: phase.id, title }); }} /><button type="button" className={compactButton} aria-label={`Move ${phase.title} up`} disabled={phase.archived || activeIndex <= 0} onClick={() => void runMutation({ action: "move_phase", variant_id: selectedVariant.id, phase_id: phase.id, new_index: activeIndex - 1 })}>Up</button><button type="button" className={compactButton} aria-label={`Move ${phase.title} down`} disabled={phase.archived || activeIndex < 0 || activeIndex >= activePhaseIds.length - 1} onClick={() => void runMutation({ action: "move_phase", variant_id: selectedVariant.id, phase_id: phase.id, new_index: activeIndex + 1 })}>Down</button><button type="button" className={secondaryButton} onClick={() => void runMutation({ action: phase.archived ? "restore_phase" : "archive_phase", variant_id: selectedVariant.id, phase_id: phase.id })}>{phase.archived ? "Restore" : "Archive"}</button></li>;
                   })}</ol>
-                  <form className={styles.inlineForm} onSubmit={(event) => { event.preventDefault(); void addPhase(); }}><input className={styles.input} value={newPhaseTitle} onChange={(event) => setNewPhaseTitle(event.target.value)} placeholder="New phase" /><button className={styles.secondaryButton} disabled={!newPhaseTitle.trim() || status === "saving"}>Add phase</button></form>
+                  <form className={styles.inlineForm} onSubmit={(event) => { event.preventDefault(); void addPhase(); }}><input className={styles.input} value={newPhaseTitle} onChange={(event) => setNewPhaseTitle(event.target.value)} placeholder="New phase" /><button className={secondaryButton} disabled={!newPhaseTitle.trim() || status === "saving"}>Add phase</button></form>
                 </div>}
               </section>
               <LinkedWorkPanel

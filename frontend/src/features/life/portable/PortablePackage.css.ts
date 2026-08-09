@@ -1,10 +1,11 @@
 import { globalStyle, style } from "@vanilla-extract/css";
 import { dialogBackdrop, dialogSurface } from "../../../app/layout/layout.css";
+import { button as sharedButton, compact } from "../../../design-system/primitives/controls.css";
 
 export const controls = style({ display: "grid", gap: "0.55rem", marginBlock: "0.7rem" });
 export const actions = style({ display: "flex", flexWrap: "wrap", gap: "0.5rem", alignItems: "center" });
-export const button = style({ border: "1px solid currentColor", borderRadius: "var(--radius-control)", background: "transparent", color: "inherit", padding: "0.55rem 0.8rem", cursor: "pointer", selectors: { "&:disabled": { cursor: "wait", opacity: 0.6 } } });
-export const fileLabel = style([button, { display: "inline-flex" }]);
+export const button = style([sharedButton.secondary, compact, { selectors: { "&:disabled": { cursor: "wait" } } }]);
+export const fileLabel = style([sharedButton.secondary, { display: "inline-flex" }]);
 export const hiddenFile = style({ position: "absolute", inlineSize: "1px", blockSize: "1px", overflow: "hidden", clipPath: "inset(50%)" });
 export const explanation = style({ margin: 0, maxInlineSize: "70ch", opacity: 0.8 });
 export const note = style({ margin: 0, paddingInlineStart: "0.7rem", borderInlineStart: "3px solid currentColor" });

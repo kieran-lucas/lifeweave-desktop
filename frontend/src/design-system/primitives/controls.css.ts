@@ -4,6 +4,7 @@ import { style, styleVariants } from "@vanilla-extract/css";
 // resolve `var(--accent)` against whatever happened to load first, and the control
 // gallery caught the consequence — the primary button rendered white-on-white.
 import "../visual/theme.css";
+import { duration, easing, reduced } from "../visual/motion.css";
 import { text } from "../visual/typography.css";
 
 /**
@@ -28,7 +29,7 @@ const base = style({
   justifyContent: "center",
   gap: 7,
   minHeight: 32,
-  padding: "0 13px",
+  padding: "5px 13px",
   border: "1px solid transparent",
   borderRadius: "var(--radius-control)",
   fontFamily: text.button.fontFamily,
@@ -43,9 +44,9 @@ const base = style({
    * ADR 0045 §8: it animates layout properties too, which turns a hover into per-frame layout work.
    */
   transition:
-    "background-color 110ms cubic-bezier(0.2,0,0,1), border-color 110ms cubic-bezier(0.2,0,0,1), " +
-    "color 110ms cubic-bezier(0.2,0,0,1), box-shadow 110ms cubic-bezier(0.2,0,0,1), " +
-    "transform 70ms cubic-bezier(0.2,0,0,1)",
+    `background-color ${duration.state} ${easing.standard}, border-color ${duration.state} ${easing.standard}, ` +
+    `color ${duration.state} ${easing.standard}, box-shadow ${duration.state} ${easing.standard}, ` +
+    `transform ${duration.press} ${easing.standard}`,
   selectors: {
     /*
      * Press is a 1px settle, not a scale. Scaling text resamples every glyph for the duration of
@@ -61,7 +62,7 @@ const base = style({
   "@media": {
     /* Reduced motion keeps the tonal change and drops the travel — ADR 0045 §6. */
     "(prefers-reduced-motion: reduce)": {
-      transition: "background-color 80ms linear, border-color 80ms linear, color 80ms linear",
+      transition: `background-color ${reduced.duration} linear, border-color ${reduced.duration} linear, color ${reduced.duration} linear`,
       selectors: { "&:active:not(:disabled)": { transform: "none" } },
     },
     "(forced-colors: active)": { borderColor: "ButtonText" },
@@ -75,14 +76,14 @@ export const button = styleVariants({
     {
       background: "var(--accent)",
       borderColor: "var(--accent)",
-      color: "#fff",
+      color: "var(--accent-contrast)",
       selectors: {
         "&:hover:not(:disabled)": {
-          background: "color-mix(in srgb, var(--accent) 88%, #000)",
-          borderColor: "color-mix(in srgb, var(--accent) 88%, #000)",
+          background: "color-mix(in srgb, var(--accent) 88%, var(--text-primary))",
+          borderColor: "color-mix(in srgb, var(--accent) 88%, var(--text-primary))",
         },
         "&:active:not(:disabled)": {
-          background: "color-mix(in srgb, var(--accent) 78%, #000)",
+          background: "color-mix(in srgb, var(--accent) 78%, var(--text-primary))",
         },
       },
     },
@@ -155,4 +156,4 @@ export const iconButton = style([
 ]);
 
 /** A denser button for inline row actions, where 32px would dominate a 21px line. */
-export const compact = style({ minHeight: 26, padding: "0 9px", fontSize: 12.5, borderRadius: "var(--radius-small)" });
+export const compact = style({ minHeight: 26, padding: "2px 9px", fontSize: 12.5, borderRadius: "var(--radius-small)" });

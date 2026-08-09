@@ -3,9 +3,11 @@ import { useEffect, useRef, useState } from "react";
 
 import { createFocusPlanReview, listFocusPlanReviews } from "../../ipc/commands";
 import type { FocusPlanReviewHistoryView } from "../../ipc/generated/FocusPlanReviewHistoryView";
-import * as styles from "./FocusPlansScreen.css";
 import { EmptyState } from "../../design-system/primitives/States";
+import { button } from "../../design-system/primitives/controls.css";
 import { iconNote } from "../../design-system/visual/icons";
+
+import * as styles from "./FocusPlansScreen.css";
 
 function messageFrom(cause: unknown): string {
   if (cause && typeof cause === "object" && "message" in cause) {
@@ -153,7 +155,7 @@ export function ReviewsPanel({
           <div className={styles.actions}>
             <button
               type="submit"
-              className={styles.primaryButton}
+              className={button.primary}
               disabled={!reflection.trim() || pending || disabled}
             >
               {pending ? "Saving review…" : "Save review"}

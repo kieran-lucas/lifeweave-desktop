@@ -57,16 +57,16 @@ export default function BasicLeafEditor({ document, initialJson, onCommitted, on
   const addImage = async (file?: File) => { if (!file) return; setStatus("Saving asset"); try { const result = await importDocumentAsset({ original_name: file.name, bytes: Array.from(new Uint8Array(await file.arrayBuffer())) }); editor.chain().focus().setImage({ src: `asset:${result.asset_id}`, assetId: result.asset_id, alt: file.name } as never).run(); setStatus("Saving draft"); } catch { setStatus("Error / recovery required"); setMessage("The image was rejected or could not be stored."); } };
   return <section className={styles.shell} aria-label="Document editor">
     <div className={styles.toolbar} role="toolbar" aria-label="Document formatting">
-      <button className={styles.button} aria-label="Bold" aria-pressed={editor.isActive("bold")} onClick={() => editor.chain().focus().toggleBold().run()}><strong>B</strong></button>
-      <button className={styles.button} aria-label="Italic" aria-pressed={editor.isActive("italic")} onClick={() => editor.chain().focus().toggleItalic().run()}><em>I</em></button>
-      {[1,2,3].map(level => <button key={level} className={styles.button} aria-label={`Heading ${level}`} onClick={() => editor.chain().focus().toggleHeading({ level: level as 1|2|3 }).run()}>H{level}</button>)}
-      <button className={styles.button} onClick={() => editor.chain().focus().toggleBulletList().run()}>Bullet list</button>
-      <button className={styles.button} onClick={() => editor.chain().focus().toggleOrderedList().run()}>Numbered list</button>
-      <button className={styles.button} onClick={() => editor.chain().focus().toggleBlockquote().run()}>Quote</button>
-      <button className={styles.button} onClick={() => editor.chain().focus().toggleCodeBlock().run()}>Code block</button>
-      <button className={styles.button} onClick={addLink}>Link</button>
-      <button className={styles.button} onClick={() => editor.chain().focus().insertTable({ rows: 2, cols: 2, withHeaderRow: true }).run()}>Table</button>
-      <label className={styles.fileLabel}>Image<input className={styles.hiddenFile} type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={event => void addImage(event.currentTarget.files?.[0])}/></label>
+      <button className={styles.toolbarButton} aria-label="Bold" aria-pressed={editor.isActive("bold")} onClick={() => editor.chain().focus().toggleBold().run()}><strong>B</strong></button>
+      <button className={styles.toolbarButton} aria-label="Italic" aria-pressed={editor.isActive("italic")} onClick={() => editor.chain().focus().toggleItalic().run()}><em>I</em></button>
+      {[1,2,3].map(level => <button key={level} className={styles.toolbarButton} aria-label={`Heading ${level}`} aria-pressed={editor.isActive("heading", { level })} onClick={() => editor.chain().focus().toggleHeading({ level: level as 1|2|3 }).run()}>H{level}</button>)}
+      <button className={styles.toolbarButton} aria-pressed={editor.isActive("bulletList")} onClick={() => editor.chain().focus().toggleBulletList().run()}>Bullet list</button>
+      <button className={styles.toolbarButton} aria-pressed={editor.isActive("orderedList")} onClick={() => editor.chain().focus().toggleOrderedList().run()}>Numbered list</button>
+      <button className={styles.toolbarButton} aria-pressed={editor.isActive("blockquote")} onClick={() => editor.chain().focus().toggleBlockquote().run()}>Quote</button>
+      <button className={styles.toolbarButton} aria-pressed={editor.isActive("codeBlock")} onClick={() => editor.chain().focus().toggleCodeBlock().run()}>Code block</button>
+      <button className={styles.toolbarButton} onClick={addLink}>Link</button>
+      <button className={styles.toolbarButton} onClick={() => editor.chain().focus().insertTable({ rows: 2, cols: 2, withHeaderRow: true }).run()}>Table</button>
+      <label className={styles.toolbarFileLabel}>Image<input className={styles.hiddenFile} type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={event => void addImage(event.currentTarget.files?.[0])}/></label>
     </div>
     <div className={styles.editor}><EditorContent editor={editor} /></div>
     <p className={styles.status} role="status" aria-live="polite">{status}</p>

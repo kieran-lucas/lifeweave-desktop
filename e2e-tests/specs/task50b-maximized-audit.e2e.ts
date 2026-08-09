@@ -228,6 +228,20 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
 
     await go("Plans", "h1#plans-heading");
     await capture("plans", "11-plans");
+    const seededPlan = $("aside[aria-label='active plans'] button");
+    if (await seededPlan.isExisting()) {
+      await seededPlan.waitForEnabled({ timeout: 15_000 });
+      await seededPlan.click();
+      await $("fieldset").waitForDisplayed({ timeout: 15_000 });
+      await capture("plans--selected", "11b-plans-selected");
+    } else {
+      records.push({
+        screen: "plans--selected",
+        utilization: null,
+        collisions: [],
+        note: "NOT TESTED: seeded active plan was not reachable",
+      });
+    }
 
     await go("Life System", "h1#life-heading");
     await capture("life-browse", "12-life-browse");

@@ -213,7 +213,7 @@ def check(errors: list[str]) -> None:
 # fails when a count *rises*, and fails again when a count falls without the budget being lowered.
 # Residue can therefore only ever decrease, and the file records honestly how much is left.
 MAX_RESIDUE = {
-    "hex": 13,        # hardcoded colour literals in feature *.css.ts
+    "hex": 12,       # hardcoded colour literals in feature *.css.ts
     "radius": 0,    # raw border-radius literals not resolved through vars.radius
     "shadow": 0,     # raw box-shadow literals not resolved through vars.elevation
 }
