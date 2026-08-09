@@ -55,7 +55,11 @@ export const viewport = style({ position: "relative", zIndex: 1, minInlineSize: 
 /** v2 sets every heading in the platform sans. Weight and scale carry the hierarchy, not a serif. */
 export const heading = style({ margin: 0, color: "var(--text-primary)", fontSize: "clamp(1.75rem, 2.4vw, 2.125rem)", fontWeight: 700, letterSpacing: "-0.022em", lineHeight: 1.2 });
 export const lede = style({ margin: 0, color: "var(--text-muted)", fontSize: "0.9375rem" });
-export const settingsSection = style({ display: "flex", flexDirection: "column", gap: space.group, minInlineSize: 0 });
+/*
+ * Settings sits at the quiet end of the art scale, but quiet is not dead: each section becomes a
+ * soft material region so the page reads as composed rather than as a form dumped on a background.
+ */
+export const settingsSection = style([glass, { display: "flex", flexDirection: "column", gap: space.group, minInlineSize: 0, padding: space.x5, borderRadius: 12 }]);
 export const coreStatus = style({ color: "var(--text-muted)" });
 export const shortcutList = style({ display: "grid", gridTemplateColumns: "1fr auto", gap: `${space.control} ${space.field}`, margin: 0, alignItems: "center" });
 globalStyle(`${shortcutList} dd`, { margin: 0, justifySelf: "end" });

@@ -48,6 +48,18 @@ globalStyle("input, textarea", {
   color: "var(--text-primary)",
 });
 globalStyle("textarea", { padding: space.control });
+/*
+ * `<fieldset>` is the last native element that still drew its own century-old chrome: a thin inset
+ * groove with a notch cut for the legend. It appears in Settings' goal editors, the Task dialog's
+ * schedule and recurrence groups, and the tag editors, so it gets the material here rather than in
+ * three feature files.
+ */
+globalStyle("fieldset", {
+  border: "1px solid var(--glass-border)",
+  borderRadius: 10,
+  background: "var(--glass-surface)",
+});
+globalStyle("legend", { padding: `0 ${space.x2}`, color: "var(--text-muted)", fontWeight: 600 });
 
 /**
  * The shared layout classes (ADR 0044).
