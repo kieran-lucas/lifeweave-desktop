@@ -21,6 +21,11 @@ import {
   utilization,
   type Collision,
 } from "../support/spacingAudit.js";
+import {
+  profileGroups,
+  profileIncludes,
+  requestedVisualAuditProfile,
+} from "../support/visualAuditProfiles.js";
 
 /**
  * Task 50 follow-up — maximized-window layout audit.
@@ -35,9 +40,11 @@ import {
 
 const ESCAPE = String.fromCharCode(0xe00c);
 const viewport = requestedViewport();
-const label =
+const auditProfile = requestedVisualAuditProfile();
+const baseLabel =
   process.env.LIFEWEAVE_AUDIT_LABEL ??
   (viewport ? `${viewport.width}x${viewport.height}` : "pass1");
+const label = auditProfile === "full" ? baseLabel : `${auditProfile}-${baseLabel}`;
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const outputRoot = join(repoRoot, "target", "e2e-artifacts", "task-50b", label);
 const visualRegression = process.env.LIFEWEAVE_VISUAL_REGRESSION === "1";
@@ -364,7 +371,7 @@ const tryClick = async (selector: string) => {
   return false;
 };
 
-describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
+describe(`Endgame visual audit (${auditProfile}: ${label})`, () => {
   before(async function () {
     this.timeout(300_000);
     mkdirSync(outputRoot, { recursive: true });
@@ -437,6 +444,7 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
     );
     console.log(`environment: ${JSON.stringify(environment)}`);
     console.log(`theme: ${requestedTheme}  media: ${mediaMode}  language: ${requestedLanguage}`);
+    console.log(`profile: ${auditProfile}  groups: ${profileGroups(auditProfile).join(",")}`);
     console.log(`screens: ${records.length}  collisions: ${collisions.length} ${JSON.stringify(byKind)}`);
     for (const record of records) {
       const u = record.utilization;
@@ -448,7 +456,8 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
     }
   });
 
-  it("walks every surface with the window maximized", async function () {
+  if (profileIncludes(auditProfile, "shell-task")) {
+    it("walks shell and task surfaces", async function () {
     this.timeout(900_000);
 
     await go("Today", "h1#today-heading");
@@ -583,7 +592,12 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
     await capture("saved-view-editor", "08b-saved-view-editor");
     await dismiss();
     await tab("today");
+    });
+  }
 
+  if (profileIncludes(auditProfile, "calendar-analytics-plans")) {
+    it("walks Calendar, Analytics, and Focus Plans", async function () {
+    this.timeout(300_000);
     await go("Calendar", "h1#calendar-heading");
     await capture("calendar", "09-calendar");
 
@@ -606,7 +620,12 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
         note: "NOT TESTED: seeded active plan was not reachable",
       });
     }
+    });
+  }
 
+  if (profileIncludes(auditProfile, "life-reader-interchange")) {
+    it("walks Life, Reader, editor, and interchange surfaces", async function () {
+    this.timeout(600_000);
     await go("Life System", "h1#life-heading");
     await capture("life-browse", "12-life-browse");
     if (await tryClick("button=Edit")) {
@@ -698,7 +717,18 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
     await dismiss();
     await $("button*=Back to Life Browse").click();
     await $("h1#life-heading").waitForDisplayed({ timeout: 15_000 });
+    });
+  }
 
+  if (profileIncludes(auditProfile, "narrative")) {
+    it("walks Narrative Reader and Studio surfaces", async function () {
+    this.timeout(300_000);
+    if (!profileIncludes(auditProfile, "life-reader-interchange")) {
+      await go("Life System", "h1#life-heading");
+      const areaCard = $(`[data-life-id='${lifeAreaId}']`);
+      await areaCard.waitForDisplayed({ timeout: 15_000 });
+      await areaCard.click();
+    }
     const narrativeCard = $(`[data-life-id='${lifeNarrativeChildId}']`);
     await narrativeCard.waitForDisplayed({ timeout: 15_000 });
     await narrativeCard.waitForEnabled({ timeout: 15_000 });
@@ -736,7 +766,12 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
     await $("button=Edit canvas").waitForDisplayed({ timeout: 15_000 });
     await $("button*=Back to Life Browse").click();
     await $("h1#life-heading").waitForDisplayed({ timeout: 15_000 });
+    });
+  }
 
+  if (profileIncludes(auditProfile, "settings")) {
+    it("walks Settings, Search, backup, and restore preview surfaces", async function () {
+    this.timeout(300_000);
     await go("Settings", "h1#settings-heading");
     await capture("settings-top", "18-settings");
     await browser.execute(() => {
@@ -780,7 +815,12 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
       await capture("restore-confirmation", "23b-restore-confirmation", "Timestamped runtime evidence; intentionally not a visual golden.");
       await dismiss();
     }
+    });
+  }
 
+  if (profileIncludes(auditProfile, "shell-task")) {
+    it("walks shell shortcut and collapsed states", async function () {
+    this.timeout(180_000);
     // Keep the visual golden independent from backup timestamps in Settings. The shortcut is the
     // production entry path and Today is a deterministic fixture-backed backdrop for the dialog.
     await go("Today", "h1#today-heading");
@@ -796,5 +836,6 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
     await go("Analytics", "h1#analytics-heading");
     await capture("analytics-collapsed", "25-analytics-collapsed");
     await tryClick("button[aria-label='Expand sidebar']");
-  });
+    });
+  }
 });

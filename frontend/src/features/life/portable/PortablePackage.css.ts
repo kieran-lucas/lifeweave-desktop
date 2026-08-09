@@ -6,7 +6,7 @@ export const controls = style({ display: "grid", gap: "0.55rem", marginBlock: "0
 export const actions = style({ display: "flex", flexWrap: "wrap", gap: "0.5rem", alignItems: "center" });
 export const button = style([sharedButton.secondary, compact, { selectors: { "&:disabled": { cursor: "wait" } } }]);
 export const fileLabel = style([sharedButton.secondary, { display: "inline-flex" }]);
-export const hiddenFile = style({ position: "absolute", inlineSize: "1px", blockSize: "1px", overflow: "hidden", clipPath: "inset(50%)" });
+export { srOnly as hiddenFile } from "../../../design-system/primitives/utilities.css";
 export const explanation = style({ margin: 0, maxInlineSize: "70ch", opacity: 0.8 });
 export const note = style({ margin: 0, paddingInlineStart: "0.7rem", borderInlineStart: "3px solid currentColor" });
 /*

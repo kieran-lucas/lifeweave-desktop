@@ -36,9 +36,9 @@ globalStyle("body", {
 });
 
 /*
- * Headings take the editorial family. This is the single change that gives the product its voice:
- * a page title, an object title and a section heading stop being "bold sans at three sizes" and
- * become type that was drawn for the job.
+ * Operational headings take productive Display optical roles. Editorial type belongs to authored
+ * Reader/Narrative content and explicitly specified knowledge-expression moments; HTML heading
+ * level alone never opts a surface into the editorial register.
  *
  * `margin: 0` is set with them because the browser default heading margins are a different
  * vertical rhythm from the one `app/layout/` owns, and mixing the two is what produced the
@@ -49,8 +49,8 @@ globalStyle("h2", { ...text.objectTitle, margin: 0 });
 globalStyle("h3", { ...text.sectionTitle, margin: 0 });
 
 /*
- * h4–h6 stay in the sans. Below the section level a heading is structural rather than expressive,
- * and setting six levels of serif turns a dense settings page into a broadsheet.
+ * h4–h6 use the productive text optical family. Below the section level a heading is compact
+ * structure rather than page identity.
  */
 globalStyle("h4, h5, h6", { ...text.cardTitle, margin: 0 });
 

@@ -36,6 +36,7 @@ import type { SearchNavigationTarget } from "../ipc/generated/SearchNavigationTa
 import {
   Icon,
   iconAnalytics,
+  iconBrand,
   iconCalendar,
   iconLife,
   iconPanelLeft,
@@ -302,7 +303,7 @@ export function App() {
       <nav className={styles.sidebar} aria-label="Primary navigation">
         <div className={styles.brand}>
           <span className={styles.brandMark} aria-hidden="true">
-            <Icon d={iconLife} size={14} />
+            <Icon d={iconBrand} size={28} className={styles.brandGlyph} />
           </span>
           <span className={styles.navLabel}>Lifeweave</span>
         </div>

@@ -25,4 +25,4 @@ export const error = style({ marginTop: "16px", color: "var(--danger)" });
 export const backdrop = dialogBackdrop;
 export const dialog = style([dialogSurface.compact, { boxShadow: "var(--elevation-modal)" }]);
 export const dialogActions = style({ display: "flex", flexWrap: "wrap", justifyContent: "flex-end", alignItems: "center", gap: space.control, minInlineSize: 0 });
-export const visuallyHidden = style({ position: "absolute", width: "1px", height: "1px", padding: 0, margin: "-1px", overflow: "hidden", clip: "rect(0, 0, 0, 0)", whiteSpace: "nowrap", border: 0 });
+export { srOnly as visuallyHidden } from "../../design-system/primitives/utilities.css";

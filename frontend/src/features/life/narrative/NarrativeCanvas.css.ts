@@ -72,4 +72,4 @@ export const sceneTabActive = style([sceneTab, { background: "var(--glass-surfac
 export const sceneTabAdd = style({ padding: "6px 10px", background: "none", border: "1px dashed var(--border-subtle)", borderRadius: "var(--radius-small)", cursor: "pointer", color: "var(--text-muted)", alignSelf: "center", marginBottom: 4, selectors: { "&:focus-visible": { outline: "3px solid var(--focus-ring)", outlineOffset: 2 } } });
 export const sceneControls = style({ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", marginBottom: 12 });
 export const sceneRenameInput = style({ flexGrow: 1, background: "none", border: "none", borderBottom: "1px solid var(--border-subtle)", padding: "4px 0", fontSize: "0.95rem", color: "var(--text-primary)", selectors: { "&:focus": { outline: "none", borderBottomColor: "var(--focus-ring)" } } });
-export const srOnly = style({ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" });
+export { srOnly } from "../../../design-system/primitives/utilities.css";

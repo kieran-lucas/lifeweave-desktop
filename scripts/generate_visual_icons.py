@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
-"""Vendor the Task 51 icon subset from @fluentui/svg-icons.
+"""Vendor the Lifeweave icon subset and generated brand mark.
 
 The package ships 20,621 SVGs. Lifeweave needs 22. Shipping the package to the renderer to reach
 0.1% of it would be indefensible against a 5,473-byte startup budget headroom, and Vite treats an
 imported SVG as an asset rather than as a component, so each icon would also become a separate
 network-less-but-still-parsed request.
 
-So the subset is vendored as one generated TSX module of inline paths. It is generated rather than
-hand-copied so the provenance is reproducible and a future agent can re-run it after an upgrade
+So the subset is vendored as one generated TSX module of inline paths. The simple infinity brand
+mark is emitted by the same pipeline so shell identity cannot drift into a feature-local SVG. It is
+generated rather than hand-copied so the provenance is reproducible and a future agent can re-run it after an upgrade
 instead of trusting that 22 path strings were transcribed correctly.
 
     python scripts/generate_visual_icons.py
@@ -57,8 +58,8 @@ HEADER = '''/*
  * GENERATED FILE — do not edit by hand.
  * Regenerate with:  python scripts/generate_visual_icons.py
  *
- * The Lifeweave icon vocabulary (ADR 0045): a curated {count}-icon subset of Fluent System Icons,
- * vendored as inline paths.
+ * The Lifeweave icon vocabulary (ADR 0045): a curated {count}-icon subset of Fluent System Icons
+ * plus the Lifeweave infinity brand mark, vendored as inline geometry.
  *
  * Source:  @fluentui/svg-icons {version}  (npm)
  * License: MIT — Copyright (c) Microsoft Corporation
@@ -82,6 +83,10 @@ HEADER = '''/*
 import type {{ SVGProps }} from "react";
 
 {entries}
+
+/** Lifeweave infinity mark â€” simple stroke geometry, never a feature glyph or status icon. */
+export const iconBrand =
+  "M2 10c3-5 5-5 8 0s5 5 8 0M2 10c3 5 5 5 8 0s5-5 8 0";
 
 export function Icon({{
   d,

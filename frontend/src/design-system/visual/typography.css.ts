@@ -117,9 +117,9 @@ export const text = {
     fontWeight: 600,
     letterSpacing: "-0.021em",
   },
-  /** "Today", "Calendar", "Analytics" — the page's own name. */
+  /** "Today", "Calendar", "Analytics" — productive operational page identity. */
   pageTitle: {
-    fontFamily: family.editorial,
+    fontFamily: family.uiDisplay,
     fontSize: 30,
     lineHeight: "38px",
     fontWeight: 600,
@@ -127,15 +127,15 @@ export const text = {
   },
   /** An object's title: the inspector heading, a Plan name, a Life node. */
   objectTitle: {
-    fontFamily: family.editorial,
+    fontFamily: family.uiDisplay,
     fontSize: 23,
     lineHeight: "30px",
     fontWeight: 600,
     letterSpacing: "-0.013em",
   },
-  /** A titled region inside a page, where the region is expressive rather than dense. */
+  /** A titled region inside an operational page. */
   sectionTitle: {
-    fontFamily: family.editorial,
+    fontFamily: family.uiDisplay,
     fontSize: 18,
     lineHeight: "25px",
     fontWeight: 600,

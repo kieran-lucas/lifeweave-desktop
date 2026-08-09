@@ -5,20 +5,20 @@
 ## Program state
 
 - BASELINE_PLANNING_SHA: `a1078c1f91c251aaa7a453ef1e8a5108551c852d`
-- EXECUTION_START_SHA: `<fill at preflight after Phase 8 pack commit>`
+- EXECUTION_START_SHA: `0b3e01d4a8bd9b62c5d786e9b4a4401d72c0edc1`
 - LAST_VERIFIED_COMMIT: `<none>`
-- CURRENT_PACKET: `F0`
+- CURRENT_PACKET: `S01`
 - CURRENT_STATUS: `PENDING`
-- NEXT_PACKET: `F0`
+- NEXT_PACKET: `S01`
 - FINAL_REVIEW_DONE: `false`
 - FINAL_FINDING_SET_FROZEN: `false`
-- PROGRAM_STATUS: `PENDING`
+- PROGRAM_STATUS: `IN_PROGRESS`
 
 ## Stage/checkpoint state
 
 | Packet | Status | Commit | Evidence |
 |---|---|---|---|
-| F0 | PENDING | — | — |
+| F0 | CLOSED | checkpoint containing this row | VERIFIED; 109-row crosswalk, foundation gates, and representative native audit passed |
 | S01 | PENDING | — | — |
 | S02 | PENDING | — | — |
 | S03 | PENDING | — | — |
@@ -199,9 +199,24 @@ Append concise entries:
 [packet] command — PASS/FAIL — relevant count/summary — log/artifact path
 ```
 
+- [F0] `python scripts/check_endgame_pack.py` — PASS — 109 unique canonical IDs / 13 stages / 6 checkpoints; unknown IDs rejected
+- [F0] `git diff --check` — PASS — no whitespace errors
+- [F0] `pnpm verify` — PASS — repository, governance, source, security, hardening, layout, and endgame validators — `target/codex-stage/F0/logs/verify.log`
+- [F0] `pnpm typecheck` — PASS — frontend project references
+- [F0] `pnpm test` — PASS — 52 files / 777 tests — `target/codex-stage/F0/logs/frontend-tests.log`
+- [F0] `pnpm build` — PASS — production frontend and desktop build — `target/codex-stage/F0/logs/build-budget-final.log`
+- [F0] `pnpm hardening:performance` — PASS — 1,263,640 raw / 389,495 gzip / 26 chunks; ceilings unchanged
+- [F0] full-profile static equivalence proof — PASS — 49 capture calls before / 49 after / zero capture-text differences
+- [F0] native `foundation` visual audit — PASS — 45 audit records / zero collisions / 5 WebDriver tests — `target/e2e-artifacts/task-50b/foundation-F0-20260810-062235`
+- [F0] bounded self-review `F_F0` — RESOLVED — persistent segmented selection no longer uses floating elevation; visual-audit wrapper always restores PowerShell error policy; affected parser/layout/type checks passed
+
 ## DECISIONS MADE UNDER UNATTENDED AUTHORITY
 
 Record only material reversible decisions that future stages may need to know.
+
+- [F0] Productive operational headings use Segoe UI Variable Display; Literata remains restricted to authored Reader/Narrative content.
+- [F0] The generated icon module owns the central Lifeweave infinity mark; no external or duplicated brand asset was introduced.
+- [F0] The full audit profile preserves the pre-F0 49-capture order; packet profiles are selectable bounded subsets and never redefine full-audit coverage.
 
 ## FINAL FINDING SET
 

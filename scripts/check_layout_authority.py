@@ -217,6 +217,9 @@ MAX_RESIDUE = {
     "radius": 0,    # raw border-radius literals not resolved through vars.radius
     "shadow": 0,     # raw box-shadow literals not resolved through vars.elevation
     "motion": 0,    # literal transition/animation timings outside the motion authority
+    "font_size": 125,  # feature-local sizes remaining before semantic-role migration
+    "focus": 43,       # local focus-visible recipes remaining before shared utility migration
+    "control_clone": 53,  # feature-local button/action/trigger style exports
 }
 
 AUTHORIZED_EDITORIAL_FAMILY = "Literata"
@@ -242,19 +245,28 @@ RAW_SHADOW = re.compile(
 RAW_MOTION = re.compile(
     r"(?:transition|animation):\s*[\"'][^\"']*(?:\d+(?:\.\d+)?m?s|ease|cubic-bezier)"
 )
+RAW_FONT_SIZE = re.compile(r"\bfontSize\s*:")
+LOCAL_FOCUS = re.compile(r"focus-visible")
+CONTROL_CLONE = re.compile(
+    r"export const \w*(?:button|action|trigger)\w*\s*=\s*style",
+    re.IGNORECASE,
+)
 GLYPH_ICON_LITERAL = re.compile(
     r'[\"\'][^\r\n\"\']*[▲▼◉◇▶►◀◁▷◆■□●○★☆✓✔✕×＋→←↗↘][^\r\n\"\']*[\"\']'
 )
 
 
 def check_visual_residue(errors: list[str]) -> None:
-    counts = {"color": 0, "radius": 0, "shadow": 0, "motion": 0}
+    counts = {kind: 0 for kind in MAX_RESIDUE}
     for path, source in domain_css():
         if path.relative_to(FEATURES).as_posix() not in RESIDUE_EXEMPT:
             counts["color"] += len(RAW_COLOR.findall(source))
         counts["radius"] += len(RAW_RADIUS.findall(source))
         counts["shadow"] += len(RAW_SHADOW.findall(source))
         counts["motion"] += len(RAW_MOTION.findall(source))
+        counts["font_size"] += len(RAW_FONT_SIZE.findall(source))
+        counts["focus"] += len(LOCAL_FOCUS.findall(source))
+        counts["control_clone"] += len(CONTROL_CLONE.findall(source))
 
     # Shell and shared layout CSS are production visual owners too. Radius/elevation declarations
     # there are the authority or deliberate shell geometry, but raw motion and colour must still be
@@ -263,6 +275,9 @@ def check_visual_residue(errors: list[str]) -> None:
         source = path.read_text(encoding="utf-8")
         counts["color"] += len(RAW_COLOR.findall(source))
         counts["motion"] += len(RAW_MOTION.findall(source))
+        counts["font_size"] += len(RAW_FONT_SIZE.findall(source))
+        counts["focus"] += len(LOCAL_FOCUS.findall(source))
+        counts["control_clone"] += len(CONTROL_CLONE.findall(source))
 
     for root in (FRONTEND / "app", FEATURES):
         for path in sorted(root.rglob("*.tsx")):
@@ -279,12 +294,12 @@ def check_visual_residue(errors: list[str]) -> None:
         budget = MAX_RESIDUE[kind]
         if found > budget:
             errors.append(
-                f"visual residue increased: {found} raw {kind} values in feature CSS, budget "
+                f"visual residue increased: {found} {kind} declarations in app/feature CSS, budget "
                 f"{budget}. Resolve them through the visual contract rather than raising the budget."
             )
         elif found < budget:
             errors.append(
-                f"visual residue budget is stale: {found} raw {kind} values remain but the budget "
+                f"visual residue budget is stale: {found} {kind} declarations remain but the budget "
                 f"is {budget}. Lower MAX_RESIDUE['{kind}'] to {found} so the ratchet holds."
             )
 

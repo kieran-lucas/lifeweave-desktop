@@ -42,4 +42,4 @@ export const variantEditor = style({ display: "grid", gap: "12px", paddingTop: "
 export const inlineForm = style({ display: "flex", gap: "8px", alignItems: "center", margin: "10px 0", flexWrap: "wrap" });
 export const phaseList = style({ display: "grid", gap: "8px", paddingLeft: "24px" });
 export const phaseRow = style({ display: "grid", gridTemplateColumns: "minmax(160px, 1fr) auto auto auto", gap: "6px", alignItems: "center", '@media': { '(max-width: 650px)': { gridTemplateColumns: "minmax(120px, 1fr) auto auto auto" } } });
-export const srOnly = style({ position: "absolute", width: "1px", height: "1px", padding: 0, margin: "-1px", overflow: "hidden", clip: "rect(0, 0, 0, 0)", whiteSpace: "nowrap", border: 0 });
+export { srOnly } from "../../design-system/primitives/utilities.css";

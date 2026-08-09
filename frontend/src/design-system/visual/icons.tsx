@@ -2,8 +2,8 @@
  * GENERATED FILE — do not edit by hand.
  * Regenerate with:  python scripts/generate_visual_icons.py
  *
- * The Lifeweave icon vocabulary (ADR 0045): a curated 22-icon subset of Fluent System Icons,
- * vendored as inline paths.
+ * The Lifeweave icon vocabulary (ADR 0045): a curated 22-icon subset of Fluent System Icons
+ * plus the Lifeweave infinity brand mark, vendored as inline geometry.
  *
  * Source:  @fluentui/svg-icons 1.1.334  (npm)
  * License: MIT — Copyright (c) Microsoft Corporation
@@ -113,6 +113,10 @@ export const iconMore =
 /** dismiss_20_regular */
 export const iconDismiss =
   "m4.09 4.22.06-.07a.5.5 0 0 1 .63-.06l.07.06L10 9.29l5.15-5.14a.5.5 0 0 1 .63-.06l.07.06c.18.17.2.44.06.63l-.06.07L10.71 10l5.14 5.15c.18.17.2.44.06.63l-.06.07a.5.5 0 0 1-.63.06l-.07-.06L10 10.71l-5.15 5.14a.5.5 0 0 1-.63.06l-.07-.06a.5.5 0 0 1-.06-.63l.06-.07L9.29 10 4.15 4.85a.5.5 0 0 1-.06-.63l.06-.07-.06.07Z";
+
+/** Lifeweave infinity mark â€” simple stroke geometry, never a feature glyph or status icon. */
+export const iconBrand =
+  "M2 10c3-5 5-5 8 0s5 5 8 0M2 10c3 5 5 5 8 0s5-5 8 0";
 
 export function Icon({
   d,

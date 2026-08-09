@@ -23,7 +23,7 @@ export const warning = style({ color: "var(--danger)", fontSize: 13, margin: 0 }
 export const mergeConfirm = style({ background: "var(--surface)", border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-small)", padding: 12, display: "flex", flexDirection: "column", gap: 8 });
 export const mergeConfirmText = style({ margin: 0, fontSize: 13 });
 export const mergeConfirmActions = style({ display: "flex", gap: 8 });
-export const srOnly = style({ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" });
+export { srOnly } from "../../design-system/primitives/utilities.css";
 export const mergeHeading = style({ margin: 0 });
 export const mergeDescription = style({ margin: 0, fontSize: 13, color: "var(--text-muted, var(--text-muted))" });
 export const mergedAlias = style({ fontSize: 11, marginLeft: 6, color: "var(--text-muted, var(--text-muted))" });

@@ -44,6 +44,7 @@ globalStyle(":root", {
     "--surface": vars.color.surfaceRaised,
     "--surface-raised": vars.color.surfaceRaised,
     "--surface-primary": vars.color.surfaceRaised,
+    "--surface-subtle": vars.color.surfaceSubtle,
     "--sidebar-surface": vars.color.surface,
     "--border-subtle": vars.color.borderHairline,
     "--border-strong": vars.color.borderStrong,
