@@ -1,6 +1,7 @@
 import { style } from "@vanilla-extract/css";
 import { space } from "../../../app/layout/tokens.css";
 import { glassStrong } from "../../../design-system/visual/atmosphere.css";
+import { duration, easing } from "../../../design-system/visual/motion.css";
 
 /*
  * Today owns no page width. It is a STANDARD_PAGE and consumes the shared `PageFrame`; what remains
@@ -40,7 +41,7 @@ export const time=style({fontVariantNumeric:"tabular-nums",color:"var(--text-mut
  * the row can never grow an undeclared implicit column the way it did with three tracks and four
  * children.
  */
-export const row=style({display:"grid",gridTemplateColumns:"minmax(0,1fr) auto",gap:space.x3,alignItems:"start",padding:"8px 0",cursor:"pointer",minInlineSize:0,borderRadius:"var(--radius-control)",transition:"background-color 100ms cubic-bezier(0.2,0,0,1)",selectors:{"&:hover":{background:"var(--icon-background)"}}});
+export const row=style({display:"grid",gridTemplateColumns:"minmax(0,1fr) auto",gap:space.x3,alignItems:"start",padding:"8px 0",cursor:"pointer",minInlineSize:0,borderRadius:"var(--radius-control)",transition:`background-color ${duration.state} ${easing.standard}`,selectors:{"&:hover":{background:"var(--icon-background)"}}});
 /*
  * The row's content column. Title, description, metadata and tags are four stacked units; the
  * metadata itself is a wrapping group with a parent gap, so the category can never run into the
@@ -64,7 +65,7 @@ export const rowMeta=style({display:"flex",flexWrap:"wrap",alignItems:"center",g
  * the *material*: a quiet hairline chip with accent text instead of a filled panel, and a narrower
  * cap so it reads as an annotation on the row rather than as a second heading.
  */
-export const rowChip=style({maxInlineSize:"22rem",textAlign:"left",overflowWrap:"anywhere",border:"1px solid color-mix(in srgb, var(--accent) 22%, transparent)",borderRadius:"var(--radius-small)",background:"transparent",color:"var(--accent)",fontSize:"0.8125rem",lineHeight:1.35,padding:"0.15rem 0.45rem",cursor:"pointer",transition:"background-color 110ms cubic-bezier(0.2,0,0,1)",selectors:{"&:hover":{background:"color-mix(in srgb, var(--accent) 8%, transparent)"},"&:focus-visible":{outline:"2px solid var(--focus-ring)",outlineOffset:2}}});
+export const rowChip=style({maxInlineSize:"22rem",textAlign:"left",overflowWrap:"anywhere",border:"1px solid color-mix(in srgb, var(--accent) 22%, transparent)",borderRadius:"var(--radius-small)",background:"transparent",color:"var(--accent)",fontSize:"0.8125rem",lineHeight:1.35,padding:"0.15rem 0.45rem",cursor:"pointer",transition:`background-color ${duration.state} ${easing.standard}`,selectors:{"&:hover":{background:"color-mix(in srgb, var(--accent) 8%, transparent)"},"&:focus-visible":{outline:"2px solid var(--focus-ring)",outlineOffset:2}}});
 
 /*
  * The priority indicator was a literal "•" character, so it carried the document font's weight and

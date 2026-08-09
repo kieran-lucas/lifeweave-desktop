@@ -7,6 +7,13 @@ goldens, and remain untracked.
 Comparison is opt-in so the normal geometry audit is unchanged. Baseline creation is a separate,
 explicit action and is disabled by default.
 
+The native runner pins the E2E presentation date to the baseline date while preserving the real
+native date for concurrency-sensitive fixture commands. The visual service suppresses blinking
+carets where the engine permits; the audit additionally blurs and restores a focused text-editable
+for the comparison frame because WebView2 otherwise retains a 27-pixel native caret. Actual
+comparison frames are saved under `target` for deterministic failure diagnosis;
+normal audit screenshots retain the real focused-control caret.
+
 ```powershell
 # Compare only. Missing or changed baselines fail; nothing is accepted.
 $env:LIFEWEAVE_VISUAL_REGRESSION = '1'
@@ -46,6 +53,17 @@ Reduced motion is asserted independently with `LIFEWEAVE_AUDIT_REDUCED_MOTION=1`
 walk exercises all 36 states under `prefers-reduced-motion: reduce`. Its five representative static
 captures are byte-for-byte identical to the light goldens, so duplicate PNGs are not tracked; the
 labeled native audit artifacts are the durable execution evidence.
+
+Vietnamese typography runs independently in light mode with `LIFEWEAVE_AUDIT_LANGUAGE=vi`. It adds
+a real accented Task and documented Life leaf, verifies accent-insensitive Search reaches the Task,
+Life node, and document, and compares four tracked UI/editorial goldens.
+
+```powershell
+$env:LIFEWEAVE_AUDIT_LANGUAGE = 'vi'
+$env:LIFEWEAVE_VISUAL_REGRESSION = '1'
+Remove-Item Env:LIFEWEAVE_ACCEPT_VISUAL_BASELINES -ErrorAction SilentlyContinue
+.\scripts\run_windows_e2e.ps1 -Phases 'task50b-maximized-audit.e2e.ts'
+```
 
 Before accepting a new or replaced PNG:
 

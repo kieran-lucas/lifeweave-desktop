@@ -21,7 +21,7 @@ export const field=style({display:"grid",gap:5,color:"var(--text-muted)",fontSiz
 export const input=style({width:"100%",minWidth:0,border:"1px solid var(--glass-border)",borderRadius:"var(--radius-control)",padding:"8px 10px",background:"var(--app-background)",color:"var(--text-primary)",font:"inherit",selectors:{"&:focus-visible":{outline:"3px solid var(--focus-ring)",outlineOffset:1}}});
 export const actions=style({display:"flex",gap:7,flexWrap:"wrap"});
 export const button=style({border:"1px solid var(--glass-border)",borderRadius:"var(--radius-control)",padding:"7px 10px",background:"var(--app-background)",color:"var(--text-primary)",cursor:"pointer",fontWeight:650,selectors:{"&:disabled":{opacity:.45,cursor:"default"},"&:focus-visible":{outline:"3px solid var(--focus-ring)",outlineOffset:2}}});
-export const destructive=style([button,{color:"#b93838"}]);
+export const destructive=style([button,{color:"var(--danger)"}]);
 export const archived=style({display:"grid",gap:8,paddingTop:8,borderTop:"1px solid var(--border-subtle)"});
 export const archivedList=style({display:"grid",gap:6,listStyle:"none",padding:0,margin:0,maxHeight:180,overflow:"auto"});
 export const archivedRow=style({display:"flex",justifyContent:"space-between",gap:8,alignItems:"center",fontSize:13});
@@ -29,6 +29,6 @@ export const status=style({gridColumn:"1/-1",minHeight:24,color:"var(--text-mute
 export const instructions=style({fontSize:12,color:"var(--text-muted)",lineHeight:1.45});
 export const overlay=style({width:164,padding:10,border:"2px solid var(--focus-ring)",borderRadius:"var(--radius-surface)",background:"var(--glass-surface-strong)",boxShadow: "var(--elevation-modal)",color:"var(--text-primary)",fontWeight:750});
 export const preview=style({stroke:"var(--focus-ring)",strokeWidth:2,strokeDasharray:"5 4",fill:"none"});
-globalStyle(`${links} path`,{stroke:"var(--border-subtle)",strokeWidth:1.25,fill:"none",transition:"d 360ms cubic-bezier(.2,.8,.2,1)"});
+globalStyle(`${links} path`,{stroke:"var(--border-subtle)",strokeWidth:1.25,fill:"none"});
 globalStyle(`${workspace} textarea`,{resize:"vertical"});
 globalStyle(`${workspace} button:focus-visible`,{outline:"3px solid var(--focus-ring)",outlineOffset:2});

@@ -1,4 +1,5 @@
 import { style } from "@vanilla-extract/css";
+import { duration, easing } from "../../design-system/visual/motion.css";
 
 /*
  * Week strip, composed for Visual Baseline v2.
@@ -60,7 +61,7 @@ export const move = style({
   background: "transparent",
   color: "var(--text-muted)",
   cursor: "pointer",
-  transition: "background-color 100ms cubic-bezier(0.2,0,0,1), color 100ms cubic-bezier(0.2,0,0,1)",
+  transition: `background-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}`,
   selectors: {
     "&:hover": { background: "var(--icon-background)", color: "var(--text-primary)" },
     "&:focus-visible": { outline: "2px solid var(--focus-ring)", outlineOffset: 2 },
@@ -89,7 +90,7 @@ export const day = style({
   fontSize: "0.8125rem",
   lineHeight: 1.3,
   cursor: "pointer",
-  transition: "background-color 100ms cubic-bezier(0.2,0,0,1), color 100ms cubic-bezier(0.2,0,0,1)",
+  transition: `background-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}`,
   selectors: {
     "&:hover": { background: "var(--icon-background)" },
     "&[aria-pressed=true]": {

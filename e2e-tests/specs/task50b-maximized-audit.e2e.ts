@@ -5,6 +5,16 @@ import { fileURLToPath } from "node:url";
 
 import { appLocalDate, seedLayoutFixture } from "../support/layoutFixture.js";
 import {
+  capturedBranchDownload,
+  chooseBranchFile,
+  installBranchDownloadCapture,
+} from "../support/lifeBranch.js";
+import {
+  capturedTreeDownload,
+  chooseTreeFile,
+  installTreeDownloadCapture,
+} from "../support/lifeTree.js";
+import {
   enterAuditViewport,
   findCollisions,
   requestedViewport,
@@ -31,6 +41,9 @@ const label =
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const outputRoot = join(repoRoot, "target", "e2e-artifacts", "task-50b", label);
 const visualRegression = process.env.LIFEWEAVE_VISUAL_REGRESSION === "1";
+const visualTagFilter = process.env.LIFEWEAVE_VISUAL_TAGS
+  ? new Set(process.env.LIFEWEAVE_VISUAL_TAGS.split(",").map(tag => tag.trim()).filter(Boolean))
+  : null;
 const requestedTheme = process.env.LIFEWEAVE_AUDIT_THEME ?? "light";
 if (requestedTheme !== "light" && requestedTheme !== "dark")
   throw new Error(`Unsupported LIFEWEAVE_AUDIT_THEME: ${requestedTheme}`);
@@ -45,22 +58,42 @@ const mediaMode = requestedTheme === "dark"
     : reducedMotion
       ? "reduced-motion"
       : "light";
+const requestedLanguage = process.env.LIFEWEAVE_AUDIT_LANGUAGE ?? "en";
+if (requestedLanguage !== "en" && requestedLanguage !== "vi")
+  throw new Error(`Unsupported LIFEWEAVE_AUDIT_LANGUAGE: ${requestedLanguage}`);
+if (requestedLanguage === "vi" && mediaMode !== "light")
+  throw new Error("The Vietnamese typography audit must run independently in the light theme");
 const lightVisualSnapshotFiles = new Set([
   "01-today",
+  "01d-today-running-timer",
+  "01e-today-assessment",
   "02-task-create",
+  "02b-task-tags",
   "09-calendar",
   "10-analytics",
   "11-plans",
   "12-life-browse",
   "13-life-edit",
+  "13b-life-tree-import",
+  "13c-life-branch-import",
   "14-life-pinned",
   "15-life-graph",
   "16-life-reader",
+  "16b-life-link-dialog",
+  "16c-life-empty",
+  "16d-markdown-import",
+  "16e-portable-import",
   "17-basic-editor",
   "17b-basic-editor-link-dialog",
   "18-narrative-reader",
   "19-narrative-studio",
   "19b-narrative-only-block-dialog",
+  "19c-narrative-paper",
+  "19d-narrative-sakura",
+  "19e-narrative-aurora",
+  "19f-narrative-nocturne",
+  "19g-narrative-dirty-exit",
+  "08b-saved-view-editor",
   "18-settings",
   "21b-search-results",
   "21c-search-no-results",
@@ -68,17 +101,32 @@ const lightVisualSnapshotFiles = new Set([
 ]);
 const darkVisualSnapshotFiles = new Set([
   "01-today",
+  "01d-today-running-timer",
+  "01e-today-assessment",
   "02-task-create",
+  "02b-task-tags",
   "09-calendar",
   "10-analytics",
   "11-plans",
   "12-life-browse",
+  "13b-life-tree-import",
+  "13c-life-branch-import",
   "15-life-graph",
   "16-life-reader",
+  "16b-life-link-dialog",
+  "16c-life-empty",
+  "16d-markdown-import",
+  "16e-portable-import",
   "17-basic-editor",
   "17b-basic-editor-link-dialog",
   "18-narrative-reader",
   "19-narrative-studio",
+  "19c-narrative-paper",
+  "19d-narrative-sakura",
+  "19e-narrative-aurora",
+  "19f-narrative-nocturne",
+  "19g-narrative-dirty-exit",
+  "08b-saved-view-editor",
   "18-settings",
   "21b-search-results",
   "22-keyboard-help",
@@ -102,6 +150,12 @@ const reducedMotionVisualSnapshotFiles = new Set([
   "15-life-graph",
   "19-narrative-studio",
 ]);
+const vietnameseVisualSnapshotFiles = new Set([
+  "01-today",
+  "16-life-reader",
+  "17-basic-editor",
+  "21b-search-results",
+]);
 
 type ScreenRecord = {
   screen: string;
@@ -116,6 +170,8 @@ let lifeAreaId = "";
 const CONTROL = "\uE009";
 let lifeDocumentedChildId = "";
 let lifeNarrativeChildId = "";
+let lifeEmptyChildId = "";
+let portablePackageBytes: number[] = [];
 let mediaEmulationSocket: WebSocket | null = null;
 
 type DevToolsTarget = {
@@ -170,6 +226,59 @@ async function emulateMediaFeatures(features: Array<{ name: string; value: strin
   mediaEmulationSocket = socket;
 }
 
+async function installPortableDownloadCapture() {
+  await browser.execute(() => {
+    const state = window as unknown as {
+      __task51PortableBlob?: Blob;
+      __task51PortableCapture?: boolean;
+    };
+    if (state.__task51PortableCapture) return;
+    state.__task51PortableCapture = true;
+    const originalCreate = URL.createObjectURL.bind(URL);
+    URL.createObjectURL = (object: Blob | MediaSource) => {
+      if (object instanceof Blob) state.__task51PortableBlob = object;
+      return originalCreate(object as Blob);
+    };
+  });
+}
+
+async function capturedPortablePackage(): Promise<number[]> {
+  const result = await browser.execute(async () => {
+    const blob = (window as unknown as { __task51PortableBlob?: Blob }).__task51PortableBlob;
+    return blob ? Array.from(new Uint8Array(await blob.arrayBuffer())) : [];
+  });
+  if (result.length === 0) throw new Error("Portable package export produced no captured bytes");
+  return result;
+}
+
+async function choosePortablePackage(bytes: number[]) {
+  await browser.execute((values: number[]) => {
+    const input = document.querySelector<HTMLInputElement>(
+      "section[aria-label='Lifeweave portable package'] input[type='file']",
+    );
+    if (!input) throw new Error("Portable package input is missing");
+    const transfer = new DataTransfer();
+    transfer.items.add(new File([new Uint8Array(values)], "audit.lifeweave.zip", {
+      type: "application/zip",
+    }));
+    input.files = transfer.files;
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  }, bytes);
+}
+
+async function chooseMarkdownImport() {
+  await browser.execute(() => {
+    const input = [...document.querySelectorAll<HTMLInputElement>("input[type='file']")]
+      .find(candidate => candidate.closest("label")?.textContent?.includes("Import Markdown as Canvas"));
+    if (!input) throw new Error("Narrative Markdown input is missing");
+    const markdown = "# Quarterly reflection\n\nA calm review with **clear priorities**.\n\n## Next steps\n\n- Protect focus time\n- Review progress";
+    const transfer = new DataTransfer();
+    transfer.items.add(new File([markdown], "quarterly-reflection.md", { type: "text/markdown" }));
+    input.files = transfer.files;
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+}
+
 const shot = async (name: string) => {
   await browser.saveScreenshot(join(outputRoot, `${name}.png`));
 };
@@ -184,16 +293,34 @@ async function capture(screen: string, file: string, note?: string) {
   if (note) record.note = note;
   records.push(record);
   await shot(file);
-  const visualSnapshotFiles = mediaMode === "dark"
+  const visualSnapshotFiles = requestedLanguage === "vi"
+    ? vietnameseVisualSnapshotFiles
+    : mediaMode === "dark"
     ? darkVisualSnapshotFiles
     : mediaMode === "forced-colors"
       ? forcedColorsVisualSnapshotFiles
       : mediaMode === "reduced-motion"
         ? reducedMotionVisualSnapshotFiles
         : lightVisualSnapshotFiles;
-  if (visualRegression && visualSnapshotFiles.has(file)) {
-    const tag = mediaMode === "light" ? file : `${file}-${mediaMode}`;
+  if (visualRegression && visualSnapshotFiles.has(file) && (!visualTagFilter || visualTagFilter.has(file))) {
+    const tag = requestedLanguage === "vi"
+      ? `${file}-vi`
+      : mediaMode === "light"
+        ? file
+        : `${file}-${mediaMode}`;
+    const restoreTextFocus = await browser.execute(() => {
+      const active = document.activeElement;
+      if (!(active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement || active instanceof HTMLElement && active.isContentEditable)) return false;
+      active.setAttribute("data-visual-restore-focus", "");
+      active.blur();
+      return true;
+    });
     const result = await browser.checkScreen(tag);
+    if (restoreTextFocus) await browser.execute(() => {
+      const target = document.querySelector<HTMLElement>("[data-visual-restore-focus]");
+      target?.removeAttribute("data-visual-restore-focus");
+      target?.focus({ preventScroll: true });
+    });
     const mismatch = typeof result === "number" ? result : result.misMatchPercentage;
     if (mismatch !== 0) throw new Error(`${tag} visual mismatch: ${mismatch}%`);
   }
@@ -236,11 +363,14 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
     mkdirSync(outputRoot, { recursive: true });
     await browser.url("http://tauri.localhost");
     environment = await enterAuditViewport();
-    const seeded = await seedLayoutFixture(await appLocalDate());
+    const seeded = await seedLayoutFixture(await appLocalDate(), {
+      vietnamese: requestedLanguage === "vi",
+    });
     if (!seeded.ok) throw new Error(`fixture seeding failed at ${seeded.stage}: ${seeded.error}`);
     lifeAreaId = seeded.lifeRootChildId;
     lifeDocumentedChildId = seeded.lifeDocumentedChildId;
     lifeNarrativeChildId = seeded.lifeNarrativeChildId;
+    lifeEmptyChildId = seeded.lifeEmptyChildId;
     await browser.url("http://tauri.localhost");
     await browser.pause(700);
     /*
@@ -284,7 +414,7 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
     const collisions = records.flatMap(r => r.collisions);
     writeFileSync(
       join(outputRoot, "audit.json"),
-      `${JSON.stringify({ label, theme: requestedTheme, mediaMode, environment, records }, null, 2)}\n`,
+      `${JSON.stringify({ label, theme: requestedTheme, mediaMode, language: requestedLanguage, environment, records }, null, 2)}\n`,
       "utf8",
     );
     const byKind = collisions.reduce<Record<string, number>>((acc, c) => {
@@ -299,7 +429,7 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
       }  achieved: ${environment?.innerWidth}x${environment?.innerHeight} @ DPR ${environment?.devicePixelRatio}`,
     );
     console.log(`environment: ${JSON.stringify(environment)}`);
-    console.log(`theme: ${requestedTheme}  media: ${mediaMode}`);
+    console.log(`theme: ${requestedTheme}  media: ${mediaMode}  language: ${requestedLanguage}`);
     console.log(`screens: ${records.length}  collisions: ${collisions.length} ${JSON.stringify(byKind)}`);
     for (const record of records) {
       const u = record.utilization;
@@ -316,6 +446,27 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
 
     await go("Today", "h1#today-heading");
     await capture("today--unselected", "01-today");
+
+    // The fixture's one-off task exposes both of Today's compact edge controls. Exercise the
+    // running strip first because an active timer intentionally disables assessment, then discard
+    // the empty segment so the deterministic fixture is restored before opening the assessment fan.
+    const timerStart = $("button[aria-label^='Start timer for']");
+    if (await timerStart.isExisting()) {
+      await timerStart.waitForEnabled({ timeout: 15_000 });
+      await timerStart.click();
+      await $("section[aria-label='Running task timer']").waitForDisplayed({ timeout: 15_000 });
+      await capture("today--running-timer", "01d-today-running-timer");
+      await $("button=Discard segment").click();
+      await $("section[aria-label='Running task timer']").waitForDisplayed({ reverse: true, timeout: 15_000 });
+    }
+    const assessmentTrigger = $("button[aria-label^='Assess task.']");
+    if (await assessmentTrigger.isExisting()) {
+      await assessmentTrigger.waitForEnabled({ timeout: 15_000 });
+      await assessmentTrigger.click();
+      await $("[role='listbox'][aria-label='Completion assessment']").waitForDisplayed({ timeout: 15_000 });
+      await capture("today--assessment", "01e-today-assessment");
+      await browser.keys(ESCAPE);
+    }
 
     /*
      * Today with the production context inspector open.
@@ -369,6 +520,17 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
 
     if (await tryClick("button[aria-label='Create task']")) {
       await capture("task-create", "02-task-create");
+      const tagPicker = $("button=Add tags");
+      if (await tagPicker.isExisting()) {
+        await tagPicker.waitForEnabled({ timeout: 15_000 });
+        const tagPanelId = await tagPicker.getAttribute("aria-controls");
+        if (!tagPanelId) throw new Error("Tag picker trigger did not expose aria-controls");
+        await tagPicker.click();
+        await $(`#${tagPanelId}[role='region']`).waitForDisplayed({ timeout: 15_000 });
+        await capture("task-create--tags", "02b-task-tags");
+        await browser.keys(ESCAPE);
+        await $(`#${tagPanelId}[role='region']`).waitForDisplayed({ reverse: true, timeout: 15_000 });
+      }
       // Activate recurrence through its visible label. In forced-colors mode WebView2 hands the
       // checkbox back to the native renderer; the input remains correctly labelled, but its native
       // hit-test box is not exposed to WebDriver. Clicking the label is the real accessible target
@@ -394,6 +556,10 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
     await capture("deadlines", "07-deadlines");
     await tab("views");
     await capture("saved-views", "08-saved-views");
+    await $("button=Create view").click();
+    await $("[role='dialog'][aria-labelledby='saved-view-editor-heading']").waitForDisplayed({ timeout: 15_000 });
+    await capture("saved-view-editor", "08b-saved-view-editor");
+    await dismiss();
     await tab("today");
 
     await go("Calendar", "h1#calendar-heading");
@@ -421,7 +587,33 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
 
     await go("Life System", "h1#life-heading");
     await capture("life-browse", "12-life-browse");
-    if (await tryClick("button=Edit")) await capture("life-edit", "13-life-edit");
+    if (await tryClick("button=Edit")) {
+      await capture("life-edit", "13-life-edit");
+
+      // Produce both package previews entirely through the product's own export/import controls,
+      // then cancel. This reviews the real parsing and preview UI without mutating the seeded tree.
+      await installTreeDownloadCapture();
+      const treeControls = $("section[aria-label='Life tree interchange']");
+      await treeControls.$("button=Export Life tree").click();
+      await treeControls.$("[role='status']").waitForDisplayed({ timeout: 30_000 });
+      const treePackage = await capturedTreeDownload();
+      await chooseTreeFile(treePackage.bytes);
+      await $("//section[@role='dialog' and .//h2[normalize-space()='Import Life tree']]").waitForDisplayed({ timeout: 30_000 });
+      await capture("life-edit--tree-import", "13b-life-tree-import");
+      await dismiss();
+
+      await $(`[data-life-edit-id='${lifeAreaId}']`).click();
+      await $("h2=Edit Layout Area").waitForDisplayed({ timeout: 15_000 });
+      await installBranchDownloadCapture();
+      const branchControls = $("section[aria-label='Life branch interchange']");
+      await branchControls.$("button=Export branch").click();
+      await branchControls.$("[role='status']").waitForDisplayed({ timeout: 30_000 });
+      const branchPackage = await capturedBranchDownload();
+      await chooseBranchFile(branchPackage.bytes);
+      await $("//section[@role='dialog' and .//h2[normalize-space()='Import Life branch']]").waitForDisplayed({ timeout: 30_000 });
+      await capture("life-edit--branch-import", "13c-life-branch-import");
+      await dismiss();
+    }
     if (await tryClick("button=Pinned")) await capture("life-pinned", "14-life-pinned");
     if (await tryClick("button=Browse")) {
       if (await tryClick("button=Graph")) {
@@ -444,6 +636,14 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
     await leafCard.click();
     await $("h1#life-reader-title").waitForDisplayed({ timeout: 15_000 });
     await capture("life-reader", "16-life-reader");
+    await $("button=Add link").click();
+    await $("[role='dialog'][aria-modal='true']").waitForDisplayed({ timeout: 15_000 });
+    await capture("life-reader--add-link", "16b-life-link-dialog");
+    await dismiss();
+    await installPortableDownloadCapture();
+    await $("button=Export Lifeweave package").click();
+    await $("section[aria-label='Lifeweave portable package'] [role='status']").waitForDisplayed({ timeout: 30_000 });
+    portablePackageBytes = await capturedPortablePackage();
 
     // Enter and leave without editing or saving; this exercises only presentation/navigation.
     await $("button=Edit document").click();
@@ -460,6 +660,23 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
     await $("button*=Back to Life Browse").click();
     await $("h1#life-heading").waitForDisplayed({ timeout: 15_000 });
 
+    const emptyCard = $(`[data-life-id='${lifeEmptyChildId}']`);
+    await emptyCard.waitForDisplayed({ timeout: 15_000 });
+    await emptyCard.waitForEnabled({ timeout: 15_000 });
+    await emptyCard.click();
+    await $("p=This leaf has no document yet.").waitForDisplayed({ timeout: 15_000 });
+    await capture("life-reader--empty", "16c-life-empty");
+    await chooseMarkdownImport();
+    await $("[role='dialog'][aria-labelledby='nc-import-title']").waitForDisplayed({ timeout: 30_000 });
+    await capture("life-reader--markdown-import", "16d-markdown-import");
+    await dismiss();
+    await choosePortablePackage(portablePackageBytes);
+    await $("[role='dialog'][aria-labelledby='portable-dialog-title']").waitForDisplayed({ timeout: 30_000 });
+    await capture("life-reader--portable-import", "16e-portable-import");
+    await dismiss();
+    await $("button*=Back to Life Browse").click();
+    await $("h1#life-heading").waitForDisplayed({ timeout: 15_000 });
+
     const narrativeCard = $(`[data-life-id='${lifeNarrativeChildId}']`);
     await narrativeCard.waitForDisplayed({ timeout: 15_000 });
     await narrativeCard.waitForEnabled({ timeout: 15_000 });
@@ -473,7 +690,24 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
     await $("[role='dialog']").waitForDisplayed({ timeout: 15_000 });
     await capture("narrative-studio--only-block-dialog", "19b-narrative-only-block-dialog");
     await browser.keys(ESCAPE);
+
+    // Each semantic Visual World is product content, not a cosmetic test theme. Capture all four
+    // from the production radio group, then exercise the shared dirty-exit decision surface created
+    // by those real edits. The confirm path intentionally leaves the recoverable draft unpublished.
+    for (const [world, file] of [
+      ["paper", "19c-narrative-paper"],
+      ["sakura", "19d-narrative-sakura"],
+      ["aurora", "19e-narrative-aurora"],
+      ["nocturne", "19f-narrative-nocturne"],
+    ] as const) {
+      await $(`input[name='visual-world'][value='${world}']`).click();
+      await browser.pause(150);
+      await capture(`narrative-studio--${world}`, file);
+    }
     await $("button=Back").click();
+    await $("[role='dialog'][aria-modal='true']").waitForDisplayed({ timeout: 15_000 });
+    await capture("narrative-studio--dirty-exit", "19g-narrative-dirty-exit");
+    await $("button=Leave editor").click();
     await $("button=Edit canvas").waitForDisplayed({ timeout: 15_000 });
     await $("button*=Back to Life Browse").click();
     await $("h1#life-heading").waitForDisplayed({ timeout: 15_000 });
@@ -498,8 +732,13 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
     if (await tryClick("button[aria-label^='Search']")) {
       await capture("search", "21-search");
       const searchInput = $("input[aria-label='Search tasks, life nodes, and documents']");
-      await searchInput.setValue("Layout");
-      await $("[role='option']").waitForDisplayed({ timeout: 15_000 });
+      await searchInput.setValue(requestedLanguage === "vi" ? "suc khoe" : "Layout");
+      if (requestedLanguage === "vi")
+        // The freshly created Task, Life node, and document are indexed through the product's
+        // bounded dirty queue. One option only proves that indexing started; three results proves
+        // the Vietnamese fixture reached its deterministic complete state before capture.
+        await $("p=3 results.").waitForDisplayed({ timeout: 15_000 });
+      else await $("[role='option']").waitForDisplayed({ timeout: 15_000 });
       await capture("search--results", "21b-search-results");
       await searchInput.setValue("task51-no-result-sentinel");
       await $("p=No results.").waitForDisplayed({ timeout: 15_000 });
@@ -509,6 +748,12 @@ describe(`Task 50 follow-up — maximized layout audit (${label})`, () => {
     if (await tryClick("button=Create backup")) {
       await browser.pause(3000);
       await capture("backup-settings", "23-backup");
+      const restore = $("//section[@aria-labelledby='backup-settings-heading']//tbody/tr[1]//button[normalize-space()='Restore']");
+      await restore.waitForDisplayed({ timeout: 30_000 });
+      await restore.click();
+      await $("[role='dialog'][aria-labelledby='restore-backup-title']").waitForDisplayed({ timeout: 15_000 });
+      await capture("restore-confirmation", "23b-restore-confirmation", "Timestamped runtime evidence; intentionally not a visual golden.");
+      await dismiss();
     }
 
     // Keep the visual golden independent from backup timestamps in Settings. The shortcut is the

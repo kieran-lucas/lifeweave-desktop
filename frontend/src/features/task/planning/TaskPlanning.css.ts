@@ -1,5 +1,6 @@
 import { style } from "@vanilla-extract/css";
 import { space } from "../../../app/layout/tokens.css";
+import { duration, easing } from "../../../design-system/visual/motion.css";
 
 /*
  * The five workspace views, composed for Visual Baseline v2.
@@ -38,7 +39,7 @@ export const tab = style({
   },
   '@media': {
     '(prefers-reduced-motion: no-preference)': {
-      transition: "border-color 100ms cubic-bezier(0.2,0,0,1), color 100ms cubic-bezier(0.2,0,0,1)",
+      transition: `border-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}`,
     },
   },
 });

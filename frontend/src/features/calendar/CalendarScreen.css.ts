@@ -1,6 +1,7 @@
 import { style } from "@vanilla-extract/css";
 import { space } from "../../app/layout/tokens.css";
 import { glassStrong, progressBar } from "../../design-system/visual/atmosphere.css";
+import { duration, easing } from "../../design-system/visual/motion.css";
 
 /*
  * Calendar, composed for Visual Baseline v2.
@@ -55,7 +56,7 @@ export const actionButton = style({
   color: "var(--text-muted)",
   fontSize: "0.8125rem",
   cursor: "pointer",
-  transition: "background-color 100ms cubic-bezier(0.2,0,0,1), color 100ms cubic-bezier(0.2,0,0,1)",
+  transition: `background-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}`,
   selectors: {
     "&:hover": { background: "var(--icon-background)", color: "var(--text-primary)" },
     "&:focus-visible": { outline: "2px solid var(--focus-ring)", outlineOffset: 2 },
@@ -120,7 +121,7 @@ export const cellButton = style({
   color: "var(--text-primary)",
   textAlign: "left",
   cursor: "pointer",
-  transition: "background-color 100ms cubic-bezier(0.2,0,0,1)",
+  transition: `background-color ${duration.state} ${easing.standard}`,
   selectors: {
     // Days outside the shown month recede by tone, not by opacity: opacity dims the hairlines too.
     "&[data-outside]": { color: "var(--text-muted)" },
@@ -142,7 +143,7 @@ export const dayNumber = style({
   selectors: {
     [`${cellButton}[aria-current=date] &`]: {
       background: "var(--accent)",
-      color: "#fff",
+      color: "var(--accent-contrast)",
     },
     [`${cellButton}[data-outside] &`]: { fontWeight: 400 },
   },
@@ -197,7 +198,7 @@ export const missed = style({
   height: 15,
   borderRadius: "var(--radius-full)",
   background: "var(--icon-background)",
-  color: "#a34b24",
+  color: "var(--danger)",
   fontSize: "0.625rem",
   fontWeight: 700,
 });

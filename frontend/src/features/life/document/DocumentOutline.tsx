@@ -30,7 +30,8 @@ export function DocumentOutline({
         aria-controls={listId}
         onClick={() => setExpanded(v => !v)}
       >
-        {expanded ? "▲ Hide outline" : "▼ Show outline"}
+        <span className={styles.disclosureIcon} />
+        <span>{expanded ? "Hide outline" : "Show outline"}</span>
       </button>
       <ol
         id={listId}

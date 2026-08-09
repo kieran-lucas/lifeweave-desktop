@@ -213,9 +213,10 @@ def check(errors: list[str]) -> None:
 # fails when a count *rises*, and fails again when a count falls without the budget being lowered.
 # Residue can therefore only ever decrease, and the file records honestly how much is left.
 MAX_RESIDUE = {
-    "hex": 12,       # hardcoded colour literals in feature *.css.ts
+    "color": 0,     # hardcoded colour literals in production app/feature *.css.ts
     "radius": 0,    # raw border-radius literals not resolved through vars.radius
     "shadow": 0,     # raw box-shadow literals not resolved through vars.elevation
+    "motion": 0,    # literal transition/animation timings outside the motion authority
 }
 
 AUTHORIZED_EDITORIAL_FAMILY = "Literata"
@@ -227,7 +228,7 @@ FONT_FACE_DECLARATION = re.compile(r"@font-face\s*\{|\bglobalFontFace\(|\bfontFa
 # They are exempt from the hex budget and harmonised rather than deleted.
 RESIDUE_EXEMPT = ("life/narrative/NarrativeVisualWorld.css.ts",)
 
-HEX = re.compile(r"#[0-9a-fA-F]{3,8}\b")
+RAW_COLOR = re.compile(r"#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?|oklch)\(")
 # A resolved radius is `vars.radius.*` or the `--radius-*` custom property. `borderRadius: 0` is
 # deliberate squareness — a declaration, not an unscaled literal — so it is not counted as residue.
 RAW_RADIUS = re.compile(r"borderRadius:\s*(?!.*(?:vars\.radius|--radius-))[\"']?(?!0\s*[,}])[\d.]+")
@@ -238,16 +239,41 @@ RAW_SHADOW = re.compile(
     r"boxShadow:\s*(?!.*(?:vars\.elevation|--elevation-|--glow-|--world-shadow))"
     r"[\"'](?!none|inset|0 0 0)[^\"']*\d"
 )
+RAW_MOTION = re.compile(
+    r"(?:transition|animation):\s*[\"'][^\"']*(?:\d+(?:\.\d+)?m?s|ease|cubic-bezier)"
+)
+GLYPH_ICON_LITERAL = re.compile(
+    r'[\"\'][^\r\n\"\']*[▲▼◉◇▶►◀◁▷◆■□●○★☆✓✔✕×＋→←↗↘][^\r\n\"\']*[\"\']'
+)
 
 
 def check_visual_residue(errors: list[str]) -> None:
-    counts = {"hex": 0, "radius": 0, "shadow": 0}
+    counts = {"color": 0, "radius": 0, "shadow": 0, "motion": 0}
     for path, source in domain_css():
-        if path.relative_to(FEATURES).as_posix() in RESIDUE_EXEMPT:
-            continue
-        counts["hex"] += len(HEX.findall(source))
+        if path.relative_to(FEATURES).as_posix() not in RESIDUE_EXEMPT:
+            counts["color"] += len(RAW_COLOR.findall(source))
         counts["radius"] += len(RAW_RADIUS.findall(source))
         counts["shadow"] += len(RAW_SHADOW.findall(source))
+        counts["motion"] += len(RAW_MOTION.findall(source))
+
+    # Shell and shared layout CSS are production visual owners too. Radius/elevation declarations
+    # there are the authority or deliberate shell geometry, but raw motion and colour must still be
+    # rejected so a legacy island cannot hide outside `features/`.
+    for path in sorted((FRONTEND / "app").rglob("*.css.ts")):
+        source = path.read_text(encoding="utf-8")
+        counts["color"] += len(RAW_COLOR.findall(source))
+        counts["motion"] += len(RAW_MOTION.findall(source))
+
+    for root in (FRONTEND / "app", FEATURES):
+        for path in sorted(root.rglob("*.tsx")):
+            if ".test." in path.name:
+                continue
+            source = path.read_text(encoding="utf-8")
+            if GLYPH_ICON_LITERAL.search(source):
+                errors.append(
+                    f"{path.relative_to(ROOT).as_posix()} uses a Unicode glyph as an icon; "
+                    "use the generated icon vocabulary or a contract-backed CSS drawing instead"
+                )
 
     for kind, found in counts.items():
         budget = MAX_RESIDUE[kind]
