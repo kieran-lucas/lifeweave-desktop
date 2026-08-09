@@ -16,12 +16,12 @@ export const tabs = style({
   display: "flex",
   flexWrap: "wrap",
   alignItems: "center",
-  gap: space.x5,
+  gap: space.x4,
   borderBottom: "1px solid var(--border-subtle)",
   minInlineSize: 0,
 });
 export const tab = style({
-  padding: "0 0 10px",
+  padding: "8px 8px 10px",
   minBlockSize: 34,
   border: 0,
   borderBottom: "2px solid transparent",
