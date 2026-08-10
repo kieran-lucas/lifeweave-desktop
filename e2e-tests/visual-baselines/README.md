@@ -4,48 +4,39 @@ These PNGs are approved production baselines for the native Tauri/WebView2 audit
 `actual` and `diff` images are written under `target/visual-regression/`; they are evidence, not
 goldens, and remain untracked.
 
+Lifeweave is **Light-only**. There is no Dark product theme, no Dark baseline set and no supported
+`LIFEWEAVE_AUDIT_THEME=dark` workflow. `LIFEWEAVE_AUDIT_THEME` must be `light` or unset.
+
 Comparison is opt-in so the normal geometry audit is unchanged. Baseline creation is a separate,
 explicit action and is disabled by default.
 
 The native runner pins the E2E presentation date to the baseline date while preserving the real
 native date for concurrency-sensitive fixture commands. The visual service suppresses blinking
 carets where the engine permits; the audit additionally makes a focused text-editable caret
-transparent only for the comparison frame because WebView2 otherwise retains a 27-pixel native
-caret. This preserves expanded combobox state and focus while eliminating pixel drift. Actual
-comparison frames are saved under `target` for deterministic failure diagnosis;
-normal audit screenshots retain the real focused-control caret.
+transparent only for the comparison frame because WebView2 otherwise retains a native caret. This
+preserves expanded combobox state and focus while eliminating pixel drift. Actual comparison frames
+are saved under `target` for deterministic failure diagnosis; normal audit screenshots retain the
+real focused-control caret.
 
 At the governed minimum, Windows' 125% DPI rounding alternates a nominal `960×640` request between
 959 and 960 CSS pixels. Pixel-comparison runs therefore target the metadata's established achieved
 `959×639` WebView explicitly; geometry-only audits continue to request and report `960×640`.
 
 ```powershell
-# Compare only. Missing or changed baselines fail; nothing is accepted.
+# Compare Light only. Missing or changed baselines fail; nothing is accepted.
 $env:LIFEWEAVE_VISUAL_REGRESSION = '1'
 Remove-Item Env:LIFEWEAVE_ACCEPT_VISUAL_BASELINES -ErrorAction SilentlyContinue
 .\scripts\run_windows_e2e.ps1 -Phases 'task50b-maximized-audit.e2e.ts'
 
-# Deliberately create a reviewed missing baseline. Never use this to erase an unexplained diff.
+# Deliberately create a reviewed missing Light baseline. Never use this to erase an unexplained diff.
 $env:LIFEWEAVE_VISUAL_REGRESSION = '1'
 $env:LIFEWEAVE_ACCEPT_VISUAL_BASELINES = '1'
 .\scripts\run_windows_e2e.ps1 -Phases 'task50b-maximized-audit.e2e.ts'
 ```
 
-For the tracked dark set, add `LIFEWEAVE_AUDIT_THEME=dark`. The native spec connects to the
-session's WebView2 DevTools target, emulates `prefers-color-scheme: dark`, and hard-asserts the
-production `matchMedia` result before capture. The connection is closed during teardown and does
-not change the Windows theme.
-
-```powershell
-$env:LIFEWEAVE_AUDIT_THEME = 'dark'
-$env:LIFEWEAVE_VISUAL_REGRESSION = '1'
-Remove-Item Env:LIFEWEAVE_ACCEPT_VISUAL_BASELINES -ErrorAction SilentlyContinue
-.\scripts\run_windows_e2e.ps1 -Phases 'task50b-maximized-audit.e2e.ts'
-```
-
-Forced-colors uses the same scoped DevTools connection and production precondition. Its twelve
-tracked goldens cover the shell, native controls, Calendar, Analytics, Graph, Reader, a focused
-editor dialog, Settings, Search, and Keyboard Help.
+Forced-colors remains a separate accessibility/system audit, not a product theme. Its tracked
+goldens cover the shell, native controls, Calendar, Settings-owned Analytics, Graph, Reader, a
+focused editor dialog, Settings, Settings-owned Search and Keyboard Help.
 
 ```powershell
 $env:LIFEWEAVE_AUDIT_FORCED_COLORS = '1'
@@ -54,14 +45,13 @@ Remove-Item Env:LIFEWEAVE_ACCEPT_VISUAL_BASELINES -ErrorAction SilentlyContinue
 .\scripts\run_windows_e2e.ps1 -Phases 'task50b-maximized-audit.e2e.ts'
 ```
 
-Reduced motion is asserted independently with `LIFEWEAVE_AUDIT_REDUCED_MOTION=1`. The production
-walk exercises all 36 states under `prefers-reduced-motion: reduce`. Its five representative static
-captures are byte-for-byte identical to the light goldens, so duplicate PNGs are not tracked; the
-labeled native audit artifacts are the durable execution evidence.
+Reduced Motion is asserted independently with `LIFEWEAVE_AUDIT_REDUCED_MOTION=1`. Its representative
+static captures compare against the same Light visual language; duplicate product-theme PNGs are not
+tracked.
 
-Vietnamese typography runs independently in light mode with `LIFEWEAVE_AUDIT_LANGUAGE=vi`. It adds
-a real accented Task and documented Life leaf, verifies accent-insensitive Search reaches the Task,
-Life node, and document, and compares four tracked UI/editorial goldens.
+Vietnamese typography runs independently in Light mode with `LIFEWEAVE_AUDIT_LANGUAGE=vi`. It adds
+a real accented Task and documented Life leaf, verifies accent-insensitive Settings-owned Search
+reaches the Task, Life node and document, and compares the tracked UI/editorial goldens.
 
 ```powershell
 $env:LIFEWEAVE_AUDIT_LANGUAGE = 'vi'
