@@ -226,8 +226,8 @@ MAX_RESIDUE = {
     "radius": 0,    # raw border-radius literals not resolved through vars.radius
     "shadow": 0,     # raw box-shadow literals not resolved through vars.elevation
     "motion": 0,    # literal transition/animation timings outside the motion authority
-    "font_size": 41,  # feature-local sizes remaining before semantic-role migration
-    "focus": 16,       # local focus-visible recipes remaining before shared utility migration
+    "font_size": 35,  # feature-local sizes remaining before semantic-role migration
+    "focus": 15,       # local focus-visible recipes remaining before shared utility migration
     "control_clone": 46,  # feature-local button/action/trigger style exports
 }
 

@@ -7,9 +7,9 @@
 - BASELINE_PLANNING_SHA: `a1078c1f91c251aaa7a453ef1e8a5108551c852d`
 - EXECUTION_START_SHA: `0b3e01d4a8bd9b62c5d786e9b4a4401d72c0edc1`
 - LAST_VERIFIED_COMMIT: `0dd47122939abb57fd38530cdcb8748921890c74`
-- CURRENT_PACKET: `S11`
+- CURRENT_PACKET: `Q4`
 - CURRENT_STATUS: `IN_PROGRESS`
-- NEXT_PACKET: `S11`
+- NEXT_PACKET: `Q4`
 - FINAL_REVIEW_DONE: `false`
 - FINAL_FINDING_SET_FROZEN: `false`
 - PROGRAM_STATUS: `IN_PROGRESS`
@@ -28,8 +28,8 @@
 | S07 | CLOSED | `d828058d493ff1275da44bd5ab39dcd4cfaef8a7` | 12/12 rows LOCAL_VERIFIED; focused semantics, fixed budget, and max/min native profiles passed |
 | S08 | CLOSED | `c65f3feeae9be9355373436502bd8f77781a0978` | 11/11 rows LOCAL_VERIFIED; focused semantics, fixed budget, and max/min native profiles passed |
 | S09 | CLOSED | `37fe55157ac71107868ce9245e1110a7c1244057` | 6/6 rows LOCAL_VERIFIED; focused semantics and max/min native profiles passed |
-| S10 | CLOSED | LOCAL checkpoint | 11/11 rows LOCAL_VERIFIED; focused semantics and routed max/min native profiles passed |
-| S11 | IN_PROGRESS | — | Narrative Studio redesign started |
+| S10 | CLOSED | `cee004579145649a9f79fc3228bc66f722124563` | 11/11 rows LOCAL_VERIFIED; focused semantics and routed max/min native profiles passed |
+| S11 | CLOSED | LOCAL checkpoint | 10/10 rows LOCAL_VERIFIED; focused semantics and max/min native profiles passed |
 | S12 | PENDING | — | — |
 | Q1 | CLOSED | `db2f7ccd472938e71382b6ad338e073145eac003` | 33/33 scoped rows VERIFIED; full unit, build/budget, native behavior, and max/min visual gates passed |
 | Q2 | CLOSED | `37ec413a2e4d769a8913c0e73478fea824035360` | 18/18 scoped rows VERIFIED; full unit, build/budget, native behavior, and max/min visual gates passed |
@@ -128,16 +128,16 @@
 | N-07 | S10 | LOCAL_VERIFIED | S10 checkpoint | timelines retain ordered items on a quiet vertical authored-world rule with readable labels and descriptions |
 | N-08 | S10 | LOCAL_VERIFIED | S10 checkpoint | unknown blocks, unsupported text islands, missing images, and canvas errors remain local explicit states |
 | N-09 | S10 | LOCAL_VERIFIED | S10 checkpoint | draft recovery mirrors Basic Leaf calm-band grammar with primary Recover and secondary destructive Discard |
-| NS-01 | S11 | PENDING | — | — |
-| NS-02 | S11 | PENDING | — | — |
-| NS-03 | S11 | PENDING | — | — |
-| NS-04 | S11 | PENDING | — | — |
-| NS-05 | S11 | PENDING | — | — |
-| NS-06 | S11 | PENDING | — | — |
-| NS-07 | S11 | PENDING | — | — |
-| NS-08 | S11 | PENDING | — | — |
-| NS-09 | S11 | PENDING | — | — |
-| NS-10 | S11 | PENDING | — | — |
+| NS-01 | S11 | LOCAL_VERIFIED | S11 checkpoint | Studio retains the reading frame while its Lifeweave header makes Publish primary, history/navigation secondary, and discard separately destructive |
+| NS-02 | S11 | LOCAL_VERIFIED | S11 checkpoint | compact four-world selector uses structural blue selection while authored-world theming begins only at the canvas boundary |
+| NS-03 | S11 | LOCAL_VERIFIED | S11 checkpoint | shared low-chrome scene tabs scroll horizontally without a vertical scrollbar artifact and keep Add scene distinct |
+| NS-04 | S11 | LOCAL_VERIFIED | S11 checkpoint | inactive rich text reads as authored text and the active island gains an explicit editorial editing boundary |
+| NS-05 | S11 | LOCAL_VERIFIED | S11 checkpoint | callout editing retains variant/content capability with the authored-world rule and tint treatment |
+| NS-06 | S11 | LOCAL_VERIFIED | S11 checkpoint | metric label/value/unit fields form a compact aligned grid with a full-width description field |
+| NS-07 | S11 | LOCAL_VERIFIED | S11 checkpoint | image preview remains bounded with alt/caption inputs and quiet factual asset status |
+| NS-08 | S11 | LOCAL_VERIFIED | S11 checkpoint | timeline items use ordered hairline separation instead of nested card enclosures |
+| NS-09 | S11 | LOCAL_VERIFIED | S11 checkpoint | Add block remains a compact finite flow exposing exactly the five supported block kinds |
+| NS-10 | S11 | LOCAL_VERIFIED | S11 checkpoint | only-block and dirty-exit decisions retain shared dialog semantics, focus behavior, and consequence-appropriate actions |
 | MD-01 | S10 | LOCAL_VERIFIED | S10 checkpoint | compact shared dialog presents quoted excerpt, definition-list metadata, separated warning, and primary Import at max/min |
 | MD-02 | S10 | LOCAL_VERIFIED | S10 checkpoint | Markdown export remains a secondary utility with its fixed lossiness truth visible and no invented options |
 | S-01 | S12 | PENDING | — | — |
@@ -163,14 +163,15 @@
 - S09 Portable/Branch/Tree interchange: 6/6 rows LOCAL_VERIFIED
 - Q3 promoted S07–S09: 29/29 scoped rows VERIFIED
 - S10 Narrative Reader/Markdown: 11/11 rows LOCAL_VERIFIED
+- S11 Narrative Studio: 10/10 rows LOCAL_VERIFIED
 
 ## CURRENT
 
-- S11 in progress
+- Q4 in progress
 
 ## NEXT
 
-- S11
+- Q4
 
 ## KNOWN_DEBT
 
@@ -305,6 +306,12 @@ Append concise entries:
 - [S10] native Light `life-reader-interchange` maximized — PASS — 13 profile surfaces / zero collisions; empty creation and Markdown preview tags inspected — `target/e2e-artifacts/task-50b/life-reader-interchange-S10-20260810-115215`
 - [S10] native Light `life-reader-interchange` 960×640 — PASS — achieved 960×639 / 13 profile surfaces / zero collisions; Markdown preview tag inspected — `target/e2e-artifacts/task-50b/life-reader-interchange-S10-20260810-115355`
 - [S10] bounded self-review `F_S10` — FROZEN/RESOLVED — zero findings; no post-review fixes or repeated review
+- [S11] `git diff --check` + convergence ratchet — PASS — font-size residue 35 / focus residue 15 / control clones 46; ceilings tightened
+- [S11] `pnpm typecheck` — PASS — frontend project references
+- [S11] focused Narrative Studio/schema/history/block-editor/DecisionDialog tests — PASS — 3 files / 86 tests
+- [S11] native Light `narrative` maximized — PASS — 8 profile surfaces / zero collisions; all Studio/world/decision tags inspected — `target/e2e-artifacts/task-50b/narrative-S11-20260810-121258`
+- [S11] native Light `narrative` 960×640 — PASS — achieved 960×639 / 8 profile surfaces / zero collisions; all Studio/world/decision tags inspected — `target/e2e-artifacts/task-50b/narrative-S11-20260810-121429`
+- [S11] bounded self-review `F_S11` — FROZEN/RESOLVED — removed the scene rail's vertical scrollbar artifact and separated destructive close from navigation actions; affected convergence/type/max-min visual checks passed without a second review
 
 ## DECISIONS MADE UNDER UNATTENDED AUTHORITY
 
@@ -335,6 +342,7 @@ Record only material reversible decisions that future stages may need to know.
 - [S08] Reader node identity uses the authorized editorial display role while controls, relationship sections, outline, and metadata remain productive sans; the Life-link picker uses the compact shared dialog at both governed viewports.
 - [S09] Portable previews remain compact, branch previews remain standard, and the denser high-consequence full-tree preview uses the shared wide dialog; all three retain the same append/import capability and factual warning content.
 - [S10] Narrative Visual Worlds remain contained to the authored Canvas while shell controls retain Lifeweave styling; reader blocks express their native semantics through typography, rules, tint, and ordered structure rather than repeated cards.
+- [S11] Studio keeps the proven reading frame: the Lifeweave document controls remain outside the selected Visual World, while only the authored block canvas receives world palette and material; no structural compression justified a wider frame.
 
 ## FINAL FINDING SET
 

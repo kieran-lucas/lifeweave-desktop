@@ -14,7 +14,7 @@ export const sakura = worldStyle(visualWorlds[1].light, visualWorlds[1].dark);
 export const aurora = worldStyle(visualWorlds[2].light, visualWorlds[2].dark);
 export const nocturne = worldStyle(visualWorlds[3].light, visualWorlds[3].dark);
 export const selector = style({ display:"grid", gridTemplateColumns:"repeat(4,minmax(0,1fr))", gap:0, border:"1px solid var(--border-subtle)", borderRadius:"var(--radius-control)", padding:0, margin:"4px 0 8px", overflow:"hidden", "@media": { "screen and (max-width: 720px)": { gridTemplateColumns:"repeat(2,minmax(0,1fr))" } } });
-export const option = style({ display:"grid", gridTemplateColumns:"auto 1fr", alignContent:"start", gap:"5px 7px", minWidth:0, padding:"9px 10px", border:0, borderInlineEnd:"1px solid var(--border-subtle)", background:"transparent", ...text.metadata, selectors:{ "&:has(input:checked)": { boxShadow:`inset 0 3px 0 ${worldTokens.accent}`, background:worldTokens.accentSoft }, "&:focus-within": { outline:"2px solid var(--focus-ring)", outlineOffset:-2 } } });
+export const option = style({ display:"grid", gridTemplateColumns:"auto 1fr", alignContent:"start", gap:"5px 7px", minWidth:0, padding:"9px 10px", border:0, borderInlineEnd:"1px solid var(--border-subtle)", background:"transparent", ...text.metadata, selectors:{ "&:has(input:checked)": { boxShadow:"inset 0 3px 0 var(--accent)", background:"var(--active-background)" }, "&:focus-within": { outline:"2px solid var(--focus-ring)", outlineOffset:-2 } } });
 export const chips = style({ display:"flex", gap:3, gridColumn:"2" });
 export const chip = style({
   width: 14,

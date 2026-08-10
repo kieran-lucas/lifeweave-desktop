@@ -188,43 +188,23 @@ function MetricBlockEditor({
   onChange: (b: MetricBlock) => void;
 }) {
   return (
-    <div>
-      <label className={styles.fieldLabel} htmlFor={`metric-label-${block.id}`}>
-        Label
-      </label>
-      <input
-        id={`metric-label-${block.id}`}
-        className={styles.fieldInput}
-        value={block.label}
-        onChange={e => onChange({ ...block, label: e.currentTarget.value })}
-      />
-      <label className={styles.fieldLabel} htmlFor={`metric-value-${block.id}`}>
-        Value
-      </label>
-      <input
-        id={`metric-value-${block.id}`}
-        className={styles.fieldInput}
-        value={block.value}
-        onChange={e => onChange({ ...block, value: e.currentTarget.value })}
-      />
-      <label className={styles.fieldLabel} htmlFor={`metric-unit-${block.id}`}>
-        Unit
-      </label>
-      <input
-        id={`metric-unit-${block.id}`}
-        className={styles.fieldInput}
-        value={block.unit}
-        onChange={e => onChange({ ...block, unit: e.currentTarget.value })}
-      />
-      <label className={styles.fieldLabel} htmlFor={`metric-desc-${block.id}`}>
-        Description
-      </label>
-      <textarea
-        id={`metric-desc-${block.id}`}
-        className={styles.fieldTextarea}
-        value={block.description}
-        onChange={e => onChange({ ...block, description: e.currentTarget.value })}
-      />
+    <div className={styles.metricEditor}>
+      <div className={styles.metricField}>
+        <label className={styles.fieldLabel} htmlFor={`metric-label-${block.id}`}>Label</label>
+        <input id={`metric-label-${block.id}`} className={styles.fieldInput} value={block.label} onChange={e => onChange({ ...block, label: e.currentTarget.value })} />
+      </div>
+      <div className={styles.metricField}>
+        <label className={styles.fieldLabel} htmlFor={`metric-value-${block.id}`}>Value</label>
+        <input id={`metric-value-${block.id}`} className={styles.fieldInput} value={block.value} onChange={e => onChange({ ...block, value: e.currentTarget.value })} />
+      </div>
+      <div className={styles.metricField}>
+        <label className={styles.fieldLabel} htmlFor={`metric-unit-${block.id}`}>Unit</label>
+        <input id={`metric-unit-${block.id}`} className={styles.fieldInput} value={block.unit} onChange={e => onChange({ ...block, unit: e.currentTarget.value })} />
+      </div>
+      <div className={styles.metricDescriptionField}>
+        <label className={styles.fieldLabel} htmlFor={`metric-desc-${block.id}`}>Description</label>
+        <textarea id={`metric-desc-${block.id}`} className={styles.fieldTextarea} value={block.description} onChange={e => onChange({ ...block, description: e.currentTarget.value })} />
+      </div>
     </div>
   );
 }
@@ -293,7 +273,7 @@ function ImageBlockEditor({
   };
 
   return (
-    <div>
+    <div className={styles.imageEditor}>
       <button
         className={styles.importButton}
         onClick={handleImport}
@@ -494,7 +474,7 @@ function TimelineBlockEditor({
           items={itemIds}
           strategy={verticalListSortingStrategy}
         >
-          <div className={styles.blockList}>
+          <div className={styles.timelineItems}>
             {block.items.map((item, i) => (
               <SortableTimelineItem
                 key={item.id}
@@ -664,7 +644,7 @@ function SortableBlockEditor({
   };
 
   return (
-    <div ref={setNodeRef} style={dndStyle} className={styles.studioBlock}>
+    <div ref={setNodeRef} style={dndStyle} className={styles.studioBlock} data-kind={block.kind}>
       <div className={styles.studioBlockHeader}>
         {/* drag handle only — NOT the whole block, prevents text inputs from starting drags */}
         <button
@@ -1310,7 +1290,7 @@ export default function NarrativeCanvasStudio({
   };
 
   return (
-    <NarrativeVisualWorld id={doc.visualWorldId}><div className={styles.studioShell}>
+    <div className={styles.studioShell}>
       <header className={styles.studioHeader}>
       <h2 className={styles.studioHeading}>Narrative Canvas — Studio</h2>
       <div className={styles.studioActions}>
@@ -1346,7 +1326,7 @@ export default function NarrativeCanvasStudio({
           Back
         </button>
         <button
-          className={styles.studioButton}
+          className={styles.studioDestructive}
           onClick={() => void handleDiscard()}
           type="button"
         >
@@ -1464,7 +1444,8 @@ export default function NarrativeCanvasStudio({
         </button>
       </div>
 
-      <div role="tabpanel" id="nc-studio-tabpanel" aria-labelledby={`nc-tab-${activeSceneId}`}>
+      <NarrativeVisualWorld id={doc.visualWorldId}>
+      <div className={styles.studioCanvas} role="tabpanel" id="nc-studio-tabpanel" aria-labelledby={`nc-tab-${activeSceneId}`}>
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -1537,6 +1518,7 @@ export default function NarrativeCanvasStudio({
         </button>
       </div>
       </div>
+      </NarrativeVisualWorld>
       {decision ? <DecisionDialog
         title={decision.title}
         description={decision.description}
@@ -1547,7 +1529,7 @@ export default function NarrativeCanvasStudio({
         onCancel={() => setDecision(null)}
         onConfirm={confirmDecision}
       /> : null}
-    </div></NarrativeVisualWorld>
+    </div>
   );
 }
 
