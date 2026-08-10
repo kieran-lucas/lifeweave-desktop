@@ -75,6 +75,42 @@ html, body, #root {
 }
 button, input, textarea, select { font: inherit; }
 
+/*
+ * `app/layout/layout.css.ts` still owns control geometry and therefore keeps high-specificity
+ * selectors for native fields. These material-only overrides intentionally outrank that old
+ * white-paper paint without changing size, spacing or layout contracts.
+ */
+:root input:not([type=checkbox]):not([type=radio]):not([type=range]),
+:root textarea,
+:root select {
+  border-color: var(--glass-border);
+  background-color: var(--glass-surface-strong);
+  background-image: var(--paint-grain-fine);
+  color: var(--text-primary);
+  box-shadow: inset 0 1px 0 var(--glass-highlight), 0 4px 14px rgba(73, 102, 192, 0.045);
+}
+
+:root input:not([type=checkbox]):not([type=radio]):not([type=range]):hover,
+:root textarea:hover,
+:root select:hover {
+  border-color: rgba(113, 143, 219, 0.52);
+  background-color: rgba(255, 255, 255, 0.94);
+}
+
+:root input:not([type=checkbox]):not([type=radio]):not([type=range]):focus-visible,
+:root textarea:focus-visible,
+:root select:focus-visible {
+  border-color: var(--accent);
+  background-color: #FFFFFF;
+  box-shadow: 0 0 0 3px rgba(78, 111, 255, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.92);
+}
+
+:root fieldset {
+  border-color: var(--glass-border);
+  background-color: rgba(255, 255, 255, 0.58);
+  background-image: var(--paint-grain-fine);
+}
+
 ::selection { background: var(--accent); color: var(--accent-contrast); }
 
 :focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
