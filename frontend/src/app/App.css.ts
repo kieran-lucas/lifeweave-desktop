@@ -1,8 +1,5 @@
 import { globalStyle, style } from "@vanilla-extract/css";
 
-// Side-effect import: this is what puts the type system and its one authorized @font-face into the
-// production bundle. Before it, `visual/typography.css.ts` was reachable only from the excluded
-// prototype entry, so the scale shipped to nothing.
 import "../design-system/visual/globalType.css";
 import { button } from "../design-system/primitives/controls.css";
 import { focusRing } from "../design-system/primitives/utilities.css";
@@ -10,87 +7,211 @@ import { text } from "../design-system/visual/typography.css";
 import { duration, easing } from "../design-system/visual/motion.css";
 import { gutter, space } from "./layout/tokens.css";
 
-/**
- * Application shell geometry only. Page width, page gutter, dialog width, and page-level section
- * gaps live in `layout/` (ADR 0044); nothing in this file may declare them again.
- */
+export const appRoot = style({
+  display: "grid",
+  gridTemplateColumns: "264px minmax(0, 1fr)",
+  inlineSize: "100%",
+  blockSize: "100%",
+  overflow: "hidden",
+  position: "relative",
+  isolation: "isolate",
+  background: "transparent",
+  selectors: { "&[data-sidebar-mode=collapsed]": { gridTemplateColumns: "72px minmax(0, 1fr)" } },
+});
 
-/*
- * Sized in percentage terms, never viewport units. `100vw`/`100vh` include the classic scrollbar
- * gutter by definition, so before Task 50 a vertical scrollbar made the root 15 px wider than the
- * space available to it, that horizontal scrollbar shrank the available height, and the two axes
- * fed each other. Measured evidence is in `docs/audits/task-50-layout-baseline.md` §2.1.
- */
-export const appRoot = style({ display: "grid", gridTemplateColumns: "252px minmax(0, 1fr)", inlineSize: "100%", blockSize: "100%", overflow: "hidden", background: "var(--app-background)", selectors: { "&[data-sidebar-mode=collapsed]": { gridTemplateColumns: "68px minmax(0, 1fr)" } } });
-export const sidebar = style({ display: "flex", flexDirection: "column", minWidth: 0, padding: "28px 16px 18px", borderRight: "1px solid var(--border-subtle)", background: "var(--sidebar-background)", position: "relative", zIndex: 1 });
-export const brand = style({ display: "flex", alignItems: "center", gap: 11, minHeight: 36, padding: "0 9px", marginBottom: 28, ...text.objectTitle, color: "var(--text-primary)" });
-/** The centralized product mark: a simple blue infinity without a tile or glow. */
-export const brandMark = style({ display: "grid", placeItems: "center", width: 30, height: 30, flexShrink: 0, color: "var(--accent)" });
-export const brandGlyph = style({ fill: "none", stroke: "currentColor", strokeWidth: 1.9, strokeLinecap: "round", strokeLinejoin: "round" });
-export const navGroup = style({ display: "grid", gap: 3 });
-export const navButton = style([focusRing, { display: "flex", alignItems: "center", gap: 12, minHeight: 42, width: "100%", padding: "8px 11px", border: 0, borderRadius: "var(--radius-control)", background: "transparent", color: "var(--text-muted)", ...text.navigation, textAlign: "left", cursor: "pointer", transition: `background-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}`, selectors: { "&[aria-current=page]": { background: "var(--accent)", color: "var(--accent-contrast)", fontWeight: 600 }, "&:hover:not([aria-current=page])": { background: "var(--active-background)", color: "var(--text-primary)" } } }]);
-/**
- * v2 replaces the grey letter tile with a real 20 px outline icon that takes the accent when its
- * destination is current. The tile was the single most dated element in the shell: it put a filled
- * box behind every navigation row, which is exactly the enclosure the design law removes.
- */
-export const navIcon = style({ flexShrink: 0, width: 20, height: 20, color: "currentColor" });
+export const sidebar = style({
+  display: "flex",
+  flexDirection: "column",
+  minWidth: 0,
+  padding: "26px 15px 18px",
+  position: "relative",
+  zIndex: 2,
+  borderRight: "1px solid color-mix(in srgb, var(--accent) 18%, var(--border-subtle))",
+  background:
+    "linear-gradient(180deg, color-mix(in srgb, white 72%, transparent), color-mix(in srgb, var(--surface) 78%, transparent)), color-mix(in srgb, var(--sidebar-background) 74%, transparent)",
+  boxShadow:
+    "18px 0 56px color-mix(in srgb, var(--accent) 8%, transparent), inset -1px 0 0 color-mix(in srgb, white 52%, transparent)",
+  "@supports": {
+    "(backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))": {
+      backdropFilter: "blur(26px) saturate(1.28)",
+      WebkitBackdropFilter: "blur(26px) saturate(1.28)",
+    },
+  },
+  "@media": {
+    "(forced-colors: active)": { background: "Canvas", borderRight: "1px solid CanvasText", boxShadow: "none" },
+  },
+});
+
+export const brand = style({
+  display: "flex",
+  alignItems: "center",
+  gap: 12,
+  minHeight: 42,
+  padding: "0 7px",
+  marginBottom: 28,
+  ...text.objectTitle,
+  color: "var(--text-primary)",
+  letterSpacing: "-0.018em",
+});
+
+export const brandMark = style({
+  display: "grid",
+  placeItems: "center",
+  width: 38,
+  height: 38,
+  flexShrink: 0,
+  borderRadius: "var(--radius-full)",
+  color: "var(--accent)",
+  background:
+    "radial-gradient(circle at 35% 28%, color-mix(in srgb, white 80%, transparent), transparent 34%), linear-gradient(145deg, color-mix(in srgb, var(--accent-cyan) 18%, white), color-mix(in srgb, var(--accent-violet) 16%, white))",
+  border: "1px solid color-mix(in srgb, var(--accent) 28%, white)",
+  boxShadow:
+    "0 10px 30px color-mix(in srgb, var(--accent) 18%, transparent), 0 0 26px color-mix(in srgb, var(--accent-violet) 12%, transparent), inset 0 1px 0 white",
+});
+
+export const brandGlyph = style({
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 1.9,
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  filter: "drop-shadow(0 2px 5px color-mix(in srgb, var(--accent) 24%, transparent))",
+});
+
+export const navGroup = style({ display: "grid", gap: 5 });
+
+export const navButton = style([
+  focusRing,
+  {
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+    minHeight: 44,
+    width: "100%",
+    padding: "8px 11px",
+    border: "1px solid transparent",
+    borderRadius: "var(--radius-control)",
+    background: "transparent",
+    color: "var(--text-muted)",
+    ...text.navigation,
+    textAlign: "left",
+    cursor: "pointer",
+    transition:
+      `background-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}, ` +
+      `border-color ${duration.state} ${easing.standard}, box-shadow ${duration.state} ${easing.standard}, transform ${duration.state} ${easing.standard}`,
+    selectors: {
+      "&[aria-current=page]": {
+        color: "white",
+        fontWeight: 650,
+        borderColor: "color-mix(in srgb, white 28%, var(--accent))",
+        background: "linear-gradient(135deg, var(--accent-cyan) -25%, var(--accent) 44%, var(--accent-violet) 118%)",
+        boxShadow:
+          "0 12px 30px color-mix(in srgb, var(--accent) 25%, transparent), 0 4px 14px color-mix(in srgb, var(--accent-violet) 18%, transparent), inset 0 1px 0 color-mix(in srgb, white 42%, transparent)",
+        transform: "translateX(2px)",
+      },
+      "&:hover:not([aria-current=page])": {
+        color: "var(--text-primary)",
+        borderColor: "color-mix(in srgb, var(--accent) 16%, transparent)",
+        background:
+          "linear-gradient(105deg, color-mix(in srgb, var(--accent-cyan) 8%, transparent), color-mix(in srgb, var(--accent-violet) 7%, transparent))",
+        transform: "translateX(2px)",
+      },
+    },
+    "@media": {
+      "(prefers-reduced-motion: reduce)": { transition: "none", selectors: { "&[aria-current=page]": { transform: "none" }, "&:hover:not([aria-current=page])": { transform: "none" } } },
+      "(forced-colors: active)": { selectors: { "&[aria-current=page]": { background: "Highlight", color: "HighlightText", boxShadow: "none", transform: "none" } } },
+    },
+  },
+]);
+
+export const navIcon = style({
+  flexShrink: 0,
+  width: 20,
+  height: 20,
+  color: "currentColor",
+  filter: "drop-shadow(0 2px 5px color-mix(in srgb, currentColor 18%, transparent))",
+});
+
 export const navLabel = style({ overflow: "hidden", whiteSpace: "nowrap" });
 globalStyle(`${appRoot}[data-sidebar-mode=collapsed] .${navLabel}`, { display: "none" });
-globalStyle(`${appRoot}[data-sidebar-mode=collapsed] .${brand}`, { fontSize: 0, paddingInline: 4 });
-export const divider = style({ height: 1, margin: "13px 10px", background: "var(--border-subtle)" });
-export const collapseButton = style([focusRing, { marginTop: "auto", display: "flex", gap: 12, alignItems: "center", minHeight: 40, padding: "10px 11px 8px", border: 0, borderTop: "1px solid var(--border-subtle)", borderRadius: 0, background: "transparent", color: "var(--text-muted)", ...text.navigation, cursor: "pointer", selectors: { "&:hover": { color: "var(--text-primary)" } } }]);
+globalStyle(`${appRoot}[data-sidebar-mode=collapsed] .${brand}`, { fontSize: 0, paddingInline: 1, justifyContent: "center" });
 
-/*
- * The one main viewport. It owns the single responsive gutter and reserves its scrollbar gutter on
- * *both* edges, so a page frame is optically centred whether or not the scrollbar is drawn.
- *
- * `stable` alone reserves the gutter on the inline-end edge only. That keeps the content box a
- * constant width — which is what stops the frame jumping as content grows — but leaves the visible
- * composition 15.2px heavier on one side, and native phase 21 measured exactly that imbalance.
- * `both-edges` costs one gutter of width and makes the equilibrium real rather than nominal.
- *
- * `position: relative` is load-bearing, not decoration. Without it the viewport is not a containing
- * block, so an absolutely positioned descendant with no positioned ancestor — every `srOnly`
- * clipping span, and there are several deep in Settings — resolves against the initial containing
- * block instead. It then escapes this element's `overflow: auto`, lands at its static offset
- * hundreds of pixels down the document, and gives the *document* a vertical scrollbar. That
- * scrollbar was the second half of the measured Settings defect: it shrank `clientWidth` by 15px,
- * which the old `100vw` root then turned into horizontal overflow.
- */
-export const viewport = style({ position: "relative", zIndex: 1, minInlineSize: 0, minBlockSize: 0, overflow: "auto", scrollbarGutter: "stable both-edges", padding: gutter });
+export const divider = style({
+  height: 1,
+  margin: "13px 10px",
+  background: "linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 24%, var(--border-subtle)), transparent)",
+});
 
-/** v2 sets every heading in the platform sans. Weight and scale carry the hierarchy, not a serif. */
-export const heading = style({ ...text.pageTitle, margin: 0, color: "var(--text-primary)" });
-export const lede = style({ ...text.body, margin: 0, color: "var(--text-muted)" });
-/*
- * Settings sits at the quiet end of the art scale, but quiet is not dead: each section becomes a
- * soft material region so the page reads as composed rather than as a form dumped on a background.
- *
- * The rhythm is deliberately uneven. Rendering the section stack showed title, description and
- * controls all separated by the same `group` gap, so nothing grouped: a heading floated as far from
- * its own description as from the controls below it. Title and description are now one unit with a
- * tight gap, and the content is pushed away from both.
- */
-export const settingsSection = style({ display: "flex", flexDirection: "column", gap: space.x2, minInlineSize: 0, paddingBlockStart: space.x5, borderTop: "1px solid var(--border-subtle)" });
+export const collapseButton = style([
+  focusRing,
+  {
+    marginTop: "auto",
+    display: "flex",
+    gap: 12,
+    alignItems: "center",
+    minHeight: 42,
+    padding: "9px 11px",
+    border: "1px solid color-mix(in srgb, var(--accent) 10%, var(--border-subtle))",
+    borderRadius: "var(--radius-control)",
+    background: "color-mix(in srgb, var(--glass-surface) 74%, transparent)",
+    color: "var(--text-muted)",
+    ...text.navigation,
+    cursor: "pointer",
+    selectors: {
+      "&:hover": {
+        color: "var(--text-primary)",
+        borderColor: "color-mix(in srgb, var(--accent) 24%, var(--border-subtle))",
+        background: "var(--glass-surface-strong)",
+      },
+    },
+  },
+]);
 
-/*
- * A settings heading is `sectionTitle`, not the global `h2` role.
- *
- * The global rule sets every `h2` to the 23px object title, which is right for the one heading that
- * names an object and wrong for six stacked settings groups — the rendered stack read as a sequence
- * of headlines rather than as a page with sections.
- */
+export const viewport = style({
+  position: "relative",
+  zIndex: 1,
+  minInlineSize: 0,
+  minBlockSize: 0,
+  overflow: "auto",
+  scrollbarGutter: "stable both-edges",
+  padding: gutter,
+  background: "linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--app-background) 24%, transparent) 100%)",
+});
+
+export const heading = style({
+  ...text.pageTitle,
+  margin: 0,
+  color: "var(--text-primary)",
+  textShadow: "0 10px 30px color-mix(in srgb, var(--accent) 12%, transparent)",
+});
+export const lede = style({ ...text.body, margin: 0, color: "var(--text-muted)", maxInlineSize: "72ch" });
+
+export const settingsSection = style({
+  display: "flex",
+  flexDirection: "column",
+  gap: space.x2,
+  minInlineSize: 0,
+  paddingBlockStart: space.x5,
+  borderTop: "1px solid color-mix(in srgb, var(--accent) 13%, var(--border-subtle))",
+});
 globalStyle(`${settingsSection} > h2`, { ...text.sectionTitle, margin: 0 });
-/* The description belongs to its heading, so it carries no top gap of its own. */
 globalStyle(`${settingsSection} > h2 + p`, { ...text.compactBody, margin: 0, color: "var(--text-muted)", maxInlineSize: "72ch" });
-/* Everything after the description is content, and content gets air. */
 globalStyle(`${settingsSection} > h2 + p + *`, { marginBlockStart: space.x3 });
+
 export const coreStatus = style({ ...text.body, margin: 0, color: "var(--text-muted)" });
 export const recovery = style({ paddingBlockStart: space.x6 });
 export const recoveryCopy = style({ maxInlineSize: "62ch", margin: 0, color: "var(--text-muted)" });
 export const recoveryAction = button.primary;
 export const shortcutList = style({ display: "grid", gridTemplateColumns: "1fr auto", gap: `${space.control} ${space.field}`, margin: 0, alignItems: "center" });
 globalStyle(`${shortcutList} dd`, { margin: 0, justifySelf: "end" });
-export const shortcutChord = style({ padding: "3px 8px", borderRadius: "var(--radius-small)", border: "1px solid var(--border-subtle)", background: "var(--icon-background)", ...text.code, fontWeight: 600, whiteSpace: "nowrap" });
+export const shortcutChord = style({
+  padding: "4px 9px",
+  borderRadius: "var(--radius-small)",
+  border: "1px solid var(--glass-border)",
+  background: "var(--glass-surface-strong)",
+  boxShadow: "inset 0 1px 0 var(--glass-highlight)",
+  ...text.code,
+  fontWeight: 600,
+  whiteSpace: "nowrap",
+});
 export const dialogButton = button.secondary;
