@@ -1,28 +1,9 @@
 import { style, styleVariants } from "@vanilla-extract/css";
 
-// Side-effect import: a primitive must carry its own palette. Without this these classes
-// resolve `var(--accent)` against whatever happened to load first, and the control
-// gallery caught the consequence — the primary button rendered white-on-white.
 import "../visual/theme.css";
 import { duration, easing, reduced } from "../visual/motion.css";
 import { text } from "../visual/typography.css";
 
-/**
- * The button system.
- *
- * `app/layout/layout.css.ts` gives every native `button` and `select` its geometry and a low-chrome
- * material at element specificity, so nothing in the product renders as a raw Windows control. That
- * is a *floor*, not a system: it cannot express that Save and Delete are different, or that a
- * toolbar button and a page's primary action are different.
- *
- * This file is that system. A component opts into a variant; the element rule underneath keeps
- * working for anything that has not opted in yet, because these classes are more specific.
- *
- * Every variant carries the full state matrix — rest, hover, active, focus-visible, disabled — plus
- * forced colors. A variant that only changes colour on hover is not finished.
- */
-
-/* The shared skeleton: geometry, type and motion. Variants supply only colour and emphasis. */
 const base = style({
   display: "inline-flex",
   alignItems: "center",
@@ -39,74 +20,72 @@ const base = style({
   letterSpacing: text.button.letterSpacing,
   whiteSpace: "nowrap",
   cursor: "pointer",
-  /*
-   * Only the properties that actually change are transitioned. `transition: all` is prohibited by
-   * ADR 0045 §8: it animates layout properties too, which turns a hover into per-frame layout work.
-   */
   transition:
     `background-color ${duration.state} ${easing.standard}, border-color ${duration.state} ${easing.standard}, ` +
     `color ${duration.state} ${easing.standard}, box-shadow ${duration.state} ${easing.standard}, ` +
-    `transform ${duration.press} ${easing.standard}`,
+    `transform ${duration.state} ${easing.standard}, filter ${duration.state} ${easing.standard}`,
   selectors: {
-    /*
-     * Press is a 1px settle, not a scale. Scaling text resamples every glyph for the duration of
-     * the press, which reads as a blur on the exact element the user is looking at.
-     */
-    "&:active:not(:disabled)": { transform: "translateY(1px)" },
-    "&:focus-visible": {
-      outline: "2px solid var(--focus-ring)",
-      outlineOffset: 2,
-    },
-    "&:disabled": { cursor: "not-allowed", opacity: 0.5, transform: "none" },
+    "&:active:not(:disabled)": { transform: "translateY(1px) scale(0.995)" },
+    "&:focus-visible": { outline: "2px solid var(--focus-ring)", outlineOffset: 2 },
+    "&:disabled": { cursor: "not-allowed", opacity: 0.5, transform: "none", filter: "none" },
   },
   "@media": {
-    /* Reduced motion keeps the tonal change and drops the travel — ADR 0045 §6. */
     "(prefers-reduced-motion: reduce)": {
       transition: `background-color ${reduced.duration} linear, border-color ${reduced.duration} linear, color ${reduced.duration} linear`,
       selectors: { "&:active:not(:disabled)": { transform: "none" } },
     },
-    "(forced-colors: active)": { borderColor: "ButtonText" },
+    "(forced-colors: active)": { borderColor: "ButtonText", boxShadow: "none", filter: "none" },
   },
 });
 
 export const button = styleVariants({
-  /** The one action a surface most wants the user to take. At most one per view. */
   primary: [
     base,
     {
-      background: "var(--accent)",
-      borderColor: "var(--accent)",
-      color: "var(--accent-contrast)",
+      position: "relative",
+      overflow: "hidden",
+      background: "linear-gradient(135deg, var(--accent-cyan) -28%, var(--accent) 42%, var(--accent-violet) 120%)",
+      borderColor: "color-mix(in srgb, white 24%, var(--accent))",
+      color: "white",
+      boxShadow: "var(--glow-primary), inset 0 1px 0 color-mix(in srgb, white 46%, transparent)",
+      textShadow: "0 1px 6px color-mix(in srgb, var(--text-primary) 20%, transparent)",
       selectors: {
         "&:hover:not(:disabled)": {
-          background: "color-mix(in srgb, var(--accent) 88%, var(--text-primary))",
-          borderColor: "color-mix(in srgb, var(--accent) 88%, var(--text-primary))",
+          transform: "translateY(-1px)",
+          filter: "saturate(1.08) brightness(1.035)",
+          boxShadow:
+            "0 16px 38px color-mix(in srgb, var(--accent) 34%, transparent), 0 5px 18px color-mix(in srgb, var(--accent-violet) 22%, transparent), inset 0 1px 0 color-mix(in srgb, white 58%, transparent)",
         },
-        "&:active:not(:disabled)": {
-          background: "color-mix(in srgb, var(--accent) 78%, var(--text-primary))",
-        },
+        "&:active:not(:disabled)": { transform: "translateY(1px) scale(0.995)", filter: "saturate(1.02)" },
+      },
+      "@media": {
+        "(forced-colors: active)": { background: "Highlight", color: "HighlightText", borderColor: "Highlight" },
+        "(prefers-reduced-motion: reduce)": { selectors: { "&:hover:not(:disabled)": { transform: "none" } } },
       },
     },
   ],
 
-  /** The default. Reads as a control without competing with the primary action. */
   secondary: [
     base,
     {
-      background: "var(--glass-surface-strong)",
+      background:
+        "linear-gradient(145deg, color-mix(in srgb, white 48%, transparent), transparent 52%), var(--glass-surface-strong)",
       borderColor: "var(--glass-border)",
       color: "var(--text-primary)",
+      boxShadow: "inset 0 1px 0 var(--glass-highlight), 0 5px 16px color-mix(in srgb, var(--accent) 6%, transparent)",
       selectors: {
         "&:hover:not(:disabled)": {
-          background: "var(--surface)",
+          transform: "translateY(-1px)",
+          background: "color-mix(in srgb, var(--glass-surface-strong) 84%, white)",
           borderColor: "color-mix(in srgb, var(--accent) 30%, var(--border-subtle))",
+          boxShadow: "inset 0 1px 0 var(--glass-highlight), 0 8px 22px color-mix(in srgb, var(--accent) 10%, transparent)",
         },
-        "&:active:not(:disabled)": { background: "var(--active-background)" },
+        "&:active:not(:disabled)": { transform: "translateY(1px)", background: "var(--active-background)" },
       },
+      "@media": { "(prefers-reduced-motion: reduce)": { selectors: { "&:hover:not(:disabled)": { transform: "none" } } } },
     },
   ],
 
-  /** No container until touched. For dense rows and toolbars, where borders would stack up. */
   ghost: [
     base,
     {
@@ -115,45 +94,47 @@ export const button = styleVariants({
       color: "var(--text-muted)",
       selectors: {
         "&:hover:not(:disabled)": {
-          background: "var(--active-background)",
+          background:
+            "linear-gradient(110deg, color-mix(in srgb, var(--accent-cyan) 9%, transparent), color-mix(in srgb, var(--accent-violet) 8%, transparent))",
+          borderColor: "color-mix(in srgb, var(--accent) 12%, transparent)",
           color: "var(--text-primary)",
         },
-        "&:active:not(:disabled)": {
-          background: "color-mix(in srgb, var(--accent) 12%, transparent)",
-        },
+        "&:active:not(:disabled)": { background: "color-mix(in srgb, var(--accent) 14%, transparent)" },
       },
     },
   ],
 
-  /**
-   * Destructive. Red is used because comprehension genuinely benefits — this is the one place the
-   * blue identity yields, and it yields only on the action itself, never on the surrounding surface.
-   */
   destructive: [
     base,
     {
-      background: "transparent",
-      borderColor: "color-mix(in srgb, var(--danger) 35%, transparent)",
+      background: "color-mix(in srgb, var(--danger) 3%, transparent)",
+      borderColor: "color-mix(in srgb, var(--danger) 30%, transparent)",
       color: "var(--danger)",
       selectors: {
         "&:hover:not(:disabled)": {
-          background: "color-mix(in srgb, var(--danger) 8%, transparent)",
+          background: "color-mix(in srgb, var(--danger) 9%, transparent)",
           borderColor: "var(--danger)",
+          boxShadow: "0 7px 20px color-mix(in srgb, var(--danger) 10%, transparent)",
         },
       },
     },
   ],
 });
 
-/**
- * Icon-only. Square, so the optical centre of a 20px glyph sits in the middle of the target, and
- * never smaller than 32px regardless of how small the glyph looks — ADR 0045 §7 forbids a premium
- * style that depends on a 10px hit area.
- */
 export const iconButton = style([
   base,
-  { minWidth: 32, width: 32, height: 32, padding: 0, borderRadius: "var(--radius-control)" },
+  {
+    minWidth: 32,
+    width: 32,
+    height: 32,
+    padding: 0,
+    borderRadius: "var(--radius-control)",
+  },
 ]);
 
-/** A denser button for inline row actions, where 32px would dominate a 21px line. */
-export const compact = style({ minHeight: 26, padding: "2px 9px", fontSize: 12.5, borderRadius: "var(--radius-small)" });
+export const compact = style({
+  minHeight: 26,
+  padding: "2px 9px",
+  fontSize: 12.5,
+  borderRadius: "var(--radius-small)",
+});

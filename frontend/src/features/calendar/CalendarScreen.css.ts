@@ -3,109 +3,93 @@ import { space } from "../../app/layout/tokens.css";
 import { glassStrong, progressBar } from "../../design-system/visual/atmosphere.css";
 import { duration, easing } from "../../design-system/visual/motion.css";
 
-/*
- * Calendar, composed for Visual Baseline v2.
- *
- * Calendar owns no page width. It is a WIDE_WORKSPACE and consumes the shared `PageFrame`, which is
- * also the query container its cells reflow against (ADR 0044).
- *
- * The design decision that shapes this file: **the grid is drawn with hairlines, not with cards.**
- *
- * The previous version rendered the grid as a 1 px `gap` over a `--border-subtle` background, so
- * every one of 35–42 cells became a separate filled tile floating on a coloured sheet. That reads
- * as a card per day, which is exactly what the v2 direction rules out, and it made the whole month
- * a field of boxes before a single date was read.
- *
- * Here the grid is one continuous surface and the separators are real 1 px hairlines drawn on the
- * cells themselves — outer border on the container, inner borders on cells, no double lines. What
- * carries the composition is the date typography, the whitespace inside each cell, and a single
- * blue for today and for selection.
- */
-
-export const eyebrow = style({ margin: 0, color: "var(--text-muted)", fontSize: "0.8125rem" });
-
-export const actions = style({
-  display: "flex",
-  flexWrap: "wrap",
-  alignItems: "center",
-  gap: space.control,
-  minInlineSize: 0,
+export const eyebrow = style({
+  margin: 0,
+  color: "var(--accent)",
+  fontSize: "0.8125rem",
+  fontWeight: 650,
+  letterSpacing: "0.045em",
+  textTransform: "uppercase",
 });
 
-/** The month label between the arrows. Tabular so the header does not shift month to month. */
+export const actions = style({ display: "flex", flexWrap: "wrap", alignItems: "center", gap: space.control, minInlineSize: 0 });
+
 export const monthLabel = style({
-  minInlineSize: "9.5rem",
+  minInlineSize: "10.5rem",
   textAlign: "center",
-  fontSize: "0.9375rem",
-  fontWeight: 600,
-  letterSpacing: "-0.01em",
+  fontSize: "1rem",
+  fontWeight: 650,
+  letterSpacing: "-0.012em",
   fontVariantNumeric: "tabular-nums",
+  color: "var(--text-primary)",
 });
 
-/** Low-chrome: a hairline and a hover tone, no fill at rest. */
 export const actionButton = style({
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
-  minHeight: 32,
-  minWidth: 32,
-  paddingInline: 10,
-  border: "1px solid var(--border-subtle)",
+  minHeight: 34,
+  minWidth: 34,
+  paddingInline: 11,
+  border: "1px solid var(--glass-border)",
   borderRadius: "var(--radius-control)",
-  background: "transparent",
+  background: "linear-gradient(145deg, color-mix(in srgb, white 46%, transparent), transparent 52%), var(--glass-surface-strong)",
   color: "var(--text-muted)",
   fontSize: "0.8125rem",
   cursor: "pointer",
-  transition: `background-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}`,
+  boxShadow: "var(--glow-compact)",
+  transition: `background-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}, border-color ${duration.state} ${easing.standard}, box-shadow ${duration.state} ${easing.standard}, transform ${duration.state} ${easing.standard}`,
   selectors: {
-    "&:hover": { background: "var(--icon-background)", color: "var(--text-primary)" },
+    "&:hover": {
+      color: "var(--text-primary)",
+      borderColor: "color-mix(in srgb, var(--accent) 30%, var(--border-subtle))",
+      background: "color-mix(in srgb, var(--glass-surface-strong) 88%, white)",
+      boxShadow: "var(--glow-hover)",
+      transform: "translateY(-1px)",
+    },
     "&:focus-visible": { outline: "2px solid var(--focus-ring)", outlineOffset: 2 },
   },
+  "@media": { "(prefers-reduced-motion: reduce)": { selectors: { "&:hover": { transform: "none" } } } },
 });
 
-/**
- * One continuous surface with a single outer hairline and a 12 px radius, matching the Today row
- * group. `overflow: hidden` lets the corner cells clip to the radius so no cell fill escapes it.
- */
 export const grid = style([
   glassStrong,
-  { display: "grid", borderRadius: "var(--radius-surface)", overflow: "hidden", minInlineSize: 0 },
+  {
+    display: "grid",
+    borderRadius: "var(--radius-surface)",
+    overflow: "hidden",
+    minInlineSize: 0,
+    borderColor: "color-mix(in srgb, var(--accent) 22%, var(--border-subtle))",
+    boxShadow: "var(--glow-hero)",
+  },
 ]);
 
 export const weekdays = style({
   display: "grid",
   gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
-  borderBottom: "1px solid var(--border-subtle)",
+  borderBottom: "1px solid color-mix(in srgb, var(--accent) 16%, var(--border-subtle))",
+  background: "linear-gradient(90deg, color-mix(in srgb, var(--accent-cyan) 7%, transparent), color-mix(in srgb, var(--accent-violet) 6%, transparent))",
   color: "var(--text-muted)",
   textAlign: "center",
-  paddingBlock: 10,
+  paddingBlock: 11,
   fontSize: "0.75rem",
-  fontWeight: 500,
-  letterSpacing: "0.02em",
+  fontWeight: 650,
+  letterSpacing: "0.07em",
+  textTransform: "uppercase",
 });
 
 export const week = style({ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))" });
 
-/*
- * Separators live on the cell, so there is exactly one line between neighbours and none on the
- * outer edge where the container already draws one.
- */
 export const cell = style({
   minWidth: 0,
   minHeight: 96,
-  borderInlineStart: "1px solid var(--border-subtle)",
+  borderInlineStart: "1px solid color-mix(in srgb, var(--accent) 10%, var(--border-subtle))",
   selectors: {
     "&:first-child": { borderInlineStart: 0 },
-    [`${week}:not(:last-child) &`]: { borderBottom: "1px solid var(--border-subtle)" },
+    [`${week}:not(:last-child) &`]: { borderBottom: "1px solid color-mix(in srgb, var(--accent) 10%, var(--border-subtle))" },
   },
 });
 
-/**
- * Today and selection are deliberately different marks. Today uses a compact outlined date box;
- * selection uses the pale full-cell field and structural edge. Neither depends on colour alone —
- * today also carries `aria-current="date"` and selection `aria-selected`, and the two remain
- * distinguishable in forced colors because one is a bounded label and the other is a field.
- */
 export const cellButton = style({
   width: "100%",
   height: "100%",
@@ -113,111 +97,66 @@ export const cellButton = style({
   display: "flex",
   flexDirection: "column",
   alignItems: "stretch",
-  gap: 7,
-  padding: "9px 10px",
+  gap: 8,
+  padding: "10px 11px",
   border: 0,
   background: "transparent",
   color: "var(--text-primary)",
   textAlign: "left",
   cursor: "pointer",
-  transition: `background-color ${duration.state} ${easing.standard}`,
+  transition: `background-color ${duration.state} ${easing.standard}, box-shadow ${duration.state} ${easing.standard}, filter ${duration.state} ${easing.standard}`,
   selectors: {
-    // Days outside the shown month recede by tone, not by opacity: opacity dims the hairlines too.
     "&[data-outside]": { color: "var(--text-muted)" },
-    "&:hover": { background: "var(--icon-background)" },
-    "[aria-selected=true] &": { background: "var(--icon-background)", boxShadow: "inset 3px 0 0 var(--accent)" },
+    "&:hover": {
+      background: "linear-gradient(145deg, color-mix(in srgb, var(--accent-cyan) 10%, transparent), color-mix(in srgb, var(--accent-violet) 7%, transparent))",
+      boxShadow: "inset 0 0 28px color-mix(in srgb, var(--accent) 5%, transparent)",
+    },
+    "[aria-selected=true] &": {
+      background: "linear-gradient(145deg, color-mix(in srgb, var(--accent-cyan) 15%, var(--icon-background)), color-mix(in srgb, var(--accent-violet) 14%, var(--icon-background)))",
+      boxShadow: "inset 3px 0 0 var(--accent), var(--glow-selected)",
+    },
     "&:focus-visible": { position: "relative", outline: "2px solid var(--focus-ring)", outlineOffset: -2 },
   },
-  "@media": {
-    "(forced-colors: active)": {
-      selectors: { "[aria-selected=true] &": { borderInlineStart: "3px solid Highlight" } },
-    },
-  },
+  "@media": { "(forced-colors: active)": { selectors: { "[aria-selected=true] &": { borderInlineStart: "3px solid Highlight", boxShadow: "none", background: "Canvas" } } } },
 });
 
 export const dayNumber = style({
   display: "grid",
   placeItems: "center",
-  inlineSize: 27,
-  blockSize: 24,
+  inlineSize: 29,
+  blockSize: 27,
   border: "1px solid transparent",
   borderRadius: "var(--radius-small)",
   fontSize: "0.8125rem",
-  fontWeight: 600,
+  fontWeight: 650,
   fontVariantNumeric: "tabular-nums",
+  transition: `box-shadow ${duration.state} ${easing.standard}, background-color ${duration.state} ${easing.standard}`,
   selectors: {
     [`${cellButton}[aria-current=date] &`]: {
-      borderColor: "var(--accent)",
-      background: "color-mix(in srgb, var(--accent) 8%, var(--surface-raised))",
-      color: "var(--accent)",
-      boxShadow: "inset 0 -2px 0 var(--accent)",
+      borderColor: "color-mix(in srgb, white 24%, var(--accent))",
+      background: "linear-gradient(135deg, var(--accent-cyan) -35%, var(--accent) 48%, var(--accent-violet) 125%)",
+      color: "white",
+      boxShadow: "var(--glow-compact)",
     },
     [`${cellButton}[data-outside] &`]: { fontWeight: 400 },
   },
-  "@media": {
-    "(forced-colors: active)": {
-      selectors: {
-        [`${cellButton}[aria-current=date] &`]: {
-          borderColor: "Highlight",
-          background: "Canvas",
-          color: "CanvasText",
-          boxShadow: "inset 0 -2px 0 Highlight",
-        },
-      },
-    },
-  },
+  "@media": { "(forced-colors: active)": { selectors: { [`${cellButton}[aria-current=date] &`]: { borderColor: "Highlight", background: "Highlight", color: "HighlightText", boxShadow: "none" } } } },
 });
 
-export const summary = style({
-  display: "grid",
-  gap: 5,
-  fontSize: "0.6875rem",
-  lineHeight: 1.35,
-  color: "var(--text-muted)",
-});
-
+export const summary = style({ display: "grid", gap: 5, fontSize: "0.6875rem", lineHeight: 1.35, color: "var(--text-muted)" });
 export const icons = style({ display: "flex", gap: 4, alignItems: "center" });
-
-/*
- * Period load stays a real three-part reading of morning / afternoon / evening — it is factual
- * schedule information, not decoration, and the accessible summary depends on all three. What
- * changes is its weight: 5 px bars in the neutral track with the accent fill, so a dense month
- * reads as texture rather than as colour.
- */
-/*
- * Morning / afternoon / evening load. At 3px on a 3px gap these read as three faint scratches
- * rather than as a day's shape; rendered across a full month they were the least legible thing on
- * the surface. 5px with a wider gap makes the three periods separable at a glance without turning
- * a calendar cell into a chart.
- */
 export const loads = style({ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 4 });
-
-/**
- * The load bars are `<progress>` elements and must be styled through their shadow parts.
- *
- * `accent-color` alone was not enough: adding `border`/`border-radius` moves Chromium off the
- * native control path, and the fallback rendering ignored the accent and painted the default
- * **green** — every day in the month showed a green bar, which the v2 direction bans outright. It
- * was invisible in the CSS and obvious the moment the month was rendered.
- *
- * `appearance: none` plus explicit track and value backgrounds removes the ambiguity: the track is
- * the neutral fill, the value is the accent, and no user-agent colour can leak through.
- */
-export const load = style([progressBar, { width: "100%", height: 5 }]);
-
-/**
- * Unevaluated past work keeps a distinct semantic colour rather than being folded into the blue
- * accent. It is a warning, and the v2 direction explicitly preserves warning and error semantics
- * instead of forcing every state into one hue.
- */
+export const load = style([progressBar, { width: "100%", height: 6 }]);
 export const missed = style({
   display: "grid",
   placeItems: "center",
-  width: 15,
-  height: 15,
+  width: 16,
+  height: 16,
   borderRadius: "var(--radius-full)",
-  background: "var(--icon-background)",
+  background: "color-mix(in srgb, var(--danger) 9%, white)",
+  border: "1px solid color-mix(in srgb, var(--danger) 24%, transparent)",
   color: "var(--danger)",
   fontSize: "0.625rem",
-  fontWeight: 700,
+  fontWeight: 750,
+  boxShadow: "var(--glow-danger)",
 });
