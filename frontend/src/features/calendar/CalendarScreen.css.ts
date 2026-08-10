@@ -144,7 +144,7 @@ export const summary = style({
   fontSize: "0.6875rem",
   lineHeight: 1.25,
   selectors: {
-    [`${cellButton}[aria-selected=true] &`]: { color: "#D7D7D7" },
+    "[aria-selected=true] &": { color: "#D7D7D7" },
   },
 });
 
