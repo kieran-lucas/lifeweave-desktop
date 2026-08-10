@@ -9,28 +9,30 @@ import { gutter, space } from "./layout/tokens.css";
 
 export const appRoot = style({
   display: "grid",
-  gridTemplateColumns: "252px minmax(0, 1fr)",
+  gridTemplateColumns: "246px minmax(0, 1fr)",
   inlineSize: "100%",
   blockSize: "100%",
   overflow: "hidden",
   position: "relative",
   isolation: "isolate",
-  background: "var(--app-background)",
+  background:
+    "radial-gradient(circle at 82% -8%, rgba(96, 142, 255, 0.22), transparent 35%), radial-gradient(circle at 18% 110%, rgba(154, 116, 255, 0.12), transparent 32%), var(--app-background)",
   selectors: { "&[data-sidebar-mode=collapsed]": { gridTemplateColumns: "68px minmax(0, 1fr)" } },
 });
 
-/** The shell is one hard black plane against the permanent white workspace. */
+/** A translucent navigation rail lets the active visual world breathe through the shell. */
 export const sidebar = style({
   display: "flex",
   flexDirection: "column",
   minWidth: 0,
-  padding: "26px 15px 18px",
+  padding: "24px 14px 17px",
   position: "relative",
   zIndex: 2,
-  borderRight: "1px solid var(--text-primary)",
-  backgroundColor: "var(--text-primary)",
-  boxShadow: "none",
-  "@media": { "(forced-colors: active)": { background: "Canvas", borderRight: "1px solid CanvasText" } },
+  borderRight: "1px solid rgba(178, 198, 228, 0.72)",
+  background: "linear-gradient(180deg, rgba(251, 253, 255, 0.94), rgba(240, 246, 255, 0.90))",
+  backdropFilter: "blur(22px) saturate(1.12)",
+  boxShadow: "8px 0 34px rgba(52, 77, 128, 0.07), inset -1px 0 0 rgba(255, 255, 255, 0.66)",
+  "@media": { "(forced-colors: active)": { background: "Canvas", borderRight: "1px solid CanvasText", boxShadow: "none" } },
 });
 
 export const brand = style({
@@ -39,29 +41,29 @@ export const brand = style({
   gap: 12,
   minHeight: 42,
   padding: "0 7px",
-  marginBottom: 28,
+  marginBottom: 30,
   ...text.objectTitle,
-  color: "var(--app-background)",
-  letterSpacing: "-0.018em",
+  color: "var(--text-primary)",
+  letterSpacing: "-0.024em",
 });
 
 export const brandMark = style({
   display: "grid",
   placeItems: "center",
-  width: 38,
-  height: 38,
+  width: 39,
+  height: 39,
   flexShrink: 0,
-  borderRadius: "var(--radius-control)",
-  color: "var(--text-primary)",
-  backgroundColor: "var(--app-background)",
-  border: "1px solid var(--app-background)",
-  boxShadow: "none",
+  borderRadius: "13px",
+  color: "#FFFFFF",
+  background: "linear-gradient(145deg, #5E7DFF 0%, #6A73F6 48%, #8E72F4 100%)",
+  border: "1px solid rgba(255, 255, 255, 0.82)",
+  boxShadow: "0 10px 25px rgba(78, 111, 255, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.46)",
 });
 
 export const brandGlyph = style({
   fill: "none",
   stroke: "currentColor",
-  strokeWidth: 2.15,
+  strokeWidth: 2.1,
   strokeLinecap: "round",
   strokeLinejoin: "round",
 });
@@ -74,31 +76,31 @@ export const navButton = style([
     display: "flex",
     alignItems: "center",
     gap: 12,
-    minHeight: 44,
+    minHeight: 43,
     width: "100%",
     padding: "8px 11px",
     border: "1px solid transparent",
-    borderRadius: "var(--radius-control)",
+    borderRadius: "12px",
     background: "transparent",
-    color: "var(--app-background)",
+    color: "var(--text-muted)",
     ...text.navigation,
     textAlign: "left",
     cursor: "pointer",
-    transition: `background-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}, border-color ${duration.state} ${easing.standard}, transform ${duration.press} ${easing.standard}`,
+    transition: `background-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}, border-color ${duration.state} ${easing.standard}, transform ${duration.press} ${easing.standard}, box-shadow ${duration.state} ${easing.standard}`,
     selectors: {
       "&[aria-current=page]": {
-        color: "var(--text-primary)",
+        color: "var(--accent-muted)",
         fontWeight: 700,
-        borderColor: "var(--app-background)",
-        backgroundColor: "var(--app-background)",
-        boxShadow: "none",
+        borderColor: "rgba(132, 158, 230, 0.34)",
+        background: "linear-gradient(110deg, rgba(232, 239, 255, 0.96), rgba(247, 249, 255, 0.90))",
+        boxShadow: "0 8px 20px rgba(73, 102, 192, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.86)",
       },
       "&:hover:not([aria-current=page])": {
-        color: "var(--app-background)",
-        borderColor: "var(--text-secondary)",
-        backgroundColor: "var(--text-secondary)",
+        color: "var(--text-primary)",
+        borderColor: "rgba(193, 208, 230, 0.65)",
+        backgroundColor: "rgba(255, 255, 255, 0.66)",
       },
-      "&:active": { transform: "translateY(1px)" },
+      "&:active": { transform: "translateY(1px) scale(0.995)" },
     },
     "@media": {
       "(prefers-reduced-motion: reduce)": { transition: "none", selectors: { "&:active": { transform: "none" } } },
@@ -117,7 +119,7 @@ globalStyle(`${appRoot}[data-sidebar-mode=collapsed] .${brand}`, { fontSize: 0, 
 export const divider = style({
   height: 1,
   margin: "13px 10px",
-  background: "var(--text-secondary)",
+  background: "linear-gradient(90deg, transparent, rgba(143, 163, 196, 0.52), transparent)",
 });
 
 export const collapseButton = style([
@@ -129,15 +131,15 @@ export const collapseButton = style([
     alignItems: "center",
     minHeight: 42,
     padding: "9px 11px",
-    border: "1px solid var(--app-background)",
-    borderRadius: "var(--radius-control)",
+    border: "1px solid transparent",
+    borderRadius: "12px",
     background: "transparent",
-    color: "var(--app-background)",
+    color: "var(--text-muted)",
     ...text.navigation,
     cursor: "pointer",
     transition: `background-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}, transform ${duration.press} ${easing.standard}`,
     selectors: {
-      "&:hover": { color: "var(--text-primary)", backgroundColor: "var(--app-background)" },
+      "&:hover": { color: "var(--text-primary)", backgroundColor: "rgba(255, 255, 255, 0.72)" },
       "&:active": { transform: "translateY(1px)" },
     },
     "@media": { "(prefers-reduced-motion: reduce)": { selectors: { "&:active": { transform: "none" } } } },
@@ -145,8 +147,8 @@ export const collapseButton = style([
 ]);
 
 const routeIn = keyframes({
-  from: { opacity: 0.78 },
-  to: { opacity: 1 },
+  from: { opacity: 0.58, transform: "translateY(5px)", filter: "blur(2px)" },
+  to: { opacity: 1, transform: "translateY(0)", filter: "blur(0)" },
 });
 
 export const viewport = style({
@@ -157,12 +159,15 @@ export const viewport = style({
   overflow: "auto",
   scrollbarGutter: "stable both-edges",
   padding: gutter,
-  background: "var(--app-background)",
+  background:
+    "radial-gradient(circle at 90% 2%, rgba(126, 169, 255, 0.13), transparent 30%), radial-gradient(circle at 8% 96%, rgba(173, 136, 255, 0.075), transparent 28%), transparent",
 });
 
 globalStyle(`${viewport} > :not(p)`, {
-  animation: `${routeIn} ${duration.route} ${easing.standard} both`,
+  animation: `${routeIn} 300ms cubic-bezier(.2,.8,.2,1) both`,
 });
+
+globalStyle(`@media (prefers-reduced-motion: reduce)`, {});
 
 export const heading = style({ ...text.pageTitle, margin: 0, color: "var(--text-primary)" });
 export const lede = style({ ...text.body, margin: 0, color: "var(--text-muted)", maxInlineSize: "72ch" });
@@ -203,10 +208,10 @@ export const settingsToolButton = style([
     color: "var(--text-primary)",
     textAlign: "left",
     cursor: "pointer",
-    boxShadow: "none",
+    boxShadow: "var(--glow-crystal)",
     transition: `border-color ${duration.state} ${easing.standard}, transform ${duration.press} ${easing.standard}`,
     selectors: {
-      "&:hover": { borderColor: "var(--text-primary)", transform: "translateY(-1px)" },
+      "&:hover": { borderColor: "var(--accent)", transform: "translateY(-1px)" },
       "&:active": { transform: "translateY(1px)" },
     },
     "@media": {
