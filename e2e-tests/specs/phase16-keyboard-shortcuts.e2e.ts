@@ -3,16 +3,10 @@ import { $, browser, expect } from "@wdio/globals";
 /**
  * Phase 16 — Global keyboard shortcuts and shortcut help.
  *
- * Single phase with no restart companion: Task 45 persists nothing, so there is no state for a
- * restart to preserve.
- *
- * This phase asserts the Product Owner's locked map literally rather than reading the frontend
- * registry. That is deliberate: the native phase is the outermost acceptance oracle, and it must
- * fail if the registry stops agreeing with the decision. Inside the frontend, the help dialog and
- * every test read the one registry, exactly as ADR 0039 requires.
+ * Analytics and Search are now owned by Settings. Their historic Ctrl+3 and Ctrl+K accelerators
+ * remain intact; this phase proves the new ownership without weakening keyboard behavior.
  */
 
-// WebDriver keyboard code points, written as escapes so the source stays readable.
 const CONTROL = "\uE009";
 const ESCAPE = "\uE00C";
 
@@ -37,25 +31,24 @@ const helpRows = () =>
   });
 
 describe("Global keyboard shortcuts", () => {
-  it("drives destinations, Search, and shortcut help from the keyboard alone", async () => {
+  it("drives destinations and Settings-owned tools from the keyboard alone", async () => {
     await browser.url("http://tauri.localhost");
     await expect($("h1=Today")).toBeDisplayed();
 
     await chord("3");
     await expect($("h1=Analytics")).toBeDisplayed();
+    await expect($("button[aria-current='page']")).toHaveText("Settings");
 
     await chord("5");
     await expect($("h1=Life System")).toBeDisplayed();
 
-    // Ctrl+K reaches the Search dialog the sidebar control already opens.
+    // Ctrl+K moves into Settings and opens the Settings-owned Search tool.
     await chord("k");
     await expect($("div[role='dialog'][aria-label='Search']")).toBeDisplayed();
     await $("button[aria-label='Close search']").click();
     await expect($("div[role='dialog'][aria-label='Search']")).not.toExist();
-
-    // Search hands focus back to its invoker, which is therefore the element the help dialog must
-    // restore after a shortcut-opened session.
-    await expect(await activeLabel()).toBe("Search (Ctrl+K)");
+    await expect($("h1=Settings")).toBeDisplayed();
+    expect(await activeLabel()).toContain("Search");
 
     await chord("/");
     await expect($("h2=Keyboard shortcuts")).toBeDisplayed();
@@ -76,13 +69,12 @@ describe("Global keyboard shortcuts", () => {
 
     await browser.keys(ESCAPE);
     await expect($("h2=Keyboard shortcuts")).not.toExist();
-    await expect($("h1=Life System")).toBeDisplayed();
-    await expect(await activeLabel()).toBe("Search (Ctrl+K)");
+    await expect($("h1=Settings")).toBeDisplayed();
+    expect(await activeLabel()).toContain("Search");
 
     await chord("6");
     await expect($("h1=Settings")).toBeDisplayed();
 
-    // The Settings trigger opens the same dialog and gets focus back when it closes.
     await $("button=Keyboard shortcuts").click();
     await expect($("h2=Keyboard shortcuts")).toBeDisplayed();
     expect(await helpRows()).toHaveLength(8);
@@ -100,12 +92,9 @@ describe("Global keyboard shortcuts", () => {
     await field.setValue("Phase16");
     await expect(await activeLabel()).toBe("New tag name");
 
-    // Ctrl+K is the regression that matters: the global layer must not consume it from a text
-    // surface, and must not even preventDefault while declining to act.
     await chord("k");
     await expect($("div[role='dialog'][aria-label='Search']")).not.toExist();
 
-    // A destination chord must not navigate away from what the user is typing either.
     await chord("3");
     await expect($("h1=Settings")).toBeDisplayed();
     await expect($("h1=Analytics")).not.toExist();
