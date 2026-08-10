@@ -1,59 +1,63 @@
 # 00 — Product Owner Execution Authorization
 
-**Status:** APPROVED — POST-EXECUTION ART-DIRECTION OVERRIDE  
-**Date:** 2026-08-10  
+**Status:** APPROVED — LATEST VISUAL OVERRIDE  
+**Date:** 2026-08-11  
 **Planning baseline:** `a1078c1f91c251aaa7a453ef1e8a5108551c852d`
 
-This file records explicit Product Owner authority for Lifeweave visual work. The latest decision in this file supersedes earlier visual-direction language wherever the two conflict.
+This file records explicit Product Owner authority for Lifeweave visual work. The latest decision in this file supersedes every earlier aesthetic direction where they conflict.
 
 ## Current authorized objective
 
-The Product Owner rejected the restrained Quiet Precision Atlas result, the subsequent glass-heavy interpretation, and the later effect-heavy Matte Anime Painted Atlas interpretation as aesthetically insufficient.
+The Product Owner requires **Lifeweave — Monochrome Matte**: a premium Windows productivity experience rendered in **black, white and neutral gray only**.
 
-The current target is **Lifeweave — Flat Matte Monochrome**: a premium Windows productivity experience built from pure white work surfaces, one solid blue identity plane, subtle dry grain, crisp neutral rules and deliberate blue ink states.
+This explicitly supersedes the earlier blue/white Flat Matte direction as well as prior glass, atmospheric and multicolor experiments.
 
 The Product Owner explicitly requires:
-- no glass/acrylic/frosted appearance;
-- no translucent persistent material;
-- no decorative background atmosphere;
-- no stars, petals, orbit/weave lines, color auras or wallpaper SVG;
-- no blue→white wash or pastel blue-white tint blending;
-- no multicolor blue/indigo/violet/cyan/rose identity system;
-- no decorative gradients or glow/bloom;
-- white regions remain visibly white;
-- blue regions remain visibly solid blue;
-- tactile/matte character comes from extremely fine shared grain, not visual effects.
+- no chromatic accent color, including blue;
+- no red/green/orange semantic presentation in normal rendering; meaning must also be carried by text, icon, geometry and contrast;
+- no glass, acrylic, frosted or translucent persistent material;
+- no decorative background atmosphere, stars, petals, orbit lines, auras or wallpaper art;
+- no colored or monochrome decorative gradients used as spectacle;
+- no glow/bloom;
+- white regions remain genuinely white/neutral paper;
+- dark identity regions remain genuinely black/deep neutral;
+- tactile character comes from extremely fine shared matte grain and disciplined physical edges;
+- a substantially richer icon vocabulary, while keeping one coherent monochrome icon family;
+- the desktop application icon must use the same black/white identity and remain legible at small Windows icon sizes.
 
-The desired first impression is crisp, tactile, controlled and expensive rather than luminous, atmospheric or decorative.
+The desired first impression is **sharp, tactile, authored and expensive**. The product should create visual impact through proportion, typography, contrast, icon quality, spacing and coherent inversion—not color or effects.
 
-This is an art-direction override only. Preserve real product capabilities, domain contracts, local-first behavior, data safety, keyboard semantics, geometry authority and governed performance limits.
+This remains a frontend art-direction override only. Preserve real product capabilities, domain contracts, local-first behavior, data safety, keyboard semantics, geometry authority and governed performance limits.
 
 ## Superseded visual constraints
 
 Earlier instructions are superseded wherever they authorize or require:
+- blue as identity/accent;
+- blue focus, selection, completion or progress presentation;
+- semantic red/green/orange presentation where monochrome structure can carry the same status;
 - global abstract-anime atmosphere;
 - painted color washes;
 - blue→indigo→violet identity;
 - decorative stars/petals/orbits/sigils;
 - persistent glass/acrylic/frosted/translucent presentation;
 - glow as a state or identity mechanism;
-- blue-tinted whites or pastel selected fills.
+- tinted selected fills.
 
 The current authority instead requires:
-- pure white canvas and content sheets;
-- solid blue navigation/identity regions;
-- neutral gray borders and hover separation;
-- blue borders/underlines/inset rules for focus and selection;
-- one subtle shared grain recipe;
-- no decorative background layer.
+- pure white / near-black primary planes;
+- neutral gray only for hierarchy and state separation;
+- black/white inversion for strong selected/current/primary states;
+- one subtle shared matte grain recipe;
+- no decorative background layer;
+- varied but stylistically unified icons sourced through the existing governed icon system where practical.
 
-Old reference PNGs remain capability/composition evidence but are not an aesthetic ceiling.
+Old visual-reference PNGs remain capability/composition evidence only; their colors are not authoritative.
 
 `01_DESIGN_SYSTEM_AUTHORITY.md` contains the current visual language.
 
 ## Reversible frontend authority
 
-For reversible, in-scope frontend presentation and implementation decisions, the implementation agent is authorized to choose the strongest solution without routine Product Owner confirmation. This includes shared material/texture recipes, typography application, component presentation, motion choreography, deterministic fixtures and visual verification.
+For reversible, in-scope frontend presentation decisions, the implementation agent may choose the strongest solution without routine Product Owner confirmation. This includes shared material recipes, icon assignment, typography application, component presentation, bounded motion, deterministic fixtures and visual verification.
 
 Decision order:
 1. immutable product/domain/data-safety authority;
@@ -61,7 +65,7 @@ Decision order:
 3. current design-system authority;
 4. proven geometry/accessibility/performance constraints;
 5. real source capability;
-6. strongest reversible visual result.
+6. strongest reversible monochrome visual result.
 
 ## Safe fallback authority
 
@@ -79,7 +83,7 @@ Still forbidden without a separate Product Owner decision:
 - new product capabilities;
 - backend/domain/schema/database/migration changes;
 - hand-editing generated IPC bindings;
-- heavy dependencies merely for visual effect;
+- heavy dependencies merely for visual effect or icon variety;
 - `.github/workflows/` or workflow-seal changes;
 - deleting or mutating real user data;
 - raising locked performance ceilings;
@@ -89,6 +93,6 @@ Still forbidden without a separate Product Owner decision:
 
 ## Quality requirement
 
-Passing tests is necessary but not sufficient. Visual completion requires rendered Product Owner acceptance. A result that passes geometry/screenshot/regression gates but still looks glassy, washed-out, gradient-heavy, glow-heavy, multicolor, visually busy behind content or enterprise-default is **not endgame**.
+Passing tests is necessary but not sufficient. Visual completion requires rendered Product Owner acceptance. A result that is technically correct but still looks colored, glassy, washed-out, effect-heavy, icon-poor, inconsistent between deep workflows or enterprise-default is **not endgame**.
 
-Retain the strong foundation produced by prior work—layout, semantics, tests, component convergence and safety—and replace the aesthetic layer rather than rebuilding product logic.
+Retain the strong product foundation—layout, semantics, tests, component convergence and safety—and evolve the presentation layer rather than rebuilding product logic.
