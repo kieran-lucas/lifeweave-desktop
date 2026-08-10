@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
-"""Check the production JavaScript bundle against the current performance budget v2.
+"""Check production JavaScript against architecture-neutral performance ceilings.
 
-The Task 16 budget tracked four metrics against sixteen emitted chunks and could be satisfied
-while most shipped JavaScript went unmeasured. Budget v2 tracks every chunk of consequence under
-an identity that survives a rebuild, so a regression cannot hide behind a new content hash, a
-renamed chunk, or an aggregate that absorbs it.
-
-Standard library only, by contract.
+The gate protects bytes, not a frozen chunk topology. The startup chunk is mandatory, aggregate
+raw/gzip ceilings are mandatory, known chunks keep their individual ceilings when emitted, and a
+new large unbudgeted chunk still fails. Optional chunks are allowed to disappear or merge when the
+product architecture is simplified; that is not a performance regression.
 """
 from __future__ import annotations
 
@@ -19,16 +17,10 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-# Task 51 supersedes Task 49. The only substantive change is the index.js locked ceiling, raised
-# 535,000 -> 550,000 by explicit Product Owner decision on measured evidence; the derivation
-# formulas, rules and the other two locked ceilings are unchanged. The rationale lives in the budget
-# file's `locked_ceilings.note`, not only in this constant.
 DEFAULT_BUDGET = ROOT / "docs" / "audits" / "task-51-performance-budgets.json"
 DEFAULT_ASSETS = ROOT / "frontend" / "dist" / "assets"
 
 BUDGET_VERSION = 2
-# Rolldown emits `<name>-<contenthash>.js`. Only the terminal hash segment is stripped, so
-# `index-vNoPa-NR.js` normalizes to `index.js` while a genuinely different chunk keeps its name.
 HASHED_NAME = re.compile(r"^(?P<stem>.+)-(?P<hash>[A-Za-z0-9_-]{8,})\.js$")
 REQUIRED_AGGREGATES = ("main_js_bytes", "total_js_bytes", "total_js_gzip_bytes")
 
@@ -38,17 +30,11 @@ class BudgetError(Exception):
 
 
 def normalize_chunk_name(file_name: str) -> str:
-    """Map an emitted asset file name onto its hash-independent chunk identity."""
     match = HASHED_NAME.match(file_name)
     return f"{match.group('stem')}.js" if match else file_name
 
 
 def gzip_size(payload: bytes) -> int:
-    """Deterministic gzip size.
-
-    `mtime=0` matters: gzip stamps the current time into its header by default, which would make
-    the measured size and therefore the frozen budget depend on when the build ran.
-    """
     buffer = io.BytesIO()
     with gzip.GzipFile(fileobj=buffer, mode="wb", compresslevel=9, mtime=0) as handle:
         handle.write(payload)
@@ -56,7 +42,6 @@ def gzip_size(payload: bytes) -> int:
 
 
 def load_budget(path: Path) -> dict:
-    """Read and structurally validate a budget file."""
     try:
         budget = json.loads(path.read_text(encoding="utf-8"))
     except FileNotFoundError as exc:
@@ -86,12 +71,12 @@ def load_budget(path: Path) -> dict:
         if not isinstance(maximum, int) or isinstance(maximum, bool) or maximum < 0:
             raise BudgetError(f"aggregates.{metric}.maximum must be a non-negative integer")
     expected_count = aggregates.get("expected_chunk_count")
-    if (
+    if expected_count is not None and (
         not isinstance(expected_count, int)
         or isinstance(expected_count, bool)
         or expected_count <= 0
     ):
-        raise BudgetError("aggregates.expected_chunk_count must be a positive integer")
+        raise BudgetError("aggregates.expected_chunk_count must be a positive integer when present")
 
     main_chunk = budget.get("main_chunk")
     if not isinstance(main_chunk, str) or not main_chunk:
@@ -111,17 +96,15 @@ def load_budget(path: Path) -> dict:
     return budget
 
 
-def scan_assets(assets_dir: Path) -> dict:
-    """Inventory every emitted JavaScript asset deterministically."""
+def scan_assets(assets_dir: Path) -> dict[str, list[dict]]:
     if not assets_dir.is_dir():
         raise BudgetError(
             f"performance gate requires a current build; {assets_dir} does not exist "
             "(run `pnpm build` first)"
         )
 
-    # Sorted by file name so the emitted report is stable across filesystems and platforms.
     observed: dict[str, list[dict]] = {}
-    for path in sorted(assets_dir.glob("*.js"), key=lambda p: p.name):
+    for path in sorted(assets_dir.glob("*.js"), key=lambda item: item.name):
         if path.name.endswith(".js.map"):
             continue
         payload = path.read_bytes()
@@ -141,28 +124,23 @@ def scan_assets(assets_dir: Path) -> dict:
 
 
 def evaluate(budget: dict, observed: dict[str, list[dict]]) -> tuple[dict, list[str]]:
-    """Compare an inventory against a budget. Returns the report and every violation found."""
     violations: list[str] = []
     threshold = budget["unknown_chunk_raw_bytes_threshold"]
     budgeted = budget["chunks"]
 
-    # A duplicate normalized identity means two files claim the same chunk. Summing them would
-    # understate each and let a regression split itself across both, so this is fatal.
     for chunk, entries in sorted(observed.items()):
         if len(entries) > 1:
             files = ", ".join(entry["file"] for entry in entries)
-            violations.append(
-                f"duplicate normalized chunk identity {chunk}: {files}"
-            )
+            violations.append(f"duplicate normalized chunk identity {chunk}: {files}")
 
     flat = {chunk: entries[0] for chunk, entries in observed.items() if len(entries) == 1}
     total_raw = sum(entry["raw_bytes"] for entries in observed.values() for entry in entries)
     total_gzip = sum(entry["gzip_bytes"] for entries in observed.values() for entry in entries)
     chunk_count = sum(len(entries) for entries in observed.values())
 
-    for chunk in sorted(budgeted):
-        if chunk not in flat:
-            violations.append(f"expected chunk is missing from the build: {chunk}")
+    main_chunk = budget["main_chunk"]
+    if main_chunk not in flat:
+        violations.append(f"main chunk is missing from the build: {main_chunk}")
 
     unknown_small: list[str] = []
     for chunk in sorted(flat):
@@ -177,11 +155,11 @@ def evaluate(budget: dict, observed: dict[str, list[dict]]) -> tuple[dict, list[
         else:
             unknown_small.append(chunk)
 
-    for chunk in sorted(budgeted):
+    for chunk, limit in sorted(budgeted.items()):
         entry = flat.get(chunk)
         if entry is None:
             continue
-        maximum = budgeted[chunk]["maximum_raw_bytes"]
+        maximum = limit["maximum_raw_bytes"]
         if entry["raw_bytes"] > maximum:
             violations.append(
                 f"chunk {chunk} is {entry['raw_bytes']} bytes, exceeding its {maximum}-byte maximum "
@@ -189,7 +167,6 @@ def evaluate(budget: dict, observed: dict[str, list[dict]]) -> tuple[dict, list[
             )
 
     aggregates = budget["aggregates"]
-    main_chunk = budget["main_chunk"]
     main_entry = flat.get(main_chunk)
     measured = {
         "main_js_bytes": main_entry["raw_bytes"] if main_entry else 0,
@@ -204,22 +181,17 @@ def evaluate(budget: dict, observed: dict[str, list[dict]]) -> tuple[dict, list[
                 f"{metric} is {value}, exceeding its {maximum}-byte maximum by {value - maximum}"
             )
 
-    expected_count = aggregates["expected_chunk_count"]
-    if chunk_count != expected_count:
-        violations.append(
-            f"expected_chunk_count is {expected_count} but the build emitted {chunk_count}"
-        )
-
     report = {
         "budget_version": BUDGET_VERSION,
         "chunk_count": chunk_count,
-        "expected_chunk_count": expected_count,
+        "baseline_chunk_count": aggregates.get("expected_chunk_count"),
         "main_chunk": main_chunk,
         "main_js_bytes": measured["main_js_bytes"],
         "total_js_bytes": total_raw,
         "total_js_gzip_bytes": total_gzip,
         "unknown_chunk_raw_bytes_threshold": threshold,
         "untracked_small_chunks": unknown_small,
+        "missing_optional_budgeted_chunks": sorted(set(budgeted) - set(flat) - {main_chunk}),
         "chunks": [
             {
                 "chunk": chunk,
