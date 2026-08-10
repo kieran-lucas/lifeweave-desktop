@@ -9,7 +9,7 @@ export const tabList = style({
   alignItems: "center",
   gap: 6,
   minInlineSize: 0,
-  borderBlockEnd: "1px solid color-mix(in srgb, var(--accent) 13%, var(--border-subtle))",
+  borderBlockEnd: "1px solid var(--paint-edge)",
 });
 
 export const tab = style([
@@ -31,14 +31,14 @@ export const tab = style([
     selectors: {
       "&:hover:not(:disabled)": {
         color: "var(--text-primary)",
-        background: "color-mix(in srgb, var(--accent) 6%, transparent)",
+        backgroundColor: "var(--surface-hover)",
       },
       '&[aria-selected="true"], &[aria-pressed="true"]': {
         color: "var(--accent)",
         borderBlockEndColor: "var(--accent)",
-        background:
-          "linear-gradient(180deg, color-mix(in srgb, var(--accent-cyan) 10%, transparent), color-mix(in srgb, var(--accent-violet) 5%, transparent))",
-        boxShadow: "0 8px 18px color-mix(in srgb, var(--accent) 8%, transparent)",
+        backgroundColor: "var(--paint-selected)",
+        backgroundImage: "var(--paint-grain-fine)",
+        boxShadow: "inset 0 -1px 0 color-mix(in srgb, var(--accent) 22%, transparent)",
       },
       "&:disabled": { cursor: "not-allowed", opacity: 0.5 },
     },
@@ -62,11 +62,11 @@ export const segmented = style({
   alignItems: "center",
   gap: 3,
   padding: 4,
-  border: "1px solid var(--glass-border)",
+  border: "1px solid var(--paint-edge)",
   borderRadius: "var(--radius-control)",
-  background:
-    "linear-gradient(145deg, color-mix(in srgb, white 34%, transparent), transparent 56%), var(--glass-surface)",
-  boxShadow: "inset 0 1px 0 var(--glass-highlight)",
+  backgroundColor: "var(--paint-board)",
+  backgroundImage: "var(--paint-grain-fine)",
+  boxShadow: "var(--glow-compact)",
 });
 
 export const segmentedItem = style([
@@ -84,13 +84,13 @@ export const segmentedItem = style([
       `background-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}, ` +
       `border-color ${duration.state} ${easing.standard}, box-shadow ${duration.state} ${easing.standard}`,
     selectors: {
-      "&:hover:not(:disabled)": { color: "var(--text-primary)", background: "color-mix(in srgb, var(--accent) 6%, transparent)" },
+      "&:hover:not(:disabled)": { color: "var(--text-primary)", backgroundColor: "var(--surface-hover)" },
       '&[aria-selected="true"], &[aria-pressed="true"], &[aria-current="page"]': {
-        background:
-          "linear-gradient(135deg, color-mix(in srgb, var(--accent-cyan) 14%, white), color-mix(in srgb, var(--accent-violet) 12%, white))",
+        backgroundColor: "var(--paint-sheet-strong)",
+        backgroundImage: "var(--paint-grain-fine), var(--paint-wash-blue)",
         color: "var(--text-primary)",
-        borderColor: "color-mix(in srgb, var(--accent) 24%, var(--border-subtle))",
-        boxShadow: "0 7px 18px color-mix(in srgb, var(--accent) 10%, transparent), inset 0 1px 0 white",
+        borderColor: "var(--paint-edge-strong)",
+        boxShadow: "var(--glow-compact)",
       },
     },
     "@media": {
@@ -111,8 +111,8 @@ export const segmentedItem = style([
 export const selectedRow = style({
   selectors: {
     '&[aria-current="true"], &[aria-current="page"], &[data-selected="true"]': {
-      background:
-        "linear-gradient(105deg, color-mix(in srgb, var(--accent-cyan) 8%, var(--icon-background)), color-mix(in srgb, var(--accent-violet) 8%, var(--icon-background)))",
+      backgroundColor: "var(--paint-selected)",
+      backgroundImage: "var(--paint-grain-fine)",
       boxShadow: "inset 3px 0 0 var(--accent), var(--glow-selected)",
     },
   },

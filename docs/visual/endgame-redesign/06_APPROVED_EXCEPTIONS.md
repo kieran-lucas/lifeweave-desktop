@@ -7,7 +7,7 @@ Light is the aesthetic acceptance target. Dark receives only low-cost catastroph
 
 ## Narrative Visual Worlds
 Paper, Sakura, Aurora and Nocturne may own authored-content palette/pattern semantics inside Narrative.
-They are not permission to spread multi-color theming across operational chrome.
+They may push the shared painted material language further, but they are not permission for unrelated per-screen theme systems.
 
 ## Editorial font
 Literata is the one approved self-hosted editorial family. Do not add another display/editorial font.
@@ -28,10 +28,13 @@ Use the populated stress fixture. First fix composition. If density truly cannot
 Only standard/wide/reading shared types.
 Collapsed-sidebar asymmetry is not authority for a fourth width.
 
-## Glass
-Existing glass primitives may remain for genuine floating/transient layers.
-Persistent workspace/content consumers should migrate toward semantic solid/tonal surfaces when touched.
-Do not mechanically delete blur where it represents real depth.
+## Material compatibility aliases
+Legacy primitives/tokens whose names contain `glass` may remain temporarily because many consumers import them. Their **rendered appearance is no longer glass authority**: they must resolve to the shared matte painted material family until names can be migrated safely.
+
+Persistent surfaces must look opaque/matte. Backdrop blur is not an accepted default solution. A true transient overlay may use a tiny backdrop treatment only when readability requires it, but the visible surface itself remains opaque painted paper/board.
+
+## Texture
+Shared fine grain/fiber patterns are authorized. Do not introduce photographic textures, remote assets, noisy repeating wallpaper or feature-local unrelated grain.
 
 ## Optical exceptions
 A documented optical exception is allowed when literal token placement is visibly worse, but the exception must be local, evidence-based and not create a parallel styling system.
@@ -39,7 +42,7 @@ A documented optical exception is allowed when literal token placement is visibl
 ## Native controls
 Preserve native semantics when they are the actual product model.
 TimeWheel remains hour/minute selects.
-Do not replace native control semantics with decorative replicas just to match an image.
+Do not replace native control semantics with decorative replicas merely to match an image.
 
 ## Task deletion
 Preserve current product behavior. Do not invent a new confirmation workflow or change domain semantics solely for redesign. Any bundle-sensitive enhancement outside canonical capability needs separate authority.

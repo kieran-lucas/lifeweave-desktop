@@ -1,4 +1,4 @@
-/* Lifeweave — Celestial Anime Editorial global art/material layer. */
+/* Lifeweave — Matte Anime Painted Atlas global art/material layer. */
 :root {
   font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
   color: var(--text-primary);
@@ -10,69 +10,94 @@
   --layer-modal: 10;
   --layer-overlay: 40;
 
-  --accent-violet: oklch(58% 0.25 292);
-  --accent-cyan: oklch(70% 0.18 216);
-  --accent-rose: oklch(74% 0.14 342);
-  --accent-ice: oklch(91% 0.075 220);
+  /* Pigment spectrum: color is paint, not emitted neon. */
+  --accent-violet: oklch(56% 0.20 292);
+  --accent-cyan: oklch(68% 0.13 216);
+  --accent-rose: oklch(74% 0.10 342);
+  --accent-ice: oklch(91% 0.055 220);
 
-  --art-aura-primary: oklch(80% 0.17 242 / 0.58);
-  --art-aura-secondary: oklch(79% 0.16 292 / 0.47);
-  --art-aura-cool: oklch(84% 0.14 207 / 0.50);
-  --art-aura-rose: oklch(87% 0.10 342 / 0.34);
-  --art-line: oklch(69% 0.15 250 / 0.34);
-  --art-line-strong: oklch(62% 0.19 274 / 0.52);
-  --art-glint: oklch(76% 0.17 228 / 0.92);
-  --art-petal: oklch(82% 0.11 338 / 0.50);
+  /* Broad art washes. These are deliberately lower-chroma than interaction state. */
+  --art-aura-primary: oklch(83% 0.095 242 / 0.34);
+  --art-aura-secondary: oklch(84% 0.080 292 / 0.25);
+  --art-aura-cool: oklch(87% 0.065 207 / 0.27);
+  --art-aura-rose: oklch(89% 0.055 342 / 0.20);
+  --art-line: oklch(66% 0.085 250 / 0.34);
+  --art-line-strong: oklch(57% 0.13 274 / 0.46);
+  --art-glint: oklch(70% 0.12 228 / 0.72);
+  --art-petal: oklch(79% 0.08 338 / 0.44);
 
-  --glass-surface: color-mix(in srgb, var(--surface) 70%, transparent);
-  --glass-surface-strong: color-mix(in srgb, var(--surface-raised) 84%, transparent);
-  --glass-border: color-mix(in srgb, var(--accent) 19%, var(--border-subtle));
-  --glass-border-hot: color-mix(in srgb, var(--accent-violet) 34%, var(--border-subtle));
-  --glass-highlight: color-mix(in srgb, white 78%, transparent);
-  --glass-blur: 22px;
+  /*
+   * Shared matte material family.
+   * Grain is a tiny directional variation that reads like painted paper / flat wood at normal DPI.
+   * No image asset, no filter, no moving noise and no photographic texture.
+   */
+  --paint-canvas: var(--app-background);
+  --paint-board: color-mix(in srgb, var(--surface-subtle) 62%, var(--surface));
+  --paint-sheet: var(--surface);
+  --paint-sheet-strong: var(--surface-raised);
+  --paint-selected: var(--active-background);
+  --paint-edge: color-mix(in srgb, var(--text-primary) 11%, var(--border-subtle));
+  --paint-edge-strong: color-mix(in srgb, var(--accent) 30%, var(--border-strong));
+  --paint-fiber: color-mix(in srgb, var(--text-primary) 2.7%, transparent);
+  --paint-fiber-light: color-mix(in srgb, white 30%, transparent);
+  --paint-grain:
+    repeating-linear-gradient(92deg, transparent 0 7px, var(--paint-fiber) 7px 8px, transparent 8px 17px),
+    repeating-linear-gradient(4deg, transparent 0 13px, var(--paint-fiber-light) 13px 14px, transparent 14px 29px);
+  --paint-grain-fine:
+    repeating-linear-gradient(93deg, transparent 0 11px, color-mix(in srgb, var(--text-primary) 1.8%, transparent) 11px 12px, transparent 12px 25px),
+    repeating-linear-gradient(2deg, transparent 0 19px, color-mix(in srgb, white 22%, transparent) 19px 20px, transparent 20px 41px);
+  --paint-wash-blue: linear-gradient(135deg, color-mix(in srgb, var(--accent) 12%, transparent), transparent 48%);
+  --paint-wash-violet: linear-gradient(315deg, color-mix(in srgb, var(--accent-violet) 8%, transparent), transparent 52%);
+  --paint-wash-rose: radial-gradient(circle at 84% 10%, color-mix(in srgb, var(--accent-rose) 8%, transparent), transparent 31%);
 
-  /* Shared cinematic depth recipes. Feature CSS consumes these rather than inventing elevation. */
+  /*
+   * Compatibility aliases: many production consumers still import the historic `glass` primitives.
+   * Their visual output is intentionally opaque matte paint now. The names are migration debt only.
+   */
+  --glass-surface: var(--paint-sheet);
+  --glass-surface-strong: var(--paint-sheet-strong);
+  --glass-border: var(--paint-edge);
+  --glass-border-hot: var(--paint-edge-strong);
+  --glass-highlight: transparent;
+  --glass-blur: 0px;
+
+  /* Shared physical depth — compact and dry, never luminous acrylic bloom. */
   --glow-selected:
-    0 0 0 1px color-mix(in srgb, var(--accent) 28%, transparent),
-    0 10px 34px color-mix(in srgb, var(--accent) 17%, transparent),
-    0 3px 16px color-mix(in srgb, var(--accent-violet) 10%, transparent);
-  --glow-focus: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+    0 0 0 1px color-mix(in srgb, var(--accent) 24%, transparent),
+    0 7px 16px color-mix(in srgb, var(--text-primary) 7%, transparent);
+  --glow-focus: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
   --glow-primary:
-    0 12px 30px color-mix(in srgb, var(--accent) 28%, transparent),
-    0 3px 14px color-mix(in srgb, var(--accent-violet) 18%, transparent);
+    0 7px 15px color-mix(in srgb, var(--accent) 20%, transparent),
+    0 2px 5px color-mix(in srgb, var(--text-primary) 8%, transparent);
   --glow-crystal:
-    inset 0 1px 0 var(--glass-highlight),
-    0 16px 46px color-mix(in srgb, var(--accent) 8%, transparent);
+    0 7px 18px color-mix(in srgb, var(--text-primary) 7%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 48%, transparent);
   --glow-crystal-strong:
-    inset 0 1px 0 var(--glass-highlight),
-    0 22px 60px color-mix(in srgb, var(--accent) 9%, transparent),
-    0 7px 24px color-mix(in srgb, var(--accent-violet) 6%, transparent);
+    0 10px 24px color-mix(in srgb, var(--text-primary) 8%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 55%, transparent);
   --glow-hero:
-    0 28px 76px color-mix(in srgb, var(--accent) 12%, transparent),
-    0 10px 34px color-mix(in srgb, var(--accent-violet) 8%, transparent),
-    inset 0 1px 0 white;
+    0 14px 34px color-mix(in srgb, var(--text-primary) 9%, transparent),
+    0 3px 8px color-mix(in srgb, var(--accent) 7%, transparent);
   --glow-hover:
-    0 16px 40px color-mix(in srgb, var(--accent) 13%, transparent),
-    0 5px 18px color-mix(in srgb, var(--accent-violet) 8%, transparent),
-    inset 0 1px 0 white;
-  --glow-compact:
-    0 8px 22px color-mix(in srgb, var(--accent) 10%, transparent),
-    inset 0 1px 0 var(--glass-highlight);
-  --glow-dot: 0 0 14px color-mix(in srgb, var(--accent) 24%, transparent);
-  --glow-danger: 0 5px 16px color-mix(in srgb, var(--danger) 12%, transparent);
+    0 10px 24px color-mix(in srgb, var(--text-primary) 8%, transparent),
+    0 2px 6px color-mix(in srgb, var(--accent) 8%, transparent);
+  --glow-compact: 0 5px 12px color-mix(in srgb, var(--text-primary) 7%, transparent);
+  --glow-dot: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent);
+  --glow-danger: 0 4px 10px color-mix(in srgb, var(--danger) 9%, transparent);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --art-aura-primary: oklch(35% 0.14 242 / 0.56);
-    --art-aura-secondary: oklch(31% 0.13 292 / 0.48);
-    --art-aura-cool: oklch(33% 0.11 207 / 0.48);
-    --art-aura-rose: oklch(32% 0.10 342 / 0.28);
-    --art-line: oklch(55% 0.12 250 / 0.36);
-    --art-line-strong: oklch(63% 0.17 274 / 0.44);
-    --art-glint: oklch(82% 0.13 228 / 0.86);
-    --art-petal: oklch(68% 0.11 338 / 0.34);
-    --glass-highlight: color-mix(in srgb, white 12%, transparent);
+    --art-aura-primary: oklch(35% 0.09 242 / 0.36);
+    --art-aura-secondary: oklch(31% 0.08 292 / 0.30);
+    --art-aura-cool: oklch(33% 0.07 207 / 0.30);
+    --art-aura-rose: oklch(32% 0.06 342 / 0.20);
+    --art-line: oklch(55% 0.08 250 / 0.32);
+    --art-line-strong: oklch(63% 0.11 274 / 0.40);
+    --art-glint: oklch(78% 0.09 228 / 0.66);
+    --art-petal: oklch(66% 0.08 338 / 0.28);
+    --paint-fiber: color-mix(in srgb, white 2.2%, transparent);
+    --paint-fiber-light: color-mix(in srgb, white 4%, transparent);
   }
 }
 
@@ -81,12 +106,12 @@ html, body, #root { min-width: 0; height: 100%; margin: 0; }
 button, input, textarea, select { font: inherit; }
 
 ::selection {
-  background: color-mix(in srgb, var(--accent) 22%, var(--accent-ice));
+  background: color-mix(in srgb, var(--accent) 18%, var(--accent-ice));
   color: var(--text-primary);
 }
 
 :focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
-* { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--accent) 22%, var(--border-subtle)) transparent; }
+* { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--accent) 18%, var(--border-subtle)) transparent; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -115,6 +140,13 @@ button, input, textarea, select { font: inherit; }
     --danger: LinkText;
     --error: LinkText;
     --color-error: LinkText;
+    --paint-board: Canvas;
+    --paint-sheet: Canvas;
+    --paint-sheet-strong: Canvas;
+    --paint-edge: CanvasText;
+    --paint-edge-strong: CanvasText;
+    --paint-grain: none;
+    --paint-grain-fine: none;
     --glass-surface: Canvas;
     --glass-surface-strong: Canvas;
     --glass-border: CanvasText;

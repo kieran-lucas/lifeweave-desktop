@@ -1,34 +1,41 @@
-import { useId, useRef, type FormEvent, type ReactNode, type Ref } from "react";
+import { useId, useRef, type CSSProperties, type FormEvent, type ReactNode, type Ref } from "react";
 
 import * as decisionStyles from "../DecisionDialog.css";
 import { useModalFocusTrap } from "../useModalFocusTrap";
 import * as styles from "./layout.css";
 
 /**
- * Modal **geometry** (ADR 0044). Deliberately not a modal framework.
- *
- * These components carry no focus trap, no Escape handling, no portal and no open/close state. Each
- * dialog keeps exactly the behaviour it already has, so the ADR 0039 modal-detection contract —
- * `role="dialog"` plus `aria-modal="true"` on the element the dialog itself renders — is untouched,
- * and the global shortcut layer keeps suppressing correctly.
- *
- * What they do provide is the containment the Task dialog never had: a real surface with a bounded
- * inline size, a bounded block size, and its own scroll.
+ * Modal geometry (ADR 0044). Behaviour remains owned by each dialog; this shared shell only owns
+ * containment and the visual hook used by the current matte-painted material authority.
  */
-
 export type DialogWidth = "compact" | "standard" | "wide";
+
+const matteBackdrop: CSSProperties = {
+  backdropFilter: "none",
+  WebkitBackdropFilter: "none",
+};
+
+const matteSurface: CSSProperties = {
+  backgroundColor: "var(--paint-sheet-strong)",
+  backgroundImage: "var(--paint-grain-fine), var(--paint-wash-blue)",
+  borderColor: "var(--paint-edge-strong)",
+};
 
 export function DialogBackdrop({
   children,
   className,
+  style,
   ...rest
 }: {
   children: ReactNode;
   className?: string;
+  style?: CSSProperties;
 } & Record<string, unknown>) {
   return (
     <div
       {...rest}
+      data-dialog-backdrop=""
+      style={{ ...matteBackdrop, ...style }}
       className={className ? `${styles.dialogBackdrop} ${className}` : styles.dialogBackdrop}
     >
       {children}
@@ -42,6 +49,7 @@ export function DialogSurface({
   surfaceRef,
   children,
   className,
+  style,
   ...rest
 }: {
   width?: DialogWidth;
@@ -49,14 +57,15 @@ export function DialogSurface({
   surfaceRef?: Ref<HTMLElement>;
   children: ReactNode;
   className?: string;
+  style?: CSSProperties;
 } & Record<string, unknown>) {
   return (
     <Element
       {...rest}
-      // `Element` is chosen at the call site, so React cannot narrow the ref for us here.
       ref={surfaceRef as Ref<never>}
       data-dialog-surface=""
       data-dialog-width={width}
+      style={{ ...matteSurface, ...style }}
       className={
         className
           ? `${styles.dialogSurface[width]} ${className}`
@@ -118,11 +127,12 @@ export function DecisionDialog({
   });
 
   return (
-    <div className={styles.dialogBackdrop} role="presentation">
+    <div className={styles.dialogBackdrop} data-dialog-backdrop="" style={matteBackdrop} role="presentation">
       <form
         ref={dialog}
         data-dialog-surface=""
         data-dialog-width="compact"
+        style={matteSurface}
         className={styles.dialogSurface.compact}
         role="dialog"
         aria-modal="true"

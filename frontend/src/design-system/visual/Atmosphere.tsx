@@ -1,8 +1,8 @@
 import * as styles from "./atmosphere.css";
 
 /**
- * Global abstract-anime art field.
- * Decorative only: local SVG/CSS, no timers, no input, no network and no product capability.
+ * Global abstract-anime painted field.
+ * Decorative only: local SVG/CSS, no input, no network and no product capability.
  */
 export function Atmosphere() {
   return (
@@ -17,57 +17,57 @@ export function Atmosphere() {
         fill="none"
       >
         <defs>
-          <linearGradient id="lw-orbit" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor="var(--accent-cyan)" stopOpacity="0.18" />
-            <stop offset="0.5" stopColor="var(--art-line-strong)" stopOpacity="0.72" />
-            <stop offset="1" stopColor="var(--accent-violet)" stopOpacity="0.18" />
+          <linearGradient id="lw-ink" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor="var(--accent-cyan)" stopOpacity="0.22" />
+            <stop offset="0.52" stopColor="var(--art-line-strong)" stopOpacity="0.72" />
+            <stop offset="1" stopColor="var(--accent-violet)" stopOpacity="0.20" />
           </linearGradient>
-          <linearGradient id="lw-weave" x1="0" y1="0" x2="1" y2="0">
+          <linearGradient id="lw-brush" x1="0" y1="0" x2="1" y2="0">
             <stop offset="0" stopColor="var(--accent-cyan)" stopOpacity="0" />
-            <stop offset="0.34" stopColor="var(--art-line)" stopOpacity="0.55" />
-            <stop offset="0.72" stopColor="var(--accent-violet)" stopOpacity="0.46" />
+            <stop offset="0.24" stopColor="var(--accent-cyan)" stopOpacity="0.13" />
+            <stop offset="0.68" stopColor="var(--accent-violet)" stopOpacity="0.10" />
             <stop offset="1" stopColor="var(--accent-rose)" stopOpacity="0" />
           </linearGradient>
-          <radialGradient id="lw-prism" cx="50%" cy="50%" r="50%">
-            <stop offset="0" stopColor="white" stopOpacity="0.78" />
-            <stop offset="0.48" stopColor="var(--accent-cyan)" stopOpacity="0.26" />
-            <stop offset="1" stopColor="var(--accent-violet)" stopOpacity="0" />
-          </radialGradient>
         </defs>
 
-        {/* Top-right celestial instrument: deliberately clipped by the viewport edge. */}
-        <g className={styles.orbital} stroke="url(#lw-orbit)" strokeLinecap="round">
-          <ellipse cx="1328" cy="150" rx="390" ry="186" strokeWidth="1.2" opacity="0.74" />
-          <ellipse cx="1328" cy="150" rx="308" ry="132" strokeWidth="0.8" opacity="0.52" />
-          <ellipse cx="1328" cy="150" rx="230" ry="88" strokeWidth="0.8" opacity="0.36" />
-          <path d="M1010 292 C1188 192 1404 204 1660 74" strokeWidth="1.1" opacity="0.50" />
-          <path d="M1100 348 C1280 238 1454 252 1708 146" strokeWidth="0.8" opacity="0.34" />
+        {/* Broad dry-brush gestures: intentionally soft-edged through geometry, not blur. */}
+        <g stroke="url(#lw-brush)" strokeLinecap="round">
+          <path d="M980 112 C1180 24 1440 42 1690 154" strokeWidth="84" opacity="0.58" />
+          <path d="M-120 838 C162 714 394 738 626 874" strokeWidth="66" opacity="0.42" />
+          <path d="M1120 792 C1320 696 1506 718 1690 816" strokeWidth="38" opacity="0.28" />
         </g>
 
-        {/* Long weave curves give the product a recognizable silhouette without boxing content. */}
-        <g stroke="url(#lw-weave)" strokeLinecap="round">
-          <path d="M-180 215 C210 72 474 288 808 204 C1120 124 1360 182 1760 64" strokeWidth="1.35" opacity="0.62" />
-          <path d="M-160 308 C238 164 508 370 842 286 C1160 206 1394 258 1740 164" strokeWidth="0.9" opacity="0.42" />
-          <path d="M-120 678 C276 816 604 582 936 704 C1224 812 1450 702 1740 774" strokeWidth="1.15" opacity="0.48" />
-          <path d="M-80 762 C298 902 634 674 984 796 C1258 890 1482 806 1744 866" strokeWidth="0.8" opacity="0.30" />
+        {/* Anime-editorial wind/cloud contours. */}
+        <g className={styles.orbital} stroke="url(#lw-ink)" strokeLinecap="round">
+          <path d="M936 144 C1108 62 1278 74 1430 154 C1512 198 1594 196 1694 148" strokeWidth="1.3" opacity="0.70" />
+          <path d="M1002 196 C1178 124 1332 132 1468 202 C1542 240 1612 238 1702 198" strokeWidth="0.9" opacity="0.47" />
+          <path d="M1132 88 C1222 42 1328 38 1414 74" strokeWidth="0.8" opacity="0.34" />
         </g>
 
-        {/* Lower-left orbit balances the bright upper-right world. */}
-        <g className={styles.orbitalSlow} stroke="url(#lw-orbit)">
-          <ellipse cx="152" cy="878" rx="318" ry="148" strokeWidth="1" opacity="0.42" />
-          <ellipse cx="152" cy="878" rx="224" ry="94" strokeWidth="0.75" opacity="0.30" />
-          <path d="M-100 814 C86 742 286 758 474 864" strokeWidth="0.9" opacity="0.38" />
+        {/* Long weave curves give the application one continuous silhouette across pages. */}
+        <g stroke="var(--art-line)" strokeLinecap="round">
+          <path d="M-180 218 C212 78 470 286 812 204 C1110 132 1362 182 1760 72" strokeWidth="1.35" opacity="0.58" />
+          <path d="M-160 306 C236 164 504 366 846 286 C1152 214 1392 256 1744 166" strokeWidth="0.9" opacity="0.38" />
+          <path d="M-122 680 C272 810 608 590 936 704 C1226 806 1456 706 1744 778" strokeWidth="1.15" opacity="0.44" />
+          <path d="M-82 762 C294 896 636 684 986 798 C1264 888 1488 812 1748 868" strokeWidth="0.8" opacity="0.28" />
         </g>
 
-        {/* Crystal sigil: abstract geometry, not a product control. */}
-        <g className={styles.prism} transform="translate(1388 222)">
-          <circle r="54" fill="url(#lw-prism)" opacity="0.42" />
-          <path d="M0 -35 L30 0 L0 35 L-30 0 Z" stroke="var(--art-line-strong)" strokeWidth="1.1" />
-          <path d="M0 -22 L19 0 L0 22 L-19 0 Z" stroke="var(--art-line)" strokeWidth="0.8" opacity="0.72" />
-          <circle r="4" fill="var(--art-glint)" opacity="0.82" />
+        {/* Lower-left hand-drawn atlas rings balance the composition. */}
+        <g className={styles.orbitalSlow} stroke="url(#lw-ink)">
+          <ellipse cx="150" cy="878" rx="316" ry="146" strokeWidth="1" opacity="0.36" />
+          <ellipse cx="150" cy="878" rx="224" ry="94" strokeWidth="0.75" opacity="0.25" />
+          <path d="M-104 816 C82 744 284 758 476 864" strokeWidth="0.9" opacity="0.32" />
         </g>
 
-        {/* Sparse hand-placed star/glint field. */}
+        {/* Flat illustrated seal: more artbook insignia than crystal badge. */}
+        <g className={styles.prism} transform="translate(1390 230)">
+          <circle r="48" fill="var(--paint-sheet)" stroke="var(--art-line-strong)" strokeWidth="1" />
+          <circle r="35" stroke="var(--art-line)" strokeWidth="0.8" opacity="0.72" />
+          <path d="M0 -25 C8 -8 20 -5 27 0 C16 5 8 11 0 26 C-8 11 -16 5 -27 0 C-20 -5 -8 -8 0 -25Z" fill="var(--accent-ice)" stroke="var(--art-line-strong)" strokeWidth="0.9" />
+          <circle r="3.5" fill="var(--accent)" />
+        </g>
+
+        {/* Sparse ink/silver stars. Static marks avoid distracting pulse loops. */}
         <g className={styles.stars} fill="var(--art-glint)">
           <g className={styles.starA}>
             <path d="M1218 94 l3 8 8 3-8 3-3 8-3-8-8-3 8-3z" />
@@ -86,7 +86,7 @@ export function Atmosphere() {
           </g>
         </g>
 
-        {/* Abstract petals: small enough to read as anime-editorial atmosphere, never wallpaper. */}
+        {/* Abstract petals — hand-placed, very sparse. */}
         <g className={styles.petals} fill="var(--art-petal)">
           <path d="M1450 454 C1464 444 1476 451 1471 465 C1464 478 1452 476 1450 454Z" opacity="0.58" />
           <path d="M1510 516 C1522 504 1537 510 1531 525 C1524 538 1512 536 1510 516Z" opacity="0.42" />
