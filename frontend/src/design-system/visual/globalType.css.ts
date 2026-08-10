@@ -1,31 +1,9 @@
 import { globalStyle } from "@vanilla-extract/css";
 
-// Side-effect import: assigns the visual contract to `:root` and aliases the legacy custom
-// properties through it. Imported here so a single import from the shell brings up both halves of
-// the design system — the palette and the type scale — in a deterministic order.
 import "./theme.css";
 import { family, text } from "./typography.css";
 
-/**
- * The global type layer.
- *
- * Importing this module is what makes the type system *real*: before it, `typography.css.ts` was
- * reachable only from `prototypes/task51/`, which the production build excludes, so the scale
- * existed and no shipped surface used it. Thirty domain style files cannot each be rewritten before
- * the product looks coherent, so the base elements are set once here and every surface inherits —
- * the same one-step technique `global.css` used to move the whole application onto the v2 palette.
- *
- * Every rule below is written at **element specificity (0-0-1)**, deliberately, exactly as
- * `app/layout/layout.css.ts` does for control geometry. Any component that has already made its own
- * typographic decision still wins, so this layer raises the floor without overriding intent. As
- * surfaces migrate to explicit roles, these defaults simply stop being the thing that applies.
- */
-
-/*
- * The document default. `Text` is the optical size Segoe UI Variable draws for 13–18px, which is
- * where nearly every string in this application sits; `Small` and `Display` are selected explicitly
- * by the roles that leave that band.
- */
+/* Dense product copy stays Segoe Variable; page identity is allowed to enter the editorial register. */
 globalStyle("body", {
   fontFamily: family.uiText,
   fontSize: text.body.fontSize,
@@ -35,45 +13,22 @@ globalStyle("body", {
   color: "var(--text-primary)",
 });
 
-/*
- * Operational headings take productive Display optical roles. Editorial type belongs to authored
- * Reader/Narrative content and explicitly specified knowledge-expression moments; HTML heading
- * level alone never opts a surface into the editorial register.
- *
- * `margin: 0` is set with them because the browser default heading margins are a different
- * vertical rhythm from the one `app/layout/` owns, and mixing the two is what produced the
- * inconsistent section spacing the coherence pass has to fix anyway.
- */
-globalStyle("h1", { ...text.pageTitle, margin: 0 });
+/* Celestial Anime Editorial: a top-level page title is an identity moment, not an enterprise form label. */
+globalStyle("h1", {
+  ...text.display,
+  margin: 0,
+  color: "var(--text-primary)",
+  textShadow: "0 12px 34px color-mix(in srgb, var(--accent) 12%, transparent)",
+});
 globalStyle("h2", { ...text.objectTitle, margin: 0 });
 globalStyle("h3", { ...text.sectionTitle, margin: 0 });
-
-/*
- * h4–h6 use the productive text optical family. Below the section level a heading is compact
- * structure rather than page identity.
- */
 globalStyle("h4, h5, h6", { ...text.cardTitle, margin: 0 });
 
 globalStyle("code, kbd, samp, pre", { fontFamily: family.mono, fontSize: text.code.fontSize });
 globalStyle("pre", { lineHeight: text.code.lineHeight, margin: 0 });
-
-/*
- * `small` and `caption` are used for metadata throughout. Routing them through the Small optical
- * size is the difference between 12px type that was scaled down and 12px type that was drawn.
- */
 globalStyle("small, figcaption", { ...text.metadata });
-
-/*
- * Times, durations and counts must not ripple. A `<time>` element is unambiguously numeric, so it
- * gets tabular figures without any surface having to remember to ask.
- */
 globalStyle("time", { fontVariantNumeric: "tabular-nums lining-nums" });
 
-/*
- * Controls inherit the document family by `font: inherit` in `global.css`, but a control's *role*
- * is not body text: it is shorter, needs more weight to hold its shape inside a filled surface, and
- * must not wrap. Set here rather than in `layout.css.ts` so type stays in the type authority.
- */
 globalStyle("button, select", {
   fontFamily: text.button.fontFamily,
   fontSize: text.button.fontSize,
@@ -93,9 +48,3 @@ globalStyle("label", {
   fontWeight: text.label.fontWeight,
   letterSpacing: text.label.letterSpacing,
 });
-
-/*
- * Reduced motion and forced colors do not change type, so this layer has no variant. That is
- * deliberate: a typography system that behaves differently under an accessibility preference is a
- * second typography system.
- */
