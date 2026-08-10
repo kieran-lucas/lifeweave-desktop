@@ -5,7 +5,7 @@ import { focusRing } from "../../../design-system/primitives/utilities.css";
 import { text } from "../../../design-system/visual/typography.css";
 
 export const shell = style({ marginTop: 30, borderTop: "1px solid var(--paint-edge)", paddingTop: 24 });
-export const canvas = style({ ...text.editorBody, color: "var(--text-primary)", backgroundImage: "var(--paint-grain-fine)" });
+export const canvas = style({ ...text.editorBody, color: "var(--text-primary)", backgroundColor: "#FFFFFF", backgroundImage: "var(--paint-grain-fine)" });
 export const title = style({ ...text.display, margin: "0 0 28px", color: "var(--text-primary)" });
 export const scene = style({ paddingBlock: "20px 10px", borderBlockStart: "1px solid var(--world-rule, var(--paint-edge))" });
 export const sceneTitle = style({ ...text.editorH2, color: "var(--text-primary)", margin: "0 0 18px" });
@@ -19,20 +19,19 @@ export const studioPrimary = style([sharedButton.primary, compact]);
 export const studioDestructive = style([sharedButton.destructive, compact, { marginInlineStart: 6 }]);
 export const actions = style({ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginBottom: 20 });
 export const status = style({ ...text.metadata, color: "var(--text-muted)", minHeight: 24 });
-export const recovery = style({ borderInlineStart: "3px solid var(--accent)", padding: "12px 16px", marginBottom: 20, borderRadius: "0 var(--radius-control) var(--radius-control) 0", backgroundColor: "var(--paint-selected)", backgroundImage: "var(--paint-grain-fine)" });
-export const missing = style({ borderInlineStart: "3px solid var(--paint-edge-strong)", padding: "12px 14px", borderRadius: "0 var(--radius-control) var(--radius-control) 0", backgroundColor: "var(--paint-board)", backgroundImage: "var(--paint-grain-fine)", color: "var(--text-muted)", ...text.compactBody });
+export const recovery = style({ borderInlineStart: "3px solid var(--accent)", padding: "12px 16px", marginBottom: 20, borderRadius: "0 var(--radius-control) var(--radius-control) 0", backgroundColor: "#FFFFFF", backgroundImage: "var(--paint-grain-fine)" });
+export const missing = style({ borderInlineStart: "3px solid var(--paint-edge)", padding: "12px 14px", borderRadius: "0 var(--radius-control) var(--radius-control) 0", backgroundColor: "#FFFFFF", backgroundImage: "var(--paint-grain-fine)", color: "var(--text-muted)", ...text.compactBody });
 
-/** Authored blocks use pigment bands and ink rules instead of nested glossy cards. */
-export const metricBlock = style({ borderInlineStart: "3px solid var(--world-rule, var(--accent))", padding: "13px 18px", borderRadius: "0 var(--radius-control) var(--radius-control) 0", backgroundColor: "var(--paint-board)", backgroundImage: "var(--paint-grain-fine), var(--paint-wash-blue)" });
+export const metricBlock = style({ borderInlineStart: "3px solid var(--accent)", padding: "13px 18px", borderRadius: "0 var(--radius-control) var(--radius-control) 0", backgroundColor: "#FFFFFF", backgroundImage: "var(--paint-grain-fine)" });
 export const metricLabel = style({ ...text.eyebrow, color: "var(--text-muted)" });
 export const metricValue = style({ ...text.numericMetric, color: "var(--accent)" });
 export const metricUnit = style({ ...text.bodyStrong, color: "var(--text-muted)", marginLeft: 6 });
 export const metricDescription = style({ ...text.compactBody, color: "var(--text-muted)", marginTop: 6 });
 
-export const calloutBlock = style({ borderInlineStart: "3px solid var(--world-rule, var(--accent))", padding: "13px 18px", borderRadius: "0 var(--radius-control) var(--radius-control) 0", backgroundColor: "var(--paint-selected)", backgroundImage: "var(--paint-grain-fine)" });
+export const calloutBlock = style({ borderInlineStart: "3px solid var(--accent)", padding: "13px 18px", borderRadius: "0 var(--radius-control) var(--radius-control) 0", backgroundColor: "#FFFFFF", backgroundImage: "var(--paint-grain-fine)" });
 export const calloutVariant = style({ ...text.eyebrow, marginBottom: 6, color: "var(--text-muted)" });
 
-export const timelineBlock = style({ borderLeft: "2px solid var(--world-rule, var(--paint-edge-strong))", paddingLeft: 16 });
+export const timelineBlock = style({ borderLeft: "2px solid var(--accent)", paddingLeft: 16 });
 export const timelineHeading = style({ ...text.editorH3, marginBottom: 12 });
 export const timelineList = style({ padding: "0 0 0 22px", margin: 0, display: "flex", flexDirection: "column", gap: 12 });
 export const timelineItem = style({ paddingInlineStart: 4 });
@@ -53,9 +52,9 @@ export const readerTools = style({
   marginBlock: "8px 22px",
   border: "1px solid var(--paint-edge)",
   borderRadius: "var(--radius-control)",
-  backgroundColor: "var(--paint-board)",
+  backgroundColor: "#FFFFFF",
   backgroundImage: "var(--paint-grain-fine)",
-  boxShadow: "var(--glow-compact)",
+  boxShadow: "none",
   "@media": { "screen and (max-width: 720px)": { gridTemplateColumns: "1fr", gap: 14 } },
 });
 export const readerUtilityGrid = style({ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 24, alignItems: "start", "@media": { "screen and (max-width: 720px)": { gridTemplateColumns: "1fr" } } });
@@ -65,18 +64,17 @@ globalStyle(`${shell} > h2`, { margin: "0 0 14px", ...text.sectionTitle });
 globalStyle(`${recovery} > h3`, { margin: "0 0 6px", ...text.sectionTitle });
 globalStyle(`${recovery} > p`, { margin: "0 0 10px", ...text.body });
 
-/** Studio is one painted drafting board; blocks are paper sections on that board. */
 export const studioShell = style({
   display: "grid",
   gap: 14,
   padding: 16,
-  border: "1px solid var(--paint-edge-strong)",
+  border: "1px solid var(--accent)",
   borderRadius: "var(--radius-surface)",
-  backgroundColor: "var(--paint-board)",
-  backgroundImage: "var(--paint-grain), var(--paint-wash-blue), var(--paint-wash-violet)",
-  boxShadow: "var(--glow-hero)",
+  backgroundColor: "#FFFFFF",
+  backgroundImage: "var(--paint-grain-fine)",
+  boxShadow: "none",
 });
-export const studioHeader = style({ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 14, flexWrap: "wrap", padding: "4px 4px 12px", borderBottom: "1px solid var(--paint-edge-strong)" });
+export const studioHeader = style({ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 14, flexWrap: "wrap", padding: "4px 4px 12px", borderBottom: "1px solid var(--accent)" });
 export const studioHeading = style({ margin: 0, ...text.objectTitle });
 export const studioActions = style({ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" });
 export const studioTitleField = style({ display: "grid", gap: 5 });
@@ -85,35 +83,31 @@ export const studioBlock = style({
   border: "1px solid var(--paint-edge)",
   borderRadius: "var(--radius-surface)",
   padding: 16,
-  backgroundColor: "var(--paint-sheet-strong)",
+  backgroundColor: "#FFFFFF",
   backgroundImage: "var(--paint-grain-fine)",
-  boxShadow: "var(--glow-crystal)",
+  boxShadow: "none",
   display: "flex",
   flexDirection: "column",
   gap: 10,
   selectors: {
-    '&[data-kind="callout"]': {
-      borderInlineStart: "3px solid var(--world-rule, var(--accent))",
-      backgroundColor: "var(--paint-selected)",
-      backgroundImage: "var(--paint-grain-fine)",
-    },
+    '&[data-kind="callout"]': { borderInlineStart: "3px solid var(--accent)", backgroundColor: "#FFFFFF" },
   },
 });
 export const studioBlockHeader = style({ display: "flex", justifyContent: "space-between", alignItems: "center" });
 export const studioBlockKind = style({ ...text.eyebrow, color: "var(--text-muted)" });
 export const studioBlockActions = style({ display: "flex", gap: 6 });
 export const fieldLabel = style({ ...text.label, display: "block", marginBottom: 4, color: "var(--text-muted)" });
-export const fieldInput = style([focusRing, { width: "100%", border: "1px solid var(--paint-edge)", borderRadius: "var(--radius-control)", padding: "8px 12px", backgroundColor: "var(--paint-sheet)", backgroundImage: "var(--paint-grain-fine)", color: "var(--text-primary)", ...text.body, boxSizing: "border-box" }]);
+export const fieldInput = style([focusRing, { width: "100%", border: "1px solid var(--paint-edge)", borderRadius: "var(--radius-control)", padding: "8px 12px", backgroundColor: "#FFFFFF", backgroundImage: "var(--paint-grain-fine)", color: "var(--text-primary)", ...text.body, boxSizing: "border-box" }]);
 export const fieldTextarea = style([fieldInput, { minHeight: 80, resize: "vertical" }]);
-export const editorWrap = style({ border: "1px solid var(--accent)", borderRadius: "var(--radius-control)", padding: "12px 14px", minHeight: 120, backgroundColor: "var(--paint-sheet-strong)", backgroundImage: "var(--paint-grain-fine), var(--paint-wash-blue)", boxShadow: "var(--glow-selected)" });
+export const editorWrap = style({ border: "1px solid var(--accent)", borderRadius: "var(--radius-control)", padding: "12px 14px", minHeight: 120, backgroundColor: "#FFFFFF", backgroundImage: "var(--paint-grain-fine)", boxShadow: "none" });
 globalStyle(`${editorWrap} .tiptap`, { minHeight: 100, outline: "none", ...text.editorBody });
 
 export const addBlockBar = style({ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 });
 export const addBlockButton = studioButton;
 export const dragHandle = style([studioButton, { cursor: "grab", selectors: { "&:active": { cursor: "grabbing" } } }]);
-export const staticPreview = style([focusRing, { width: "100%", textAlign: "left", border: "1px solid transparent", borderInlineStart: "3px solid transparent", borderRadius: "var(--radius-small)", padding: "8px 12px", minHeight: 48, background: "transparent", color: "var(--text-primary)", cursor: "text", ...text.editorBody, selectors: { "&:hover": { borderInlineStartColor: "var(--world-rule, var(--paint-edge-strong))", borderColor: "var(--paint-edge)", backgroundColor: "var(--surface-hover)", backgroundImage: "var(--paint-grain-fine)" } } }]);
+export const staticPreview = style([focusRing, { width: "100%", textAlign: "left", border: "1px solid transparent", borderInlineStart: "3px solid transparent", borderRadius: "var(--radius-small)", padding: "8px 12px", minHeight: 48, background: "transparent", color: "var(--text-primary)", cursor: "text", ...text.editorBody, selectors: { "&:hover": { borderInlineStartColor: "var(--accent)", borderColor: "var(--paint-edge)", backgroundColor: "#F5F5F5" } } }]);
 export const importButton = style([button, { marginBottom: 8 }]);
-export const previewImage = style([image, { maxHeight: 220, objectFit: "contain", marginTop: 2, backgroundColor: "var(--paint-sheet)" }]);
+export const previewImage = style([image, { maxHeight: 220, objectFit: "contain", marginTop: 2, backgroundColor: "#FFFFFF" }]);
 export const metricEditor = style({ display: "grid", gridTemplateColumns: "minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, .8fr)", gap: 10, alignItems: "end", "@media": { "screen and (max-width: 620px)": { gridTemplateColumns: "1fr" } } });
 export const metricField = style({ display: "grid", gap: 4 });
 export const metricDescriptionField = style([metricField, { gridColumn: "1 / -1" }]);
