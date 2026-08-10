@@ -7,9 +7,9 @@ import { tab, tabList } from "../../design-system/primitives/navigation.css";
 import { text } from "../../design-system/visual/typography.css";
 
 /*
- * Life owns no page width. Browse, Edit, Pinned and Graph are WIDE_WORKSPACE surfaces and the
- * Reader is a READING_PAGE; all four consume the shared `PageFrame`, which is also the query
- * container the child grid reflows against (ADR 0044).
+ * Life owns no page width. Browse, Edit, Pinned, Graph and the leaf Reader consume the shared wide
+ * `PageFrame`, which is also the query container the child grid reflows against (ADR 0044). The
+ * Reader's inner shell controls its prose measure without creating another page-frame width.
  */
 export const heading=style({margin:0,color:"var(--text-primary)",...text.pageTitle});
 export const readerTitle=style({margin:`${space.x3} 0 ${space.x1}`,color:"var(--text-primary)",...text.display});
@@ -44,6 +44,7 @@ export const empty=style({padding:`${space.group} ${space.x5}`,borderBlockStart:
 export const paging=style({display:"flex",justifyContent:"center",alignItems:"center",gap:12});
 export const pinList=style({display:"grid",gridTemplateColumns:"minmax(0,760px)",justifyContent:"start",gap:space.x3,listStyle:"none",padding:0,margin:0,minInlineSize:0});
 export const unavailable=style({color:"var(--text-muted)",background:"var(--surface-subtle, var(--active-background))"});
+export const readerShell=style({inlineSize:"70%",marginInline:"auto",minInlineSize:0,"@container":{"(max-width: 900px)":{inlineSize:"100%"}}});
 export const readerHero=style({marginTop:space.group,paddingBlockEnd:space.x6,minInlineSize:0});
 export const readerEmpty=style({marginTop:32,paddingTop:24,borderTop:"1px solid var(--border-subtle)",color:"var(--text-muted)"});
 export const status=style({padding:24,color:"var(--text-muted)"});

@@ -445,22 +445,24 @@ export function LifeScreen({
   if (mode === "reader" && reader) {
     const readerId = "id" in reader ? reader.id : reader.node_id;
     return (
-      <PageFrame as="section" type="reading" aria-labelledby="life-reader-title">
-        <button className={styles.quietButton} onClick={back}>
-          <Icon d={iconChevronLeft} size={16} /> Back to Life Browse
-        </button>
-        <div className={styles.readerHero}>
-          <NodeIcon iconKey={reader.icon_key} />
-          <h1 id="life-reader-title" className={styles.readerTitle} tabIndex={-1} ref={readerHeadingRef}>
-            {reader.title}
-          </h1>
-          <p className={styles.nodeDescription}>{reader.short_description}</p>
-          <TagChipList tags={reader.tags} maxVisible={12} />
-          <BasicLeafReader nodeId={readerId} />
-          <Suspense fallback={<LoadingRow label="Loading links…" />}>
-            <LifeLinksPanel nodeId={readerId} onNavigate={openLinkedReader} />
-          </Suspense>
-          <RelatedTasksPanel nodeId={readerId} anchorLocalDate={anchorLocalDate} onNavigate={onTaskNavigate} />
+      <PageFrame as="section" type="wide" aria-labelledby="life-reader-title">
+        <div className={styles.readerShell}>
+          <button className={styles.quietButton} onClick={back}>
+            <Icon d={iconChevronLeft} size={16} /> Back to Life Browse
+          </button>
+          <div className={styles.readerHero}>
+            <NodeIcon iconKey={reader.icon_key} />
+            <h1 id="life-reader-title" className={styles.readerTitle} tabIndex={-1} ref={readerHeadingRef}>
+              {reader.title}
+            </h1>
+            <p className={styles.nodeDescription}>{reader.short_description}</p>
+            <TagChipList tags={reader.tags} maxVisible={12} />
+            <BasicLeafReader nodeId={readerId} />
+            <Suspense fallback={<LoadingRow label="Loading links…" />}>
+              <LifeLinksPanel nodeId={readerId} onNavigate={openLinkedReader} />
+            </Suspense>
+            <RelatedTasksPanel nodeId={readerId} anchorLocalDate={anchorLocalDate} onNavigate={onTaskNavigate} />
+          </div>
         </div>
       </PageFrame>
     );

@@ -218,6 +218,9 @@ describe("Life Browse", () => {
     expect(
       await screen.findByRole("heading", { name: "Reader" }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Leaf", level: 1 }).closest("[data-page-frame]"),
+    ).toHaveAttribute("data-page-type", "wide");
     expect(await screen.findByText(/no document yet/)).toBeInTheDocument();
     fireEvent.click(
       screen.getByRole("button", { name: /Back to Life Browse/ }),
