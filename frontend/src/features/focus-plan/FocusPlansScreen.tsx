@@ -168,9 +168,10 @@ export function FocusPlansScreen({
     } catch (cause) {
       setError(messageFromError(cause));
       try {
-        syncDetail(await getFocusPlan({ plan_id: selected.id }));
+        // Refresh the authoritative revision without replacing the user's rejected local edits.
+        setSelected(await getFocusPlan({ plan_id: selected.id }));
       } catch {
-        // Keep the original mutation error visible.
+        // Keep the original mutation error and local form visible.
       }
       setStatus("ready");
       return false;
