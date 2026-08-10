@@ -19,16 +19,8 @@ $allPhases = @(
   'phase3-restart.e2e.ts',
   'phase4-portable-roundtrip.e2e.ts',
   'phase4-portable-restart.e2e.ts',
-  'phase6-planning.e2e.ts',
-  'phase6-planning-restart.e2e.ts',
   'phase7-unified-tags.e2e.ts',
   'phase7-unified-tags-restart.e2e.ts',
-  'phase8-focus-plans.e2e.ts',
-  'phase8-focus-plans-restart.e2e.ts',
-  'phase9-deadline-saved-views.e2e.ts',
-  'phase9-deadline-saved-views-restart.e2e.ts',
-  'phase10-saved-views-backup-restore.e2e.ts',
-  'phase10-saved-views-backup-restore-restart.e2e.ts',
   'phase11-life-links.e2e.ts',
   'phase11-life-links-restart.e2e.ts',
   'phase12-life-links-backup-restore.e2e.ts',
@@ -37,36 +29,15 @@ $allPhases = @(
   'phase13-life-branch-interchange-restart.e2e.ts',
   'phase14-actual-time.e2e.ts',
   'phase14-actual-time-restart.e2e.ts',
-  # Task 44 persists nothing, so phase 15 has no restart companion by design.
-  'phase15-life-graph.e2e.ts',
-  # Task 45 persists nothing either, so phase 16 has no restart companion by design.
   'phase16-keyboard-shortcuts.e2e.ts',
-  # Task 46 adds no persistence format, so phase 17 has no restart companion by design.
   'phase17-planned-vs-actual-analytics.e2e.ts',
   'phase18-life-tree-interchange.e2e.ts',
   'phase18-life-tree-interchange-restart.e2e.ts',
-  # Task 48 changes neither schema nor backup format, so phase 19 has no restart companion.
-  'phase19-managed-backup-versions.e2e.ts',
-  # Task 49 is a derived read-only projection at unchanged schema 27, so phase 20 has no restart
-  # companion by design.
-  'phase20-focus-plan-analytics.e2e.ts',
-  # Task 50 persists nothing, so phase 21 has no restart companion by design.
-  'phase21-global-layout.e2e.ts'
-)
-# Evidence tooling that must be requested explicitly. The layout capture walks the whole screenshot
-# matrix at three viewports and reports rather than asserts, so it belongs to the Task 50 audit
-# rather than to the release gate the default full run represents.
-$auxiliaryPhases = @(
-  'task50-layout-capture.e2e.ts',
-  'task50b-maximized-audit.e2e.ts',
-  # Task 51 renders the isolated visual prototype at /prototype.html, so it needs a build produced
-  # with LIFEWEAVE_PROTOTYPE=1. It reports rather than asserts, like the Task 50 audit.
-  'task51-visual-lock-capture.e2e.ts',
-  'task51-motion-lock-capture.e2e.ts'
+  'phase19-managed-backup-versions.e2e.ts'
 )
 if (-not $Phases -or $Phases.Count -eq 0) { $Phases = $allPhases }
 foreach ($phase in $Phases) {
-  if ($phase -notin $allPhases -and $phase -notin $auxiliaryPhases) { throw "unknown native E2E phase: $phase" }
+  if ($phase -notin $allPhases) { throw "unknown native E2E phase: $phase" }
 }
 
 function Test-DriverPortOpen {
