@@ -8,28 +8,44 @@ This file records explicit Product Owner authority for Lifeweave visual work. Th
 
 ## Current authorized objective
 
-The Product Owner rejected both the restrained Quiet Precision Atlas result and the subsequent glass-heavy interpretation as aesthetically insufficient.
+The Product Owner rejected the restrained Quiet Precision Atlas result, the subsequent glass-heavy interpretation, and the later effect-heavy Matte Anime Painted Atlas interpretation as aesthetically insufficient.
 
-The current target is **Lifeweave — Matte Anime Painted Atlas**: an endgame Windows productivity experience with immediate visual impact, abstract-anime editorial composition, tactile opaque painted materials, fine paper/flat-wood grain, ink-like structural lines, blue→indigo→violet identity and smooth cinematic motion.
+The current target is **Lifeweave — Flat Matte Monochrome**: a premium Windows productivity experience built from pure white work surfaces, one solid blue identity plane, subtle dry grain, crisp neutral rules and deliberate blue ink states.
 
-The desired first impression is unmistakable craftsmanship and a genuine **wow** response. The application must feel like one coherent illustrated world, not a productivity UI with colors or effects layered on top.
+The Product Owner explicitly requires:
+- no glass/acrylic/frosted appearance;
+- no translucent persistent material;
+- no decorative background atmosphere;
+- no stars, petals, orbit/weave lines, color auras or wallpaper SVG;
+- no blue→white wash or pastel blue-white tint blending;
+- no multicolor blue/indigo/violet/cyan/rose identity system;
+- no decorative gradients or glow/bloom;
+- white regions remain visibly white;
+- blue regions remain visibly solid blue;
+- tactile/matte character comes from extremely fine shared grain, not visual effects.
+
+The desired first impression is crisp, tactile, controlled and expensive rather than luminous, atmospheric or decorative.
 
 This is an art-direction override only. Preserve real product capabilities, domain contracts, local-first behavior, data safety, keyboard semantics, geometry authority and governed performance limits.
 
 ## Superseded visual constraints
 
-Earlier instructions are superseded wherever they require either:
-- extremely low-character/decoration-free operational chrome; or
-- glass/acrylic/frosted/translucent presentation as the primary material language.
+Earlier instructions are superseded wherever they authorize or require:
+- global abstract-anime atmosphere;
+- painted color washes;
+- blue→indigo→violet identity;
+- decorative stars/petals/orbits/sigils;
+- persistent glass/acrylic/frosted/translucent presentation;
+- glow as a state or identity mechanism;
+- blue-tinted whites or pastel selected fills.
 
-The current authority explicitly requires:
-- matte, opaque persistent surfaces;
-- shared paper/painted-board/flat-wood-like texture recipes;
-- abstract anime art language globally where decorative only;
-- restrained painted washes rather than glossy refraction;
-- smooth cross-surface motion continuity;
-- no reliance on backdrop blur for premium feel;
-- no generic glass-card dashboard appearance.
+The current authority instead requires:
+- pure white canvas and content sheets;
+- solid blue navigation/identity regions;
+- neutral gray borders and hover separation;
+- blue borders/underlines/inset rules for focus and selection;
+- one subtle shared grain recipe;
+- no decorative background layer.
 
 Old reference PNGs remain capability/composition evidence but are not an aesthetic ceiling.
 
@@ -37,11 +53,11 @@ Old reference PNGs remain capability/composition evidence but are not an aesthet
 
 ## Reversible frontend authority
 
-For reversible, in-scope frontend presentation and implementation decisions, the implementation agent is authorized to choose the strongest solution without routine Product Owner confirmation. This includes CSS/SVG art, shared material/texture recipes, typography application, component presentation, motion choreography, deterministic fixtures and visual verification.
+For reversible, in-scope frontend presentation and implementation decisions, the implementation agent is authorized to choose the strongest solution without routine Product Owner confirmation. This includes shared material/texture recipes, typography application, component presentation, motion choreography, deterministic fixtures and visual verification.
 
 Decision order:
 1. immutable product/domain/data-safety authority;
-2. this later Product Owner authorization;
+2. this latest Product Owner authorization;
 3. current design-system authority;
 4. proven geometry/accessibility/performance constraints;
 5. real source capability;
@@ -73,6 +89,6 @@ Still forbidden without a separate Product Owner decision:
 
 ## Quality requirement
 
-Passing tests is necessary but not sufficient. Visual completion requires rendered Product Owner acceptance. A result that passes geometry/screenshot/regression gates but still looks generic, glassy, disconnected, stuttery, flat or enterprise-default is **not endgame**.
+Passing tests is necessary but not sufficient. Visual completion requires rendered Product Owner acceptance. A result that passes geometry/screenshot/regression gates but still looks glassy, washed-out, gradient-heavy, glow-heavy, multicolor, visually busy behind content or enterprise-default is **not endgame**.
 
 Retain the strong foundation produced by prior work—layout, semantics, tests, component convergence and safety—and replace the aesthetic layer rather than rebuilding product logic.
