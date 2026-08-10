@@ -197,7 +197,7 @@ describe("App shell", () => {
       "2026-08-04",
     );
     fireEvent.click(screen.getByRole("button", { name: "Weekly review" }));
-    await screen.findByRole("heading", { name: "Today" });
+    await screen.findByRole("heading", { name: "Thursday, August 6" });
     await waitFor(() =>
       expect(document.activeElement).toHaveAttribute("data-series-id", "series-1"),
     );
@@ -482,9 +482,11 @@ describe("App shell", () => {
     await screen.findByRole("heading", { name: "Today" });
     fireEvent.click(screen.getByRole("button", { name: "Calendar" }));
     const grid = await screen.findByRole("grid");
-    fireEvent.click(within(grid).getAllByRole("button")[10]!);
+    const targetDate = within(grid).getAllByRole("button")[10]!;
+    expect(targetDate).toHaveAccessibleName("Thursday, August 6, 2026");
+    fireEvent.click(targetDate);
     expect(
-      await screen.findByRole("heading", { name: "Today" }),
+      await screen.findByRole("heading", { name: "Thursday, August 6" }),
     ).toBeInTheDocument();
     expect(screen.queryByRole("grid")).not.toBeInTheDocument();
   });

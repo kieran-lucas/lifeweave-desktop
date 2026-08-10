@@ -8,6 +8,7 @@ import {
   type FormEvent,
 } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { getLocalTimeZone, parseDate } from "@internationalized/date";
 import { useModalFocusTrap } from "../../../app/useModalFocusTrap";
 import type { OccurrenceEditScope } from "../../../ipc/generated/OccurrenceEditScope";
 import type { TaskCategoryView } from "../../../ipc/generated/TaskCategoryView";
@@ -116,6 +117,17 @@ const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 export const localToday = getLocalToday;
 export const formatMinute = (n: number) =>
   `${String(Math.floor(n / 60)).padStart(2, "0")}:${String(n % 60).padStart(2, "0")}`;
+const timelineHeading = (value: string, anchor: string) => {
+  if (value === anchor) return "Today";
+  const anchorDate = parseDate(anchor);
+  if (value === anchorDate.add({ days: 1 }).toString()) return "Tomorrow";
+  if (value === anchorDate.subtract({ days: 1 }).toString()) return "Yesterday";
+  return new Intl.DateTimeFormat(navigator.language || "en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  }).format(parseDate(value).toDate(getLocalTimeZone()));
+};
 const newOperationId = () => globalThis.crypto.randomUUID();
 // The Today cache entry is identified by BOTH the viewed day and the observed anchor, because
 // deadline state is derived from the anchor. Every read and write must use this exact key or a
@@ -854,7 +866,7 @@ export function TodayScreen({
           {date === today ? "Today" : "Selected day"} · {date}
         </p>
         <h1 id="today-heading" className={styles.title} tabIndex={-1}>
-          Today
+          {timelineHeading(date, today)}
         </h1>
       </PageHeader>
       <WeekStrip selectedDate={date} today={today} onSelectDate={selectUserDate} />

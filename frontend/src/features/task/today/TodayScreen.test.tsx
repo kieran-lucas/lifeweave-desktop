@@ -149,6 +149,16 @@ describe("Task 50 layout contracts", () => {
     expect([...heading.childNodes].every((node) => node.nodeType === Node.ELEMENT_NODE)).toBe(true);
   });
 
+  it("names the next local day Tomorrow instead of Today", async () => {
+    renderToday(undefined, {
+      selectedDate: "2026-08-03",
+      anchorLocalDate: "2026-08-02",
+    });
+    expect(await screen.findByRole("heading", { level: 1, name: "Tomorrow" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { level: 1, name: "Today" })).not.toBeInTheDocument();
+    expect(screen.getByText("Selected day · 2026-08-03")).toBeInTheDocument();
+  });
+
   /*
    * The one MISSING_USER_SURFACE the Task 50 census found: edit, delete and recurring-occurrence
    * scope were reachable only through a double-click or Enter that nothing advertised.
@@ -1309,7 +1319,7 @@ describe("Today recurrence contract", () => {
     await waitFor(() => expect(scroll).toHaveBeenCalledTimes(1));
     fireEvent.click(screen.getByRole("tab", { name: "Upcoming" }));
     fireEvent.click(await screen.findByRole("button", { name: /Open day for Focus/ }));
-    await waitFor(() => expect(screen.getByRole("heading", { name: "Today" })).toHaveFocus());
+    await waitFor(() => expect(screen.getByRole("heading", { name: "Tomorrow" })).toHaveFocus());
     expect(scroll).toHaveBeenCalledTimes(1);
     const todayTab = screen.getByRole("tab", { name: "Today" });
     todayTab.focus();

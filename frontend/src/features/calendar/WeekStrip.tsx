@@ -17,7 +17,7 @@ export function WeekStrip({ selectedDate, today, onSelectDate }: Props) {
       const value = day.toString();
       const nativeDate = day.toDate(getLocalTimeZone());
       return <button type="button" className={styles.day} key={value} aria-label={fullDate.format(nativeDate)} aria-current={value === today ? "date" : undefined} aria-pressed={value === selectedDate} onClick={() => onSelectDate(value)}>
-        <span>{weekday.format(nativeDate)}</span><strong>{day.day}</strong>{value === today && <small>Today</small>}
+        <span>{weekday.format(nativeDate)}</span><strong>{day.day}</strong>{value === today && <small className={styles.todayLabel}>Today</small>}
       </button>;
     })}</div>
     <button type="button" className={styles.move} aria-label="Next week" onClick={() => onSelectDate(selected.add({ weeks: 1 }).toString())}><Icon className={styles.nextIcon} d={iconChevronLeft} size={18} /></button>

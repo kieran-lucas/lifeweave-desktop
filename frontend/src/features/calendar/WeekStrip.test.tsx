@@ -10,7 +10,9 @@ describe("WeekStrip", () => {
     expect(dates).toHaveLength(7);
     expect(dates.filter(button=>button.getAttribute("aria-current")==="date")).toHaveLength(1);
     expect(dates.filter(button=>button.getAttribute("aria-pressed")==="true")).toHaveLength(1);
-    expect(dates.find(button=>button.getAttribute("aria-current")==="date")).not.toBe(dates.find(button=>button.getAttribute("aria-pressed")==="true"));
+    const current=dates.find(button=>button.getAttribute("aria-current")==="date")!;
+    expect(current).not.toBe(dates.find(button=>button.getAttribute("aria-pressed")==="true"));
+    expect(within(current).getByText("Today")).toBeVisible();
   });
 
   it("moves by exactly seven days", () => {

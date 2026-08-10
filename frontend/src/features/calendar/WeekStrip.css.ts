@@ -12,10 +12,9 @@ import { text } from "../../design-system/visual/typography.css";
  * "second dashboard inside Today" the brief rules out. v2's header uses a compact, typographic date
  * cluster instead.
  *
- * What carries the design now: weight and tone for the day name and number, a pale blue fill for the
- * selected day, and an accent dot for today. No cell has a border, and the arrows have none either —
- * the only line in the whole component is the hairline beneath it, which separates the header from
- * the timeline.
+ * What carries the design now: weight and tone for the day name and number, a pale blue fill plus
+ * a lower edge for the selected day, and one quiet outline around today. The arrows remain
+ * borderless; the hairline beneath the strip separates the header from the timeline.
  *
  * Geometry, semantics, keyboard behaviour and ARIA are unchanged; this file declares appearance only.
  */
@@ -66,21 +65,20 @@ export const move = style([iconButton, {
 export const nextIcon = style({ transform: "rotate(180deg)" });
 
 /**
- * A day cell is type on tone, not a box.
+ * A day cell is type on tone. Only the actual current day receives a quiet outline, so the marker
+ * is structural and legible without the detached decorative dot the previous version used.
  *
- * Selected takes the pale blue fill the v2 system uses for selection everywhere. Today is marked
- * with an accent dot rather than an underline, so "today" and "selected" remain two distinct
- * signals and neither depends on colour alone.
+ * Selected takes the pale blue fill plus a lower edge. Today receives a thin bounded frame and its
+ * explicit label, so "today" and "selected" remain distinct and neither depends on colour alone.
  */
 export const day = style([focusRing, {
-  position: "relative",
   minInlineSize: 0,
   minBlockSize: 52,
   display: "grid",
   placeContent: "center",
   gap: 1,
   padding: "6px 2px",
-  border: 0,
+  border: "1px solid transparent",
   borderRadius: "var(--radius-control)",
   background: "transparent",
   color: "var(--text-muted)",
@@ -89,29 +87,26 @@ export const day = style([focusRing, {
   transition: `background-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}`,
   selectors: {
     "&:hover": { background: "var(--icon-background)" },
+    "&[aria-current=date]": {
+      borderColor: "color-mix(in srgb, var(--accent) 46%, var(--border-subtle))",
+      background: "color-mix(in srgb, var(--accent) 5%, transparent)",
+      color: "var(--accent)",
+    },
     "&[aria-pressed=true]": {
       background: "var(--icon-background)",
       color: "var(--accent)",
       fontWeight: 600,
+      boxShadow: "inset 0 -2px 0 var(--accent)",
     },
-    /*
-     * Today's marker: a 4 px accent dot beneath the number.
-     *
-     * Centred with `inset-inline: 0` + `margin-inline: auto` rather than
-     * `left: 50%; margin-left: -2px` or a `translateX`. The Task 50 layout authority rejects both
-     * of those — negative margins and transforms used as alignment tools are how the pre-Task-50
-     * geometry drifted — and it caught this on the first run. The auto-margin form needs neither.
-     */
-    "&[aria-current=date]::after": {
-      content: '""',
-      position: "absolute",
-      insetBlockEnd: 7,
-      insetInline: 0,
-      inlineSize: 4,
-      blockSize: 4,
-      marginInline: "auto",
-      borderRadius: "var(--radius-full)",
-      background: "var(--accent)",
+  },
+  "@media": {
+    "(forced-colors: active)": {
+      selectors: {
+        "&[aria-current=date]": { borderColor: "Highlight" },
+        "&[aria-pressed=true]": { boxShadow: "inset 0 -2px 0 Highlight" },
+      },
     },
   },
 }]);
+
+export const todayLabel = style(text.caption);
