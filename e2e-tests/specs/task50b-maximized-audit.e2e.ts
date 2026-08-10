@@ -30,9 +30,9 @@ import {
 /**
  * Task 50 follow-up — maximized-window layout audit.
  *
- * Reports rather than asserts, so it can be run repeatedly against a UI that is being fixed. The
- * canonical presentation is a real Windows window maximized to the usable work area, not a
- * requested pixel size; the measured viewport is the authority and nothing here hard-codes one.
+ * The product is Light-only. Forced-colors and Reduced Motion remain independent accessibility
+ * audits; neither is an alternate product theme. Analytics and Search are reached through their
+ * current Settings ownership rather than historical primary-navigation buttons.
  *
  * Run with `pnpm e2e:windows -- task50b-maximized-audit.e2e.ts`. Set
  * `LIFEWEAVE_AUDIT_LABEL=pass2` for a later pass.
@@ -51,20 +51,21 @@ const visualRegression = process.env.LIFEWEAVE_VISUAL_REGRESSION === "1";
 const visualTagFilter = process.env.LIFEWEAVE_VISUAL_TAGS
   ? new Set(process.env.LIFEWEAVE_VISUAL_TAGS.split(",").map(tag => tag.trim()).filter(Boolean))
   : null;
-const requestedTheme = process.env.LIFEWEAVE_AUDIT_THEME ?? "light";
-if (requestedTheme !== "light" && requestedTheme !== "dark")
-  throw new Error(`Unsupported LIFEWEAVE_AUDIT_THEME: ${requestedTheme}`);
+const requestedTheme = "light" as const;
+if (
+  process.env.LIFEWEAVE_AUDIT_THEME !== undefined &&
+  process.env.LIFEWEAVE_AUDIT_THEME !== requestedTheme
+)
+  throw new Error("Lifeweave is Light-only; LIFEWEAVE_AUDIT_THEME must be light or unset");
 const forcedColors = process.env.LIFEWEAVE_AUDIT_FORCED_COLORS === "1";
 const reducedMotion = process.env.LIFEWEAVE_AUDIT_REDUCED_MOTION === "1";
-if ([requestedTheme === "dark", forcedColors, reducedMotion].filter(Boolean).length > 1)
-  throw new Error("Dark, forced-colors, and reduced-motion audits must run independently");
-const mediaMode = requestedTheme === "dark"
-  ? "dark"
-  : forcedColors
-    ? "forced-colors"
-    : reducedMotion
-      ? "reduced-motion"
-      : "light";
+if ([forcedColors, reducedMotion].filter(Boolean).length > 1)
+  throw new Error("Forced-colors and reduced-motion audits must run independently");
+const mediaMode = forcedColors
+  ? "forced-colors"
+  : reducedMotion
+    ? "reduced-motion"
+    : "light";
 const requestedLanguage = process.env.LIFEWEAVE_AUDIT_LANGUAGE ?? "en";
 if (requestedLanguage !== "en" && requestedLanguage !== "vi")
   throw new Error(`Unsupported LIFEWEAVE_AUDIT_LANGUAGE: ${requestedLanguage}`);
@@ -106,40 +107,6 @@ const lightVisualSnapshotFiles = new Set([
   "18-settings",
   "21b-search-results",
   "21c-search-no-results",
-  "22-keyboard-help",
-]);
-const darkVisualSnapshotFiles = new Set([
-  "01-today",
-  "01d-today-running-timer",
-  "01e-today-assessment",
-  "02-task-create",
-  "02b-task-tags",
-  "02c-task-life-area",
-  "02d-task-focus-plan",
-  "09-calendar",
-  "10-analytics",
-  "11-plans",
-  "12-life-browse",
-  "13b-life-tree-import",
-  "13c-life-branch-import",
-  "15-life-graph",
-  "16-life-reader",
-  "16b-life-link-dialog",
-  "16c-life-empty",
-  "16d-markdown-import",
-  "16e-portable-import",
-  "17-basic-editor",
-  "17b-basic-editor-link-dialog",
-  "18-narrative-reader",
-  "19-narrative-studio",
-  "19c-narrative-paper",
-  "19d-narrative-sakura",
-  "19e-narrative-aurora",
-  "19f-narrative-nocturne",
-  "19g-narrative-dirty-exit",
-  "08b-saved-view-editor",
-  "18-settings",
-  "21b-search-results",
   "22-keyboard-help",
 ]);
 const forcedColorsVisualSnapshotFiles = new Set([
@@ -308,8 +275,6 @@ async function capture(screen: string, file: string, note?: string) {
   await shot(file);
   const visualSnapshotFiles = requestedLanguage === "vi"
     ? vietnameseVisualSnapshotFiles
-    : mediaMode === "dark"
-    ? darkVisualSnapshotFiles
     : mediaMode === "forced-colors"
       ? forcedColorsVisualSnapshotFiles
       : mediaMode === "reduced-motion"
@@ -341,7 +306,8 @@ async function capture(screen: string, file: string, note?: string) {
 }
 
 const go = async (destination: string, heading: string) => {
-  await $(`button[aria-label='${destination}']`).click();
+  if (destination === "Analytics") await browser.keys([CONTROL, "3"]);
+  else await $(`button[aria-label='${destination}']`).click();
   await $(heading).waitForDisplayed({ timeout: 30_000 });
   await browser.pause(300);
 };
@@ -387,19 +353,8 @@ describe(`Endgame visual audit (${auditProfile}: ${label})`, () => {
     lifeEmptyChildId = seeded.lifeEmptyChildId;
     await browser.url("http://tauri.localhost");
     await browser.pause(700);
-    /*
-     * Re-assert the audited presentation after the reload.
-     *
-     * In canonical mode this re-maximizes, as it always has. In explicit-viewport mode it re-applies
-     * and re-verifies the requested size — the previous attempt re-maximized unconditionally here,
-     * which silently discarded the requested viewport and measured a maximized window while
-     * reporting a small one.
-     */
     environment = await enterAuditViewport();
     const mediaFeatures = [
-      ...(requestedTheme === "dark"
-        ? [{ name: "prefers-color-scheme", value: "dark" }]
-        : []),
       ...(forcedColors ? [{ name: "forced-colors", value: "active" }] : []),
       ...(reducedMotion ? [{ name: "prefers-reduced-motion", value: "reduce" }] : []),
     ];
@@ -408,12 +363,10 @@ describe(`Endgame visual audit (${auditProfile}: ${label})`, () => {
       await browser.pause(150);
     }
     const mediaMatches = await browser.execute(() => ({
-      dark: window.matchMedia("(prefers-color-scheme: dark)").matches,
       forcedColors: window.matchMedia("(forced-colors: active)").matches,
       reducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
     }));
     if (
-      mediaMatches.dark !== (requestedTheme === "dark") ||
       mediaMatches.forcedColors !== forcedColors ||
       mediaMatches.reducedMotion !== reducedMotion
     )
@@ -435,7 +388,6 @@ describe(`Endgame visual audit (${auditProfile}: ${label})`, () => {
       acc[c.kind] = (acc[c.kind] ?? 0) + 1;
       return acc;
     }, {});
-    // Printed so the run log itself carries the finding, not only the artifact.
     console.log(`\n=== MAXIMIZED AUDIT (${label}) ===`);
     console.log(
       `mode: ${environment?.mode ?? "?"}  requested: ${
@@ -463,9 +415,6 @@ describe(`Endgame visual audit (${auditProfile}: ${label})`, () => {
     await go("Today", "h1#today-heading");
     await capture("today--unselected", "01-today");
 
-    // The fixture's one-off task exposes both of Today's compact edge controls. Exercise the
-    // running strip first because an active timer intentionally disables assessment, then discard
-    // the empty segment so the deterministic fixture is restored before opening the assessment fan.
     const timerStart = $("button[aria-label^='Start timer for']");
     if (await timerStart.isExisting()) {
       await timerStart.waitForEnabled({ timeout: 15_000 });
@@ -484,25 +433,6 @@ describe(`Endgame visual audit (${auditProfile}: ${label})`, () => {
       await browser.keys(ESCAPE);
     }
 
-    /*
-     * Today with the production context inspector open.
-     *
-     * Selection is semantic, not coordinate-based: the first seeded row carries `data-task-id`, and
-     * clicking it is exactly what a user does. The wait is on the inspector's own accessible name
-     * rather than on a fixed pause, because the inspector is lazily imported and an arbitrary
-     * timeout would either flake or hide a slow load.
-     *
-     * This asserts the *production* inspector — `aside[aria-label^="Details for"]` exists only in
-     * `features/task/today/TaskInspector.tsx`, never in the isolated prototype.
-     */
-    /*
-     * Click the row's *title*, not the row's centre.
-     *
-     * The row selects on click, but its Life-area and Focus-Plan chips are buttons that correctly
-     * `stopPropagation`, and on the seeded fixture a long Focus-Plan chip sits across the middle of
-     * the row — so a naive centre-click lands on the chip and selects nothing. The title is inert
-     * and bubbles to the row, which is what a user clicking the task name actually does.
-     */
     const firstRow = $("[role='listitem'][data-task-id] strong");
     if (await firstRow.isExisting()) {
       await firstRow.click();
@@ -510,7 +440,6 @@ describe(`Endgame visual audit (${auditProfile}: ${label})`, () => {
       await inspector.waitForDisplayed({ timeout: 15_000 });
       await capture("today--selected", "01b-today-selected");
 
-      // Each inspector facet is a separate composition and each is measured.
       for (const facet of ["Details", "Time", "Links"]) {
         const tab = $(`[role='tab']=${facet}`);
         if (await tab.isExisting()) {
@@ -562,10 +491,6 @@ describe(`Endgame visual audit (${auditProfile}: ${label})`, () => {
         await browser.keys(ESCAPE);
         await $(`#${tagPanelId}[role='region']`).waitForDisplayed({ reverse: true, timeout: 15_000 });
       }
-      // Activate recurrence through its visible label. In forced-colors mode WebView2 hands the
-      // checkbox back to the native renderer; the input remains correctly labelled, but its native
-      // hit-test box is not exposed to WebDriver. Clicking the label is the real accessible target
-      // and works for pointer, touch, and high-contrast users alike.
       if (
         await tryClick(
           "//fieldset[legend[normalize-space()='Recurring']]//label[normalize-space()='Repeat task']",
@@ -574,9 +499,6 @@ describe(`Endgame visual audit (${auditProfile}: ${label})`, () => {
         await capture("task-recurring", "03-task-recurring");
       await dismiss();
     }
-    // S03's edit evidence is specifically the governed recurring occurrence/series scope, not the
-    // already-covered one-off form. Target the seeded recurring row so the capture proves that the
-    // scope decision precedes every series-owned field at both required viewports.
     if (await tryClick("[role='listitem'][data-series-id] button[aria-label^='Edit ']")) {
       await capture("task-edit", "04-task-edit");
       await dismiss();
@@ -589,9 +511,6 @@ describe(`Endgame visual audit (${auditProfile}: ${label})`, () => {
     await tab("deadlines");
     await capture("deadlines", "07-deadlines");
     await tab("views");
-    // T-21 is the manager/results workspace, not only its empty state. Create through the real UI
-    // so the capture proves selected-row grammar, compact lifecycle controls, and structured
-    // results against the same deterministic Task fixture used by the planning views.
     await $("button=Create view").click();
     const seededViewDialog = $("[role='dialog'][aria-labelledby='saved-view-editor-heading']");
     await seededViewDialog.waitForDisplayed({ timeout: 15_000 });
@@ -665,8 +584,6 @@ describe(`Endgame visual audit (${auditProfile}: ${label})`, () => {
     if (await tryClick("button=Edit")) {
       await capture("life-edit", "13-life-edit");
 
-      // Produce both package previews entirely through the product's own export/import controls,
-      // then cancel. This reviews the real parsing and preview UI without mutating the seeded tree.
       await installTreeDownloadCapture();
       const treeControls = $("section[aria-label='Life tree interchange']");
       await treeControls.$("button=Export Life tree").click();
@@ -696,12 +613,6 @@ describe(`Endgame visual audit (${auditProfile}: ${label})`, () => {
         await tryClick("button=Graph");
       }
     }
-    /*
-     * The documented leaf is a child of the seeded Layout Area, not a direct child of `life-root`.
-     * Browse intentionally renders only the focal node and its direct children, so the audit must
-     * traverse both real UI levels. The fixture returns both stable IDs; no title matching or raw
-     * navigation shortcut can accidentally bypass the production Browse interaction.
-     */
     const areaCard = $(`[data-life-id='${lifeAreaId}']`);
     await areaCard.waitForDisplayed({ timeout: 15_000 });
     await areaCard.click();
@@ -720,7 +631,6 @@ describe(`Endgame visual audit (${auditProfile}: ${label})`, () => {
     await $("section[aria-label='Lifeweave portable package'] [role='status']").waitForDisplayed({ timeout: 30_000 });
     portablePackageBytes = await capturedPortablePackage();
 
-    // Enter and leave without editing or saving; this exercises only presentation/navigation.
     await $("button=Edit document").click();
     await $("section[aria-label='Document editor']").waitForDisplayed({ timeout: 30_000 });
     await capture("basic-editor", "17-basic-editor");
@@ -777,18 +687,12 @@ describe(`Endgame visual audit (${auditProfile}: ${label})`, () => {
     await capture("narrative-studio--only-block-dialog", "19b-narrative-only-block-dialog");
     await browser.keys(ESCAPE);
 
-    // Each semantic Visual World is product content, not a cosmetic test theme. Capture all four
-    // from the production radio group, then exercise the shared dirty-exit decision surface created
-    // by those real edits. The confirm path intentionally leaves the recoverable draft unpublished.
     for (const [world, file] of [
       ["paper", "19c-narrative-paper"],
       ["sakura", "19d-narrative-sakura"],
       ["aurora", "19e-narrative-aurora"],
       ["nocturne", "19f-narrative-nocturne"],
     ] as const) {
-      // Forced colors delegates radios to WebView2's native renderer, whose input hit target is not
-      // exposed to WebDriver. The wrapping label is the production pointer/touch target in every
-      // mode and keeps this audit aligned with the accessible interaction path.
       await $(`//label[input[@name='visual-world' and @value='${world}']]`).click();
       await browser.pause(150);
       await capture(`narrative-studio--${world}`, file);
@@ -835,14 +739,13 @@ describe(`Endgame visual audit (${auditProfile}: ${label})`, () => {
     await dismiss();
     }
 
-    if (await tryClick("button[aria-label^='Search']")) {
+    if (!profileIncludes(auditProfile, "settings"))
+      await go("Settings", "h1#settings-heading");
+    if (await tryClick("//button[.//strong[normalize-space()='Search']]")) {
       await capture("search", "21-search");
       const searchInput = $("input[aria-label='Search tasks, life nodes, and documents']");
       await searchInput.setValue(requestedLanguage === "vi" ? "suc khoe" : "Layout");
       if (requestedLanguage === "vi")
-        // The freshly created Task, Life node, and document are indexed through the product's
-        // bounded dirty queue. One option only proves that indexing started; three results proves
-        // the Vietnamese fixture reached its deterministic complete state before capture.
         await $("p=3 results.").waitForDisplayed({ timeout: 15_000 });
       else await $("[role='option']").waitForDisplayed({ timeout: 15_000 });
       await capture("search--results", "21b-search-results");
@@ -869,8 +772,6 @@ describe(`Endgame visual audit (${auditProfile}: ${label})`, () => {
   if (profileIncludes(auditProfile, "shell-task")) {
     it("walks shell shortcut and collapsed states", async function () {
     this.timeout(180_000);
-    // Keep the visual golden independent from backup timestamps in Settings. The shortcut is the
-    // production entry path and Today is a deterministic fixture-backed backdrop for the dialog.
     if (!profileIncludes(auditProfile, "settings")) {
     await go("Today", "h1#today-heading");
     await browser.keys([CONTROL, "/"]);
@@ -879,7 +780,6 @@ describe(`Endgame visual audit (${auditProfile}: ${label})`, () => {
     await dismiss();
     }
 
-    // Collapsed sidebar is the second canonical shell state.
     await tryClick("button[aria-label='Collapse sidebar']");
     await go("Today", "h1#today-heading");
     await capture("today-collapsed", "24-today-collapsed");
