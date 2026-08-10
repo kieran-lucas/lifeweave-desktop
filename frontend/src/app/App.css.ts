@@ -167,8 +167,6 @@ globalStyle(`${viewport} > :not(p)`, {
   animation: `${routeIn} 300ms cubic-bezier(.2,.8,.2,1) both`,
 });
 
-globalStyle(`@media (prefers-reduced-motion: reduce)`, {});
-
 export const heading = style({ ...text.pageTitle, margin: 0, color: "var(--text-primary)" });
 export const lede = style({ ...text.body, margin: 0, color: "var(--text-muted)", maxInlineSize: "72ch" });
 
