@@ -1,4 +1,4 @@
-import { globalStyle, style } from "@vanilla-extract/css";
+import { globalStyle, keyframes, style } from "@vanilla-extract/css";
 
 import "../design-system/visual/globalType.css";
 import { button } from "../design-system/primitives/controls.css";
@@ -151,6 +151,11 @@ export const collapseButton = style([
   },
 ]);
 
+const routeIn = keyframes({
+  from: { opacity: 0.58 },
+  to: { opacity: 1 },
+});
+
 export const viewport = style({
   position: "relative",
   zIndex: 1,
@@ -160,6 +165,11 @@ export const viewport = style({
   scrollbarGutter: "stable both-edges",
   padding: gutter,
   background: "transparent",
+});
+
+/* RouteErrorBoundary remounts on destination change, so the new surface receives one shared fade. */
+globalStyle(`${viewport} > :not(p)`, {
+  animation: `${routeIn} ${duration.route} ${easing.standard} both`,
 });
 
 export const heading = style({ ...text.pageTitle, margin: 0, color: "var(--text-primary)" });
