@@ -1,5 +1,5 @@
 import { getDayOfWeek, getLocalTimeZone, parseDate } from "@internationalized/date";
-import { Icon, iconChevronLeft, iconChevronRight } from "../../design-system/visual/icons";
+import { Icon, iconChevronLeft } from "../../design-system/visual/icons";
 import * as styles from "./WeekStrip.css";
 
 type Props = { selectedDate: string; today: string; onSelectDate: (date: string) => void };
@@ -20,6 +20,6 @@ export function WeekStrip({ selectedDate, today, onSelectDate }: Props) {
         <span>{weekday.format(nativeDate)}</span><strong>{day.day}</strong>{value === today && <small>Today</small>}
       </button>;
     })}</div>
-    <button type="button" className={styles.move} aria-label="Next week" onClick={() => onSelectDate(selected.add({ weeks: 1 }).toString())}><Icon d={iconChevronRight} size={18} /></button>
+    <button type="button" className={styles.move} aria-label="Next week" onClick={() => onSelectDate(selected.add({ weeks: 1 }).toString())}><Icon className={styles.nextIcon} d={iconChevronLeft} size={18} /></button>
   </nav>;
 }

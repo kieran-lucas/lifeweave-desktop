@@ -63,9 +63,9 @@ export default function TaskPlanningPanel({
   return (
     <div className={styles.panelBody}>
       <header className={styles.header}>
-        <h1 className={styles.title} id={`${mode}-heading`}>{name}</h1>
-        <p className={styles.subtitle}>{mode === "upcoming" ? "Next 14 days" : "Needs review from the last 30 days"}</p>
-        <p className={styles.summary}>{projection.total_item_count} tasks · {duration(projection.scheduled_minutes)}</p>
+        <h1 id={`${mode}-heading`}>{name}</h1>
+        <p>{mode === "upcoming" ? "Next 14 days" : "Needs review from the last 30 days"}</p>
+        <p>{projection.total_item_count} tasks · {duration(projection.scheduled_minutes)}</p>
       </header>
       {projection.groups.length === 0 ? (
         <div className={styles.empty}>
@@ -76,7 +76,7 @@ export default function TaskPlanningPanel({
         const headingId = `planning-day-${mode}-${group.local_date}`;
         return (
           <section key={group.local_date} aria-labelledby={headingId} className={styles.dayGroup}>
-            <h2 className={styles.dayHeading} id={headingId}>{dateLabel(group.local_date, anchorLocalDate)}</h2>
+            <h2 id={headingId}>{dateLabel(group.local_date, anchorLocalDate)}</h2>
             <ul className={styles.list}>
               {group.items.map((item) => (
                 <PlanningRow key={item.id} item={item} mode={mode} onOpenItem={onOpenItem} onFocusPlanNavigate={onFocusPlanNavigate} />
@@ -99,10 +99,10 @@ function PlanningRow({ item, mode, onOpenItem, onFocusPlanNavigate }: {
   const labelDate = new Intl.DateTimeFormat(undefined, { dateStyle: "long" }).format(new Date(`${item.local_date}T12:00:00`));
   return (
     <li className={styles.row}>
-      <div className={styles.time}>{formatMinute(item.start_minute)}–{formatMinute(item.end_minute)}</div>
-      <div className={styles.content}>
-        <strong className={styles.rowTitle}>{item.title}</strong>
-        {item.description && <p className={styles.description}>{item.description}</p>}
+      <div>{formatMinute(item.start_minute)}–{formatMinute(item.end_minute)}</div>
+      <div>
+        <strong>{item.title}</strong>
+        {item.description && <p>{item.description}</p>}
         <div className={styles.metadata}>
           <span><CategoryIcon iconKey={item.category_icon_key} label={`Category ${item.category_name}`} /> {item.category_name}</span>
           <span>Priority {item.priority}</span>

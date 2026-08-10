@@ -24,13 +24,10 @@ import type { TaskSavedViewBaseScope } from "../../../ipc/generated/TaskSavedVie
 import type { TaskSavedViewGroupMode } from "../../../ipc/generated/TaskSavedViewGroupMode";
 import type { TaskSavedViewPredicate } from "../../../ipc/generated/TaskSavedViewPredicate";
 import type { TaskSavedViewSortMode } from "../../../ipc/generated/TaskSavedViewSortMode";
-import type { DeadlineState } from "../../../ipc/generated/DeadlineState";
-import type { TaskSavedViewPriority } from "../../../ipc/generated/TaskSavedViewPriority";
-import type { TaskSavedViewTaskKind } from "../../../ipc/generated/TaskSavedViewTaskKind";
 import { taskSavedViewKeys } from "./savedViewQueries";
 import * as styles from "./TaskSavedViews.css";
 import { EmptyState, LoadingRow, SkeletonList } from "../../../design-system/primitives/States";
-import { Icon, iconChevronRight, iconToday } from "../../../design-system/visual/icons";
+import { Icon, iconChevronLeft, iconToday } from "../../../design-system/visual/icons";
 
 type ClauseKind = TaskSavedViewClause["kind"];
 type Draft = {
@@ -63,6 +60,17 @@ const clauseLabels: Record<ClauseKind, string> = {
   deadline_state_in: "Deadline state",
   scheduled_after_deadline_is: "Scheduled after deadline",
 };
+const toggleConfigs = {
+  task_kind_in: ["Included task kinds", [["one_off", "One-off"], ["recurring", "Recurring"]]],
+  priority_in: ["Included priorities", [["high", "High"], ["medium", "Medium"], ["low", "Low"]]],
+  deadline_state_in: ["Included deadline states", [["overdue", "Overdue"], ["due_today", "Due today"], ["upcoming", "Upcoming"]]],
+} as const;
+const referenceKeys = {
+  category_id_in: "categories",
+  tag_id_any: "tags",
+  life_area_id_in: "life_areas",
+  focus_plan_id_in: "focus_plans",
+} as const;
 
 const emptyDraft = (): Draft => ({
   name: "",
@@ -165,30 +173,30 @@ function ReferenceSelect({
   );
 }
 
-function ToggleSet<T extends string>({
+function ToggleSet({
   label,
   choices,
   values,
   onChange,
 }: {
   label: string;
-  choices: readonly { value: T; label: string }[];
-  values: T[];
-  onChange: (values: T[]) => void;
+  choices: ReadonlyArray<readonly [string, string]>;
+  values: string[];
+  onChange: (values: string[]) => void;
 }) {
   return (
     <fieldset>
       <legend>{label}</legend>
       <div className={styles.checkboxRow}>
-        {choices.map((choice) => (
-          <label key={choice.value}>
+        {choices.map(([value, text]) => (
+          <label key={value}>
             <input
               type="checkbox"
-              checked={values.includes(choice.value)}
+              checked={values.includes(value)}
               onChange={(event) => onChange(event.target.checked
-                ? [...values, choice.value]
-                : values.filter((value) => value !== choice.value))}
-            /> {choice.label}
+                ? [...values, value]
+                : values.filter((current) => current !== value))}
+            /> {text}
           </label>
         ))}
       </div>
@@ -207,42 +215,15 @@ function ClauseEditor({
   onChange: (clause: TaskSavedViewClause) => void;
   onRemove: () => void;
 }) {
-  let control;
-  switch (clause.kind) {
-    case "task_kind_in":
-      control = <ToggleSet<TaskSavedViewTaskKind> label="Included task kinds" values={clause.values} choices={[{ value: "one_off", label: "One-off" }, { value: "recurring", label: "Recurring" }]} onChange={(values) => onChange({ ...clause, values })} />;
-      break;
-    case "priority_in":
-      control = <ToggleSet<TaskSavedViewPriority> label="Included priorities" values={clause.values} choices={[{ value: "high", label: "High" }, { value: "medium", label: "Medium" }, { value: "low", label: "Low" }]} onChange={(values) => onChange({ ...clause, values })} />;
-      break;
-    case "deadline_state_in":
-      control = <ToggleSet<DeadlineState> label="Included deadline states" values={clause.values} choices={[{ value: "overdue", label: "Overdue" }, { value: "due_today", label: "Due today" }, { value: "upcoming", label: "Upcoming" }]} onChange={(values) => onChange({ ...clause, values })} />;
-      break;
-    case "category_id_in":
-      control = <ReferenceSelect clause={clause} options={options.categories} onChange={(ids) => onChange({ ...clause, ids })} />;
-      break;
-    case "tag_id_any":
-      control = <ReferenceSelect clause={clause} options={options.tags} onChange={(ids) => onChange({ ...clause, ids })} />;
-      break;
-    case "life_area_id_in":
-      control = <ReferenceSelect clause={clause} options={options.life_areas} onChange={(ids) => onChange({ ...clause, ids })} />;
-      break;
-    case "focus_plan_id_in":
-      control = <ReferenceSelect clause={clause} options={options.focus_plans} onChange={(ids) => onChange({ ...clause, ids })} />;
-      break;
-    case "has_deadline_is":
-    case "scheduled_after_deadline_is":
-      control = (
-        <label>
-          Value
-          <select value={clause.value ? "true" : "false"} onChange={(event) => onChange({ ...clause, value: event.target.value === "true" })}>
-            <option value="true">Yes</option>
-            <option value="false">No</option>
-          </select>
-        </label>
-      );
-      break;
-  }
+  const toggle = toggleConfigs[clause.kind as keyof typeof toggleConfigs];
+  const referenceKey = referenceKeys[clause.kind as keyof typeof referenceKeys];
+  const control = toggle && "values" in clause ? (
+    <ToggleSet label={toggle[0]} choices={toggle[1]} values={clause.values} onChange={(values) => onChange({ ...clause, values } as TaskSavedViewClause)} />
+  ) : referenceKey && "ids" in clause ? (
+    <ReferenceSelect clause={clause} options={options[referenceKey]} onChange={(ids) => onChange({ ...clause, ids } as TaskSavedViewClause)} />
+  ) : "value" in clause ? (
+    <label>Value<select value={clause.value ? "true" : "false"} onChange={(event) => onChange({ ...clause, value: event.target.value === "true" })}><option value="true">Yes</option><option value="false">No</option></select></label>
+  ) : null;
   return (
     <fieldset className={styles.clause}>
       <legend>{clauseLabels[clause.kind]}</legend>
@@ -371,7 +352,7 @@ export default function TaskSavedViewsPanel({
   return (
     <div className={styles.shell}>
       <aside className={styles.manager} aria-labelledby="saved-view-manager-heading">
-        <h2 className={styles.panelHeading} id="saved-view-manager-heading">Saved Views</h2>
+        <h2 id="saved-view-manager-heading">Saved Views</h2>
         <button className={styles.createView} type="button" onClick={(event) => { returnFocus.current = event.currentTarget; setDraft(emptyDraft()); setEditor({ mode: "create", viewId: null, revision: 0, unsupported: false }); setSaveError(null); }}>Create view</button>
         {active.isLoading ? <SkeletonList rows={3} label="Loading Saved Views…" /> : active.isError ? <p role="alert">Saved Views could not be loaded.</p> : active.data!.length === 0 ? <EmptyState compact title="No active Saved Views." body="Save a filtered task view to return to it quickly." /> : (
           <ul className={styles.viewList} aria-label="Active Saved Views">
@@ -382,8 +363,8 @@ export default function TaskSavedViewsPanel({
                   {view.support_state !== "supported" && <span> Unsupported filter</span>}
                 </div>
                 <span className={styles.actions}>
-                  <button className={styles.iconControl} type="button" aria-label={`Move ${view.name} up`} disabled={index === 0 || reorder.isPending} onClick={() => move(view, -1)}><Icon className={`${styles.controlIcon} ${styles.moveUpIcon}`} d={iconChevronRight} size={16} /></button>
-                  <button className={styles.iconControl} type="button" aria-label={`Move ${view.name} down`} disabled={index === active.data!.length - 1 || reorder.isPending} onClick={() => move(view, 1)}><Icon className={`${styles.controlIcon} ${styles.moveDownIcon}`} d={iconChevronRight} size={16} /></button>
+                  <button className={styles.iconControl} type="button" aria-label={`Move ${view.name} up`} disabled={index === 0 || reorder.isPending} onClick={() => move(view, -1)}><Icon className={styles.moveUpIcon} d={iconChevronLeft} size={16} /></button>
+                  <button className={styles.iconControl} type="button" aria-label={`Move ${view.name} down`} disabled={index === active.data!.length - 1 || reorder.isPending} onClick={() => move(view, 1)}><Icon className={styles.moveDownIcon} d={iconChevronLeft} size={16} /></button>
                   <button className={styles.rowControl} type="button" onClick={(event) => void beginEdit(view, event.currentTarget)}>Edit</button>
                   <button className={styles.rowControl} type="button" onClick={() => lifecycle.mutate({ action: "archive", view })}>Archive</button>
                 </span>
@@ -403,7 +384,7 @@ export default function TaskSavedViewsPanel({
       </aside>
 
       <section className={styles.results} aria-labelledby="saved-view-results-heading">
-        <h2 className={styles.panelHeading} id="saved-view-results-heading">Results</h2>
+        <h2 id="saved-view-results-heading">Results</h2>
         {!selectedId ? <p>Select or create a Saved View.</p> : projection.isLoading ? <LoadingRow label="Loading Saved View results…" /> : projection.isError ? <div className={styles.notice} role="alert"><p>This Saved View could not be executed.</p><button className={styles.rowControl} type="button" onClick={() => void projection.refetch()}>Retry</button></div> : projection.data!.unsupported_reason ? (
           <div role="alert" className={styles.notice}><strong>Unsupported Saved View</strong><p>{projection.data!.unsupported_reason}</p><p>You can edit this view to replace its filter or archive it.</p></div>
         ) : (
@@ -416,10 +397,10 @@ export default function TaskSavedViewsPanel({
                 <ul className={styles.resultList}>
                   {group.items.map((item) => (
                     <li key={item.task_id ?? `${item.series_id}:${item.original_local_date}`} className={styles.resultRow}>
-                      <time className={styles.resultTime} dateTime={item.scheduled_local_date}>{item.scheduled_local_date}<br />{formatMinute(item.start_minute)}–{formatMinute(item.end_minute)}</time>
-                      <div className={styles.resultContent}>
-                        <strong className={styles.resultTitle}>{item.title}</strong>
-                        {item.description && <p className={styles.resultDescription}>{item.description}</p>}
+                      <time dateTime={item.scheduled_local_date}>{item.scheduled_local_date}<br />{formatMinute(item.start_minute)}–{formatMinute(item.end_minute)}</time>
+                      <div>
+                        <strong>{item.title}</strong>
+                        {item.description && <p>{item.description}</p>}
                         <div className={styles.metadata}>
                           <span>{item.category_name}{item.category_archived ? " (archived)" : ""}</span>
                           <span>Priority {item.priority}</span>
@@ -464,7 +445,7 @@ export default function TaskSavedViewsPanel({
                   <label className={styles.field}>Group<select value={draft.group_mode} onChange={(event) => setDraft({ ...draft, group_mode: event.target.value as TaskSavedViewGroupMode })}><option value="base_default">Base default</option><option value="none">No groups</option><option value="category">Category</option><option value="life_area">Life area</option><option value="focus_plan">Focus Plan</option></select></label>
                 </div>
                 <section className={styles.filterSection} aria-labelledby="saved-view-filter-heading">
-                  <h3 className={styles.filterHeading} id="saved-view-filter-heading">Filters (all must match)</h3>
+                  <h3 id="saved-view-filter-heading">Filters (all must match)</h3>
                   {options.isLoading ? <LoadingRow label="Loading filter choices…" /> : options.isError ? <p role="alert">Filter choices could not be loaded.</p> : <>
                     {draft.predicate.clauses.map((clause, index) => <ClauseEditor key={clause.kind} clause={clause} options={options.data!} onChange={(next) => setDraft({ ...draft, predicate: { type: "all", clauses: draft.predicate.clauses.map((value, candidate) => candidate === index ? next : value) } })} onRemove={() => setDraft({ ...draft, predicate: { type: "all", clauses: draft.predicate.clauses.filter((_, candidate) => candidate !== index) } })} />)}
                     {unused.length > 0 && <div className={styles.addFilter}><label className={styles.field}>Add filter<select value={addKind} onChange={(event) => setAddKind(event.target.value as ClauseKind)}>{unused.map((kind) => <option key={kind} value={kind}>{clauseLabels[kind]}</option>)}</select></label><button className={styles.addFilterControl} type="button" onClick={() => setDraft({ ...draft, predicate: { type: "all", clauses: [...draft.predicate.clauses, newClause(addKind, options.data)] } })}>Add</button></div>}

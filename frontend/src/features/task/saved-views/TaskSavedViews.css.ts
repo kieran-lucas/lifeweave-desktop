@@ -10,7 +10,6 @@ export const shell = style([
   { vars: { "--lw-split-columns": "minmax(190px, 260px) minmax(0, 1fr)" } },
 ]);
 export const manager = style({ display: "flex", flexDirection: "column", gap: space.x3, minInlineSize: 0, paddingInlineEnd: space.group, borderInlineEnd: "1px solid var(--border-subtle)", '@container': { '(max-width: 899px)': { paddingInlineEnd: 0, paddingBlockEnd: space.group, borderInlineEnd: 0, borderBlockEnd: "1px solid var(--border-subtle)" } } });
-export const panelHeading = style({ ...text.sectionTitle, margin: 0 });
 export const createView = button.primary;
 export const viewList = style({ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: space.x1 });
 export const viewLine = style({
@@ -24,11 +23,12 @@ export const viewLine = style({
 export const viewSelect = style([button.ghost, { inlineSize: "100%", minInlineSize: 0, justifyContent: "flex-start", overflowWrap: "anywhere", whiteSpace: "normal", textAlign: "left", selectors: { "&[aria-pressed=true]": { background: "var(--active-background)", color: "var(--accent)", boxShadow: "inset 2px 0 0 var(--accent)" } } }]);
 export const actions = style({ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "flex-end", gap: space.x1 });
 export const iconControl = style([iconButton, button.ghost, compact]);
-export const controlIcon = style({ inlineSize: 16, blockSize: 16 });
-export const moveUpIcon = style({ transform: "rotate(-90deg)" });
-export const moveDownIcon = style({ transform: "rotate(90deg)" });
+globalStyle(`${iconControl} svg`, { inlineSize: 16, blockSize: 16 });
+export const moveUpIcon = style({ transform: "rotate(90deg)" });
+export const moveDownIcon = style({ transform: "rotate(-90deg)" });
 export const rowControl = style([button.ghost, compact]);
 export const results = style({ minWidth: 0, display: "flex", flexDirection: "column", gap: space.group });
+globalStyle(`${manager} > h2, ${results} > h2`, { ...text.sectionTitle, margin: 0 });
 export const notice = style({ padding: space.x3, border: "1px solid var(--border-subtle)", borderInlineStart: "3px solid var(--focus-ring)", borderRadius: "var(--radius-control)", background: "var(--surface-subtle)" });
 export const editorForm = style({ display: "flex", flexDirection: "column", gap: space.group, minInlineSize: 0 });
 export const editorBody = style({ display: "flex", flexDirection: "column", gap: space.group, minInlineSize: 0 });
@@ -36,7 +36,7 @@ export const field = sharedField;
 export const fieldRow = style({ display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: space.field, '@container': { '(max-width: 560px)': { gridTemplateColumns: "minmax(0,1fr)" } } });
 globalStyle(`${editorBody} input, ${editorBody} select`, { inlineSize: "100%", minInlineSize: 0, boxSizing: "border-box" });
 export const filterSection = style({ display: "flex", flexDirection: "column", gap: space.x3, minInlineSize: 0 });
-export const filterHeading = style({ ...text.sectionTitle, margin: 0 });
+globalStyle(`${filterSection} > h3`, { ...text.sectionTitle, margin: 0 });
 export const clause = style({ border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-control)", background: "var(--surface-subtle)", padding: space.x3, display: "flex", flexDirection: "column", gap: space.x2, minInlineSize: 0 });
 export const removeClause = style([button.destructive, compact, { alignSelf: "flex-start" }]);
 export const multi = style({ minHeight: 110, width: "100%" });
@@ -57,10 +57,10 @@ export const resultRow = style({
   selectors: { "&:not(:last-child)": { borderBottom: "1px solid var(--border-subtle)" } },
   '@media': { '(max-width: 640px)': { gridTemplateColumns: "1fr" } },
 });
-export const resultTime = style({ ...text.numeric, color: "var(--text-muted)" });
-export const resultContent = style({ display: "flex", flexDirection: "column", gap: space.control, minInlineSize: 0 });
-export const resultTitle = style({ ...text.row, fontWeight: 600 });
-export const resultDescription = style({ margin: 0, color: "var(--text-muted)" });
+globalStyle(`${resultRow} > time`, { ...text.numeric, color: "var(--text-muted)" });
+globalStyle(`${resultRow} > div`, { display: "flex", flexDirection: "column", gap: space.control, minInlineSize: 0 });
+globalStyle(`${resultRow} > div > strong`, { ...text.row, fontWeight: 600 });
+globalStyle(`${resultRow} > div > p`, { margin: 0, color: "var(--text-muted)" });
 export const metadata = style({ ...text.metadata, display: "flex", flexWrap: "wrap", alignItems: "center", gap: space.control, color: "var(--text-muted)" });
 export const resultLink = style([button.ghost, compact, { color: "var(--accent)", minBlockSize: 0 }]);
 export const resultOpen = style([button.secondary, compact]);

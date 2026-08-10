@@ -4,10 +4,13 @@ describe("Phase 6 — Upcoming and Overdue planning", () => {
   it("projects bounded queues, opens exact recurring identity, and reviews an overdue task", async () => {
     await browser.url("http://tauri.localhost");
     await expect($("h1=Today")).toBeDisplayed();
-    const fixture = await browser.execute(async () => {
+    const auditLocalDate = process.env.LIFEWEAVE_AUDIT_LOCAL_DATE
+      ?? new Intl.DateTimeFormat("en-CA").format(new Date());
+    const fixture = await browser.execute(async (anchorLocalDate) => {
       const invoke = (window as unknown as { __TAURI_INTERNALS__: { invoke: <T>(command: string, payload?: unknown) => Promise<T> } }).__TAURI_INTERNALS__.invoke;
       const iso = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-      const shift = (days: number) => { const date = new Date(); date.setHours(12, 0, 0, 0); date.setDate(date.getDate() + days); return iso(date); };
+      const [year, month, day] = anchorLocalDate.split("-").map(Number);
+      const shift = (days: number) => { const date = new Date(year!, month! - 1, day! + days, 12); return iso(date); };
       const yesterday = shift(-1), tomorrow = shift(1), afterTomorrow = shift(2);
       await invoke("create_task", { input: { title: "E2E Past Review", description: "needs review", local_date: yesterday, start_minute: 360, end_minute: 420, category_id: "general", priority: "high", life_node_id: null, tag_ids: [] } });
       await invoke("create_task", { input: { title: "E2E Future One-off", description: "upcoming", local_date: tomorrow, start_minute: 480, end_minute: 540, category_id: "general", priority: "medium", life_node_id: null, tag_ids: [] } });
@@ -17,7 +20,7 @@ describe("Phase 6 — Upcoming and Overdue planning", () => {
       const movedSeries = await invoke<string>("create_recurring_task", { input: { title: "E2E Moved Future", description: "moved", local_date: tomorrow, start_minute: 840, end_minute: 900, category_id: "general", priority: "low", frequency: "daily", interval: 1, weekdays: [], until: null, count: 1, life_node_id: null, tag_ids: [] } });
       await invoke("update_recurring_occurrence", { input: { series_id: movedSeries, original_local_date: tomorrow, replacement_local_date: afterTomorrow, title: null, description: null, category_id: null, priority: null, start_minute: null, end_minute: null, scope: "only_this_occurrence", cancelled: false, frequency: null, interval: null, weekdays: null, until: null, count: null, life_node_id: null, series_tag_ids: null } });
       return { futureSeries };
-    });
+    }, auditLocalDate);
     await browser.refresh();
     await expect($("h1=Today")).toBeDisplayed();
     // Assessment-fan lifecycle, driven from an *overdue* Task. Eligibility is
@@ -63,6 +66,7 @@ describe("Phase 6 — Upcoming and Overdue planning", () => {
     await expect(row).toBeDisplayed();
     await row.$("button[aria-label^='Assess task']").click();
     await $("//*[@role='option' and normalize-space()='Met expectation']").click();
+    await expect($("//p[contains(normalize-space(.), 'Assessment saved.')]")).toBeDisplayed();
     await $("button=Overdue").click();
     await expect($("//strong[normalize-space()='E2E Past Review']")).not.toExist();
   });

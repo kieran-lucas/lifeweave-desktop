@@ -61,6 +61,8 @@ async function addClause(label: string) {
   await expect($(sel.clauseLegend(label))).toBeDisplayed();
 }
 
+const undoAssessment = () => $("//p[contains(normalize-space(.), 'Assessment saved.')]//button[normalize-space()='Undo assessment']");
+
 describe("Phase 9 — deadline semantics and Saved Views", () => {
   it("creates deadline work, queues it, and drives a typed Saved View end to end", async () => {
     await browser.url("http://tauri.localhost");
@@ -104,7 +106,7 @@ describe("Phase 9 — deadline semantics and Saved Views", () => {
     await expect($(sel.title(CONTROL_TASK))).not.toExist();
 
     // State is grouped, and the row carries its own deadline date and priority as text.
-    await expect($("//h3[starts-with(normalize-space(), 'Upcoming deadlines')]")).toBeDisplayed();
+    await expect($("//h2[starts-with(normalize-space(), 'Upcoming deadlines')]")).toBeDisplayed();
     const queued = $(sel.deadlineRow(MATCHING_TASK));
     await expect(queued.$(sel.deadlineTime(DEADLINE))).toBeDisplayed();
     await expect(queued).toHaveText(expect.stringContaining("Priority high"));
@@ -121,15 +123,15 @@ describe("Phase 9 — deadline semantics and Saved Views", () => {
     await expect(evaluated).toBeDisplayed();
     await evaluated.$("button[aria-label^='Assess task']").click();
     await $("//*[@role='option' and normalize-space()='Met expectation']").click();
-    await expect($("button=Undo assessment")).toBeDisplayed();
+    await expect(undoAssessment()).toBeDisplayed();
 
     await $("button=Deadlines").click();
     await expect($(sel.title(EVALUATED_TASK))).not.toExist();
     // The evaluated Task leaves the active queue; the unevaluated one is untouched.
     await expect($(sel.title(MATCHING_TASK))).toBeDisplayed();
 
-    await $("button=Today").click();
-    await $("button=Undo assessment").click();
+    await $("//button[@role='tab' and normalize-space()='Today']").click();
+    await undoAssessment().click();
     await $("button=Deadlines").click();
     await expect($(sel.title(EVALUATED_TASK))).toBeDisplayed();
 

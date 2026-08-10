@@ -12,7 +12,7 @@ export default defineConfig({
   envPrefix: ["VITE_", "TAURI_"],
   build: {
     target: "es2022",
-    sourcemap: true,
+    sourcemap: "hidden",
     /*
      * The Task 51 visual prototype is a second HTML entry. It is added to the production build
      * **only** when LIFEWEAVE_PROTOTYPE=1, so an ordinary `pnpm build` emits exactly the chunks it

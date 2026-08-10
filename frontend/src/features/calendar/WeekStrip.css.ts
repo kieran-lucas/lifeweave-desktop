@@ -63,6 +63,7 @@ export const move = style([iconButton, {
     "&:hover": { background: "var(--icon-background)", color: "var(--text-primary)" },
   },
 }]);
+export const nextIcon = style({ transform: "rotate(180deg)" });
 
 /**
  * A day cell is type on tone, not a box.

@@ -6,10 +6,10 @@
 
 - BASELINE_PLANNING_SHA: `a1078c1f91c251aaa7a453ef1e8a5108551c852d`
 - EXECUTION_START_SHA: `0b3e01d4a8bd9b62c5d786e9b4a4401d72c0edc1`
-- LAST_VERIFIED_COMMIT: `17ebdea04baf4386a370bcc06acd1479fa2f806e`
-- CURRENT_PACKET: `Q1`
+- LAST_VERIFIED_COMMIT: `Q1 checkpoint`
+- CURRENT_PACKET: `S05`
 - CURRENT_STATUS: `PENDING`
-- NEXT_PACKET: `Q1`
+- NEXT_PACKET: `S05`
 - FINAL_REVIEW_DONE: `false`
 - FINAL_FINDING_SET_FROZEN: `false`
 - PROGRAM_STATUS: `IN_PROGRESS`
@@ -22,7 +22,7 @@
 | S01 | CLOSED | `1a3a859fa408701ac95b88078cdd5a2051a3cea9` | 8/8 rows LOCAL_VERIFIED; focused semantics and max/min native profiles passed |
 | S02 | CLOSED | `d80ea4dfdc287f226826bcdf8f223ff8fdb247d4` | 11/11 rows LOCAL_VERIFIED; focused semantics and max/min native profiles passed |
 | S03 | CLOSED | `17ebdea04baf4386a370bcc06acd1479fa2f806e` | 9/9 rows LOCAL_VERIFIED; focused semantics and max/min native profiles passed |
-| S04 | CLOSED | S04 checkpoint | 5/5 rows LOCAL_VERIFIED; focused semantics and max/min native profiles passed |
+| S04 | CLOSED | `d5c66c85f0287db322e70c163aaf4be39d06b1c1` | 5/5 rows LOCAL_VERIFIED; focused semantics and max/min native profiles passed |
 | S05 | PENDING | — | — |
 | S06 | PENDING | — | — |
 | S07 | PENDING | — | — |
@@ -31,7 +31,7 @@
 | S10 | PENDING | — | — |
 | S11 | PENDING | — | — |
 | S12 | PENDING | — | — |
-| Q1 | PENDING | — | — |
+| Q1 | CLOSED | Q1 checkpoint | 33/33 scoped rows VERIFIED; full unit, build/budget, native behavior, and max/min visual gates passed |
 | Q2 | PENDING | — | — |
 | Q3 | PENDING | — | — |
 | Q4 | PENDING | — | — |
@@ -42,36 +42,36 @@
 
 | ID | Stage | Status | Last verified commit | Debt/blocker |
 |---|---|---|---|---|
-| G-01 | S01 | LOCAL_VERIFIED | `1a3a859fa408701ac95b88078cdd5a2051a3cea9` | focused App/core-status semantics + native parent-surface evidence |
-| G-02 | S01 | LOCAL_VERIFIED | `1a3a859fa408701ac95b88078cdd5a2051a3cea9` | focused App/core-status semantics + native parent-surface evidence |
-| G-03 | S01 | LOCAL_VERIFIED | `1a3a859fa408701ac95b88078cdd5a2051a3cea9` | focused recovery semantics, heading focus, and page-frame evidence |
-| G-04 | S01 | LOCAL_VERIFIED | `1a3a859fa408701ac95b88078cdd5a2051a3cea9` | search result/no-result max+min visual evidence; focus containment/restoration |
-| G-05 | S01 | LOCAL_VERIFIED | `1a3a859fa408701ac95b88078cdd5a2051a3cea9` | registry-derived 8-row modal max+min visual evidence |
-| G-06 | S01 | LOCAL_VERIFIED | `1a3a859fa408701ac95b88078cdd5a2051a3cea9` | inputless/input/destructive focused dialog tests; shared modal grammar |
-| SH-01 | S01 | LOCAL_VERIFIED | `1a3a859fa408701ac95b88078cdd5a2051a3cea9` | expanded shell max+min visual evidence; current state is not color-only |
-| SH-02 | S01 | LOCAL_VERIFIED | `1a3a859fa408701ac95b88078cdd5a2051a3cea9` | collapsed shell max+min visual evidence; no overflow/collisions |
-| T-01 | S02 | LOCAL_VERIFIED | `d80ea4dfdc287f226826bcdf8f223ff8fdb247d4` | populated Today hierarchy and bounded period groups; max native evidence |
-| T-02 | S02 | LOCAL_VERIFIED | `d80ea4dfdc287f226826bcdf8f223ff8fdb247d4` | selected split max+min evidence; stable selected geometry |
-| T-03 | S02 | LOCAL_VERIFIED | `d80ea4dfdc287f226826bcdf8f223ff8fdb247d4` | Note facet max+min evidence; no invented edit affordance |
-| T-04 | S02 | LOCAL_VERIFIED | `d80ea4dfdc287f226826bcdf8f223ff8fdb247d4` | aligned definition-list Details facet max+min evidence |
-| T-05 | S02 | LOCAL_VERIFIED | `d80ea4dfdc287f226826bcdf8f223ff8fdb247d4` | numeric recorded-time and textual timer state max+min evidence |
-| T-06 | S02 | LOCAL_VERIFIED | `d80ea4dfdc287f226826bcdf8f223ff8fdb247d4` | low-chrome active links and factual archived/empty semantics |
-| T-07 | S02 | LOCAL_VERIFIED | `d80ea4dfdc287f226826bcdf8f223ff8fdb247d4` | slim timer strip, local primary Stop, secondary destructive Discard |
-| T-08 | S02 | LOCAL_VERIFIED | `d80ea4dfdc287f226826bcdf8f223ff8fdb247d4` | compact row time controls and accessible disabled reasons |
-| T-09 | S02 | LOCAL_VERIFIED | `d80ea4dfdc287f226826bcdf8f223ff8fdb247d4` | contained fan/listbox, active-vs-saved distinction, keyboard/outside close |
-| T-10 | S02 | LOCAL_VERIFIED | `d80ea4dfdc287f226826bcdf8f223ff8fdb247d4` | compact reversible saved-status strip and Undo semantics |
-| T-11 | S03 | LOCAL_VERIFIED | `17ebdea04baf4386a370bcc06acd1479fa2f806e` | one-off modal max+min evidence; canonical form hierarchy and primary action |
-| T-12 | S03 | LOCAL_VERIFIED | `17ebdea04baf4386a370bcc06acd1479fa2f806e` | recurring form max+min evidence; preserved recurrence capability |
-| T-13 | S03 | LOCAL_VERIFIED | `17ebdea04baf4386a370bcc06acd1479fa2f806e` | recurring occurrence scope precedes governed fields; max+min evidence |
-| T-14 | S03 | LOCAL_VERIFIED | `17ebdea04baf4386a370bcc06acd1479fa2f806e` | bounded validation alert and explicit destructive/pending action states |
-| T-15 | S03 | LOCAL_VERIFIED | `17ebdea04baf4386a370bcc06acd1479fa2f806e` | attached floating Life Area popup; active and saved states remain distinct |
-| T-16 | S03 | LOCAL_VERIFIED | `17ebdea04baf4386a370bcc06acd1479fa2f806e` | attached floating Focus Plan popup; series-owned disabled reason preserved |
-| T-17 | S03 | LOCAL_VERIFIED | `17ebdea04baf4386a370bcc06acd1479fa2f806e` | bounded TagPicker disclosure with shared controls and focus restoration |
-| T-18 | S04 | LOCAL_VERIFIED | S04 checkpoint | upcoming planning hierarchy, day sections, and aligned task-row evidence |
-| T-19 | S04 | LOCAL_VERIFIED | S04 checkpoint | overdue planning hierarchy with semantic danger restricted to overdue context |
-| T-20 | S04 | LOCAL_VERIFIED | S04 checkpoint | deadline groups expose first-class dates and render metadata once per row |
-| T-21 | S04 | LOCAL_VERIFIED | S04 checkpoint | populated saved-view manager/results max+min evidence with stable narrow rail |
-| T-22 | S04 | LOCAL_VERIFIED | S04 checkpoint | shared wide dialog shell, canonical fields, and primary-save ordering |
+| G-01 | S01 | VERIFIED | Q1 checkpoint | focused App/core-status semantics + native parent-surface evidence |
+| G-02 | S01 | VERIFIED | Q1 checkpoint | focused App/core-status semantics + native parent-surface evidence |
+| G-03 | S01 | VERIFIED | Q1 checkpoint | focused recovery semantics, heading focus, and page-frame evidence |
+| G-04 | S01 | VERIFIED | Q1 checkpoint | search result/no-result max+min visual evidence; focus containment/restoration |
+| G-05 | S01 | VERIFIED | Q1 checkpoint | registry-derived 8-row modal max+min visual evidence |
+| G-06 | S01 | VERIFIED | Q1 checkpoint | inputless/input/destructive focused dialog tests; shared modal grammar |
+| SH-01 | S01 | VERIFIED | Q1 checkpoint | expanded shell max+min visual evidence; current state is not color-only |
+| SH-02 | S01 | VERIFIED | Q1 checkpoint | collapsed shell max+min visual evidence; no overflow/collisions |
+| T-01 | S02 | VERIFIED | Q1 checkpoint | populated Today hierarchy and bounded period groups; max native evidence |
+| T-02 | S02 | VERIFIED | Q1 checkpoint | selected split max+min evidence; stable selected geometry |
+| T-03 | S02 | VERIFIED | Q1 checkpoint | Note facet max+min evidence; no invented edit affordance |
+| T-04 | S02 | VERIFIED | Q1 checkpoint | aligned definition-list Details facet max+min evidence |
+| T-05 | S02 | VERIFIED | Q1 checkpoint | numeric recorded-time and textual timer state max+min evidence |
+| T-06 | S02 | VERIFIED | Q1 checkpoint | low-chrome active links and factual archived/empty semantics |
+| T-07 | S02 | VERIFIED | Q1 checkpoint | slim timer strip, local primary Stop, secondary destructive Discard |
+| T-08 | S02 | VERIFIED | Q1 checkpoint | compact row time controls and accessible disabled reasons |
+| T-09 | S02 | VERIFIED | Q1 checkpoint | contained fan/listbox, active-vs-saved distinction, keyboard/outside close |
+| T-10 | S02 | VERIFIED | Q1 checkpoint | compact reversible saved-status strip and Undo semantics |
+| T-11 | S03 | VERIFIED | Q1 checkpoint | one-off modal max+min evidence; canonical form hierarchy and primary action |
+| T-12 | S03 | VERIFIED | Q1 checkpoint | recurring form max+min evidence; preserved recurrence capability |
+| T-13 | S03 | VERIFIED | Q1 checkpoint | recurring occurrence scope precedes governed fields; max+min evidence |
+| T-14 | S03 | VERIFIED | Q1 checkpoint | bounded validation alert and explicit destructive/pending action states |
+| T-15 | S03 | VERIFIED | Q1 checkpoint | attached floating Life Area popup; active and saved states remain distinct |
+| T-16 | S03 | VERIFIED | Q1 checkpoint | attached floating Focus Plan popup; series-owned disabled reason preserved |
+| T-17 | S03 | VERIFIED | Q1 checkpoint | bounded TagPicker disclosure with shared controls and focus restoration |
+| T-18 | S04 | VERIFIED | Q1 checkpoint | upcoming planning hierarchy, day sections, and aligned task-row evidence |
+| T-19 | S04 | VERIFIED | Q1 checkpoint | overdue planning hierarchy with semantic danger restricted to overdue context |
+| T-20 | S04 | VERIFIED | Q1 checkpoint | deadline groups expose first-class dates and render metadata once per row |
+| T-21 | S04 | VERIFIED | Q1 checkpoint | populated saved-view manager/results max+min evidence with stable narrow rail |
+| T-22 | S04 | VERIFIED | Q1 checkpoint | shared wide dialog shell, canonical fields, and primary-save ordering |
 | C-01 | S05 | PENDING | — | — |
 | C-02 | S05 | PENDING | — | — |
 | A-01 | S05 | PENDING | — | — |
@@ -148,21 +148,21 @@
 | S-06 | S12 | PENDING | — | — |
 | S-07 | S12 | PENDING | — | — |
 | S-08 | S12 | PENDING | — | — |
-| MC-01 | S02 | LOCAL_VERIFIED | `d80ea4dfdc287f226826bcdf8f223ff8fdb247d4` | seven-day bounded navigation; generated chevrons; selected/today semantics |
-| MC-02 | S03 | LOCAL_VERIFIED | `17ebdea04baf4386a370bcc06acd1479fa2f806e` | compact native Start time pair with shared inset focus treatment |
-| MC-03 | S03 | LOCAL_VERIFIED | `17ebdea04baf4386a370bcc06acd1479fa2f806e` | compact native End time pair with shared inset focus treatment |
+| MC-01 | S02 | VERIFIED | Q1 checkpoint | seven-day bounded navigation; generated chevrons; selected/today semantics |
+| MC-02 | S03 | VERIFIED | Q1 checkpoint | compact native Start time pair with shared inset focus treatment |
+| MC-03 | S03 | VERIFIED | Q1 checkpoint | compact native End time pair with shared inset focus treatment |
 
 ## DONE
 
-- none
+- Q1 promoted S01–S04: 33/33 scoped rows VERIFIED
 
 ## CURRENT
 
-- F0 preflight
+- S05 pending
 
 ## NEXT
 
-- S01 after F0 closure
+- S05
 
 ## KNOWN_DEBT
 
@@ -233,6 +233,14 @@ Append concise entries:
 - [S04] native Light `shell-task` maximized — PASS — 24 surfaces / zero collisions — `target/e2e-artifacts/task-50b/shell-task-S04-20260810-080823`
 - [S04] native Light `shell-task` 960×640 — PASS — achieved 960×639 / 24 surfaces / zero collisions — `target/e2e-artifacts/task-50b/shell-task-S04-20260810-081009`
 - [S04] bounded self-review `F_S04` — RESOLVED — verifier requires the exact modal CSS owner import with shared DialogSurface use; audit creates and selects a saved view through the UI, with its manager rail composed for bounded widths; affected static and max/min checks passed
+- [Q1] full frontend unit sentinel — PASS — 52 files / 781 tests
+- [Q1] production build — PASS — source maps emitted without shipping per-chunk source-map comments
+- [Q1] performance budget — PASS — 1,263,675 raw / 389,107 gzip / 26 chunks; ceilings unchanged; headroom 299 raw / 418 gzip
+- [Q1] affected planning/Saved Views/WeekStrip tests — PASS — 4 files / 27 tests
+- [Q1] native behavior — PASS — phase6 planning, phase9 deadline/Saved Views, phase14 actual time, and phase16 keyboard shortcuts; audit date aligned to authoritative backend date
+- [Q1] native Light `shell-task` maximized — PASS — 24 surfaces / zero collisions — `target/e2e-artifacts/task-50b/shell-task-Q1-20260810-085941`
+- [Q1] native Light `shell-task` 960×640 — PASS — achieved 960×639 / 24 surfaces / zero collisions — `target/e2e-artifacts/task-50b/shell-task-Q1-20260810-090127`
+- [Q1] bounded self-review `F_Q1` — FROZEN/RESOLVED — zero findings; no post-review fixes or repeated review
 
 ## DECISIONS MADE UNDER UNATTENDED AUTHORITY
 
@@ -251,6 +259,8 @@ Record only material reversible decisions that future stages may need to know.
 - [S03] Task combobox popups attach below at wide viewports and above at compact viewports; both remain floating, contained, and use a blue edge for keyboard-active versus tonal fill for saved selection.
 - [S04] Planning and deadline workspaces reuse Today task-row density and grouping; danger color is reserved for overdue headings and conflicts, while deadline dates remain first-class neutral structure.
 - [S04] Saved Views evidence creates and selects an ephemeral view through public UI controls so the manager, selection, result rows, and editor are all exercised without inventing persisted capability.
+- [Q1] Production source maps remain emitted as hidden maps; omitting only per-chunk `sourceMappingURL` comments restores the fixed bundle budget without changing ceilings, chunking, or diagnostic artifacts.
+- [Q1] Native behavior suites use the authoritative backend local date when date-sensitive fixtures cross the wall-clock boundary; semantic workspace-tab selectors avoid matching the shell destination with the same accessible name.
 
 ## FINAL FINDING SET
 

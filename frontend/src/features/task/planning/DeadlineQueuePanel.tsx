@@ -32,53 +32,29 @@ export default function DeadlineQueuePanel({
     queryFn: () => getDeadlineQueue({ anchor_local_date: anchorLocalDate }),
   });
 
-  if (query.isLoading)
-    return (
-      <div className={styles.deadlinePanel}>
-        <header className={styles.header}><h1 className={styles.title}>Deadlines</h1></header>
+  const projection = query.data;
+  return (
+    <div className={styles.panelBody}>
+      <header className={styles.header}>
+        <h1>Deadlines</h1>
+        {projection && <p>{projection.total_item_count} tasks · {projection.range_start_local_date}–{projection.range_end_local_date}</p>}
+      </header>
+      {query.isLoading ? (
         <p role="status" aria-live="polite">Loading deadlines…</p>
-      </div>
-    );
-  if (query.isError)
-    return (
-      <div className={styles.deadlinePanel}>
-        <header className={styles.header}><h1 className={styles.title}>Deadlines</h1></header>
+      ) : query.isError ? (
         <div className={styles.error} role="alert">
           <p>Deadlines could not be loaded. Today is still available.</p>
           <button className={styles.retry} type="button" onClick={() => void query.refetch.call(query)}>Retry</button>
         </div>
-      </div>
-    );
-
-  const projection = query.data!;
-  if (projection.total_item_count === 0)
-    return (
-      <div className={styles.deadlinePanel}>
-        <header className={styles.header}>
-          <h1 className={styles.title}>Deadlines</h1>
-          <p className={styles.summary}>0 tasks</p>
-        </header>
+      ) : projection!.total_item_count === 0 ? (
         <div className={styles.empty}>
-          <p>
-            No deadlines between{" "}
-            <time dateTime={projection.range_start_local_date}>{projection.range_start_local_date}</time>{" "}
-            and <time dateTime={projection.range_end_local_date}>{projection.range_end_local_date}</time>.
-          </p>
+          <p>No deadlines between <time dateTime={projection!.range_start_local_date}>{projection!.range_start_local_date}</time> and <time dateTime={projection!.range_end_local_date}>{projection!.range_end_local_date}</time>.</p>
         </div>
-      </div>
-    );
-
-  return (
-    <div className={styles.deadlinePanel}>
-      <header className={styles.header}>
-        <h1 className={styles.title}>Deadlines</h1>
-        <p className={styles.summary}>{projection.total_item_count} tasks · {projection.range_start_local_date}–{projection.range_end_local_date}</p>
-      </header>
-      {projection.groups
+      ) : projection!.groups
         .filter((group) => group.items.length > 0)
         .map((group) => (
-          <section className={styles.deadlineGroup} key={group.state} aria-labelledby={`deadline-${group.state}`}>
-            <h2 className={`${styles.deadlineHeading} ${group.state === "overdue" ? styles.overdueHeading : ""}`} id={`deadline-${group.state}`}>
+          <section className={styles.dayGroup} key={group.state} aria-labelledby={`deadline-${group.state}`}>
+            <h2 className={group.state === "overdue" ? styles.overdueHeading : undefined} id={`deadline-${group.state}`}>
               {groupHeadings[group.state]} · {group.item_count}
             </h2>
             <ul className={styles.list}>
@@ -115,15 +91,15 @@ function DeadlineRow({
   }).format(new Date(`${item.scheduled_local_date}T12:00:00`));
   return (
     <li className={styles.row}>
-      <div className={styles.time}>
+      <div>
         <time dateTime={item.deadline_local_date}>
           {item.deadline_local_date}
         </time>
       </div>
-      <div className={styles.content}>
-        <strong className={styles.rowTitle}>{item.title}</strong>
+      <div>
+        <strong>{item.title}</strong>
         {item.description && (
-          <p className={styles.description}>{item.description}</p>
+          <p>{item.description}</p>
         )}
         <div className={styles.metadata}>
           <span>
