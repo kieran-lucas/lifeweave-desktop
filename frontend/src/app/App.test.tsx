@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { describe, expect, it, beforeEach, vi } from "vitest";
 
 import { App, settleNavigationEnvelope } from "./App";
-import { shortcutCommands } from "./keyboardShortcuts";
+import { analyticsShortcut, destinationShortcuts, shortcutCommands } from "./keyboardShortcuts";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import axe from "axe-core";
 
@@ -29,9 +29,9 @@ const renderApp = () => {
   const client = new QueryClient();
   return {
     ...render(
-    <QueryClientProvider client={client}>
-      <App />
-    </QueryClientProvider>,
+      <QueryClientProvider client={client}>
+        <App />
+      </QueryClientProvider>,
     ),
     client,
   };
@@ -101,28 +101,28 @@ vi.mock("../ipc/commands", () => ({
 }));
 
 const rootProjection = {
-      root_id: "life-root",
-      selected: {
-        id: "life-root",
-        title: "Life",
-        short_description: "Your personal structure begins here.",
-        icon_key: "life-root",
-        branch_theme_id: "neutral",
-        child_count: 0,
-        is_leaf: true,
-        is_pinned: false,
-        revision: 0,
-      },
-      parent: null,
-      children: [],
-      breadcrumb: [],
-      selected_is_pinned: false,
-      child_page: 0,
-      child_page_count: 1,
-      tree_revision: 0,
-      resolved_from_fallback: false,
-      preferred_mode: "browse",
-      viewport_anchor: null,
+  root_id: "life-root",
+  selected: {
+    id: "life-root",
+    title: "Life",
+    short_description: "Your personal structure begins here.",
+    icon_key: "life-root",
+    branch_theme_id: "neutral",
+    child_count: 0,
+    is_leaf: true,
+    is_pinned: false,
+    revision: 0,
+  },
+  parent: null,
+  children: [],
+  breadcrumb: [],
+  selected_is_pinned: false,
+  child_page: 0,
+  child_page_count: 1,
+  tree_revision: 0,
+  resolved_from_fallback: false,
+  preferred_mode: "browse",
+  viewport_anchor: null,
 };
 
 describe("App shell", () => {
@@ -343,86 +343,71 @@ describe("App shell", () => {
     resolveToday([]);
   });
 
-  it("defaults to Today and exposes the locked navigation order", async () => {
+  it("defaults to Today and exposes the compact primary navigation order", async () => {
     renderApp();
     await screen.findByRole("heading", { name: "Today" });
-    expect(screen.getAllByRole("navigation")[0]).toHaveAccessibleName(
-      "Primary navigation",
-    );
-    expect(
-      screen.getByRole("button", { name: "Create task" }),
-    ).toBeInTheDocument();
+    const navigation = screen.getByRole("navigation", { name: "Primary navigation" });
+    expect(within(navigation).getAllByRole("button").map((button) => button.getAttribute("aria-label") ?? button.textContent?.trim())).toEqual([
+      "Today",
+      "Calendar",
+      "Plans",
+      "Life System",
+      "Settings",
+      "Collapse sidebar",
+    ]);
+    expect(within(navigation).queryByRole("button", { name: "Analytics" })).not.toBeInTheDocument();
+    expect(within(navigation).queryByRole("button", { name: /Search/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Create task" })).toBeInTheDocument();
   });
 
   it("navigates destinations and exposes the active item", async () => {
     renderApp();
     await screen.findByRole("heading", { name: "Today" });
     fireEvent.click(screen.getByRole("button", { name: "Calendar" }));
-    expect(
-      await screen.findByRole("heading", { name: "Calendar" }),
-    ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Calendar" })).toHaveAttribute(
-      "aria-current",
-      "page",
-    );
+    expect(await screen.findByRole("heading", { name: "Calendar" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Calendar" })).toHaveAttribute("aria-current", "page");
   });
 
-  it("opens objective Analytics instead of the former placeholder", async () => {
+  it("owns Search and objective Analytics inside Settings", async () => {
     renderApp();
     await screen.findByRole("heading", { name: "Today" });
-    fireEvent.click(screen.getByRole("button", { name: "Analytics" }));
-    expect(
-      await screen.findByRole("heading", { name: "Analytics" }),
-    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+    expect(await screen.findByRole("heading", { name: "Settings" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Search/ })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Analytics/ }));
+    expect(await screen.findByRole("heading", { name: "Analytics" })).toBeInTheDocument();
     expect(await screen.findByText("Scheduled time")).toBeInTheDocument();
-    expect(
-      screen.queryByLabelText("Analytics placeholder"),
-    ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Settings" })).toHaveAttribute("aria-current", "page");
+    expect(screen.queryByLabelText("Analytics placeholder")).not.toBeInTheDocument();
   });
 
   it("persists collapse and restores the task preference after Life System", async () => {
     renderApp();
     await screen.findByRole("heading", { name: "Today" });
     fireEvent.click(screen.getByRole("button", { name: "Collapse sidebar" }));
-    expect(
-      screen.getByRole("button", { name: "Expand sidebar" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Expand sidebar" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Life System" }));
     fireEvent.click(screen.getByRole("button", { name: "Today" }));
-    expect(
-      screen.getByRole("button", { name: "Expand sidebar" }),
-    ).toBeInTheDocument();
-    expect(window.localStorage.getItem("lifeweave.task-sidebar-mode.v1")).toBe(
-      "collapsed",
-    );
+    expect(screen.getByRole("button", { name: "Expand sidebar" })).toBeInTheDocument();
+    expect(window.localStorage.getItem("lifeweave.task-sidebar-mode.v1")).toBe("collapsed");
   });
 
   it("opens the real two-level Life Browse instead of a placeholder", async () => {
     renderApp();
     await screen.findByRole("heading", { name: "Today" });
     fireEvent.click(screen.getByRole("button", { name: "Life System" }));
-    expect(
-      await screen.findByRole("heading", { name: "Life" }),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Life" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pinned" })).toBeInTheDocument();
-    expect(
-      screen.queryByLabelText("Life System placeholder"),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Life System placeholder")).not.toBeInTheDocument();
   });
 
   it("keeps Foundation tools under Settings", async () => {
     renderApp();
     await screen.findByRole("heading", { name: "Today" });
-    expect(
-      screen.queryByRole("heading", { name: "Foundation Records" }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Foundation Records" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Settings" }));
-    expect(
-      await screen.findByRole("heading", { name: "Settings" }),
-    ).toBeInTheDocument();
-    expect(
-      await screen.findByRole("heading", { name: "Foundation Records" }),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Settings" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Foundation Records" })).toBeInTheDocument();
   });
 
   it("keeps selected-day state in the shell and defaults create to it", async () => {
@@ -485,21 +470,15 @@ describe("App shell", () => {
     const targetDate = within(grid).getAllByRole("button")[10]!;
     expect(targetDate).toHaveAccessibleName("Thursday, August 6, 2026");
     fireEvent.click(targetDate);
-    expect(
-      await screen.findByRole("heading", { name: "Thursday, August 6" }),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Thursday, August 6" })).toBeInTheDocument();
     expect(screen.queryByRole("grid")).not.toBeInTheDocument();
   });
 
-  // Global keyboard shortcuts (Task 45). The suppression matrix itself is proven once in
-  // keyboardShortcuts.test.ts; these cases prove the application wiring on top of it.
-
-  it("reaches every destination through Ctrl+1..6 using the sidebar transition", async () => {
+  it("reaches every primary destination by its preserved shortcut and keeps Analytics under Settings", async () => {
     renderApp();
     await screen.findByRole("heading", { name: "Today" });
     const sidebar = screen.getByRole("navigation", { name: "Primary navigation" });
-    for (const command of shortcutCommands) {
-      if (!command.destination) continue;
+    for (const command of destinationShortcuts) {
       expect(fireEvent.keyDown(window, { key: command.key, ctrlKey: true })).toBe(false);
       const active = within(sidebar)
         .getAllByRole("button")
@@ -508,14 +487,12 @@ describe("App shell", () => {
       expect(active[0]).toHaveAccessibleName(command.label);
       expect(active[0]).toHaveAttribute("aria-keyshortcuts", command.ariaKeyShortcuts);
     }
-    fireEvent.keyDown(window, { key: "3", ctrlKey: true });
+    fireEvent.keyDown(window, { key: analyticsShortcut.key, ctrlKey: true });
     expect(await screen.findByRole("heading", { name: "Analytics" })).toBeInTheDocument();
+    expect(within(sidebar).getByRole("button", { name: "Settings" })).toHaveAttribute("aria-current", "page");
   });
 
   it("clears an unsettled pending Today navigation through the destination shortcut", async () => {
-    // Today items never resolve, so the pending navigation cannot settle itself. Its companion
-    // test above proves that an *uncleared* pending request pins the date across a rollover;
-    // here the destination shortcut clears it and the rollover is free to advance.
     appApi.listTodayItems.mockReturnValue(new Promise(() => {}));
     const leaf = { ...rootProjection.selected, id: "life-area", title: "Area" };
     appApi.getLifeBrowseProjection.mockResolvedValue({
@@ -549,16 +526,16 @@ describe("App shell", () => {
     expect(await screen.findByText("Today · 2026-08-05")).toBeInTheDocument();
   });
 
-  it("opens the existing Search dialog with Ctrl+K and yields the keyboard to it", async () => {
+  it("opens Settings-owned Search with Ctrl+K and yields the keyboard to it", async () => {
     renderApp();
     await screen.findByRole("heading", { name: "Today" });
     expect(fireEvent.keyDown(window, { key: "k", ctrlKey: true })).toBe(false);
     expect(await screen.findByRole("dialog", { name: "Search" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Settings" })).toBeInTheDocument();
 
-    // An open modal owns the keyboard: no navigation, no second Search, no help.
     expect(fireEvent.keyDown(window, { key: "3", ctrlKey: true })).toBe(true);
     expect(fireEvent.keyDown(window, { key: "/", ctrlKey: true })).toBe(true);
-    expect(screen.getByRole("heading", { name: "Today" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Settings" })).toBeInTheDocument();
     expect(screen.queryByRole("dialog", { name: "Keyboard shortcuts" })).not.toBeInTheDocument();
   });
 
@@ -572,7 +549,6 @@ describe("App shell", () => {
     const dialog = await screen.findByRole("dialog", { name: "Keyboard shortcuts" });
     expect(document.activeElement).toBe(within(dialog).getByRole("heading", { level: 2 }));
 
-    // Rows are generated from the registry, so they cannot drift from what dispatch does.
     expect([...dialog.querySelectorAll("dt")].map((node) => node.textContent)).toEqual(
       shortcutCommands.map((command) => command.label),
     );
@@ -580,7 +556,6 @@ describe("App shell", () => {
       shortcutCommands.map((command) => command.chord),
     );
 
-    // The help dialog is itself a modal, so global chords stay suppressed while it is open.
     expect(fireEvent.keyDown(window, { key: "3", ctrlKey: true })).toBe(true);
     expect(screen.getByRole("heading", { name: "Today" })).toBeInTheDocument();
 
@@ -612,7 +587,6 @@ describe("App shell", () => {
   it.each([
     ["Today", "Today"],
     ["Calendar", "Calendar"],
-    ["Analytics", "Analytics"],
     ["Life System", "Life"],
     ["Settings", "Settings"],
   ])(
@@ -632,4 +606,16 @@ describe("App shell", () => {
       expect(result.violations).toEqual([]);
     },
   );
+
+  it("has no automated WCAG violations in Settings-owned Analytics", async () => {
+    const { container } = renderApp();
+    await screen.findByRole("heading", { name: "Today" });
+    fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+    fireEvent.click(await screen.findByRole("button", { name: /Analytics/ }));
+    await screen.findByRole("heading", { name: "Analytics" });
+    const result = await axe.run(container, {
+      runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"] },
+    });
+    expect(result.violations).toEqual([]);
+  });
 });
