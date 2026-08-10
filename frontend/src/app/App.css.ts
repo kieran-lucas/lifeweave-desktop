@@ -19,10 +19,7 @@ export const appRoot = style({
   selectors: { "&[data-sidebar-mode=collapsed]": { gridTemplateColumns: "68px minmax(0, 1fr)" } },
 });
 
-/**
- * The shell is one hard inversion plane: black against white in Light, white against black in Dark.
- * No translucent fill, wash, glow or colored separator is allowed here.
- */
+/** The shell is one hard black plane against the permanent white workspace. */
 export const sidebar = style({
   display: "flex",
   flexDirection: "column",
@@ -181,6 +178,55 @@ export const settingsSection = style({
 globalStyle(`${settingsSection} > h2`, { ...text.sectionTitle, margin: 0 });
 globalStyle(`${settingsSection} > h2 + p`, { ...text.compactBody, margin: 0, color: "var(--text-muted)", maxInlineSize: "72ch" });
 globalStyle(`${settingsSection} > h2 + p + *`, { marginBlockStart: space.x3 });
+
+export const settingsToolGrid = style({
+  display: "grid",
+  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+  gap: space.x3,
+  "@media": { "screen and (max-width: 760px)": { gridTemplateColumns: "1fr" } },
+});
+
+export const settingsToolButton = style([
+  focusRing,
+  {
+    display: "grid",
+    gridTemplateColumns: "40px minmax(0, 1fr)",
+    alignItems: "center",
+    gap: 12,
+    minInlineSize: 0,
+    minBlockSize: 82,
+    padding: "14px 16px",
+    border: "1px solid var(--paint-edge)",
+    borderRadius: "var(--radius-surface)",
+    backgroundColor: "var(--surface-raised)",
+    backgroundImage: "var(--paint-grain-fine)",
+    color: "var(--text-primary)",
+    textAlign: "left",
+    cursor: "pointer",
+    boxShadow: "none",
+    transition: `border-color ${duration.state} ${easing.standard}, transform ${duration.press} ${easing.standard}`,
+    selectors: {
+      "&:hover": { borderColor: "var(--text-primary)", transform: "translateY(-1px)" },
+      "&:active": { transform: "translateY(1px)" },
+    },
+    "@media": {
+      "(prefers-reduced-motion: reduce)": { transition: "none", selectors: { "&:hover": { transform: "none" }, "&:active": { transform: "none" } } },
+    },
+  },
+]);
+
+globalStyle(`${settingsToolButton} > span`, { display: "grid", gap: 4, minInlineSize: 0 });
+globalStyle(`${settingsToolButton} strong`, { ...text.objectTitle });
+globalStyle(`${settingsToolButton} small`, { ...text.metadata, color: "var(--text-muted)" });
+
+export const settingsToolIcon = style({
+  inlineSize: 24,
+  blockSize: 24,
+  justifySelf: "center",
+});
+
+export const settingsSubpage = style({ display: "grid", gap: space.x3 });
+export const settingsBackButton = style([button.ghost, { justifySelf: "start" }]);
 
 export const coreStatus = style({ ...text.body, margin: 0, color: "var(--text-muted)" });
 export const recovery = style({ paddingBlockStart: space.x6 });
