@@ -6,12 +6,7 @@ import { family, text } from "../../design-system/visual/typography.css";
 import { tab as sharedTab } from "../../design-system/primitives/navigation.css";
 import { duration, easing } from "../../design-system/visual/motion.css";
 
-export const heading = style({
-  margin: 0,
-  ...text.display,
-  color: "var(--text-primary)",
-  textShadow: "0 14px 38px color-mix(in srgb, var(--accent-violet) 14%, transparent)",
-});
+export const heading = style({ margin: 0, ...text.display, color: "var(--text-primary)", textShadow: "0 14px 38px color-mix(in srgb, var(--accent-violet) 14%, transparent)" });
 export const lede = style({ margin: 0, color: "var(--text-muted)", maxInlineSize: "70ch" });
 export const createForm = style({ display: "grid", gridTemplateColumns: "minmax(11rem, 1fr) auto", alignItems: "center", gap: space.control, inlineSize: "min(24rem, 100%)", minInlineSize: 0, "@media": { "(max-width: 700px)": { inlineSize: "100%" } } });
 export const portfolios = style({ display: "flex", gap: space.x3, flexWrap: "wrap", borderBottom: "1px solid color-mix(in srgb, var(--accent) 14%, var(--border-subtle))" });
@@ -22,15 +17,12 @@ export const listPanel = style({
   padding: space.x3,
   border: "1px solid var(--glass-border)",
   borderRadius: "var(--radius-surface)",
-  background:
-    "linear-gradient(150deg, color-mix(in srgb, white 34%, transparent), transparent 50%), var(--glass-surface)",
-  boxShadow: "0 18px 48px color-mix(in srgb, var(--accent) 8%, transparent), inset 0 1px 0 var(--glass-highlight)",
+  background: "linear-gradient(150deg, color-mix(in srgb, white 34%, transparent), transparent 50%), var(--glass-surface)",
+  boxShadow: "var(--glow-crystal)",
   maxHeight: "calc(100vh - 220px)",
   overflowY: "auto",
   scrollbarGutter: "stable",
-  "@supports": {
-    "(backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))": { backdropFilter: "blur(16px) saturate(1.16)", WebkitBackdropFilter: "blur(16px) saturate(1.16)" },
-  },
+  "@supports": { "(backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))": { backdropFilter: "blur(16px) saturate(1.16)", WebkitBackdropFilter: "blur(16px) saturate(1.16)" } },
   "@media": { "(max-width: 700px)": { maxHeight: "none" } },
 });
 export const planList = style({ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 3 });
@@ -49,13 +41,9 @@ export const planButton = style({
   transition: `background-color ${duration.state} ${easing.standard}, border-color ${duration.state} ${easing.standard}, box-shadow ${duration.state} ${easing.standard}, transform ${duration.state} ${easing.standard}`,
   selectors: {
     "&::before": { content: '""', position: "absolute", insetBlock: 10, insetInlineStart: 0, inlineSize: 3, borderRadius: "var(--radius-full)", background: "transparent" },
-    "&:hover": { background: "linear-gradient(105deg, color-mix(in srgb, var(--accent-cyan) 8%, transparent), color-mix(in srgb, var(--accent-violet) 7%, transparent))", transform: "translateX(2px)" },
-    '&[aria-current="true"]': {
-      background: "linear-gradient(115deg, color-mix(in srgb, var(--accent-cyan) 14%, var(--active-background)), color-mix(in srgb, var(--accent-violet) 12%, var(--active-background)))",
-      borderColor: "color-mix(in srgb, var(--accent) 22%, transparent)",
-      boxShadow: "0 10px 28px color-mix(in srgb, var(--accent) 10%, transparent)",
-    },
-    '&[aria-current="true"]::before': { background: "linear-gradient(180deg, var(--accent-cyan), var(--accent), var(--accent-violet))", boxShadow: "0 0 12px color-mix(in srgb, var(--accent) 35%, transparent)" },
+    "&:hover": { background: "linear-gradient(105deg, color-mix(in srgb, var(--accent-cyan) 8%, transparent), color-mix(in srgb, var(--accent-violet) 7%, transparent))", transform: "translateY(-1px)" },
+    '&[aria-current="true"]': { background: "linear-gradient(115deg, color-mix(in srgb, var(--accent-cyan) 14%, var(--active-background)), color-mix(in srgb, var(--accent-violet) 12%, var(--active-background)))", borderColor: "color-mix(in srgb, var(--accent) 22%, transparent)", boxShadow: "var(--glow-hover)" },
+    '&[aria-current="true"]::before': { background: "linear-gradient(180deg, var(--accent-cyan), var(--accent), var(--accent-violet))", boxShadow: "var(--glow-dot)" },
     "&:focus-visible": { outline: "2px solid var(--focus-ring)", outlineOffset: -2 },
   },
   "@media": {
@@ -72,16 +60,13 @@ export const detailPanel = style({
   minInlineSize: 0,
   border: "1px solid var(--glass-border)",
   borderRadius: "var(--radius-surface)",
-  background:
-    "radial-gradient(560px 260px at 92% 4%, color-mix(in srgb, var(--accent-violet) 8%, transparent), transparent 68%), linear-gradient(145deg, color-mix(in srgb, white 44%, transparent), transparent 46%), var(--glass-surface-strong)",
-  boxShadow: "0 24px 66px color-mix(in srgb, var(--accent) 10%, transparent), inset 0 1px 0 white",
-  "@supports": {
-    "(backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))": { backdropFilter: "blur(18px) saturate(1.18)", WebkitBackdropFilter: "blur(18px) saturate(1.18)" },
-  },
+  background: "radial-gradient(560px 260px at 92% 4%, color-mix(in srgb, var(--accent-violet) 8%, transparent), transparent 68%), linear-gradient(145deg, color-mix(in srgb, white 44%, transparent), transparent 46%), var(--glass-surface-strong)",
+  boxShadow: "var(--glow-hero)",
+  "@supports": { "(backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))": { backdropFilter: "blur(18px) saturate(1.18)", WebkitBackdropFilter: "blur(18px) saturate(1.18)" } },
   "@media": { "(max-width: 700px)": { padding: space.x3 } },
 });
 export const detailHeader = style({ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", gap: space.field, alignItems: "start", minInlineSize: 0, "@media": { "(max-width: 700px)": { gridTemplateColumns: "1fr" } } });
-globalStyle(`${detailHeader} h2`, { ...text.objectTitle, margin: 0, fontFamily: family.editorial, fontSize: 28, lineHeight: "36px" });
+globalStyle(`${detailHeader} h2`, { ...text.objectTitle, margin: 0, fontFamily: family.editorial });
 globalStyle(`${detailPanel} > section`, { borderBlockStart: "1px solid color-mix(in srgb, var(--accent) 12%, var(--border-subtle))", paddingBlockStart: space.group });
 globalStyle(`${detailPanel} > section > h3`, { ...text.sectionTitle, margin: `0 0 ${space.x3}` });
 
