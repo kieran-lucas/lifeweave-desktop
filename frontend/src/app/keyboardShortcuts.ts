@@ -11,7 +11,6 @@
 export type Destination =
   | "today"
   | "calendar"
-  | "analytics"
   | "plans"
   | "life"
   | "settings";
@@ -54,15 +53,25 @@ function chordOf(key: string): Pick<ShortcutCommand, "key" | "chord" | "ariaKeyS
   return { key, chord: `Ctrl+${display}`, ariaKeyShortcuts: `Control+${display}` };
 }
 
-/** The six destination commands, in the sidebar's existing locked order. */
+/**
+ * Primary sidebar destinations. Their historic chords are preserved even though Analytics moved
+ * under Settings, so existing muscle memory for Today/Calendar/Plans/Life/Settings does not shift.
+ */
 export const destinationShortcuts: readonly DestinationShortcutCommand[] = [
   { id: "open-today", label: "Today", destination: "today", ...chordOf("1") },
   { id: "open-calendar", label: "Calendar", destination: "calendar", ...chordOf("2") },
-  { id: "open-analytics", label: "Analytics", destination: "analytics", ...chordOf("3") },
   { id: "open-plans", label: "Plans", destination: "plans", ...chordOf("4") },
   { id: "open-life", label: "Life System", destination: "life", ...chordOf("5") },
   { id: "open-settings", label: "Settings", destination: "settings", ...chordOf("6") },
 ];
+
+/** Analytics is a Settings subview, but Ctrl+3 remains its direct accelerator. */
+export const analyticsShortcut: ShortcutCommand = {
+  id: "open-analytics",
+  label: "Analytics",
+  destination: "settings",
+  ...chordOf("3"),
+};
 
 export const searchShortcut: ShortcutCommand = {
   id: "open-search",
@@ -78,9 +87,14 @@ export const shortcutHelpShortcut: ShortcutCommand = {
   ...chordOf("/"),
 };
 
-/** The complete registry. Help rows, dispatch, and every displayed chord read this one list. */
+/** The complete registry, ordered by the familiar Ctrl+1..6 sequence, then global tools. */
 export const shortcutCommands: readonly ShortcutCommand[] = [
-  ...destinationShortcuts,
+  destinationShortcuts[0]!,
+  destinationShortcuts[1]!,
+  analyticsShortcut,
+  destinationShortcuts[2]!,
+  destinationShortcuts[3]!,
+  destinationShortcuts[4]!,
   searchShortcut,
   shortcutHelpShortcut,
 ];
