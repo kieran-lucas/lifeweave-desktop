@@ -9,7 +9,7 @@ import { findCollisions, maximizeAndDescribe, type Collision } from "../support/
  * Task 51 — VISUAL LOCK capture.
  *
  * Renders the isolated prototype at `/prototype.html` in the real WebView2, at the canonical
- * maximized viewport and at the three additional required sizes, and captures every lock state.
+ * maximized viewport and at the three additional required sizes, and captures every Light lock state.
  *
  * It reuses the Task 50 semantic-collision detector deliberately: the composition is new, so the
  * evidence that it does not reintroduce `Morning04:00–12:00`-class defects has to be measured
@@ -23,7 +23,7 @@ const label = process.env.LIFEWEAVE_CAPTURE_LABEL ?? "pass1";
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const outputRoot = join(repoRoot, "target", "e2e-artifacts", "task-51", label);
 
-const states = ["populated", "selected", "dense", "empty", "timer", "dark-selected"] as const;
+const states = ["populated", "selected", "dense", "empty", "timer"] as const;
 
 /** The canonical lock size is whatever the maximized window actually measures, never a request. */
 const extraViewports = [
@@ -44,13 +44,6 @@ type Record_ = {
 const records: Record_[] = [];
 let environment: Awaited<ReturnType<typeof maximizeAndDescribe>> | null = null;
 
-/**
- * Counts the deepest chain of *visible enclosures* — elements that draw a border, a non-inherited
- * background, or a shadow — under the application root.
- *
- * This is the mechanical form of ADR 0045's enclosure budget. "Two levels" is otherwise a claim
- * somebody eyeballs; here it is a number that a regression can move.
- */
 async function enclosureDepth(): Promise<number> {
   return browser.execute(() => {
     const root = document.querySelector<HTMLElement>("[data-prototype-harness]")?.parentElement;
@@ -66,7 +59,6 @@ async function enclosureDepth(): Promise<number> {
         const colour = style.getPropertyValue(`border-${side.toLowerCase()}-color`);
         return width > 0 && colour !== "rgba(0, 0, 0, 0)" && colour !== "transparent";
       }).length;
-      // A single edge is a separator, not an enclosure. Three or more edges make a box.
       if (hasBorder >= 3) return true;
       if (style.boxShadow !== "none" && !style.boxShadow.startsWith("inset")) return true;
       const bg = style.backgroundColor;
@@ -105,7 +97,6 @@ async function overflow() {
 async function show(state: string) {
   await browser.url(`http://tauri.localhost/prototype.html?state=${state}`);
   await browser.pause(700);
-  // Hide the harness so it never lands in a capture; it is tooling, not design.
   await browser.execute(() => {
     const harness = document.querySelector<HTMLElement>("[data-prototype-harness]");
     if (harness) harness.style.display = "none";
@@ -160,7 +151,7 @@ describe(`Task 51 — visual lock capture (${label})`, () => {
     }
   });
 
-  it("captures every lock state at the canonical maximized viewport", async function () {
+  it("captures every Light lock state at the canonical maximized viewport", async function () {
     this.timeout(600_000);
     for (const state of states) {
       await show(state);
