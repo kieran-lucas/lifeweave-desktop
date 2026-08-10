@@ -4,12 +4,14 @@ Run only after F0, S01–S12 and Q1–Q5 are closed.
 
 ## Required read set
 - repository instructions;
-- owner authorization;
-- Master;
-- design-system authority;
+- latest Product Owner authorization;
+- Master for finite coverage/termination;
+- **current design-system authority (`Matte Anime Painted Atlas`) for aesthetic judgment**;
 - execution ledger;
 - surface packets only when a concrete final finding points to them;
 - test policy.
+
+The later Product Owner art-direction override supersedes earlier Quiet Precision Atlas / glass-first aesthetic language wherever those conflict. The old 109-row program remains capability and surface-coverage authority; it is not an aesthetic ceiling.
 
 Do not preload research archive.
 
@@ -30,8 +32,12 @@ A nondiagnostic infrastructure failure follows the repository's risk-based closu
 ## Exactly one whole-app adversarial/coherence review
 
 Review the implemented redesign against:
-- all 109 canonical rows;
-- Quiet Precision Atlas global laws;
+- all 109 canonical rows for capability/surface coverage;
+- **Matte Anime Painted Atlas** global laws;
+- opaque/matte persistent-material requirement and rejection of glass/acrylic appearance;
+- shared paper/painted-board/flat-wood grain continuity;
+- abstract-anime editorial identity without fandom/gacha/cyberpunk framing;
+- smooth cross-surface motion continuity and absence of visible stutter/snap;
 - capability-vs-reference boundary;
 - cross-screen hierarchy/coherence;
 - keyboard/focus/a11y;
@@ -39,6 +45,8 @@ Review the implemented redesign against:
 - performance/bundle;
 - no invented capability;
 - no regression to closed product invariants.
+
+Rendered visual acceptance matters: a technically passing result that still reads as generic SaaS, disconnected themed screens, frosted glass, or enterprise-default is a finding, not completion.
 
 Materialize a **finite fixed finding set `F_final`** with severity, row IDs, files, violated authority, smallest safe correction and required rerun.
 
