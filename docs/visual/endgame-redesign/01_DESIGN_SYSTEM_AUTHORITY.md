@@ -1,218 +1,160 @@
 # 01 — Design System Authority
 
-This file contains global visual rules that every stage may reference. It intentionally does not repeat screen-specific composition.
+**Status:** superseded visual direction approved by the Product Owner after post-execution review.  
+**Art direction:** **Lifeweave — Celestial Anime Editorial**.  
+**Target:** a premium Windows productivity application whose first impression is unmistakably crafted, cinematic and anime-inspired while remaining fast, readable and operational.
 
-## Brand
+This authority replaces the earlier interpretation of “Quiet Precision Atlas” wherever that interpretation suppressed visual character. Product capability, local-first/data-safety rules, geometry authority, keyboard behavior and semantic accessibility remain unchanged.
 
-- Mark: simple blue infinity symbol rendered through the centralized icon/asset pipeline.
-- No lightning, glow, avatar, fake profile, decorative badge, or unrelated shell furniture.
-- Lifeweave identity comes from blue + geometry + typography + spatial/product semantics, not decoration.
+## 1. Core visual thesis
 
-## Color
+Lifeweave should feel like a **luminous personal world for structuring a life**, not a generic SaaS dashboard with blue buttons.
 
-Use the current typed Light contract as the base:
-- cool near-white canvas/planes;
-- strong readable neutral text;
-- saturated blue accent;
-- blue completion semantics;
-- red/destructive only when semantic;
-- restrained warning role;
-- hairline structural borders.
+The global visual language may deliberately use:
+- sky light, aurora, crystal/prismatic light, orbit lines, constellations, stars and abstract petals;
+- layered translucent material where the atmosphere materially contributes to depth;
+- blue → indigo → violet as the primary identity spectrum, with cyan and restrained rose as atmospheric support;
+- luminous selected/current states;
+- editorial scale contrast and title-sequence-like composition;
+- slow ambient motion and small interaction choreography;
+- custom local SVG/CSS art that is decorative only and never becomes product capability.
 
-Do not reintroduce the superseded warm v1 palette globally.
+The intended reaction is **“this is a distinctive premium product”** before the user has inspected individual controls.
 
-Narrative Visual Worlds are an intentional authored-content exception; see `06_APPROVED_EXCEPTIONS.md`.
+## 2. Anime means abstract editorial, not fandom decoration
 
-## Typography
+Use **Abstract Anime Editorial** rather than characters or franchise imagery.
 
-### Productive register
-Segoe UI Variable optical families.
-Use for operational UI, navigation, controls, tables, inspectors, data, form chrome, task rows, Calendar, Analytics, Plans, Settings, Search, graph controls.
+Allowed motifs:
+- open sky and atmospheric light;
+- stars, glints and constellation geometry;
+- orbital rings and flowing weave curves;
+- glass/crystal refraction;
+- abstract sakura/petal silhouettes;
+- elegant geometric sigils;
+- layered spatial depth;
+- restrained cinematic motion.
 
-### Editorial register
-Literata.
-Use for authored Basic Reader and Narrative content and explicitly specified expressive knowledge identity.
+Forbidden:
+- copyrighted anime characters or fan art;
+- gacha banners, rarity framing or loot-box visual language;
+- dense cyberpunk neon;
+- visual-novel dialogue framing as global chrome;
+- random particles/effects without compositional purpose;
+- remote decorative assets.
 
-### Role law
-Use semantic roles such as:
-- productive page/object/section/card title;
-- body/bodyStrong/compact/row;
-- label/metadata/caption/eyebrow;
-- metric/numeric;
-- editorial document title/H1/H2/H3/body/caption;
-- control button/tab/navigation/field;
-- code inline/block.
+## 3. Global composition hierarchy
 
-Do not choose raw feature-local sizes when a role exists.
-Do not map HTML heading tags directly to editorial styling.
+The visual stack is:
 
-## Spacing
+`atmospheric world → workspace glass/plane → structured content → selected/luminous object → inspector → floating surface → modal`.
 
-Keep the existing finite scale:
-`4, 8, 12, 16, 24, 32, 48, 64`.
+The atmosphere is allowed to be clearly visible. It must not be reduced until it is barely perceptible merely because content is important. Instead, dense content receives stronger local material so readability and art can coexist.
 
-Interpret relationships rather than mechanically applying identical gaps:
-- 4: tight internal pairing;
-- 8: compact control/metadata relation;
-- 12: related row/control structure;
-- 16: field/body grouping;
-- 24: group separation;
-- 32: section separation;
-- 48–64: major page rhythm.
+Use whitespace, alignment and typography for hierarchy, but **do not treat visible art, depth or glow as defects by default**.
 
-Calm density is the target. Empty space must communicate hierarchy, not imitate a marketing landing page.
+## 4. Color
 
-## Radius
+Light theme is the acceptance target.
 
-Keep the current coherent scale:
-- small 6;
-- control 10;
-- surface 14;
-- floating 18;
-- full 999.
+Identity spectrum:
+- royal/celestial blue is primary;
+- indigo/violet is the second identity pole;
+- cyan is a cool atmospheric highlight;
+- restrained rose may appear only as ambient/supporting light;
+- red remains destructive/error semantic authority.
 
-Do not invent many near-identical radii.
+Near-white content planes remain readable, but they may carry cool chroma and controlled translucency. Selected/current states should visibly gain light and depth.
 
-## Surface/depth
+Completion semantics remain blue-family, not green.
 
-Persistent content:
-- opaque/near-opaque;
-- low chroma;
-- separated first by space, alignment, tone and hairline;
-- no decorative blur or oversized shadow.
+## 5. Typography
 
-Floating/transient:
-- menus, popovers, modals, detached drag layers may use the floating material grammar.
+Keep the existing high-quality families:
+- Segoe UI Variable optical families for dense operational text;
+- Literata Variable for editorial/high-expression moments and authored content.
 
-Conceptual stack:
-`canvas → workspace → bounded content → selected → inspector → popover/menu → modal → drag/transient`.
+Large identity moments may use the editorial register more freely than the previous direction allowed, provided repeated dense headings remain operationally clear.
 
-## Borders and shadows
+Hierarchy may use stronger scale contrast than before. The page should not look like every string belongs to one enterprise form.
 
-Hairlines are structural punctuation.
-Avoid nested border boxes.
-Do not combine selected fill + strong border + shadow unless a real state hierarchy requires it.
-Keep elevation sparse: none for normal content, soft floating, stronger modal.
+## 6. Material
 
-## Buttons
+Persistent surfaces may use **controlled glass** when the atmospheric field is genuinely visible behind them.
 
-Canonical families:
-- primary;
-- secondary;
-- ghost;
-- destructive;
-- icon;
-- compact.
+Canonical material behaviors:
+- translucent cool-white tint;
+- chromatic hairline/refraction edge;
+- subtle inner top highlight;
+- soft blue/indigo depth shadow;
+- backdrop blur only where it materially improves layering;
+- stronger opacity for text-dense surfaces.
 
-Do not recreate ordinary button padding/font/focus/disabled recipes in feature CSS when shared authority fits.
-Destructive actions remain visually semantic rather than aggressively decorative.
+Avoid stacking five glass cards inside one another. Glass is a material system, not a reason to box every paragraph.
 
-## Fields
+## 7. Glow and light
 
-Shared field grammar should cover input/select/textarea/number/file-trigger where appropriate:
-- label;
-- control;
-- help/description;
-- error;
-- disabled;
-- focus.
+Glow is now an authorized identity tool.
 
-Preserve native semantics. Do not turn TimeWheel into a fictional wheel picker; it is two native select controls for hour/minute.
+Use it for:
+- current navigation;
+- primary actions;
+- selected/high-value objects;
+- focused atmospheric accents;
+- sparse star/glint art.
 
-## Tabs and selection
+Do not put a neon halo around every control. A page needs dark/quiet intervals for luminous moments to read.
 
-Low-chrome tabs.
-Active state should be legible through more than color when required by context.
-Selection is not focus.
-List selection should not require a card shadow.
+## 8. Motion
 
-## Focus
+Motion has two layers.
 
-Default visual grammar:
-- clearly visible 2px focus ring;
-- 2px offset where geometry allows;
-- inset only when clipping requires it;
-- forced colors use platform-highlight behavior.
+**Ambient:** long-period, tiny-amplitude transform/opacity movement in the decorative world: aurora breathing, orbital drift, glints and petal drift.
 
-A thicker local ring requires documented perceptual reason.
+**Interaction:** fast controlled choreography for hover, selection, modal entry and direct manipulation. Small lifts and light changes are permitted.
 
-## States
+No mutation waits for animation. Reduced Motion removes ambient travel/loops and preserves short tonal feedback.
 
-Every primitive/surface must distinguish applicable:
-- default;
-- hover;
-- active;
-- focus-visible;
-- selected/current;
-- disabled;
-- pending/loading;
-- empty;
-- error;
-- success/status;
-- destructive;
-- drag/transient.
+## 9. Shell
 
-Use text/shape/position/semantics, not color alone.
+The shell is the strongest persistent brand carrier.
 
-## Motion
+- sidebar may be frosted/translucent;
+- current destination should read as a luminous blue-indigo ribbon, not a flat enterprise selection fill;
+- the infinity mark may have a restrained aura/refraction field while its core geometry remains the approved simple infinity mark;
+- no avatar, profile, meeting widget or invented capability.
 
-Use the existing state-first motion authority. Motion explains continuity and state; it never gates mutation.
+## 10. Surface-specific character
 
-Preserve current timing vocabulary approximately:
-- press ~70ms;
-- state ~100ms;
-- check/popover ~140ms;
-- inspector ~170–200ms;
-- reorder/route ~220ms;
-- traversal ~260ms.
+- **Today:** luminous timeline instrument; task content stays primary, but period groups and selection may carry atmospheric depth.
+- **Calendar:** the month grid is a crystalline hero surface; today and selection should feel special at a glance.
+- **Analytics:** evidence presented like an observatory/dashboard instrument, not generic KPI cards.
+- **Focus Plans:** strategic manuscript/mission-board seriousness with celestial accents.
+- **Life:** strongest atlas/spatial identity; nodes may feel like luminous coordinates in a personal constellation.
+- **Reader/Narrative:** full editorial expression; authored Visual Worlds remain valid and may be richer than operational chrome.
+- **Settings:** calmer than other pages, but still unmistakably belongs to the same world.
 
-No universal route theatrics.
-Reduced Motion removes travel and preserves useful tonal/state feedback.
+## 11. Geometry and semantics that remain locked
 
-## Geometry
+Do not change product behavior to obtain a visual effect.
 
-Preserve a finite page taxonomy only:
-- standard;
-- wide;
-- reading (768).
+Preserve:
+- standard / wide / reading frame taxonomy;
+- reading measure discipline;
+- real Task/Calendar/Life/Focus Plan capability boundaries;
+- native/semantic control meaning;
+- focus visibility and keyboard parity;
+- Reduced Motion and forced-colors fallbacks;
+- no backend/schema/domain/generated-IPC change for art;
+- no remote runtime assets.
 
-Do not add page-local max-width variants.
-The collapsed sidebar does not automatically justify a new width class.
-Narrative Studio may graduate to an existing shared frame only if a populated stress fixture proves the reading frame cannot compose cleanly; fix composition first.
+## 12. Anti-generic rejection test
 
-## Tables
+A visual change fails if the result could plausibly be described as:
+- “clean SaaS”; 
+- “Notion but blue”; 
+- “Linear with softer corners”; 
+- “Windows settings with glass”; or
+- “generic AI dashboard”.
 
-Tables remain tables when the information is relational.
-Use native semantics, strong column alignment, restrained rules, local horizontal scrolling where necessary.
-Do not convert dense factual tables into card grids.
-
-## Inspectors
-
-Inspector is contextual secondary detail, not a dashboard panel.
-It should feel attached to the selected object/workspace through alignment and depth, with local scrolling only when needed.
-
-## Accessibility
-
-Pragmatic high-quality floor:
-- semantic HTML first;
-- keyboard parity;
-- deterministic focus restoration;
-- visible focus;
-- no color-only critical state;
-- modal focus containment;
-- Reduced Motion;
-- forced-colors compatibility;
-- Vietnamese typography remains valid.
-
-Accessibility requirements must not be used as a pretext for visually clumsy duplication when a simpler accessible composition exists.
-
-## Anti-generic rules
-
-Do not add:
-- fake KPI cards just to fill space;
-- gradient hero banners;
-- translucent persistent glass panels;
-- decorative pills for every metadata field;
-- multi-color dashboard confetti;
-- invented assistant/profile/meeting widgets;
-- arbitrary visual-world theming outside authored Narrative content.
+A successful result has a recognizable Lifeweave silhouette, light field, material language and motion personality even with all text replaced by grey bars.
