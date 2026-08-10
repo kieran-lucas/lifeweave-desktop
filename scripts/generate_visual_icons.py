@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
 """Vendor the Lifeweave icon subset and generated brand mark.
 
-The package ships 20,621 SVGs. Lifeweave needs 22. Shipping the package to the renderer to reach
-0.1% of it would be indefensible against a 5,473-byte startup budget headroom, and Vite treats an
-imported SVG as an asset rather than as a component, so each icon would also become a separate
-network-less-but-still-parsed request.
+The upstream package contains thousands of SVGs. Lifeweave deliberately vendors only the glyphs
+that production actually imports: runtime icon-package dependencies and dozens of separate SVG
+assets would waste startup budget and weaken visual governance.
 
-So the subset is vendored as one generated TSX module of inline paths. The simple infinity brand
-mark is emitted by the same pipeline so shell identity cannot drift into a feature-local SVG. It is
-generated rather than hand-copied so the provenance is reproducible and a future agent can re-run it after an upgrade
-instead of trusting that 22 path strings were transcribed correctly.
+The subset is emitted as one generated TSX module of named inline paths. Named exports let Vite
+remove unused glyphs. The infinity brand mark is emitted by the same pipeline so shell identity stays
+reproducible.
 
     python scripts/generate_visual_icons.py
 
@@ -26,10 +24,10 @@ SOURCE = ROOT / "frontend/node_modules/@fluentui/svg-icons/icons"
 TARGET = ROOT / "frontend/src/design-system/visual/icons.tsx"
 BRAND_SOURCE = ROOT / "assets/brand/lifeweave-mark.svg"
 
-# name in Lifeweave  ->  Fluent file stem.
-#
-# Regular 20px throughout, per ADR 0045 §26, except where a filled counterpart carries genuine state
-# semantics: a completed task and a raised priority are states, not decorations.
+# name in Lifeweave -> Fluent file stem.
+# Regular 20px throughout, except filled counterparts that carry genuine state semantics.
+# The set is intentionally broad enough that feature/category semantics do not collapse into one
+# generic symbol, but each entry still needs a real production consumer before further expansion.
 ICONS: dict[str, str] = {
     "today": "weather_sunny_20_regular",
     "morning": "weather_sunny_low_20_regular",
@@ -60,33 +58,30 @@ HEADER = '''/*
  * GENERATED FILE — do not edit by hand.
  * Regenerate with:  python scripts/generate_visual_icons.py
  *
- * The Lifeweave icon vocabulary (ADR 0045): a curated {count}-icon subset of Fluent System Icons
- * plus the Lifeweave infinity brand mark, vendored as inline geometry.
+ * The Lifeweave icon vocabulary: a curated {count}-icon subset of Fluent System Icons plus the
+ * Lifeweave infinity brand mark, vendored as inline geometry.
  *
  * Source:  @fluentui/svg-icons {version}  (npm)
  * License: MIT — Copyright (c) Microsoft Corporation
  *          upstream repository: github.com/microsoft/fluentui-system-icons
  *
  * The attribution deliberately omits the URL scheme: `scripts/verify_no_remote_assets.py` rejects
- * any `https?://` under `frontend/src`, and that gate is more valuable than a clickable comment.
+ * any `https?://` under `frontend/src`.
  *
- * **Each path is a separate named export, deliberately.** An earlier version kept them in one
- * `Record<IconName, string>` and let `Icon` look the path up by name. That reads nicely and cannot
- * tree-shake: a dynamic lookup forces every entry into the bundle, so production shipped all
- * {count} icons to render the seven the shell actually uses, and `index.js` went 1,551 bytes over
- * its locked ceiling. Named exports let the bundler drop what no one imports.
+ * Each path is a separate named export so the bundler can drop unused glyphs. The vocabulary may be
+ * semantically diverse, but production only pays for the names a screen imports.
  *
- * Predominantly 20px regular weight, themed with `currentColor`. Filled variants appear only where
- * state semantics benefit — a completed task, a raised priority. No colour-icon variants.
+ * Icons render through `currentColor`, so the complete vocabulary remains black/white/gray under the
+ * Monochrome Matte authority. Filled variants appear only where state semantics benefit.
  *
- * Every icon is `aria-hidden` and focusable={{false}}: an icon is never the accessible name. A
- * control that renders only an icon must carry its own `aria-label`.
+ * Every icon is `aria-hidden` and focusable={{false}}: an icon is never the accessible name. An
+ * icon-only control must carry its own `aria-label`.
  */
 import type {{ SVGProps }} from "react";
 
 {entries}
 
-/** Lifeweave infinity mark — refined continuous geometry shared with the desktop icon. */
+/** Lifeweave infinity mark — continuous geometry shared with the desktop identity. */
 export const iconBrand =
   "{brand_path}";
 
