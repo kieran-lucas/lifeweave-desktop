@@ -42,17 +42,17 @@ function iconForCategory(iconKey: string, label: string): string {
   if (/(data|analytic|metric|finance|money|budget|stat)/.test(value)) return iconAnalytics;
   if (/(link|web|online|research)/.test(value)) return iconLink;
   if (/(note|write|journal|idea|document)/.test(value)) return iconNote;
-  return fallbackIcons[stableHash(value) % fallbackIcons.length];
+
+  const fallback = fallbackIcons[stableHash(value) % fallbackIcons.length];
+  if (fallback === undefined) {
+    throw new Error("Category icon fallback set must not be empty");
+  }
+  return fallback;
 }
 
 export function CategoryIcon({ iconKey, label }: { iconKey: string; label: string }) {
   return (
-    <span
-      role="img"
-      aria-label={label}
-      data-icon-key={iconKey}
-      className={styles.mark}
-    >
+    <span role="img" aria-label={label} data-icon-key={iconKey} className={styles.mark}>
       <Icon d={iconForCategory(iconKey, label)} size={16} />
     </span>
   );
