@@ -24,18 +24,12 @@ import {
 /**
  * Phase 21 — global layout invariants (ADR 0044).
  *
- * Single phase with no restart companion: Task 50 persists nothing, so there is no state for a
- * restart to preserve.
- *
- * This is the only place in the repository where layout is actually proven. jsdom reports every
- * rectangle as zero, so the frontend suite can prove which primitive an element uses but never that
- * two fields stopped overlapping or that a page stopped scrolling sideways. Every assertion below
- * reads the real WebView box model, and every screen is reached through the UI — no raw IPC drives
- * navigation, and raw IPC is used only to seed the fixture before measurement begins.
+ * Search and Analytics are Settings-owned tools. Layout coverage remains unchanged, but the audit
+ * reaches Analytics through its preserved Ctrl+3 accelerator and Search through Settings → Tools.
  */
 
-/** WebDriver Escape, built from its code point so no invisible character enters the source. */
 const ESCAPE = String.fromCharCode(0xe00c);
+const CONTROL = "\uE009";
 
 const VIEWPORT_MATRIX: Array<{ label: string; request: AuditViewportRequest }> = [
   { label: "maximized", request: null },
@@ -63,7 +57,8 @@ async function assertGeometryClean(label: string) {
 }
 
 const go = async (destination: string, heading: string) => {
-  await $(`button[aria-label='${destination}']`).click();
+  if (destination === "Analytics") await browser.keys([CONTROL, "3"]);
+  else await $(`button[aria-label='${destination}']`).click();
   await $(heading).waitForDisplayed({ timeout: 30_000 });
   await browser.pause(250);
   await assertGeometryClean(destination);
@@ -79,14 +74,11 @@ const dismissDialog = async () => {
   }
 };
 
-/** The live inner width, so comparisons never trust the requested window size. */
 const innerWidth = () => browser.execute(() => document.documentElement.clientWidth);
 
 describe("Global layout invariants", () => {
   before(async () => {
     await browser.url("http://tauri.localhost");
-    // §37 — a layout that only works while empty is not complete, and §38's long-string stress
-    // cases are the usual cause of page-level horizontal overflow.
     const seeded = await seedLayoutFixture(await appLocalDate());
     if (!seeded.ok)
       throw new Error(`layout fixture seeding failed at ${seeded.stage}: ${seeded.error}`);
@@ -95,7 +87,6 @@ describe("Global layout invariants", () => {
   });
 
   for (const { label: viewport, request } of VIEWPORT_MATRIX) {
-
     describe(`at ${viewport}`, () => {
       before(async () => {
         await browser.url("http://tauri.localhost");
@@ -121,8 +112,6 @@ describe("Global layout invariants", () => {
             await go(destination, heading);
             await assertPageHorizontallyStable(`${destination} (${viewport}, ${sidebar})`);
           }
-          // Settings is the named baseline defect: a 15px document-level scrollbar appeared once
-          // the page was scrolled. Scroll it and assert again at the bottom.
           await browser.execute(() => {
             const main = document.querySelector("[data-app-viewport]");
             if (main) main.scrollTop = main.scrollHeight;
@@ -148,8 +137,6 @@ describe("Global layout invariants", () => {
           await go(destination, heading);
           const viewportBox = await rect(VIEWPORT);
           const frameBox = await rect(PAGE_FRAME);
-          // Only a frame that is actually capped can be centred; a full-width frame trivially has
-          // zero free space on both sides and would prove nothing.
           if (frameBox.width < viewportBox.width - 8) await assertCentered();
         }
       });
@@ -190,8 +177,6 @@ describe("Global layout invariants", () => {
               inner: await innerWidth(),
             });
           }
-          // Comparing across pages is only meaningful at the same measured inner width; the
-          // requested window size is never evidence of the size actually rendered.
           const inner = new Set(widths.map(entry => entry.inner));
           if (inner.size !== 1)
             throw new Error(
@@ -220,7 +205,6 @@ describe("Global layout invariants", () => {
         assertNoOverlap(await controlRects(DIALOG_SURFACE), `Create task (${viewport})`);
         await assertGeometryClean(`Create task (${viewport})`);
 
-        // Recurrence expands the form the most, so it is the hardest containment case.
         await $(`${DIALOG_SURFACE} fieldset input[type='checkbox']`).click();
         await browser.pause(300);
         await assertWithinViewport(DIALOG_SURFACE);
@@ -231,8 +215,6 @@ describe("Global layout invariants", () => {
         );
         await assertGeometryClean(`Create recurring task (${viewport})`);
 
-        // The surface owns its scroll, so heading and footer stay reachable rather than the page
-        // becoming the workaround scroll surface.
         const scroll = await browser.execute((css: string) => {
           const node = document.querySelector(css);
           if (!node) return null;
@@ -253,8 +235,6 @@ describe("Global layout invariants", () => {
 
       it("contains an edit dialog opened from the visible row control", async () => {
         await go("Today", "h1#today-heading");
-        // The Task 50 census finding: this control is the visible path to edit, delete and the
-        // recurring occurrence-scope controls.
         const edit = $("button[aria-label^='Edit ']");
         await expect(edit).toBeDisplayed();
         await edit.click();
@@ -302,7 +282,7 @@ describe("Global layout invariants", () => {
 
       it("keeps Search and the shortcut dialog inside the viewport", async () => {
         await go("Settings", "h1#settings-heading");
-        await $("button[aria-label^='Search']").click();
+        await $("//button[.//strong[normalize-space()='Search']]").click();
         await $("div[role='dialog'][aria-label='Search']").waitForDisplayed({ timeout: 10_000 });
         await assertWithinViewport("div[role='dialog'][aria-label='Search']");
         await assertGeometryClean(`Search dialog (${viewport})`);
@@ -331,8 +311,6 @@ describe("Global layout invariants", () => {
     const collapsed = await rect(PAGE_FRAME);
     await assertPageHorizontallyStable("Analytics collapsed");
     await assertGeometryClean("Analytics collapsed");
-    // The collapsed rail is 152px narrower, so the frame must actually have re-laid out rather
-    // than keeping a stale width.
     expect(collapsed.width).toBeGreaterThan(expanded.width - 1);
 
     await $("button[aria-label='Expand sidebar']").click();
