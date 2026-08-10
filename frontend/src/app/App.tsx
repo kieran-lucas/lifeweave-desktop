@@ -38,6 +38,7 @@ import {
   iconAnalytics,
   iconBrand,
   iconCalendar,
+  iconChevronLeft,
   iconLife,
   iconPanelLeft,
   iconPlans,
@@ -46,12 +47,12 @@ import {
   iconToday,
 } from "../design-system/visual/icons";
 import { LoadingRow } from "../design-system/primitives/States";
-import { Atmosphere } from "../design-system/visual/Atmosphere";
 import * as styles from "./App.css";
 import { PageFrame, PageHeader } from "./layout/PageFrame";
 import { RouteErrorBoundary } from "./RouteErrorBoundary";
 import { ShortcutHelpDialog } from "./ShortcutHelpDialog";
 import {
+  analyticsShortcut,
   destinationShortcuts,
   resolveShortcutCommand,
   searchShortcut,
@@ -64,23 +65,17 @@ const GlobalSearchDialog = lazy(
   () => import("../features/search/GlobalSearchDialog"),
 );
 
-/**
- * The v2 icon vocabulary for the shell.
- *
- * Before this, every destination rendered its own first letter in a filled grey tile. The tile is
- * gone: these are 20 px outline marks that take the accent when their destination is current, which
- * is what `image1.png` shows.
- */
+/** Primary navigation is deliberately compact; Search and Analytics now live under Settings. */
 const destinationIcons: Record<Destination, string> = {
   today: iconToday,
   calendar: iconCalendar,
-  analytics: iconAnalytics,
   plans: iconPlans,
   life: iconLife,
   settings: iconSettings,
 };
 
 type SidebarMode = "expanded" | "collapsed";
+type SettingsView = "general" | "analytics";
 type SearchNavRequest = {
   requestId: string;
   target: SearchNavigationTarget;
@@ -119,6 +114,7 @@ export function App() {
     "loading",
   );
   const [destination, setDestination] = useState<Destination>("today");
+  const [settingsView, setSettingsView] = useState<SettingsView>("general");
   const [selectedDate, setSelectedDate] = useState(localToday);
   const anchorLocalDate = useLocalDateRollover();
   const previousAnchor = useRef(anchorLocalDate);
@@ -164,13 +160,27 @@ export function App() {
   const settleNavigationRequest = useCallback((requestId: string) => {
     setPendingNav((current) => settleNavigationEnvelope(current, requestId));
   }, []);
-  // The single navigation transition. Sidebar activation and Ctrl+1..6 both call this, so a
-  // shortcut can never diverge from the button it mirrors.
+
   const selectDestination = useCallback((next: Destination) => {
     setPendingNav(null);
     if (next === "today") setSelectedDate(anchorLocalDate);
+    if (next === "settings") setSettingsView("general");
     setDestination(next);
   }, [anchorLocalDate]);
+
+  const openSettingsAnalytics = useCallback(() => {
+    setPendingNav(null);
+    setDestination("settings");
+    setSettingsView("analytics");
+  }, []);
+
+  const openSettingsSearch = useCallback(() => {
+    setPendingNav(null);
+    setDestination("settings");
+    setSettingsView("general");
+    setSearchOpen(true);
+  }, []);
+
   const openShortcutHelp = useCallback((opener: HTMLElement | null) => {
     shortcutHelpOpenerRef.current = opener;
     setShortcutHelpOpen(true);
@@ -206,21 +216,21 @@ export function App() {
     requestAnimationFrame(() =>
       headingRef.current?.focus({ preventScroll: true }),
     );
-  }, [destination]);
+  }, [destination, settingsView]);
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
       const command = resolveShortcutCommand(event);
-      // A suppressed chord leaves the event completely untouched, including preventDefault.
       if (!command) return;
       event.preventDefault();
-      if (command.destination) selectDestination(command.destination);
-      else if (command.id === searchShortcut.id) setSearchOpen(true);
+      if (command.id === analyticsShortcut.id) openSettingsAnalytics();
+      else if (command.id === searchShortcut.id) openSettingsSearch();
+      else if (command.destination) selectDestination(command.destination);
       else openShortcutHelp(document.activeElement as HTMLElement | null);
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [openShortcutHelp, selectDestination]);
+  }, [openSettingsAnalytics, openSettingsSearch, openShortcutHelp, selectDestination]);
 
   const handleSearchNavigate = (target: SearchNavigationTarget) => {
     const requestId = globalThis.crypto.randomUUID();
@@ -295,12 +305,6 @@ export function App() {
       className={styles.appRoot}
       data-sidebar-mode={collapsed ? "collapsed" : "expanded"}
     >
-      {/*
-        Layer 0, mounted exactly once. Every page in the product sits on this one field, which is
-        what keeps the art a system rather than per-screen decoration — and means there is a single
-        place to tune the mood.
-      */}
-      <Atmosphere />
       <nav className={styles.sidebar} aria-label="Primary navigation">
         <div className={styles.brand}>
           <span className={styles.brandMark} aria-hidden="true">
@@ -311,20 +315,7 @@ export function App() {
         <div className={styles.navGroup}>
           {destinationShortcuts.slice(0, 4).map(renderDestination)}
           <div className={styles.divider} />
-          {destinationShortcuts.slice(4, 5).map(renderDestination)}
-          <div className={styles.divider} />
-          <button
-            ref={searchTriggerRef}
-            type="button"
-            className={styles.navButton}
-            onClick={() => setSearchOpen(true)}
-            aria-label={`${searchShortcut.label} (${searchShortcut.chord})`}
-            aria-keyshortcuts={searchShortcut.ariaKeyShortcuts}
-          >
-            <Icon d={iconSearch} className={styles.navIcon} />
-            <span className={styles.navLabel}>{searchShortcut.label}</span>
-          </button>
-          {destinationShortcuts.slice(5, 6).map(renderDestination)}
+          {destinationShortcuts.slice(4).map(renderDestination)}
         </div>
         <button
           type="button"
@@ -337,11 +328,6 @@ export function App() {
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           aria-pressed={taskSidebarMode === "collapsed"}
         >
-          {/*
-            Was a pair of bare text arrows: the last place in the shell where an icon was a
-            character rather than a drawing, so it carried the text baseline and the font's stroke
-            weight instead of the icon vocabulary's.
-          */}
           <Icon d={iconPanelLeft} className={styles.navIcon} />
           <span className={styles.navLabel}>
             {collapsed ? "Expand" : "Collapse"}
@@ -361,7 +347,7 @@ export function App() {
         )}
         {ipcStatus === "ready" && (
           <RouteErrorBoundary key={destination} destination={destination}>
-            {destination === "settings" && (
+            {destination === "settings" && settingsView === "general" && (
               <PageFrame
                 as="section"
                 type="standard"
@@ -377,9 +363,43 @@ export function App() {
                     Settings
                   </h1>
                   <p className={styles.lede}>
-                    Application preferences, backup and restore, and foundation verification tools.
+                    Application tools, preferences, backup and verification.
                   </p>
                 </PageHeader>
+                <section
+                  className={styles.settingsSection}
+                  aria-labelledby="settings-tools-heading"
+                >
+                  <h2 id="settings-tools-heading">Tools</h2>
+                  <p>Search the local workspace or inspect objective analytics from one place.</p>
+                  <div className={styles.settingsToolGrid}>
+                    <button
+                      ref={searchTriggerRef}
+                      type="button"
+                      className={styles.settingsToolButton}
+                      onClick={openSettingsSearch}
+                      aria-keyshortcuts={searchShortcut.ariaKeyShortcuts}
+                    >
+                      <Icon d={iconSearch} className={styles.settingsToolIcon} />
+                      <span>
+                        <strong>Search</strong>
+                        <small>Find tasks, plans and Life content · {searchShortcut.chord}</small>
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.settingsToolButton}
+                      onClick={openSettingsAnalytics}
+                      aria-keyshortcuts={analyticsShortcut.ariaKeyShortcuts}
+                    >
+                      <Icon d={iconAnalytics} className={styles.settingsToolIcon} />
+                      <span>
+                        <strong>Analytics</strong>
+                        <small>Review scheduled, recorded and focus-plan activity · {analyticsShortcut.chord}</small>
+                      </span>
+                    </button>
+                  </div>
+                </section>
                 <CategoryGoals />
                 <Suspense fallback={<LoadingRow label="Loading tag settings…" />}>
                   <TagSettings />
@@ -393,9 +413,8 @@ export function App() {
                 >
                   <h2 id="settings-keyboard-heading">Keyboard</h2>
                   <p>
-                    Review the eight global shortcuts. Press{" "}
-                    {shortcutHelpShortcut.chord} anywhere outside a text field, a
-                    document editor, or an open dialog.
+                    Review the global shortcuts. Press {shortcutHelpShortcut.chord} anywhere outside
+                    a text field, document editor, or open dialog.
                   </p>
                   <div>
                     <button
@@ -408,10 +427,6 @@ export function App() {
                     </button>
                   </div>
                 </section>
-                {/*
-                  Foundation tools are verification tooling. They stay last and visually secondary,
-                  but Task 50 does not hide or collapse them — that would need new authority.
-                */}
                 <section
                   className={styles.settingsSection}
                   aria-labelledby="settings-foundation-heading"
@@ -421,6 +436,26 @@ export function App() {
                   <FoundationScreen />
                 </section>
               </PageFrame>
+            )}
+            {destination === "settings" && settingsView === "analytics" && (
+              <div
+                ref={(node) => {
+                  headingRef.current = node;
+                }}
+                className={styles.settingsSubpage}
+              >
+                <PageFrame as="div" type="standard">
+                  <button
+                    type="button"
+                    className={styles.settingsBackButton}
+                    onClick={() => setSettingsView("general")}
+                  >
+                    <Icon d={iconChevronLeft} size={18} />
+                    Settings
+                  </button>
+                </PageFrame>
+                <AnalyticsScreen onPlanNavigate={navigateToFocusPlan} />
+              </div>
             )}
             {destination === "today" && (
               <div
@@ -450,15 +485,6 @@ export function App() {
                   today={localToday()}
                   onActivateDate={activateCalendarDate}
                 />
-              </div>
-            )}
-            {destination === "analytics" && (
-              <div
-                ref={(node) => {
-                  headingRef.current = node;
-                }}
-              >
-                <AnalyticsScreen onPlanNavigate={navigateToFocusPlan} />
               </div>
             )}
             {destination === "plans" && (
