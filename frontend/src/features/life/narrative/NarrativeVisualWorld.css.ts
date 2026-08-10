@@ -18,9 +18,9 @@ const vars = (palette: NarrativeWorldPalette) => ({
 
 export const world = style({});
 
-/** Narrative world names remain selectable; rendered materials remain strictly grayscale. */
-const worldStyle = (light: NarrativeWorldPalette, dark: NarrativeWorldPalette) => style({
-  vars: vars(light) as any,
+/** Narrative world names remain selectable; all render through the single Light palette. */
+const worldStyle = (palette: NarrativeWorldPalette) => style({
+  vars: vars(palette) as any,
   position: "relative",
   border: `1px solid ${worldTokens.border}`,
   borderRadius: "var(--radius-surface)",
@@ -30,9 +30,8 @@ const worldStyle = (light: NarrativeWorldPalette, dark: NarrativeWorldPalette) =
   backgroundImage: "var(--paint-grain-fine)",
   boxShadow: "none",
   "@media": {
-    "(prefers-color-scheme: dark)": { vars: vars(dark), backgroundColor: worldTokens.canvas },
     "(forced-colors: active)": {
-      vars: { ...vars({ ...light, canvas: "Canvas", surface: "Canvas", surfaceRaised: "Canvas", text: "CanvasText", muted: "CanvasText", heading: "CanvasText", accent: "CanvasText", accentSoft: "Canvas", border: "CanvasText", rule: "CanvasText", shadow: "none", patternA: "Canvas", patternB: "Canvas", patternOpacity: "0" }) },
+      vars: { ...vars({ ...palette, canvas: "Canvas", surface: "Canvas", surfaceRaised: "Canvas", text: "CanvasText", muted: "CanvasText", heading: "CanvasText", accent: "CanvasText", accentSoft: "Canvas", border: "CanvasText", rule: "CanvasText", shadow: "none", patternA: "Canvas", patternB: "Canvas", patternOpacity: "0" }) },
       background: "Canvas",
       backgroundImage: "none",
       color: "CanvasText",
@@ -41,10 +40,10 @@ const worldStyle = (light: NarrativeWorldPalette, dark: NarrativeWorldPalette) =
   },
 });
 
-export const paper = worldStyle(visualWorlds[0].light, visualWorlds[0].dark);
-export const sakura = worldStyle(visualWorlds[1].light, visualWorlds[1].dark);
-export const aurora = worldStyle(visualWorlds[2].light, visualWorlds[2].dark);
-export const nocturne = worldStyle(visualWorlds[3].light, visualWorlds[3].dark);
+export const paper = worldStyle(visualWorlds[0].palette);
+export const sakura = worldStyle(visualWorlds[1].palette);
+export const aurora = worldStyle(visualWorlds[2].palette);
+export const nocturne = worldStyle(visualWorlds[3].palette);
 
 export const selector = style({
   display: "grid",
