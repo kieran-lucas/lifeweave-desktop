@@ -1,45 +1,62 @@
 import { globalStyle, style } from "@vanilla-extract/css";
 import { button as sharedButton, compact } from "../../../design-system/primitives/controls.css";
+import { text } from "../../../design-system/visual/typography.css";
 
 export const shell = style({ marginTop: 30, borderTop: "1px solid var(--border-subtle)", paddingTop: 24 });
-export const title = style({ fontSize: "1.5rem", fontWeight: 700, marginBottom: 8, color: "var(--text-primary)" });
-export const sceneTitle = style({ fontSize: "1.1rem", fontWeight: 600, color: "var(--text-muted)", marginBottom: 16 });
-export const blockList = style({ display: "flex", flexDirection: "column", gap: 20, marginBottom: 24 });
+export const canvas = style({ ...text.editorBody, color: "var(--text-primary)" });
+export const title = style({ ...text.display, margin: "0 0 28px", color: "var(--text-primary)" });
+export const scene = style({ paddingBlock: "18px 8px", borderBlockStart: "1px solid var(--world-rule, var(--border-subtle))" });
+export const sceneTitle = style({ ...text.editorH2, color: "var(--text-primary)", margin: "0 0 18px" });
+export const blockList = style({ display: "flex", flexDirection: "column", gap: 24, marginBottom: 24 });
 
 export const button = sharedButton.secondary;
 export const primary = sharedButton.primary;
+export const destructive = sharedButton.destructive;
 export const studioButton = style([sharedButton.secondary, compact]);
 export const studioPrimary = style([sharedButton.primary, compact]);
 export const actions = style({ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginBottom: 20 });
-export const status = style({ color: "var(--text-muted)", minHeight: 24 });
-export const recovery = style({ border: "1px solid var(--focus-ring)", borderRadius: "var(--radius-surface)", padding: 16, marginBottom: 20, background: "var(--active-background)" });
-export const missing = style({ border: "1px dashed var(--border-subtle)", borderRadius: "var(--radius-control)", padding: 14, color: "var(--text-muted)" });
+export const status = style({ ...text.metadata, color: "var(--text-muted)", minHeight: 24 });
+export const recovery = style({ borderInlineStart: "3px solid var(--accent)", padding: "12px 16px", marginBottom: 20, background: "var(--active-background)" });
+export const missing = style({ borderInlineStart: "3px solid var(--border-strong)", padding: "12px 14px", background: "var(--active-background)", color: "var(--text-muted)", ...text.compactBody });
 
-export const metricBlock = style({ border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-surface)", padding: "16px 20px", background: "var(--surface)", boxShadow: "var(--world-shadow, none)" });
-export const metricLabel = style({ fontWeight: 700, fontSize: "0.85rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" });
-export const metricValue = style({ fontSize: "2rem", fontWeight: 700, lineHeight: 1.1 });
-export const metricUnit = style({ fontSize: "1rem", color: "var(--text-muted)", marginLeft: 6 });
-export const metricDescription = style({ fontSize: "0.9rem", color: "var(--text-muted)", marginTop: 6 });
+export const metricBlock = style({ borderInlineStart: "3px solid var(--world-rule, var(--accent))", padding: "12px 18px", background: "color-mix(in srgb, var(--active-background) 58%, transparent)" });
+export const metricLabel = style({ ...text.eyebrow, color: "var(--text-muted)" });
+export const metricValue = style({ ...text.numericMetric });
+export const metricUnit = style({ ...text.bodyStrong, color: "var(--text-muted)", marginLeft: 6 });
+export const metricDescription = style({ ...text.compactBody, color: "var(--text-muted)", marginTop: 6 });
 
-export const calloutBlock = style({ borderLeft: "4px solid var(--focus-ring)", borderRadius: "0 var(--radius-control) var(--radius-control) 0", padding: "12px 16px", background: "var(--active-background)" });
-export const calloutVariant = style({ fontWeight: 700, fontSize: "0.8rem", textTransform: "uppercase", marginBottom: 6, color: "var(--text-muted)" });
+export const calloutBlock = style({ borderInlineStart: "3px solid var(--world-rule, var(--accent))", padding: "12px 18px", background: "var(--active-background)" });
+export const calloutVariant = style({ ...text.eyebrow, marginBottom: 6, color: "var(--text-muted)" });
 
 export const timelineBlock = style({ borderLeft: "2px solid var(--world-rule, var(--border-subtle))", paddingLeft: 16 });
-export const timelineHeading = style({ fontWeight: 700, marginBottom: 12 });
-export const timelineList = style({ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 8 });
-export const timelineItem = style({ display: "flex", flexDirection: "column", gap: 2 });
-export const timelineItemLabel = style({ fontWeight: 600 });
-export const timelineItemDesc = style({ color: "var(--text-muted)", fontSize: "0.9rem" });
+export const timelineHeading = style({ ...text.editorH3, marginBottom: 12 });
+export const timelineList = style({ padding: "0 0 0 22px", margin: 0, display: "flex", flexDirection: "column", gap: 12 });
+export const timelineItem = style({ paddingInlineStart: 4 });
+export const timelineItemLabel = style({ display: "block", ...text.bodyStrong });
+export const timelineItemDesc = style({ display: "block", color: "var(--text-muted)", ...text.compactBody, marginTop: 2 });
 
-export const imageCaption = style({ fontSize: "0.85rem", color: "var(--text-muted)", marginTop: 4 });
-export const image = style({ display: "block", maxWidth: "100%", height: "auto", borderRadius: "var(--radius-control)" });
+export const figure = style({ margin: 0 });
+export const imageCaption = style({ ...text.metadata, color: "var(--text-muted)", marginTop: 8 });
+export const image = style({ display: "block", width: "100%", height: "auto", borderRadius: "var(--radius-control)" });
 
 export const richText = style({ lineHeight: 1.72, color: "var(--text-primary)", overflowWrap: "anywhere" });
 
-export const readerTools = style({ display: "grid", gap: 14, paddingBlock: 16, marginBlock: "8px 22px", borderBlock: "1px solid var(--border-subtle)" });
+export const readerTools = style({
+  display: "grid",
+  gridTemplateColumns: "auto minmax(0, 1fr)",
+  gap: 20,
+  alignItems: "start",
+  paddingBlock: 16,
+  marginBlock: "8px 22px",
+  borderBlock: "1px solid var(--border-subtle)",
+  "@media": { "screen and (max-width: 720px)": { gridTemplateColumns: "1fr", gap: 14 } },
+});
 export const readerUtilityGrid = style({ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 24, alignItems: "start", "@media": { "screen and (max-width: 720px)": { gridTemplateColumns: "1fr" } } });
 export const exportControl = style({ display: "grid", gap: 8, alignContent: "start", justifyItems: "start" });
 globalStyle(`${readerUtilityGrid} > section`, { margin: 0, alignContent: "start" });
+globalStyle(`${shell} > h2`, { margin: "0 0 14px", ...text.sectionTitle });
+globalStyle(`${recovery} > h3`, { margin: "0 0 6px", ...text.sectionTitle });
+globalStyle(`${recovery} > p`, { margin: "0 0 10px", ...text.body });
 
 export const studioShell = style({ display: "grid", gap: 12 });
 export const studioHeader = style({ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 14, flexWrap: "wrap", paddingBottom: 12, borderBottom: "1px solid var(--border-subtle)" });

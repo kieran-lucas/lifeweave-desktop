@@ -49,5 +49,17 @@ export const outlineColumn = style({
   },
 });
 export const templateChooser = style({ border: 0, borderBlockStart: "1px solid var(--border-subtle)", padding: "14px 0 0", maxWidth: 620 });
-export const templateOption = style({ display: "grid", gridTemplateColumns: "auto minmax(0, 1fr)", gap: "3px 9px", padding: "10px 4px", borderBottom: "1px solid var(--border-subtle)" });
+export const templateOption = style({
+  display: "grid",
+  gridTemplateColumns: "auto minmax(0, 1fr)",
+  gap: "3px 9px",
+  padding: "10px 8px",
+  borderInlineStart: "2px solid transparent",
+  borderBottom: "1px solid var(--border-subtle)",
+  selectors: {
+    "&:has(input:checked)": { borderInlineStartColor: "var(--accent)", background: "var(--active-background)" },
+    "&:focus-within": { outline: "2px solid var(--focus-ring)", outlineOffset: 2 },
+  },
+  "@media": { "(forced-colors: active)": { selectors: { "&:has(input:checked)": { borderInlineStartWidth: 4 } } } },
+});
 globalStyle(`${templateOption} > span`, { gridColumn: 2, ...text.compactBody, color: "var(--text-muted)" });

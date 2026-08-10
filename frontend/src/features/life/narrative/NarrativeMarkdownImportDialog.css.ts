@@ -1,30 +1,31 @@
-import { style } from "@vanilla-extract/css";
+import { globalStyle, style } from "@vanilla-extract/css";
 import { dialogBackdrop, dialogSurface } from "../../../app/layout/layout.css";
+import { button as sharedButton } from "../../../design-system/primitives/controls.css";
+import { text } from "../../../design-system/visual/typography.css";
 
 /* MODAL_SURFACE — shared backdrop and surface geometry (ADR 0044). */
 export const overlay = dialogBackdrop;
 
 export const dialog = style([
   dialogSurface.compact,
-  { boxShadow: "var(--elevation-modal)" },
 ]);
 
-export const title = style({ fontWeight: 700, fontSize: "1.1rem", margin: 0 });
+export const title = style({ ...text.objectTitle, margin: 0 });
 
 export const meta = style({
   display: "grid",
-  gridTemplateColumns: "1fr 1fr",
+  gridTemplateColumns: "max-content 1fr",
   gap: "6px 16px",
-  fontSize: "0.85rem",
-  color: "var(--text-muted)",
+  ...text.compactBody,
 });
+globalStyle(`${meta} dt`, { ...text.label, color: "var(--text-muted)" });
+globalStyle(`${meta} dd`, { margin: 0, ...text.bodyStrong, overflowWrap: "anywhere" });
 
 export const excerpt = style({
-  fontSize: "0.9rem",
+  ...text.editorBody,
   color: "var(--text-primary)",
-  lineHeight: 1.55,
-  borderLeft: "3px solid var(--border-subtle)",
-  paddingLeft: 12,
+  borderInlineStart: "3px solid var(--border-subtle)",
+  padding: "4px 0 4px 14px",
   margin: 0,
 });
 
@@ -33,10 +34,9 @@ export const warnings = style({
   flexDirection: "column",
   gap: 6,
   padding: "10px 14px",
-  border: "1px solid var(--focus-ring)",
-  borderRadius: "var(--radius-control)",
+  borderInlineStart: "3px solid var(--accent)",
   background: "var(--active-background)",
-  fontSize: "0.85rem",
+  ...text.compactBody,
 });
 
 export const warningItem = style({ margin: 0, color: "var(--text-primary)" });
@@ -48,30 +48,14 @@ export const actions = style({
   paddingTop: 4,
 });
 
-export const button = style({
-  border: "1px solid var(--border-subtle)",
-  borderRadius: "var(--radius-control)",
-  padding: "8px 16px",
-  background: "var(--surface)",
-  color: "var(--text-primary)",
-  fontWeight: 700,
-  cursor: "pointer",
-  selectors: {
-    "&:disabled": { opacity: 0.55, cursor: "default" },
-    "&:focus-visible": { outline: "3px solid var(--focus-ring)", outlineOffset: 2 },
-  },
-});
-
-export const primary = style([
-  button,
-  { background: "var(--accent)", color: "var(--accent-contrast)", borderColor: "transparent" },
-]);
+export const button = sharedButton.secondary;
+export const primary = sharedButton.primary;
 
 export const errorMsg = style({
   color: "var(--text-muted)",
-  border: "1px dashed var(--border-subtle)",
-  borderRadius: "var(--radius-control)",
-  padding: 10,
-  fontSize: "0.85rem",
+  borderInlineStart: "3px solid var(--border-strong)",
+  background: "var(--active-background)",
+  padding: "10px 12px",
+  ...text.compactBody,
   margin: 0,
 });

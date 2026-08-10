@@ -6,10 +6,10 @@
 
 - BASELINE_PLANNING_SHA: `a1078c1f91c251aaa7a453ef1e8a5108551c852d`
 - EXECUTION_START_SHA: `0b3e01d4a8bd9b62c5d786e9b4a4401d72c0edc1`
-- LAST_VERIFIED_COMMIT: `37fe55157ac71107868ce9245e1110a7c1244057`
-- CURRENT_PACKET: `S10`
+- LAST_VERIFIED_COMMIT: `0dd47122939abb57fd38530cdcb8748921890c74`
+- CURRENT_PACKET: `S11`
 - CURRENT_STATUS: `IN_PROGRESS`
-- NEXT_PACKET: `S10`
+- NEXT_PACKET: `S11`
 - FINAL_REVIEW_DONE: `false`
 - FINAL_FINDING_SET_FROZEN: `false`
 - PROGRAM_STATUS: `IN_PROGRESS`
@@ -28,12 +28,12 @@
 | S07 | CLOSED | `d828058d493ff1275da44bd5ab39dcd4cfaef8a7` | 12/12 rows LOCAL_VERIFIED; focused semantics, fixed budget, and max/min native profiles passed |
 | S08 | CLOSED | `c65f3feeae9be9355373436502bd8f77781a0978` | 11/11 rows LOCAL_VERIFIED; focused semantics, fixed budget, and max/min native profiles passed |
 | S09 | CLOSED | `37fe55157ac71107868ce9245e1110a7c1244057` | 6/6 rows LOCAL_VERIFIED; focused semantics and max/min native profiles passed |
-| S10 | IN_PROGRESS | — | Narrative workspace and Markdown redesign started |
-| S11 | PENDING | — | — |
+| S10 | CLOSED | LOCAL checkpoint | 11/11 rows LOCAL_VERIFIED; focused semantics and routed max/min native profiles passed |
+| S11 | IN_PROGRESS | — | Narrative Studio redesign started |
 | S12 | PENDING | — | — |
 | Q1 | CLOSED | `db2f7ccd472938e71382b6ad338e073145eac003` | 33/33 scoped rows VERIFIED; full unit, build/budget, native behavior, and max/min visual gates passed |
 | Q2 | CLOSED | `37ec413a2e4d769a8913c0e73478fea824035360` | 18/18 scoped rows VERIFIED; full unit, build/budget, native behavior, and max/min visual gates passed |
-| Q3 | CLOSED | LOCAL checkpoint | 29/29 scoped rows VERIFIED; full unit, build/budget, native behavior, and max/min visual gates passed |
+| Q3 | CLOSED | `0dd47122939abb57fd38530cdcb8748921890c74` | 29/29 scoped rows VERIFIED; full unit, build/budget, native behavior, and max/min visual gates passed |
 | Q4 | PENDING | — | — |
 | Q5 | PENDING | — | — |
 | FINAL | PENDING | — | — |
@@ -119,15 +119,15 @@
 | BR-02 | S09 | VERIFIED | Q3 checkpoint | branch preview uses a bounded standard dialog, semantic inventory, factual warnings, and non-destructive primary import action |
 | TR-01 | S09 | VERIFIED | Q3 checkpoint | tree controls retain root/export and document/import availability rules with explicit adjacent reasons |
 | TR-02 | S09 | VERIFIED | Q3 checkpoint | wide high-consequence preview keeps append/fresh-identity/no-overwrite/no-undo explanation and supported primary action visible at max |
-| N-01 | S10 | PENDING | — | — |
-| N-02 | S10 | PENDING | — | — |
-| N-03 | S10 | PENDING | — | — |
-| N-04 | S10 | PENDING | — | — |
-| N-05 | S10 | PENDING | — | — |
-| N-06 | S10 | PENDING | — | — |
-| N-07 | S10 | PENDING | — | — |
-| N-08 | S10 | PENDING | — | — |
-| N-09 | S10 | PENDING | — | — |
+| N-01 | S10 | LOCAL_VERIFIED | S10 checkpoint | inline template creation keeps one primary path, semantic name/description/scenes hierarchy, and tonal structural selection |
+| N-02 | S10 | LOCAL_VERIFIED | S10 checkpoint | Canvas Reader remains an editorial authored world beneath a quiet Lifeweave utility toolbar at max/min |
+| N-03 | S10 | LOCAL_VERIFIED | S10 checkpoint | rich-text islands retain unboxed Reader typography and explicit unsupported-content fallback |
+| N-04 | S10 | LOCAL_VERIFIED | S10 checkpoint | metric blocks use one restrained factual rule with governed numeric, label, unit, and description roles |
+| N-05 | S10 | LOCAL_VERIFIED | S10 checkpoint | images occupy the reading measure with bounded geometry, required alt semantics, and quiet captions |
+| N-06 | S10 | LOCAL_VERIFIED | S10 checkpoint | callouts use semantic authored-world rule/tint treatment without card chrome |
+| N-07 | S10 | LOCAL_VERIFIED | S10 checkpoint | timelines retain ordered items on a quiet vertical authored-world rule with readable labels and descriptions |
+| N-08 | S10 | LOCAL_VERIFIED | S10 checkpoint | unknown blocks, unsupported text islands, missing images, and canvas errors remain local explicit states |
+| N-09 | S10 | LOCAL_VERIFIED | S10 checkpoint | draft recovery mirrors Basic Leaf calm-band grammar with primary Recover and secondary destructive Discard |
 | NS-01 | S11 | PENDING | — | — |
 | NS-02 | S11 | PENDING | — | — |
 | NS-03 | S11 | PENDING | — | — |
@@ -138,8 +138,8 @@
 | NS-08 | S11 | PENDING | — | — |
 | NS-09 | S11 | PENDING | — | — |
 | NS-10 | S11 | PENDING | — | — |
-| MD-01 | S10 | PENDING | — | — |
-| MD-02 | S10 | PENDING | — | — |
+| MD-01 | S10 | LOCAL_VERIFIED | S10 checkpoint | compact shared dialog presents quoted excerpt, definition-list metadata, separated warning, and primary Import at max/min |
+| MD-02 | S10 | LOCAL_VERIFIED | S10 checkpoint | Markdown export remains a secondary utility with its fixed lossiness truth visible and no invented options |
 | S-01 | S12 | PENDING | — | — |
 | S-02 | S12 | PENDING | — | — |
 | S-03 | S12 | PENDING | — | — |
@@ -162,14 +162,15 @@
 - S08 Reader/Basic Editor/Links/Related Tasks: 11/11 rows LOCAL_VERIFIED
 - S09 Portable/Branch/Tree interchange: 6/6 rows LOCAL_VERIFIED
 - Q3 promoted S07–S09: 29/29 scoped rows VERIFIED
+- S10 Narrative Reader/Markdown: 11/11 rows LOCAL_VERIFIED
 
 ## CURRENT
 
-- S10 in progress
+- S11 in progress
 
 ## NEXT
 
-- S10
+- S11
 
 ## KNOWN_DEBT
 
@@ -296,6 +297,14 @@ Append concise entries:
 - [Q3] native Light `life-reader-interchange` maximized — PASS — 13 profile surfaces / zero collisions — `target/e2e-artifacts/task-50b/life-reader-interchange-Q3-20260810-113842`
 - [Q3] native Light `life-reader-interchange` 960×640 — PASS — achieved 960×639 / 13 profile surfaces / zero collisions — `target/e2e-artifacts/task-50b/life-reader-interchange-Q3-20260810-114025`
 - [Q3] bounded self-review `F_Q3` — FROZEN/RESOLVED — zero findings; no post-review fixes or repeated review
+- [S10] `git diff --check` + convergence ratchet — PASS — font-size residue 41 / focus residue 16 / control clones 46; ceilings tightened
+- [S10] `pnpm typecheck` — PASS — frontend project references
+- [S10] focused Narrative Reader/template/Markdown/Visual World tests — PASS — 5 files / 38 tests
+- [S10] native Light `narrative` maximized — PASS — 8 profile surfaces / zero collisions; Canvas Reader tag inspected — `target/e2e-artifacts/task-50b/narrative-S10-20260810-115616`
+- [S10] native Light `narrative` 960×640 — PASS — achieved 960×639 / 8 profile surfaces / zero collisions; Canvas Reader tag inspected — `target/e2e-artifacts/task-50b/narrative-S10-20260810-115730`
+- [S10] native Light `life-reader-interchange` maximized — PASS — 13 profile surfaces / zero collisions; empty creation and Markdown preview tags inspected — `target/e2e-artifacts/task-50b/life-reader-interchange-S10-20260810-115215`
+- [S10] native Light `life-reader-interchange` 960×640 — PASS — achieved 960×639 / 13 profile surfaces / zero collisions; Markdown preview tag inspected — `target/e2e-artifacts/task-50b/life-reader-interchange-S10-20260810-115355`
+- [S10] bounded self-review `F_S10` — FROZEN/RESOLVED — zero findings; no post-review fixes or repeated review
 
 ## DECISIONS MADE UNDER UNATTENDED AUTHORITY
 
@@ -325,6 +334,7 @@ Record only material reversible decisions that future stages may need to know.
 - [S07] Life Browse/Edit node motion wrappers were removed in favor of equivalent native semantic elements and existing CSS state changes, preserving interaction while reclaiming more than 120 KB from the eager startup path.
 - [S08] Reader node identity uses the authorized editorial display role while controls, relationship sections, outline, and metadata remain productive sans; the Life-link picker uses the compact shared dialog at both governed viewports.
 - [S09] Portable previews remain compact, branch previews remain standard, and the denser high-consequence full-tree preview uses the shared wide dialog; all three retain the same append/import capability and factual warning content.
+- [S10] Narrative Visual Worlds remain contained to the authored Canvas while shell controls retain Lifeweave styling; reader blocks express their native semantics through typography, rules, tint, and ordered structure rather than repeated cards.
 
 ## FINAL FINDING SET
 

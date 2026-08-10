@@ -78,7 +78,7 @@ function BlockReader({ block }: { block: ParsedNarrativeBlock }) {
       );
     case "image":
       return (
-        <figure>
+        <figure className={styles.figure}>
           <NarrativeAssetImage assetId={block.assetId} alt={block.alt} />
           {block.caption && <figcaption className={styles.imageCaption}>{block.caption}</figcaption>}
         </figure>
@@ -125,12 +125,12 @@ function BlockReader({ block }: { block: ParsedNarrativeBlock }) {
 
 function StaticCanvasView({ doc }: { doc: ParsedNarrativeDocument }) {
   return (
-    <NarrativeVisualWorld id={doc.visualWorldId}><article aria-labelledby="nc-canvas-title">
+    <NarrativeVisualWorld id={doc.visualWorldId}><article className={styles.canvas} aria-labelledby="nc-canvas-title">
       <header>
         <h1 id="nc-canvas-title" className={styles.title}>{doc.title || "Untitled Canvas"}</h1>
       </header>
       {doc.scenes.map((scene, i) => (
-        <section key={scene.id} aria-labelledby={`nc-scene-title-${scene.id}`}>
+        <section className={styles.scene} key={scene.id} aria-labelledby={`nc-scene-title-${scene.id}`}>
           <h2
             id={`nc-scene-title-${scene.id}`}
             className={scene.title ? styles.sceneTitle : styles.srOnly}
@@ -280,7 +280,7 @@ export function NarrativeCanvasReader({ nodeId }: { nodeId: string }) {
           </p>
           <div className={styles.actions}>
             <button className={styles.primary} onClick={() => void recover()}>Recover draft</button>
-            <button className={styles.button} onClick={() => void discard()}>Discard draft</button>
+            <button className={styles.destructive} onClick={() => void discard()}>Discard draft</button>
           </div>
         </section>
       )}
