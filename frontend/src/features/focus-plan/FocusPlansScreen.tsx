@@ -26,7 +26,7 @@ import { iconPlans } from "../../design-system/visual/icons";
 import { EmptyState, SkeletonList } from "../../design-system/primitives/States";
 import { button as sharedButton, compact } from "../../design-system/primitives/controls.css";
 
-const primaryButton = `${sharedButton.primary} ${styles.primaryButtonSizing}`;
+const primaryButton = sharedButton.primary;
 const secondaryButton = sharedButton.secondary;
 const dangerButton = sharedButton.destructive;
 const compactButton = `${sharedButton.secondary} ${compact}`;

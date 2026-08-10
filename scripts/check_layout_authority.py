@@ -226,9 +226,9 @@ MAX_RESIDUE = {
     "radius": 0,    # raw border-radius literals not resolved through vars.radius
     "shadow": 0,     # raw box-shadow literals not resolved through vars.elevation
     "motion": 0,    # literal transition/animation timings outside the motion authority
-    "font_size": 86,  # feature-local sizes remaining before semantic-role migration
-    "focus": 30,       # local focus-visible recipes remaining before shared utility migration
-    "control_clone": 51,  # feature-local button/action/trigger style exports
+    "font_size": 83,  # feature-local sizes remaining before semantic-role migration
+    "focus": 29,       # local focus-visible recipes remaining before shared utility migration
+    "control_clone": 50,  # feature-local button/action/trigger style exports
 }
 
 AUTHORIZED_EDITORIAL_FAMILY = "Literata"
