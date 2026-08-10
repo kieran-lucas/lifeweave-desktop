@@ -3,77 +3,76 @@ import { createTheme } from "@vanilla-extract/css";
 import { vars } from "./contract.css";
 
 /**
- * Celestial Anime Editorial — Light acceptance theme.
+ * Matte Anime Painted Atlas — Light acceptance palette.
  *
- * The palette keeps dense operational content highly readable while allowing the global atmosphere
- * to be visibly present through controlled translucency. Blue is the semantic identity; indigo,
- * violet and cyan are atmospheric partners supplied by the global art layer.
+ * Opaque tonal planes replace the previous glass/translucent interpretation. Color should read as
+ * pigment on paper/painted board: calm in large areas, concentrated in selection and identity.
  */
 export const lightValues = {
   color: {
-    canvas: "oklch(98.45% 0.012 253)",
-    surface: "oklch(99.1% 0.012 258 / 0.86)",
-    surfaceSubtle: "oklch(96.9% 0.025 261 / 0.82)",
-    surfaceRaised: "oklch(100% 0 0 / 0.88)",
-    surfaceSelected: "oklch(94.8% 0.055 264 / 0.90)",
-    surfaceSelectedNav: "oklch(94.4% 0.063 268 / 0.94)",
-    surfaceHover: "oklch(97.2% 0.028 258 / 0.88)",
+    canvas: "oklch(97.7% 0.018 92)",
+    surface: "oklch(98.8% 0.014 94)",
+    surfaceSubtle: "oklch(95.9% 0.028 88)",
+    surfaceRaised: "oklch(99.45% 0.010 96)",
+    surfaceSelected: "oklch(92.8% 0.065 260)",
+    surfaceSelectedNav: "oklch(90.8% 0.082 264)",
+    surfaceHover: "oklch(95.2% 0.036 255)",
 
-    textPrimary: "oklch(23.5% 0.035 258)",
-    textSecondary: "oklch(36% 0.036 260)",
-    textTertiary: "oklch(48% 0.035 259)",
-    textDisabled: "oklch(64% 0.025 259)",
-    textOnAccent: "oklch(100% 0 0)",
+    textPrimary: "oklch(24% 0.032 257)",
+    textSecondary: "oklch(37% 0.034 258)",
+    textTertiary: "oklch(50% 0.031 258)",
+    textDisabled: "oklch(66% 0.022 258)",
+    textOnAccent: "oklch(99.6% 0.006 248)",
 
-    borderHairline: "oklch(90.8% 0.034 262 / 0.76)",
-    borderStrong: "oklch(84.5% 0.055 264 / 0.86)",
+    borderHairline: "oklch(86.8% 0.036 90)",
+    borderStrong: "oklch(78.5% 0.055 258)",
 
-    accent: "oklch(56% 0.245 262)",
-    accentMuted: "oklch(63% 0.21 257)",
-    accentSoft: "oklch(93.8% 0.058 266 / 0.90)",
-    selectionEdge: "oklch(56% 0.245 262)",
+    accent: "oklch(54.5% 0.232 260)",
+    accentMuted: "oklch(62% 0.18 257)",
+    accentSoft: "oklch(91.8% 0.070 262)",
+    selectionEdge: "oklch(54.5% 0.232 260)",
 
-    success: "oklch(56% 0.245 262)",
+    success: "oklch(54.5% 0.232 260)",
     warning: "oklch(57% 0.15 70)",
     danger: "oklch(51% 0.20 25)",
-    successSoft: "oklch(93.8% 0.058 266 / 0.90)",
+    successSoft: "oklch(91.8% 0.070 262)",
     warningSoft: "oklch(95% 0.045 78)",
     dangerSoft: "oklch(95% 0.045 25)",
 
-    lifeLavender: "oklch(92.5% 0.075 285 / 0.88)",
-    lifeMint: "oklch(94.5% 0.060 176 / 0.86)",
-    lifePeach: "oklch(95% 0.055 52 / 0.84)",
-    lifeBlue: "oklch(93.5% 0.075 246 / 0.88)",
-    lifeCream: "oklch(96% 0.040 93 / 0.84)",
+    lifeLavender: "oklch(91.8% 0.070 285)",
+    lifeMint: "oklch(93.4% 0.056 176)",
+    lifePeach: "oklch(94.1% 0.054 52)",
+    lifeBlue: "oklch(92% 0.072 246)",
+    lifeCream: "oklch(95.2% 0.043 93)",
 
-    ambientContour: "oklch(78% 0.12 252 / 0.42)",
-    ambientGlowPrimary: "oklch(84% 0.15 244 / 0.48)",
-    ambientGlowSecondary: "oklch(82% 0.14 292 / 0.42)",
-    ambientAura: "oklch(88% 0.10 214 / 0.40)",
+    ambientContour: "oklch(72% 0.095 250 / 0.42)",
+    ambientGlowPrimary: "oklch(82% 0.105 242 / 0.34)",
+    ambientGlowSecondary: "oklch(83% 0.090 292 / 0.26)",
+    ambientAura: "oklch(88% 0.070 214 / 0.24)",
 
-    focusRing: "oklch(56% 0.245 262)",
-    backdrop: "oklch(24% 0.080 260 / 0.46)",
+    focusRing: "oklch(54.5% 0.232 260)",
+    backdrop: "oklch(25% 0.055 260 / 0.42)",
   },
 
   radius: {
-    small: "7px",
-    control: "12px",
-    surface: "18px",
-    floating: "24px",
+    small: "6px",
+    control: "9px",
+    surface: "14px",
+    floating: "18px",
     full: "999px",
   },
 
   elevation: {
     none: "none",
     floating:
-      "0 18px 48px oklch(45% 0.11 264 / 0.13), 0 2px 12px oklch(40% 0.08 248 / 0.08)",
+      "0 12px 28px oklch(34% 0.05 260 / 0.11), 0 2px 6px oklch(30% 0.03 90 / 0.08)",
     modal:
-      "0 34px 96px oklch(36% 0.12 266 / 0.22), 0 8px 30px oklch(50% 0.10 242 / 0.12)",
+      "0 22px 56px oklch(30% 0.065 260 / 0.18), 0 6px 18px oklch(30% 0.03 90 / 0.10)",
   },
 
   hairline: {
-    structural: "1px solid oklch(90.8% 0.034 262 / 0.76)",
-    subtle: "1px solid oklch(95% 0.022 262 / 0.72)",
+    structural: "1px solid oklch(86.8% 0.036 90)",
+    subtle: "1px solid oklch(92.7% 0.026 92)",
   },
 };
 
