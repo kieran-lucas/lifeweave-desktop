@@ -2,6 +2,7 @@ import { $, browser, expect } from "@wdio/globals";
 
 const TRACKED = "E2E Analytics Tracked";
 const UNTRACKED = "E2E Analytics Untracked";
+const CONTROL = "\uE009";
 
 const taskRow = (title: string) =>
   $(`//div[@role='listitem'][.//strong[normalize-space()='${title}']]`);
@@ -35,7 +36,6 @@ describe("Phase 17 — planned versus actual Analytics", () => {
     await browser.url("http://tauri.localhost");
     await expect($("h1=Today")).toBeDisplayed();
 
-    // Adjacent one-hour slots keep the two planned durations exact and non-overlapping.
     await createOneHourTask(TRACKED, "20", "21");
     await createOneHourTask(UNTRACKED, "21", "22");
 
@@ -51,8 +51,10 @@ describe("Phase 17 — planned versus actual Analytics", () => {
     await $(`button[aria-label='Stop timer for ${TRACKED}']`).click();
     await expect($("section[aria-label='Running task timer']")).not.toExist();
 
-    await $("button[aria-label='Analytics']").click();
+    // Ctrl+3 preserves the historical accelerator while Analytics is owned by Settings.
+    await browser.keys([CONTROL, "3"]);
     await expect($("h1=Analytics")).toBeDisplayed();
+    await expect($("button[aria-label='Settings'][aria-current='page']")).toBeDisplayed();
     const actual = $("section[aria-labelledby='recorded-actual-time']");
     await expect(actual.$("h2=Recorded actual time")).toBeDisplayed();
 
@@ -62,9 +64,6 @@ describe("Phase 17 — planned versus actual Analytics", () => {
     const recordedText = await factValue(actual, "Recorded time").getText();
     expect(durationSeconds(recordedText)).toBeGreaterThan(0);
 
-    // The untracked Task is absent from the comparison denominator, while the established
-    // scheduled overview still contains at least these two one-hour Tasks. Earlier native phases
-    // may have created additional current-date work in a full-suite run, so these are lower bounds.
     const scheduled = $("section[aria-labelledby='scheduled-overview']");
     expect(durationSeconds(await scheduled.$("strong").getText())).toBeGreaterThanOrEqual(7_200);
     expect(Number(await factValue(scheduled, "Scheduled tasks").getText())).toBeGreaterThanOrEqual(2);
