@@ -4,7 +4,7 @@ export type NarrativeWorldPalette = {
   patternA: string; patternB: string; patternOpacity: string;
 };
 
-const light = (rule: string): NarrativeWorldPalette => ({
+const palette = (rule: string): NarrativeWorldPalette => ({
   canvas: "#FFFFFF",
   surface: "#FFFFFF",
   surfaceRaised: "#FFFFFF",
@@ -21,33 +21,15 @@ const light = (rule: string): NarrativeWorldPalette => ({
   patternOpacity: "0.03",
 });
 
-const dark = (rule: string): NarrativeWorldPalette => ({
-  canvas: "#0A0A0A",
-  surface: "#101010",
-  surfaceRaised: "#101010",
-  text: "#FAFAFA",
-  muted: "#A3A3A3",
-  heading: "#FAFAFA",
-  accent: "#FAFAFA",
-  accentSoft: "#1C1C1C",
-  border: "#303030",
-  rule,
-  shadow: "none",
-  patternA: "#FAFAFA",
-  patternB: "#9A9A9A",
-  patternOpacity: "0",
-});
-
 /**
- * Narrative worlds keep their semantic identities and names, but not separate color themes.
- * Their differentiation is typographic/compositional only so entering Narrative never breaks the
- * application's strict black/white material language.
+ * Narrative worlds keep semantic identities but share the application's single Light palette.
+ * Their differentiation is typographic/compositional only; no alternate color-scheme data exists.
  */
 export const visualWorlds = [
-  { id: "paper", name: "Paper", description: "Quiet editorial spacing with restrained rules.", light: light("#777777"), dark: dark("#A3A3A3") },
-  { id: "sakura", name: "Sakura", description: "Airier editorial rhythm with fine monochrome rules.", light: light("#555555"), dark: dark("#B8B8B8") },
-  { id: "aurora", name: "Aurora", description: "Sharper technical rhythm in pure monochrome.", light: light("#333333"), dark: dark("#D0D0D0") },
-  { id: "nocturne", name: "Nocturne", description: "High-contrast editorial rhythm without hue.", light: light("#111111"), dark: dark("#FAFAFA") },
+  { id: "paper", name: "Paper", description: "Quiet editorial spacing with restrained rules.", palette: palette("#777777") },
+  { id: "sakura", name: "Sakura", description: "Airier editorial rhythm with fine monochrome rules.", palette: palette("#555555") },
+  { id: "aurora", name: "Aurora", description: "Sharper technical rhythm in pure monochrome.", palette: palette("#333333") },
+  { id: "nocturne", name: "Nocturne", description: "High-contrast editorial rhythm without hue.", palette: palette("#111111") },
 ] as const;
 
 export type NarrativeVisualWorldId = typeof visualWorlds[number]["id"];
