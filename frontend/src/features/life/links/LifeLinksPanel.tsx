@@ -187,7 +187,7 @@ function AddLinkDialog({
         )}
         <div className={styles.actions}>
           <button type="button" className={styles.button} onClick={onClose} disabled={create.isPending}>Cancel</button>
-          <button type="button" className={styles.button} onClick={() => create.mutate()} disabled={!selected || create.isPending}>
+          <button type="button" className={styles.primary} onClick={() => create.mutate()} disabled={!selected || create.isPending}>
             {create.isPending ? "Adding link…" : "Confirm link"}
           </button>
         </div>

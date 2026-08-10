@@ -12,6 +12,7 @@ import { text } from "../../design-system/visual/typography.css";
  * container the child grid reflows against (ADR 0044).
  */
 export const heading=style({margin:0,color:"var(--text-primary)",...text.pageTitle});
+export const readerTitle=style({margin:`${space.x3} 0 ${space.x1}`,color:"var(--text-primary)",...text.display});
 /*
  * The Life mode switch, finally de-boxed.
  *
@@ -43,7 +44,7 @@ export const empty=style({padding:`${space.group} ${space.x5}`,borderBlockStart:
 export const paging=style({display:"flex",justifyContent:"center",alignItems:"center",gap:12});
 export const pinList=style({display:"grid",gridTemplateColumns:"minmax(0,760px)",justifyContent:"start",gap:space.x3,listStyle:"none",padding:0,margin:0,minInlineSize:0});
 export const unavailable=style({color:"var(--text-muted)",background:"var(--surface-subtle, var(--active-background))"});
-export const readerHero=style({marginTop:24,padding:"clamp(28px,6vw,64px)",border:"1px solid var(--glass-border)",borderRadius:"var(--radius-floating)",background:"var(--glass-surface-strong)"});
+export const readerHero=style({marginTop:space.group,paddingBlockEnd:space.x6,minInlineSize:0});
 export const readerEmpty=style({marginTop:32,paddingTop:24,borderTop:"1px solid var(--border-subtle)",color:"var(--text-muted)"});
 export const status=style({padding:24,color:"var(--text-muted)"});
 globalStyle(`${connectors} path`,{stroke:"var(--border-subtle)",strokeWidth:1.5,fill:"none",transition:`opacity ${duration.inspectorState} ${easing.standard}`});

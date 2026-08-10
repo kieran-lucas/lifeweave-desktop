@@ -1,18 +1,17 @@
 import { style } from "@vanilla-extract/css";
 import { duration, easing } from "../../../design-system/visual/motion.css";
+import { button as sharedButton } from "../../../design-system/primitives/controls.css";
+import { text } from "../../../design-system/visual/typography.css";
 
-export const nav = style({ color: "var(--text-primary)", fontSize: "0.875rem" });
+export const nav = style({ color: "var(--text-primary)", ...text.navigation });
 
-export const heading = style({ margin: "0 0 8px", fontSize: "0.75rem", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--text-muted)" });
+export const heading = style({ margin: "0 0 8px", ...text.eyebrow, color: "var(--text-muted)" });
 
-export const disclosureToggle = style({
-  display: "flex", alignItems: "center", gap: 6, width: "100%",
-  border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-control)", padding: "7px 11px",
-  background: "var(--surface)", color: "var(--text-primary)", fontWeight: 700,
-  cursor: "pointer", marginBottom: 8, textAlign: "left",
+export const disclosureToggle = style([sharedButton.secondary, {
+  display: "flex", width: "100%", justifyContent: "flex-start",
+  marginBottom: 8, textAlign: "left",
   "@container": { "(min-width: 520px)": { display: "none" } },
-  selectors: { "&:focus-visible": { outline: "3px solid var(--focus-ring)", outlineOffset: 2 } },
-});
+}]);
 
 export const disclosureIcon = style({
   flexShrink: 0,
@@ -33,17 +32,17 @@ export const list = style({ listStyle: "none", padding: 0, margin: 0, display: "
 export const listHiddenNarrow = style({ "@container": { "(max-width: 519px)": { display: "none" } } });
 
 export const entryButton = style({
-  display: "block", width: "100%", border: 0, borderRadius: "var(--radius-small)",
-  padding: "5px 8px", background: "transparent", color: "var(--text-muted)",
-  textAlign: "left", cursor: "pointer", lineHeight: 1.4, wordBreak: "break-word",
+  display: "block", width: "100%", border: 0, borderInlineStart: "2px solid transparent", borderRadius: 0,
+  padding: "5px 8px", background: "transparent", color: "var(--text-muted)", ...text.navigation,
+  textAlign: "left", cursor: "pointer", wordBreak: "break-word",
   selectors: {
     "&[data-level='1']": { fontWeight: 700, color: "var(--text-primary)" },
     "&[data-level='2']": { paddingLeft: 14 },
-    "&[data-level='3']": { paddingLeft: 24, fontSize: "0.8125rem" },
-    "&[aria-current]": { background: "var(--active-background)", color: "var(--text-primary)" },
+    "&[data-level='3']": { paddingLeft: 24, ...text.metadata },
+    "&[aria-current]": { borderInlineStartColor: "var(--accent)", background: "var(--active-background)", color: "var(--text-primary)" },
     "&:hover": { background: "var(--active-background)" },
-    "&:focus-visible": { outline: "3px solid var(--focus-ring)", outlineOffset: 2 },
+    "&:focus-visible": { outline: "2px solid var(--focus-ring)", outlineOffset: 2 },
   },
 });
 
-export const truncationNote = style({ marginTop: 8, fontSize: "0.75rem", color: "var(--text-muted)", padding: "4px 8px" });
+export const truncationNote = style({ marginTop: 8, ...text.caption, color: "var(--text-muted)", padding: "4px 8px" });

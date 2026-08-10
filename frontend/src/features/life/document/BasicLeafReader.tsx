@@ -211,7 +211,7 @@ export function BasicLeafReader({ nodeId }: { nodeId: string }) {
           <p>{projection.draft_state === "conflict" ? "This draft is based on an older revision. The current document remains safe." : "An interrupted editing draft is available."}</p>
           <div className={styles.actions}>
             <button className={styles.primary} onClick={() => void recover()}>Recover draft</button>
-            <button className={styles.button} onClick={() => void discard()}>Discard draft</button>
+            <button className={styles.destructive} onClick={() => void discard()}>Discard draft</button>
           </div>
         </section>
       )}

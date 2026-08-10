@@ -6,9 +6,10 @@ export const shell = style({ marginTop: 30, borderTop: "1px solid var(--border-s
 export const actions = style({ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginBottom: 20 });
 export const button = sharedButton.secondary;
 export const primary = sharedButton.primary;
+export const destructive = sharedButton.destructive;
 export const article = style({ ...text.editorBody, color: "var(--text-primary)", overflowWrap: "anywhere" });
 export const status = style({ ...text.metadata, color: "var(--text-muted)", minHeight: 24 });
-export const recovery = style({ border: "1px solid var(--focus-ring)", borderRadius: "var(--radius-surface)", padding: 16, marginBottom: 20, background: "var(--active-background)" });
+export const recovery = style({ borderInlineStart: "3px solid var(--accent)", padding: "12px 16px", marginBottom: 20, background: "var(--active-background)" });
 export const toolbar = style({ position: "sticky", top: 0, zIndex: 1, display: "flex", flexWrap: "wrap", gap: 2, padding: "8px 0", borderBottom: "1px solid var(--border-subtle)", background: "color-mix(in srgb, var(--surface) 94%, transparent)" });
 export const toolbarButton = style([sharedButton.ghost, compact, { minInlineSize: 30, selectors: { '&[aria-pressed="true"]': { color: "var(--accent)", background: "var(--active-background)" } } }]);
 export const editor = style({ border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-surface)", padding: "20px 22px", minHeight: 360, background: "var(--surface)", selectors: { "&:focus-within": { borderColor: "color-mix(in srgb, var(--accent) 45%, var(--border-subtle))" } } });
@@ -47,5 +48,6 @@ export const outlineColumn = style({
     },
   },
 });
-export const templateChooser = style({ border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-control)", padding: 14, maxWidth: 620 });
-export const templateOption = style({ display: "grid", gap: 4, padding: 10, borderBottom: "1px solid var(--border-subtle)" });
+export const templateChooser = style({ border: 0, borderBlockStart: "1px solid var(--border-subtle)", padding: "14px 0 0", maxWidth: 620 });
+export const templateOption = style({ display: "grid", gridTemplateColumns: "auto minmax(0, 1fr)", gap: "3px 9px", padding: "10px 4px", borderBottom: "1px solid var(--border-subtle)" });
+globalStyle(`${templateOption} > span`, { gridColumn: 2, ...text.compactBody, color: "var(--text-muted)" });

@@ -451,7 +451,7 @@ export function LifeScreen({
         </button>
         <div className={styles.readerHero}>
           <NodeIcon iconKey={reader.icon_key} />
-          <h1 id="life-reader-title" className={styles.heading} tabIndex={-1} ref={readerHeadingRef}>
+          <h1 id="life-reader-title" className={styles.readerTitle} tabIndex={-1} ref={readerHeadingRef}>
             {reader.title}
           </h1>
           <p className={styles.nodeDescription}>{reader.short_description}</p>

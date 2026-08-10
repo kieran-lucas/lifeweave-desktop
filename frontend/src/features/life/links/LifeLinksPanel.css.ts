@@ -1,5 +1,7 @@
 import { globalStyle, style } from "@vanilla-extract/css";
 import { dialogBackdrop, dialogSurface } from "../../../app/layout/layout.css";
+import { button as sharedButton, compact } from "../../../design-system/primitives/controls.css";
+import { text } from "../../../design-system/visual/typography.css";
 
 export const panel = style({
   marginTop: 32,
@@ -13,23 +15,11 @@ export const header = style({
   gap: 12,
   flexWrap: "wrap",
 });
-export const heading = style({ margin: 0 });
-export const subheading = style({ margin: "24px 0 10px", fontSize: "1rem" });
-export const button = style({
-  border: "1px solid var(--border-subtle)",
-  borderRadius: "var(--radius-control)",
-  padding: "7px 11px",
-  background: "var(--surface)",
-  color: "var(--text-primary)",
-  cursor: "pointer",
-  selectors: {
-    "&:disabled": { opacity: 0.55, cursor: "default" },
-  },
-});
-export const destructive = style([
-  button,
-  { color: "var(--danger)", flexShrink: 0 },
-]);
+export const heading = style({ margin: 0, ...text.sectionTitle });
+export const subheading = style({ margin: "24px 0 10px", ...text.eyebrow, color: "var(--text-muted)" });
+export const button = sharedButton.secondary;
+export const primary = sharedButton.primary;
+export const destructive = style([sharedButton.destructive, compact, { flexShrink: 0 }]);
 export const list = style({
   display: "grid",
   gap: 8,
@@ -42,9 +32,8 @@ export const row = style({
   alignItems: "center",
   justifyContent: "space-between",
   gap: 12,
-  padding: 12,
-  border: "1px solid var(--border-subtle)",
-  borderRadius: "var(--radius-surface)",
+  padding: "10px 0",
+  borderBlockEnd: "1px solid var(--border-subtle)",
 });
 export const rowBody = style({ minWidth: 0, flex: 1 });
 export const linkButton = style({
@@ -52,7 +41,7 @@ export const linkButton = style({
   padding: 0,
   background: "transparent",
   color: "var(--text-primary)",
-  fontWeight: 750,
+  ...text.cardTitle,
   textAlign: "left",
   cursor: "pointer",
   selectors: { "&:disabled": { cursor: "default", opacity: 0.75 } },
@@ -60,7 +49,7 @@ export const linkButton = style({
 export const meta = style({
   margin: "3px 0 0",
   color: "var(--text-muted)",
-  fontSize: 13,
+  ...text.metadata,
   overflowWrap: "anywhere",
 });
 export const state = style({
@@ -70,13 +59,12 @@ export const state = style({
   border: "1px solid var(--border-subtle)",
   borderRadius: "var(--radius-full)",
   color: "var(--text-muted)",
-  fontSize: 12,
+  ...text.caption,
 });
 /* MODAL_SURFACE — shared backdrop and surface geometry (ADR 0044). */
 export const overlay = dialogBackdrop;
 export const dialog = style([
-  dialogSurface.standard,
-  { borderRadius: "var(--radius-floating)", boxShadow: "var(--elevation-modal)" },
+  dialogSurface.compact,
 ]);
 export const field = style({ display: "grid", gap: 6, marginTop: 18 });
 export const searchRow = style({ display: "flex", flexWrap: "wrap", gap: 8, minInlineSize: 0 });
@@ -88,6 +76,7 @@ export const input = style({
   padding: "9px 11px",
   background: "var(--app-background)",
   color: "var(--text-primary)",
+  ...text.body,
 });
 export const result = style({
   display: "grid",
@@ -97,6 +86,11 @@ export const result = style({
   border: "1px solid var(--border-subtle)",
   borderRadius: "var(--radius-control)",
   cursor: "pointer",
+  selectors: {
+    "&:has(input:checked)": { background: "var(--active-background)", borderColor: "var(--accent)" },
+    "&:focus-within": { outline: "2px solid var(--focus-ring)", outlineOffset: 2 },
+  },
+  "@media": { "(forced-colors: active)": { selectors: { "&:has(input:checked)": { borderWidth: 2 } } } },
 });
 export const actions = style({
   display: "flex",
@@ -106,7 +100,7 @@ export const actions = style({
 });
 export const muted = style({ color: "var(--text-muted)" });
 
-globalStyle(`${panel} button:focus-visible, ${dialog} button:focus-visible, ${dialog} input:focus-visible`, {
-  outline: "3px solid var(--focus-ring)",
+globalStyle(`${linkButton}:focus-visible, ${dialog} input:focus-visible`, {
+  outline: "2px solid var(--focus-ring)",
   outlineOffset: 2,
 });
