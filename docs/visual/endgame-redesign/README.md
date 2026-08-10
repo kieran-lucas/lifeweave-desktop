@@ -1,46 +1,48 @@
-# Lifeweave Phase 8 — Canonical Execution Pack
+# Historical archive — superseded visual program
 
-This directory is the compiled execution authority for the approved Endgame Visual Redesign.
+> **Status: RETIRED / NON-AUTHORITATIVE**
+>
+> This directory records the completed Task 50/51 Endgame Visual Redesign program. It is retained
+> for provenance only. It is **not** an execution authority, design-system authority, UI manifest,
+> test contract, visual reference authority, or acceptance gate for the current product.
 
-## Install
+The previous program converged the app on a restrained near-monochrome productivity aesthetic and
+on a fixed surface/test topology. Product Owner direction on 2026-08-11 explicitly reset that
+architecture and art direction. The old pack must therefore never be used to block, revert, grade,
+or regenerate the current interface.
 
-Extract/copy these files into:
+## Current product direction
 
-`docs/visual/endgame-redesign/`
+The active primary destinations are:
 
-Preserve the already-created `research-archive/` reports and `references/` images.
+- **Today** — a focused daily command surface with progressive disclosure and a luminous anime-dawn editorial world.
+- **Calendar** — a glance-first month board with an orbital sky-atlas visual language.
+- **Plans** — a deliberately small execution brief presented as a crystalline focus chamber.
+- **Life** — a browse-first constellation tree with Reader depth and Edit as the only primary alternate mode.
 
-Then read `08_CODEX_LAUNCH_AND_RECOVERY.md`.
+Settings is outside this redesign scope. Domain/data compatibility remains valuable, but retired
+front-end surfaces do not need to stay visible merely because the underlying capability exists.
 
-## Normal Codex read path
+## Current interaction principles
 
-`AGENTS/Constitution → owner authorization → Master → current stage packet → relevant surface file → source/tests → ledger`
+1. Frequent actions stay visible; secondary operations use progressive disclosure.
+2. Remove UI that adds cognitive load without materially improving the dominant workflow.
+3. Do not preserve an old screen, tab, mode, test, golden, or chunk topology solely for historical compatibility.
+4. Preserve domain/data integrity when hiding or removing front-end paths unless the Product Owner explicitly changes the domain.
+5. Accessibility, keyboard operation, reduced motion, forced colors, security, and byte ceilings remain real safety constraints.
+6. Performance gates protect byte cost, not a frozen bundle/chunk architecture.
+7. Visual identity is **Luminous Editorial**: sky light, orbit, crystal, constellation, controlled glass/refraction, blue-violet spectral accents, and meaningful motion. It must remain legible productivity software rather than gacha/game chrome.
+8. Copyrighted anime characters, fan art, remote visual assets, generic AI-SaaS gradient blobs, and decorative clutter are not part of the visual language.
 
-Do **not** preload research archive.
+## What this directory is still useful for
 
-## Files
+The `research-archive/`, old reference images, stage packets, checkpoint reports, surface specs, and
+execution ledger remain useful as historical evidence of decisions already tried. They can explain
+why a previous implementation looked or behaved a certain way. They cannot overrule current source
+code or current Product Owner direction.
 
-- `00_OWNER_EXECUTION_AUTHORIZATION.md` — scoped Product Owner unattended authority.
-- `00_MASTER_EXECUTION_SPEC.md` — top-level finite program and terminal predicate.
-- `01_DESIGN_SYSTEM_AUTHORITY.md` — global visual grammar.
-- `02_SURFACE_MANIFEST.md` — 109 canonical capability/closure rows.
-- `03_MIGRATION_DAG.md` — finite stage/checkpoint graph.
-- `04_TEST_AND_VERIFICATION_POLICY.md` — smart verification/test economics.
-- `05_UNATTENDED_EXECUTION_POLICY.md` — auto-decide/safe-fallback/hard-block policy.
-- `06_APPROVED_EXCEPTIONS.md` — deliberate exceptions/non-goals.
-- `07_REFERENCE_AUTHORITY.md` — visual-reference permissions and exclusions.
-- `08_CODEX_LAUNCH_AND_RECOVERY.md` — exact overnight setup.
-- `BOOT_GOAL.txt` — compact `/goal` objective.
-- `PRELAUNCH_PREFLIGHT_MESSAGE.txt` — no-write preflight.
-- `surfaces/` — detailed screen-family design specifications.
-- `stages/` — F0 + S01–S12 finite implementation packets.
-- `checkpoints/` — Q1–Q5 + FINAL verification packets.
-- `state/EXECUTION_LEDGER.md` — durable mutable state.
-- `research-archive/` — evidence only.
-- `references/` — actual visual inputs.
+## Explicitly retired mechanisms
 
-## Immutability during implementation
-
-Treat all canonical instruction files and reference images as read-only after the planning-pack commit.
-The normal mutable state document is `state/EXECUTION_LEDGER.md`.
-A contradiction should be recorded, not silently “fixed” by rewriting authority.
+The old `check_layout_authority.py`, `check_endgame_pack.py`, Task 50/51 layout/visual capture suites,
+and old UI-path E2E suites were removed from the repository when they became blockers to the reset.
+Do not recreate them as compatibility gates.
