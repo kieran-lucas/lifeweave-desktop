@@ -23,9 +23,9 @@ const base = style({
   boxShadow: "none",
   transition:
     `background-color ${duration.state} ${easing.standard}, border-color ${duration.state} ${easing.standard}, ` +
-    `color ${duration.state} ${easing.standard}, transform ${duration.press} ${easing.standard}`,
+    `color ${duration.state} ${easing.standard}, transform ${duration.press} ${easing.standard}, box-shadow ${duration.state} ${easing.standard}`,
   selectors: {
-    "&:active:not(:disabled)": { transform: "translateY(1px)" },
+    "&:active:not(:disabled)": { transform: "translateY(1px) scale(.99)" },
     "&:focus-visible": { outline: "2px solid var(--focus-ring)", outlineOffset: 2 },
     "&:disabled": { cursor: "not-allowed", opacity: 0.45, transform: "none" },
   },
@@ -42,15 +42,16 @@ export const button = styleVariants({
   primary: [
     base,
     {
-      backgroundColor: "var(--accent)",
-      borderColor: "var(--accent)",
-      color: "var(--accent-contrast)",
+      background: "linear-gradient(135deg, var(--accent), #7864EE)",
+      borderColor: "rgba(255,255,255,.38)",
+      color: "#FFFFFF",
+      boxShadow: "var(--glow-primary), inset 0 1px 0 rgba(255,255,255,.26)",
       selectors: {
-        "&:hover:not(:disabled)": { transform: "translateY(-1px)", backgroundColor: "var(--accent-muted)", borderColor: "var(--accent-muted)" },
-        "&:active:not(:disabled)": { transform: "translateY(1px)", backgroundColor: "var(--text-primary)", borderColor: "var(--text-primary)" },
+        "&:hover:not(:disabled)": { transform: "translateY(-1px)", background: "linear-gradient(135deg, #4468F0, #6E59DF)", borderColor: "rgba(255,255,255,.54)", boxShadow: "0 13px 32px rgba(70,93,218,.27), inset 0 1px 0 rgba(255,255,255,.30)" },
+        "&:active:not(:disabled)": { transform: "translateY(1px) scale(.99)", background: "linear-gradient(135deg, #3658D9, #6250C8)" },
       },
       "@media": {
-        "(forced-colors: active)": { background: "Highlight", color: "HighlightText", borderColor: "Highlight" },
+        "(forced-colors: active)": { background: "Highlight", color: "HighlightText", borderColor: "Highlight", boxShadow: "none" },
         "(prefers-reduced-motion: reduce)": { selectors: { "&:hover:not(:disabled)": { transform: "none" } } },
       },
     },
@@ -59,13 +60,14 @@ export const button = styleVariants({
   secondary: [
     base,
     {
-      backgroundColor: "var(--surface-raised)",
-      backgroundImage: "var(--paint-grain-fine)",
-      borderColor: "var(--paint-edge)",
+      background: "rgba(255,255,255,.70)",
+      backdropFilter: "blur(12px)",
+      borderColor: "var(--glass-border)",
       color: "var(--text-primary)",
+      boxShadow: "var(--glow-compact), inset 0 1px 0 rgba(255,255,255,.82)",
       selectors: {
-        "&:hover:not(:disabled)": { transform: "translateY(-1px)", backgroundColor: "var(--surface-hover)", borderColor: "var(--text-primary)" },
-        "&:active:not(:disabled)": { transform: "translateY(1px)", backgroundColor: "var(--surface-selected)" },
+        "&:hover:not(:disabled)": { transform: "translateY(-1px)", background: "rgba(241,246,255,.94)", borderColor: "rgba(113,143,219,.48)", boxShadow: "var(--glow-hover)" },
+        "&:active:not(:disabled)": { transform: "translateY(1px) scale(.99)", backgroundColor: "var(--surface-selected)" },
       },
       "@media": {
         "(prefers-reduced-motion: reduce)": { selectors: { "&:hover:not(:disabled)": { transform: "none" } } },
@@ -80,7 +82,7 @@ export const button = styleVariants({
       borderColor: "transparent",
       color: "var(--text-muted)",
       selectors: {
-        "&:hover:not(:disabled)": { backgroundColor: "var(--surface-hover)", borderColor: "var(--paint-edge)", color: "var(--text-primary)" },
+        "&:hover:not(:disabled)": { backgroundColor: "rgba(239,244,255,.76)", borderColor: "rgba(185,202,228,.54)", color: "var(--text-primary)" },
         "&:active:not(:disabled)": { backgroundColor: "var(--surface-selected)" },
       },
     },
@@ -89,12 +91,15 @@ export const button = styleVariants({
   destructive: [
     base,
     {
-      backgroundColor: "var(--surface-raised)",
-      backgroundImage: "var(--paint-grain-fine)",
-      borderColor: "var(--text-primary)",
-      color: "var(--text-primary)",
+      background: "rgba(255,245,248,.78)",
+      borderColor: "rgba(217,78,114,.34)",
+      color: "var(--danger)",
+      boxShadow: "none",
       selectors: {
-        "&:hover:not(:disabled)": { backgroundColor: "var(--text-primary)", borderColor: "var(--text-primary)", color: "var(--app-background)" },
+        "&:hover:not(:disabled)": { background: "linear-gradient(135deg, #E55B7D, #C84269)", borderColor: "rgba(255,255,255,.45)", color: "#FFFFFF", boxShadow: "var(--glow-danger)" },
+      },
+      "@media": {
+        "(forced-colors: active)": { background: "Canvas", color: "LinkText", borderColor: "LinkText", boxShadow: "none" },
       },
     },
   ],
