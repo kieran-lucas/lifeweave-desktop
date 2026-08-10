@@ -19,6 +19,7 @@ const appApi = vi.hoisted(() => ({
 
 vi.mock("../features/calendar/date", () => ({
   localToday: () => "2026-08-04",
+  observedLocalToday: () => "2026-08-04",
 }));
 vi.mock("../features/calendar/useLocalDateRollover", () => ({
   useLocalDateRollover: () => appApi.anchorLocalDate,

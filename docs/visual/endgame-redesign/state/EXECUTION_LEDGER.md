@@ -6,10 +6,10 @@
 
 - BASELINE_PLANNING_SHA: `a1078c1f91c251aaa7a453ef1e8a5108551c852d`
 - EXECUTION_START_SHA: `0b3e01d4a8bd9b62c5d786e9b4a4401d72c0edc1`
-- LAST_VERIFIED_COMMIT: `04ac51faa9f910d1c6bcca2047f15ed11c1a1c4a`
-- CURRENT_PACKET: `Q2`
+- LAST_VERIFIED_COMMIT: `d99fdf53740a59318264861b810be72807ff44d7`
+- CURRENT_PACKET: `S07`
 - CURRENT_STATUS: `PENDING`
-- NEXT_PACKET: `Q2`
+- NEXT_PACKET: `S07`
 - FINAL_REVIEW_DONE: `false`
 - FINAL_FINDING_SET_FROZEN: `false`
 - PROGRAM_STATUS: `IN_PROGRESS`
@@ -24,7 +24,7 @@
 | S03 | CLOSED | `17ebdea04baf4386a370bcc06acd1479fa2f806e` | 9/9 rows LOCAL_VERIFIED; focused semantics and max/min native profiles passed |
 | S04 | CLOSED | `d5c66c85f0287db322e70c163aaf4be39d06b1c1` | 5/5 rows LOCAL_VERIFIED; focused semantics and max/min native profiles passed |
 | S05 | CLOSED | `04ac51faa9f910d1c6bcca2047f15ed11c1a1c4a` | 11/11 rows LOCAL_VERIFIED; focused semantics, fixed budget, and max/min native profiles passed |
-| S06 | CLOSED | `S06 checkpoint` | 7/7 rows LOCAL_VERIFIED; focused semantics, fixed budget, and max/min native profiles passed |
+| S06 | CLOSED | `d99fdf53740a59318264861b810be72807ff44d7` | 7/7 rows LOCAL_VERIFIED; focused semantics, fixed budget, and max/min native profiles passed |
 | S07 | PENDING | — | — |
 | S08 | PENDING | — | — |
 | S09 | PENDING | — | — |
@@ -32,7 +32,7 @@
 | S11 | PENDING | — | — |
 | S12 | PENDING | — | — |
 | Q1 | CLOSED | `db2f7ccd472938e71382b6ad338e073145eac003` | 33/33 scoped rows VERIFIED; full unit, build/budget, native behavior, and max/min visual gates passed |
-| Q2 | PENDING | — | — |
+| Q2 | CLOSED | `Q2 checkpoint` | 18/18 scoped rows VERIFIED; full unit, build/budget, native behavior, and max/min visual gates passed |
 | Q3 | PENDING | — | — |
 | Q4 | PENDING | — | — |
 | Q5 | PENDING | — | — |
@@ -72,24 +72,24 @@
 | T-20 | S04 | VERIFIED | Q1 checkpoint | deadline groups expose first-class dates and render metadata once per row |
 | T-21 | S04 | VERIFIED | Q1 checkpoint | populated saved-view manager/results max+min evidence with stable narrow rail |
 | T-22 | S04 | VERIFIED | Q1 checkpoint | shared wide dialog shell, canonical fields, and primary-save ordering |
-| C-01 | S05 | LOCAL_VERIFIED | S05 checkpoint | coherent 5/6-week hairline board, compact month navigation, and deterministic populated max/min evidence |
-| C-02 | S05 | LOCAL_VERIFIED | S05 checkpoint | separate today disc, selected structural edge, missed badge, load triplet, focus, and forced-colors semantics |
-| A-01 | S05 | LOCAL_VERIFIED | S05 checkpoint | Week report hierarchy, shared period controls, and nonzero native projection evidence |
-| A-02 | S05 | LOCAL_VERIFIED | S05 checkpoint | Month period remains the same editorial report and focused period-query coverage passes |
-| A-03 | S05 | LOCAL_VERIFIED | S05 checkpoint | Year period remains the same editorial report and completed-week facts stay readable |
-| A-04 | S05 | LOCAL_VERIFIED | S05 checkpoint | scheduled time remains the lead fact with three subordinate facts on one plane |
-| A-05 | S05 | LOCAL_VERIFIED | S05 checkpoint | recorded-vs-plan facts and factual zero-session explanation preserved |
-| A-06 | S05 | LOCAL_VERIFIED | S05 checkpoint | category list keeps scheduled time, actual-time facts, and shared progress material |
-| A-07 | S05 | LOCAL_VERIFIED | S05 checkpoint | objective streaks form a compact structured secondary section without gamified chrome |
-| A-08 | S05 | LOCAL_VERIFIED | S05 checkpoint | completion distribution retains factual visual/table equivalents with explicit header/row scope |
-| A-09 | S05 | LOCAL_VERIFIED | S05 checkpoint | lazy Focus Plan summary/table loads before capture and retains local horizontal containment |
-| P-01 | S06 | LOCAL_VERIFIED | S06 checkpoint | compact portfolio tabs and populated/empty rail preserve factual plan state without invented progress |
-| P-02 | S06 | LOCAL_VERIFIED | S06 checkpoint | selected plan has structural accent edge, editorial object title, and independent forced-colors focus channel |
-| P-03 | S06 | LOCAL_VERIFIED | S06 checkpoint | plan editor uses a ruled document form with canonical fields and compact primary action |
-| P-04 | S06 | LOCAL_VERIFIED | S06 checkpoint | approach variants use shared low-chrome navigation tabs and stable detail hierarchy |
-| P-05 | S06 | LOCAL_VERIFIED | S06 checkpoint | phases retain ordered rows, dates, status, and compact movement controls without card stacking |
-| P-06 | S06 | LOCAL_VERIFIED | S06 checkpoint | linked work remains a compact structured list with existing relationship capability only |
-| P-07 | S06 | LOCAL_VERIFIED | S06 checkpoint | reviews retain authored journal rhythm, factual history, and canonical review entry controls |
+| C-01 | S05 | VERIFIED | Q2 checkpoint | coherent 5/6-week hairline board, compact month navigation, and deterministic populated max/min evidence |
+| C-02 | S05 | VERIFIED | Q2 checkpoint | separate today disc, selected structural edge, missed badge, load triplet, focus, and forced-colors semantics |
+| A-01 | S05 | VERIFIED | Q2 checkpoint | Week report hierarchy, shared period controls, and nonzero native projection evidence |
+| A-02 | S05 | VERIFIED | Q2 checkpoint | Month period remains the same editorial report and focused period-query coverage passes |
+| A-03 | S05 | VERIFIED | Q2 checkpoint | Year period remains the same editorial report and completed-week facts stay readable |
+| A-04 | S05 | VERIFIED | Q2 checkpoint | scheduled time remains the lead fact with three subordinate facts on one plane |
+| A-05 | S05 | VERIFIED | Q2 checkpoint | recorded-vs-plan facts and factual zero-session explanation preserved |
+| A-06 | S05 | VERIFIED | Q2 checkpoint | category list keeps scheduled time, actual-time facts, and shared progress material |
+| A-07 | S05 | VERIFIED | Q2 checkpoint | objective streaks form a compact structured secondary section without gamified chrome |
+| A-08 | S05 | VERIFIED | Q2 checkpoint | completion distribution retains factual visual/table equivalents with explicit header/row scope |
+| A-09 | S05 | VERIFIED | Q2 checkpoint | lazy Focus Plan summary/table loads before capture and retains local horizontal containment |
+| P-01 | S06 | VERIFIED | Q2 checkpoint | compact portfolio tabs and populated/empty rail preserve factual plan state without invented progress |
+| P-02 | S06 | VERIFIED | Q2 checkpoint | selected plan has structural accent edge, editorial object title, and independent forced-colors focus channel |
+| P-03 | S06 | VERIFIED | Q2 checkpoint | plan editor uses a ruled document form with canonical fields and compact primary action |
+| P-04 | S06 | VERIFIED | Q2 checkpoint | approach variants use shared low-chrome navigation tabs and stable detail hierarchy |
+| P-05 | S06 | VERIFIED | Q2 checkpoint | phases retain ordered rows, dates, status, and compact movement controls without card stacking |
+| P-06 | S06 | VERIFIED | Q2 checkpoint | linked work remains a compact structured list with existing relationship capability only |
+| P-07 | S06 | VERIFIED | Q2 checkpoint | reviews retain authored journal rhythm, factual history, and canonical review entry controls |
 | L-01 | S07 | PENDING | — | — |
 | L-02 | S07 | PENDING | — | — |
 | L-03 | S07 | PENDING | — | — |
@@ -157,14 +157,15 @@
 - Q1 promoted S01–S04: 33/33 scoped rows VERIFIED
 - S05 Calendar + Analytics: 11/11 rows LOCAL_VERIFIED
 - S06 Focus Plans: 7/7 rows LOCAL_VERIFIED
+- Q2 promoted S05–S06: 18/18 scoped rows VERIFIED
 
 ## CURRENT
 
-- Q2 pending
+- S07 pending
 
 ## NEXT
 
-- Q2
+- S07
 
 ## KNOWN_DEBT
 
@@ -257,6 +258,13 @@ Append concise entries:
 - [S06] native Light `calendar-analytics-plans` maximized — PASS — 4 surfaces / zero collisions — `target/e2e-artifacts/task-50b/calendar-analytics-plans-S06-20260810-095534`
 - [S06] native Light `calendar-analytics-plans` 960×640 — PASS — achieved 960×639 / 4 surfaces / zero collisions — `target/e2e-artifacts/task-50b/calendar-analytics-plans-S06-20260810-095705`
 - [S06] bounded self-review `F_S06` — RESOLVED — forced-colors selected-plan state now uses a structural inline edge so keyboard focus retains its independent outline; affected type/static/Focus Plans checks passed
+- [Q2] full frontend unit sentinel — PASS — 52 files / 781 tests after repairing the causal complete-module date mock; focused App subset 1 file / 24 tests passed first
+- [Q2] production build + performance budget — PASS — 1,263,952 raw / 389,156 gzip / 26 chunks; ceilings unchanged
+- [Q2] native behavior — PASS — phase8 Focus Plans and phase17 planned-vs-actual Analytics passed; phase20 Focus Plan Analytics passed on its single controlled rerun with audit date aligned to authoritative local date
+- [Q2] native harness diagnosis — RESOLVED — runner default `2026-08-09` pin made an actual-date yesterday fixture equal pinned today before its end time; no product row was reopened
+- [Q2] native Light `calendar-analytics-plans` maximized — PASS — 4 surfaces / zero collisions — `target/e2e-artifacts/task-50b/calendar-analytics-plans-Q2-20260810-101459`
+- [Q2] native Light `calendar-analytics-plans` 960×640 — PASS — achieved 960×639 / 4 surfaces / zero collisions — `target/e2e-artifacts/task-50b/calendar-analytics-plans-Q2-20260810-101622`
+- [Q2] bounded self-review `F_Q2` — FROZEN/RESOLVED — zero findings; no post-review fixes or repeated review
 
 ## DECISIONS MADE UNDER UNATTENDED AUTHORITY
 
