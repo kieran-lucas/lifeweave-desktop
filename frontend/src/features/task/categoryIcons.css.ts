@@ -1,4 +1,4 @@
-import { style } from "@vanilla-extract/css";
+import { globalStyle, style } from "@vanilla-extract/css";
 
 /**
  * Category glyph frame. The semantic variety comes from the shared Fluent paths; this wrapper only
@@ -13,10 +13,13 @@ export const mark = style({
   verticalAlign: "-0.14em",
   color: "currentColor",
   opacity: 0.82,
-  selectors: {
-    "& > svg": { display: "block", inlineSize: 16, blockSize: 16 },
-  },
   "@media": {
     "(forced-colors: active)": { color: "CanvasText", opacity: 1 },
   },
+});
+
+globalStyle(`${mark} > svg`, {
+  display: "block",
+  inlineSize: 16,
+  blockSize: 16,
 });
