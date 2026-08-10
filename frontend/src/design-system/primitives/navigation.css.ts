@@ -9,7 +9,7 @@ export const tabList = style({
   alignItems: "center",
   gap: 6,
   minInlineSize: 0,
-  borderBlockEnd: "1px solid var(--paint-edge)",
+  borderBlockEnd: "1px solid rgba(189,205,230,.72)",
 });
 
 export const tab = style([
@@ -28,15 +28,14 @@ export const tab = style([
     boxShadow: "none",
     transition:
       `background-color ${duration.state} ${easing.standard}, border-color ${duration.state} ${easing.standard}, ` +
-      `color ${duration.state} ${easing.standard}`,
+      `color ${duration.state} ${easing.standard}, box-shadow ${duration.state} ${easing.standard}`,
     selectors: {
-      "&:hover:not(:disabled)": { color: "var(--text-primary)", backgroundColor: "var(--surface-hover)" },
+      "&:hover:not(:disabled)": { color: "var(--text-primary)", backgroundColor: "rgba(242,246,255,.74)" },
       '&[aria-selected="true"], &[aria-pressed="true"]': {
-        color: "var(--text-primary)",
-        borderBlockEndColor: "var(--text-primary)",
-        backgroundColor: "var(--surface-raised)",
-        backgroundImage: "var(--paint-grain-fine)",
-        boxShadow: "none",
+        color: "var(--accent-muted)",
+        borderBlockEndColor: "var(--accent)",
+        background: "linear-gradient(180deg, rgba(244,247,255,.42), rgba(231,238,255,.86))",
+        boxShadow: "inset 0 -4px 12px rgba(78,111,255,.07)",
       },
       "&:disabled": { cursor: "not-allowed", opacity: 0.5 },
     },
@@ -60,11 +59,11 @@ export const segmented = style({
   alignItems: "center",
   gap: 3,
   padding: 4,
-  border: "1px solid var(--paint-edge)",
+  border: "1px solid var(--glass-border)",
   borderRadius: "var(--radius-control)",
-  backgroundColor: "var(--surface-raised)",
-  backgroundImage: "var(--paint-grain-fine)",
-  boxShadow: "none",
+  background: "var(--glass-surface)",
+  backdropFilter: "blur(12px)",
+  boxShadow: "var(--glow-compact)",
 });
 
 export const segmentedItem = style([
@@ -81,17 +80,19 @@ export const segmentedItem = style([
     boxShadow: "none",
     transition:
       `background-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}, ` +
-      `border-color ${duration.state} ${easing.standard}`,
+      `border-color ${duration.state} ${easing.standard}, box-shadow ${duration.state} ${easing.standard}, transform ${duration.press} ${easing.standard}`,
     selectors: {
-      "&:hover:not(:disabled)": { color: "var(--text-primary)", backgroundColor: "var(--surface-hover)" },
+      "&:hover:not(:disabled)": { color: "var(--text-primary)", backgroundColor: "rgba(242,246,255,.78)" },
       '&[aria-selected="true"], &[aria-pressed="true"], &[aria-current="page"]': {
-        backgroundColor: "var(--text-primary)",
-        color: "var(--app-background)",
-        borderColor: "var(--text-primary)",
-        boxShadow: "none",
+        background: "linear-gradient(135deg, var(--accent), #7864EE)",
+        color: "#FFFFFF",
+        borderColor: "rgba(255,255,255,.54)",
+        boxShadow: "0 7px 18px rgba(78,101,220,.18), inset 0 1px 0 rgba(255,255,255,.26)",
       },
+      "&:active:not(:disabled)": { transform: "translateY(1px)" },
     },
     "@media": {
+      "(prefers-reduced-motion: reduce)": { selectors: { "&:active:not(:disabled)": { transform: "none" } } },
       "(forced-colors: active)": {
         selectors: {
           '&[aria-selected="true"], &[aria-pressed="true"], &[aria-current="page"]': {
@@ -109,9 +110,8 @@ export const segmentedItem = style([
 export const selectedRow = style({
   selectors: {
     '&[aria-current="true"], &[aria-current="page"], &[data-selected="true"]': {
-      backgroundColor: "var(--surface-selected)",
-      backgroundImage: "var(--paint-grain-fine)",
-      boxShadow: "inset 3px 0 0 var(--text-primary)",
+      background: "linear-gradient(100deg, rgba(232,239,255,.90), rgba(245,242,255,.78))",
+      boxShadow: "inset 3px 0 0 var(--accent), var(--glow-compact)",
     },
   },
   "@media": {
