@@ -1,174 +1,177 @@
 # 01 — Design System Authority
 
 **Status:** current Product Owner visual authority.  
-**Art direction:** **Lifeweave — Flat Matte Monochrome**.  
-**Target:** a premium Windows productivity application with tactile matte surfaces, strict blue/white separation, restrained geometry and zero decorative-background noise.
+**Art direction:** **Lifeweave — Monochrome Matte**.  
+**Target:** a flagship Windows productivity application built from black, white and neutral gray only, with tactile matte surfaces, high-quality iconography, disciplined contrast and no decorative-background noise.
 
-This authority supersedes earlier visual language wherever it implies glass, acrylic, frosted surfaces, atmospheric illustration, multicolor washes or blue-white blended tint fields. Product capability, local-first/data safety, geometry authority, keyboard behavior and semantic accessibility remain unchanged.
+This authority supersedes every earlier aesthetic rule that implies blue/chromatic accents, glass/acrylic, atmospheric illustration, multicolor theming, tint washes or effect-led premium styling. Product capability, local-first/data safety, geometry authority, keyboard behavior and semantic accessibility remain unchanged.
 
 ## 1. Core visual thesis
 
-Lifeweave is a **solid, tactile work surface**, not a transparent dashboard floating over wallpaper and not an illustrated background with UI layered on top.
+Lifeweave is a **precise monochrome work instrument with tactile editorial character**.
 
-The global visual language is intentionally narrow:
-- white means white;
-- blue means solid blue;
-- neutral gray may support borders, disabled states and hover separation;
-- red remains allowed only where destructive/error semantics require it;
-- matte texture comes from extremely fine shared grain, never translucency or color wash;
-- composition comes from spacing, typography, alignment, borders and clear solid regions.
+The visual system has three color classes only:
+- white / near-white paper;
+- black / near-black ink and identity planes;
+- neutral gray for hierarchy, disabled states, separators and quiet interaction feedback.
 
-The intended first impression is **“crisp, tactile, deliberate and expensive”**, not colorful, luminous or effect-heavy.
+Impact must come from composition, typography, spacing, icon shape, optical alignment, line weight, inversion and material tooth—not hue.
 
-## 2. Material law — FLAT, OPAQUE, MATTE
+## 2. Material law — OPAQUE, MATTE, ZERO-CHROMA
 
 Every persistent surface is opaque.
 
-Canonical material layers:
-1. **white canvas** — pure white application ground;
-2. **solid blue plane** — primary identity areas such as the navigation shell or explicit selected controls;
-3. **white paper** — content surfaces, forms, cards, tables and readers;
-4. **neutral rule** — gray structural border where separation is needed;
-5. **blue ink edge** — blue border, underline or inset rule for focus/current/selected state;
-6. **modal paper** — opaque white dialog with modest physical elevation only when separation from the backdrop requires it.
+Canonical layers:
+1. **paper canvas** — white in Light, near-black in Dark;
+2. **ink plane** — near-black in Light, near-white in Dark, reserved for strong identity/current/primary states;
+3. **paper surface** — content, cards, forms, tables, editors and dialogs;
+4. **neutral rule** — gray structural borders and separators;
+5. **ink edge** — black/white underline, inset rule or outline for selection/focus;
+6. **floating paper** — popover/dialog with modest neutral physical elevation only when separation requires it.
 
-Depth comes from border, spacing, overlap and tiny physical shadow only where necessary. Persistent content cards should normally have no shadow.
-
-**Forbidden as material mechanisms:**
+Forbidden material mechanisms:
 - backdrop blur;
 - translucent persistent fills;
 - glass/acrylic/frosted treatment;
+- chromatic color;
 - glow/bloom;
-- blue-white tint blending;
+- tint blending;
 - decorative gradients;
-- colored ambient washes;
 - specular highlights.
 
-Legacy source names containing `glass` may remain temporarily for compatibility, but their rendered result must be plain opaque white paper.
+Legacy source/token names such as `accent`, `glass`, `danger` may remain for compatibility, but their normal rendered values must remain zero-chroma.
 
 ## 3. Texture
 
-Texture is allowed only to create a subtle dry/matte feel.
+Texture exists only to make flat surfaces feel dry and tactile.
 
 Allowed:
-- extremely sparse micro-speckle or paper fiber encoded locally;
-- one shared low-contrast grain recipe;
-- the same grain on blue or white surfaces without changing the base fill color.
+- one shared extremely sparse micro-speckle/paper-tooth recipe;
+- subtle neutral fiber variation that does not change the perceived base color;
+- no texture on Dark surfaces when it harms clarity.
 
 Forbidden:
+- photographic texture;
+- visible repeating stripes;
 - watercolor/gouache wash;
 - gradients used as texture;
-- visible repeating stripes;
-- photographic textures;
-- noisy grain that competes with text;
-- different decorative textures per feature.
-
-Texture must never turn a white region blue-ish or a blue region pale/washed-out.
+- feature-specific decorative texture systems;
+- noise that competes with text or icons.
 
 ## 4. Background law — NO DECORATIVE ATMOSPHERE
 
-The application background is not an illustration layer.
+No stars, petals, particles, orbit/weave lines, auras, decorative SVG fields, brush scenery, wallpaper motifs or continuously animated ambient art.
 
-Forbidden globally:
-- sky/cloud scenery;
-- stars, petals, particles or glints;
-- orbit/weave lines;
-- decorative SVG fields;
-- background sigils;
-- animated ambient art;
-- color auras;
-- background brush strokes.
+Page identity comes from information architecture and solid composition.
 
-A page earns character through its information architecture and solid material composition, not wallpaper effects.
+## 5. Color and semantic state
 
-## 5. Cohesion rule
+Normal rendering uses **zero chroma**.
 
-Today, Calendar, Analytics, Focus Plans, Life, Reader/Narrative, Search, dialogs and Settings share:
-- pure white content planes;
-- one solid royal/celestial blue identity;
-- neutral gray structural borders;
-- one grain density family;
-- one focus/selection grammar;
-- one motion easing vocabulary.
+Light target:
+- canvas/surface: `#FFFFFF` family;
+- strong ink: `#111111` family;
+- secondary text/borders: neutral grays only.
 
-No screen may introduce a second decorative color system or its own atmosphere.
+Dark target is the same system inverted.
 
-## 6. Color
+Status meaning must never depend on hue. Error/destructive/success/completion states use combinations of:
+- explicit text/icon labels;
+- border weight/style;
+- fill inversion/value;
+- shape and iconography;
+- accessible semantics already present in the product.
 
-Light theme is the aesthetic acceptance target.
+## 6. Iconography — RICH BUT ONE FAMILY
 
-- application canvas: `#FFFFFF`;
-- primary identity/accent: one solid royal blue family;
-- large blue regions are explicitly solid blue, not pastel or mixed with white;
-- white surfaces remain white, not cool-blue/off-white tinted;
-- neutral gray is structural only;
-- destructive/error red is a semantic exception;
-- completion remains blue-family.
-
-Avoid `color-mix()` for ordinary blue/white presentation. Avoid blue-tinted whites. Avoid gradients between identity colors.
-
-## 7. Typography
-
-Keep:
-- Segoe UI Variable optical families for dense operational text;
-- Literata Variable for authored/editorial content where already justified.
-
-Typography should provide more of the premium character now that decorative atmosphere is removed.
-
-## 8. Motion — continuity without visual effects
+Lifeweave should use a broad icon vocabulary wherever icons improve scanability or distinguish actions/features.
 
 Rules:
+- prefer the existing governed Fluent-derived icon pipeline;
+- use distinct semantic glyphs instead of repeatedly reusing generic dots/arrows when an existing suitable glyph exists;
+- user-defined categories may be deterministically assigned among a curated fallback set without changing domain data;
+- all icons remain monochrome `currentColor` drawings;
+- maintain consistent optical size, stroke/fill character and alignment;
+- no emoji, Unicode icon glyphs, clip-art, multicolor symbols or mixed icon libraries;
+- icon-only controls retain accessible names/tooltips where required;
+- do not add a heavy runtime dependency merely to increase icon count.
+
+## 7. Application icon
+
+Canonical desktop identity:
+- solid black rounded-square field;
+- centered continuous white Lifeweave infinity mark;
+- strong silhouette at 16–32 px;
+- no gradient, glow, shadow, border decoration or color;
+- the shell mark and packaged Windows icon must visibly belong to the same identity system.
+
+Canonical source: `assets/brand/lifeweave-app-icon.svg`.
+Generated bundle outputs live under `src-tauri/icons/`.
+
+## 8. Typography and hierarchy
+
+Keep Segoe UI Variable for operational UI and Literata Variable where authored/editorial content already justifies it.
+
+With color removed, typography must carry more hierarchy through:
+- deliberate weight steps;
+- compact metadata;
+- disciplined numeric treatment;
+- restrained editorial contrast;
+- line length and spacing rather than oversized decorative type.
+
+## 9. Motion — CONTINUITY, NOT EFFECT
+
 - state commits before motion;
-- prefer short transform + opacity transitions;
-- hover may use a 1px lift or solid fill/border change;
-- do not animate blur, glow, filters, gradients or background art;
-- page/surface changes use one consistent settle curve;
-- Reduced Motion removes travel and keeps instant/short state feedback;
-- no continuous ambient animation.
+- short opacity/transform transitions only where they clarify continuity;
+- 1 px press/lift is acceptable;
+- no animated blur, glow, gradients, background art or continuous ambient loops;
+- use one easing vocabulary across surfaces;
+- Reduced Motion removes travel and keeps short tonal feedback;
+- no interaction should visibly stutter because of paint-heavy effects.
 
-## 9. Shell
+## 10. Shell
 
-The shell is the clearest two-plane composition in the product:
-- sidebar/navigation: **solid blue**;
-- main viewport: **solid white**;
-- active navigation may invert to a solid white block with blue ink;
-- no sidebar gradient, wash, glow or translucent layer;
-- infinity mark may use a white-on-blue or blue-on-white flat emblem;
-- no avatar, profile, meetings or invented capability.
+The shell is the strongest inversion composition:
+- Light: black sidebar + white workspace;
+- Dark: white/light sidebar + black workspace;
+- current navigation inverts against the sidebar plane;
+- icons are a major navigation differentiator;
+- no avatar/profile/meetings or invented capability;
+- no atmosphere, gradient, glow or translucency.
 
-## 10. Surface-specific character
+## 11. Surface continuity
 
-- **Today:** white planning paper with blue ink rules and solid blue action states.
-- **Calendar:** white month grid; a deliberate solid-blue header/current-day treatment is allowed.
-- **Analytics:** white report sheets; blue is concentrated in metrics/progress/current controls.
-- **Focus Plans:** white manuscript/workspace; selection is blue edge or deliberate solid-blue control, never a pastel wash.
-- **Life:** white atlas board with blue connectors/markers and neutral paper cards.
-- **Reader/Narrative:** white editorial paper; content itself provides richness, not background decoration.
-- **Settings/Search/Dialogs:** quiet white utility surfaces with the same grain and blue focus grammar.
+Today, Calendar, Analytics, Focus Plans, Life, Reader/Editor/Narrative, Search, Settings, dialogs and interchange flows share:
+- the same paper/ink/neutral material family;
+- the same grain density;
+- the same border and selected-state grammar;
+- the same monochrome icon vocabulary;
+- the same motion cadence.
 
-## 11. Geometry and semantics remain locked
+No deep workflow may reintroduce color or default enterprise chrome.
+
+## 12. Geometry, capability and accessibility remain locked
 
 Preserve:
 - standard / wide / reading frame taxonomy;
 - reading measure discipline;
 - real Task/Calendar/Life/Focus Plan capability boundaries;
-- native/semantic control meaning;
-- focus visibility and keyboard parity;
-- Reduced Motion and forced-colors fallbacks;
-- no backend/schema/domain/generated-IPC change for art;
-- no remote runtime assets;
+- semantic control meaning and keyboard parity;
+- visible focus, Reduced Motion and forced-colors behavior;
+- no backend/schema/domain/generated-IPC change for aesthetics;
+- no remote runtime decorative assets;
 - governed performance ceilings.
 
-## 12. Rejection test
+## 13. Rejection test
 
-A visual change fails if it can plausibly be described as:
-- glassy;
-- frosted;
-- blue-white pastel blend;
-- colorful anime wallpaper;
-- gradient-heavy;
-- glowing;
-- generic translucent SaaS;
-- visually busy behind the content.
+A visual change fails if it can be described as:
+- blue-accented;
+- chromatic;
+- glassy/frosted;
+- gradient/glow-heavy;
+- wallpaper/decorative-background-led;
+- icon-poor or icon-inconsistent;
+- generic enterprise/SaaS styling;
+- a different design language inside a deep workflow.
 
-A successful result remains recognizable with all decorative background layers removed: **solid blue shell, pure white workspace, subtle dry grain, crisp blue ink, neutral rules and disciplined typography**.
+A successful result remains recognizable with all copy replaced by gray bars: **hard black/white inversion, dry matte paper, disciplined neutral rules, distinctive monochrome iconography and one coherent geometry/motion language**.
