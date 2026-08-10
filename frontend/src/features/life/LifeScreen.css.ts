@@ -20,8 +20,6 @@ export const heading = style({ margin: 0, color: "var(--text-primary)", ...text.
 export const readerTitle = style({ margin: `${space.x3} 0 ${space.x1}`, color: "var(--text-primary)", ...text.display, letterSpacing: "-0.04em" });
 export const modes = style([tabList, { flexWrap: "nowrap", gap: space.x3, borderBottomColor: "rgba(189,205,230,.72)" }]);
 export const modeButton = tab;
-/* Browse and Edit are the primary Life operations. Pinned/Graph remain data-compatible but leave the front door. */
-globalStyle(`${modes} > button:nth-child(n+3)`, { display: "none" });
 
 export const toolbar = style({
   display: "flex",
@@ -138,9 +136,6 @@ export const focal = style({
 export const focalTitle = style({ margin: `${space.x2} 0 ${space.x1}`, ...text.objectTitle, color: "var(--text-primary)", letterSpacing: "-0.03em", fontSize: "clamp(1.35rem, 2vw, 1.8rem)" });
 export const nodeDescription = style({ margin: 0, color: "var(--text-muted)", lineHeight: 1.55, whiteSpace: "pre-wrap" });
 export const nodeMeta = style({ display: "flex", alignItems: "center", gap: 7, color: "var(--text-muted)", ...text.metadata });
-/* Tags and pinning are secondary organization mechanics, not the branch headline. */
-globalStyle(`${focal} > :nth-child(4)`, { display: "none" });
-globalStyle(`${focal} > button`, { display: "none" });
 
 export const children = style({
   position: "relative",
@@ -201,7 +196,6 @@ export const card = style({
 });
 
 export const cardTitle = style({ position: "relative", zIndex: 1, display: "block", margin: 0, ...text.cardTitle, letterSpacing: "-0.015em", color: "var(--text-primary)" });
-export const pinButton = style({ display: "none" });
 export const icon = style({
   position: "relative",
   zIndex: 1,
@@ -216,15 +210,10 @@ export const icon = style({
   border: "1px solid rgba(115,143,219,.34)",
   boxShadow: "0 7px 18px rgba(76,106,185,.12), inset 0 1px 0 rgba(255,255,255,.90)",
 });
-/* Keep only title + structural cue on branch tiles; full prose and tags belong after opening. */
-globalStyle(`${card} > p`, { display: "none" });
-globalStyle(`${card} > :nth-child(n+5)`, { display: "none" });
 globalStyle(`${card} > ${nodeMeta}`, { position: "relative", zIndex: 1, gridColumn: 2, alignSelf: "start" });
 
 export const empty = style({ position: "relative", zIndex: 1, padding: `${space.x4} ${space.x2}`, border: "1px dashed rgba(143,163,203,.54)", borderRadius: "15px", background: "rgba(255,255,255,.46)", textAlign: "left", color: "var(--text-muted)" });
 export const paging = style({ position: "relative", zIndex: 1, display: "flex", justifyContent: "center", alignItems: "center", gap: 12, ...text.metadata, color: "var(--text-muted)" });
-export const pinList = style({ display: "grid", gridTemplateColumns: "minmax(0,760px)", justifyContent: "start", gap: space.x2, listStyle: "none", padding: 0, margin: 0, minInlineSize: 0 });
-export const unavailable = style({ color: "var(--text-muted)", background: "rgba(245,248,252,.80)" });
 
 export const readerShell = style({
   inlineSize: "min(800px, 100%)",
@@ -252,6 +241,4 @@ globalStyle(`${connectors} path`, {
 });
 globalStyle(`${pageFrame.wide} button:focus-visible`, { outline: "2px solid var(--focus-ring)", outlineOffset: 2 });
 globalStyle(`${pageFrame.reading} button:focus-visible`, { outline: "2px solid var(--focus-ring)", outlineOffset: 2 });
-
-/* Motion never carries meaning; reduce it to a static constellation when requested. */
 globalStyle(`${pageFrame.wide} ${connectors}`, { transition: `opacity ${duration.state} ${easing.standard}` });
