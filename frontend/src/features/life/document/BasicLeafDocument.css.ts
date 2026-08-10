@@ -26,7 +26,13 @@ globalStyle(`${shell} > h2`, { ...text.sectionTitle, margin: "0 0 14px" });
 globalStyle(`${article} blockquote`, { borderLeft: "3px solid var(--focus-ring)", marginLeft: 0, paddingLeft: 18, color: "var(--text-muted)" });
 globalStyle(`${article} pre`, { overflowX: "auto", padding: 14, borderRadius: "var(--radius-control)", background: "var(--sidebar-surface)" });
 globalStyle(`${article} th, ${article} td, ${editor} .tiptap th, ${editor} .tiptap td`, { border: "1px solid var(--border-subtle)", padding: 8, textAlign: "left" });
-globalStyle(`${article} th, ${editor} .tiptap th`, { fontFamily: text.editorBody.fontFamily, fontWeight: 400 });
+globalStyle(`${article} th, ${editor} .tiptap th`, {
+  fontFamily: text.editorBody.fontFamily,
+  fontWeight: 400,
+  background: "var(--surface-subtle)",
+  borderBlockEnd: "1px solid var(--border-strong)",
+});
+globalStyle(`${article} th strong, ${article} th b, ${editor} .tiptap th strong, ${editor} .tiptap th b`, { fontWeight: 400 });
 globalStyle(`${editor} .tiptap`, { minHeight: 280, outline: "none" });
 globalStyle(`${editor} .tiptap img`, { maxWidth: "100%", height: "auto" });
 
