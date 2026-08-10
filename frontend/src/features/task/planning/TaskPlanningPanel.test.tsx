@@ -79,6 +79,25 @@ describe("TaskPlanningPanel", () => {
     expect(screen.getByRole("button", { name: /Review for Weekly review/ })).toBeInTheDocument();
   });
 
+  it("renders deadline metadata exactly once per planning row", async () => {
+    commands.getTaskPlanningProjection.mockResolvedValue({
+      ...projection,
+      groups: [{
+        ...projection.groups[0]!,
+        items: [{
+          ...item,
+          deadline: {
+            deadline_local_date: "2026-08-04",
+            state: "overdue",
+            scheduled_after_deadline: true,
+          },
+        }],
+      }],
+    });
+    renderPanel();
+    expect(await screen.findAllByText(/Deadline overdue/)).toHaveLength(1);
+  });
+
   it("renders locked empty copy", async () => {
     commands.getTaskPlanningProjection.mockResolvedValue({ ...projection, total_item_count: 0, scheduled_minutes: 0, groups: [] });
     renderPanel();

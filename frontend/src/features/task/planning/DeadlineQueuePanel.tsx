@@ -34,45 +34,53 @@ export default function DeadlineQueuePanel({
 
   if (query.isLoading)
     return (
-      <p role="status" aria-live="polite">
-        Loading deadlines…
-      </p>
+      <div className={styles.deadlinePanel}>
+        <header className={styles.header}><h1 className={styles.title}>Deadlines</h1></header>
+        <p role="status" aria-live="polite">Loading deadlines…</p>
+      </div>
     );
   if (query.isError)
     return (
-      <div role="alert">
-        <p>Deadlines could not be loaded. Today is still available.</p>
-        <button type="button" onClick={() => void query.refetch.call(query)}>
-          Retry
-        </button>
+      <div className={styles.deadlinePanel}>
+        <header className={styles.header}><h1 className={styles.title}>Deadlines</h1></header>
+        <div className={styles.error} role="alert">
+          <p>Deadlines could not be loaded. Today is still available.</p>
+          <button className={styles.retry} type="button" onClick={() => void query.refetch.call(query)}>Retry</button>
+        </div>
       </div>
     );
 
   const projection = query.data!;
   if (projection.total_item_count === 0)
     return (
-      <p>
-        No deadlines between{" "}
-        <time dateTime={projection.range_start_local_date}>
-          {projection.range_start_local_date}
-        </time>{" "}
-        and{" "}
-        <time dateTime={projection.range_end_local_date}>
-          {projection.range_end_local_date}
-        </time>
-        .
-      </p>
+      <div className={styles.deadlinePanel}>
+        <header className={styles.header}>
+          <h1 className={styles.title}>Deadlines</h1>
+          <p className={styles.summary}>0 tasks</p>
+        </header>
+        <div className={styles.empty}>
+          <p>
+            No deadlines between{" "}
+            <time dateTime={projection.range_start_local_date}>{projection.range_start_local_date}</time>{" "}
+            and <time dateTime={projection.range_end_local_date}>{projection.range_end_local_date}</time>.
+          </p>
+        </div>
+      </div>
     );
 
   return (
-    <div>
+    <div className={styles.deadlinePanel}>
+      <header className={styles.header}>
+        <h1 className={styles.title}>Deadlines</h1>
+        <p className={styles.summary}>{projection.total_item_count} tasks · {projection.range_start_local_date}–{projection.range_end_local_date}</p>
+      </header>
       {projection.groups
         .filter((group) => group.items.length > 0)
         .map((group) => (
-          <section key={group.state} aria-labelledby={`deadline-${group.state}`}>
-            <h3 id={`deadline-${group.state}`}>
+          <section className={styles.deadlineGroup} key={group.state} aria-labelledby={`deadline-${group.state}`}>
+            <h2 className={`${styles.deadlineHeading} ${group.state === "overdue" ? styles.overdueHeading : ""}`} id={`deadline-${group.state}`}>
               {groupHeadings[group.state]} · {group.item_count}
-            </h3>
+            </h2>
             <ul className={styles.list}>
               {group.items.map((item) => (
                 <DeadlineRow
@@ -113,50 +121,32 @@ function DeadlineRow({
         </time>
       </div>
       <div className={styles.content}>
-        <strong>{item.title}</strong>
+        <strong className={styles.rowTitle}>{item.title}</strong>
         {item.description && (
           <p className={styles.description}>{item.description}</p>
         )}
-        <span>
-          Scheduled{" "}
-          <time dateTime={item.scheduled_local_date}>
-            {item.scheduled_local_date}
-          </time>{" "}
-          {formatMinute(item.start_minute)}–{formatMinute(item.end_minute)}
-        </span>
-        <span>
-          <CategoryIcon
-            iconKey={item.category_icon_key}
-            label={`Category ${item.category_name}`}
-          />{" "}
-          {item.category_name}
-        </span>
-        <span>Priority {item.priority}</span>
-        {item.life_area && (
+        <div className={styles.metadata}>
           <span>
-            {item.life_area.archived ? "Archived life area: " : "Life area: "}
-            {item.life_area.breadcrumb}
+            Scheduled <time dateTime={item.scheduled_local_date}>{item.scheduled_local_date}</time>{" "}
+            {formatMinute(item.start_minute)}–{formatMinute(item.end_minute)}
           </span>
-        )}
-        {item.focus_plan &&
-          (item.focus_plan.archived ? (
+          <span><CategoryIcon iconKey={item.category_icon_key} label={`Category ${item.category_name}`} /> {item.category_name}</span>
+          <span>Priority {item.priority}</span>
+          {item.life_area && <span>{item.life_area.archived ? "Archived life area: " : "Life area: "}{item.life_area.breadcrumb}</span>}
+          {item.focus_plan && (item.focus_plan.archived ? (
             <span>Archived Focus Plan: {item.focus_plan.title}</span>
           ) : (
-            <button
-              type="button"
-              aria-label={`Focus Plan: ${item.focus_plan.title}`}
-              onClick={() => onFocusPlanNavigate?.(item.focus_plan!.id)}
-            >
+            <button className={styles.focusPlan} type="button" aria-label={`Focus Plan: ${item.focus_plan.title}`} onClick={() => onFocusPlanNavigate?.(item.focus_plan!.id)}>
               Focus Plan: {item.focus_plan.title}
             </button>
           ))}
-        {/* Stated in text, never colour alone. */}
-        {item.scheduled_after_deadline && (
-          <span className={styles.needsReview}>Scheduled after deadline</span>
-        )}
+          {/* Stated in text, never colour alone. */}
+          {item.scheduled_after_deadline && <span className={styles.needsReview}>Scheduled after deadline</span>}
+        </div>
         <TagChipList tags={item.tags} />
       </div>
       <button
+        className={styles.rowControl}
         type="button"
         onClick={() =>
           // Navigation targets the scheduled day, which is where the Task actually lives.

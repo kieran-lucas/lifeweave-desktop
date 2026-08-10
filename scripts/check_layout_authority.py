@@ -121,8 +121,17 @@ def check(errors: list[str]) -> None:
         path = FEATURES / owner
         if not path.exists():
             errors.append(f"missing modal owner {owner}")
-        elif "dialogSurface" not in path.read_text(encoding="utf-8"):
-            errors.append(f"{owner} must take its surface from the shared modal grammar")
+        else:
+            css_source = path.read_text(encoding="utf-8")
+            owner_import = f'./{path.name.removesuffix(".css.ts")}.css'
+            component_uses_shared_surface = any(
+                owner_import in (component_source := component.read_text(encoding="utf-8"))
+                and "<DialogSurface" in component_source
+                for component in path.parent.glob("*.tsx")
+                if ".test." not in component.name
+            )
+            if "dialogSurface" not in css_source and not component_uses_shared_surface:
+                errors.append(f"{owner} must take its surface from the shared modal grammar")
 
     for component in PAGE_COMPONENTS:
         source = (FEATURES / component).read_text(encoding="utf-8")

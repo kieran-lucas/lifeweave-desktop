@@ -589,6 +589,24 @@ describe(`Endgame visual audit (${auditProfile}: ${label})`, () => {
     await tab("deadlines");
     await capture("deadlines", "07-deadlines");
     await tab("views");
+    // T-21 is the manager/results workspace, not only its empty state. Create through the real UI
+    // so the capture proves selected-row grammar, compact lifecycle controls, and structured
+    // results against the same deterministic Task fixture used by the planning views.
+    await $("button=Create view").click();
+    const seededViewDialog = $("[role='dialog'][aria-labelledby='saved-view-editor-heading']");
+    await seededViewDialog.waitForDisplayed({ timeout: 15_000 });
+    await $("//label[normalize-space()='Name']/input").setValue("Audit focus");
+    const saveView = $("button=Save view");
+    await saveView.waitForEnabled({ timeout: 15_000 });
+    await saveView.click();
+    await seededViewDialog.waitForDisplayed({ reverse: true, timeout: 15_000 });
+    const seededView = $("button=Audit focus");
+    await seededView.waitForDisplayed({ timeout: 15_000 });
+    await browser.waitUntil(
+      async () => (await seededView.getAttribute("aria-pressed")) === "true",
+      { timeout: 15_000, timeoutMsg: "created Saved View was not selected" },
+    );
+    await $("section[aria-labelledby='saved-view-results-heading'] li").waitForDisplayed({ timeout: 15_000 });
     await capture("saved-views", "08-saved-views");
     await $("button=Create view").click();
     await $("[role='dialog'][aria-labelledby='saved-view-editor-heading']").waitForDisplayed({ timeout: 15_000 });

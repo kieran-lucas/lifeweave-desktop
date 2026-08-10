@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type MouseEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useModalFocusTrap } from "../../../app/useModalFocusTrap";
+import { DialogBackdrop, DialogBody, DialogFooter, DialogHeader, DialogSurface } from "../../../app/layout/DialogSurface";
 
 import {
   archiveTaskSavedView,
@@ -29,7 +30,7 @@ import type { TaskSavedViewTaskKind } from "../../../ipc/generated/TaskSavedView
 import { taskSavedViewKeys } from "./savedViewQueries";
 import * as styles from "./TaskSavedViews.css";
 import { EmptyState, LoadingRow, SkeletonList } from "../../../design-system/primitives/States";
-import { iconToday } from "../../../design-system/visual/icons";
+import { Icon, iconChevronRight, iconToday } from "../../../design-system/visual/icons";
 
 type ClauseKind = TaskSavedViewClause["kind"];
 type Draft = {
@@ -246,7 +247,7 @@ function ClauseEditor({
     <fieldset className={styles.clause}>
       <legend>{clauseLabels[clause.kind]}</legend>
       {control}
-      <button type="button" onClick={onRemove}>Remove {clauseLabels[clause.kind]}</button>
+      <button className={styles.removeClause} type="button" onClick={onRemove}>Remove {clauseLabels[clause.kind]}</button>
     </fieldset>
   );
 }
@@ -370,21 +371,21 @@ export default function TaskSavedViewsPanel({
   return (
     <div className={styles.shell}>
       <aside className={styles.manager} aria-labelledby="saved-view-manager-heading">
-        <h2 id="saved-view-manager-heading">Saved Views</h2>
-        <button type="button" onClick={(event) => { returnFocus.current = event.currentTarget; setDraft(emptyDraft()); setEditor({ mode: "create", viewId: null, revision: 0, unsupported: false }); setSaveError(null); }}>Create view</button>
+        <h2 className={styles.panelHeading} id="saved-view-manager-heading">Saved Views</h2>
+        <button className={styles.createView} type="button" onClick={(event) => { returnFocus.current = event.currentTarget; setDraft(emptyDraft()); setEditor({ mode: "create", viewId: null, revision: 0, unsupported: false }); setSaveError(null); }}>Create view</button>
         {active.isLoading ? <SkeletonList rows={3} label="Loading Saved Views…" /> : active.isError ? <p role="alert">Saved Views could not be loaded.</p> : active.data!.length === 0 ? <EmptyState compact title="No active Saved Views." body="Save a filtered task view to return to it quickly." /> : (
           <ul className={styles.viewList} aria-label="Active Saved Views">
             {active.data!.map((view, index) => (
               <li key={view.id} className={styles.viewLine}>
                 <div>
-                  <button type="button" aria-pressed={selectedId === view.id} onClick={() => setSelectedId(view.id)}>{view.name}</button>
+                  <button className={styles.viewSelect} type="button" aria-pressed={selectedId === view.id} onClick={() => setSelectedId(view.id)}>{view.name}</button>
                   {view.support_state !== "supported" && <span> Unsupported filter</span>}
                 </div>
                 <span className={styles.actions}>
-                  <button type="button" aria-label={`Move ${view.name} up`} disabled={index === 0 || reorder.isPending} onClick={() => move(view, -1)}>↑</button>
-                  <button type="button" aria-label={`Move ${view.name} down`} disabled={index === active.data!.length - 1 || reorder.isPending} onClick={() => move(view, 1)}>↓</button>
-                  <button type="button" onClick={(event) => void beginEdit(view, event.currentTarget)}>Edit</button>
-                  <button type="button" onClick={() => lifecycle.mutate({ action: "archive", view })}>Archive</button>
+                  <button className={styles.iconControl} type="button" aria-label={`Move ${view.name} up`} disabled={index === 0 || reorder.isPending} onClick={() => move(view, -1)}><Icon className={`${styles.controlIcon} ${styles.moveUpIcon}`} d={iconChevronRight} size={16} /></button>
+                  <button className={styles.iconControl} type="button" aria-label={`Move ${view.name} down`} disabled={index === active.data!.length - 1 || reorder.isPending} onClick={() => move(view, 1)}><Icon className={`${styles.controlIcon} ${styles.moveDownIcon}`} d={iconChevronRight} size={16} /></button>
+                  <button className={styles.rowControl} type="button" onClick={(event) => void beginEdit(view, event.currentTarget)}>Edit</button>
+                  <button className={styles.rowControl} type="button" onClick={() => lifecycle.mutate({ action: "archive", view })}>Archive</button>
                 </span>
               </li>
             ))}
@@ -394,7 +395,7 @@ export default function TaskSavedViewsPanel({
           <summary>Archived views ({archived.data?.length ?? 0})</summary>
           {archived.isLoading ? <SkeletonList rows={2} label="Loading archived views…" /> : archived.isError ? <p role="alert">Archived views could not be loaded.</p> : archived.data!.length === 0 ? <EmptyState compact title="No archived Saved Views." /> : (
             <ul className={styles.viewList}>
-              {(archived.data ?? []).map((view) => <li key={view.id} className={styles.viewLine}><span>{view.name}</span><button type="button" onClick={() => lifecycle.mutate({ action: "restore", view })}>Restore</button></li>)}
+              {(archived.data ?? []).map((view) => <li key={view.id} className={styles.viewLine}><span>{view.name}</span><button className={styles.rowControl} type="button" onClick={() => lifecycle.mutate({ action: "restore", view })}>Restore</button></li>)}
             </ul>
           )}
         </details>
@@ -402,8 +403,8 @@ export default function TaskSavedViewsPanel({
       </aside>
 
       <section className={styles.results} aria-labelledby="saved-view-results-heading">
-        <h2 id="saved-view-results-heading">Results</h2>
-        {!selectedId ? <p>Select or create a Saved View.</p> : projection.isLoading ? <LoadingRow label="Loading Saved View results…" /> : projection.isError ? <div role="alert"><p>This Saved View could not be executed.</p><button type="button" onClick={() => void projection.refetch()}>Retry</button></div> : projection.data!.unsupported_reason ? (
+        <h2 className={styles.panelHeading} id="saved-view-results-heading">Results</h2>
+        {!selectedId ? <p>Select or create a Saved View.</p> : projection.isLoading ? <LoadingRow label="Loading Saved View results…" /> : projection.isError ? <div className={styles.notice} role="alert"><p>This Saved View could not be executed.</p><button className={styles.rowControl} type="button" onClick={() => void projection.refetch()}>Retry</button></div> : projection.data!.unsupported_reason ? (
           <div role="alert" className={styles.notice}><strong>Unsupported Saved View</strong><p>{projection.data!.unsupported_reason}</p><p>You can edit this view to replace its filter or archive it.</p></div>
         ) : (
           <>
@@ -415,9 +416,21 @@ export default function TaskSavedViewsPanel({
                 <ul className={styles.resultList}>
                   {group.items.map((item) => (
                     <li key={item.task_id ?? `${item.series_id}:${item.original_local_date}`} className={styles.resultRow}>
-                      <time dateTime={item.scheduled_local_date}>{item.scheduled_local_date}<br />{formatMinute(item.start_minute)}–{formatMinute(item.end_minute)}</time>
-                      <div><strong>{item.title}</strong>{item.description && <p>{item.description}</p>}<div className={styles.metadata}><span>{item.category_name}{item.category_archived ? " (archived)" : ""}</span><span>Priority {item.priority}</span>{item.kind === "recurring" && <span>Recurring</span>}{item.life_area && <span>{item.life_area.archived ? "Archived Life area" : "Life area"}: {item.life_area.title}</span>}{item.focus_plan && (item.focus_plan.archived ? <span>Archived Focus Plan: {item.focus_plan.title}</span> : <button type="button" onClick={() => onFocusPlanNavigate?.(item.focus_plan!.id)}>Focus Plan: {item.focus_plan.title}</button>)}{item.deadline && <span>Deadline <time dateTime={item.deadline.deadline_local_date}>{item.deadline.deadline_local_date}</time> · {item.deadline.state}{item.deadline.scheduled_after_deadline ? " · scheduled after deadline" : ""}</span>}{item.tags.map((tag) => <span key={tag.id}>#{tag.name}{tag.archived ? " (archived)" : ""}</span>)}</div></div>
-                      <button type="button" aria-label={`Open ${item.title}, scheduled ${item.scheduled_local_date}`} onClick={() => onOpenItem({ localDate: item.scheduled_local_date, taskId: item.task_id, seriesId: item.series_id, originalLocalDate: item.original_local_date })}>Open</button>
+                      <time className={styles.resultTime} dateTime={item.scheduled_local_date}>{item.scheduled_local_date}<br />{formatMinute(item.start_minute)}–{formatMinute(item.end_minute)}</time>
+                      <div className={styles.resultContent}>
+                        <strong className={styles.resultTitle}>{item.title}</strong>
+                        {item.description && <p className={styles.resultDescription}>{item.description}</p>}
+                        <div className={styles.metadata}>
+                          <span>{item.category_name}{item.category_archived ? " (archived)" : ""}</span>
+                          <span>Priority {item.priority}</span>
+                          {item.kind === "recurring" && <span>Recurring</span>}
+                          {item.life_area && <span>{item.life_area.archived ? "Archived Life area" : "Life area"}: {item.life_area.title}</span>}
+                          {item.focus_plan && (item.focus_plan.archived ? <span>Archived Focus Plan: {item.focus_plan.title}</span> : <button className={styles.resultLink} type="button" onClick={() => onFocusPlanNavigate?.(item.focus_plan!.id)}>Focus Plan: {item.focus_plan.title}</button>)}
+                          {item.deadline && <span>Deadline <time dateTime={item.deadline.deadline_local_date}>{item.deadline.deadline_local_date}</time> · {item.deadline.state}{item.deadline.scheduled_after_deadline ? " · scheduled after deadline" : ""}</span>}
+                          {item.tags.map((tag) => <span key={tag.id}>#{tag.name}{tag.archived ? " (archived)" : ""}</span>)}
+                        </div>
+                      </div>
+                      <button className={styles.resultOpen} type="button" aria-label={`Open ${item.title}, scheduled ${item.scheduled_local_date}`} onClick={() => onOpenItem({ localDate: item.scheduled_local_date, taskId: item.task_id, seriesId: item.series_id, originalLocalDate: item.original_local_date })}>Open</button>
                     </li>
                   ))}
                 </ul>
@@ -428,29 +441,44 @@ export default function TaskSavedViewsPanel({
       </section>
 
       {editor && (
-        <div className={styles.dialog} role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closeEditor(); }}>
-          <div
-            ref={editorRef}
-            className={styles.editor}
+        <DialogBackdrop role="presentation" onMouseDown={(event: MouseEvent<HTMLDivElement>) => { if (event.target === event.currentTarget) closeEditor(); }}>
+          <DialogSurface
+            width="wide"
+            surfaceRef={editorRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="saved-view-editor-heading"
           >
-            <form onSubmit={(event) => { event.preventDefault(); setSaveError(null); save.mutate(); }}>
+            <form className={styles.editorForm} onSubmit={(event: FormEvent<HTMLFormElement>) => { event.preventDefault(); setSaveError(null); save.mutate(); }}>
+            <DialogHeader>
               <h2 id="saved-view-editor-heading">{editor.mode === "create" ? "Create Saved View" : "Edit Saved View"}</h2>
               {editor.unsupported && <p className={styles.notice}>This view has an unsupported stored filter. Saving replaces it with the typed controls below.</p>}
-              {saveError && <div ref={errorRef} tabIndex={-1} role="alert">{saveError}</div>}
-              <label className={styles.field}>Name<input ref={nameRef} value={draft.name} maxLength={80} onChange={(event) => setDraft({ ...draft, name: event.target.value })} /></label>
-              <div className={styles.fieldRow}>
-                <label className={styles.field}>Base scope<select value={draft.base_scope} onChange={(event) => setDraft({ ...draft, base_scope: event.target.value as TaskSavedViewBaseScope })}><option value="today">Today</option><option value="upcoming">Upcoming</option><option value="overdue">Overdue</option><option value="deadlines">Deadlines</option></select></label>
-                <label className={styles.field}>Sort<select value={draft.sort_mode} onChange={(event) => setDraft({ ...draft, sort_mode: event.target.value as TaskSavedViewSortMode })}><option value="base_default">Base default</option><option value="scheduled_ascending">Scheduled ascending</option><option value="priority_then_scheduled">Priority, then scheduled</option><option value="title_ascending">Title ascending</option></select></label>
-                <label className={styles.field}>Group<select value={draft.group_mode} onChange={(event) => setDraft({ ...draft, group_mode: event.target.value as TaskSavedViewGroupMode })}><option value="base_default">Base default</option><option value="none">No groups</option><option value="category">Category</option><option value="life_area">Life area</option><option value="focus_plan">Focus Plan</option></select></label>
+            </DialogHeader>
+            <DialogBody>
+              <div className={styles.editorBody}>
+                {saveError && <div className={styles.modalError} ref={errorRef} tabIndex={-1} role="alert">{saveError}</div>}
+                <label className={styles.field}>Name<input ref={nameRef} value={draft.name} maxLength={80} onChange={(event) => setDraft({ ...draft, name: event.target.value })} /></label>
+                <div className={styles.fieldRow}>
+                  <label className={styles.field}>Base scope<select value={draft.base_scope} onChange={(event) => setDraft({ ...draft, base_scope: event.target.value as TaskSavedViewBaseScope })}><option value="today">Today</option><option value="upcoming">Upcoming</option><option value="overdue">Overdue</option><option value="deadlines">Deadlines</option></select></label>
+                  <label className={styles.field}>Sort<select value={draft.sort_mode} onChange={(event) => setDraft({ ...draft, sort_mode: event.target.value as TaskSavedViewSortMode })}><option value="base_default">Base default</option><option value="scheduled_ascending">Scheduled ascending</option><option value="priority_then_scheduled">Priority, then scheduled</option><option value="title_ascending">Title ascending</option></select></label>
+                  <label className={styles.field}>Group<select value={draft.group_mode} onChange={(event) => setDraft({ ...draft, group_mode: event.target.value as TaskSavedViewGroupMode })}><option value="base_default">Base default</option><option value="none">No groups</option><option value="category">Category</option><option value="life_area">Life area</option><option value="focus_plan">Focus Plan</option></select></label>
+                </div>
+                <section className={styles.filterSection} aria-labelledby="saved-view-filter-heading">
+                  <h3 className={styles.filterHeading} id="saved-view-filter-heading">Filters (all must match)</h3>
+                  {options.isLoading ? <LoadingRow label="Loading filter choices…" /> : options.isError ? <p role="alert">Filter choices could not be loaded.</p> : <>
+                    {draft.predicate.clauses.map((clause, index) => <ClauseEditor key={clause.kind} clause={clause} options={options.data!} onChange={(next) => setDraft({ ...draft, predicate: { type: "all", clauses: draft.predicate.clauses.map((value, candidate) => candidate === index ? next : value) } })} onRemove={() => setDraft({ ...draft, predicate: { type: "all", clauses: draft.predicate.clauses.filter((_, candidate) => candidate !== index) } })} />)}
+                    {unused.length > 0 && <div className={styles.addFilter}><label className={styles.field}>Add filter<select value={addKind} onChange={(event) => setAddKind(event.target.value as ClauseKind)}>{unused.map((kind) => <option key={kind} value={kind}>{clauseLabels[kind]}</option>)}</select></label><button className={styles.addFilterControl} type="button" onClick={() => setDraft({ ...draft, predicate: { type: "all", clauses: [...draft.predicate.clauses, newClause(addKind, options.data)] } })}>Add</button></div>}
+                  </>}
+                </section>
               </div>
-              <section aria-labelledby="saved-view-filter-heading"><h3 id="saved-view-filter-heading">Filters (all must match)</h3>{options.isLoading ? <LoadingRow label="Loading filter choices…" /> : options.isError ? <p role="alert">Filter choices could not be loaded.</p> : <>{draft.predicate.clauses.map((clause, index) => <ClauseEditor key={clause.kind} clause={clause} options={options.data!} onChange={(next) => setDraft({ ...draft, predicate: { type: "all", clauses: draft.predicate.clauses.map((value, candidate) => candidate === index ? next : value) } })} onRemove={() => setDraft({ ...draft, predicate: { type: "all", clauses: draft.predicate.clauses.filter((_, candidate) => candidate !== index) } })} />)}{unused.length > 0 && <div className={styles.actions}><label>Add filter<select value={addKind} onChange={(event) => setAddKind(event.target.value as ClauseKind)}>{unused.map((kind) => <option key={kind} value={kind}>{clauseLabels[kind]}</option>)}</select></label><button type="button" onClick={() => setDraft({ ...draft, predicate: { type: "all", clauses: [...draft.predicate.clauses, newClause(addKind, options.data)] } })}>Add</button></div>}</>}</section>
-              <div className={styles.actions}><button type="submit" disabled={save.isPending || options.isLoading}>{save.isPending ? "Saving…" : "Save view"}</button><button type="button" onClick={closeEditor}>Cancel</button></div>
+            </DialogBody>
+            <DialogFooter>
+              <button className={styles.modalCancel} type="button" onClick={closeEditor}>Cancel</button>
+              <button className={styles.modalSave} type="submit" disabled={save.isPending || options.isLoading}>{save.isPending ? "Saving…" : "Save view"}</button>
+            </DialogFooter>
             </form>
-          </div>
-        </div>
+          </DialogSurface>
+        </DialogBackdrop>
       )}
     </div>
   );

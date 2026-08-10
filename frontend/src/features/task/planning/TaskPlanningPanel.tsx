@@ -54,18 +54,18 @@ export default function TaskPlanningPanel({
     return <SkeletonList rows={4} label={`Loading ${mode} tasks…`} />;
   if (query.isError)
     return (
-      <div role="alert">
+      <div role="alert" className={styles.error}>
         <p>{name} tasks could not be loaded. Today is still available.</p>
-        <button type="button" onClick={() => void query.refetch.call(query)}>Retry</button>
+        <button className={styles.retry} type="button" onClick={() => void query.refetch.call(query)}>Retry</button>
       </div>
     );
   const projection = query.data!;
   return (
     <div className={styles.panelBody}>
-      <header>
-        <h1 id={`${mode}-heading`}>{name}</h1>
-        <p>{mode === "upcoming" ? "Next 14 days" : "Needs review from the last 30 days"}</p>
-        <p>{projection.total_item_count} tasks · {duration(projection.scheduled_minutes)}</p>
+      <header className={styles.header}>
+        <h1 className={styles.title} id={`${mode}-heading`}>{name}</h1>
+        <p className={styles.subtitle}>{mode === "upcoming" ? "Next 14 days" : "Needs review from the last 30 days"}</p>
+        <p className={styles.summary}>{projection.total_item_count} tasks · {duration(projection.scheduled_minutes)}</p>
       </header>
       {projection.groups.length === 0 ? (
         <div className={styles.empty}>
@@ -76,7 +76,7 @@ export default function TaskPlanningPanel({
         const headingId = `planning-day-${mode}-${group.local_date}`;
         return (
           <section key={group.local_date} aria-labelledby={headingId} className={styles.dayGroup}>
-            <h2 id={headingId}>{dateLabel(group.local_date, anchorLocalDate)}</h2>
+            <h2 className={styles.dayHeading} id={headingId}>{dateLabel(group.local_date, anchorLocalDate)}</h2>
             <ul className={styles.list}>
               {group.items.map((item) => (
                 <PlanningRow key={item.id} item={item} mode={mode} onOpenItem={onOpenItem} onFocusPlanNavigate={onFocusPlanNavigate} />
@@ -101,47 +101,40 @@ function PlanningRow({ item, mode, onOpenItem, onFocusPlanNavigate }: {
     <li className={styles.row}>
       <div className={styles.time}>{formatMinute(item.start_minute)}–{formatMinute(item.end_minute)}</div>
       <div className={styles.content}>
-        <strong>{item.title}</strong>
+        <strong className={styles.rowTitle}>{item.title}</strong>
         {item.description && <p className={styles.description}>{item.description}</p>}
-        <span><CategoryIcon iconKey={item.category_icon_key} label={`Category ${item.category_name}`} /> {item.category_name}</span>
-        <span>Priority {item.priority}</span>
-        {item.life_area && <span>{item.life_area.archived ? "Archived life area: " : "Life area: "}{item.life_area.breadcrumb}</span>}
-        {item.focus_plan && (item.focus_plan.archived ? (
-          <span>Archived Focus Plan: {item.focus_plan.title}</span>
-        ) : (
-          <button
-            type="button"
-            aria-label={`Focus Plan: ${item.focus_plan.title}`}
-            onClick={() => onFocusPlanNavigate?.(item.focus_plan!.id)}
-          >Focus Plan: {item.focus_plan.title}</button>
-        ))}
-        {item.deadline && (
-          <span>
-            {item.deadline.state === "due_today"
-              ? "Due today"
-              : item.deadline.state === "overdue"
-                ? "Deadline overdue"
-                : "Deadline"}{" "}
-            <time dateTime={item.deadline.deadline_local_date}>{item.deadline.deadline_local_date}</time>
-            {item.deadline.scheduled_after_deadline && " · Scheduled after deadline"}
-          </span>
-        )}
-        {item.deadline && (
-          <span>
-            {item.deadline.state === "due_today"
-              ? "Due today"
-              : item.deadline.state === "overdue"
-                ? "Deadline overdue"
-                : "Deadline"}{" "}
-            <time dateTime={item.deadline.deadline_local_date}>{item.deadline.deadline_local_date}</time>
-            {item.deadline.scheduled_after_deadline && " · Scheduled after deadline"}
-          </span>
-        )}
-        {item.kind === "recurring" && <span>Recurring</span>}
-        {mode === "overdue" && <span className={styles.needsReview}>Needs review</span>}
+        <div className={styles.metadata}>
+          <span><CategoryIcon iconKey={item.category_icon_key} label={`Category ${item.category_name}`} /> {item.category_name}</span>
+          <span>Priority {item.priority}</span>
+          {item.life_area && <span>{item.life_area.archived ? "Archived life area: " : "Life area: "}{item.life_area.breadcrumb}</span>}
+          {item.focus_plan && (item.focus_plan.archived ? (
+            <span>Archived Focus Plan: {item.focus_plan.title}</span>
+          ) : (
+            <button
+              className={styles.focusPlan}
+              type="button"
+              aria-label={`Focus Plan: ${item.focus_plan.title}`}
+              onClick={() => onFocusPlanNavigate?.(item.focus_plan!.id)}
+            >Focus Plan: {item.focus_plan.title}</button>
+          ))}
+          {item.deadline && (
+            <span>
+              {item.deadline.state === "due_today"
+                ? "Due today"
+                : item.deadline.state === "overdue"
+                  ? "Deadline overdue"
+                  : "Deadline"}{" "}
+              <time dateTime={item.deadline.deadline_local_date}>{item.deadline.deadline_local_date}</time>
+              {item.deadline.scheduled_after_deadline && " · Scheduled after deadline"}
+            </span>
+          )}
+          {item.kind === "recurring" && <span>Recurring</span>}
+          {mode === "overdue" && <span className={styles.needsReview}>Needs review</span>}
+        </div>
         <TagChipList tags={item.tags} />
       </div>
       <button
+        className={styles.rowControl}
         type="button"
         onClick={() => onOpenItem({
           localDate: item.local_date,
