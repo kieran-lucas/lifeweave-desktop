@@ -5,17 +5,9 @@ import { useModalFocusTrap } from "../useModalFocusTrap";
 import * as styles from "./layout.css";
 
 /**
- * Modal **geometry** (ADR 0044). Deliberately not a modal framework.
- *
- * These components carry no focus trap, no Escape handling, no portal and no open/close state. Each
- * dialog keeps exactly the behaviour it already has, so the ADR 0039 modal-detection contract —
- * `role="dialog"` plus `aria-modal="true"` on the element the dialog itself renders — is untouched,
- * and the global shortcut layer keeps suppressing correctly.
- *
- * What they do provide is the containment the Task dialog never had: a real surface with a bounded
- * inline size, a bounded block size, and its own scroll.
+ * Modal geometry (ADR 0044). Behaviour remains owned by each dialog; this shared shell only owns
+ * containment and the visual hook used by the current matte-painted material authority.
  */
-
 export type DialogWidth = "compact" | "standard" | "wide";
 
 export function DialogBackdrop({
@@ -29,6 +21,7 @@ export function DialogBackdrop({
   return (
     <div
       {...rest}
+      data-dialog-backdrop=""
       className={className ? `${styles.dialogBackdrop} ${className}` : styles.dialogBackdrop}
     >
       {children}
@@ -53,7 +46,6 @@ export function DialogSurface({
   return (
     <Element
       {...rest}
-      // `Element` is chosen at the call site, so React cannot narrow the ref for us here.
       ref={surfaceRef as Ref<never>}
       data-dialog-surface=""
       data-dialog-width={width}
@@ -118,7 +110,7 @@ export function DecisionDialog({
   });
 
   return (
-    <div className={styles.dialogBackdrop} role="presentation">
+    <div className={styles.dialogBackdrop} data-dialog-backdrop="" role="presentation">
       <form
         ref={dialog}
         data-dialog-surface=""
