@@ -5,7 +5,7 @@ import {
   type DragEndEvent, type DragOverEvent,
 } from "@dnd-kit/core";
 import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { motion, useReducedMotion } from "motion/react";
+import { useReducedMotion } from "motion/react";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -49,9 +49,9 @@ function Positioner({node,point,selected,onSelect,invalid,active}:{node:LifeEdit
  return <div ref={positionRef} className={styles.positioner} role="treeitem" aria-level={node.depth+1} aria-expanded={node.child_count?true:undefined}>
    <button ref={beforeDrop.setNodeRef} className={styles.dropBefore} data-over={beforeDrop.isOver} tabIndex={-1} aria-label={`Insert before ${node.title}`}/>
    <div ref={setRefs} className={styles.dndOwner}>
-    <motion.button layout className={styles.nodeCard} onClick={onSelect} {...sortable.attributes} {...sortable.listeners} aria-pressed={selected} data-life-edit-id={node.id}>
+    <button className={styles.nodeCard} onClick={onSelect} {...sortable.attributes} {...sortable.listeners} aria-pressed={selected} data-life-edit-id={node.id}>
       <span aria-hidden="true"><Icon d={node.is_leaf?iconNote:iconLife} size={15}/></span><span><span className={styles.compactTitle}>{node.title}</span><span className={styles.compactMeta}>{node.is_leaf?"Leaf":`${node.child_count} children`}{node.is_pinned?" · Pinned":""}</span><TagChipList tags={node.tags} /></span>
-    </motion.button>
+    </button>
    </div>
    {parentDrop.isOver&&active&&<span className={styles.compactMeta} role="status">Move into {node.title}</span>}
   </div>;

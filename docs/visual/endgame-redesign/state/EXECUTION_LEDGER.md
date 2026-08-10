@@ -6,10 +6,10 @@
 
 - BASELINE_PLANNING_SHA: `a1078c1f91c251aaa7a453ef1e8a5108551c852d`
 - EXECUTION_START_SHA: `0b3e01d4a8bd9b62c5d786e9b4a4401d72c0edc1`
-- LAST_VERIFIED_COMMIT: `d99fdf53740a59318264861b810be72807ff44d7`
-- CURRENT_PACKET: `S07`
+- LAST_VERIFIED_COMMIT: `37ec413a2e4d769a8913c0e73478fea824035360`
+- CURRENT_PACKET: `S08`
 - CURRENT_STATUS: `PENDING`
-- NEXT_PACKET: `S07`
+- NEXT_PACKET: `S08`
 - FINAL_REVIEW_DONE: `false`
 - FINAL_FINDING_SET_FROZEN: `false`
 - PROGRAM_STATUS: `IN_PROGRESS`
@@ -25,14 +25,14 @@
 | S04 | CLOSED | `d5c66c85f0287db322e70c163aaf4be39d06b1c1` | 5/5 rows LOCAL_VERIFIED; focused semantics and max/min native profiles passed |
 | S05 | CLOSED | `04ac51faa9f910d1c6bcca2047f15ed11c1a1c4a` | 11/11 rows LOCAL_VERIFIED; focused semantics, fixed budget, and max/min native profiles passed |
 | S06 | CLOSED | `d99fdf53740a59318264861b810be72807ff44d7` | 7/7 rows LOCAL_VERIFIED; focused semantics, fixed budget, and max/min native profiles passed |
-| S07 | PENDING | — | — |
+| S07 | CLOSED | `S07 checkpoint` | 12/12 rows LOCAL_VERIFIED; focused semantics, fixed budget, and max/min native profiles passed |
 | S08 | PENDING | — | — |
 | S09 | PENDING | — | — |
 | S10 | PENDING | — | — |
 | S11 | PENDING | — | — |
 | S12 | PENDING | — | — |
 | Q1 | CLOSED | `db2f7ccd472938e71382b6ad338e073145eac003` | 33/33 scoped rows VERIFIED; full unit, build/budget, native behavior, and max/min visual gates passed |
-| Q2 | CLOSED | `Q2 checkpoint` | 18/18 scoped rows VERIFIED; full unit, build/budget, native behavior, and max/min visual gates passed |
+| Q2 | CLOSED | `37ec413a2e4d769a8913c0e73478fea824035360` | 18/18 scoped rows VERIFIED; full unit, build/budget, native behavior, and max/min visual gates passed |
 | Q3 | PENDING | — | — |
 | Q4 | PENDING | — | — |
 | Q5 | PENDING | — | — |
@@ -90,18 +90,18 @@
 | P-05 | S06 | VERIFIED | Q2 checkpoint | phases retain ordered rows, dates, status, and compact movement controls without card stacking |
 | P-06 | S06 | VERIFIED | Q2 checkpoint | linked work remains a compact structured list with existing relationship capability only |
 | P-07 | S06 | VERIFIED | Q2 checkpoint | reviews retain authored journal rhythm, factual history, and canonical review entry controls |
-| L-01 | S07 | PENDING | — | — |
-| L-02 | S07 | PENDING | — | — |
-| L-03 | S07 | PENDING | — | — |
-| L-04 | S07 | PENDING | — | — |
-| L-05 | S07 | PENDING | — | — |
-| L-06 | S07 | PENDING | — | — |
-| L-07 | S07 | PENDING | — | — |
-| L-08 | S07 | PENDING | — | — |
-| LG-01 | S07 | PENDING | — | — |
-| LG-02 | S07 | PENDING | — | — |
-| LG-03 | S07 | PENDING | — | — |
-| LG-04 | S07 | PENDING | — | — |
+| L-01 | S07 | LOCAL_VERIFIED | S07 checkpoint | Life System uses one shared low-chrome Browse/Edit/Pinned/Graph family with a sole active state and contextual lede |
+| L-02 | S07 | LOCAL_VERIFIED | S07 checkpoint | populated Browse remains a bounded hierarchical document with a focal node, quiet connectors, and neutral child hierarchy |
+| L-03 | S07 | LOCAL_VERIFIED | S07 checkpoint | empty/fallback context stays local and instructive while preserving the focal branch |
+| L-04 | S07 | LOCAL_VERIFIED | S07 checkpoint | existing Previous/Page/Next child pager remains compact beneath the child region without invented numbering |
+| L-05 | S07 | LOCAL_VERIFIED | S07 checkpoint | populated Pinned is a readable dense vertical list using the same node DNA as Browse |
+| L-06 | S07 | LOCAL_VERIFIED | S07 checkpoint | pinned empty/unavailable states remain explicit and readable without low-opacity treatment |
+| L-07 | S07 | LOCAL_VERIFIED | S07 checkpoint | editable tree remains the hero on a precise neutral local-scroll drafting plane with structural selection |
+| L-08 | S07 | LOCAL_VERIFIED | S07 checkpoint | bounded inspector rail keeps canonical identity, classification, creation, movement, interchange, undo, and archive controls |
+| LG-01 | S07 | LOCAL_VERIFIED | S07 checkpoint | read-only Graph retains quiet solid/dashed/dotted edge semantics and locally scrollable canvas at max/min |
+| LG-02 | S07 | LOCAL_VERIFIED | S07 checkpoint | graph inspector is a bounded ruled rail with selector, factual metadata, open action, and structured connection lists |
+| LG-03 | S07 | LOCAL_VERIFIED | S07 checkpoint | all explicit links remain available in one locally scrollable semantic table with aligned columns |
+| LG-04 | S07 | LOCAL_VERIFIED | S07 checkpoint | graph refusal stays a local accent-edge notice with authoritative text and Close graph action |
 | R-01 | S08 | PENDING | — | — |
 | R-02 | S08 | PENDING | — | — |
 | R-03 | S08 | PENDING | — | — |
@@ -158,14 +158,15 @@
 - S05 Calendar + Analytics: 11/11 rows LOCAL_VERIFIED
 - S06 Focus Plans: 7/7 rows LOCAL_VERIFIED
 - Q2 promoted S05–S06: 18/18 scoped rows VERIFIED
+- S07 Life Browse/Edit/Graph: 12/12 rows LOCAL_VERIFIED
 
 ## CURRENT
 
-- S07 pending
+- S08 pending
 
 ## NEXT
 
-- S07
+- S08
 
 ## KNOWN_DEBT
 
@@ -265,6 +266,13 @@ Append concise entries:
 - [Q2] native Light `calendar-analytics-plans` maximized — PASS — 4 surfaces / zero collisions — `target/e2e-artifacts/task-50b/calendar-analytics-plans-Q2-20260810-101459`
 - [Q2] native Light `calendar-analytics-plans` 960×640 — PASS — achieved 960×639 / 4 surfaces / zero collisions — `target/e2e-artifacts/task-50b/calendar-analytics-plans-Q2-20260810-101622`
 - [Q2] bounded self-review `F_Q2` — FROZEN/RESOLVED — zero findings; no post-review fixes or repeated review
+- [S07] `git diff --check` + convergence ratchet — PASS — font-size residue 63 / focus residue 18 / control clones 47; ceilings tightened
+- [S07] `pnpm typecheck` — PASS — frontend project references
+- [S07] focused Life Browse/Edit/Graph/layout tests — PASS — 3 files / 65 tests; affected post-review LifeScreen subset 1 file / 34 tests
+- [S07] production build + performance budget — PASS — 1,143,113 raw / 350,723 gzip / 26 chunks; ceilings unchanged; startup index 415,748 raw
+- [S07] native Light `life-reader-interchange` maximized — PASS — 13 profile surfaces / zero collisions; required Life tags inspected — `target/e2e-artifacts/task-50b/life-reader-interchange-S07-20260810-103046`
+- [S07] native Light `life-reader-interchange` 960×640 — PASS — achieved 960×639 / 13 profile surfaces / zero collisions; required Edit/Graph tags inspected — `target/e2e-artifacts/task-50b/life-reader-interchange-S07-20260810-103221`
+- [S07] bounded self-review `F_S07` — RESOLVED — Browse/Edit/Pinned now close the transient Graph before activating their named mode; affected type/static/LifeScreen/build-budget checks passed
 
 ## DECISIONS MADE UNDER UNATTENDED AUTHORITY
 
@@ -290,6 +298,8 @@ Record only material reversible decisions that future stages may need to know.
 - [S05] Analytics period controls live in the shared page header and compose the segmented/button primitives; Week, Month, and Year retain one editorial report structure.
 - [S06] Focus Plans retains the standard master/detail frame; portfolio and variant controls use shared low-chrome tabs while plan forms and supporting sections use ruled document structure.
 - [S06] No owner, collaborator, or synthetic completion data was added; the redesign expresses only existing plan, phase, linked-work, and review capability.
+- [S07] Graph remains a transient read-only workspace over the persisted Life mode, but the visible mode family exposes exactly one active state and every named mode action closes Graph before activating.
+- [S07] Life Browse/Edit node motion wrappers were removed in favor of equivalent native semantic elements and existing CSS state changes, preserving interaction while reclaiming more than 120 KB from the eager startup path.
 
 ## FINAL FINDING SET
 

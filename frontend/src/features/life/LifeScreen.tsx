@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { motion, useReducedMotion } from "motion/react";
+import { useReducedMotion } from "motion/react";
 import {
   getLifeBrowseProjection,
   getPinnedLifeNodes,
@@ -449,10 +449,7 @@ export function LifeScreen({
         <button className={styles.quietButton} onClick={back}>
           <Icon d={iconChevronLeft} size={16} /> Back to Life Browse
         </button>
-        <motion.div
-          layoutId={`life-node-${readerId}`}
-          className={styles.readerHero}
-        >
+        <div className={styles.readerHero}>
           <NodeIcon iconKey={reader.icon_key} />
           <h1 id="life-reader-title" className={styles.heading} tabIndex={-1} ref={readerHeadingRef}>
             {reader.title}
@@ -464,7 +461,7 @@ export function LifeScreen({
             <LifeLinksPanel nodeId={readerId} onNavigate={openLinkedReader} />
           </Suspense>
           <RelatedTasksPanel nodeId={readerId} anchorLocalDate={anchorLocalDate} onNavigate={onTaskNavigate} />
-        </motion.div>
+        </div>
       </PageFrame>
     );
   }
@@ -475,10 +472,11 @@ export function LifeScreen({
         <div className={styles.modes} aria-label="Life view">
           <button
             className={styles.modeButton}
-            aria-pressed={mode === "browse"}
+            aria-pressed={!graphOpen && mode === "browse"}
             onClick={() => {
               invalidateLinkedReaderNavigation();
               cancelPendingEntryRequest();
+              setGraphOpen(false);
               setMode("browse");
             }}
           >
@@ -486,10 +484,11 @@ export function LifeScreen({
           </button>
           <button
             className={styles.modeButton}
-            aria-pressed={mode === "edit"}
+            aria-pressed={!graphOpen && mode === "edit"}
             onClick={() => {
               invalidateLinkedReaderNavigation();
               cancelPendingEntryRequest();
+              setGraphOpen(false);
               setMode("edit");
             }}
           >
@@ -497,10 +496,11 @@ export function LifeScreen({
           </button>
           <button
             className={styles.modeButton}
-            aria-pressed={mode === "pinned"}
+            aria-pressed={!graphOpen && mode === "pinned"}
             onClick={() => {
               invalidateLinkedReaderNavigation();
               cancelPendingEntryRequest();
+              setGraphOpen(false);
               setMode("pinned");
             }}
           >
@@ -525,7 +525,9 @@ export function LifeScreen({
           Life System
         </h1>
         <p className={styles.nodeDescription}>
-          {mode === "edit"
+          {graphOpen
+            ? "Explore the active Life tree and explicit links in a read-only workspace."
+            : mode === "edit"
             ? "Edit the complete structure with atomic moves and undo."
             : "Browse one branch at a time."}
         </p>
@@ -604,9 +606,8 @@ export function LifeScreen({
               ))}
             </svg>
             <div className={styles.focalWrap}>
-              <motion.div
+              <div
                 ref={focalRef}
-                layoutId={`life-node-${projection.selected.id}`}
                 className={styles.focal}
                 tabIndex={-1}
                 data-life-focal
@@ -641,7 +642,7 @@ export function LifeScreen({
                     ? "Unpin focal node"
                     : "Pin focal node"}
                 </button>
-              </motion.div>
+              </div>
             </div>
             {projection.children.length === 0 ? (
               <div className={styles.empty}>
@@ -662,8 +663,7 @@ export function LifeScreen({
                       else childRefs.current.delete(child.id);
                     }}
                   >
-                    <motion.button
-                      layoutId={`life-node-${child.id}`}
+                    <button
                       className={styles.card}
                       data-life-id={child.id}
                       onClick={() => navigate(child)}
@@ -680,7 +680,7 @@ export function LifeScreen({
                           : `${child.child_count} direct children`}
                       </span>
                       <TagChipList tags={child.tags} />
-                    </motion.button>
+                    </button>
                     <button
                       className={styles.pinButton}
                       aria-label={

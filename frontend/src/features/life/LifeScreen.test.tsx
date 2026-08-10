@@ -852,6 +852,15 @@ describe("Life Graph", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Graph" }));
     expect(await screen.findByRole("heading", { name: "Life graph" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Graph" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Browse" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByText(/read-only workspace/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Browse" }));
+    await waitFor(() =>
+      expect(screen.queryByRole("heading", { name: "Life graph" })).not.toBeInTheDocument(),
+    );
+    expect(screen.getByRole("button", { name: "Browse" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Graph" })).toHaveAttribute("aria-pressed", "false");
 
     // The Rust validator only accepts browse/edit/pinned/reader, so "graph" must never reach it.
     for (const call of api.save.mock.calls) expect(call[0].mode).not.toBe("graph");

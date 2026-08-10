@@ -1,5 +1,9 @@
 import { globalStyle, style } from "@vanilla-extract/css";
 import { splitWorkspace } from "../../../app/layout/layout.css";
+import { space } from "../../../app/layout/tokens.css";
+import { button as sharedButton } from "../../../design-system/primitives/controls.css";
+import { focusRing } from "../../../design-system/primitives/utilities.css";
+import { text } from "../../../design-system/visual/typography.css";
 
 /*
  * Canvas leads, inspector is a bounded readable rail that stays reachable when the workspace stacks
@@ -16,16 +20,16 @@ export const header = style({
   alignItems: "baseline",
   flexWrap: "wrap",
 });
-export const heading = style({ margin: 0, fontSize: "1.05rem" });
-export const summary = style({ margin: 0, fontSize: 13, color: "var(--text-muted)" });
+export const heading = style({ margin: 0, ...text.sectionTitle });
+export const summary = style({ margin: 0, color: "var(--text-muted)", ...text.metadata });
 export const canvasViewport = style({
   position: "relative",
   minWidth: 0,
   minHeight: 520,
   overflow: "auto",
-  border: "1px solid var(--glass-border)",
+  border: "1px solid var(--border-subtle)",
   borderRadius: "var(--radius-surface)",
-  background: "color-mix(in srgb, var(--surface) 62%, var(--app-background))",
+  background: "color-mix(in srgb, var(--surface) 82%, var(--app-background))",
   scrollbarGutter: "stable",
 });
 export const canvas = style({
@@ -44,7 +48,7 @@ export const hierarchyEdge = style({});
 export const linkEdge = style({});
 /** Unavailable links stay drawn. Dotted plus a thinner stroke, never colour alone. */
 export const unavailableEdge = style({});
-export const nodeMark = style({
+export const nodeMark = style([focusRing, {
   position: "absolute",
   transform: "translate(var(--graph-x),var(--graph-y))",
   display: "grid",
@@ -52,47 +56,50 @@ export const nodeMark = style({
   width: 152,
   minHeight: 52,
   padding: "8px 9px",
-  border: "1px solid var(--glass-border)",
+  border: "1px solid var(--border-subtle)",
   borderRadius: "var(--radius-surface)",
-  background: "var(--glass-surface-strong)",
+  background: "var(--surface)",
   color: "var(--text-primary)",
   textAlign: "left",
   cursor: "pointer",
   selectors: {
     "&[data-selected=true]": {
-      borderColor: "var(--focus-ring)",
-      background: "color-mix(in srgb, var(--active-background) 68%, var(--glass-surface-strong))",
-      boxShadow: "inset 3px 0 0 var(--focus-ring)",
+      borderInlineStart: "3px solid var(--accent)",
+      background: "var(--active-background)",
     },
   },
-});
+  "@media": { "(forced-colors: active)": { selectors: { "&[data-selected=true]": { borderInlineStart: "3px solid Highlight" } } } },
+}]);
 export const nodeTitle = style({
-  fontWeight: 720,
-  fontSize: 13,
   whiteSpace: "nowrap",
   overflow: "hidden",
   textOverflow: "ellipsis",
+  ...text.cardTitle,
 });
-export const nodeMeta = style({ display: "block", fontSize: 11, color: "var(--text-muted)", marginTop: 2 });
+export const nodeMeta = style({ display: "block", color: "var(--text-muted)", marginTop: 2, ...text.caption });
 export const inspector = style({
   position: "sticky",
   top: 0,
   display: "grid",
   gap: 12,
+  maxBlockSize: "calc(100dvh - 190px)",
+  overflowY: "auto",
   padding: "4px 0 0 18px",
   borderLeft: "1px solid var(--border-subtle)",
   background: "transparent",
+  scrollbarGutter: "stable",
+  "@media": { "(max-width: 700px)": { position: "static", maxBlockSize: "none", overflowY: "visible", padding: `${space.x4} 0 0`, borderLeft: 0, borderTop: "1px solid var(--border-subtle)" } },
 });
-export const inspectorTitle = style({ margin: 0, fontSize: "1.02rem" });
+export const inspectorTitle = style({ margin: 0, ...text.sectionTitle });
 export const inspectorMeta = style({
   margin: 0,
   display: "grid",
   gap: 4,
-  fontSize: 13,
   color: "var(--text-muted)",
+  ...text.metadata,
 });
 export const connectionGroup = style({ display: "grid", gap: 6 });
-export const connectionHeading = style({ margin: 0, fontSize: 13, fontWeight: 700 });
+export const connectionHeading = style({ margin: 0, ...text.cardTitle });
 export const connectionList = style({
   display: "grid",
   gap: 5,
@@ -102,7 +109,7 @@ export const connectionList = style({
   maxHeight: 190,
   overflow: "auto",
 });
-export const connectionButton = style({
+export const connectionButton = style([focusRing, {
   width: "100%",
   border: 0,
   borderLeft: "2px solid var(--border-subtle)",
@@ -112,58 +119,45 @@ export const connectionButton = style({
   color: "var(--text-primary)",
   textAlign: "left",
   cursor: "pointer",
-  fontSize: 13,
-  selectors: { "&:hover": { background: "var(--active-background)", borderLeftColor: "var(--accent)" }, "&:focus-visible": { outline: "3px solid var(--focus-ring)", outlineOffset: 2 } },
-});
-export const connectionKind = style({ display: "block", fontSize: 11, color: "var(--text-muted)" });
-export const empty = style({ margin: 0, fontSize: 12, color: "var(--text-muted)" });
-export const field = style({ display: "grid", gap: 5, color: "var(--text-muted)", fontSize: 13 });
-export const select = style({
+  ...text.compactBody,
+  selectors: { "&:hover": { background: "var(--active-background)", borderLeftColor: "var(--accent)" } },
+}]);
+export const connectionKind = style({ display: "block", color: "var(--text-muted)", ...text.caption });
+export const empty = style({ margin: 0, color: "var(--text-muted)", ...text.metadata });
+export const field = style({ display: "grid", gap: 5, color: "var(--text-muted)", ...text.label });
+export const select = style([focusRing, {
   width: "100%",
   minWidth: 0,
-  border: "1px solid var(--glass-border)",
+  border: "1px solid var(--border-subtle)",
   borderRadius: "var(--radius-control)",
   padding: "8px 10px",
-  background: "var(--app-background)",
+  background: "var(--surface)",
   color: "var(--text-primary)",
   font: "inherit",
-  selectors: { "&:focus-visible": { outline: "3px solid var(--focus-ring)", outlineOffset: 1 } },
-});
+}]);
 export const allLinks = style({
   gridColumn: "1/-1",
   display: "grid",
   gap: 8,
-  padding: 16,
-  border: "1px solid var(--glass-border)",
-  borderRadius: "var(--radius-surface)",
-  background: "var(--glass-surface-strong)",
+  paddingBlockStart: space.group,
+  borderBlockStart: "1px solid var(--border-subtle)",
 });
 export const tableScroll = style({ overflowX: "auto" });
 export const table = style({
   width: "100%",
   borderCollapse: "collapse",
-  fontSize: 13,
   textAlign: "left",
+  ...text.metadata,
 });
 export const actions = style({ display: "flex", gap: 7, flexWrap: "wrap" });
-export const button = style({
-  border: "1px solid var(--glass-border)",
-  borderRadius: "var(--radius-control)",
-  padding: "7px 10px",
-  background: "var(--app-background)",
-  color: "var(--text-primary)",
-  cursor: "pointer",
-  fontWeight: 650,
-  selectors: { "&:focus-visible": { outline: "3px solid var(--focus-ring)", outlineOffset: 2 } },
-});
+export const button = sharedButton.secondary;
 export const notice = style({
   gridColumn: "1/-1",
   display: "grid",
   gap: 8,
-  padding: 16,
-  border: "1px solid var(--glass-border)",
-  borderRadius: "var(--radius-surface)",
-  background: "var(--glass-surface-strong)",
+  padding: `${space.x4} ${space.x5}`,
+  borderInlineStart: "3px solid var(--accent)",
+  background: "var(--active-background)",
   color: "var(--text-primary)",
 });
 export const status = style({ gridColumn: "1/-1", minHeight: 24, color: "var(--text-muted)" });
@@ -191,8 +185,4 @@ globalStyle(`${table} th, ${table} td`, {
   padding: "5px 8px",
   borderBottom: "1px solid var(--border-subtle)",
   verticalAlign: "top",
-});
-globalStyle(`${workspace} button:focus-visible`, {
-  outline: "3px solid var(--focus-ring)",
-  outlineOffset: 2,
 });
