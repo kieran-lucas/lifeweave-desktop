@@ -6,26 +6,27 @@ function luminance(hex: string) {
   return .2126 * channels[0]! + .7152 * channels[1]! + .0722 * channels[2]!;
 }
 function contrast(a: string, b: string) { const [x, y] = [luminance(a), luminance(b)].sort((a, b) => b - a); return (x! + .05) / (y! + .05); }
+
 describe("visual worlds", () => {
-  it("preserves the exact twelve approved light-palette chip colors", () => {
-    expect(
-      visualWorlds.map(({ id, light }) => [
-        id,
-        light.canvas,
-        light.accent,
-        light.rule,
-      ]),
-    ).toEqual([
-      ["paper", "#FAF8F4", "#6B5B4B", "#9A8977"],
-      ["sakura", "#FFF7FA", "#A63D68", "#C56B8F"],
-      ["aurora", "#F4FBFF", "#0F738A", "#2D7F91"],
-      ["nocturne", "#F7F5FF", "#5746A6", "#7A68BD"],
+  it("keeps the complete world catalog on one monochrome Light palette family", () => {
+    expect(visualWorlds.map(w => w.id)).toEqual(["paper", "sakura", "aurora", "nocturne"]);
+    expect(visualWorlds.map(({ palette }) => palette.canvas)).toEqual([
+      "#FFFFFF",
+      "#FFFFFF",
+      "#FFFFFF",
+      "#FFFFFF",
+    ]);
+    expect(visualWorlds.map(({ palette }) => palette.accent)).toEqual([
+      "#111111",
+      "#111111",
+      "#111111",
+      "#111111",
     ]);
   });
 
-  it("has the exact complete catalog with accessible text contrast", () => {
-    expect(visualWorlds.map(w => w.id)).toEqual(["paper", "sakura", "aurora", "nocturne"]);
-    for (const world of visualWorlds) for (const palette of [world.light, world.dark]) {
+  it("keeps every single-theme palette complete and accessible", () => {
+    for (const world of visualWorlds) {
+      const { palette } = world;
       expect(Object.values(palette).every(Boolean)).toBe(true);
       expect(contrast(palette.text, palette.surface)).toBeGreaterThanOrEqual(4.5);
       expect(contrast(palette.text, palette.canvas)).toBeGreaterThanOrEqual(4.5);
