@@ -1,4 +1,4 @@
-/* Lifeweave — Monochrome Matte material layer. */
+/* Lifeweave — Light-only Monochrome Matte material layer. */
 :root {
   font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
   color: var(--text-primary);
@@ -75,14 +75,6 @@ button, input, textarea, select { font: inherit; }
 
 :focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 * { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    /* Data-URI grain is black for the Light acceptance surface; dark mode stays clean matte. */
-    --paint-grain: none;
-    --paint-grain-fine: none;
-  }
-}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
