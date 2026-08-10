@@ -25,20 +25,18 @@ export const tab = style([
     color: "var(--text-muted)",
     ...text.tab,
     cursor: "pointer",
+    boxShadow: "none",
     transition:
       `background-color ${duration.state} ${easing.standard}, border-color ${duration.state} ${easing.standard}, ` +
-      `color ${duration.state} ${easing.standard}, box-shadow ${duration.state} ${easing.standard}`,
+      `color ${duration.state} ${easing.standard}`,
     selectors: {
-      "&:hover:not(:disabled)": {
-        color: "var(--text-primary)",
-        backgroundColor: "var(--surface-hover)",
-      },
+      "&:hover:not(:disabled)": { color: "var(--text-primary)", backgroundColor: "#F5F5F5" },
       '&[aria-selected="true"], &[aria-pressed="true"]': {
         color: "var(--accent)",
         borderBlockEndColor: "var(--accent)",
-        backgroundColor: "var(--paint-selected)",
+        backgroundColor: "#FFFFFF",
         backgroundImage: "var(--paint-grain-fine)",
-        boxShadow: "inset 0 -1px 0 color-mix(in srgb, var(--accent) 22%, transparent)",
+        boxShadow: "none",
       },
       "&:disabled": { cursor: "not-allowed", opacity: 0.5 },
     },
@@ -64,9 +62,9 @@ export const segmented = style({
   padding: 4,
   border: "1px solid var(--paint-edge)",
   borderRadius: "var(--radius-control)",
-  backgroundColor: "var(--paint-board)",
+  backgroundColor: "#FFFFFF",
   backgroundImage: "var(--paint-grain-fine)",
-  boxShadow: "var(--glow-compact)",
+  boxShadow: "none",
 });
 
 export const segmentedItem = style([
@@ -80,17 +78,18 @@ export const segmentedItem = style([
     color: "var(--text-muted)",
     ...text.button,
     cursor: "pointer",
+    boxShadow: "none",
     transition:
       `background-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}, ` +
-      `border-color ${duration.state} ${easing.standard}, box-shadow ${duration.state} ${easing.standard}`,
+      `border-color ${duration.state} ${easing.standard}`,
     selectors: {
-      "&:hover:not(:disabled)": { color: "var(--text-primary)", backgroundColor: "var(--surface-hover)" },
+      "&:hover:not(:disabled)": { color: "var(--text-primary)", backgroundColor: "#F5F5F5" },
       '&[aria-selected="true"], &[aria-pressed="true"], &[aria-current="page"]': {
-        backgroundColor: "var(--paint-sheet-strong)",
-        backgroundImage: "var(--paint-grain-fine), var(--paint-wash-blue)",
-        color: "var(--text-primary)",
-        borderColor: "var(--paint-edge-strong)",
-        boxShadow: "var(--glow-compact)",
+        backgroundColor: "var(--accent)",
+        backgroundImage: "var(--paint-grain-fine)",
+        color: "#FFFFFF",
+        borderColor: "var(--accent)",
+        boxShadow: "none",
       },
     },
     "@media": {
@@ -111,9 +110,9 @@ export const segmentedItem = style([
 export const selectedRow = style({
   selectors: {
     '&[aria-current="true"], &[aria-current="page"], &[data-selected="true"]': {
-      backgroundColor: "var(--paint-selected)",
+      backgroundColor: "#FFFFFF",
       backgroundImage: "var(--paint-grain-fine)",
-      boxShadow: "inset 3px 0 0 var(--accent), var(--glow-selected)",
+      boxShadow: "inset 3px 0 0 var(--accent)",
     },
   },
   "@media": {
