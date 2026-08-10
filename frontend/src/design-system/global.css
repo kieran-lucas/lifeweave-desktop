@@ -1,4 +1,4 @@
-/* Lifeweave — Light-only Monochrome Matte material layer. */
+/* Lifeweave — Luminous Editorial material layer. */
 :root {
   color-scheme: light;
   font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
@@ -11,65 +11,68 @@
   --layer-modal: 10;
   --layer-overlay: 40;
 
-  /* Historic color aliases remain only for compatibility; all resolve to the monochrome accent. */
-  --accent-violet: var(--accent);
-  --accent-cyan: var(--accent);
-  --accent-rose: var(--accent);
-  --accent-ice: var(--accent);
+  /* Shared spectral accents. The primary product accent remains blue; adjacent hues are atmosphere. */
+  --accent-violet: #8D6DFF;
+  --accent-cyan: #54C7F4;
+  --accent-rose: #F08AAD;
+  --accent-ice: #B9E8FF;
 
-  /* Decorative atmosphere stays disabled. */
-  --art-aura-primary: transparent;
-  --art-aura-secondary: transparent;
-  --art-aura-cool: transparent;
-  --art-aura-rose: transparent;
-  --art-line: transparent;
-  --art-line-strong: transparent;
-  --art-glint: transparent;
-  --art-petal: transparent;
+  /* Abstract Anime Editorial atmosphere: sky, orbit, crystal, petals, luminous contour. */
+  --art-aura-primary: rgba(78, 111, 255, 0.28);
+  --art-aura-secondary: rgba(141, 109, 255, 0.20);
+  --art-aura-cool: rgba(84, 199, 244, 0.18);
+  --art-aura-rose: rgba(240, 138, 173, 0.15);
+  --art-line: rgba(76, 105, 197, 0.14);
+  --art-line-strong: rgba(69, 95, 180, 0.24);
+  --art-glint: rgba(255, 255, 255, 0.94);
+  --art-petal: rgba(242, 142, 183, 0.20);
 
-  /*
-   * Monochrome matte family.
-   * Surfaces are opaque and value-separated. Texture is microscopic black ink speckle only: it
-   * adds tooth without changing the perceived color of a white or black plane.
-   */
   --paint-canvas: var(--app-background);
   --paint-board: var(--surface-subtle);
-  --paint-sheet: var(--surface-raised);
-  --paint-sheet-strong: var(--surface-raised);
+  --paint-sheet: rgba(255, 255, 255, 0.82);
+  --paint-sheet-strong: rgba(255, 255, 255, 0.94);
   --paint-selected: var(--surface-selected);
   --paint-edge: var(--border-subtle);
   --paint-edge-strong: var(--border-strong);
-  --paint-fiber: var(--text-primary);
-  --paint-fiber-light: var(--text-primary);
-  --paint-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cg fill='%23000' fill-opacity='.028'%3E%3Crect x='3' y='5' width='1' height='1'/%3E%3Crect x='22' y='8' width='1' height='1'/%3E%3Crect x='31' y='25' width='1' height='1'/%3E%3Crect x='10' y='32' width='1' height='1'/%3E%3Cpath d='M14 17h3v1h-3zM26 35h2v1h-2zM1 24h2v1H1z'/%3E%3C/g%3E%3C/svg%3E");
-  --paint-grain-fine: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='31' height='31' viewBox='0 0 31 31'%3E%3Cg fill='%23000' fill-opacity='.020'%3E%3Crect x='2' y='4' width='1' height='1'/%3E%3Crect x='16' y='8' width='1' height='1'/%3E%3Crect x='25' y='20' width='1' height='1'/%3E%3Crect x='9' y='25' width='1' height='1'/%3E%3Cpath d='M12 14h2v1h-2zM21 28h2v1h-2z'/%3E%3C/g%3E%3C/svg%3E");
-  --paint-wash-blue: none;
-  --paint-wash-violet: none;
-  --paint-wash-rose: none;
+  --paint-fiber: rgba(39, 56, 94, 0.07);
+  --paint-fiber-light: rgba(255, 255, 255, 0.72);
+  --paint-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44'%3E%3Cg fill='%23586f9b' fill-opacity='.032'%3E%3Ccircle cx='4' cy='7' r='.65'/%3E%3Ccircle cx='23' cy='10' r='.55'/%3E%3Ccircle cx='35' cy='29' r='.6'/%3E%3Ccircle cx='12' cy='36' r='.5'/%3E%3C/g%3E%3C/svg%3E");
+  --paint-grain-fine: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='31' height='31' viewBox='0 0 31 31'%3E%3Cg fill='%23586f9b' fill-opacity='.022'%3E%3Ccircle cx='3' cy='5' r='.5'/%3E%3Ccircle cx='17' cy='9' r='.45'/%3E%3Ccircle cx='26' cy='21' r='.5'/%3E%3Ccircle cx='10' cy='26' r='.45'/%3E%3C/g%3E%3C/svg%3E");
+  --paint-wash-blue: radial-gradient(circle at 76% 8%, rgba(93, 132, 255, 0.19), transparent 38%);
+  --paint-wash-violet: radial-gradient(circle at 12% 88%, rgba(155, 121, 255, 0.12), transparent 34%);
+  --paint-wash-rose: radial-gradient(circle at 88% 78%, rgba(242, 144, 182, 0.11), transparent 30%);
 
-  /* Legacy glass names now resolve to opaque paper; no blur or highlight survives. */
-  --glass-surface: var(--surface-raised);
-  --glass-surface-strong: var(--surface-raised);
-  --glass-border: var(--border-subtle);
-  --glass-border-hot: var(--border-strong);
-  --glass-highlight: transparent;
-  --glass-blur: 0px;
+  /* Glass is reserved for floating/hero surfaces; reading planes remain mostly opaque. */
+  --glass-surface: rgba(255, 255, 255, 0.72);
+  --glass-surface-strong: rgba(255, 255, 255, 0.88);
+  --glass-border: rgba(184, 202, 231, 0.72);
+  --glass-border-hot: rgba(112, 142, 224, 0.70);
+  --glass-highlight: rgba(255, 255, 255, 0.86);
+  --glass-blur: 18px;
 
-  /* Depth is structural, never luminous. */
-  --glow-selected: none;
-  --glow-focus: 0 0 0 2px var(--focus-ring);
-  --glow-primary: none;
-  --glow-crystal: none;
-  --glow-crystal-strong: none;
-  --glow-hero: none;
-  --glow-hover: none;
-  --glow-compact: none;
-  --glow-dot: none;
-  --glow-danger: none;
+  /* Luminous depth is selective: focused states, floating planes and visual-world anchors only. */
+  --glow-selected: 0 0 0 1px rgba(78, 111, 255, 0.28), 0 10px 30px rgba(78, 111, 255, 0.12);
+  --glow-focus: 0 0 0 2px var(--focus-ring), 0 0 0 6px rgba(78, 111, 255, 0.10);
+  --glow-primary: 0 10px 28px rgba(68, 102, 239, 0.22);
+  --glow-crystal: 0 14px 40px rgba(89, 113, 198, 0.11), inset 0 1px 0 rgba(255, 255, 255, 0.78);
+  --glow-crystal-strong: 0 22px 60px rgba(76, 98, 177, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.92);
+  --glow-hero: 0 34px 90px rgba(73, 102, 192, 0.17);
+  --glow-hover: 0 12px 30px rgba(73, 102, 192, 0.11);
+  --glow-compact: 0 6px 18px rgba(73, 102, 192, 0.10);
+  --glow-dot: 0 0 14px rgba(78, 111, 255, 0.44);
+  --glow-danger: 0 8px 22px rgba(217, 78, 114, 0.15);
 }
 
 * { box-sizing: border-box; }
-html, body, #root { min-width: 0; height: 100%; margin: 0; background: var(--app-background); }
+html, body, #root {
+  min-width: 0;
+  height: 100%;
+  margin: 0;
+  background:
+    radial-gradient(circle at 82% -10%, rgba(104, 151, 255, 0.18), transparent 34%),
+    radial-gradient(circle at 8% 105%, rgba(160, 123, 255, 0.10), transparent 30%),
+    var(--app-background);
+}
 button, input, textarea, select { font: inherit; }
 
 ::selection { background: var(--accent); color: var(--accent-contrast); }
@@ -113,6 +116,9 @@ button, input, textarea, select { font: inherit; }
     --paint-edge-strong: CanvasText;
     --paint-grain: none;
     --paint-grain-fine: none;
+    --paint-wash-blue: none;
+    --paint-wash-violet: none;
+    --paint-wash-rose: none;
     --glass-surface: Canvas;
     --glass-surface-strong: Canvas;
     --glass-border: CanvasText;
