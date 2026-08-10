@@ -227,7 +227,7 @@ export const summary = style({
 });
 
 export const taskCount = style({ color: "currentColor", fontSize: "0.9rem", fontWeight: 780, fontVariantNumeric: "tabular-nums" });
-export const duration = style({ marginInlineStart: "auto", color: "currentColor", fontVariantNumeric: "tabular-nums" });
+export const durationText = style({ marginInlineStart: "auto", color: "currentColor", fontVariantNumeric: "tabular-nums" });
 export const needsAttention = style({
   marginInlineStart: 3,
   padding: "1px 5px",
