@@ -27,7 +27,7 @@ const base = style({
   selectors: {
     "&:active:not(:disabled)": { transform: "translateY(1px)" },
     "&:focus-visible": { outline: "2px solid var(--focus-ring)", outlineOffset: 2 },
-    "&:disabled": { cursor: "not-allowed", opacity: 0.5, transform: "none" },
+    "&:disabled": { cursor: "not-allowed", opacity: 0.45, transform: "none" },
   },
   "@media": {
     "(prefers-reduced-motion: reduce)": {
@@ -43,12 +43,11 @@ export const button = styleVariants({
     base,
     {
       backgroundColor: "var(--accent)",
-      backgroundImage: "var(--paint-grain-fine)",
       borderColor: "var(--accent)",
-      color: "#FFFFFF",
+      color: "var(--accent-contrast)",
       selectors: {
-        "&:hover:not(:disabled)": { transform: "translateY(-1px)", backgroundColor: "#1D4ED8", borderColor: "#1D4ED8" },
-        "&:active:not(:disabled)": { transform: "translateY(1px)", backgroundColor: "#1E40AF", borderColor: "#1E40AF" },
+        "&:hover:not(:disabled)": { transform: "translateY(-1px)", backgroundColor: "var(--accent-muted)", borderColor: "var(--accent-muted)" },
+        "&:active:not(:disabled)": { transform: "translateY(1px)", backgroundColor: "var(--text-primary)", borderColor: "var(--text-primary)" },
       },
       "@media": {
         "(forced-colors: active)": { background: "Highlight", color: "HighlightText", borderColor: "Highlight" },
@@ -60,13 +59,13 @@ export const button = styleVariants({
   secondary: [
     base,
     {
-      backgroundColor: "#FFFFFF",
+      backgroundColor: "var(--surface-raised)",
       backgroundImage: "var(--paint-grain-fine)",
       borderColor: "var(--paint-edge)",
       color: "var(--text-primary)",
       selectors: {
-        "&:hover:not(:disabled)": { transform: "translateY(-1px)", backgroundColor: "#F5F5F5", borderColor: "var(--accent)" },
-        "&:active:not(:disabled)": { transform: "translateY(1px)", backgroundColor: "#F3F4F6" },
+        "&:hover:not(:disabled)": { transform: "translateY(-1px)", backgroundColor: "var(--surface-hover)", borderColor: "var(--text-primary)" },
+        "&:active:not(:disabled)": { transform: "translateY(1px)", backgroundColor: "var(--surface-selected)" },
       },
       "@media": {
         "(prefers-reduced-motion: reduce)": { selectors: { "&:hover:not(:disabled)": { transform: "none" } } },
@@ -81,8 +80,8 @@ export const button = styleVariants({
       borderColor: "transparent",
       color: "var(--text-muted)",
       selectors: {
-        "&:hover:not(:disabled)": { backgroundColor: "#F5F5F5", borderColor: "var(--paint-edge)", color: "var(--text-primary)" },
-        "&:active:not(:disabled)": { backgroundColor: "#F3F4F6" },
+        "&:hover:not(:disabled)": { backgroundColor: "var(--surface-hover)", borderColor: "var(--paint-edge)", color: "var(--text-primary)" },
+        "&:active:not(:disabled)": { backgroundColor: "var(--surface-selected)" },
       },
     },
   ],
@@ -90,12 +89,12 @@ export const button = styleVariants({
   destructive: [
     base,
     {
-      backgroundColor: "#FFFFFF",
+      backgroundColor: "var(--surface-raised)",
       backgroundImage: "var(--paint-grain-fine)",
-      borderColor: "var(--danger)",
-      color: "var(--danger)",
+      borderColor: "var(--text-primary)",
+      color: "var(--text-primary)",
       selectors: {
-        "&:hover:not(:disabled)": { backgroundColor: "var(--danger)", borderColor: "var(--danger)", color: "#FFFFFF" },
+        "&:hover:not(:disabled)": { backgroundColor: "var(--text-primary)", borderColor: "var(--text-primary)", color: "var(--app-background)" },
       },
     },
   ],
