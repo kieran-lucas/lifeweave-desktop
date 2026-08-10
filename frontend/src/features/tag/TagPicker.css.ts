@@ -1,44 +1,40 @@
 import { style } from "@vanilla-extract/css";
 
+import { space } from "../../app/layout/tokens.css";
+import { button, compact } from "../../design-system/primitives/controls.css";
+import { text } from "../../design-system/visual/typography.css";
+
 export const fieldset = style({
   border: "1px solid var(--border-subtle, var(--border-subtle))",
-  borderRadius: "var(--radius-small)",
-  padding: "6px 10px 8px",
+  borderRadius: "var(--radius-surface)",
+  padding: `${space.x2} ${space.x3} ${space.x3}`,
   margin: 0,
   position: "relative",
 });
 
 export const legend = style({
-  fontSize: 11,
-  fontWeight: 600,
+  ...text.eyebrow,
   color: "var(--text-muted, var(--text-muted))",
   padding: "0 4px",
   letterSpacing: "0.04em",
   textTransform: "uppercase",
 });
 
-export const trigger = style({
-  fontSize: 12,
-  padding: "3px 10px",
-  border: "1px solid var(--border-subtle, var(--border-subtle))",
-  borderRadius: "var(--radius-small)",
-  background: "transparent",
-  cursor: "pointer",
-  color: "var(--text-muted, var(--text-muted))",
-  display: "block",
-  width: "100%",
-  textAlign: "left",
-});
+export const trigger = style([button.secondary, { display: "flex", inlineSize: "100%", justifyContent: "flex-start", color: "var(--text-muted)" }]);
 
 export const panel = style({
-  marginTop: 6,
+  marginTop: space.x2,
   display: "flex",
   flexDirection: "column",
-  gap: 6,
+  gap: space.x2,
+  padding: space.x3,
+  border: "1px solid var(--border-subtle)",
+  borderRadius: "var(--radius-control)",
+  background: "var(--surface-subtle)",
 });
 
 export const searchLabel = style({
-  fontSize: 11,
+  ...text.label,
   color: "var(--text-muted, var(--text-muted))",
   display: "block",
   marginBottom: 2,
@@ -49,13 +45,13 @@ export const search = style({
   padding: "6px 8px",
   border: "1px solid var(--border-subtle, var(--border-subtle))",
   borderRadius: "var(--radius-small)",
-  fontSize: 13,
+  ...text.compactBody,
   boxSizing: "border-box",
 });
 
 export const status = style({
   margin: "2px 0",
-  fontSize: 12,
+  ...text.metadata,
   color: "var(--text-muted, var(--text-muted))",
 });
 
@@ -76,7 +72,7 @@ export const checkLabel = style({
   gap: 6,
   padding: "5px 8px",
   borderRadius: "var(--radius-small)",
-  fontSize: 13,
+  ...text.compactBody,
   cursor: "pointer",
   selectors: {
     "&:hover": { background: "var(--surface-raised)" },
@@ -89,26 +85,17 @@ export const checkLabelDisabled = style({
 });
 
 export const selectedCount = style({
-  fontSize: 11,
+  ...text.metadata,
   color: "var(--text-muted, var(--text-muted))",
 });
 
 export const limitWarning = style({
-  fontSize: 11,
+  ...text.metadata,
   color: "var(--danger)",
   fontWeight: 600,
 });
 
-export const createButton = style({
-  fontSize: 12,
-  padding: "4px 10px",
-  border: "1px dashed var(--border-subtle, var(--border-subtle))",
-  borderRadius: "var(--radius-small)",
-  background: "transparent",
-  cursor: "pointer",
-  color: "var(--accent)",
-  textAlign: "left",
-});
+export const createButton = style([button.ghost, compact, { alignSelf: "flex-start", color: "var(--accent)", textAlign: "left" }]);
 
 export const footer = style({
   display: "flex",
@@ -119,27 +106,12 @@ export const footer = style({
   marginTop: 2,
 });
 
-export const doneButton = style({
-  fontSize: 12,
-  padding: "3px 12px",
-  border: "1px solid var(--border-subtle, var(--border-subtle))",
-  borderRadius: "var(--radius-small)",
-  background: "transparent",
-  cursor: "pointer",
-});
+export const doneButton = style([button.secondary, compact]);
 
 export const errorMsg = style({
-  fontSize: 11,
+  ...text.metadata,
   color: "var(--danger)",
   marginTop: 2,
 });
 
-export const retryButton = style({
-  fontSize: 11,
-  padding: "2px 8px",
-  border: "1px solid var(--border-subtle, var(--border-subtle))",
-  borderRadius: "var(--radius-small)",
-  background: "transparent",
-  cursor: "pointer",
-  marginTop: 2,
-});
+export const retryButton = style([button.secondary, compact, { marginTop: 2 }]);

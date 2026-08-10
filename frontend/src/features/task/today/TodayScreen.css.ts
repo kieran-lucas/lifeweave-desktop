@@ -1,7 +1,7 @@
 import { globalStyle, style } from "@vanilla-extract/css";
 import { space } from "../../../app/layout/tokens.css";
 import { button, compact } from "../../../design-system/primitives/controls.css";
-import { focusRing } from "../../../design-system/primitives/utilities.css";
+import { focusRing, focusRingInset } from "../../../design-system/primitives/utilities.css";
 import { duration, easing } from "../../../design-system/visual/motion.css";
 import { text } from "../../../design-system/visual/typography.css";
 
@@ -93,8 +93,10 @@ export const category=style({...text.metadata,color:"var(--text-muted)"});
  * here is only what is specific to this form.
  */
 /** Hour and minute share one bounded row; the pair is one field unit on the form grid. */
-export const wheel=style({display:"flex",alignItems:"center",gap:space.x1,minInlineSize:0});
+export const wheel=style({display:"flex",alignItems:"center",gap:space.x1,minInlineSize:0,border:"1px solid var(--glass-border)",borderRadius:"var(--radius-control)",background:"var(--glass-surface-strong)",overflow:"hidden"});
 export const wheelPart=style({display:"flex",flex:1,minInlineSize:0});
+export const wheelSelect=focusRingInset;
+globalStyle(`${wheel} select`,{border:0,borderRadius:0,background:"transparent",minBlockSize:38});
 export const legend=style({padding:`0 ${space.x1}`,fontWeight:700});
 export const subGroup=style({display:"flex",flexDirection:"column",gap:space.control,margin:0,padding:space.x3,border:"1px solid var(--border-subtle)",borderRadius:"var(--radius-control)",minInlineSize:0});
 export const checkLabel=style({display:"inline-flex",alignItems:"center",gap:space.x1,minInlineSize:0});
@@ -107,6 +109,10 @@ export const numberControl=style({minInlineSize:0,maxInlineSize:"8rem",boxSizing
 export const undo=style({...text.metadata,display:"flex",flexWrap:"wrap",alignItems:"center",alignSelf:"flex-start",gap:space.x1,margin:0,padding:`${space.x1} ${space.x2}`,border:"1px solid var(--border-subtle)",borderRadius:"var(--radius-control)",background:"var(--surface-subtle)",color:"var(--text-muted)"});
 export const undoButton=button.ghost;
 export const seriesTagsNote=style({fontSize:11,color:"var(--text-muted, var(--text-muted))",margin:"4px 0 0"});
+export const dialogError=style({...text.compactBody,margin:0,padding:`${space.x2} ${space.x3}`,border:"1px solid color-mix(in srgb, var(--danger) 32%, var(--border-subtle))",borderRadius:"var(--radius-control)",background:"color-mix(in srgb, var(--danger) 6%, var(--surface-raised))",color:"var(--danger)"});
+export const dialogDelete=button.destructive;
+export const dialogCancel=button.secondary;
+export const dialogSave=button.primary;
 
 // ── Actual time (Task 43). Running state is conveyed by text and a border, never colour alone.
 export const timerStrip = style({ display: "flex", flexWrap: "wrap", gap: space.control, alignItems: "center", padding: `${space.x2} ${space.x3}`, border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-control)", background:"var(--surface-subtle)" });

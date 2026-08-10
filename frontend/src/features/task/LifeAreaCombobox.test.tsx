@@ -91,3 +91,19 @@ it("keeps Escape inside an open popup before the parent dialog sees it", async (
   expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
   expect(bubbled).not.toHaveBeenCalled();
 });
+
+it("keeps keyboard-active and saved-selection states distinct", async () => {
+  api.list.mockResolvedValue([
+    { id: "work", title: "Work", breadcrumb: "Life › Work" },
+    { id: "health", title: "Health", breadcrumb: "Life › Health" },
+  ]);
+  mount();
+  const input = await screen.findByRole("combobox", { name: "Life area" });
+  fireEvent.focus(input);
+  const options = await screen.findAllByRole("option");
+  expect(options[0]).toHaveAttribute("data-active", "true");
+  expect(options[0]).toHaveAttribute("aria-selected", "false");
+  fireEvent.keyDown(input, { key: "ArrowDown" });
+  expect(options[0]).toHaveAttribute("data-active", "false");
+  expect(options[1]).toHaveAttribute("data-active", "true");
+});

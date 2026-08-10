@@ -115,6 +115,7 @@ export function TaskCombobox<T extends Option>({
               id={`${id}-${option.id}`}
               role="option"
               aria-selected={value === option.id}
+              data-active={index === active}
               key={option.id}
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => select(index)}

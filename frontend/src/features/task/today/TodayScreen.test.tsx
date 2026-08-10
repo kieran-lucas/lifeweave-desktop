@@ -358,6 +358,11 @@ describe("Today recurrence contract", () => {
       "Entire series",
     ])
       expect(screen.getByLabelText(label)).toBeInTheDocument();
+    const scopeGroup = screen.getByRole("group", { name: "Occurrence scope" });
+    const scheduleGroup = screen.getByRole("group", { name: "Schedule" });
+    expect(
+      scopeGroup.compareDocumentPosition(scheduleGroup) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
     fireEvent.click(screen.getByLabelText("This and future occurrences"));
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() =>

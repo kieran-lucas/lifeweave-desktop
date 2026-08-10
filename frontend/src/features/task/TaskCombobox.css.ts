@@ -1,6 +1,8 @@
 import { globalStyle, style } from "@vanilla-extract/css";
 
 import { space } from "../../app/layout/tokens.css";
+import { button, compact } from "../../design-system/primitives/controls.css";
+import { text } from "../../design-system/visual/typography.css";
 
 /**
  * Geometry shared by the Life area and Focus Plan comboboxes.
@@ -12,9 +14,15 @@ import { space } from "../../app/layout/tokens.css";
  */
 
 export const listbox = style({
+  position: "absolute",
+  insetInline: 0,
+  insetBlockStart: `calc(100% + ${space.x1})`,
+  zIndex: "var(--layer-overlay)",
+  inlineSize: "100%",
+  boxSizing: "border-box",
   listStyle: "none",
   margin: 0,
-  padding: space.x1,
+  padding: space.x2,
   display: "flex",
   flexDirection: "column",
   gap: space.x1,
@@ -22,16 +30,13 @@ export const listbox = style({
   overflowY: "auto",
   minInlineSize: 0,
   border: "1px solid var(--border-subtle)",
-  borderRadius: "var(--radius-control)",
-  background: "var(--surface)",
+  borderRadius: "var(--radius-floating)",
+  background: "var(--surface-raised)",
+  boxShadow: "var(--elevation-floating)",
   "@media": {
     "screen and (max-width: 65rem)": {
-      position: "absolute",
-      insetInline: 0,
+      insetBlockStart: "auto",
       insetBlockEnd: `calc(100% + ${space.x1})`,
-      zIndex: "var(--layer-overlay)",
-      inlineSize: "100%",
-      boxSizing: "border-box",
     },
   },
 });
@@ -47,8 +52,10 @@ export const option = style({
   borderRadius: "var(--radius-small)",
   cursor: "pointer",
   minInlineSize: 0,
+  ...text.compactBody,
   selectors: {
     "&[aria-selected=true]": { background: "var(--active-background)" },
+    "&[data-active=true]": { boxShadow: "inset 2px 0 0 var(--accent)" },
     "&:hover": { background: "var(--active-background)" },
   },
 });
@@ -56,18 +63,9 @@ export const option = style({
 /** The breadcrumb is secondary to the title and must not run into it. */
 globalStyle(`${option} span`, { color: "var(--text-muted)" });
 
-export const empty = style({ padding: `${space.x1} ${space.control}`, color: "var(--text-muted)" });
+export const empty = style({ ...text.compactBody, padding: `${space.x1} ${space.control}`, color: "var(--text-muted)" });
 
-export const clear = style({
-  alignSelf: "flex-start",
-  border: "1px solid var(--border-subtle)",
-  borderRadius: "var(--radius-control)",
-  background: "transparent",
-  color: "inherit",
-  padding: `${space.x1} ${space.control}`,
-  cursor: "pointer",
-  selectors: { "&:focus-visible": { outline: "3px solid var(--focus-ring)", outlineOffset: 2 } },
-});
+export const clear = style([button.ghost, compact, { alignSelf: "flex-start" }]);
 
 export const input = style({
   inlineSize: "100%",

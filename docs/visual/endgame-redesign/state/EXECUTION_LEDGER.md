@@ -6,10 +6,10 @@
 
 - BASELINE_PLANNING_SHA: `a1078c1f91c251aaa7a453ef1e8a5108551c852d`
 - EXECUTION_START_SHA: `0b3e01d4a8bd9b62c5d786e9b4a4401d72c0edc1`
-- LAST_VERIFIED_COMMIT: `1a3a859fa408701ac95b88078cdd5a2051a3cea9`
+- LAST_VERIFIED_COMMIT: `d80ea4dfdc287f226826bcdf8f223ff8fdb247d4`
 - CURRENT_PACKET: `S03`
-- CURRENT_STATUS: `PENDING`
-- NEXT_PACKET: `S03`
+- CURRENT_STATUS: `CLOSED`
+- NEXT_PACKET: `S04`
 - FINAL_REVIEW_DONE: `false`
 - FINAL_FINDING_SET_FROZEN: `false`
 - PROGRAM_STATUS: `IN_PROGRESS`
@@ -20,8 +20,8 @@
 |---|---|---|---|
 | F0 | CLOSED | `f4dc93ddd8d7696feedb528232c6710376ef65c6` | VERIFIED; 109-row crosswalk, foundation gates, and representative native audit passed |
 | S01 | CLOSED | `1a3a859fa408701ac95b88078cdd5a2051a3cea9` | 8/8 rows LOCAL_VERIFIED; focused semantics and max/min native profiles passed |
-| S02 | CLOSED | checkpoint containing this row | 11/11 rows LOCAL_VERIFIED; focused semantics and max/min native profiles passed |
-| S03 | PENDING | — | — |
+| S02 | CLOSED | `d80ea4dfdc287f226826bcdf8f223ff8fdb247d4` | 11/11 rows LOCAL_VERIFIED; focused semantics and max/min native profiles passed |
+| S03 | CLOSED | checkpoint containing this row | 9/9 rows LOCAL_VERIFIED; focused semantics and max/min native profiles passed |
 | S04 | PENDING | — | — |
 | S05 | PENDING | — | — |
 | S06 | PENDING | — | — |
@@ -50,23 +50,23 @@
 | G-06 | S01 | LOCAL_VERIFIED | `1a3a859fa408701ac95b88078cdd5a2051a3cea9` | inputless/input/destructive focused dialog tests; shared modal grammar |
 | SH-01 | S01 | LOCAL_VERIFIED | `1a3a859fa408701ac95b88078cdd5a2051a3cea9` | expanded shell max+min visual evidence; current state is not color-only |
 | SH-02 | S01 | LOCAL_VERIFIED | `1a3a859fa408701ac95b88078cdd5a2051a3cea9` | collapsed shell max+min visual evidence; no overflow/collisions |
-| T-01 | S02 | LOCAL_VERIFIED | S02 checkpoint | populated Today hierarchy and bounded period groups; max native evidence |
-| T-02 | S02 | LOCAL_VERIFIED | S02 checkpoint | selected split max+min evidence; stable selected geometry |
-| T-03 | S02 | LOCAL_VERIFIED | S02 checkpoint | Note facet max+min evidence; no invented edit affordance |
-| T-04 | S02 | LOCAL_VERIFIED | S02 checkpoint | aligned definition-list Details facet max+min evidence |
-| T-05 | S02 | LOCAL_VERIFIED | S02 checkpoint | numeric recorded-time and textual timer state max+min evidence |
-| T-06 | S02 | LOCAL_VERIFIED | S02 checkpoint | low-chrome active links and factual archived/empty semantics |
-| T-07 | S02 | LOCAL_VERIFIED | S02 checkpoint | slim timer strip, local primary Stop, secondary destructive Discard |
-| T-08 | S02 | LOCAL_VERIFIED | S02 checkpoint | compact row time controls and accessible disabled reasons |
-| T-09 | S02 | LOCAL_VERIFIED | S02 checkpoint | contained fan/listbox, active-vs-saved distinction, keyboard/outside close |
-| T-10 | S02 | LOCAL_VERIFIED | S02 checkpoint | compact reversible saved-status strip and Undo semantics |
-| T-11 | S03 | PENDING | — | — |
-| T-12 | S03 | PENDING | — | — |
-| T-13 | S03 | PENDING | — | — |
-| T-14 | S03 | PENDING | — | — |
-| T-15 | S03 | PENDING | — | — |
-| T-16 | S03 | PENDING | — | — |
-| T-17 | S03 | PENDING | — | — |
+| T-01 | S02 | LOCAL_VERIFIED | `d80ea4dfdc287f226826bcdf8f223ff8fdb247d4` | populated Today hierarchy and bounded period groups; max native evidence |
+| T-02 | S02 | LOCAL_VERIFIED | `d80ea4dfdc287f226826bcdf8f223ff8fdb247d4` | selected split max+min evidence; stable selected geometry |
+| T-03 | S02 | LOCAL_VERIFIED | `d80ea4dfdc287f226826bcdf8f223ff8fdb247d4` | Note facet max+min evidence; no invented edit affordance |
+| T-04 | S02 | LOCAL_VERIFIED | `d80ea4dfdc287f226826bcdf8f223ff8fdb247d4` | aligned definition-list Details facet max+min evidence |
+| T-05 | S02 | LOCAL_VERIFIED | `d80ea4dfdc287f226826bcdf8f223ff8fdb247d4` | numeric recorded-time and textual timer state max+min evidence |
+| T-06 | S02 | LOCAL_VERIFIED | `d80ea4dfdc287f226826bcdf8f223ff8fdb247d4` | low-chrome active links and factual archived/empty semantics |
+| T-07 | S02 | LOCAL_VERIFIED | `d80ea4dfdc287f226826bcdf8f223ff8fdb247d4` | slim timer strip, local primary Stop, secondary destructive Discard |
+| T-08 | S02 | LOCAL_VERIFIED | `d80ea4dfdc287f226826bcdf8f223ff8fdb247d4` | compact row time controls and accessible disabled reasons |
+| T-09 | S02 | LOCAL_VERIFIED | `d80ea4dfdc287f226826bcdf8f223ff8fdb247d4` | contained fan/listbox, active-vs-saved distinction, keyboard/outside close |
+| T-10 | S02 | LOCAL_VERIFIED | `d80ea4dfdc287f226826bcdf8f223ff8fdb247d4` | compact reversible saved-status strip and Undo semantics |
+| T-11 | S03 | LOCAL_VERIFIED | S03 checkpoint | one-off modal max+min evidence; canonical form hierarchy and primary action |
+| T-12 | S03 | LOCAL_VERIFIED | S03 checkpoint | recurring form max+min evidence; preserved recurrence capability |
+| T-13 | S03 | LOCAL_VERIFIED | S03 checkpoint | recurring occurrence scope precedes governed fields; max+min evidence |
+| T-14 | S03 | LOCAL_VERIFIED | S03 checkpoint | bounded validation alert and explicit destructive/pending action states |
+| T-15 | S03 | LOCAL_VERIFIED | S03 checkpoint | attached floating Life Area popup; active and saved states remain distinct |
+| T-16 | S03 | LOCAL_VERIFIED | S03 checkpoint | attached floating Focus Plan popup; series-owned disabled reason preserved |
+| T-17 | S03 | LOCAL_VERIFIED | S03 checkpoint | bounded TagPicker disclosure with shared controls and focus restoration |
 | T-18 | S04 | PENDING | — | — |
 | T-19 | S04 | PENDING | — | — |
 | T-20 | S04 | PENDING | — | — |
@@ -148,9 +148,9 @@
 | S-06 | S12 | PENDING | — | — |
 | S-07 | S12 | PENDING | — | — |
 | S-08 | S12 | PENDING | — | — |
-| MC-01 | S02 | LOCAL_VERIFIED | S02 checkpoint | seven-day bounded navigation; generated chevrons; selected/today semantics |
-| MC-02 | S03 | PENDING | — | — |
-| MC-03 | S03 | PENDING | — | — |
+| MC-01 | S02 | LOCAL_VERIFIED | `d80ea4dfdc287f226826bcdf8f223ff8fdb247d4` | seven-day bounded navigation; generated chevrons; selected/today semantics |
+| MC-02 | S03 | LOCAL_VERIFIED | S03 checkpoint | compact native Start time pair with shared inset focus treatment |
+| MC-03 | S03 | LOCAL_VERIFIED | S03 checkpoint | compact native End time pair with shared inset focus treatment |
 
 ## DONE
 
@@ -221,6 +221,12 @@ Append concise entries:
 - [S02] native Light `shell-task` maximized — PASS — 24 surfaces / zero collisions — `target/e2e-artifacts/task-50b/shell-task-S02-20260810-071012`
 - [S02] native Light `shell-task` 960×640 — PASS — achieved 960×639 / 24 surfaces / zero collisions — `target/e2e-artifacts/task-50b/shell-task-S02-20260810-071157`
 - [S02] bounded self-review `F_S02` — RESOLVED — composed saved-assessment Undo and bounded timer/assessment failure notices; affected static/type/focused checks passed
+- [S03] `git diff --check` + convergence ratchet — PASS — font-size residue 86 / focus residue 30 / control clones 51; ceilings tightened
+- [S03] `pnpm typecheck` — PASS — frontend project references
+- [S03] focused task-dialog/shared-input tests — PASS — 3 files / 97 tests; affected post-review Today subset 1 file / 65 tests
+- [S03] native Light `shell-task` maximized — PASS — 24 surfaces / zero collisions — `target/e2e-artifacts/task-50b/shell-task-S03-20260810-072935`
+- [S03] native Light `shell-task` 960×640 — PASS — achieved 960×639 / 24 surfaces / zero collisions — `target/e2e-artifacts/task-50b/shell-task-S03-20260810-073431`
+- [S03] bounded self-review `F_S03` — RESOLVED — applied the shared inset focus utility to borderless TimeWheel selects inside their clipped group; affected static/type/Today checks passed
 
 ## DECISIONS MADE UNDER UNATTENDED AUTHORITY
 
@@ -235,6 +241,8 @@ Record only material reversible decisions that future stages may need to know.
 - [S02] Today is the routed expressive-title exception to the productive global heading default; all repeated period, row, inspector, and control roles remain productive sans.
 - [S02] The Today inspector is a contextual rail with a structural divider at wide widths and a structural top divider when stacked; it is never a detached card.
 - [S02] Assessment focus/roving state uses a blue edge while the saved evaluation uses tonal fill, keeping the two states visually and semantically distinct.
+- [S03] Recurring edit scope is presented before series-owned fields; the audit capture targets the seeded recurring row so T-13 evidence cannot silently regress to a one-off edit.
+- [S03] Task combobox popups attach below at wide viewports and above at compact viewports; both remain floating, contained, and use a blue edge for keyboard-active versus tonal fill for saved selection.
 
 ## FINAL FINDING SET
 

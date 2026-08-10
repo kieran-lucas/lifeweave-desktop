@@ -574,7 +574,10 @@ describe(`Endgame visual audit (${auditProfile}: ${label})`, () => {
         await capture("task-recurring", "03-task-recurring");
       await dismiss();
     }
-    if (await tryClick("button[aria-label^='Edit ']")) {
+    // S03's edit evidence is specifically the governed recurring occurrence/series scope, not the
+    // already-covered one-off form. Target the seeded recurring row so the capture proves that the
+    // scope decision precedes every series-owned field at both required viewports.
+    if (await tryClick("[role='listitem'][data-series-id] button[aria-label^='Edit ']")) {
       await capture("task-edit", "04-task-edit");
       await dismiss();
     }

@@ -195,7 +195,7 @@ function TimeWheel({
         <label className={styles.wheelPart}>
           <span className={styles.srOnly}>{name} hour</span>
           <select
-            className={layout.fieldControl}
+            className={`${layout.fieldControl} ${styles.wheelSelect}`}
             aria-label={`${name} hour`}
             value={hour}
             onChange={(e) => onChange(Number(e.target.value) * 60 + minute)}
@@ -211,7 +211,7 @@ function TimeWheel({
         <label className={styles.wheelPart}>
           <span className={styles.srOnly}>{name} minute</span>
           <select
-            className={layout.fieldControl}
+            className={`${layout.fieldControl} ${styles.wheelSelect}`}
             aria-label={`${name} minute`}
             value={minute}
             onChange={(e) => onChange(hour * 60 + Number(e.target.value))}
@@ -1207,7 +1207,7 @@ export function TodayScreen({
                 {editing ? "Edit task" : "Create task"}
               </h2>
               {error && (
-                <p role="alert" id="task-error">
+                <p role="alert" id="task-error" className={styles.dialogError}>
                   {error}
                 </p>
               )}
@@ -1233,6 +1233,34 @@ export function TodayScreen({
                   }
                 />
               </label>
+              {editing?.kind === "recurring" && (
+                <fieldset className={`${layout.fieldGroup} ${layout.fieldSpan.full}`}>
+                  <legend className={styles.legend}>Occurrence scope</legend>
+                  <div className={`${styles.scopeList} ${layout.fieldSpan.full}`}>
+                    {(
+                      [
+                        "only_this_occurrence",
+                        "this_and_future",
+                        "entire_series",
+                      ] as OccurrenceEditScope[]
+                    ).map((value) => (
+                      <label key={value} className={styles.checkLabel}>
+                        <input
+                          type="radio"
+                          name="scope"
+                          checked={scope === value}
+                          onChange={() => setScope(value)}
+                        />
+                        {value === "only_this_occurrence"
+                          ? "Only this occurrence"
+                          : value === "this_and_future"
+                            ? "This and future occurrences"
+                            : "Entire series"}
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+              )}
               {/* Schedule is one semantic group, so it gets one common region (Palmer 1992). */}
               <fieldset className={`${layout.fieldGroup} ${layout.fieldSpan.full}`}>
                 <legend className={styles.legend}>Schedule</legend>
@@ -1483,50 +1511,22 @@ export function TodayScreen({
                   )}
                 </fieldset>
               )}
-              {editing?.kind === "recurring" && (
-                <fieldset className={`${layout.fieldGroup} ${layout.fieldSpan.full}`}>
-                  <legend className={styles.legend}>Occurrence scope</legend>
-                  <div className={`${styles.scopeList} ${layout.fieldSpan.full}`}>
-                    {(
-                      [
-                        "only_this_occurrence",
-                        "this_and_future",
-                        "entire_series",
-                      ] as OccurrenceEditScope[]
-                    ).map((value) => (
-                      <label key={value} className={styles.checkLabel}>
-                        <input
-                          type="radio"
-                          name="scope"
-                          checked={scope === value}
-                          onChange={() => setScope(value)}
-                        />
-                        {value === "only_this_occurrence"
-                          ? "Only this occurrence"
-                          : value === "this_and_future"
-                            ? "This and future occurrences"
-                            : "Entire series"}
-                      </label>
-                    ))}
-                  </div>
-                </fieldset>
-              )}
             </div>
             <DialogFooter>
               {editing && (
                 <button
                   type="button"
-                  className={layout.dialogFooterLeading}
+                  className={`${layout.dialogFooterLeading} ${styles.dialogDelete}`}
                   disabled={save.isPending || remove.isPending}
                   onClick={() => remove.mutate()}
                 >
                   {remove.isPending ? "Deleting…" : "Delete"}
                 </button>
               )}
-              <button type="button" onClick={closeDialog}>
+              <button type="button" className={styles.dialogCancel} onClick={closeDialog}>
                 Cancel
               </button>
-              <button type="submit" disabled={save.isPending || remove.isPending}>
+              <button className={styles.dialogSave} type="submit" disabled={save.isPending || remove.isPending}>
                 {save.isPending ? "Saving…" : "Save"}
               </button>
             </DialogFooter>
