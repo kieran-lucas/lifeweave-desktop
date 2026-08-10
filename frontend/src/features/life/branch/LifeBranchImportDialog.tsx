@@ -36,11 +36,11 @@ export function LifeBranchImportDialog({ preview, destinationTitle, pending, err
         <dt>Links inside the branch</dt><dd>{counts.internal_links}</dd>
         <dt>Package</dt><dd>{formatBytes(preview.package_bytes)}</dd>
       </dl>
-      <ul className={styles.warnings}>{preview.warnings.map(warning => <li key={warning}>{warning}</li>)}</ul>
+      {preview.warnings.length > 0 && <ul className={styles.warnings}>{preview.warnings.map(warning => <li key={warning}>{warning}</li>)}</ul>}
       {error && <p className={styles.error} role="alert">{error}</p>}
       <div className={styles.actions}>
         <button className={styles.button} type="button" disabled={pending} onClick={onCancel}>Cancel</button>
-        <button className={styles.button} type="button" disabled={pending} onClick={onConfirm}>{pending ? "Importing…" : "Import branch here"}</button>
+        <button className={styles.primary} type="button" disabled={pending} onClick={onConfirm}>{pending ? "Importing…" : "Import branch here"}</button>
       </div>
     </section>
   </div>;
@@ -63,10 +63,10 @@ export function LifeTreeImportDialog({ preview, destinationTitle, pending, error
   useModalFocusTrap({ container: dialog, initialFocus: heading, onEscape: onCancel, escapeEnabled: !pending });
   const counts = preview.counts;
   return <div className={styles.backdrop} role="presentation" onMouseDown={event => { if (event.target === event.currentTarget && !pending) onCancel(); }}>
-    <section ref={dialog} className={styles.dialog} role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={descriptionId}>
+    <section ref={dialog} className={styles.treeDialog} role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={descriptionId}>
       <h2 id={titleId} tabIndex={-1} ref={heading}>Import Life tree</h2>
       <p id={descriptionId}>This Life Tree Package contains the complete active non-root forest from its snapshot. It will append every top-level root beneath “{destinationTitle}”.</p>
-      <p>Every imported node, document, link, and newly required asset receives a fresh local identity. Existing content is never merged, replaced, reordered, or overwritten. This import cannot be undone.</p>
+      <p className={styles.consequence}>Every imported node, document, link, and newly required asset receives a fresh local identity. Existing content is never merged, replaced, reordered, or overwritten. This import cannot be undone.</p>
       <dl className={styles.metadata}>
         <dt>Destination</dt><dd>{destinationTitle}</dd>
         <dt>Top-level roots</dt><dd>{counts.top_level_nodes}</dd>
@@ -78,11 +78,11 @@ export function LifeTreeImportDialog({ preview, destinationTitle, pending, error
         <dt>Links inside the forest</dt><dd>{counts.internal_links}</dd>
         <dt>Package</dt><dd>{formatBytes(preview.package_bytes)}</dd>
       </dl>
-      <ul className={styles.warnings}>{preview.warnings.map(warning => <li key={warning}>{warning}</li>)}</ul>
+      {preview.warnings.length > 0 && <ul className={styles.warnings}>{preview.warnings.map(warning => <li key={warning}>{warning}</li>)}</ul>}
       {error && <p className={styles.error} role="alert">{error}</p>}
       <div className={styles.actions}>
         <button className={styles.button} type="button" disabled={pending} onClick={onCancel}>Cancel</button>
-        <button className={styles.button} type="button" disabled={pending || !preview.supported} onClick={onConfirm}>{pending ? "Importing…" : "Import Life tree here"}</button>
+        <button className={styles.primary} type="button" disabled={pending || !preview.supported} onClick={onConfirm}>{pending ? "Importing…" : "Import Life tree here"}</button>
       </div>
     </section>
   </div>;

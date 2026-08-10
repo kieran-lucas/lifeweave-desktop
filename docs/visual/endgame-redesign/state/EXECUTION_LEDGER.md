@@ -6,10 +6,10 @@
 
 - BASELINE_PLANNING_SHA: `a1078c1f91c251aaa7a453ef1e8a5108551c852d`
 - EXECUTION_START_SHA: `0b3e01d4a8bd9b62c5d786e9b4a4401d72c0edc1`
-- LAST_VERIFIED_COMMIT: `d828058d493ff1275da44bd5ab39dcd4cfaef8a7`
-- CURRENT_PACKET: `S09`
+- LAST_VERIFIED_COMMIT: `c65f3feeae9be9355373436502bd8f77781a0978`
+- CURRENT_PACKET: `Q3`
 - CURRENT_STATUS: `IN_PROGRESS`
-- NEXT_PACKET: `S09`
+- NEXT_PACKET: `Q3`
 - FINAL_REVIEW_DONE: `false`
 - FINAL_FINDING_SET_FROZEN: `false`
 - PROGRAM_STATUS: `IN_PROGRESS`
@@ -26,14 +26,14 @@
 | S05 | CLOSED | `04ac51faa9f910d1c6bcca2047f15ed11c1a1c4a` | 11/11 rows LOCAL_VERIFIED; focused semantics, fixed budget, and max/min native profiles passed |
 | S06 | CLOSED | `d99fdf53740a59318264861b810be72807ff44d7` | 7/7 rows LOCAL_VERIFIED; focused semantics, fixed budget, and max/min native profiles passed |
 | S07 | CLOSED | `d828058d493ff1275da44bd5ab39dcd4cfaef8a7` | 12/12 rows LOCAL_VERIFIED; focused semantics, fixed budget, and max/min native profiles passed |
-| S08 | CLOSED | LOCAL checkpoint | 11/11 rows LOCAL_VERIFIED; focused semantics, fixed budget, and max/min native profiles passed |
-| S09 | IN_PROGRESS | — | Portable package, branch interchange, and restore redesign started |
+| S08 | CLOSED | `c65f3feeae9be9355373436502bd8f77781a0978` | 11/11 rows LOCAL_VERIFIED; focused semantics, fixed budget, and max/min native profiles passed |
+| S09 | CLOSED | LOCAL checkpoint | 6/6 rows LOCAL_VERIFIED; focused semantics and max/min native profiles passed |
 | S10 | PENDING | — | — |
 | S11 | PENDING | — | — |
 | S12 | PENDING | — | — |
 | Q1 | CLOSED | `db2f7ccd472938e71382b6ad338e073145eac003` | 33/33 scoped rows VERIFIED; full unit, build/budget, native behavior, and max/min visual gates passed |
 | Q2 | CLOSED | `37ec413a2e4d769a8913c0e73478fea824035360` | 18/18 scoped rows VERIFIED; full unit, build/budget, native behavior, and max/min visual gates passed |
-| Q3 | PENDING | — | — |
+| Q3 | IN_PROGRESS | — | Life spatial, Reader, editor, links, and interchange checkpoint started |
 | Q4 | PENDING | — | — |
 | Q5 | PENDING | — | — |
 | FINAL | PENDING | — | — |
@@ -113,12 +113,12 @@
 | LL-01 | S08 | LOCAL_VERIFIED | S08 checkpoint | outgoing links and backlinks render as two flat ruled relationship sections with compact remove action |
 | LL-02 | S08 | LOCAL_VERIFIED | S08 checkpoint | Add Life Link uses the shared compact search/selection dialog, tonal selected row, and disabled confirmation |
 | RT-01 | S08 | LOCAL_VERIFIED | S08 checkpoint | active and completed related tasks remain two small post-document sections with completed work visually quieter |
-| PK-01 | S09 | PENDING | — | — |
-| PK-02 | S09 | PENDING | — | — |
-| BR-01 | S09 | PENDING | — | — |
-| BR-02 | S09 | PENDING | — | — |
-| TR-01 | S09 | PENDING | — | — |
-| TR-02 | S09 | PENDING | — | — |
+| PK-01 | S09 | LOCAL_VERIFIED | S09 checkpoint | portable package controls remain a compact secondary utility region with readable committed-draft note and real file action |
+| PK-02 | S09 | LOCAL_VERIFIED | S09 checkpoint | compact preview dialog presents semantic package metadata, separated factual warnings, and a single primary import confirmation |
+| BR-01 | S09 | LOCAL_VERIFIED | S09 checkpoint | branch controls form a compact inspector utility group and preserve explicit disabled export reasons |
+| BR-02 | S09 | LOCAL_VERIFIED | S09 checkpoint | branch preview uses a bounded standard dialog, semantic inventory, factual warnings, and non-destructive primary import action |
+| TR-01 | S09 | LOCAL_VERIFIED | S09 checkpoint | tree controls retain root/export and document/import availability rules with explicit adjacent reasons |
+| TR-02 | S09 | LOCAL_VERIFIED | S09 checkpoint | wide high-consequence preview keeps append/fresh-identity/no-overwrite/no-undo explanation and supported primary action visible at max |
 | N-01 | S10 | PENDING | — | — |
 | N-02 | S10 | PENDING | — | — |
 | N-03 | S10 | PENDING | — | — |
@@ -160,14 +160,15 @@
 - Q2 promoted S05–S06: 18/18 scoped rows VERIFIED
 - S07 Life Browse/Edit/Graph: 12/12 rows LOCAL_VERIFIED
 - S08 Reader/Basic Editor/Links/Related Tasks: 11/11 rows LOCAL_VERIFIED
+- S09 Portable/Branch/Tree interchange: 6/6 rows LOCAL_VERIFIED
 
 ## CURRENT
 
-- S09 in progress
+- Q3 in progress
 
 ## NEXT
 
-- S09
+- Q3
 
 ## KNOWN_DEBT
 
@@ -281,6 +282,12 @@ Append concise entries:
 - [S08] native Light `life-reader-interchange` maximized — PASS — 13 profile surfaces / zero collisions; required Reader/editor/dialog tags inspected — `target/e2e-artifacts/task-50b/life-reader-interchange-S08-20260810-110924`
 - [S08] native Light `life-reader-interchange` 960×640 — PASS — achieved 960×639 / 13 profile surfaces / zero collisions; required Reader/editor/dialog tags inspected — `target/e2e-artifacts/task-50b/life-reader-interchange-S08-20260810-111051`
 - [S08] bounded self-review `F_S08` — RESOLVED — Life-link search/selection now uses the required shared compact dialog instead of the oversized standard width; affected build-budget and max/min visual checks passed
+- [S09] `git diff --check` + convergence ratchet — PASS — font-size residue 56 / focus residue 17 / control clones 47; ceilings unchanged
+- [S09] `pnpm typecheck` — PASS — frontend project references
+- [S09] focused Portable Package/Life Branch/Life Tree tests — PASS — 3 files / 31 tests; affected post-review Life Tree subset 1 file / 6 tests
+- [S09] native Light `life-reader-interchange` maximized — PASS — 13 profile surfaces / zero collisions; required interchange controls/dialog tags inspected — `target/e2e-artifacts/task-50b/life-reader-interchange-S09-20260810-112437`
+- [S09] native Light `life-reader-interchange` 960×640 — PASS — achieved 960×639 / 13 profile surfaces / zero collisions; all three required preview dialogs inspected — `target/e2e-artifacts/task-50b/life-reader-interchange-S09-20260810-112605`
+- [S09] bounded self-review `F_S09` — RESOLVED — full-tree preview now uses the shared wide dialog so its high-consequence explanation, inventory, warnings, and primary confirmation remain visible together at the canonical maximized viewport; affected type/Life Tree/max-min visual checks passed
 
 ## DECISIONS MADE UNDER UNATTENDED AUTHORITY
 
@@ -309,6 +316,7 @@ Record only material reversible decisions that future stages may need to know.
 - [S07] Graph remains a transient read-only workspace over the persisted Life mode, but the visible mode family exposes exactly one active state and every named mode action closes Graph before activating.
 - [S07] Life Browse/Edit node motion wrappers were removed in favor of equivalent native semantic elements and existing CSS state changes, preserving interaction while reclaiming more than 120 KB from the eager startup path.
 - [S08] Reader node identity uses the authorized editorial display role while controls, relationship sections, outline, and metadata remain productive sans; the Life-link picker uses the compact shared dialog at both governed viewports.
+- [S09] Portable previews remain compact, branch previews remain standard, and the denser high-consequence full-tree preview uses the shared wide dialog; all three retain the same append/import capability and factual warning content.
 
 ## FINAL FINDING SET
 

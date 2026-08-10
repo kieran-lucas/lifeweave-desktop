@@ -28,11 +28,11 @@ export function PortablePackageImportDialog({ preview, pending, error, onConfirm
         <dt>Assets</dt><dd>{preview.asset_count} ({formatBytes(preview.total_asset_bytes)})</dd>
         <dt>Package</dt><dd>{formatBytes(preview.package_bytes)}</dd>
       </dl>
-      <ul>{preview.warnings.map(warning => <li key={warning}>{warning}</li>)}</ul>
+      {preview.warnings.length > 0 && <ul className={styles.warnings}>{preview.warnings.map(warning => <li key={warning}>{warning}</li>)}</ul>}
       {error && <p className={styles.error} role="alert">{error}</p>}
       <div className={styles.actions}>
         <button className={styles.button} type="button" disabled={pending} onClick={onCancel}>Cancel</button>
-        <button className={styles.button} type="button" disabled={pending} onClick={onConfirm}>{pending ? "Importing…" : "Import into this empty leaf"}</button>
+        <button className={styles.primary} type="button" disabled={pending} onClick={onConfirm}>{pending ? "Importing…" : "Import into this empty leaf"}</button>
       </div>
     </section>
   </div>;
