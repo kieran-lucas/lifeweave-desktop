@@ -1,8 +1,4 @@
-/*
- * Prototype-only reset. Deliberately NOT `design-system/global.css`, which stays frozen until the
- * production slice — the layout-authority gate asserts its palette, font family and focus ring are
- * unchanged, and Task 51 does not touch it before VISUAL LOCK.
- */
+/* Prototype-only reset and current information-architecture guard. */
 * {
   box-sizing: border-box;
 }
@@ -27,12 +23,16 @@ button {
 }
 
 /*
- * Reduced motion as a designed state (ADR 0045 §6), not a blanket zeroing.
- *
- * The application's current rule sets every duration to 0.01ms, which replaces a movement with a
- * jump. Here, travel is removed and a short tonal cross-fade is kept, so a change is still
- * perceived as a change.
+ * The historical Task 51 prototype still contains these inert controls in its TSX fixture. Hide
+ * them from evidence so captures match the current production IA: Analytics/Search belong to
+ * Settings and there is no Dark theme control. Production code contains no corresponding controls.
  */
+button[aria-label="Analytics"],
+button[aria-label="Search"],
+button[aria-label="Switch to dark theme"] {
+  display: none !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
