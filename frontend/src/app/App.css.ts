@@ -15,11 +15,11 @@ export const appRoot = style({
   overflow: "hidden",
   position: "relative",
   isolation: "isolate",
-  background: "transparent",
+  background: "#FFFFFF",
   selectors: { "&[data-sidebar-mode=collapsed]": { gridTemplateColumns: "68px minmax(0, 1fr)" } },
 });
 
-/** Persistent shell = opaque painted navigation board, never frosted glass. */
+/** One solid blue navigation plane. No tint, wash, gradient, blur or glow. */
 export const sidebar = style({
   display: "flex",
   flexDirection: "column",
@@ -27,11 +27,11 @@ export const sidebar = style({
   padding: "26px 15px 18px",
   position: "relative",
   zIndex: 2,
-  borderRight: "1px solid var(--paint-edge)",
-  backgroundColor: "var(--paint-board)",
-  backgroundImage: "var(--paint-grain), var(--paint-wash-blue)",
-  boxShadow: "8px 0 20px color-mix(in srgb, var(--text-primary) 5%, transparent)",
-  "@media": { "(forced-colors: active)": { background: "Canvas", borderRight: "1px solid CanvasText", boxShadow: "none" } },
+  borderRight: "1px solid #1D4ED8",
+  backgroundColor: "var(--accent)",
+  backgroundImage: "var(--paint-grain-fine)",
+  boxShadow: "none",
+  "@media": { "(forced-colors: active)": { background: "Canvas", borderRight: "1px solid CanvasText" } },
 });
 
 export const brand = style({
@@ -42,11 +42,10 @@ export const brand = style({
   padding: "0 7px",
   marginBottom: 28,
   ...text.objectTitle,
-  color: "var(--text-primary)",
+  color: "#FFFFFF",
   letterSpacing: "-0.018em",
 });
 
-/** Flat painted emblem: ink-on-board rather than crystal badge. */
 export const brandMark = style({
   display: "grid",
   placeItems: "center",
@@ -55,10 +54,10 @@ export const brandMark = style({
   flexShrink: 0,
   borderRadius: "var(--radius-control)",
   color: "var(--accent)",
-  backgroundColor: "var(--paint-sheet-strong)",
-  backgroundImage: "var(--paint-grain-fine), var(--paint-wash-blue)",
-  border: "1px solid var(--paint-edge-strong)",
-  boxShadow: "var(--glow-compact)",
+  backgroundColor: "#FFFFFF",
+  backgroundImage: "var(--paint-grain-fine)",
+  border: "1px solid #FFFFFF",
+  boxShadow: "none",
 });
 
 export const brandGlyph = style({
@@ -83,24 +82,24 @@ export const navButton = style([
     border: "1px solid transparent",
     borderRadius: "var(--radius-control)",
     background: "transparent",
-    color: "var(--text-muted)",
+    color: "#FFFFFF",
     ...text.navigation,
     textAlign: "left",
     cursor: "pointer",
-    transition: `background-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}, border-color ${duration.state} ${easing.standard}, box-shadow ${duration.state} ${easing.standard}`,
+    transition: `background-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}, border-color ${duration.state} ${easing.standard}`,
     selectors: {
       "&[aria-current=page]": {
-        color: "var(--accent-contrast)",
-        fontWeight: 650,
-        borderColor: "color-mix(in srgb, var(--accent) 78%, var(--paint-edge))",
-        backgroundColor: "var(--accent)",
+        color: "var(--accent)",
+        fontWeight: 700,
+        borderColor: "#FFFFFF",
+        backgroundColor: "#FFFFFF",
         backgroundImage: "var(--paint-grain-fine)",
-        boxShadow: "var(--glow-primary)",
+        boxShadow: "none",
       },
       "&:hover:not([aria-current=page])": {
-        color: "var(--text-primary)",
-        borderColor: "var(--paint-edge)",
-        backgroundColor: "var(--surface-hover)",
+        color: "#FFFFFF",
+        borderColor: "#1D4ED8",
+        backgroundColor: "#1D4ED8",
         backgroundImage: "var(--paint-grain-fine)",
       },
     },
@@ -118,11 +117,10 @@ export const navLabel = style({ overflow: "hidden", whiteSpace: "nowrap" });
 globalStyle(`${appRoot}[data-sidebar-mode=collapsed] .${navLabel}`, { display: "none" });
 globalStyle(`${appRoot}[data-sidebar-mode=collapsed] .${brand}`, { fontSize: 0, paddingInline: 1, justifyContent: "center" });
 
-/** Ink/brush hairline; the fade at the ends keeps the sidebar from becoming a ruled form. */
 export const divider = style({
   height: 1,
   margin: "13px 10px",
-  background: "linear-gradient(90deg, transparent, var(--paint-edge-strong) 20% 80%, transparent)",
+  background: "#1D4ED8",
 });
 
 export const collapseButton = style([
@@ -134,25 +132,25 @@ export const collapseButton = style([
     alignItems: "center",
     minHeight: 42,
     padding: "9px 11px",
-    border: "1px solid var(--paint-edge)",
+    border: "1px solid #FFFFFF",
     borderRadius: "var(--radius-control)",
-    backgroundColor: "var(--paint-sheet)",
+    backgroundColor: "var(--accent)",
     backgroundImage: "var(--paint-grain-fine)",
-    color: "var(--text-muted)",
+    color: "#FFFFFF",
     ...text.navigation,
     cursor: "pointer",
     selectors: {
       "&:hover": {
-        color: "var(--text-primary)",
-        borderColor: "var(--paint-edge-strong)",
-        backgroundColor: "var(--surface-hover)",
+        color: "var(--accent)",
+        borderColor: "#FFFFFF",
+        backgroundColor: "#FFFFFF",
       },
     },
   },
 ]);
 
 const routeIn = keyframes({
-  from: { opacity: 0.58 },
+  from: { opacity: 0.72 },
   to: { opacity: 1 },
 });
 
@@ -164,10 +162,9 @@ export const viewport = style({
   overflow: "auto",
   scrollbarGutter: "stable both-edges",
   padding: gutter,
-  background: "transparent",
+  background: "#FFFFFF",
 });
 
-/* RouteErrorBoundary remounts on destination change, so the new surface receives one shared fade. */
 globalStyle(`${viewport} > :not(p)`, {
   animation: `${routeIn} ${duration.route} ${easing.standard} both`,
 });
@@ -197,9 +194,9 @@ export const shortcutChord = style({
   padding: "4px 9px",
   borderRadius: "var(--radius-small)",
   border: "1px solid var(--paint-edge)",
-  backgroundColor: "var(--paint-sheet-strong)",
+  backgroundColor: "#FFFFFF",
   backgroundImage: "var(--paint-grain-fine)",
-  boxShadow: "var(--glow-compact)",
+  boxShadow: "none",
   ...text.code,
   fontWeight: 600,
   whiteSpace: "nowrap",
