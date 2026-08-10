@@ -6,10 +6,10 @@
 
 - BASELINE_PLANNING_SHA: `a1078c1f91c251aaa7a453ef1e8a5108551c852d`
 - EXECUTION_START_SHA: `0b3e01d4a8bd9b62c5d786e9b4a4401d72c0edc1`
-- LAST_VERIFIED_COMMIT: `0dd47122939abb57fd38530cdcb8748921890c74`
-- CURRENT_PACKET: `Q4`
+- LAST_VERIFIED_COMMIT: `8968a939172ed0c63e650c3096003691a8d06fc3`
+- CURRENT_PACKET: `S12`
 - CURRENT_STATUS: `IN_PROGRESS`
-- NEXT_PACKET: `Q4`
+- NEXT_PACKET: `S12`
 - FINAL_REVIEW_DONE: `false`
 - FINAL_FINDING_SET_FROZEN: `false`
 - PROGRAM_STATUS: `IN_PROGRESS`
@@ -29,12 +29,12 @@
 | S08 | CLOSED | `c65f3feeae9be9355373436502bd8f77781a0978` | 11/11 rows LOCAL_VERIFIED; focused semantics, fixed budget, and max/min native profiles passed |
 | S09 | CLOSED | `37fe55157ac71107868ce9245e1110a7c1244057` | 6/6 rows LOCAL_VERIFIED; focused semantics and max/min native profiles passed |
 | S10 | CLOSED | `cee004579145649a9f79fc3228bc66f722124563` | 11/11 rows LOCAL_VERIFIED; focused semantics and routed max/min native profiles passed |
-| S11 | CLOSED | LOCAL checkpoint | 10/10 rows LOCAL_VERIFIED; focused semantics and max/min native profiles passed |
+| S11 | CLOSED | `8968a939172ed0c63e650c3096003691a8d06fc3` | 10/10 rows LOCAL_VERIFIED; focused semantics and max/min native profiles passed |
 | S12 | PENDING | — | — |
 | Q1 | CLOSED | `db2f7ccd472938e71382b6ad338e073145eac003` | 33/33 scoped rows VERIFIED; full unit, build/budget, native behavior, and max/min visual gates passed |
 | Q2 | CLOSED | `37ec413a2e4d769a8913c0e73478fea824035360` | 18/18 scoped rows VERIFIED; full unit, build/budget, native behavior, and max/min visual gates passed |
 | Q3 | CLOSED | `0dd47122939abb57fd38530cdcb8748921890c74` | 29/29 scoped rows VERIFIED; full unit, build/budget, native behavior, and max/min visual gates passed |
-| Q4 | PENDING | — | — |
+| Q4 | CLOSED | LOCAL checkpoint | 21/21 scoped rows VERIFIED; focused Narrative, build/budget, release performance, and max/min visual gates passed |
 | Q5 | PENDING | — | — |
 | FINAL | PENDING | — | — |
 
@@ -119,27 +119,27 @@
 | BR-02 | S09 | VERIFIED | Q3 checkpoint | branch preview uses a bounded standard dialog, semantic inventory, factual warnings, and non-destructive primary import action |
 | TR-01 | S09 | VERIFIED | Q3 checkpoint | tree controls retain root/export and document/import availability rules with explicit adjacent reasons |
 | TR-02 | S09 | VERIFIED | Q3 checkpoint | wide high-consequence preview keeps append/fresh-identity/no-overwrite/no-undo explanation and supported primary action visible at max |
-| N-01 | S10 | LOCAL_VERIFIED | S10 checkpoint | inline template creation keeps one primary path, semantic name/description/scenes hierarchy, and tonal structural selection |
-| N-02 | S10 | LOCAL_VERIFIED | S10 checkpoint | Canvas Reader remains an editorial authored world beneath a quiet Lifeweave utility toolbar at max/min |
-| N-03 | S10 | LOCAL_VERIFIED | S10 checkpoint | rich-text islands retain unboxed Reader typography and explicit unsupported-content fallback |
-| N-04 | S10 | LOCAL_VERIFIED | S10 checkpoint | metric blocks use one restrained factual rule with governed numeric, label, unit, and description roles |
-| N-05 | S10 | LOCAL_VERIFIED | S10 checkpoint | images occupy the reading measure with bounded geometry, required alt semantics, and quiet captions |
-| N-06 | S10 | LOCAL_VERIFIED | S10 checkpoint | callouts use semantic authored-world rule/tint treatment without card chrome |
-| N-07 | S10 | LOCAL_VERIFIED | S10 checkpoint | timelines retain ordered items on a quiet vertical authored-world rule with readable labels and descriptions |
-| N-08 | S10 | LOCAL_VERIFIED | S10 checkpoint | unknown blocks, unsupported text islands, missing images, and canvas errors remain local explicit states |
-| N-09 | S10 | LOCAL_VERIFIED | S10 checkpoint | draft recovery mirrors Basic Leaf calm-band grammar with primary Recover and secondary destructive Discard |
-| NS-01 | S11 | LOCAL_VERIFIED | S11 checkpoint | Studio retains the reading frame while its Lifeweave header makes Publish primary, history/navigation secondary, and discard separately destructive |
-| NS-02 | S11 | LOCAL_VERIFIED | S11 checkpoint | compact four-world selector uses structural blue selection while authored-world theming begins only at the canvas boundary |
-| NS-03 | S11 | LOCAL_VERIFIED | S11 checkpoint | shared low-chrome scene tabs scroll horizontally without a vertical scrollbar artifact and keep Add scene distinct |
-| NS-04 | S11 | LOCAL_VERIFIED | S11 checkpoint | inactive rich text reads as authored text and the active island gains an explicit editorial editing boundary |
-| NS-05 | S11 | LOCAL_VERIFIED | S11 checkpoint | callout editing retains variant/content capability with the authored-world rule and tint treatment |
-| NS-06 | S11 | LOCAL_VERIFIED | S11 checkpoint | metric label/value/unit fields form a compact aligned grid with a full-width description field |
-| NS-07 | S11 | LOCAL_VERIFIED | S11 checkpoint | image preview remains bounded with alt/caption inputs and quiet factual asset status |
-| NS-08 | S11 | LOCAL_VERIFIED | S11 checkpoint | timeline items use ordered hairline separation instead of nested card enclosures |
-| NS-09 | S11 | LOCAL_VERIFIED | S11 checkpoint | Add block remains a compact finite flow exposing exactly the five supported block kinds |
-| NS-10 | S11 | LOCAL_VERIFIED | S11 checkpoint | only-block and dirty-exit decisions retain shared dialog semantics, focus behavior, and consequence-appropriate actions |
-| MD-01 | S10 | LOCAL_VERIFIED | S10 checkpoint | compact shared dialog presents quoted excerpt, definition-list metadata, separated warning, and primary Import at max/min |
-| MD-02 | S10 | LOCAL_VERIFIED | S10 checkpoint | Markdown export remains a secondary utility with its fixed lossiness truth visible and no invented options |
+| N-01 | S10 | VERIFIED | Q4 checkpoint | inline template creation keeps one primary path, semantic name/description/scenes hierarchy, and tonal structural selection |
+| N-02 | S10 | VERIFIED | Q4 checkpoint | Canvas Reader remains an editorial authored world beneath a quiet Lifeweave utility toolbar at max/min |
+| N-03 | S10 | VERIFIED | Q4 checkpoint | rich-text islands retain unboxed Reader typography and explicit unsupported-content fallback |
+| N-04 | S10 | VERIFIED | Q4 checkpoint | metric blocks use one restrained factual rule with governed numeric, label, unit, and description roles |
+| N-05 | S10 | VERIFIED | Q4 checkpoint | images occupy the reading measure with bounded geometry, required alt semantics, and quiet captions |
+| N-06 | S10 | VERIFIED | Q4 checkpoint | callouts use semantic authored-world rule/tint treatment without card chrome |
+| N-07 | S10 | VERIFIED | Q4 checkpoint | timelines retain ordered items on a quiet vertical authored-world rule with readable labels and descriptions |
+| N-08 | S10 | VERIFIED | Q4 checkpoint | unknown blocks, unsupported text islands, missing images, and canvas errors remain local explicit states |
+| N-09 | S10 | VERIFIED | Q4 checkpoint | draft recovery mirrors Basic Leaf calm-band grammar with primary Recover and secondary destructive Discard |
+| NS-01 | S11 | VERIFIED | Q4 checkpoint | Studio retains the reading frame while its Lifeweave header makes Publish primary, history/navigation secondary, and discard separately destructive |
+| NS-02 | S11 | VERIFIED | Q4 checkpoint | compact four-world selector uses structural blue selection while authored-world theming begins only at the canvas boundary |
+| NS-03 | S11 | VERIFIED | Q4 checkpoint | shared low-chrome scene tabs scroll horizontally without a vertical scrollbar artifact and keep Add scene distinct |
+| NS-04 | S11 | VERIFIED | Q4 checkpoint | inactive rich text reads as authored text and the active island gains an explicit editorial editing boundary |
+| NS-05 | S11 | VERIFIED | Q4 checkpoint | callout editing retains variant/content capability with the authored-world rule and tint treatment |
+| NS-06 | S11 | VERIFIED | Q4 checkpoint | metric label/value/unit fields form a compact aligned grid with a full-width description field |
+| NS-07 | S11 | VERIFIED | Q4 checkpoint | image preview remains bounded with alt/caption inputs and quiet factual asset status |
+| NS-08 | S11 | VERIFIED | Q4 checkpoint | timeline items use ordered hairline separation instead of nested card enclosures |
+| NS-09 | S11 | VERIFIED | Q4 checkpoint | Add block remains a compact finite flow exposing exactly the five supported block kinds |
+| NS-10 | S11 | VERIFIED | Q4 checkpoint | only-block and dirty-exit decisions retain shared dialog semantics, focus behavior, and consequence-appropriate actions |
+| MD-01 | S10 | VERIFIED | Q4 checkpoint | compact shared dialog presents quoted excerpt, definition-list metadata, separated warning, and primary Import at max/min |
+| MD-02 | S10 | VERIFIED | Q4 checkpoint | Markdown export remains a secondary utility with its fixed lossiness truth visible and no invented options |
 | S-01 | S12 | PENDING | — | — |
 | S-02 | S12 | PENDING | — | — |
 | S-03 | S12 | PENDING | — | — |
@@ -164,14 +164,15 @@
 - Q3 promoted S07–S09: 29/29 scoped rows VERIFIED
 - S10 Narrative Reader/Markdown: 11/11 rows LOCAL_VERIFIED
 - S11 Narrative Studio: 10/10 rows LOCAL_VERIFIED
+- Q4 promoted S10–S11: 21/21 scoped rows VERIFIED
 
 ## CURRENT
 
-- Q4 in progress
+- S12 in progress
 
 ## NEXT
 
-- Q4
+- S12
 
 ## KNOWN_DEBT
 
@@ -312,6 +313,14 @@ Append concise entries:
 - [S11] native Light `narrative` maximized — PASS — 8 profile surfaces / zero collisions; all Studio/world/decision tags inspected — `target/e2e-artifacts/task-50b/narrative-S11-20260810-121258`
 - [S11] native Light `narrative` 960×640 — PASS — achieved 960×639 / 8 profile surfaces / zero collisions; all Studio/world/decision tags inspected — `target/e2e-artifacts/task-50b/narrative-S11-20260810-121429`
 - [S11] bounded self-review `F_S11` — FROZEN/RESOLVED — removed the scene rail's vertical scrollbar artifact and separated destructive close from navigation actions; affected convergence/type/max-min visual checks passed without a second review
+- [Q4] focused Narrative tests — PASS — 7 files / 118 tests; causal post-budget Studio subset 1 file / 56 tests
+- [Q4] production build + performance budget — PASS — 1,143,979 raw / 351,130 gzip / 26 chunks; NarrativeCanvasStudio 21,076 raw within unchanged 21,098 ceiling
+- [Q4] budget failure routing — RESOLVED — first build measured NarrativeCanvasStudio 235 bytes over ceiling; redundant metric IDs/wrappers and two presentation-only class hooks were reclaimed, with no ceiling increase
+- [Q4] `pnpm hardening:narrative-performance` — PASS — 1 release test / 793 filtered; 128-block validation p95 1.3268ms; save 5-block p95 536.3µs
+- [Q4] native performance harness diagnosis — RESOLVED — initial release compilation exceeded the five-minute command envelope while rustc remained active; after that owned compile exited, one controlled cached rerun produced passing evidence
+- [Q4] native Light `narrative` maximized — PASS — 8 locked profile surfaces / zero collisions — `target/e2e-artifacts/task-50b/narrative-Q4-20260810-123003`
+- [Q4] native Light `narrative` 960×640 — PASS — achieved 960×639 / 8 locked profile surfaces / zero collisions — `target/e2e-artifacts/task-50b/narrative-Q4-20260810-123140`
+- [Q4] bounded self-review `F_Q4` — FROZEN/RESOLVED — zero findings in the causal budget diff and locked Narrative evidence; no post-review fixes or repeated review
 
 ## DECISIONS MADE UNDER UNATTENDED AUTHORITY
 
@@ -343,6 +352,7 @@ Record only material reversible decisions that future stages may need to know.
 - [S09] Portable previews remain compact, branch previews remain standard, and the denser high-consequence full-tree preview uses the shared wide dialog; all three retain the same append/import capability and factual warning content.
 - [S10] Narrative Visual Worlds remain contained to the authored Canvas while shell controls retain Lifeweave styling; reader blocks express their native semantics through typography, rules, tint, and ordered structure rather than repeated cards.
 - [S11] Studio keeps the proven reading frame: the Lifeweave document controls remain outside the selected Visual World, while only the authored block canvas receives world palette and material; no structural compression justified a wider frame.
+- [Q4] Metric inputs use wrapped semantic labels rather than generated ID/for pairs; this preserves accessible naming and the aligned editor grid while reclaiming the fixed Narrative chunk budget.
 
 ## FINAL FINDING SET
 

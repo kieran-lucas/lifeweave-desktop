@@ -67,7 +67,6 @@ export const studioHeading = style({ margin: 0, ...text.objectTitle });
 export const studioActions = style({ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" });
 export const studioTitleField = style({ display: "grid", gap: 5 });
 
-export const studioCanvas = style({ display: "grid", gap: 14 });
 export const studioBlock = style({ border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-surface)", padding: 16, background: "var(--surface)", display: "flex", flexDirection: "column", gap: 10, selectors: { '&[data-kind="callout"]': { borderInlineStart: "3px solid var(--world-rule, var(--accent))", background: "var(--active-background)" } } });
 export const studioBlockHeader = style({ display: "flex", justifyContent: "space-between", alignItems: "center" });
 export const studioBlockKind = style({ ...text.eyebrow, color: "var(--text-muted)" });
@@ -83,7 +82,6 @@ export const addBlockButton = studioButton;
 export const dragHandle = style([studioButton, { cursor: "grab", selectors: { "&:active": { cursor: "grabbing" } } }]);
 export const staticPreview = style([focusRing, { width: "100%", textAlign: "left", border: 0, borderInlineStart: "2px solid transparent", borderRadius: 0, padding: "8px 12px", minHeight: 48, background: "transparent", color: "var(--text-primary)", cursor: "text", ...text.editorBody, selectors: { "&:hover": { borderInlineStartColor: "var(--world-rule, var(--border-subtle))", background: "color-mix(in srgb, var(--active-background) 45%, transparent)" } } }]);
 export const importButton = style([button, { marginBottom: 8 }]);
-export const imageEditor = style({ display: "grid", gap: 10 });
 export const previewImage = style([image, { maxHeight: 220, objectFit: "contain", marginTop: 2, background: "var(--app-background)" }]);
 export const metricEditor = style({ display: "grid", gridTemplateColumns: "minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, .8fr)", gap: 10, alignItems: "end", "@media": { "screen and (max-width: 620px)": { gridTemplateColumns: "1fr" } } });
 export const metricField = style({ display: "grid", gap: 4 });

@@ -189,22 +189,22 @@ function MetricBlockEditor({
 }) {
   return (
     <div className={styles.metricEditor}>
-      <div className={styles.metricField}>
-        <label className={styles.fieldLabel} htmlFor={`metric-label-${block.id}`}>Label</label>
-        <input id={`metric-label-${block.id}`} className={styles.fieldInput} value={block.label} onChange={e => onChange({ ...block, label: e.currentTarget.value })} />
-      </div>
-      <div className={styles.metricField}>
-        <label className={styles.fieldLabel} htmlFor={`metric-value-${block.id}`}>Value</label>
-        <input id={`metric-value-${block.id}`} className={styles.fieldInput} value={block.value} onChange={e => onChange({ ...block, value: e.currentTarget.value })} />
-      </div>
-      <div className={styles.metricField}>
-        <label className={styles.fieldLabel} htmlFor={`metric-unit-${block.id}`}>Unit</label>
-        <input id={`metric-unit-${block.id}`} className={styles.fieldInput} value={block.unit} onChange={e => onChange({ ...block, unit: e.currentTarget.value })} />
-      </div>
-      <div className={styles.metricDescriptionField}>
-        <label className={styles.fieldLabel} htmlFor={`metric-desc-${block.id}`}>Description</label>
-        <textarea id={`metric-desc-${block.id}`} className={styles.fieldTextarea} value={block.description} onChange={e => onChange({ ...block, description: e.currentTarget.value })} />
-      </div>
+      <label className={styles.metricField}>
+        <span className={styles.fieldLabel}>Label</span>
+        <input className={styles.fieldInput} value={block.label} onChange={e => onChange({ ...block, label: e.currentTarget.value })} />
+      </label>
+      <label className={styles.metricField}>
+        <span className={styles.fieldLabel}>Value</span>
+        <input className={styles.fieldInput} value={block.value} onChange={e => onChange({ ...block, value: e.currentTarget.value })} />
+      </label>
+      <label className={styles.metricField}>
+        <span className={styles.fieldLabel}>Unit</span>
+        <input className={styles.fieldInput} value={block.unit} onChange={e => onChange({ ...block, unit: e.currentTarget.value })} />
+      </label>
+      <label className={styles.metricDescriptionField}>
+        <span className={styles.fieldLabel}>Description</span>
+        <textarea className={styles.fieldTextarea} value={block.description} onChange={e => onChange({ ...block, description: e.currentTarget.value })} />
+      </label>
     </div>
   );
 }
@@ -273,7 +273,7 @@ function ImageBlockEditor({
   };
 
   return (
-    <div className={styles.imageEditor}>
+    <div>
       <button
         className={styles.importButton}
         onClick={handleImport}
@@ -1445,7 +1445,7 @@ export default function NarrativeCanvasStudio({
       </div>
 
       <NarrativeVisualWorld id={doc.visualWorldId}>
-      <div className={styles.studioCanvas} role="tabpanel" id="nc-studio-tabpanel" aria-labelledby={`nc-tab-${activeSceneId}`}>
+      <div role="tabpanel" id="nc-studio-tabpanel" aria-labelledby={`nc-tab-${activeSceneId}`}>
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
