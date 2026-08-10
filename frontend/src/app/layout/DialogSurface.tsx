@@ -1,4 +1,4 @@
-import { useId, useRef, type FormEvent, type ReactNode, type Ref } from "react";
+import { useId, useRef, type CSSProperties, type FormEvent, type ReactNode, type Ref } from "react";
 
 import * as decisionStyles from "../DecisionDialog.css";
 import { useModalFocusTrap } from "../useModalFocusTrap";
@@ -10,24 +10,32 @@ import * as styles from "./layout.css";
  */
 export type DialogWidth = "compact" | "standard" | "wide";
 
-const matteBackdrop = {
+const matteBackdrop: CSSProperties = {
   backdropFilter: "none",
   WebkitBackdropFilter: "none",
-} as const;
+};
+
+const matteSurface: CSSProperties = {
+  backgroundColor: "var(--paint-sheet-strong)",
+  backgroundImage: "var(--paint-grain-fine), var(--paint-wash-blue)",
+  borderColor: "var(--paint-edge-strong)",
+};
 
 export function DialogBackdrop({
   children,
   className,
+  style,
   ...rest
 }: {
   children: ReactNode;
   className?: string;
+  style?: CSSProperties;
 } & Record<string, unknown>) {
   return (
     <div
       {...rest}
       data-dialog-backdrop=""
-      style={matteBackdrop}
+      style={{ ...matteBackdrop, ...style }}
       className={className ? `${styles.dialogBackdrop} ${className}` : styles.dialogBackdrop}
     >
       {children}
@@ -41,6 +49,7 @@ export function DialogSurface({
   surfaceRef,
   children,
   className,
+  style,
   ...rest
 }: {
   width?: DialogWidth;
@@ -48,6 +57,7 @@ export function DialogSurface({
   surfaceRef?: Ref<HTMLElement>;
   children: ReactNode;
   className?: string;
+  style?: CSSProperties;
 } & Record<string, unknown>) {
   return (
     <Element
@@ -55,6 +65,7 @@ export function DialogSurface({
       ref={surfaceRef as Ref<never>}
       data-dialog-surface=""
       data-dialog-width={width}
+      style={{ ...matteSurface, ...style }}
       className={
         className
           ? `${styles.dialogSurface[width]} ${className}`
@@ -121,6 +132,7 @@ export function DecisionDialog({
         ref={dialog}
         data-dialog-surface=""
         data-dialog-width="compact"
+        style={matteSurface}
         className={styles.dialogSurface.compact}
         role="dialog"
         aria-modal="true"
