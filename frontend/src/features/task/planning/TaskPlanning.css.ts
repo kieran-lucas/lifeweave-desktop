@@ -61,7 +61,7 @@ export const moreMenu = style({
   border: "1px solid var(--border-subtle)",
   borderRadius: "var(--radius-surface)",
   background: "#FFFFFF",
-  boxShadow: "0 10px 28px rgb(0 0 0 / 0.08)",
+  boxShadow: "none",
 });
 
 export const moreItem = style({
