@@ -62,5 +62,17 @@ globalStyle(`${resultRow} > div`, { display: "flex", flexDirection: "column", ga
 globalStyle(`${resultRow} > div > strong`, { ...text.row, fontWeight: 600 });
 globalStyle(`${resultRow} > div > p`, { margin: 0, color: "var(--text-muted)" });
 export const metadata = style({ ...text.metadata, display: "flex", flexWrap: "wrap", alignItems: "center", gap: space.control, color: "var(--text-muted)" });
-export const resultLink = style([button.ghost, compact, { color: "var(--accent)", minBlockSize: 0 }]);
+export const resultLink = style([
+  button.ghost,
+  compact,
+  {
+    color: "var(--accent)",
+    minBlockSize: 0,
+    maxInlineSize: "100%",
+    justifyContent: "flex-start",
+    overflowWrap: "anywhere",
+    whiteSpace: "normal",
+    textAlign: "left",
+  },
+]);
 export const resultOpen = style([button.secondary, compact]);

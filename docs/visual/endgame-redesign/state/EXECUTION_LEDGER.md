@@ -6,13 +6,13 @@
 
 - BASELINE_PLANNING_SHA: `a1078c1f91c251aaa7a453ef1e8a5108551c852d`
 - EXECUTION_START_SHA: `0b3e01d4a8bd9b62c5d786e9b4a4401d72c0edc1`
-- LAST_VERIFIED_COMMIT: `da11e97fbc48d4d427123ba629e1276321f9a655`
+- LAST_VERIFIED_COMMIT: `LOCAL FINAL checkpoint`
 - CURRENT_PACKET: `FINAL`
-- CURRENT_STATUS: `IN_PROGRESS`
-- NEXT_PACKET: `FINAL`
-- FINAL_REVIEW_DONE: `false`
-- FINAL_FINDING_SET_FROZEN: `false`
-- PROGRAM_STATUS: `IN_PROGRESS`
+- CURRENT_STATUS: `CLOSED`
+- NEXT_PACKET: `STOP`
+- FINAL_REVIEW_DONE: `true`
+- FINAL_FINDING_SET_FROZEN: `true`
+- PROGRAM_STATUS: `COMPLETE`
 
 ## Stage/checkpoint state
 
@@ -35,8 +35,8 @@
 | Q2 | CLOSED | `37ec413a2e4d769a8913c0e73478fea824035360` | 18/18 scoped rows VERIFIED; full unit, build/budget, native behavior, and max/min visual gates passed |
 | Q3 | CLOSED | `0dd47122939abb57fd38530cdcb8748921890c74` | 29/29 scoped rows VERIFIED; full unit, build/budget, native behavior, and max/min visual gates passed |
 | Q4 | CLOSED | `d7c20a24fdbc9c5eb3cdb793082eae3b3e80e87d` | 21/21 scoped rows VERIFIED; focused Narrative, build/budget, release performance, and max/min visual gates passed |
-| Q5 | CLOSED | LOCAL checkpoint | 8/8 scoped rows VERIFIED; full unit, build/budget, native behavior, and max/min visual gates passed |
-| FINAL | PENDING | — | — |
+| Q5 | CLOSED | `141691100542d015c02af3c8bfb00857cdac6b37` | 8/8 scoped rows VERIFIED; full unit, build/budget, native behavior, and max/min visual gates passed |
+| FINAL | CLOSED | LOCAL checkpoint | 109/109 rows VERIFIED; mandatory gates and Light matrix passed; single frozen `F_final` finding resolved |
 
 ## Canonical rows
 
@@ -167,14 +167,15 @@
 - Q4 promoted S10–S11: 21/21 scoped rows VERIFIED
 - S12 Settings: 8/8 rows LOCAL_VERIFIED
 - Q5 promoted S12: 8/8 scoped rows VERIFIED
+- FINAL verified the complete program: 109/109 rows VERIFIED; `F_final` frozen and resolved; terminal predicate satisfied
 
 ## CURRENT
 
-- FINAL in progress
+- Program complete; no packet remains open
 
 ## NEXT
 
-- FINAL
+- STOP
 
 ## KNOWN_DEBT
 
@@ -337,6 +338,22 @@ Append concise entries:
 - [Q5] native Light `settings` maximized — PASS — 9 profile surfaces / zero collisions; 6 locked settings tags inspected — `target/e2e-artifacts/task-50b/settings-Q5-20260810-131251`
 - [Q5] native Light `settings` 960×640 — PASS — achieved 960×639 / 9 profile surfaces / zero collisions; 6 locked settings tags inspected — `target/e2e-artifacts/task-50b/settings-Q5-20260810-131419`
 - [Q5] bounded self-review `F_Q5` — FROZEN/RESOLVED — zero findings across the locked max/min settings evidence; no post-review fixes or repeated review
+- [FINAL] pre-review `pnpm verify` + `pnpm typecheck` — PASS — repository/governance/endgame pack and frontend project references; 109 unique canonical IDs / 13 stages / 6 checkpoints
+- [FINAL] pre-review full frontend unit sentinel — PASS — 52 files / 781 tests
+- [FINAL] pre-review production build + performance budget — PASS — 1,144,241 raw / 351,215 gzip / 26 chunks; zero violations and ceilings unchanged
+- [FINAL] pre-review native behavior — PASS — phases 1–20 passed with authoritative local-date routing; phase 21 passed after the bounded transport-reset rerun
+- [FINAL] pre-review Light matrix — PASS — maximized 54/54, 960×640 54/54, reduced-motion 54/54, forced-colors 4/4; zero collisions — `target/e2e-artifacts/task-50b/FINAL-20260810-133755`, `target/e2e-artifacts/task-50b/FINAL-20260810-134315`, `target/e2e-artifacts/task-50b/FINAL-20260810-134640`, `target/e2e-artifacts/task-50b/calendar-analytics-plans-FINAL-20260810-135002`
+- [FINAL] one whole-app adversarial/coherence pass — COMPLETE ONCE — 83 changed files, all 54 maximized and 54 minimum-window screens, reduced/forced audit results, forbidden-boundary/dependency/history scope, and 109 verified rows reviewed; `F_final` frozen with one finding and no second whole-app pass
+- [FINAL] frozen finding correction — RESOLVED — long Focus Plan result links now wrap within Saved Views at minimum width; focused Saved Views test 11/11 passed; targeted 960×640 shell-task audit 24/24 screens / zero collisions / zero viewport and document overflow — `target/e2e-artifacts/task-50b/shell-task-FINAL-20260810-141533`
+- [FINAL] post-fix `pnpm verify` + `pnpm typecheck` — PASS — repository/governance/endgame pack and frontend project references; 109 unique canonical IDs / 13 stages / 6 checkpoints
+- [FINAL] post-fix full frontend unit sentinel — PASS — 52 files / 781 tests
+- [FINAL] post-fix production build + performance budget — PASS — 1,144,241 raw / 351,189 gzip / 26 chunks; zero violations and ceilings unchanged
+- [FINAL] post-fix native behavior — PASS — retained full-run phases 1–18 plus bounded direct phases 19–21 suffix; authoritative local date; no product or test change
+- [FINAL] post-fix Light maximized — PASS — 54/54 screens / zero collisions — `target/e2e-artifacts/task-50b/FINAL-20260810-145207`
+- [FINAL] post-fix Light 960×640 — PASS — 54/54 screens / zero collisions — `target/e2e-artifacts/task-50b/FINAL-20260810-145431`
+- [FINAL] post-fix reduced-motion Light — PASS — 54/54 screens / zero collisions — `target/e2e-artifacts/task-50b/FINAL-20260810-145651`
+- [FINAL] post-fix forced-colors Light — PASS — 4/4 calendar/analytics/plans screens / zero collisions — `target/e2e-artifacts/task-50b/calendar-analytics-plans-FINAL-20260810-145917`
+- [FINAL] `git diff --check` + `python scripts/check_endgame_pack.py` — PASS — no whitespace errors; 109 IDs / 13 stages / 6 checkpoints
 
 ## DECISIONS MADE UNDER UNATTENDED AUTHORITY
 
@@ -373,4 +390,7 @@ Record only material reversible decisions that future stages may need to know.
 
 ## FINAL FINDING SET
 
-`F_final`: not created.
+`F_final`: FROZEN after exactly one whole-app adversarial/coherence pass.
+
+- `MEDIUM` — RESOLVED — `frontend/src/features/task/saved-views/TaskSavedViews.css.ts`: a long Focus Plan result label inherited non-wrapping button text and caused 52 px horizontal viewport/document overflow in the 960×640 Saved Views manager and editor. The result link now wraps inside its available width. Focused unit and targeted/full post-fix minimum-window evidence pass with zero overflow/collisions.
+- No unresolved findings, verification debt, or blockers. No second whole-app adversarial pass was performed.
