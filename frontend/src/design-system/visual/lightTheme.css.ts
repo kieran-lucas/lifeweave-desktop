@@ -3,55 +3,55 @@ import { createTheme } from "@vanilla-extract/css";
 import { vars } from "./contract.css";
 
 /**
- * Flat Matte — Light acceptance palette.
+ * Lifeweave Monochrome — Light acceptance palette.
  *
- * Two visual planes only: neutral white/gray paper and one solid blue pigment. There are no tinted
- * blue-white surfaces, ambient color washes or pseudo-glass highlight colors in the light theme.
+ * Absolute chroma rule: presentation uses only white, black and neutral gray. Semantic distinction
+ * is carried by value, geometry, iconography, labels and border treatment rather than hue.
  */
 export const lightValues = {
   color: {
     canvas: "#FFFFFF",
     surface: "#FFFFFF",
-    surfaceSubtle: "#F3F4F6",
+    surfaceSubtle: "#F4F4F4",
     surfaceRaised: "#FFFFFF",
-    surfaceSelected: "#FFFFFF",
-    surfaceSelectedNav: "#2563EB",
-    surfaceHover: "#F5F5F5",
+    surfaceSelected: "#F0F0F0",
+    surfaceSelectedNav: "#111111",
+    surfaceHover: "#F3F3F3",
 
-    textPrimary: "#111827",
-    textSecondary: "#374151",
-    textTertiary: "#6B7280",
-    textDisabled: "#9CA3AF",
+    textPrimary: "#111111",
+    textSecondary: "#333333",
+    textTertiary: "#666666",
+    textDisabled: "#9A9A9A",
     textOnAccent: "#FFFFFF",
 
-    borderHairline: "#E5E7EB",
-    borderStrong: "#C7CDD4",
+    borderHairline: "#E3E3E3",
+    borderStrong: "#BDBDBD",
 
-    accent: "#2563EB",
-    accentMuted: "#2563EB",
-    accentSoft: "#2563EB",
-    selectionEdge: "#2563EB",
+    accent: "#111111",
+    accentMuted: "#333333",
+    accentSoft: "#F0F0F0",
+    selectionEdge: "#111111",
 
-    success: "#2563EB",
-    warning: "#4B5563",
-    danger: "#B42318",
-    successSoft: "#FFFFFF",
-    warningSoft: "#FFFFFF",
-    dangerSoft: "#FFFFFF",
+    success: "#111111",
+    warning: "#4A4A4A",
+    danger: "#111111",
+    successSoft: "#F4F4F4",
+    warningSoft: "#F4F4F4",
+    dangerSoft: "#F4F4F4",
 
     lifeLavender: "#FFFFFF",
     lifeMint: "#FFFFFF",
     lifePeach: "#FFFFFF",
     lifeBlue: "#FFFFFF",
-    lifeCream: "#FFFFFF",
+    lifeCream: "#F4F4F4",
 
     ambientContour: "transparent",
     ambientGlowPrimary: "transparent",
     ambientGlowSecondary: "transparent",
     ambientAura: "transparent",
 
-    focusRing: "#2563EB",
-    backdrop: "rgba(17, 24, 39, 0.46)",
+    focusRing: "#111111",
+    backdrop: "rgba(0, 0, 0, 0.52)",
   },
 
   radius: {
@@ -64,13 +64,13 @@ export const lightValues = {
 
   elevation: {
     none: "none",
-    floating: "0 1px 2px rgba(17, 24, 39, 0.08)",
-    modal: "0 12px 30px rgba(17, 24, 39, 0.16)",
+    floating: "0 1px 2px rgba(0, 0, 0, 0.10)",
+    modal: "0 12px 30px rgba(0, 0, 0, 0.18)",
   },
 
   hairline: {
-    structural: "1px solid #D1D5DB",
-    subtle: "1px solid #E5E7EB",
+    structural: "1px solid #CFCFCF",
+    subtle: "1px solid #E3E3E3",
   },
 };
 
