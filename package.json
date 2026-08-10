@@ -16,7 +16,6 @@
     "hardening:narrative-performance": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run_narrative_performance_evidence.ps1",
     "hardening:portable-performance": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run_portable_performance_evidence.ps1",
     "hardening:planning-performance": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run_planning_performance_evidence.ps1",
-    "visual:audit": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run_visual_audit.ps1",
     "hardening:rc": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run_core_rc_dogfood.ps1",
     "dev": "pnpm --dir frontend dev",
     "build": "pnpm --dir frontend build",
