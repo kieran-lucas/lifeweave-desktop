@@ -449,6 +449,7 @@ export function App() {
                     type="button"
                     className={styles.settingsBackButton}
                     onClick={() => setSettingsView("general")}
+                    aria-label="Back to Settings"
                   >
                     <Icon d={iconChevronLeft} size={18} />
                     Settings
