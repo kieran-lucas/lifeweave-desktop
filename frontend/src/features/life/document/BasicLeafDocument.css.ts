@@ -19,11 +19,14 @@ export const hiddenFile = style({ position: "absolute", width: 1, height: 1, ove
 export const image = style({ display: "block", maxWidth: "100%", height: "auto", borderRadius: "var(--radius-control)", margin: "14px 0" });
 export const missing = style({ border: "1px dashed var(--border-subtle)", borderRadius: "var(--radius-control)", padding: 14, color: "var(--text-muted)" });
 export const table = style({ borderCollapse: "collapse", width: "100%", margin: "16px 0" });
-globalStyle(`${article} h1, ${article} h2, ${article} h3`, { lineHeight: 1.2, marginTop: "1.6em", scrollMarginTop: "1.5rem" });
+globalStyle(`${article} h1, ${editor} .tiptap h1`, { ...text.editorH1, marginTop: "1.6em", scrollMarginTop: "1.5rem" });
+globalStyle(`${article} h2, ${editor} .tiptap h2`, { ...text.editorH2, marginTop: "1.6em", scrollMarginTop: "1.5rem" });
+globalStyle(`${article} h3, ${editor} .tiptap h3`, { ...text.editorH3, marginTop: "1.6em", scrollMarginTop: "1.5rem" });
 globalStyle(`${shell} > h2`, { ...text.sectionTitle, margin: "0 0 14px" });
 globalStyle(`${article} blockquote`, { borderLeft: "3px solid var(--focus-ring)", marginLeft: 0, paddingLeft: 18, color: "var(--text-muted)" });
 globalStyle(`${article} pre`, { overflowX: "auto", padding: 14, borderRadius: "var(--radius-control)", background: "var(--sidebar-surface)" });
-globalStyle(`${article} th, ${article} td`, { border: "1px solid var(--border-subtle)", padding: 8, textAlign: "left" });
+globalStyle(`${article} th, ${article} td, ${editor} .tiptap th, ${editor} .tiptap td`, { border: "1px solid var(--border-subtle)", padding: 8, textAlign: "left" });
+globalStyle(`${article} th, ${editor} .tiptap th`, { fontFamily: text.editorBody.fontFamily, fontWeight: 400 });
 globalStyle(`${editor} .tiptap`, { minHeight: 280, outline: "none" });
 globalStyle(`${editor} .tiptap img`, { maxWidth: "100%", height: "auto" });
 
