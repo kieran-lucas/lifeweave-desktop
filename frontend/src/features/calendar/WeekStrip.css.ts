@@ -1,5 +1,8 @@
 import { style } from "@vanilla-extract/css";
+import { iconButton } from "../../design-system/primitives/controls.css";
+import { focusRing } from "../../design-system/primitives/utilities.css";
 import { duration, easing } from "../../design-system/visual/motion.css";
+import { text } from "../../design-system/visual/typography.css";
 
 /*
  * Week strip, composed for Visual Baseline v2.
@@ -51,22 +54,15 @@ export const days = style({
 });
 
 /** Chromeless arrows: a hover tone, no border, no fill at rest. */
-export const move = style({
-  display: "grid",
-  placeItems: "center",
-  minBlockSize: 32,
-  padding: 0,
+export const move = style([iconButton, {
   border: 0,
-  borderRadius: "var(--radius-control)",
   background: "transparent",
   color: "var(--text-muted)",
-  cursor: "pointer",
   transition: `background-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}`,
   selectors: {
     "&:hover": { background: "var(--icon-background)", color: "var(--text-primary)" },
-    "&:focus-visible": { outline: "2px solid var(--focus-ring)", outlineOffset: 2 },
   },
-});
+}]);
 
 /**
  * A day cell is type on tone, not a box.
@@ -75,7 +71,7 @@ export const move = style({
  * with an accent dot rather than an underline, so "today" and "selected" remain two distinct
  * signals and neither depends on colour alone.
  */
-export const day = style({
+export const day = style([focusRing, {
   position: "relative",
   minInlineSize: 0,
   minBlockSize: 52,
@@ -87,8 +83,7 @@ export const day = style({
   borderRadius: "var(--radius-control)",
   background: "transparent",
   color: "var(--text-muted)",
-  fontSize: "0.8125rem",
-  lineHeight: 1.3,
+  ...text.metadata,
   cursor: "pointer",
   transition: `background-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}`,
   selectors: {
@@ -117,6 +112,5 @@ export const day = style({
       borderRadius: "var(--radius-full)",
       background: "var(--accent)",
     },
-    "&:focus-visible": { outline: "2px solid var(--focus-ring)", outlineOffset: 1 },
   },
-});
+}]);

@@ -848,17 +848,18 @@ export function TodayScreen({
         <p className={styles.eyebrow}>
           {date === today ? "Today" : "Selected day"} · {date}
         </p>
-        <h1 id="today-heading" tabIndex={-1}>
+        <h1 id="today-heading" className={styles.title} tabIndex={-1}>
           Today
         </h1>
       </PageHeader>
       <WeekStrip selectedDate={date} today={today} onSelectDate={selectUserDate} />
-      {assessmentError && <p role="alert">{assessmentError}</p>}
+      {assessmentError && <p className={styles.timerError} role="alert">{assessmentError}</p>}
       {lastOperation && (
         <p aria-live="polite" className={styles.undo}>
           Assessment saved.{" "}
           <button
             type="button"
+            className={styles.undoButton}
             disabled={undoAssessment.isPending}
             onClick={() => undoAssessment.mutate(lastOperation.operationId)}
           >

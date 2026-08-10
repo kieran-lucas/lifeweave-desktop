@@ -1,4 +1,5 @@
 import { getDayOfWeek, getLocalTimeZone, parseDate } from "@internationalized/date";
+import { Icon, iconChevronLeft, iconChevronRight } from "../../design-system/visual/icons";
 import * as styles from "./WeekStrip.css";
 
 type Props = { selectedDate: string; today: string; onSelectDate: (date: string) => void };
@@ -11,7 +12,7 @@ export function WeekStrip({ selectedDate, today, onSelectDate }: Props) {
   const weekday = new Intl.DateTimeFormat(locale, { weekday: "short" });
   const fullDate = new Intl.DateTimeFormat(locale, { dateStyle: "full" });
   return <nav className={styles.root} aria-label="Week navigation">
-    <button type="button" className={styles.move} aria-label="Previous week" onClick={() => onSelectDate(selected.subtract({ weeks: 1 }).toString())}>‹</button>
+    <button type="button" className={styles.move} aria-label="Previous week" onClick={() => onSelectDate(selected.subtract({ weeks: 1 }).toString())}><Icon d={iconChevronLeft} size={18} /></button>
     <div className={styles.days}>{days.map(day => {
       const value = day.toString();
       const nativeDate = day.toDate(getLocalTimeZone());
@@ -19,6 +20,6 @@ export function WeekStrip({ selectedDate, today, onSelectDate }: Props) {
         <span>{weekday.format(nativeDate)}</span><strong>{day.day}</strong>{value === today && <small>Today</small>}
       </button>;
     })}</div>
-    <button type="button" className={styles.move} aria-label="Next week" onClick={() => onSelectDate(selected.add({ weeks: 1 }).toString())}>›</button>
+    <button type="button" className={styles.move} aria-label="Next week" onClick={() => onSelectDate(selected.add({ weeks: 1 }).toString())}><Icon d={iconChevronRight} size={18} /></button>
   </nav>;
 }

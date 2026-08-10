@@ -42,10 +42,10 @@ export function ActiveTimerStrip({ active, pending, onStop, onDiscard }: {
       {total !== running && (
         <span className={styles.timerTotal}>Total {formatElapsed(total)}</span>
       )}
-      <button className={styles.timerButton} type="button" disabled={pending} onClick={onStop}>
+      <button className={styles.timerStop} type="button" disabled={pending} onClick={onStop}>
         Stop timer
       </button>
-      <button className={styles.timerButton} type="button" disabled={pending} onClick={onDiscard}>
+      <button className={styles.timerDiscard} type="button" disabled={pending} onClick={onDiscard}>
         Discard segment
       </button>
     </section>

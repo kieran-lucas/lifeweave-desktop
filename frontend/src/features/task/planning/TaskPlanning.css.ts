@@ -1,6 +1,6 @@
 import { style } from "@vanilla-extract/css";
 import { space } from "../../../app/layout/tokens.css";
-import { duration, easing } from "../../../design-system/visual/motion.css";
+import { tab as sharedTab, tabList } from "../../../design-system/primitives/navigation.css";
 
 /*
  * The five workspace views, composed for Visual Baseline v2.
@@ -13,36 +13,11 @@ import { duration, easing } from "../../../design-system/visual/motion.css";
  * It still wraps rather than forcing the page sideways, which is what keeps the Task 50
  * no-horizontal-overflow invariant true at narrow widths.
  */
-export const tabs = style({
-  display: "flex",
+export const tabs = style([tabList, {
   flexWrap: "wrap",
-  alignItems: "center",
   gap: space.x4,
-  borderBottom: "1px solid var(--border-subtle)",
-  minInlineSize: 0,
-});
-export const tab = style({
-  padding: "8px 8px 10px",
-  minBlockSize: 34,
-  border: 0,
-  borderBottom: "2px solid transparent",
-  marginBottom: -1,
-  background: "transparent",
-  color: "var(--text-muted)",
-  fontSize: "0.875rem",
-  fontWeight: 500,
-  cursor: "pointer",
-  selectors: {
-    "&:hover": { color: "var(--text-primary)" },
-    '&[aria-selected="true"]': { color: "var(--accent)", borderBottomColor: "var(--accent)", fontWeight: 600 },
-    "&:focus-visible": { outline: "2px solid var(--focus-ring)", outlineOffset: 2 },
-  },
-  '@media': {
-    '(prefers-reduced-motion: no-preference)': {
-      transition: `border-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}`,
-    },
-  },
-});
+}]);
+export const tab = sharedTab;
 export const panelBody = style({ display: "flex", flexDirection: "column", gap: space.group, minInlineSize: 0 });
 export const empty = style({ color: "var(--text-muted)" });
 export const dayGroup = style({ borderTop: "1px solid var(--border-subtle)", paddingTop: 12 });
