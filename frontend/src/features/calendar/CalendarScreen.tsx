@@ -193,7 +193,7 @@ function DaySummary({ day }: { day: CalendarDayProjection }) {
     <div className={styles.summary}>
       <span className={styles.taskCount}>{day.task_count}</span>
       <span>{day.task_count === 1 ? "task" : "tasks"}</span>
-      <span className={styles.duration}>{formatDuration(day.scheduled_minutes)}</span>
+      <span className={styles.durationText}>{formatDuration(day.scheduled_minutes)}</span>
       {day.has_missed && <span className={styles.needsAttention} aria-label="Past scheduled tasks are unevaluated">Review</span>}
     </div>
   );
