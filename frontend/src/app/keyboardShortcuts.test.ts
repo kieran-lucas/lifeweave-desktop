@@ -1,20 +1,12 @@
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
+  analyticsShortcut,
   destinationShortcuts,
   resolveShortcutCommand,
   shortcutCommands,
   type ShortcutCommand,
 } from "./keyboardShortcuts";
-
-/**
- * The whole suppression matrix is provable here because `resolveShortcutCommand` is the single
- * dispatch authority. `App.test.tsx` proves integration and does not restate these cases.
- *
- * The locked map is asserted behaviourally — by driving key events and naming the command that
- * comes back — rather than by copying the registry into a second literal table, which would defeat
- * the point of having one authority.
- */
 
 type Fired = { command: ShortcutCommand | null; consumed: boolean };
 
@@ -53,7 +45,7 @@ afterEach(() => {
 });
 
 describe("global shortcut registry", () => {
-  it("locks exactly eight commands with unique ids, chords, and labels", () => {
+  it("keeps exactly eight commands with unique ids, chords, and labels", () => {
     expect(shortcutCommands).toHaveLength(8);
     expect(new Set(shortcutCommands.map((c) => c.id)).size).toBe(8);
     expect(new Set(shortcutCommands.map((c) => c.key)).size).toBe(8);
@@ -71,7 +63,7 @@ describe("global shortcut registry", () => {
   it.each([
     ["1", "open-today", "today"],
     ["2", "open-calendar", "calendar"],
-    ["3", "open-analytics", "analytics"],
+    ["3", "open-analytics", "settings"],
     ["4", "open-plans", "plans"],
     ["5", "open-life", "life"],
     ["6", "open-settings", "settings"],
@@ -83,11 +75,10 @@ describe("global shortcut registry", () => {
     expect(command?.destination).toBe(destination);
   });
 
-  it("orders the six destination commands as the sidebar does", () => {
+  it("keeps only five primary sidebar destinations", () => {
     expect(destinationShortcuts.map((c) => c.destination)).toEqual([
       "today",
       "calendar",
-      "analytics",
       "plans",
       "life",
       "settings",
@@ -121,8 +112,6 @@ describe("global shortcut registry", () => {
     const editable = mount(tag, attributes);
     const { command, consumed } = fire(editable, { key: "k", ctrlKey: true });
     expect(command).toBeNull();
-    // Suppression must leave the event completely untouched, or the editor would lose the key
-    // without the global layer doing anything with it.
     expect(consumed).toBe(false);
   });
 
@@ -142,8 +131,8 @@ describe("global shortcut registry", () => {
     }
   });
 
-  it("resolves an accepted chord to exactly one command", () => {
+  it("resolves Ctrl+3 to the Settings-owned Analytics command", () => {
     const { command } = fire(document.body, { key: "3", ctrlKey: true });
-    expect(command).toBe(destinationShortcuts[2]);
+    expect(command).toBe(analyticsShortcut);
   });
 });
