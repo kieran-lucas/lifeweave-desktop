@@ -619,10 +619,23 @@ describe(`Endgame visual audit (${auditProfile}: ${label})`, () => {
   if (profileIncludes(auditProfile, "calendar-analytics-plans")) {
     it("walks Calendar, Analytics, and Focus Plans", async function () {
     this.timeout(300_000);
+    const calendarAnchor = await appLocalDate();
+    await browser.execute(async (anchor) => {
+      const invoke = (window as unknown as { __TAURI_INTERNALS__: { invoke: <T>(command: string, payload?: unknown) => Promise<T> } }).__TAURI_INTERNALS__.invoke;
+      const [year, month, day] = anchor.split("-").map(Number);
+      const missed = new Date(year!, month! - 1, day! - 1, 12);
+      const localDate = `${missed.getFullYear()}-${String(missed.getMonth() + 1).padStart(2, "0")}-${String(missed.getDate()).padStart(2, "0")}`;
+      await invoke("create_task", { input: { title: "Calendar missed-state fixture", description: "Visual evidence for an unevaluated past day.", local_date: localDate, start_minute: 540, end_minute: 600, category_id: "general", priority: "medium", life_node_id: null, tag_ids: [] } });
+    }, calendarAnchor);
+    await go("Calendar", "h1#calendar-heading");
+    await $("(//button[@aria-current='date']/ancestor::div[@role='gridcell']/following::div[@role='gridcell'][1]//button)[1]").click();
+    await $("h1=Today").waitForDisplayed({ timeout: 15_000 });
     await go("Calendar", "h1#calendar-heading");
     await capture("calendar", "09-calendar");
 
     await go("Analytics", "h1#analytics-heading");
+    await $("#scheduled-overview").waitForDisplayed({ timeout: 15_000 });
+    await $("#focus-plan-activity").waitForDisplayed({ timeout: 15_000 });
     await capture("analytics", "10-analytics");
 
     await go("Plans", "h1#plans-heading");

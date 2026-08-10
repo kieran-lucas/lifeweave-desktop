@@ -1,8 +1,10 @@
 import { globalStyle, style } from "@vanilla-extract/css";
 import { space } from "../../app/layout/tokens.css";
 import { scrollRegion } from "../../app/layout/layout.css";
-import { glass, glassStrong, progressBar } from "../../design-system/visual/atmosphere.css";
+import { glass, progressBar } from "../../design-system/visual/atmosphere.css";
 import { text } from "../../design-system/visual/typography.css";
+import { button, compact } from "../../design-system/primitives/controls.css";
+import { segmented, segmentedItem } from "../../design-system/primitives/navigation.css";
 
 /*
  * Analytics owns no page width. It is a STANDARD_PAGE and consumes the shared `PageFrame`; what
@@ -17,18 +19,23 @@ export const eyebrow=style({margin:0,color:"var(--accent)",fontWeight:600,fontSi
  * The period controls become one glass module that visibly governs the summary beneath them, rather
  * than a bordered strip floating above unrelated content.
  */
-export const periodControls=style([glass,{display:"flex",inlineSize:"fit-content",maxInlineSize:"100%",flexWrap:"wrap",alignItems:"center",justifyContent:"flex-start",gap:space.field,padding:space.x4,borderRadius:"var(--radius-surface)",minInlineSize:0}]);
-export const periodTabs=style({display:"flex",flexWrap:"wrap",gap:space.x1,minInlineSize:0});
+export const periodControls=style({display:"flex",maxInlineSize:"100%",flexWrap:"wrap",alignItems:"center",justifyContent:"flex-end",gap:space.field,minInlineSize:0});
+export const periodTabs=style([segmented,{flexWrap:"wrap",minInlineSize:0}]);
+export const periodTab=segmentedItem;
 /*
  * The period navigation used to be pushed to the far edge of a full-width module, leaving a void
  * between the Week/Month/Year tabs and it — a toolbar strip stretched for no semantic reason, which
  * ADR 0045 section 3 rules out. It now sits beside the tabs and the module stops where its content
  * stops.
  */
-export const periodNav=style({display:"flex",flexWrap:"wrap",gap:space.x3,alignItems:"center",minInlineSize:0});
+export const periodNav=style({display:"flex",flexWrap:"wrap",gap:space.x1,alignItems:"center",minInlineSize:0});
+export const periodStep=style([button.ghost,compact]);
+export const currentPeriod=style([button.secondary,compact]);
+globalStyle(`${periodNav} > strong`,{...text.numeric,minInlineSize:"11.5rem",paddingInline:space.x2,textAlign:"center",fontVariantNumeric:"tabular-nums"});
 
 /** Every Analytics section shares one internal rhythm. */
 export const section=style({display:"flex",flexDirection:"column",gap:space.group,minInlineSize:0});
+globalStyle(`${section} > h2`,{...text.sectionTitle,margin:0});
 
 /*
  * The headline metric is the page's centrepiece: a large tabular number on its own glass module,
@@ -72,6 +79,11 @@ export const summaryFacts=style({display:"grid",gridTemplateColumns:"repeat(auto
 globalStyle(`${facts} div, ${summaryFacts} div`,{padding:`${space.x2} ${space.x4} ${space.x2} 0`,minInlineSize:0});
 globalStyle(`${facts} dt, ${summaryFacts} dt`,{color:"var(--text-muted)",fontSize:"0.8125rem"});
 globalStyle(`${facts} dd, ${summaryFacts} dd`,{margin:0,fontSize:26,fontWeight:600,letterSpacing:"-0.02em",fontVariantNumeric:"tabular-nums",color:"var(--text-primary)"});
+
+export const secondaryGrid=style({display:"grid",gridTemplateColumns:"repeat(2,minmax(0,1fr))",gap:space.section,minInlineSize:0,'@container':{'(max-width: 760px)':{gridTemplateColumns:"minmax(0,1fr)"}}});
+globalStyle(`${secondaryGrid} > section:first-child > ul`,{listStyle:"none",display:"grid",gap:space.x2,margin:0,padding:space.x4,border:"1px solid var(--glass-border)",borderRadius:"var(--radius-surface)",background:"var(--glass-surface-strong)",minInlineSize:0});
+globalStyle(`${secondaryGrid} > section:first-child > ul li`,{paddingBlock:space.x1,fontVariantNumeric:"tabular-nums"});
+globalStyle(`${secondaryGrid} > section:first-child > ul li + li`,{borderBlockStart:"1px solid var(--border-subtle)",paddingBlockStart:space.x3});
 
 export const categories=style([glass,{listStyle:"none",padding:space.x4,margin:0,display:"grid",gap:space.field,borderRadius:"var(--radius-surface)",minInlineSize:0}]);
 globalStyle(`${categories} li`,{minInlineSize:0});

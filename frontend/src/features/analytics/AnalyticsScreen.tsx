@@ -3,7 +3,7 @@ import { parseDate } from "@internationalized/date";
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { getAnalyticsProjection } from "../../ipc/commands";
 import type { AnalyticsPeriodKind } from "../../ipc/generated/AnalyticsPeriodKind";
-import { localToday } from "../calendar/date";
+import { localToday, observedLocalToday } from "../calendar/date";
 import { CategoryIcon } from "../task/categoryIcons";
 import * as styles from "./AnalyticsScreen.css";
 import { PageFrame, PageHeader } from "../../app/layout/PageFrame";
@@ -43,18 +43,19 @@ export function AnalyticsScreen({
   const client = useQueryClient();
   const now = new Date();
   const today = localToday();
+  const observedToday = observedLocalToday();
   const observedMinute = now.getHours() * 60 + now.getMinutes();
   const analyticsInput = useMemo(
     () => ({
       period_kind: kind,
       anchor_local_date: anchor,
-      observed_local_date: today,
+      observed_local_date: observedToday,
       observed_local_minute: observedMinute,
     }),
-    [kind, anchor, today, observedMinute],
+    [kind, anchor, observedToday, observedMinute],
   );
   const query = useQuery({
-    queryKey: ["analytics", kind, anchor, today],
+    queryKey: ["analytics", kind, anchor, observedToday],
     queryFn: () => getAnalyticsProjection(analyticsInput),
     placeholderData: (previous) => previous,
   });
@@ -62,52 +63,38 @@ export function AnalyticsScreen({
     for (const amount of [-1, 1]) {
       const adjacent = moveDate(anchor, kind, amount);
       void client.prefetchQuery({
-        queryKey: ["analytics", kind, adjacent, today],
+        queryKey: ["analytics", kind, adjacent, observedToday],
         queryFn: () =>
           getAnalyticsProjection({ ...analyticsInput, anchor_local_date: adjacent }),
       });
     }
-  }, [client, kind, anchor, today, analyticsInput]);
+  }, [client, kind, anchor, observedToday, analyticsInput]);
   const data = query.data;
   const distributionTotal =
     data?.completion_distribution.reduce((sum, item) => sum + item.count, 0) ?? 0;
 
   return (
     <PageFrame as="section" type="standard" aria-labelledby="analytics-heading">
-      <PageHeader>
-        <p className={styles.eyebrow}>Objective Analytics · scheduled and recorded time</p>
-        <h1 id="analytics-heading" tabIndex={-1}>
-          Analytics
-        </h1>
-      </PageHeader>
-      {/*
-        Period kind and period navigation are one control group, so they sit in one common region
-        rather than floating away from the summary they govern.
-      */}
-      <div className={styles.periodControls}>
+      <PageHeader actions={<div className={styles.periodControls}>
         <div className={styles.periodTabs} role="tablist" aria-label="Analytics period">
           {kinds.map((value) => (
-            <button
-              key={value}
-              role="tab"
-              aria-selected={kind === value}
-              onClick={() => setKind(value)}
-            >
+            <button className={styles.periodTab} key={value} role="tab" aria-selected={kind === value} onClick={() => setKind(value)}>
               {value[0]!.toUpperCase() + value.slice(1)}
             </button>
           ))}
         </div>
         <div className={styles.periodNav}>
-          <button aria-label="Previous period" onClick={() => setAnchor(moveDate(anchor, kind, -1))}>
-            Previous
-          </button>
+          <button className={styles.periodStep} aria-label="Previous period" onClick={() => setAnchor(moveDate(anchor, kind, -1))}>Previous</button>
           <strong>{data ? `${data.period_start} – ${data.period_end}` : anchor}</strong>
-          <button aria-label="Next period" onClick={() => setAnchor(moveDate(anchor, kind, 1))}>
-            Next
-          </button>
-          <button onClick={() => setAnchor(today)}>Current period</button>
+          <button className={styles.periodStep} aria-label="Next period" onClick={() => setAnchor(moveDate(anchor, kind, 1))}>Next</button>
+          <button className={styles.currentPeriod} onClick={() => setAnchor(today)}>Current period</button>
         </div>
-      </div>
+      </div>}>
+        <p className={styles.eyebrow}>Objective Analytics · scheduled and recorded time</p>
+        <h1 id="analytics-heading" tabIndex={-1}>
+          Analytics
+        </h1>
+      </PageHeader>
       {query.isLoading && <LoadingRow label="Loading objective Analytics…" />}
       {query.isError && <p role="alert">Unable to load objective Analytics.</p>}
       {data && (
@@ -240,6 +227,7 @@ export function AnalyticsScreen({
             )}
           </section>
 
+          <div className={styles.secondaryGrid}>
           <section className={styles.section} aria-labelledby="objective-streaks">
             <h2 id="objective-streaks">Objective streaks</h2>
             {data.streaks.length === 0 ? (
@@ -277,14 +265,14 @@ export function AnalyticsScreen({
                   <caption>Evaluation counts</caption>
                   <thead>
                     <tr>
-                      <th>State</th>
-                      <th>Tasks</th>
+                      <th scope="col">State</th>
+                      <th scope="col">Tasks</th>
                     </tr>
                   </thead>
                   <tbody>
                     {data.completion_distribution.map((item) => (
                       <tr key={`${item.state_id}-${item.label}`}>
-                        <th>{item.label}</th>
+                        <th scope="row">{item.label}</th>
                         <td>{item.count}</td>
                       </tr>
                     ))}
@@ -294,12 +282,13 @@ export function AnalyticsScreen({
               </>
             )}
           </section>
+          </div>
 
           <Suspense fallback={<LoadingRow label="Loading Focus Plan activity…" />}>
             <FocusPlanAnalyticsSection
               periodKind={kind}
               anchorLocalDate={anchor}
-              observedLocalDate={today}
+              observedLocalDate={observedToday}
               observedLocalMinute={observedMinute}
               onPlanNavigate={onPlanNavigate}
             />

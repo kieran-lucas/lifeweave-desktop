@@ -6,10 +6,10 @@
 
 - BASELINE_PLANNING_SHA: `a1078c1f91c251aaa7a453ef1e8a5108551c852d`
 - EXECUTION_START_SHA: `0b3e01d4a8bd9b62c5d786e9b4a4401d72c0edc1`
-- LAST_VERIFIED_COMMIT: `Q1 checkpoint`
-- CURRENT_PACKET: `S05`
+- LAST_VERIFIED_COMMIT: `db2f7ccd472938e71382b6ad338e073145eac003`
+- CURRENT_PACKET: `S06`
 - CURRENT_STATUS: `PENDING`
-- NEXT_PACKET: `S05`
+- NEXT_PACKET: `S06`
 - FINAL_REVIEW_DONE: `false`
 - FINAL_FINDING_SET_FROZEN: `false`
 - PROGRAM_STATUS: `IN_PROGRESS`
@@ -23,7 +23,7 @@
 | S02 | CLOSED | `d80ea4dfdc287f226826bcdf8f223ff8fdb247d4` | 11/11 rows LOCAL_VERIFIED; focused semantics and max/min native profiles passed |
 | S03 | CLOSED | `17ebdea04baf4386a370bcc06acd1479fa2f806e` | 9/9 rows LOCAL_VERIFIED; focused semantics and max/min native profiles passed |
 | S04 | CLOSED | `d5c66c85f0287db322e70c163aaf4be39d06b1c1` | 5/5 rows LOCAL_VERIFIED; focused semantics and max/min native profiles passed |
-| S05 | PENDING | — | — |
+| S05 | CLOSED | S05 checkpoint | 11/11 rows LOCAL_VERIFIED; focused semantics, fixed budget, and max/min native profiles passed |
 | S06 | PENDING | — | — |
 | S07 | PENDING | — | — |
 | S08 | PENDING | — | — |
@@ -31,7 +31,7 @@
 | S10 | PENDING | — | — |
 | S11 | PENDING | — | — |
 | S12 | PENDING | — | — |
-| Q1 | CLOSED | Q1 checkpoint | 33/33 scoped rows VERIFIED; full unit, build/budget, native behavior, and max/min visual gates passed |
+| Q1 | CLOSED | `db2f7ccd472938e71382b6ad338e073145eac003` | 33/33 scoped rows VERIFIED; full unit, build/budget, native behavior, and max/min visual gates passed |
 | Q2 | PENDING | — | — |
 | Q3 | PENDING | — | — |
 | Q4 | PENDING | — | — |
@@ -72,17 +72,17 @@
 | T-20 | S04 | VERIFIED | Q1 checkpoint | deadline groups expose first-class dates and render metadata once per row |
 | T-21 | S04 | VERIFIED | Q1 checkpoint | populated saved-view manager/results max+min evidence with stable narrow rail |
 | T-22 | S04 | VERIFIED | Q1 checkpoint | shared wide dialog shell, canonical fields, and primary-save ordering |
-| C-01 | S05 | PENDING | — | — |
-| C-02 | S05 | PENDING | — | — |
-| A-01 | S05 | PENDING | — | — |
-| A-02 | S05 | PENDING | — | — |
-| A-03 | S05 | PENDING | — | — |
-| A-04 | S05 | PENDING | — | — |
-| A-05 | S05 | PENDING | — | — |
-| A-06 | S05 | PENDING | — | — |
-| A-07 | S05 | PENDING | — | — |
-| A-08 | S05 | PENDING | — | — |
-| A-09 | S05 | PENDING | — | — |
+| C-01 | S05 | LOCAL_VERIFIED | S05 checkpoint | coherent 5/6-week hairline board, compact month navigation, and deterministic populated max/min evidence |
+| C-02 | S05 | LOCAL_VERIFIED | S05 checkpoint | separate today disc, selected structural edge, missed badge, load triplet, focus, and forced-colors semantics |
+| A-01 | S05 | LOCAL_VERIFIED | S05 checkpoint | Week report hierarchy, shared period controls, and nonzero native projection evidence |
+| A-02 | S05 | LOCAL_VERIFIED | S05 checkpoint | Month period remains the same editorial report and focused period-query coverage passes |
+| A-03 | S05 | LOCAL_VERIFIED | S05 checkpoint | Year period remains the same editorial report and completed-week facts stay readable |
+| A-04 | S05 | LOCAL_VERIFIED | S05 checkpoint | scheduled time remains the lead fact with three subordinate facts on one plane |
+| A-05 | S05 | LOCAL_VERIFIED | S05 checkpoint | recorded-vs-plan facts and factual zero-session explanation preserved |
+| A-06 | S05 | LOCAL_VERIFIED | S05 checkpoint | category list keeps scheduled time, actual-time facts, and shared progress material |
+| A-07 | S05 | LOCAL_VERIFIED | S05 checkpoint | objective streaks form a compact structured secondary section without gamified chrome |
+| A-08 | S05 | LOCAL_VERIFIED | S05 checkpoint | completion distribution retains factual visual/table equivalents with explicit header/row scope |
+| A-09 | S05 | LOCAL_VERIFIED | S05 checkpoint | lazy Focus Plan summary/table loads before capture and retains local horizontal containment |
 | P-01 | S06 | PENDING | — | — |
 | P-02 | S06 | PENDING | — | — |
 | P-03 | S06 | PENDING | — | — |
@@ -155,14 +155,15 @@
 ## DONE
 
 - Q1 promoted S01–S04: 33/33 scoped rows VERIFIED
+- S05 Calendar + Analytics: 11/11 rows LOCAL_VERIFIED
 
 ## CURRENT
 
-- S05 pending
+- S06 pending
 
 ## NEXT
 
-- S05
+- S06
 
 ## KNOWN_DEBT
 
@@ -241,6 +242,13 @@ Append concise entries:
 - [Q1] native Light `shell-task` maximized — PASS — 24 surfaces / zero collisions — `target/e2e-artifacts/task-50b/shell-task-Q1-20260810-085941`
 - [Q1] native Light `shell-task` 960×640 — PASS — achieved 960×639 / 24 surfaces / zero collisions — `target/e2e-artifacts/task-50b/shell-task-Q1-20260810-090127`
 - [Q1] bounded self-review `F_Q1` — FROZEN/RESOLVED — zero findings; no post-review fixes or repeated review
+- [S05] `git diff --check` + convergence ratchet — PASS — font-size residue 86 / focus residue 30 / control clones 51; ceilings unchanged
+- [S05] `pnpm typecheck` — PASS — frontend project references
+- [S05] focused Calendar/Analytics/Focus Plan Analytics tests — PASS — 3 files / 40 tests; affected post-review Calendar subset 1 file / 6 tests
+- [S05] production build + performance budget — PASS — 1,263,963 raw / 389,162 gzip / 26 chunks; ceilings unchanged
+- [S05] native Light `calendar-analytics-plans` maximized — PASS — 4 surfaces / zero collisions — `target/e2e-artifacts/task-50b/calendar-analytics-plans-S05-20260810-094139`
+- [S05] native Light `calendar-analytics-plans` 960×640 — PASS — achieved 960×639 / 4 surfaces / zero collisions — `target/e2e-artifacts/task-50b/calendar-analytics-plans-S05-20260810-094312`
+- [S05] bounded self-review `F_S05` — RESOLVED — forced-colors selection now uses a structural inline edge so keyboard focus retains its independent outline; affected type/static/Calendar checks passed
 
 ## DECISIONS MADE UNDER UNATTENDED AUTHORITY
 
@@ -261,6 +269,9 @@ Record only material reversible decisions that future stages may need to know.
 - [S04] Saved Views evidence creates and selects an ephemeral view through public UI controls so the manager, selection, result rows, and editor are all exercised without inventing persisted capability.
 - [Q1] Production source maps remain emitted as hidden maps; omitting only per-chunk `sourceMappingURL` comments restores the fixed bundle budget without changing ceilings, chunking, or diagnostic artifacts.
 - [Q1] Native behavior suites use the authoritative backend local date when date-sensitive fixtures cross the wall-clock boundary; semantic workspace-tab selectors avoid matching the shell destination with the same accessible name.
+- [S05] The visual audit keeps its pinned anchor date for deterministic content while Analytics sends the actual system-local observation date required by backend validation; production builds resolve both dates identically.
+- [S05] Calendar evidence creates one audit-only past task and returns through public date activation so one capture proves separate today, selected, missed, and load states without changing production capability.
+- [S05] Analytics period controls live in the shared page header and compose the segmented/button primitives; Week, Month, and Year retain one editorial report structure.
 
 ## FINAL FINDING SET
 

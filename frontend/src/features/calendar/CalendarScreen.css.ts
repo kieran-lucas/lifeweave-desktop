@@ -126,8 +126,13 @@ export const cellButton = style({
     // Days outside the shown month recede by tone, not by opacity: opacity dims the hairlines too.
     "&[data-outside]": { color: "var(--text-muted)" },
     "&:hover": { background: "var(--icon-background)" },
-    "[aria-selected=true] &": { background: "var(--icon-background)" },
+    "[aria-selected=true] &": { background: "var(--icon-background)", boxShadow: "inset 3px 0 0 var(--accent)" },
     "&:focus-visible": { position: "relative", outline: "2px solid var(--focus-ring)", outlineOffset: -2 },
+  },
+  "@media": {
+    "(forced-colors: active)": {
+      selectors: { "[aria-selected=true] &": { borderInlineStart: "3px solid Highlight" } },
+    },
   },
 });
 
