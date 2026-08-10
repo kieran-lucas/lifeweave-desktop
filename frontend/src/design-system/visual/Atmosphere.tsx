@@ -1,64 +1,97 @@
 import * as styles from "./atmosphere.css";
 
 /**
- * The Lifeweave atmosphere — Layer 0 of the art system.
- *
- * One field for the entire application, mounted once behind the shell. This is the decision that
- * makes the art *a system* rather than decoration: every page sits on the same light, so pages
- * cannot drift apart visually, and there is exactly one thing to tune when the mood needs adjusting.
- *
- * Composition, in order of what carries the mood:
- *
- *   1. three wide aura fields — cool blue, blue-violet and cyan — anchored to the corners and edges
- *      so the centre of every page stays clean where text lives;
- *   2. a set of long flowing contour lines, drawn once and reused, which give the field structure
- *      without reading as a pattern;
- *   3. a handful of glints — sparse, placed, never generated — that catch the eye the way a star
- *      field does at the edge of vision.
- *
- * Everything here is **static paint**. There is no animation, no timer, no canvas and no filter:
- * the target machine has two cores and integrated graphics, and an animated background would spend
- * real frames on something the user is meant to notice only peripherally. It is `aria-hidden` and
- * `pointer-events: none`, so it can never intercept input or reach a screen reader.
- *
- * Intensity is not adjusted here. Pages that need a quieter ground raise their own surface opacity
- * over this field rather than asking the field to dim, which keeps one source of truth.
+ * Global abstract-anime art field.
+ * Decorative only: local SVG/CSS, no timers, no input, no network and no product capability.
  */
 export function Atmosphere() {
   return (
     <div className={styles.root} aria-hidden="true">
       <div className={styles.aura} />
+      <div className={styles.veil} />
+
       <svg
         className={styles.lines}
         viewBox="0 0 1600 1000"
         preserveAspectRatio="xMidYMid slice"
         fill="none"
       >
-        {/*
-          Flowing contours. Five strokes, weighted so the field reads as depth rather than as a
-          repeating texture: the nearest is the most visible, the furthest barely there.
-        */}
-        <g stroke="var(--art-line)" strokeLinecap="round">
-          <path d="M-120 210 C 260 120, 520 300, 900 200 C 1200 120, 1420 250, 1760 170" opacity="0.5" strokeWidth="1.1" />
-          <path d="M-120 300 C 300 200, 560 380, 940 280 C 1240 200, 1460 330, 1760 250" opacity="0.36" strokeWidth="1" />
-          <path d="M-120 640 C 300 760, 620 560, 1000 690 C 1300 790, 1500 640, 1760 720" opacity="0.3" strokeWidth="1" />
-          <path d="M-120 730 C 320 850, 640 650, 1020 780 C 1320 880, 1520 730, 1760 810" opacity="0.22" strokeWidth="0.9" />
-          <path d="M980 -60 C 1140 180, 1220 420, 1180 700 C 1150 860, 1200 960, 1320 1060" opacity="0.18" strokeWidth="0.9" />
+        <defs>
+          <linearGradient id="lw-orbit" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor="var(--accent-cyan)" stopOpacity="0.18" />
+            <stop offset="0.5" stopColor="var(--art-line-strong)" stopOpacity="0.72" />
+            <stop offset="1" stopColor="var(--accent-violet)" stopOpacity="0.18" />
+          </linearGradient>
+          <linearGradient id="lw-weave" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stopColor="var(--accent-cyan)" stopOpacity="0" />
+            <stop offset="0.34" stopColor="var(--art-line)" stopOpacity="0.55" />
+            <stop offset="0.72" stopColor="var(--accent-violet)" stopOpacity="0.46" />
+            <stop offset="1" stopColor="var(--accent-rose)" stopOpacity="0" />
+          </linearGradient>
+          <radialGradient id="lw-prism" cx="50%" cy="50%" r="50%">
+            <stop offset="0" stopColor="white" stopOpacity="0.78" />
+            <stop offset="0.48" stopColor="var(--accent-cyan)" stopOpacity="0.26" />
+            <stop offset="1" stopColor="var(--accent-violet)" stopOpacity="0" />
+          </radialGradient>
+        </defs>
+
+        {/* Top-right celestial instrument: deliberately clipped by the viewport edge. */}
+        <g className={styles.orbital} stroke="url(#lw-orbit)" strokeLinecap="round">
+          <ellipse cx="1328" cy="150" rx="390" ry="186" strokeWidth="1.2" opacity="0.74" />
+          <ellipse cx="1328" cy="150" rx="308" ry="132" strokeWidth="0.8" opacity="0.52" />
+          <ellipse cx="1328" cy="150" rx="230" ry="88" strokeWidth="0.8" opacity="0.36" />
+          <path d="M1010 292 C1188 192 1404 204 1660 74" strokeWidth="1.1" opacity="0.50" />
+          <path d="M1100 348 C1280 238 1454 252 1708 146" strokeWidth="0.8" opacity="0.34" />
         </g>
-        {/*
-          Glints. Placed by hand, not generated — nine marks across a 1600×1000 field, clustered
-          where the auras are strongest so they read as light catching rather than as dust.
-        */}
-        <g fill="var(--art-glint)">
-          <circle cx="1290" cy="150" r="2.4" opacity="0.55" />
-          <circle cx="1420" cy="264" r="1.6" opacity="0.4" />
-          <circle cx="1180" cy="86" r="1.4" opacity="0.34" />
-          <circle cx="1512" cy="360" r="2" opacity="0.3" />
-          <circle cx="96" cy="742" r="2.2" opacity="0.4" />
-          <circle cx="228" cy="860" r="1.5" opacity="0.32" />
-          <circle cx="40" cy="640" r="1.3" opacity="0.26" />
-          <circle cx="1360" cy="820" r="1.8" opacity="0.24" />
-          <circle cx="700" cy="60" r="1.2" opacity="0.2" />
+
+        {/* Long weave curves give the product a recognizable silhouette without boxing content. */}
+        <g stroke="url(#lw-weave)" strokeLinecap="round">
+          <path d="M-180 215 C210 72 474 288 808 204 C1120 124 1360 182 1760 64" strokeWidth="1.35" opacity="0.62" />
+          <path d="M-160 308 C238 164 508 370 842 286 C1160 206 1394 258 1740 164" strokeWidth="0.9" opacity="0.42" />
+          <path d="M-120 678 C276 816 604 582 936 704 C1224 812 1450 702 1740 774" strokeWidth="1.15" opacity="0.48" />
+          <path d="M-80 762 C298 902 634 674 984 796 C1258 890 1482 806 1744 866" strokeWidth="0.8" opacity="0.30" />
+        </g>
+
+        {/* Lower-left orbit balances the bright upper-right world. */}
+        <g className={styles.orbitalSlow} stroke="url(#lw-orbit)">
+          <ellipse cx="152" cy="878" rx="318" ry="148" strokeWidth="1" opacity="0.42" />
+          <ellipse cx="152" cy="878" rx="224" ry="94" strokeWidth="0.75" opacity="0.30" />
+          <path d="M-100 814 C86 742 286 758 474 864" strokeWidth="0.9" opacity="0.38" />
+        </g>
+
+        {/* Crystal sigil: abstract geometry, not a product control. */}
+        <g className={styles.prism} transform="translate(1388 222)">
+          <circle r="54" fill="url(#lw-prism)" opacity="0.42" />
+          <path d="M0 -35 L30 0 L0 35 L-30 0 Z" stroke="var(--art-line-strong)" strokeWidth="1.1" />
+          <path d="M0 -22 L19 0 L0 22 L-19 0 Z" stroke="var(--art-line)" strokeWidth="0.8" opacity="0.72" />
+          <circle r="4" fill="var(--art-glint)" opacity="0.82" />
+        </g>
+
+        {/* Sparse hand-placed star/glint field. */}
+        <g className={styles.stars} fill="var(--art-glint)">
+          <g className={styles.starA}>
+            <path d="M1218 94 l3 8 8 3-8 3-3 8-3-8-8-3 8-3z" />
+            <path d="M1494 332 l2 6 6 2-6 2-2 6-2-6-6-2 6-2z" opacity="0.72" />
+            <circle cx="310" cy="126" r="2.2" opacity="0.58" />
+          </g>
+          <g className={styles.starB}>
+            <path d="M1060 164 l2.4 6.4 6.4 2.4-6.4 2.4-2.4 6.4-2.4-6.4-6.4-2.4 6.4-2.4z" opacity="0.76" />
+            <circle cx="1460" cy="104" r="2" opacity="0.54" />
+            <circle cx="92" cy="708" r="2.3" opacity="0.62" />
+          </g>
+          <g className={styles.starC}>
+            <path d="M184 820 l2.8 7.2 7.2 2.8-7.2 2.8-2.8 7.2-2.8-7.2-7.2-2.8 7.2-2.8z" opacity="0.68" />
+            <circle cx="686" cy="72" r="1.8" opacity="0.48" />
+            <circle cx="1282" cy="822" r="1.9" opacity="0.44" />
+          </g>
+        </g>
+
+        {/* Abstract petals: small enough to read as anime-editorial atmosphere, never wallpaper. */}
+        <g className={styles.petals} fill="var(--art-petal)">
+          <path d="M1450 454 C1464 444 1476 451 1471 465 C1464 478 1452 476 1450 454Z" opacity="0.58" />
+          <path d="M1510 516 C1522 504 1537 510 1531 525 C1524 538 1512 536 1510 516Z" opacity="0.42" />
+          <path d="M234 762 C246 751 260 757 255 771 C248 784 236 782 234 762Z" opacity="0.46" />
+          <path d="M320 846 C332 836 344 842 339 855 C332 867 322 865 320 846Z" opacity="0.34" />
         </g>
       </svg>
     </div>
