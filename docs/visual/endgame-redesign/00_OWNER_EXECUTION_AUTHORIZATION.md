@@ -1,70 +1,74 @@
 # 00 — Product Owner Execution Authorization
 
-**Status:** APPROVED FOR THIS REDESIGN  
+**Status:** APPROVED — POST-EXECUTION ART-DIRECTION OVERRIDE  
 **Date:** 2026-08-10  
 **Planning baseline:** `a1078c1f91c251aaa7a453ef1e8a5108551c852d`
 
-This file records explicit Product Owner authorization for the Lifeweave Endgame Visual Redesign execution.
+This file records explicit Product Owner authority for Lifeweave visual work. The later decision in this file supersedes earlier visual-direction language wherever the two conflict.
 
-## Authorized objective
+## Current authorized objective
 
-Implement the approved **Quiet Precision Atlas** frontend redesign across the complete canonical surface ledger while preserving real product capabilities, domain contracts, local-first behavior, data safety, keyboard semantics, and governed performance limits.
+The Product Owner rejected the completed restrained **Quiet Precision Atlas** result as insufficiently distinctive and explicitly replaced that aesthetic target.
 
-## Explicit unattended authority
+The current target is **Lifeweave — Celestial Anime Editorial**: an endgame, premium Windows productivity experience with immediate visual impact, abstract-anime atmosphere, luminous sky/crystal/orbit/star/petal motifs, controlled prismatic glass, blue→indigo→violet identity, and polished cinematic motion.
 
-The Product Owner is intentionally unavailable during the overnight run.
+The desired first impression is unmistakable craftsmanship and a genuine **wow** response, not merely “clean”, “minimal”, “professional” or “SaaS-like”.
 
-For **reversible, in-scope frontend presentation and implementation decisions**, the execution agent is authorized and required to decide without asking for confirmation. This includes CSS composition, spacing, typography application, primitive reuse, local component structure, naming, test fixture details, deterministic verification substitutes, and other low-risk implementation choices.
+This is an art-direction override only. Preserve real product capabilities, domain contracts, local-first behavior, data safety, keyboard semantics, geometry authority and governed performance limits.
 
-When multiple valid in-scope choices remain, choose the option that best satisfies the canonical design authority, existing architecture, accessibility, performance, and product quality.
+## Superseded visual constraints
+
+Earlier instructions that required the global UI to remain extremely low-chroma, nearly decoration-free, static, solid-only, glow-free, or that confined abstract-anime visual language to Narrative are **superseded** to the extent they prevent the current objective.
+
+In particular:
+- visible global atmosphere is authorized;
+- controlled persistent glass is authorized where it creates real world/depth hierarchy;
+- glow is authorized as a sparse identity/state tool;
+- abstract anime motifs may exist globally as decorative presentation;
+- ambient transform/opacity motion is authorized with Reduced Motion behavior;
+- stronger editorial identity moments are authorized;
+- old visual-reference PNGs remain useful for composition/capability evidence but are not an aesthetic ceiling.
+
+`01_DESIGN_SYSTEM_AUTHORITY.md` contains the current visual language.
+
+## Reversible frontend authority
+
+For reversible, in-scope frontend presentation and implementation decisions, the implementation agent is authorized to choose the strongest solution without routine Product Owner confirmation. This includes CSS/SVG art, material composition, typography application, shared primitives, local component presentation, motion choreography, deterministic fixtures and visual verification.
+
+Decision order:
+1. immutable product/domain/data-safety authority;
+2. this later Product Owner authorization;
+3. current design-system authority;
+4. proven geometry/accessibility/performance constraints;
+5. real source capability;
+6. strongest reversible visual result.
 
 ## Safe fallback authority
 
-If a choice would expand risk or scope, do not ask the absent Product Owner merely to continue. Use the safest in-scope fallback:
-
+If a choice would expand product or data risk, use the safest in-scope fallback:
 - uncertain dependency → do not add it;
-- uncertain backend/schema/domain change → do not make it;
-- uncertain new capability → do not invent it;
+- uncertain backend/schema/domain change → leave it unchanged;
+- uncertain capability → do not invent it;
 - uncertain destructive action → do not perform it;
-- uncertain workflow/seal change → do not modify it;
-- ambitious vs reversible implementation → choose the reversible in-scope option.
+- uncertain workflow/seal change → leave it untouched;
+- visual ambition vs product correctness → preserve correctness and achieve the effect in presentation only.
 
-## Hard-block boundary
+## Hard boundaries
 
-The agent may stop a path only when no safe in-scope route exists, for example:
-
-- immutable product/domain authority is genuinely contradictory;
-- required backend/schema change is unavoidable;
-- repository/source state is externally corrupted or ambiguous;
-- authentication/toolchain/filesystem failure prevents all deterministic substitutes;
-- a confirmed performance regression cannot be reclaimed within authorized scope.
-
-Record exact evidence as `BLOCKED_PRODUCT` or `VERIFICATION_DEBT`; do not loop.
-
-## Single-goal overnight override
-
-Phase 7 originally recommended one `/goal` per stage for maximum isolation. The Product Owner now explicitly authorizes **one finite top-level overnight Goal** to execute the whole ordered program `F0 → S1 … S12 → Q checkpoints → one final adversarial pass → final gates`.
-
-This does **not** remove stage boundaries. Every stage remains a finite transaction:
-implement assigned rows → local gate → one review → ledger → scoped commit/checkpoint → continue.
-A closed row is not reopened for taste.
-
-The top-level Goal is complete only when the finite terminal predicate in `00_MASTER_EXECUTION_SPEC.md` is true.
-
-## Still forbidden without new authorization
-
+Still forbidden without a separate Product Owner decision:
 - new product capabilities;
 - backend/domain/schema/database/migration changes;
 - hand-editing generated IPC bindings;
-- new heavy dependencies merely for visual effect;
-- `.github/workflows/` or `.github/WORKFLOW_SEAL.sha256` changes;
-- push/force-push/history rewrite during the unattended redesign run;
+- heavy dependencies merely for visual effect;
+- `.github/workflows/` or workflow-seal changes;
 - deleting or mutating real user data;
 - raising locked performance ceilings;
-- recursive “keep improving until perfect” loops.
+- remote runtime decorative assets;
+- copyrighted anime characters/fan art;
+- gacha, loot-box or dense cyberpunk visual framing.
 
-This authorization narrows what counts as a materially OPEN frontend redesign decision. It does not weaken immutable product, safety, security, data, or workflow boundaries.
+## Quality requirement
 
-## Git publication policy
+Passing tests is necessary but not sufficient. Visual completion requires rendered Product Owner acceptance. A result that passes geometry, screenshot and regression gates but still looks generic, flat, timid or enterprise-default is **not endgame**.
 
-Local scoped commits are authorized and required for durable stage checkpoints. **Do not push during the unattended run.** Publication is deliberately deferred to the Product Owner after reviewing the final report. Never force-push or rewrite history.
+The implementation should retain the strong foundation produced by the previous execution—layout, semantics, tests, component convergence and safety—and replace the aesthetic layer rather than rebuilding product logic.
