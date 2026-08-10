@@ -1,16 +1,12 @@
 import { assignVars, globalStyle } from "@vanilla-extract/css";
 
 import { vars } from "./contract.css";
-import { darkValues } from "./darkTheme.css";
 import { lightValues } from "./lightTheme.css";
 
+/** Lifeweave now has one runtime theme: Light. System color-scheme never swaps product tokens. */
 globalStyle(":root", { vars: assignVars(vars, lightValues) });
 
-globalStyle(":root", {
-  "@media": { "(prefers-color-scheme: dark)": { vars: assignVars(vars, darkValues) } },
-});
-
-/** Compatibility aliases. Every presentation alias remains zero-chroma in both themes. */
+/** Compatibility aliases. Every presentation alias remains zero-chroma in the single Light theme. */
 globalStyle(":root", {
   vars: {
     "--app-background": vars.color.canvas,
