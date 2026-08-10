@@ -439,6 +439,20 @@ describe("App shell", () => {
     expect(screen.getByLabelText("Date")).toHaveValue(selectedIso);
   });
 
+  it("returns an intentionally selected date to the local day when Today is activated", async () => {
+    renderApp();
+    await screen.findByRole("heading", { name: "Today" });
+    const week = screen.getByRole("navigation", { name: "Week navigation" });
+    const other = within(week)
+      .getAllByRole("button")
+      .find((button) => button.getAttribute("aria-pressed") === "false")!;
+    fireEvent.click(other);
+    expect(await screen.findByText(/Selected day ·/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Today" }));
+    expect(await screen.findByText("Today · 2026-08-04")).toBeInTheDocument();
+  });
+
   it("advances a selected Today date when the local anchor rolls over", async () => {
     const view = renderApp();
     expect(await screen.findByText("Today · 2026-08-04")).toBeInTheDocument();

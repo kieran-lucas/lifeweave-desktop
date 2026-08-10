@@ -6,7 +6,11 @@ The immutable source is authoritative. This registry makes operational status vi
 
 - Windows local-first/offline application.
 - No account, server, collaboration, hidden telemetry, or default cloud dependency.
-- Task-first navigation; Today default.
+- Task-first navigation; Today default. Activating the Today destination always returns the viewed
+  date to the current local day.
+- The approved current Lifeweave mark is a refined single-stroke blue infinity. The shell and the
+  Windows desktop/bundle icon derive from the same local SVG source; no tile, glow, remote asset, or
+  third-party brand geometry is used.
 - Task is not a card.
 - Continuous Task timeline 04:00–24:00 with required exact-minute start/end.
 - Ordinary overlaps rejected; exact-slot groups allowed.
@@ -169,7 +173,7 @@ The immutable source is authoritative. This registry makes operational status vi
 
 ## OPEN — Product/UX
 
-- final brand/name/logo;
+- final brand/name beyond the approved current blue-infinity mark;
 - final FAB icon and placement;
 - actual-time semantics beyond explicit one-off sessions and planned-versus-actual Analytics
   (recurring actual time, manual time entry, editing completed segments, and every other extension

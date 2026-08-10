@@ -25,8 +25,8 @@ export const appRoot = style({ display: "grid", gridTemplateColumns: "252px minm
 export const sidebar = style({ display: "flex", flexDirection: "column", minWidth: 0, padding: "28px 16px 18px", borderRight: "1px solid var(--border-subtle)", background: "var(--sidebar-background)", position: "relative", zIndex: 1 });
 export const brand = style({ display: "flex", alignItems: "center", gap: 11, minHeight: 36, padding: "0 9px", marginBottom: 28, ...text.objectTitle, color: "var(--text-primary)" });
 /** The centralized product mark: a simple blue infinity without a tile or glow. */
-export const brandMark = style({ display: "grid", placeItems: "center", width: 28, height: 28, flexShrink: 0, color: "var(--accent)" });
-export const brandGlyph = style({ fill: "none", stroke: "currentColor", strokeWidth: 1.65, strokeLinecap: "round" });
+export const brandMark = style({ display: "grid", placeItems: "center", width: 30, height: 30, flexShrink: 0, color: "var(--accent)" });
+export const brandGlyph = style({ fill: "none", stroke: "currentColor", strokeWidth: 1.9, strokeLinecap: "round", strokeLinejoin: "round" });
 export const navGroup = style({ display: "grid", gap: 3 });
 export const navButton = style([focusRing, { display: "flex", alignItems: "center", gap: 12, minHeight: 42, width: "100%", padding: "8px 11px", border: 0, borderRadius: "var(--radius-control)", background: "transparent", color: "var(--text-muted)", ...text.navigation, textAlign: "left", cursor: "pointer", transition: `background-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}`, selectors: { "&[aria-current=page]": { background: "var(--accent)", color: "var(--accent-contrast)", fontWeight: 600 }, "&:hover:not([aria-current=page])": { background: "var(--active-background)", color: "var(--text-primary)" } } }]);
 /**

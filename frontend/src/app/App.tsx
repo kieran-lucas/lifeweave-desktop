@@ -168,8 +168,9 @@ export function App() {
   // shortcut can never diverge from the button it mirrors.
   const selectDestination = useCallback((next: Destination) => {
     setPendingNav(null);
+    if (next === "today") setSelectedDate(anchorLocalDate);
     setDestination(next);
-  }, []);
+  }, [anchorLocalDate]);
   const openShortcutHelp = useCallback((opener: HTMLElement | null) => {
     shortcutHelpOpenerRef.current = opener;
     setShortcutHelpOpen(true);
@@ -303,7 +304,7 @@ export function App() {
       <nav className={styles.sidebar} aria-label="Primary navigation">
         <div className={styles.brand}>
           <span className={styles.brandMark} aria-hidden="true">
-            <Icon d={iconBrand} size={28} className={styles.brandGlyph} />
+            <Icon d={iconBrand} size={30} className={styles.brandGlyph} />
           </span>
           <span className={styles.navLabel}>Lifeweave</span>
         </div>

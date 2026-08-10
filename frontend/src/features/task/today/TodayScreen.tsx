@@ -53,7 +53,12 @@ import { TagChipList } from "../../tag/TagChipList";
 import { TagPicker } from "../../tag/TagPicker";
 import type { TagSummaryView } from "../../../ipc/generated/TagSummaryView";
 import { invalidateTaskSavedViewProjections } from "../saved-views/savedViewQueries";
-import { iconToday } from "../../../design-system/visual/icons";
+import {
+  Icon,
+  iconMoon,
+  iconMorning,
+  iconToday,
+} from "../../../design-system/visual/icons";
 import { EmptyState, LoadingRow, SkeletonList } from "../../../design-system/primitives/States";
 
 /*
@@ -103,9 +108,9 @@ type Draft = {
   selectedTags: TagSummaryView[];
 };
 const periods = [
-  { name: "Morning", start: 240, end: 720 },
-  { name: "Afternoon", start: 720, end: 1080 },
-  { name: "Evening", start: 1080, end: 1440 },
+  { name: "Morning", start: 240, end: 720, icon: iconMorning },
+  { name: "Afternoon", start: 720, end: 1080, icon: iconToday },
+  { name: "Evening", start: 1080, end: 1440, icon: iconMoon },
 ];
 const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 export const localToday = getLocalToday;
@@ -898,7 +903,10 @@ export function TodayScreen({
                 inter-element whitespace that never existed.
               */}
               <h2 id={`${period.name}-heading`} className={styles.periodHeading}>
-                <span>{period.name}</span>
+                <span className={styles.periodLabel}>
+                  <Icon d={period.icon} size={17} className={styles.periodIcon} />
+                  <span>{period.name}</span>
+                </span>
                 <span className={styles.periodRange}>
                   {formatMinute(period.start)}–{formatMinute(period.end)}
                 </span>

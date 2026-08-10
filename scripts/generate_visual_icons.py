@@ -24,6 +24,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "frontend/node_modules/@fluentui/svg-icons/icons"
 TARGET = ROOT / "frontend/src/design-system/visual/icons.tsx"
+BRAND_SOURCE = ROOT / "assets/brand/lifeweave-mark.svg"
 
 # name in Lifeweave  ->  Fluent file stem.
 #
@@ -31,6 +32,7 @@ TARGET = ROOT / "frontend/src/design-system/visual/icons.tsx"
 # semantics: a completed task and a raised priority are states, not decorations.
 ICONS: dict[str, str] = {
     "today": "weather_sunny_20_regular",
+    "morning": "weather_sunny_low_20_regular",
     "calendar": "calendar_ltr_20_regular",
     "analytics": "data_trending_20_regular",
     "plans": "target_20_regular",
@@ -84,9 +86,9 @@ import type {{ SVGProps }} from "react";
 
 {entries}
 
-/** Lifeweave infinity mark â€” simple stroke geometry, never a feature glyph or status icon. */
+/** Lifeweave infinity mark — refined continuous geometry shared with the desktop icon. */
 export const iconBrand =
-  "M2 10c3-5 5-5 8 0s5 5 8 0M2 10c3 5 5 5 8 0s5-5 8 0";
+  "{brand_path}";
 
 export function Icon({{
   d,
@@ -136,11 +138,18 @@ def main() -> int:
         export_name = "icon" + name[0].upper() + name[1:]
         entries.append(f'/** {stem} */\nexport const {export_name} =\n  "{found[0]}";')
 
+    brand_svg = BRAND_SOURCE.read_text(encoding="utf-8")
+    brand_paths = re.findall(r'\bd="([^"]+)"', brand_svg)
+    if len(brand_paths) != 1:
+        print(f"{BRAND_SOURCE} has {len(brand_paths)} paths; expected exactly 1", file=sys.stderr)
+        return 1
+
     TARGET.write_text(
         HEADER.format(
             count=len(ICONS),
             version=version,
             entries="\n\n".join(entries),
+            brand_path=brand_paths[0],
         ),
         encoding="utf-8",
     )

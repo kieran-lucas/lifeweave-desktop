@@ -34,7 +34,9 @@ export const period=style({display:"flex",flexDirection:"column",gap:space.contr
  */
 export const group_=style({border:"1px solid var(--border-subtle)",borderRadius:"var(--radius-surface)",background:"var(--surface-raised)",overflow:"hidden",minInlineSize:0});
 /** Name and range are two spaced boxes; the separation is layout, never a literal space in text. */
-export const periodHeading=style({display:"flex",flexWrap:"wrap",alignItems:"baseline",gap:space.control,margin:0,minInlineSize:0,...text.eyebrow});
+export const periodHeading=style({display:"flex",flexWrap:"wrap",alignItems:"center",gap:space.control,margin:0,minInlineSize:0,...text.eyebrow});
+export const periodLabel=style({display:"inline-flex",alignItems:"center",gap:space.x1,minInlineSize:0});
+export const periodIcon=style({inlineSize:17,blockSize:17,flexShrink:0,color:"var(--accent)"});
 export const periodRange=style({...text.metadata,color:"var(--text-muted)",textTransform:"none"});
 export const empty=style({color:"var(--text-muted)",margin:0});
 export const group=style({display:"grid",gridTemplateColumns:"minmax(92px,116px) minmax(0,1fr)",gap:space.field,paddingBlock:space.x3,paddingInline:space.x4,minInlineSize:0,selectors:{"&:not(:last-child)":{borderBottom:"1px solid var(--border-subtle)"}}});

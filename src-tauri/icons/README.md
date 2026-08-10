@@ -1,9 +1,7 @@
-# Setup-only placeholder icon
+# Lifeweave application icon
 
-This neutral geometric icon exists only so the Tauri/NSIS bootstrap can build.
+The PNG and ICO files in this directory are generated from
+`assets/brand/lifeweave-mark.svg`, the same continuous infinity geometry used by the application
+shell.
 
-It is:
-- not the final logo;
-- not a locked brand asset;
-- safe to replace through an approved branding decision;
-- generated locally with no external/copyrighted asset.
+Regenerate with Tauri's local icon pipeline; do not redraw the raster files by hand.

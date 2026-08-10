@@ -101,11 +101,10 @@ export const cell = style({
 });
 
 /**
- * Today and selection are the only blue on the screen, and they are deliberately different marks:
- * today gets a filled accent disc behind its date number, selection gets the pale fill the whole
- * v2 system uses. Neither depends on colour alone — today also carries `aria-current="date"` and
- * selection `aria-selected`, and the two remain distinguishable in forced colors because one is a
- * shape and the other is a field.
+ * Today and selection are deliberately different marks. Today uses a compact outlined date box;
+ * selection uses the pale full-cell field and structural edge. Neither depends on colour alone —
+ * today also carries `aria-current="date"` and selection `aria-selected`, and the two remain
+ * distinguishable in forced colors because one is a bounded label and the other is a field.
  */
 export const cellButton = style({
   width: "100%",
@@ -139,18 +138,33 @@ export const cellButton = style({
 export const dayNumber = style({
   display: "grid",
   placeItems: "center",
-  inlineSize: 24,
+  inlineSize: 27,
   blockSize: 24,
-  borderRadius: "var(--radius-full)",
+  border: "1px solid transparent",
+  borderRadius: "var(--radius-small)",
   fontSize: "0.8125rem",
   fontWeight: 600,
   fontVariantNumeric: "tabular-nums",
   selectors: {
     [`${cellButton}[aria-current=date] &`]: {
-      background: "var(--accent)",
-      color: "var(--accent-contrast)",
+      borderColor: "var(--accent)",
+      background: "color-mix(in srgb, var(--accent) 8%, var(--surface-raised))",
+      color: "var(--accent)",
+      boxShadow: "inset 0 -2px 0 var(--accent)",
     },
     [`${cellButton}[data-outside] &`]: { fontWeight: 400 },
+  },
+  "@media": {
+    "(forced-colors: active)": {
+      selectors: {
+        [`${cellButton}[aria-current=date] &`]: {
+          borderColor: "Highlight",
+          background: "Canvas",
+          color: "CanvasText",
+          boxShadow: "inset 0 -2px 0 Highlight",
+        },
+      },
+    },
   },
 });
 

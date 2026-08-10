@@ -141,6 +141,7 @@ describe("Task 50 layout contracts", () => {
     const heading = screen.getByRole("heading", { name: /Morning/ });
     const parts = [...heading.children].map((node) => node.textContent);
     expect(parts).toEqual(["Morning", "04:00–12:00"]);
+    expect(heading.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
     // Two element children, and no bare text node between them: the gap is a layout property, so
     // the heading must not be able to fall back to a single run of text. `textContent` still
     // concatenates here — the rendered spacing itself is proven in native phase 21.
