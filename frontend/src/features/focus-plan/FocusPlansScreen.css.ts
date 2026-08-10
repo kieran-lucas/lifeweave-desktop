@@ -13,14 +13,13 @@ export const portfolios = style({ display: "flex", gap: space.x3, flexWrap: "wra
 export const tab = sharedTab;
 export const workspace = style([splitWorkspace, { vars: { "--lw-split-columns": "minmax(240px, 320px) minmax(0, 1fr)" }, gap: space.x4 }]);
 
-/** Master rail = painted index board. */
 export const listPanel = style({
   padding: space.x3,
   border: "1px solid var(--paint-edge)",
   borderRadius: "var(--radius-surface)",
-  backgroundColor: "var(--paint-board)",
-  backgroundImage: "var(--paint-grain)",
-  boxShadow: "var(--glow-crystal)",
+  backgroundColor: "#FFFFFF",
+  backgroundImage: "var(--paint-grain-fine)",
+  boxShadow: "none",
   maxHeight: "calc(100vh - 220px)",
   overflowY: "auto",
   scrollbarGutter: "stable",
@@ -37,14 +36,16 @@ export const planButton = style({
   padding: "14px 12px 14px 16px",
   border: "1px solid transparent",
   borderRadius: "var(--radius-control)",
-  background: "transparent",
+  backgroundColor: "#FFFFFF",
+  backgroundImage: "var(--paint-grain-fine)",
   color: "inherit",
   cursor: "pointer",
-  transition: `background-color ${duration.state} ${easing.standard}, border-color ${duration.state} ${easing.standard}, box-shadow ${duration.state} ${easing.standard}, transform ${duration.state} ${easing.standard}`,
+  boxShadow: "none",
+  transition: `background-color ${duration.state} ${easing.standard}, border-color ${duration.state} ${easing.standard}, transform ${duration.state} ${easing.standard}`,
   selectors: {
     "&::before": { content: '""', position: "absolute", insetBlock: 10, insetInlineStart: 0, inlineSize: 3, borderRadius: "var(--radius-full)", background: "transparent" },
-    "&:hover": { backgroundColor: "var(--surface-hover)", backgroundImage: "var(--paint-grain-fine)", transform: "translateY(-1px)" },
-    '&[aria-current="true"]': { backgroundColor: "var(--paint-selected)", backgroundImage: "var(--paint-grain-fine), var(--paint-wash-blue)", borderColor: "var(--paint-edge-strong)", boxShadow: "var(--glow-selected)" },
+    "&:hover": { backgroundColor: "#F5F5F5", transform: "translateY(-1px)" },
+    '&[aria-current="true"]': { backgroundColor: "#FFFFFF", borderColor: "var(--accent)", boxShadow: "inset 3px 0 0 var(--accent)" },
     '&[aria-current="true"]::before': { background: "var(--accent)" },
     "&:focus-visible": { outline: "2px solid var(--focus-ring)", outlineOffset: -2 },
   },
@@ -54,18 +55,17 @@ export const planButton = style({
   },
 });
 
-/** Detail = one manuscript sheet with shared grain; sections are ink rules, not nested cards. */
 export const detailPanel = style({
   display: "flex",
   flexDirection: "column",
   gap: space.group,
   padding: space.x4,
   minInlineSize: 0,
-  border: "1px solid var(--paint-edge-strong)",
+  border: "1px solid var(--paint-edge)",
   borderRadius: "var(--radius-surface)",
-  backgroundColor: "var(--paint-sheet-strong)",
-  backgroundImage: "var(--paint-grain-fine), var(--paint-wash-blue), var(--paint-wash-violet)",
-  boxShadow: "var(--glow-hero)",
+  backgroundColor: "#FFFFFF",
+  backgroundImage: "var(--paint-grain-fine)",
+  boxShadow: "none",
   "@media": { "(max-width: 700px)": { padding: space.x3 } },
 });
 export const detailHeader = style({ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", gap: space.field, alignItems: "start", minInlineSize: 0, "@media": { "(max-width: 700px)": { gridTemplateColumns: "1fr" } } });
@@ -81,10 +81,10 @@ export const input = style({ width: "100%", boxSizing: "border-box", minInlineSi
 export const createInput = style([input, { inlineSize: "100%", minInlineSize: 0 }]);
 export const textarea = style([input, { minHeight: "94px", resize: "vertical" }]);
 export const actions = style({ display: "flex", gap: "8px", flexWrap: "wrap" });
-export const error = style({ color: "var(--danger)", padding: "10px 12px", border: "1px solid currentColor", borderRadius: "var(--radius-control)", backgroundColor: "color-mix(in srgb, var(--danger) 5%, var(--paint-sheet))", backgroundImage: "var(--paint-grain-fine)" });
+export const error = style({ color: "var(--danger)", padding: "10px 12px", border: "1px solid currentColor", borderRadius: "var(--radius-control)", backgroundColor: "#FFFFFF", backgroundImage: "var(--paint-grain-fine)" });
 export const muted = style({ ...text.metadata, color: "var(--text-muted)" });
 export const emptyState = style({ alignSelf: "center", maxInlineSize: "28rem", color: "var(--text-muted)", textAlign: "center", padding: "clamp(32px, 8vh, 72px) 20px", fontFamily: family.editorial });
-export const draftNote = style({ color: "var(--text-muted)", margin: 0, padding: space.x3, borderInlineStart: "3px solid var(--accent)", borderRadius: "0 var(--radius-control) var(--radius-control) 0", backgroundColor: "var(--paint-selected)", backgroundImage: "var(--paint-grain-fine)" });
+export const draftNote = style({ color: "var(--text-muted)", margin: 0, padding: space.x3, borderInlineStart: "3px solid var(--accent)", borderRadius: "0 var(--radius-control) var(--radius-control) 0", backgroundColor: "#FFFFFF", backgroundImage: "var(--paint-grain-fine)" });
 export const variantTabs = style({ display: "flex", gap: space.x1, flexWrap: "wrap", marginBottom: space.x3, borderBlockEnd: "1px solid var(--paint-edge)" });
 export const variantControl = style({ display: "inline-flex", gap: "3px", alignItems: "center" });
 export const variantEditor = style({ display: "grid", gap: space.x3, paddingTop: space.x3 });
