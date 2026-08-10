@@ -916,7 +916,7 @@ export function TodayScreen({
               */}
               <h2 id={`${period.name}-heading`} className={styles.periodHeading}>
                 <span className={styles.periodLabel}>
-                  <Icon d={period.icon} size={17} className={styles.periodIcon} />
+                  <Icon d={period.icon} size={19} className={styles.periodIcon} />
                   <span>{period.name}</span>
                 </span>
                 <span className={styles.periodRange}>
