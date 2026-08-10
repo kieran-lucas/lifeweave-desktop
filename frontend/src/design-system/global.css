@@ -1,5 +1,6 @@
 /* Lifeweave — Light-only Monochrome Matte material layer. */
 :root {
+  color-scheme: light;
   font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
   color: var(--text-primary);
   background: var(--app-background);
