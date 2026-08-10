@@ -15,11 +15,14 @@ export const appRoot = style({
   overflow: "hidden",
   position: "relative",
   isolation: "isolate",
-  background: "#FFFFFF",
+  background: "var(--app-background)",
   selectors: { "&[data-sidebar-mode=collapsed]": { gridTemplateColumns: "68px minmax(0, 1fr)" } },
 });
 
-/** One solid blue navigation plane. No tint, wash, gradient, blur or glow. */
+/**
+ * The shell is one hard inversion plane: black against white in Light, white against black in Dark.
+ * No translucent fill, wash, glow or colored separator is allowed here.
+ */
 export const sidebar = style({
   display: "flex",
   flexDirection: "column",
@@ -27,9 +30,8 @@ export const sidebar = style({
   padding: "26px 15px 18px",
   position: "relative",
   zIndex: 2,
-  borderRight: "1px solid #1D4ED8",
-  backgroundColor: "var(--accent)",
-  backgroundImage: "var(--paint-grain-fine)",
+  borderRight: "1px solid var(--text-primary)",
+  backgroundColor: "var(--text-primary)",
   boxShadow: "none",
   "@media": { "(forced-colors: active)": { background: "Canvas", borderRight: "1px solid CanvasText" } },
 });
@@ -42,7 +44,7 @@ export const brand = style({
   padding: "0 7px",
   marginBottom: 28,
   ...text.objectTitle,
-  color: "#FFFFFF",
+  color: "var(--app-background)",
   letterSpacing: "-0.018em",
 });
 
@@ -53,17 +55,16 @@ export const brandMark = style({
   height: 38,
   flexShrink: 0,
   borderRadius: "var(--radius-control)",
-  color: "var(--accent)",
-  backgroundColor: "#FFFFFF",
-  backgroundImage: "var(--paint-grain-fine)",
-  border: "1px solid #FFFFFF",
+  color: "var(--text-primary)",
+  backgroundColor: "var(--app-background)",
+  border: "1px solid var(--app-background)",
   boxShadow: "none",
 });
 
 export const brandGlyph = style({
   fill: "none",
   stroke: "currentColor",
-  strokeWidth: 2,
+  strokeWidth: 2.15,
   strokeLinecap: "round",
   strokeLinejoin: "round",
 });
@@ -82,29 +83,28 @@ export const navButton = style([
     border: "1px solid transparent",
     borderRadius: "var(--radius-control)",
     background: "transparent",
-    color: "#FFFFFF",
+    color: "var(--app-background)",
     ...text.navigation,
     textAlign: "left",
     cursor: "pointer",
-    transition: `background-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}, border-color ${duration.state} ${easing.standard}`,
+    transition: `background-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}, border-color ${duration.state} ${easing.standard}, transform ${duration.press} ${easing.standard}`,
     selectors: {
       "&[aria-current=page]": {
-        color: "var(--accent)",
+        color: "var(--text-primary)",
         fontWeight: 700,
-        borderColor: "#FFFFFF",
-        backgroundColor: "#FFFFFF",
-        backgroundImage: "var(--paint-grain-fine)",
+        borderColor: "var(--app-background)",
+        backgroundColor: "var(--app-background)",
         boxShadow: "none",
       },
       "&:hover:not([aria-current=page])": {
-        color: "#FFFFFF",
-        borderColor: "#1D4ED8",
-        backgroundColor: "#1D4ED8",
-        backgroundImage: "var(--paint-grain-fine)",
+        color: "var(--app-background)",
+        borderColor: "var(--text-secondary)",
+        backgroundColor: "var(--text-secondary)",
       },
+      "&:active": { transform: "translateY(1px)" },
     },
     "@media": {
-      "(prefers-reduced-motion: reduce)": { transition: "none" },
+      "(prefers-reduced-motion: reduce)": { transition: "none", selectors: { "&:active": { transform: "none" } } },
       "(forced-colors: active)": {
         selectors: { "&[aria-current=page]": { background: "Highlight", color: "HighlightText", boxShadow: "none" } },
       },
@@ -120,7 +120,7 @@ globalStyle(`${appRoot}[data-sidebar-mode=collapsed] .${brand}`, { fontSize: 0, 
 export const divider = style({
   height: 1,
   margin: "13px 10px",
-  background: "#1D4ED8",
+  background: "var(--text-secondary)",
 });
 
 export const collapseButton = style([
@@ -132,25 +132,23 @@ export const collapseButton = style([
     alignItems: "center",
     minHeight: 42,
     padding: "9px 11px",
-    border: "1px solid #FFFFFF",
+    border: "1px solid var(--app-background)",
     borderRadius: "var(--radius-control)",
-    backgroundColor: "var(--accent)",
-    backgroundImage: "var(--paint-grain-fine)",
-    color: "#FFFFFF",
+    background: "transparent",
+    color: "var(--app-background)",
     ...text.navigation,
     cursor: "pointer",
+    transition: `background-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}, transform ${duration.press} ${easing.standard}`,
     selectors: {
-      "&:hover": {
-        color: "var(--accent)",
-        borderColor: "#FFFFFF",
-        backgroundColor: "#FFFFFF",
-      },
+      "&:hover": { color: "var(--text-primary)", backgroundColor: "var(--app-background)" },
+      "&:active": { transform: "translateY(1px)" },
     },
+    "@media": { "(prefers-reduced-motion: reduce)": { selectors: { "&:active": { transform: "none" } } } },
   },
 ]);
 
 const routeIn = keyframes({
-  from: { opacity: 0.72 },
+  from: { opacity: 0.78 },
   to: { opacity: 1 },
 });
 
@@ -162,7 +160,7 @@ export const viewport = style({
   overflow: "auto",
   scrollbarGutter: "stable both-edges",
   padding: gutter,
-  background: "#FFFFFF",
+  background: "var(--app-background)",
 });
 
 globalStyle(`${viewport} > :not(p)`, {
@@ -194,7 +192,7 @@ export const shortcutChord = style({
   padding: "4px 9px",
   borderRadius: "var(--radius-small)",
   border: "1px solid var(--paint-edge)",
-  backgroundColor: "#FFFFFF",
+  backgroundColor: "var(--surface-raised)",
   backgroundImage: "var(--paint-grain-fine)",
   boxShadow: "none",
   ...text.code,
