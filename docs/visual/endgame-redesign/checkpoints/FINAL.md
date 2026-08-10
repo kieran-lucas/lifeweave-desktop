@@ -6,12 +6,12 @@ Run only after F0, S01–S12 and Q1–Q5 are closed.
 - repository instructions;
 - latest Product Owner authorization;
 - Master for finite coverage/termination;
-- **current design-system authority (`Matte Anime Painted Atlas`) for aesthetic judgment**;
+- **current design-system authority (`Flat Matte Monochrome`) for aesthetic judgment**;
 - execution ledger;
 - surface packets only when a concrete final finding points to them;
 - test policy.
 
-The later Product Owner art-direction override supersedes earlier Quiet Precision Atlas / glass-first aesthetic language wherever those conflict. The old 109-row program remains capability and surface-coverage authority; it is not an aesthetic ceiling.
+The latest Product Owner art-direction override supersedes earlier Quiet Precision Atlas, glass-first and Matte Anime Painted Atlas aesthetic language wherever those conflict. The old 109-row program remains capability and surface-coverage authority; it is not an aesthetic ceiling.
 
 Do not preload research archive.
 
@@ -33,10 +33,12 @@ A nondiagnostic infrastructure failure follows the repository's risk-based closu
 
 Review the implemented redesign against:
 - all 109 canonical rows for capability/surface coverage;
-- **Matte Anime Painted Atlas** global laws;
-- opaque/matte persistent-material requirement and rejection of glass/acrylic appearance;
-- shared paper/painted-board/flat-wood grain continuity;
-- abstract-anime editorial identity without fandom/gacha/cyberpunk framing;
+- **Flat Matte Monochrome** global laws;
+- pure-white workspace and explicit solid-blue identity planes;
+- no blue-white tint blending, decorative gradients, colored ambient washes, glow or glass/acrylic appearance;
+- no global decorative atmosphere, stars, petals, orbit/weave lines, wallpaper SVG or ambient animation;
+- one subtle shared matte grain recipe only;
+- white paper / neutral rule / blue ink continuity across Today, Calendar, Analytics, Plans, Life, Reader/Narrative, Search, dialogs and Settings;
 - smooth cross-surface motion continuity and absence of visible stutter/snap;
 - capability-vs-reference boundary;
 - cross-screen hierarchy/coherence;
@@ -46,7 +48,7 @@ Review the implemented redesign against:
 - no invented capability;
 - no regression to closed product invariants.
 
-Rendered visual acceptance matters: a technically passing result that still reads as generic SaaS, disconnected themed screens, frosted glass, or enterprise-default is a finding, not completion.
+Rendered visual acceptance matters: a technically passing result that still reads as frosted glass, pastel blue-white blending, gradient-heavy, glowing, decorative-wallpaper-driven or enterprise-default is a finding, not completion.
 
 Materialize a **finite fixed finding set `F_final`** with severity, row IDs, files, violated authority, smallest safe correction and required rerun.
 
