@@ -172,7 +172,7 @@ describe("DocumentOutline component", () => {
     fireEvent.click(screen.getByRole("button", { name: "Introduction" }));
 
     expect(targetEl.scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth", block: "start" });
-    expect(targetEl.focus).toHaveBeenCalledWith({ preventScroll: false });
+    expect(targetEl.focus).toHaveBeenCalledWith({ preventScroll: true });
 
     document.body.removeChild(targetEl);
   });
@@ -188,6 +188,28 @@ describe("DocumentOutline component", () => {
     expect(targetEl.scrollIntoView).toHaveBeenCalledWith({ behavior: "auto", block: "start" });
 
     document.body.removeChild(targetEl);
+  });
+
+  it("scrolls the owning app viewport directly without a competing focus scroll", () => {
+    const viewport = document.createElement("main");
+    viewport.dataset.appViewport = "";
+    Object.defineProperty(viewport, "scrollTop", { configurable: true, value: 120 });
+    viewport.getBoundingClientRect = vi.fn(() => ({ top: 50 }) as DOMRect);
+    viewport.scrollTo = vi.fn();
+    const targetEl = document.createElement("h1");
+    targetEl.id = headingIdForSourceIndex(0);
+    targetEl.scrollIntoView = vi.fn();
+    targetEl.getBoundingClientRect = vi.fn(() => ({ top: 350 }) as DOMRect);
+    viewport.appendChild(targetEl);
+    document.body.appendChild(viewport);
+
+    render(<DocumentOutline outline={twoEntryOutline} reducedMotion={false} />);
+    fireEvent.click(screen.getByRole("button", { name: "Introduction" }));
+
+    expect(viewport.scrollTo).toHaveBeenCalledWith({ top: 396, behavior: "smooth" });
+    expect(targetEl.focus).toHaveBeenCalledWith({ preventScroll: true });
+    expect(targetEl.scrollIntoView).not.toHaveBeenCalled();
+    document.body.removeChild(viewport);
   });
 
   it("sets aria-current on the active entry after click", async () => {

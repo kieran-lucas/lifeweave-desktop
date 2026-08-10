@@ -17,8 +17,18 @@ export function DocumentOutline({
     setActiveId(id);
     const el = document.getElementById(id);
     if (!el) return;
-    el.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "start" });
-    el.focus({ preventScroll: false });
+    const behavior = reducedMotion ? "auto" : "smooth";
+    const viewport = el.closest<HTMLElement>("[data-app-viewport]");
+    el.focus({ preventScroll: true });
+    if (!viewport) {
+      el.scrollIntoView({ behavior, block: "start" });
+      return;
+    }
+    const top = viewport.scrollTop
+      + el.getBoundingClientRect().top
+      - viewport.getBoundingClientRect().top
+      - 24;
+    viewport.scrollTo({ top: Math.max(0, top), behavior });
   };
 
   return (

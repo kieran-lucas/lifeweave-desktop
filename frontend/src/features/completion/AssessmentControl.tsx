@@ -17,6 +17,13 @@ type Props = {
   onSelect: (state: CompletionStateView) => void;
 };
 
+const compactLabels: Readonly<Record<string, string>> = {
+  none: "None",
+  below: "Low",
+  met: "Met",
+  excellent: "Great",
+};
+
 export function AssessmentControl({itemId,states,evaluation,eligible,unavailableReason=null,open,onOpen,onClose,onSelect}:Props){
   const trigger=useRef<HTMLButtonElement>(null),fan=useRef<HTMLDivElement>(null),[active,setActive]=useState(0);
   const label=evaluation?.label??"Unevaluated";
@@ -29,6 +36,6 @@ export function AssessmentControl({itemId,states,evaluation,eligible,unavailable
   const key=(event:React.KeyboardEvent,index:number)=>{let next=index;if(event.key==="ArrowLeft"||event.key==="ArrowUp")next=(index-1+states.length)%states.length;if(event.key==="ArrowRight"||event.key==="ArrowDown")next=(index+1)%states.length;if(event.key==="Home")next=0;if(event.key==="End")next=states.length-1;if(event.key==="Escape"){event.preventDefault();close();return;}if(event.key==="Enter"||event.key===" "){event.preventDefault();choose(states[index]!);return;}if(next!==index){event.preventDefault();setActive(next);requestAnimationFrame(()=>fan.current?.querySelectorAll<HTMLButtonElement>("button")[next]?.focus());}};
   return <div className={styles.anchor}>
     <button ref={trigger} type="button" className={styles.trigger} data-state={evaluation?.visual_token??"empty"} aria-label={unavailableReason??(!eligible?`Assessment unavailable until task ends`:states.length===0?"Assessment options are loading":`Assess task. Current state: ${label}`)} aria-haspopup="listbox" aria-expanded={open} disabled={!available} onClick={event=>{event.stopPropagation();open?close():onOpen();}}><span className={styles.ring} aria-hidden="true"/></button>
-    {open&&createPortal(<div ref={fan} className={styles.fan} role="listbox" aria-label="Completion assessment" data-item={itemId}>{states.map((state,index)=><button key={state.id} type="button" role="option" aria-selected={evaluation?.state_id===state.id} aria-label={state.label} data-option={index} data-active={index===active} data-visual={state.visual_token} tabIndex={index===active?0:-1} className={styles.option} onKeyDown={event=>key(event,index)} onClick={()=>choose(state)}>{state.label}</button>)}</div>,document.body)}
+    {open&&createPortal(<div ref={fan} className={styles.fan} role="listbox" aria-label="Completion assessment" data-item={itemId}>{states.map((state,index)=><button key={state.id} type="button" role="option" aria-selected={evaluation?.state_id===state.id} aria-label={state.label} title={state.label} data-option={index} data-active={index===active} data-visual={state.visual_token} tabIndex={index===active?0:-1} className={styles.option} onKeyDown={event=>key(event,index)} onClick={()=>choose(state)}>{compactLabels[state.internal_key]??state.label}</button>)}</div>,document.body)}
   </div>;
 }
