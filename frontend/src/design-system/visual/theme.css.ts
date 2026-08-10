@@ -10,7 +10,7 @@ globalStyle(":root", {
   "@media": { "(prefers-color-scheme: dark)": { vars: assignVars(vars, darkValues) } },
 });
 
-/** Compatibility aliases. Light presentation stays white/neutral unless a component opts into blue. */
+/** Compatibility aliases. Every presentation alias remains zero-chroma in both themes. */
 globalStyle(":root", {
   vars: {
     "--app-background": vars.color.canvas,
@@ -28,6 +28,8 @@ globalStyle(":root", {
     "--text-primary": vars.color.textPrimary,
     "--text-muted": vars.color.textTertiary,
     "--accent": vars.color.accent,
+    "--accent-muted": vars.color.accentMuted,
+    "--accent-soft": vars.color.accentSoft,
     "--color-accent": vars.color.accent,
     "--accent-contrast": vars.color.textOnAccent,
     "--active-background": vars.color.surfaceSelected,
