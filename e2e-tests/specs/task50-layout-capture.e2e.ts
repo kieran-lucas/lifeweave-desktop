@@ -9,23 +9,13 @@ import { appLocalDate, seedLayoutFixture } from "../support/layoutFixture.js";
 /**
  * Task 50 layout capture — evidence tooling, not a gate.
  *
- * This spec walks the screenshot matrix at every supported viewport, records the real box model,
- * and **reports** violations instead of throwing. That is deliberate: it has to run unchanged
- * against the broken baseline and against the finished layout, so the two artifact sets are
- * directly comparable. The hard invariants live in `phase21-global-layout.e2e.ts`, which throws.
- *
- * Selectors degrade on purpose. Before Phase B there is no `[data-page-frame]`, so the content root
- * falls back to the first element inside the main viewport, and every contextual control is reached
- * through a best-effort click that records a skip rather than failing the run.
- *
- * Run it with `pnpm e2e:windows -- task50-layout-capture.e2e.ts`; set
- * `LIFEWEAVE_LAYOUT_CAPTURE_LABEL=final` for the post-implementation pass.
+ * Search and Analytics are Settings-owned in the current IA. Analytics keeps Ctrl+3 as its direct
+ * entry path, while Search is opened through Settings → Tools.
  */
 
-/** WebDriver Escape, built from its code point so no invisible character enters the source. */
 const ESCAPE = String.fromCharCode(0xe00c);
+const CONTROL = "\uE009";
 const label = process.env.LIFEWEAVE_LAYOUT_CAPTURE_LABEL ?? "baseline";
-// The wdio worker's cwd is `e2e-tests/`, so the repository root is resolved from this file instead.
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const outputRoot = join(repoRoot, "target", "e2e-artifacts", "task-50", label);
 
@@ -96,7 +86,6 @@ async function measure(screen: string, viewport: string, sidebar: string) {
       notes.push("no main viewport element found");
     }
 
-    // Collision sweep across whichever modal is open, else the whole content area.
     const container =
       document.querySelector("[role='dialog'][aria-modal='true']") ?? main ?? document.body;
     const nodes = [
@@ -135,8 +124,6 @@ async function measure(screen: string, viewport: string, sidebar: string) {
         if (x > 1 && y > 1) overlaps.push(`${named[i]!.name} × ${named[j]!.name}`);
       }
 
-    // Overflow-source scan. §10 forbids concealing overflow, so the capture has to name the
-    // element that actually exceeds the box rather than leave the cause to inference.
     if (root.scrollWidth > root.clientWidth + 1 || root.scrollHeight > root.clientHeight + 1) {
       const describe = (node: Element) =>
         `${node.tagName.toLowerCase()}${node.id ? `#${node.id}` : ""}${
@@ -201,7 +188,8 @@ async function measure(screen: string, viewport: string, sidebar: string) {
 }
 
 const go = async (destination: string, heading: string) => {
-  await $(`button[aria-label='${destination}']`).click();
+  if (destination === "Analytics") await browser.keys([CONTROL, "3"]);
+  else await $(`button[aria-label='${destination}']`).click();
   await $(heading).waitForDisplayed({ timeout: 30_000 });
   await browser.pause(350);
 };
@@ -219,7 +207,6 @@ const dismissDialog = async () => {
   }
 };
 
-/** Best-effort click: capture must not abort because one contextual control is absent. */
 const tryClick = async (selector: string, note: string) => {
   const element = $(selector);
   if ((await element.isExisting()) && (await element.isDisplayed())) {
@@ -281,7 +268,7 @@ async function walk(viewport: string, sidebar: string) {
     if (main) main.scrollTop = 0;
   });
 
-  if (await tryClick("button[aria-label^='Search']", "global search")) {
+  if (await tryClick("//button[.//strong[normalize-space()='Search']]", "settings search")) {
     await measure("global-search", viewport, sidebar);
     await dismissDialog();
   }
@@ -347,7 +334,6 @@ describe(`Task 50 layout capture (${label})`, () => {
 
       await walk(viewport, "expanded");
 
-      // A collapsed sidebar changes the apparent coordinate system, so both states are recorded.
       await tryClick("button[aria-label='Collapse sidebar']", "collapse sidebar");
       await go("Today", "h1#today-heading");
       await measure("today", viewport, "collapsed");
