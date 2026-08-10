@@ -1,6 +1,6 @@
 import { style } from "@vanilla-extract/css";
 import { space } from "../../app/layout/tokens.css";
-import { glassStrong, progressBar } from "../../design-system/visual/atmosphere.css";
+import { paintSheetStrong, progressBar } from "../../design-system/visual/atmosphere.css";
 import { duration, easing } from "../../design-system/visual/motion.css";
 
 export const eyebrow = style({
@@ -31,9 +31,10 @@ export const actionButton = style({
   minHeight: 34,
   minWidth: 34,
   paddingInline: 11,
-  border: "1px solid var(--glass-border)",
+  border: "1px solid var(--paint-edge)",
   borderRadius: "var(--radius-control)",
-  background: "linear-gradient(145deg, color-mix(in srgb, white 46%, transparent), transparent 52%), var(--glass-surface-strong)",
+  backgroundColor: "var(--paint-sheet-strong)",
+  backgroundImage: "var(--paint-grain-fine)",
   color: "var(--text-muted)",
   fontSize: "0.8125rem",
   cursor: "pointer",
@@ -42,8 +43,8 @@ export const actionButton = style({
   selectors: {
     "&:hover": {
       color: "var(--text-primary)",
-      borderColor: "color-mix(in srgb, var(--accent) 30%, var(--border-subtle))",
-      background: "color-mix(in srgb, var(--glass-surface-strong) 88%, white)",
+      borderColor: "var(--paint-edge-strong)",
+      backgroundColor: "var(--surface-hover)",
       boxShadow: "var(--glow-hover)",
       transform: "translateY(-1px)",
     },
@@ -52,14 +53,15 @@ export const actionButton = style({
   "@media": { "(prefers-reduced-motion: reduce)": { selectors: { "&:hover": { transform: "none" } } } },
 });
 
+/** One large month board: opaque painted sheet, not a crystalline/glass slab. */
 export const grid = style([
-  glassStrong,
+  paintSheetStrong,
   {
     display: "grid",
     borderRadius: "var(--radius-surface)",
     overflow: "hidden",
     minInlineSize: 0,
-    borderColor: "color-mix(in srgb, var(--accent) 22%, var(--border-subtle))",
+    borderColor: "var(--paint-edge-strong)",
     boxShadow: "var(--glow-hero)",
   },
 ]);
@@ -67,8 +69,9 @@ export const grid = style([
 export const weekdays = style({
   display: "grid",
   gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
-  borderBottom: "1px solid color-mix(in srgb, var(--accent) 16%, var(--border-subtle))",
-  background: "linear-gradient(90deg, color-mix(in srgb, var(--accent-cyan) 7%, transparent), color-mix(in srgb, var(--accent-violet) 6%, transparent))",
+  borderBottom: "1px solid var(--paint-edge-strong)",
+  backgroundColor: "var(--paint-board)",
+  backgroundImage: "var(--paint-grain-fine)",
   color: "var(--text-muted)",
   textAlign: "center",
   paddingBlock: 11,
@@ -83,10 +86,10 @@ export const week = style({ display: "grid", gridTemplateColumns: "repeat(7, min
 export const cell = style({
   minWidth: 0,
   minHeight: 96,
-  borderInlineStart: "1px solid color-mix(in srgb, var(--accent) 10%, var(--border-subtle))",
+  borderInlineStart: "1px solid var(--paint-edge)",
   selectors: {
     "&:first-child": { borderInlineStart: 0 },
-    [`${week}:not(:last-child) &`]: { borderBottom: "1px solid color-mix(in srgb, var(--accent) 10%, var(--border-subtle))" },
+    [`${week}:not(:last-child) &`]: { borderBottom: "1px solid var(--paint-edge)" },
   },
 });
 
@@ -104,22 +107,29 @@ export const cellButton = style({
   color: "var(--text-primary)",
   textAlign: "left",
   cursor: "pointer",
-  transition: `background-color ${duration.state} ${easing.standard}, box-shadow ${duration.state} ${easing.standard}, filter ${duration.state} ${easing.standard}`,
+  transition: `background-color ${duration.state} ${easing.standard}, box-shadow ${duration.state} ${easing.standard}`,
   selectors: {
     "&[data-outside]": { color: "var(--text-muted)" },
     "&:hover": {
-      background: "linear-gradient(145deg, color-mix(in srgb, var(--accent-cyan) 10%, transparent), color-mix(in srgb, var(--accent-violet) 7%, transparent))",
-      boxShadow: "inset 0 0 28px color-mix(in srgb, var(--accent) 5%, transparent)",
+      backgroundColor: "var(--surface-hover)",
+      backgroundImage: "var(--paint-grain-fine)",
+      boxShadow: "inset 0 0 0 1px color-mix(in srgb, var(--accent) 7%, transparent)",
     },
     "[aria-selected=true] &": {
-      background: "linear-gradient(145deg, color-mix(in srgb, var(--accent-cyan) 15%, var(--icon-background)), color-mix(in srgb, var(--accent-violet) 14%, var(--icon-background)))",
+      backgroundColor: "var(--paint-selected)",
+      backgroundImage: "var(--paint-grain-fine), var(--paint-wash-blue)",
       boxShadow: "inset 3px 0 0 var(--accent), var(--glow-selected)",
     },
     "&:focus-visible": { position: "relative", outline: "2px solid var(--focus-ring)", outlineOffset: -2 },
   },
-  "@media": { "(forced-colors: active)": { selectors: { "[aria-selected=true] &": { borderInlineStart: "3px solid Highlight", boxShadow: "none", background: "Canvas" } } } },
+  "@media": {
+    "(forced-colors: active)": {
+      selectors: { "[aria-selected=true] &": { borderInlineStart: "3px solid Highlight", boxShadow: "none", background: "Canvas" } },
+    },
+  },
 });
 
+/** Today is an inked blue date stamp, not a glowing jewel. */
 export const dayNumber = style({
   display: "grid",
   placeItems: "center",
@@ -133,14 +143,21 @@ export const dayNumber = style({
   transition: `box-shadow ${duration.state} ${easing.standard}, background-color ${duration.state} ${easing.standard}`,
   selectors: {
     [`${cellButton}[aria-current=date] &`]: {
-      borderColor: "color-mix(in srgb, white 24%, var(--accent))",
-      background: "linear-gradient(135deg, var(--accent-cyan) -35%, var(--accent) 48%, var(--accent-violet) 125%)",
-      color: "white",
+      borderColor: "var(--accent)",
+      backgroundColor: "var(--accent)",
+      backgroundImage: "var(--paint-grain-fine)",
+      color: "var(--accent-contrast)",
       boxShadow: "var(--glow-compact)",
     },
     [`${cellButton}[data-outside] &`]: { fontWeight: 400 },
   },
-  "@media": { "(forced-colors: active)": { selectors: { [`${cellButton}[aria-current=date] &`]: { borderColor: "Highlight", background: "Highlight", color: "HighlightText", boxShadow: "none" } } } },
+  "@media": {
+    "(forced-colors: active)": {
+      selectors: {
+        [`${cellButton}[aria-current=date] &`]: { borderColor: "Highlight", background: "Highlight", color: "HighlightText", boxShadow: "none" },
+      },
+    },
+  },
 });
 
 export const summary = style({ display: "grid", gap: 5, fontSize: "0.6875rem", lineHeight: 1.35, color: "var(--text-muted)" });
@@ -153,8 +170,9 @@ export const missed = style({
   width: 16,
   height: 16,
   borderRadius: "var(--radius-full)",
-  background: "color-mix(in srgb, var(--danger) 9%, white)",
-  border: "1px solid color-mix(in srgb, var(--danger) 24%, transparent)",
+  backgroundColor: "color-mix(in srgb, var(--danger) 8%, var(--paint-sheet))",
+  backgroundImage: "var(--paint-grain-fine)",
+  border: "1px solid color-mix(in srgb, var(--danger) 24%, var(--paint-edge))",
   color: "var(--danger)",
   fontSize: "0.625rem",
   fontWeight: 750,
