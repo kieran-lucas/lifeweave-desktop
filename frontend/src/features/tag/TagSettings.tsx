@@ -154,6 +154,7 @@ export function TagSettings() {
         />
         <button
           type="button"
+          className={styles.createButton}
           onClick={() => createMutation.mutate()}
           disabled={!createName.trim() || createMutation.isPending}
         >
@@ -318,6 +319,7 @@ export function TagSettings() {
             </select>
             <button
               type="button"
+              className={styles.mergeButton}
               onClick={beginMerge}
               disabled={!mergeSourceId || !mergeTargetId || mergeMutation.isPending}
             >
@@ -344,6 +346,7 @@ export function TagSettings() {
               <div className={styles.mergeConfirmActions}>
                 <button
                   type="button"
+                  className={styles.mergeConfirmButton}
                   onClick={confirmMerge}
                   disabled={mergeMutation.isPending}
                 >
@@ -351,6 +354,7 @@ export function TagSettings() {
                 </button>
                 <button
                   type="button"
+                  className={styles.mergeCancelButton}
                   onClick={() => { setMergePending(null); setMergeError(null); }}
                   disabled={mergeMutation.isPending}
                 >

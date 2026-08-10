@@ -1,6 +1,9 @@
-import { style } from "@vanilla-extract/css";
+import { globalStyle, style } from "@vanilla-extract/css";
 
 import { space } from "../../app/layout/tokens.css";
+import { button } from "../../design-system/primitives/controls.css";
+import { focusRing } from "../../design-system/primitives/utilities.css";
+import { text } from "../../design-system/visual/typography.css";
 
 /**
  * Category goal editor geometry.
@@ -12,34 +15,43 @@ import { space } from "../../app/layout/tokens.css";
 export const list = style({
   display: "flex",
   flexDirection: "column",
-  gap: space.group,
+  gap: 0,
   minInlineSize: 0,
+  marginBlockStart: space.x3,
 });
 
 export const root = style({
   display: "flex",
   flexDirection: "column",
-  gap: space.group,
+  gap: space.x2,
   minInlineSize: 0,
+  paddingBlockStart: space.x5,
+  borderTop: "1px solid var(--border-subtle)",
 });
+
+globalStyle(`${root} > h2`, { ...text.sectionTitle, margin: 0 });
+globalStyle(`${root} > h2 + p`, { ...text.compactBody, margin: 0, color: "var(--text-muted)", maxInlineSize: "72ch" });
 
 export const editor = style({
   display: "flex",
   flexDirection: "column",
   gap: space.field,
   minInlineSize: 0,
+  paddingBlock: space.x4,
+  borderBottom: "1px solid var(--border-subtle)",
   selectors: {
-    "& + &": { borderTop: "1px solid var(--border-subtle)", paddingTop: space.x5 },
+    "&:first-child": { borderTop: "1px solid var(--border-subtle)" },
   },
 });
 
-export const heading = style({ margin: 0 });
+export const heading = style({ margin: 0, ...text.cardTitle });
 
 export const toggle = style({
   display: "inline-flex",
   alignItems: "center",
   gap: space.control,
   minInlineSize: 0,
+  ...text.body,
 });
 
 export const duration = style({
@@ -48,23 +60,25 @@ export const duration = style({
   alignItems: "flex-end",
   gap: space.field,
   margin: 0,
-  inlineSize: "min(100%, 520px)",
+  inlineSize: "min(100%, 440px)",
   padding: space.x3,
   border: "1px solid var(--border-subtle)",
   borderRadius: "var(--radius-control)",
   minInlineSize: 0,
 });
 
-export const legend = style({ padding: `0 ${space.x1}`, fontWeight: 700 });
+export const legend = style({ padding: `0 ${space.x1}`, ...text.label, color: "var(--text-muted)" });
 
 export const unit = style({
   display: "flex",
   flexDirection: "column",
   gap: space.x1,
   minInlineSize: 0,
+  ...text.label,
+  color: "var(--text-muted)",
 });
 
-export const number = style({
+export const number = style([focusRing, {
   inlineSize: "6rem",
   minInlineSize: 0,
   boxSizing: "border-box",
@@ -74,20 +88,8 @@ export const number = style({
   borderRadius: "var(--radius-control)",
   background: "var(--surface)",
   color: "inherit",
-  font: "inherit",
-});
+  ...text.body,
+}]);
 
-export const save = style({
-  alignSelf: "flex-start",
-  minBlockSize: 38,
-  padding: `${space.control} ${space.field}`,
-  border: "1px solid var(--border-subtle)",
-  borderRadius: "var(--radius-control)",
-  background: "transparent",
-  color: "inherit",
-  cursor: "pointer",
-  selectors: {
-    "&:disabled": { opacity: 0.55, cursor: "not-allowed" },
-    "&:focus-visible": { outline: "3px solid var(--focus-ring)", outlineOffset: 2 },
-  },
-});
+export const save = button.secondary;
+globalStyle(`${editor} > button`, { alignSelf: "flex-start" });

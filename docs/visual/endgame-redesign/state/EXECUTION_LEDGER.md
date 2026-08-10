@@ -6,10 +6,10 @@
 
 - BASELINE_PLANNING_SHA: `a1078c1f91c251aaa7a453ef1e8a5108551c852d`
 - EXECUTION_START_SHA: `0b3e01d4a8bd9b62c5d786e9b4a4401d72c0edc1`
-- LAST_VERIFIED_COMMIT: `8968a939172ed0c63e650c3096003691a8d06fc3`
-- CURRENT_PACKET: `S12`
+- LAST_VERIFIED_COMMIT: `d7c20a24fdbc9c5eb3cdb793082eae3b3e80e87d`
+- CURRENT_PACKET: `Q5`
 - CURRENT_STATUS: `IN_PROGRESS`
-- NEXT_PACKET: `S12`
+- NEXT_PACKET: `Q5`
 - FINAL_REVIEW_DONE: `false`
 - FINAL_FINDING_SET_FROZEN: `false`
 - PROGRAM_STATUS: `IN_PROGRESS`
@@ -30,11 +30,11 @@
 | S09 | CLOSED | `37fe55157ac71107868ce9245e1110a7c1244057` | 6/6 rows LOCAL_VERIFIED; focused semantics and max/min native profiles passed |
 | S10 | CLOSED | `cee004579145649a9f79fc3228bc66f722124563` | 11/11 rows LOCAL_VERIFIED; focused semantics and routed max/min native profiles passed |
 | S11 | CLOSED | `8968a939172ed0c63e650c3096003691a8d06fc3` | 10/10 rows LOCAL_VERIFIED; focused semantics and max/min native profiles passed |
-| S12 | PENDING | — | — |
+| S12 | CLOSED | LOCAL checkpoint | 8/8 rows LOCAL_VERIFIED; focused semantics and max/min native profiles passed |
 | Q1 | CLOSED | `db2f7ccd472938e71382b6ad338e073145eac003` | 33/33 scoped rows VERIFIED; full unit, build/budget, native behavior, and max/min visual gates passed |
 | Q2 | CLOSED | `37ec413a2e4d769a8913c0e73478fea824035360` | 18/18 scoped rows VERIFIED; full unit, build/budget, native behavior, and max/min visual gates passed |
 | Q3 | CLOSED | `0dd47122939abb57fd38530cdcb8748921890c74` | 29/29 scoped rows VERIFIED; full unit, build/budget, native behavior, and max/min visual gates passed |
-| Q4 | CLOSED | LOCAL checkpoint | 21/21 scoped rows VERIFIED; focused Narrative, build/budget, release performance, and max/min visual gates passed |
+| Q4 | CLOSED | `d7c20a24fdbc9c5eb3cdb793082eae3b3e80e87d` | 21/21 scoped rows VERIFIED; focused Narrative, build/budget, release performance, and max/min visual gates passed |
 | Q5 | PENDING | — | — |
 | FINAL | PENDING | — | — |
 
@@ -140,14 +140,14 @@
 | NS-10 | S11 | VERIFIED | Q4 checkpoint | only-block and dirty-exit decisions retain shared dialog semantics, focus behavior, and consequence-appropriate actions |
 | MD-01 | S10 | VERIFIED | Q4 checkpoint | compact shared dialog presents quoted excerpt, definition-list metadata, separated warning, and primary Import at max/min |
 | MD-02 | S10 | VERIFIED | Q4 checkpoint | Markdown export remains a secondary utility with its fixed lossiness truth visible and no invented options |
-| S-01 | S12 | PENDING | — | — |
-| S-02 | S12 | PENDING | — | — |
-| S-03 | S12 | PENDING | — | — |
-| S-04 | S12 | PENDING | — | — |
-| S-05 | S12 | PENDING | — | — |
-| S-06 | S12 | PENDING | — | — |
-| S-07 | S12 | PENDING | — | — |
-| S-08 | S12 | PENDING | — | — |
+| S-01 | S12 | LOCAL_VERIFIED | S12 checkpoint | Settings remains one standard-frame editorial document with fixed section order, paired headings/descriptions, and hairline rhythm at max/min |
+| S-02 | S12 | LOCAL_VERIFIED | S12 checkpoint | Category editors repeat as ruled regions with one checkbox, paired duration groups, compact fields, and one local Save action |
+| S-03 | S12 | LOCAL_VERIFIED | S12 checkpoint | active, archived, and merged tag inventories remain semantic locally contained tables with aligned tabular counts and compact row actions |
+| S-04 | S12 | LOCAL_VERIFIED | S12 checkpoint | tag rename remains a minimal in-row input with Enter/Save and Escape/Cancel behavior preserved by focused tests |
+| S-05 | S12 | LOCAL_VERIFIED | S12 checkpoint | backup creation aligns with its section heading while retention stays subordinate and the version inventory remains the table hero |
+| S-06 | S12 | LOCAL_VERIFIED | S12 checkpoint | restore uses the shared compact modal geometry, starts focus on Cancel, retains safety facts, and keeps Restore prominent without invented confirmation |
+| S-07 | S12 | LOCAL_VERIFIED | S12 checkpoint | Keyboard remains one secondary action and the governed shortcut dialog is captured through the Settings profile at max/min |
+| S-08 | S12 | LOCAL_VERIFIED | S12 checkpoint | Foundation tools remain visible but low priority, with ruled lists, shared controls, and a correct level-3 utility heading |
 | MC-01 | S02 | VERIFIED | Q1 checkpoint | seven-day bounded navigation; generated chevrons; selected/today semantics |
 | MC-02 | S03 | VERIFIED | Q1 checkpoint | compact native Start time pair with shared inset focus treatment |
 | MC-03 | S03 | VERIFIED | Q1 checkpoint | compact native End time pair with shared inset focus treatment |
@@ -165,14 +165,15 @@
 - S10 Narrative Reader/Markdown: 11/11 rows LOCAL_VERIFIED
 - S11 Narrative Studio: 10/10 rows LOCAL_VERIFIED
 - Q4 promoted S10–S11: 21/21 scoped rows VERIFIED
+- S12 Settings: 8/8 rows LOCAL_VERIFIED
 
 ## CURRENT
 
-- S12 in progress
+- Q5 in progress
 
 ## NEXT
 
-- S12
+- Q5
 
 ## KNOWN_DEBT
 
@@ -321,6 +322,12 @@ Append concise entries:
 - [Q4] native Light `narrative` maximized — PASS — 8 locked profile surfaces / zero collisions — `target/e2e-artifacts/task-50b/narrative-Q4-20260810-123003`
 - [Q4] native Light `narrative` 960×640 — PASS — achieved 960×639 / 8 locked profile surfaces / zero collisions — `target/e2e-artifacts/task-50b/narrative-Q4-20260810-123140`
 - [Q4] bounded self-review `F_Q4` — FROZEN/RESOLVED — zero findings in the causal budget diff and locked Narrative evidence; no post-review fixes or repeated review
+- [S12] `git diff --check` + convergence ratchet — PASS — font-size residue 17 / focus residue 14 / control clones 42; ceilings tightened
+- [S12] `pnpm typecheck` — PASS — frontend project references
+- [S12] focused Category Goals/Tags/Backup/Foundation/App Settings tests — PASS — 5 files / 89 tests; affected post-review Foundation/App subset 2 files / 35 tests
+- [S12] native Light `settings` maximized — PASS — 9 profile surfaces / zero collisions; category, real merge consequence, Foundation, Keyboard, backup, and restore tags inspected — `target/e2e-artifacts/task-50b/settings-S12-20260810-125308`
+- [S12] native Light `settings` 960×640 — PASS — achieved 960×639 / 9 profile surfaces / zero collisions; required max+min rows and dialogs inspected — `target/e2e-artifacts/task-50b/settings-S12-20260810-125519`
+- [S12] bounded self-review `F_S12` — FROZEN/RESOLVED — Foundation Records now emits the correct level-3 utility heading beneath Settings/Foundation tools, with a focused semantic assertion; affected type/static/Foundation/App checks passed without a second review
 
 ## DECISIONS MADE UNDER UNATTENDED AUTHORITY
 
@@ -353,6 +360,7 @@ Record only material reversible decisions that future stages may need to know.
 - [S10] Narrative Visual Worlds remain contained to the authored Canvas while shell controls retain Lifeweave styling; reader blocks express their native semantics through typography, rules, tint, and ordered structure rather than repeated cards.
 - [S11] Studio keeps the proven reading frame: the Lifeweave document controls remain outside the selected Visual World, while only the authored block canvas receives world palette and material; no structural compression justified a wider frame.
 - [Q4] Metric inputs use wrapped semantic labels rather than generated ID/for pairs; this preserves accessible naming and the aligned editor grid while reclaiming the fixed Narrative chunk budget.
+- [S12] The Settings audit targets Tags and Foundation by semantic heading rather than scroll fractions, opens a real reversible merge-confirmation state, and routes Keyboard Help through the Settings profile; full/shell profiles still capture each canonical tag once.
 
 ## FINAL FINDING SET
 

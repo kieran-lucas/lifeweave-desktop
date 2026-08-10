@@ -813,19 +813,26 @@ describe(`Endgame visual audit (${auditProfile}: ${label})`, () => {
     await go("Settings", "h1#settings-heading");
     await capture("settings-top", "18-settings");
     await browser.execute(() => {
-      const main = document.querySelector("[data-app-viewport]");
-      if (main) main.scrollTop = main.scrollHeight / 2;
+      const heading = Array.from(document.querySelectorAll("h2")).find(
+        element => element.textContent?.trim() === "Tags",
+      );
+      heading?.scrollIntoView({ block: "start" });
     });
+    const sourceTag = $("select[aria-label='Source tag to merge from']");
+    const targetTag = $("select[aria-label='Target tag to merge into']");
+    if (await sourceTag.isExisting() && await targetTag.isExisting()) {
+      await sourceTag.selectByIndex(1);
+      await targetTag.selectByIndex(1);
+      await $("button=Merge").click();
+      await $("[role='region'][aria-label='Confirm merge']").scrollIntoView({ block: "center" });
+    }
     await capture("settings-tags", "19-settings-tags");
-    await browser.execute(() => {
-      const main = document.querySelector("[data-app-viewport]");
-      if (main) main.scrollTop = main.scrollHeight;
-    });
+    await $("#settings-foundation-heading").scrollIntoView({ block: "start" });
     await capture("settings-foundation", "20-settings-foundation");
-    await browser.execute(() => {
-      const main = document.querySelector("[data-app-viewport]");
-      if (main) main.scrollTop = 0;
-    });
+    await $("button=Keyboard shortcuts").click();
+    await $("[role='dialog'][aria-modal='true']").waitForDisplayed({ timeout: 10_000 });
+    await capture("keyboard-help", "22-keyboard-help");
+    await dismiss();
     }
 
     if (await tryClick("button[aria-label^='Search']")) {
@@ -864,11 +871,13 @@ describe(`Endgame visual audit (${auditProfile}: ${label})`, () => {
     this.timeout(180_000);
     // Keep the visual golden independent from backup timestamps in Settings. The shortcut is the
     // production entry path and Today is a deterministic fixture-backed backdrop for the dialog.
+    if (!profileIncludes(auditProfile, "settings")) {
     await go("Today", "h1#today-heading");
     await browser.keys([CONTROL, "/"]);
     await $("[role='dialog'][aria-modal='true']").waitForDisplayed({ timeout: 10_000 });
     await capture("keyboard-help", "22-keyboard-help");
     await dismiss();
+    }
 
     // Collapsed sidebar is the second canonical shell state.
     await tryClick("button[aria-label='Collapse sidebar']");

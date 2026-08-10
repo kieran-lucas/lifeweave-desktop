@@ -1,4 +1,7 @@
-import { style } from "@vanilla-extract/css";
+import { globalStyle, style } from "@vanilla-extract/css";
+import { button as sharedButton } from "../../design-system/primitives/controls.css";
+import { focusRing } from "../../design-system/primitives/utilities.css";
+import { text } from "../../design-system/visual/typography.css";
 
 /*
  * Foundation tools are content inside the Settings STANDARD_PAGE. They own no page width and no
@@ -9,64 +12,38 @@ export const panel = style({
   flexDirection: "column",
   maxInlineSize: "68ch",
   minInlineSize: 0,
+  gap: 12,
 });
 
-export const heading = style({
-  margin: "0 0 24px",
-  fontSize: "1.5rem",
-  fontWeight: 700,
-});
+export const heading = style({ margin: 0, ...text.cardTitle });
 
 export const form = style({
   display: "flex",
   flexWrap: "wrap",
   gap: "8px",
-  marginBottom: "24px",
+  marginBottom: "8px",
   minInlineSize: 0,
 });
 
-export const input = style({
+export const input = style([focusRing, {
   flex: 1,
   minInlineSize: 0,
   boxSizing: "border-box",
   padding: "8px 12px",
   border: "1px solid var(--border-subtle)",
   borderRadius: "var(--radius-control)",
-  fontSize: "1rem",
+  ...text.body,
   background: "var(--surface)",
-  color: "inherit",
-});
+  color: "var(--text-primary)",
+}]);
 
-export const button = style({
-  padding: "8px 16px",
-  borderRadius: "var(--radius-control)",
-  border: "none",
-  background: "var(--accent)",
-  color: "var(--accent-contrast)",
-  fontWeight: 600,
-  cursor: "pointer",
-  fontSize: "0.9rem",
-  selectors: {
-    "&:disabled": {
-      opacity: 0.5,
-      cursor: "not-allowed",
-    },
-  },
-});
+export const button = sharedButton.primary;
 
-export const secondaryButton = style({
-  padding: "4px 10px",
-  borderRadius: "var(--radius-small)",
-  border: "1px solid var(--border-subtle)",
-  background: "transparent",
-  cursor: "pointer",
-  fontSize: "0.8rem",
-  color: "inherit",
-});
+export const secondaryButton = sharedButton.secondary;
 
 export const errorText = style({
   color: "var(--danger)",
-  fontSize: "0.875rem",
+  ...text.compactBody,
   marginTop: "4px",
   marginBottom: "8px",
 });
@@ -77,17 +54,17 @@ export const list = style({
   padding: 0,
   display: "flex",
   flexDirection: "column",
-  gap: "8px",
+  gap: 0,
+  borderBlockStart: "1px solid var(--border-subtle)",
 });
+globalStyle(`${list} button`, { minHeight: 26, padding: "2px 9px", borderRadius: "var(--radius-small)" });
 
 export const item = style({
   display: "flex",
   alignItems: "center",
   gap: "8px",
-  padding: "10px 14px",
-  border: "1px solid var(--border-subtle)",
-  borderRadius: "var(--radius-control)",
-  background: "var(--surface)",
+  padding: "10px 0",
+  borderBlockEnd: "1px solid var(--border-subtle)",
 });
 
 export const itemLabel = style({
@@ -107,23 +84,20 @@ export const editInput = style([
 export const archivedItem = style([
   item,
   {
-    opacity: 0.55,
+    color: "var(--text-muted)",
   },
 ]);
 
 export const statusText = style({
-  color: "var(--text-muted, var(--text-muted))",
-  fontSize: "0.9rem",
+  color: "var(--text-muted)",
+  ...text.compactBody,
   padding: "16px 0",
 });
 
 export const sectionHeading = style({
   margin: "24px 0 8px",
-  fontSize: "0.85rem",
-  fontWeight: 700,
-  letterSpacing: "0.08em",
-  textTransform: "uppercase",
-  color: "var(--text-muted, var(--text-muted))",
+  ...text.eyebrow,
+  color: "var(--text-muted)",
 });
 
 export const contentsForm = style({

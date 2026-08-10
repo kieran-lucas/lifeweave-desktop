@@ -149,9 +149,9 @@ export function FoundationScreen() {
   if (state.kind === "loading") {
     return (
       <section className={styles.panel} aria-labelledby="fr-heading">
-        <h1 id="fr-heading" className={styles.heading}>
+        <h3 id="fr-heading" className={styles.heading}>
           Foundation Records
-        </h1>
+        </h3>
         <p className={styles.statusText} aria-live="polite">
           Loading…
         </p>
@@ -162,9 +162,9 @@ export function FoundationScreen() {
   if (state.kind === "error") {
     return (
       <section className={styles.panel} aria-labelledby="fr-heading">
-        <h1 id="fr-heading" className={styles.heading}>
+        <h3 id="fr-heading" className={styles.heading}>
           Foundation Records
-        </h1>
+        </h3>
         <p className={styles.errorText} role="alert">
           {state.message}
         </p>
@@ -176,9 +176,9 @@ export function FoundationScreen() {
 
   return (
     <section className={styles.panel} aria-labelledby="fr-heading">
-      <h1 id="fr-heading" className={styles.heading}>
+      <h3 id="fr-heading" className={styles.heading}>
         Foundation Records
-      </h1>
+      </h3>
 
       <form onSubmit={handleCreate} aria-label="Create foundation record">
         <div className={styles.form}>

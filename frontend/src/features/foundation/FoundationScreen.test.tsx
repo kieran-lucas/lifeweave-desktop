@@ -40,7 +40,9 @@ describe("FoundationScreen", () => {
   it("shows loading state initially then renders heading", async () => {
     render(<FoundationScreen />);
     expect(screen.getByText(/Loading/)).toBeInTheDocument();
-    await screen.findByRole("heading", { name: "Foundation Records" });
+    expect(
+      await screen.findByRole("heading", { name: "Foundation Records", level: 3 }),
+    ).toBeInTheDocument();
   });
 
   it("shows empty state when no records exist in either list", async () => {
