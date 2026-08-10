@@ -15,7 +15,6 @@ export const quietButton = style([button.ghost, { justifySelf: "start" }]);
 export const breadcrumb = style({ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", color: "var(--text-muted)" });
 export const crumb = style([button.ghost, { minHeight: 26, padding: "2px 5px", textDecoration: "underline", textUnderlineOffset: 3 }]);
 
-/** Life is the strongest atlas surface: one painted map board, not loose glass cards. */
 export const scene = style({
   position: "relative",
   display: "grid",
@@ -24,11 +23,11 @@ export const scene = style({
   minBlockSize: 360,
   minInlineSize: 0,
   padding: space.x4,
-  border: "1px solid var(--paint-edge-strong)",
+  border: "1px solid var(--accent)",
   borderRadius: "var(--radius-surface)",
-  backgroundColor: "var(--paint-board)",
-  backgroundImage: "var(--paint-grain), var(--paint-wash-blue), var(--paint-wash-violet), var(--paint-wash-rose)",
-  boxShadow: "var(--glow-hero)",
+  backgroundColor: "#FFFFFF",
+  backgroundImage: "var(--paint-grain-fine)",
+  boxShadow: "none",
 });
 export const connectors = style({ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 0 });
 export const focalWrap = style({ position: "relative", zIndex: 1, display: "flex", justifyContent: "flex-start" });
@@ -36,14 +35,14 @@ export const focalWrap = style({ position: "relative", zIndex: 1, display: "flex
 export const focal = style({
   width: "100%",
   padding: `${space.group} ${space.x5}`,
-  border: "1px solid var(--paint-edge-strong)",
-  borderInlineStart: "3px solid var(--accent)",
+  border: "1px solid var(--accent)",
+  borderInlineStart: "4px solid var(--accent)",
   borderRadius: "var(--radius-surface)",
-  backgroundColor: "var(--paint-sheet-strong)",
-  backgroundImage: "var(--paint-grain-fine), var(--paint-wash-blue)",
+  backgroundColor: "#FFFFFF",
+  backgroundImage: "var(--paint-grain-fine)",
   color: "var(--text-primary)",
   textAlign: "left",
-  boxShadow: "var(--glow-crystal-strong)",
+  boxShadow: "none",
 });
 export const focalTitle = style({ margin: `${space.x2} 0 ${space.x1}`, ...text.objectTitle, color: "var(--text-primary)" });
 export const nodeDescription = style({ margin: 0, color: "var(--text-muted)", lineHeight: 1.55, whiteSpace: "pre-wrap" });
@@ -58,19 +57,18 @@ export const card = style({
   border: "1px solid var(--paint-edge)",
   borderRadius: "var(--radius-surface)",
   padding: "15px 72px 15px 16px",
-  backgroundColor: "var(--paint-sheet)",
+  backgroundColor: "#FFFFFF",
   backgroundImage: "var(--paint-grain-fine)",
   color: "var(--text-primary)",
   textAlign: "left",
   cursor: "pointer",
-  boxShadow: "var(--glow-crystal)",
-  transition: `background-color ${duration.state} ${easing.standard}, border-color ${duration.state} ${easing.standard}, box-shadow ${duration.state} ${easing.standard}, transform ${duration.state} ${easing.standard}`,
+  boxShadow: "none",
+  transition: `background-color ${duration.state} ${easing.standard}, border-color ${duration.state} ${easing.standard}, transform ${duration.state} ${easing.standard}`,
   selectors: {
     "&:hover": {
-      backgroundColor: "var(--surface-hover)",
-      backgroundImage: "var(--paint-grain-fine), var(--paint-wash-blue)",
-      borderColor: "var(--paint-edge-strong)",
-      boxShadow: "var(--glow-hover)",
+      backgroundColor: "#F5F5F5",
+      borderColor: "var(--accent)",
+      boxShadow: "none",
       transform: "translateY(-2px)",
     },
   },
@@ -78,18 +76,18 @@ export const card = style({
 });
 
 export const cardTitle = style({ display: "block", margin: "8px 0 5px", ...text.cardTitle });
-export const pinButton = style({ position: "absolute", top: 10, right: 10, zIndex: 2, minBlockSize: 30, padding: "5px 8px", border: "1px solid transparent", borderRadius: "var(--radius-control)", background: "transparent", color: "var(--text-muted)", fontSize: 12, fontWeight: 650, cursor: "pointer", selectors: { "&:hover": { backgroundColor: "var(--paint-selected)", backgroundImage: "var(--paint-grain-fine)", borderColor: "var(--paint-edge-strong)", color: "var(--accent)" } } });
-export const icon = style({ display: "inline-grid", placeItems: "center", width: 34, height: 34, borderRadius: "var(--radius-control)", backgroundColor: "var(--paint-selected)", backgroundImage: "var(--paint-grain-fine)", color: "var(--accent)", border: "1px solid var(--paint-edge-strong)", boxShadow: "var(--glow-compact)", fontWeight: 800 });
+export const pinButton = style({ position: "absolute", top: 10, right: 10, zIndex: 2, minBlockSize: 30, padding: "5px 8px", border: "1px solid transparent", borderRadius: "var(--radius-control)", background: "transparent", color: "var(--text-muted)", fontSize: 12, fontWeight: 650, cursor: "pointer", selectors: { "&:hover": { backgroundColor: "#FFFFFF", borderColor: "var(--accent)", color: "var(--accent)" } } });
+export const icon = style({ display: "inline-grid", placeItems: "center", width: 34, height: 34, borderRadius: "var(--radius-control)", backgroundColor: "var(--accent)", backgroundImage: "var(--paint-grain-fine)", color: "#FFFFFF", border: "1px solid var(--accent)", boxShadow: "none", fontWeight: 800 });
 export const empty = style({ padding: `${space.group} ${space.x5}`, borderBlockStart: "1px solid var(--paint-edge)", textAlign: "left", color: "var(--text-muted)" });
 export const paging = style({ display: "flex", justifyContent: "center", alignItems: "center", gap: 12 });
 export const pinList = style({ display: "grid", gridTemplateColumns: "minmax(0,760px)", justifyContent: "start", gap: space.x3, listStyle: "none", padding: 0, margin: 0, minInlineSize: 0 });
-export const unavailable = style({ color: "var(--text-muted)", background: "var(--surface-subtle, var(--active-background))" });
+export const unavailable = style({ color: "var(--text-muted)", background: "#F3F4F6" });
 export const readerShell = style({ inlineSize: "80%", marginInlineStart: "5%", marginInlineEnd: "15%", minInlineSize: 0, "@container": { "(max-width: 900px)": { inlineSize: "100%", marginInline: 0 } } });
 export const readerHero = style({ marginTop: space.group, paddingBlockEnd: space.x6, minInlineSize: 0 });
 export const readerEmpty = style({ marginTop: 32, paddingTop: 24, borderTop: "1px solid var(--paint-edge)", color: "var(--text-muted)" });
 export const status = style({ padding: 24, color: "var(--text-muted)" });
 
-globalStyle(`${connectors} path`, { stroke: "color-mix(in srgb, var(--accent) 25%, var(--paint-edge-strong))", strokeWidth: 1.5, fill: "none", transition: `opacity ${duration.inspectorState} ${easing.standard}` });
+globalStyle(`${connectors} path`, { stroke: "var(--accent)", strokeWidth: 1.5, fill: "none", transition: `opacity ${duration.inspectorState} ${easing.standard}` });
 globalStyle(`${card} p`, { display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" });
 globalStyle(`${pageFrame.wide} button:focus-visible`, { outline: "3px solid var(--focus-ring)", outlineOffset: 2 });
 globalStyle(`${pageFrame.reading} button:focus-visible`, { outline: "3px solid var(--focus-ring)", outlineOffset: 2 });

@@ -9,10 +9,10 @@ export const root = style({ display: "flex", flexDirection: "column", gap: space
 globalStyle(`${root} > h2`, { ...text.sectionTitle, margin: 0 });
 export const tableScroll = scrollRegion;
 export const createRow = style({ display: "flex", flexWrap: "wrap", gap: space.control, alignItems: "center", minInlineSize: 0 });
-export const input = style([focusRing, { flex: 1, minInlineSize: 0, boxSizing: "border-box", padding: "7px 10px", border: "1px solid var(--paint-edge)", borderRadius: "var(--radius-control)", ...text.body, backgroundColor: "var(--paint-sheet)", backgroundImage: "var(--paint-grain-fine)", color: "var(--text-primary)" }]);
+export const input = style([focusRing, { flex: 1, minInlineSize: 0, boxSizing: "border-box", padding: "7px 10px", border: "1px solid var(--paint-edge)", borderRadius: "var(--radius-control)", ...text.body, backgroundColor: "#FFFFFF", backgroundImage: "var(--paint-grain-fine)", color: "var(--text-primary)" }]);
 export const createButton = button.primary;
-export const table = style({ width: "100%", borderCollapse: "collapse", backgroundImage: "var(--paint-grain-fine)" });
-globalStyle(`${table} th`, { textAlign: "left", ...text.label, color: "var(--text-muted)", padding: "7px 8px", borderBottom: "1px solid var(--paint-edge-strong)", backgroundColor: "var(--paint-board)" });
+export const table = style({ width: "100%", borderCollapse: "collapse", backgroundColor: "#FFFFFF", backgroundImage: "var(--paint-grain-fine)" });
+globalStyle(`${table} th`, { textAlign: "left", ...text.label, color: "var(--text-muted)", padding: "7px 8px", borderBottom: "1px solid var(--accent)", backgroundColor: "#FFFFFF" });
 globalStyle(`${table} td`, { padding: "8px", borderBottom: "1px solid var(--paint-edge)", ...text.compactBody, verticalAlign: "top" });
 globalStyle(`${table} th:nth-child(n+2):nth-child(-n+4), ${table} td:nth-child(n+2):nth-child(-n+4)`, { textAlign: "right", fontVariantNumeric: "tabular-nums" });
 export const archived = style({ color: "var(--text-muted)" });
@@ -21,12 +21,12 @@ globalStyle(`${actions} button`, { minHeight: 26, padding: "2px 9px", borderRadi
 export const toggleRow = style({ display: "flex", alignItems: "center", gap: 8 });
 export const mergePanel = style({ display: "flex", flexDirection: "column", gap: 8, paddingBlockStart: space.x4, borderTop: "1px solid var(--paint-edge)" });
 export const mergeRow = style({ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" });
-export const select = style([focusRing, { padding: "6px 8px", border: "1px solid var(--paint-edge)", borderRadius: "var(--radius-control)", ...text.body, backgroundColor: "var(--paint-sheet)", backgroundImage: "var(--paint-grain-fine)", color: "var(--text-primary)" }]);
+export const select = style([focusRing, { padding: "6px 8px", border: "1px solid var(--paint-edge)", borderRadius: "var(--radius-control)", ...text.body, backgroundColor: "#FFFFFF", backgroundImage: "var(--paint-grain-fine)", color: "var(--text-primary)" }]);
 export const warning = style({ color: "var(--danger)", ...text.compactBody, margin: 0 });
 export const mergeButton = button.secondary;
 export const mergeConfirmButton = button.destructive;
 export const mergeCancelButton = button.secondary;
-export const mergeConfirm = style({ backgroundColor: "color-mix(in srgb, var(--danger) 5%, var(--paint-sheet))", backgroundImage: "var(--paint-grain-fine)", borderInlineStart: "3px solid var(--danger)", borderRadius: "0 var(--radius-control) var(--radius-control) 0", padding: "10px 14px", display: "flex", flexDirection: "column", gap: 8 });
+export const mergeConfirm = style({ backgroundColor: "#FFFFFF", backgroundImage: "var(--paint-grain-fine)", borderInlineStart: "3px solid var(--danger)", borderRadius: "0 var(--radius-control) var(--radius-control) 0", padding: "10px 14px", display: "flex", flexDirection: "column", gap: 8 });
 export const mergeConfirmText = style({ margin: 0, ...text.compactBody });
 export const mergeConfirmActions = style({ display: "flex", gap: 8 });
 export { srOnly } from "../../design-system/primitives/utilities.css";

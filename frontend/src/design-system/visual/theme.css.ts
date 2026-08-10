@@ -10,10 +10,7 @@ globalStyle(":root", {
   "@media": { "(prefers-color-scheme: dark)": { vars: assignVars(vars, darkValues) } },
 });
 
-/**
- * Compatibility aliases. The typed contract remains the only palette authority; these names let
- * existing production CSS migrate incrementally without silent fallback values.
- */
+/** Compatibility aliases. Light presentation stays white/neutral unless a component opts into blue. */
 globalStyle(":root", {
   vars: {
     "--app-background": vars.color.canvas,
@@ -33,7 +30,7 @@ globalStyle(":root", {
     "--accent": vars.color.accent,
     "--color-accent": vars.color.accent,
     "--accent-contrast": vars.color.textOnAccent,
-    "--active-background": vars.color.surfaceSelectedNav,
+    "--active-background": vars.color.surfaceSelected,
     "--icon-background": vars.color.surfaceSelected,
     "--focus-ring": vars.color.focusRing,
     "--backdrop": vars.color.backdrop,

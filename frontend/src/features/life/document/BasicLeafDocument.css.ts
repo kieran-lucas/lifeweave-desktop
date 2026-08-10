@@ -8,18 +8,17 @@ export const button = sharedButton.secondary;
 export const primary = sharedButton.primary;
 export const destructive = sharedButton.destructive;
 
-/** Reader prose stays unboxed, but it sits on the same tactile paper ground as the rest of Life. */
 export const article = style({
   ...text.editorBody,
   color: "var(--text-primary)",
   overflowWrap: "anywhere",
   padding: "8px 2px 28px",
+  backgroundColor: "#FFFFFF",
   backgroundImage: "var(--paint-grain-fine)",
 });
 export const status = style({ ...text.metadata, color: "var(--text-muted)", minHeight: 24 });
-export const recovery = style({ borderInlineStart: "3px solid var(--accent)", padding: "12px 16px", marginBottom: 20, borderRadius: "0 var(--radius-control) var(--radius-control) 0", backgroundColor: "var(--paint-selected)", backgroundImage: "var(--paint-grain-fine)" });
+export const recovery = style({ borderInlineStart: "3px solid var(--accent)", padding: "12px 16px", marginBottom: 20, borderRadius: "0 var(--radius-control) var(--radius-control) 0", backgroundColor: "#FFFFFF", backgroundImage: "var(--paint-grain-fine)" });
 
-/** Editor toolbar is an opaque painted strip; sticky state never reveals content through acrylic. */
 export const toolbar = style({
   position: "sticky",
   top: 0,
@@ -30,42 +29,41 @@ export const toolbar = style({
   padding: "8px 9px",
   border: "1px solid var(--paint-edge)",
   borderRadius: "var(--radius-control)",
-  backgroundColor: "var(--paint-board)",
+  backgroundColor: "#FFFFFF",
   backgroundImage: "var(--paint-grain-fine)",
-  boxShadow: "var(--glow-compact)",
+  boxShadow: "none",
 });
-export const toolbarButton = style([sharedButton.ghost, compact, { minInlineSize: 30, selectors: { '&[aria-pressed="true"]': { color: "var(--accent)", backgroundColor: "var(--paint-selected)", backgroundImage: "var(--paint-grain-fine)" } } }]);
+export const toolbarButton = style([sharedButton.ghost, compact, { minInlineSize: 30, selectors: { '&[aria-pressed="true"]': { color: "#FFFFFF", backgroundColor: "var(--accent)", borderColor: "var(--accent)" } } }]);
 
-/** The editor is a sheet of authored paper, not a generic bordered textarea. */
 export const editor = style({
-  border: "1px solid var(--paint-edge-strong)",
+  border: "1px solid var(--accent)",
   borderRadius: "var(--radius-surface)",
   padding: "22px 24px",
   minHeight: 360,
-  backgroundColor: "var(--paint-sheet-strong)",
-  backgroundImage: "var(--paint-grain-fine), var(--paint-wash-blue)",
-  boxShadow: "var(--glow-crystal-strong)",
-  selectors: { "&:focus-within": { borderColor: "var(--accent)", boxShadow: "var(--glow-selected)" } },
+  backgroundColor: "#FFFFFF",
+  backgroundImage: "var(--paint-grain-fine)",
+  boxShadow: "none",
+  selectors: { "&:focus-within": { borderColor: "var(--accent)", boxShadow: "inset 3px 0 0 var(--accent)" } },
 });
 export const fileLabel = style([sharedButton.secondary, { display: "inline-flex", alignItems: "center" }]);
 export const toolbarFileLabel = style([toolbarButton, { display: "inline-flex", alignItems: "center" }]);
 export const hiddenFile = style({ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" });
 export const image = style({ display: "block", maxWidth: "100%", height: "auto", borderRadius: "var(--radius-control)", margin: "14px 0", border: "1px solid var(--paint-edge)" });
-export const missing = style({ border: "1px dashed var(--paint-edge-strong)", borderRadius: "var(--radius-control)", padding: 14, color: "var(--text-muted)", backgroundColor: "var(--paint-board)", backgroundImage: "var(--paint-grain-fine)" });
+export const missing = style({ border: "1px dashed var(--paint-edge)", borderRadius: "var(--radius-control)", padding: 14, color: "var(--text-muted)", backgroundColor: "#FFFFFF", backgroundImage: "var(--paint-grain-fine)" });
 export const table = style({ borderCollapse: "collapse", width: "100%", margin: "16px 0" });
 globalStyle(`${article} h1, ${editor} .tiptap h1`, { ...text.editorH1, marginTop: "1.6em", scrollMarginTop: "1.5rem" });
 globalStyle(`${article} h2, ${editor} .tiptap h2`, { ...text.editorH2, marginTop: "1.6em", scrollMarginTop: "1.5rem" });
 globalStyle(`${article} h3, ${editor} .tiptap h3`, { ...text.editorH3, marginTop: "1.6em", scrollMarginTop: "1.5rem" });
 globalStyle(`${shell} > h2`, { ...text.sectionTitle, margin: "0 0 14px" });
-globalStyle(`${article} blockquote`, { borderLeft: "3px solid var(--accent)", marginLeft: 0, padding: "10px 0 10px 18px", color: "var(--text-muted)", backgroundImage: "linear-gradient(90deg, color-mix(in srgb, var(--accent) 7%, transparent), transparent 44%)" });
-globalStyle(`${article} pre`, { overflowX: "auto", padding: 14, border: "1px solid var(--paint-edge)", borderRadius: "var(--radius-control)", backgroundColor: "var(--paint-board)", backgroundImage: "var(--paint-grain-fine)" });
+globalStyle(`${article} blockquote`, { borderLeft: "3px solid var(--accent)", marginLeft: 0, padding: "10px 0 10px 18px", color: "var(--text-muted)", background: "#FFFFFF" });
+globalStyle(`${article} pre`, { overflowX: "auto", padding: 14, border: "1px solid var(--paint-edge)", borderRadius: "var(--radius-control)", backgroundColor: "#FFFFFF", backgroundImage: "var(--paint-grain-fine)" });
 globalStyle(`${article} th, ${article} td, ${editor} .tiptap th, ${editor} .tiptap td`, { border: "1px solid var(--paint-edge)", padding: 8, textAlign: "left" });
 globalStyle(`${article} th, ${editor} .tiptap th`, {
   fontFamily: text.editorBody.fontFamily,
   fontWeight: 400,
-  backgroundColor: "var(--paint-board)",
+  backgroundColor: "#FFFFFF",
   backgroundImage: "var(--paint-grain-fine)",
-  borderBlockEnd: "1px solid var(--paint-edge-strong)",
+  borderBlockEnd: "1px solid var(--accent)",
 });
 globalStyle(`${article} th strong, ${article} th b, ${editor} .tiptap th strong, ${editor} .tiptap th b`, { fontWeight: 400 });
 globalStyle(`${editor} .tiptap`, { minHeight: 280, outline: "none" });
@@ -84,7 +82,7 @@ export const templateOption = style({
   borderInlineStart: "3px solid transparent",
   borderRadius: "var(--radius-small)",
   selectors: {
-    "&:has(input:checked)": { borderInlineStartColor: "var(--accent)", borderColor: "var(--paint-edge)", backgroundColor: "var(--paint-selected)", backgroundImage: "var(--paint-grain-fine)" },
+    "&:has(input:checked)": { borderInlineStartColor: "var(--accent)", borderColor: "var(--accent)", backgroundColor: "#FFFFFF" },
     "&:focus-within": { outline: "2px solid var(--focus-ring)", outlineOffset: 2 },
   },
   "@media": { "(forced-colors: active)": { selectors: { "&:has(input:checked)": { borderInlineStartWidth: 4 } } } },

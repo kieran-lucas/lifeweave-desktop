@@ -21,22 +21,20 @@ export const primary = style({ display: "flex", flexDirection: "column", gap: sp
 globalStyle(`${primary} strong`, { ...text.numericMetric, color: "var(--accent)" });
 globalStyle(`${primary} span`, { ...text.metadata, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" });
 
-/** Shared paper data plate rather than a glass/KPI card. */
-export const facts = style([paintSheet, { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 0, margin: 0, padding: space.x4, borderRadius: "var(--radius-surface)", minInlineSize: 0, borderColor: "var(--paint-edge)", boxShadow: "var(--glow-crystal)" }]);
+export const facts = style([paintSheet, { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 0, margin: 0, padding: space.x4, borderRadius: "var(--radius-surface)", minInlineSize: 0, borderColor: "var(--paint-edge)", boxShadow: "none" }]);
 
-/** Main report sheet: matte, slightly stronger, with a restrained painted wash in the corner. */
-export const summary = style([paintSheetStrong, { display: "flex", flexDirection: "column", margin: 0, padding: space.x5, borderRadius: "var(--radius-surface)", minInlineSize: 0, borderColor: "var(--paint-edge-strong)", backgroundColor: "var(--paint-sheet-strong)", backgroundImage: "var(--paint-grain-fine), var(--paint-wash-blue), var(--paint-wash-violet)", boxShadow: "var(--glow-hero)" }]);
+export const summary = style([paintSheetStrong, { display: "flex", flexDirection: "column", margin: 0, padding: space.x5, borderRadius: "var(--radius-surface)", minInlineSize: 0, borderColor: "var(--accent)", backgroundColor: "#FFFFFF", backgroundImage: "var(--paint-grain-fine)", boxShadow: "none" }]);
 export const summaryFacts = style({ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 0, margin: 0, minInlineSize: 0, paddingBlockStart: space.x3, marginBlockStart: space.x4, borderBlockStart: "1px solid var(--paint-edge)" });
 globalStyle(`${facts} div, ${summaryFacts} div`, { padding: `${space.x2} ${space.x4} ${space.x2} 0`, minInlineSize: 0 });
 globalStyle(`${facts} dt, ${summaryFacts} dt`, { color: "var(--text-muted)", fontSize: "0.8125rem" });
 globalStyle(`${facts} dd, ${summaryFacts} dd`, { margin: 0, fontSize: 26, fontWeight: 650, letterSpacing: "-0.025em", fontVariantNumeric: "tabular-nums", color: "var(--text-primary)" });
 
 export const secondaryGrid = style({ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: space.section, minInlineSize: 0, "@container": { "(max-width: 760px)": { gridTemplateColumns: "minmax(0,1fr)" } } });
-globalStyle(`${secondaryGrid} > section:first-child > ul`, { listStyle: "none", display: "grid", gap: space.x2, margin: 0, padding: space.x4, border: "1px solid var(--paint-edge)", borderRadius: "var(--radius-surface)", backgroundColor: "var(--paint-board)", backgroundImage: "var(--paint-grain-fine)", boxShadow: "var(--glow-crystal)", minInlineSize: 0 });
+globalStyle(`${secondaryGrid} > section:first-child > ul`, { listStyle: "none", display: "grid", gap: space.x2, margin: 0, padding: space.x4, border: "1px solid var(--paint-edge)", borderRadius: "var(--radius-surface)", backgroundColor: "#FFFFFF", backgroundImage: "var(--paint-grain-fine)", boxShadow: "none", minInlineSize: 0 });
 globalStyle(`${secondaryGrid} > section:first-child > ul li`, { paddingBlock: space.x1, fontVariantNumeric: "tabular-nums" });
 globalStyle(`${secondaryGrid} > section:first-child > ul li + li`, { borderBlockStart: "1px solid var(--paint-edge)", paddingBlockStart: space.x3 });
 
-export const categories = style([paintSheet, { listStyle: "none", padding: space.x4, margin: 0, display: "grid", gap: space.field, borderRadius: "var(--radius-surface)", minInlineSize: 0, boxShadow: "var(--glow-crystal)" }]);
+export const categories = style([paintSheet, { listStyle: "none", padding: space.x4, margin: 0, display: "grid", gap: space.field, borderRadius: "var(--radius-surface)", minInlineSize: 0, boxShadow: "none" }]);
 globalStyle(`${categories} li`, { minInlineSize: 0 });
 globalStyle(`${categories} li:not(:first-child)`, { borderTop: "1px solid var(--paint-edge)", paddingTop: space.x3 });
 globalStyle(`${categories} progress`, { display: "block", width: "min(100%,520px)", height: 7 });
@@ -50,4 +48,4 @@ export const planTable = style({ borderCollapse: "collapse", width: "100%", text
 globalStyle(`${table} th, ${table} td`, { borderTop: "1px solid var(--paint-edge)", padding: "9px 12px 9px 0", verticalAlign: "top" });
 globalStyle(`${planTable} th, ${planTable} td`, { borderTop: "1px solid var(--paint-edge)", padding: "9px 12px 9px 0", verticalAlign: "top" });
 export const progress = progressBar;
-export const module_ = style([paintSheet, { padding: space.x4, borderRadius: "var(--radius-surface)", minInlineSize: 0, boxShadow: "var(--glow-crystal)" }]);
+export const module_ = style([paintSheet, { padding: space.x4, borderRadius: "var(--radius-surface)", minInlineSize: 0, boxShadow: "none" }]);

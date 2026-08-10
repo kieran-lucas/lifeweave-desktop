@@ -33,19 +33,19 @@ export const actionButton = style({
   paddingInline: 11,
   border: "1px solid var(--paint-edge)",
   borderRadius: "var(--radius-control)",
-  backgroundColor: "var(--paint-sheet-strong)",
+  backgroundColor: "#FFFFFF",
   backgroundImage: "var(--paint-grain-fine)",
   color: "var(--text-muted)",
   fontSize: "0.8125rem",
   cursor: "pointer",
-  boxShadow: "var(--glow-compact)",
-  transition: `background-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}, border-color ${duration.state} ${easing.standard}, box-shadow ${duration.state} ${easing.standard}, transform ${duration.state} ${easing.standard}`,
+  boxShadow: "none",
+  transition: `background-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}, border-color ${duration.state} ${easing.standard}, transform ${duration.state} ${easing.standard}`,
   selectors: {
     "&:hover": {
-      color: "var(--text-primary)",
-      borderColor: "var(--paint-edge-strong)",
-      backgroundColor: "var(--surface-hover)",
-      boxShadow: "var(--glow-hover)",
+      color: "var(--accent)",
+      borderColor: "var(--accent)",
+      backgroundColor: "#FFFFFF",
+      boxShadow: "none",
       transform: "translateY(-1px)",
     },
     "&:focus-visible": { outline: "2px solid var(--focus-ring)", outlineOffset: 2 },
@@ -53,7 +53,6 @@ export const actionButton = style({
   "@media": { "(prefers-reduced-motion: reduce)": { selectors: { "&:hover": { transform: "none" } } } },
 });
 
-/** One large month board: opaque painted sheet, not a crystalline/glass slab. */
 export const grid = style([
   paintSheetStrong,
   {
@@ -61,18 +60,19 @@ export const grid = style([
     borderRadius: "var(--radius-surface)",
     overflow: "hidden",
     minInlineSize: 0,
-    borderColor: "var(--paint-edge-strong)",
-    boxShadow: "var(--glow-hero)",
+    borderColor: "var(--paint-edge)",
+    boxShadow: "none",
   },
 ]);
 
+/** Weekday bar is one unambiguous solid-blue block. */
 export const weekdays = style({
   display: "grid",
   gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
-  borderBottom: "1px solid var(--paint-edge-strong)",
-  backgroundColor: "var(--paint-board)",
+  borderBottom: "1px solid var(--accent)",
+  backgroundColor: "var(--accent)",
   backgroundImage: "var(--paint-grain-fine)",
-  color: "var(--text-muted)",
+  color: "#FFFFFF",
   textAlign: "center",
   paddingBlock: 11,
   fontSize: "0.75rem",
@@ -103,22 +103,20 @@ export const cellButton = style({
   gap: 8,
   padding: "10px 11px",
   border: 0,
-  background: "transparent",
+  backgroundColor: "#FFFFFF",
+  backgroundImage: "var(--paint-grain-fine)",
   color: "var(--text-primary)",
   textAlign: "left",
   cursor: "pointer",
+  boxShadow: "none",
   transition: `background-color ${duration.state} ${easing.standard}, box-shadow ${duration.state} ${easing.standard}`,
   selectors: {
     "&[data-outside]": { color: "var(--text-muted)" },
-    "&:hover": {
-      backgroundColor: "var(--surface-hover)",
-      backgroundImage: "var(--paint-grain-fine)",
-      boxShadow: "inset 0 0 0 1px color-mix(in srgb, var(--accent) 7%, transparent)",
-    },
+    "&:hover": { backgroundColor: "#F5F5F5", boxShadow: "none" },
     "[aria-selected=true] &": {
-      backgroundColor: "var(--paint-selected)",
-      backgroundImage: "var(--paint-grain-fine), var(--paint-wash-blue)",
-      boxShadow: "inset 3px 0 0 var(--accent), var(--glow-selected)",
+      backgroundColor: "#FFFFFF",
+      backgroundImage: "var(--paint-grain-fine)",
+      boxShadow: "inset 3px 0 0 var(--accent)",
     },
     "&:focus-visible": { position: "relative", outline: "2px solid var(--focus-ring)", outlineOffset: -2 },
   },
@@ -129,7 +127,6 @@ export const cellButton = style({
   },
 });
 
-/** Today is an inked blue date stamp, not a glowing jewel. */
 export const dayNumber = style({
   display: "grid",
   placeItems: "center",
@@ -140,14 +137,14 @@ export const dayNumber = style({
   fontSize: "0.8125rem",
   fontWeight: 650,
   fontVariantNumeric: "tabular-nums",
-  transition: `box-shadow ${duration.state} ${easing.standard}, background-color ${duration.state} ${easing.standard}`,
+  transition: `background-color ${duration.state} ${easing.standard}`,
   selectors: {
     [`${cellButton}[aria-current=date] &`]: {
       borderColor: "var(--accent)",
       backgroundColor: "var(--accent)",
       backgroundImage: "var(--paint-grain-fine)",
-      color: "var(--accent-contrast)",
-      boxShadow: "var(--glow-compact)",
+      color: "#FFFFFF",
+      boxShadow: "none",
     },
     [`${cellButton}[data-outside] &`]: { fontWeight: 400 },
   },
@@ -170,11 +167,11 @@ export const missed = style({
   width: 16,
   height: 16,
   borderRadius: "var(--radius-full)",
-  backgroundColor: "color-mix(in srgb, var(--danger) 8%, var(--paint-sheet))",
+  backgroundColor: "#FFFFFF",
   backgroundImage: "var(--paint-grain-fine)",
-  border: "1px solid color-mix(in srgb, var(--danger) 24%, var(--paint-edge))",
+  border: "1px solid var(--danger)",
   color: "var(--danger)",
   fontSize: "0.625rem",
   fontWeight: 750,
-  boxShadow: "var(--glow-danger)",
+  boxShadow: "none",
 });

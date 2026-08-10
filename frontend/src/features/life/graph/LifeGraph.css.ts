@@ -10,17 +10,16 @@ export const header = style({ gridColumn: "1/-1", display: "flex", gap: 12, alig
 export const heading = style({ margin: 0, ...text.sectionTitle });
 export const summary = style({ margin: 0, color: "var(--text-muted)", ...text.metadata });
 
-/** Graph shares the exact drafting-board DNA of Life Edit. */
 export const canvasViewport = style({
   position: "relative",
   minWidth: 0,
   minHeight: 520,
   overflow: "auto",
-  border: "1px solid var(--paint-edge-strong)",
+  border: "1px solid var(--accent)",
   borderRadius: "var(--radius-surface)",
-  backgroundColor: "var(--paint-board)",
-  backgroundImage: "var(--paint-grain), var(--paint-wash-blue), var(--paint-wash-violet)",
-  boxShadow: "var(--glow-hero)",
+  backgroundColor: "#FFFFFF",
+  backgroundImage: "var(--paint-grain-fine)",
+  boxShadow: "none",
   scrollbarGutter: "stable",
 });
 export const canvas = style({ position: "relative", minWidth: "100%", minHeight: 480, width: "var(--graph-width, 100%)", height: "var(--graph-height, 480px)" });
@@ -39,14 +38,14 @@ export const nodeMark = style([focusRing, {
   padding: "8px 9px",
   border: "1px solid var(--paint-edge)",
   borderRadius: "var(--radius-surface)",
-  backgroundColor: "var(--paint-sheet)",
+  backgroundColor: "#FFFFFF",
   backgroundImage: "var(--paint-grain-fine)",
-  boxShadow: "var(--glow-compact)",
+  boxShadow: "none",
   color: "var(--text-primary)",
   textAlign: "left",
   cursor: "pointer",
   selectors: {
-    "&[data-selected=true]": { borderInlineStart: "3px solid var(--accent)", borderColor: "var(--paint-edge-strong)", backgroundColor: "var(--paint-selected)", backgroundImage: "var(--paint-grain-fine), var(--paint-wash-blue)", boxShadow: "var(--glow-selected)" },
+    "&[data-selected=true]": { borderInlineStart: "3px solid var(--accent)", borderColor: "var(--accent)", backgroundColor: "#FFFFFF", boxShadow: "inset 3px 0 0 var(--accent)" },
   },
   "@media": { "(forced-colors: active)": { selectors: { "&[data-selected=true]": { borderInlineStart: "3px solid Highlight", boxShadow: "none" } } } },
 }]);
@@ -63,9 +62,9 @@ export const inspector = style({
   padding: space.x4,
   border: "1px solid var(--paint-edge)",
   borderRadius: "var(--radius-surface)",
-  backgroundColor: "var(--paint-sheet-strong)",
+  backgroundColor: "#FFFFFF",
   backgroundImage: "var(--paint-grain-fine)",
-  boxShadow: "var(--glow-crystal)",
+  boxShadow: "none",
   scrollbarGutter: "stable",
   "@media": { "(max-width: 700px)": { position: "static", maxBlockSize: "none", overflowY: "visible" } },
 });
@@ -85,21 +84,21 @@ export const connectionButton = style([focusRing, {
   textAlign: "left",
   cursor: "pointer",
   ...text.compactBody,
-  selectors: { "&:hover": { backgroundColor: "var(--surface-hover)", backgroundImage: "var(--paint-grain-fine)", borderColor: "var(--paint-edge)", borderLeftColor: "var(--accent)" } },
+  selectors: { "&:hover": { backgroundColor: "#F5F5F5", borderColor: "var(--paint-edge)", borderLeftColor: "var(--accent)" } },
 }]);
 export const connectionKind = style({ display: "block", color: "var(--text-muted)", ...text.caption });
 export const empty = style({ margin: 0, color: "var(--text-muted)", ...text.metadata });
 export const field = style({ display: "grid", gap: 5, color: "var(--text-muted)", ...text.label });
-export const select = style([focusRing, { width: "100%", minWidth: 0, border: "1px solid var(--paint-edge)", borderRadius: "var(--radius-control)", padding: "8px 10px", backgroundColor: "var(--paint-sheet)", backgroundImage: "var(--paint-grain-fine)", color: "var(--text-primary)", font: "inherit" }]);
+export const select = style([focusRing, { width: "100%", minWidth: 0, border: "1px solid var(--paint-edge)", borderRadius: "var(--radius-control)", padding: "8px 10px", backgroundColor: "#FFFFFF", backgroundImage: "var(--paint-grain-fine)", color: "var(--text-primary)", font: "inherit" }]);
 export const allLinks = style({ gridColumn: "1/-1", display: "grid", gap: 8, paddingBlockStart: space.group, borderBlockStart: "1px solid var(--paint-edge)" });
 export const tableScroll = style({ overflowX: "auto" });
 export const table = style({ width: "100%", borderCollapse: "collapse", textAlign: "left", ...text.metadata });
 export const actions = style({ display: "flex", gap: 7, flexWrap: "wrap" });
 export const button = sharedButton.secondary;
-export const notice = style({ gridColumn: "1/-1", display: "grid", gap: 8, padding: `${space.x4} ${space.x5}`, borderInlineStart: "3px solid var(--accent)", borderRadius: "0 var(--radius-control) var(--radius-control) 0", backgroundColor: "var(--paint-selected)", backgroundImage: "var(--paint-grain-fine)", color: "var(--text-primary)" });
+export const notice = style({ gridColumn: "1/-1", display: "grid", gap: 8, padding: `${space.x4} ${space.x5}`, borderInlineStart: "3px solid var(--accent)", borderRadius: "0 var(--radius-control) var(--radius-control) 0", backgroundColor: "#FFFFFF", backgroundImage: "var(--paint-grain-fine)", color: "var(--text-primary)" });
 export const status = style({ gridColumn: "1/-1", minHeight: 24, color: "var(--text-muted)" });
 
-globalStyle(`${edges} path.${hierarchyEdge}`, { stroke: "color-mix(in srgb, var(--text-primary) 18%, var(--paint-edge-strong))", strokeWidth: 1.25, fill: "none" });
+globalStyle(`${edges} path.${hierarchyEdge}`, { stroke: "var(--accent)", strokeWidth: 1.25, fill: "none" });
 globalStyle(`${edges} path.${linkEdge}`, { stroke: "var(--accent)", strokeWidth: 1.5, strokeDasharray: "6 4", fill: "none", markerEnd: "url(#life-graph-arrow)" });
 globalStyle(`${edges} path.${unavailableEdge}`, { stroke: "var(--text-muted)", strokeWidth: 1, strokeDasharray: "1 5", fill: "none", markerEnd: "url(#life-graph-arrow)" });
 globalStyle(`${table} th, ${table} td`, { padding: "5px 8px", borderBottom: "1px solid var(--paint-edge)", verticalAlign: "top" });
