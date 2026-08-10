@@ -18,13 +18,14 @@ export const card = style([
     maxBlockSize: "min(560px, calc(100dvh - clamp(48px, 12vh, 120px) - var(--lw-space-5)))",
     padding: 0,
     gap: 0,
-    backgroundColor: "var(--paint-sheet-strong)",
-    backgroundImage: "var(--paint-grain-fine), var(--paint-wash-blue)",
-    borderColor: "var(--paint-edge-strong)",
+    backgroundColor: "#FFFFFF",
+    backgroundImage: "var(--paint-grain-fine)",
+    borderColor: "var(--accent)",
+    boxShadow: "none",
   },
 ]);
 
-export const inputRow = style({ display: "flex", alignItems: "center", padding: "13px 16px", borderBottom: "1px solid var(--paint-edge)", backgroundColor: "var(--paint-board)", backgroundImage: "var(--paint-grain-fine)", gap: 10 });
+export const inputRow = style({ display: "flex", alignItems: "center", padding: "13px 16px", borderBottom: "1px solid var(--paint-edge)", backgroundColor: "#FFFFFF", backgroundImage: "var(--paint-grain-fine)", gap: 10 });
 export const searchIcon = style({ flexShrink: 0, color: "var(--accent)", pointerEvents: "none", userSelect: "none" });
 export const input = style({ flex: 1, WebkitAppearance: "none", appearance: "none", border: 0, outline: 0, background: "transparent", color: "var(--text-primary)", ...text.body, "::placeholder": { color: "var(--text-muted)" }, selectors: { "&::-webkit-search-cancel-button": { WebkitAppearance: "none", display: "none" } } });
 export const closeButton = style([button.ghost, compact, { flexShrink: 0 }]);
@@ -38,16 +39,17 @@ export const option = style({
   textAlign: "left",
   border: "1px solid transparent",
   borderRadius: "var(--radius-small)",
-  background: "transparent",
+  backgroundColor: "#FFFFFF",
+  backgroundImage: "var(--paint-grain-fine)",
   padding: "9px 10px",
   cursor: "pointer",
   lineHeight: 1.35,
+  boxShadow: "none",
   selectors: {
     "&[aria-selected=true]": {
-      backgroundColor: "var(--paint-selected)",
-      backgroundImage: "var(--paint-grain-fine)",
-      borderColor: "var(--paint-edge-strong)",
-      boxShadow: "var(--glow-selected)",
+      backgroundColor: "#FFFFFF",
+      borderColor: "var(--accent)",
+      boxShadow: "inset 3px 0 0 var(--accent)",
     },
     "&:focus": { outline: 0 },
   },
