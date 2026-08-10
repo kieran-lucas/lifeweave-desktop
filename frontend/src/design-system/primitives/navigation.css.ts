@@ -30,11 +30,11 @@ export const tab = style([
       `background-color ${duration.state} ${easing.standard}, border-color ${duration.state} ${easing.standard}, ` +
       `color ${duration.state} ${easing.standard}`,
     selectors: {
-      "&:hover:not(:disabled)": { color: "var(--text-primary)", backgroundColor: "#F5F5F5" },
+      "&:hover:not(:disabled)": { color: "var(--text-primary)", backgroundColor: "var(--surface-hover)" },
       '&[aria-selected="true"], &[aria-pressed="true"]': {
-        color: "var(--accent)",
-        borderBlockEndColor: "var(--accent)",
-        backgroundColor: "#FFFFFF",
+        color: "var(--text-primary)",
+        borderBlockEndColor: "var(--text-primary)",
+        backgroundColor: "var(--surface-raised)",
         backgroundImage: "var(--paint-grain-fine)",
         boxShadow: "none",
       },
@@ -62,7 +62,7 @@ export const segmented = style({
   padding: 4,
   border: "1px solid var(--paint-edge)",
   borderRadius: "var(--radius-control)",
-  backgroundColor: "#FFFFFF",
+  backgroundColor: "var(--surface-raised)",
   backgroundImage: "var(--paint-grain-fine)",
   boxShadow: "none",
 });
@@ -83,12 +83,11 @@ export const segmentedItem = style([
       `background-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}, ` +
       `border-color ${duration.state} ${easing.standard}`,
     selectors: {
-      "&:hover:not(:disabled)": { color: "var(--text-primary)", backgroundColor: "#F5F5F5" },
+      "&:hover:not(:disabled)": { color: "var(--text-primary)", backgroundColor: "var(--surface-hover)" },
       '&[aria-selected="true"], &[aria-pressed="true"], &[aria-current="page"]': {
-        backgroundColor: "var(--accent)",
-        backgroundImage: "var(--paint-grain-fine)",
-        color: "#FFFFFF",
-        borderColor: "var(--accent)",
+        backgroundColor: "var(--text-primary)",
+        color: "var(--app-background)",
+        borderColor: "var(--text-primary)",
         boxShadow: "none",
       },
     },
@@ -110,9 +109,9 @@ export const segmentedItem = style([
 export const selectedRow = style({
   selectors: {
     '&[aria-current="true"], &[aria-current="page"], &[data-selected="true"]': {
-      backgroundColor: "#FFFFFF",
+      backgroundColor: "var(--surface-selected)",
       backgroundImage: "var(--paint-grain-fine)",
-      boxShadow: "inset 3px 0 0 var(--accent)",
+      boxShadow: "inset 3px 0 0 var(--text-primary)",
     },
   },
   "@media": {
