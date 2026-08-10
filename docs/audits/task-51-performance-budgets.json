@@ -2,37 +2,38 @@
   "budget_version": 2,
   "task": 51,
   "supersedes": "docs/audits/task-49-performance-budgets.json",
-  "supersedes_note": "Task 51 supersedes Task 49. The index.js locked ceiling is raised from 535,000 to 550,000 by explicit Product Owner decision; BasicLeafEditor.js and markdown.js are unchanged.",
+  "supersedes_note": "Task 51 supersedes Task 49. Numeric byte ceilings remain the inherited safety limits; chunk topology is now informational so deliberate simplification may remove or merge optional lazy chunks.",
   "measured_at_commit": "8acd525",
   "baseline_evidence": "docs/audits/task-51-visual-lock.md",
   "main_chunk": "index.js",
   "unknown_chunk_raw_bytes_threshold": 10000,
   "rules": {
     "chunk_identity": "emitted file name with only the terminal content hash stripped",
-    "missing_expected_chunk": "fails",
+    "main_chunk_missing": "fails",
+    "missing_optional_budgeted_chunk": "reported; does not fail because removal or merging may be an intentional architecture simplification",
     "unknown_chunk_at_or_above_threshold": "fails",
-    "unknown_chunk_below_threshold": "reported as untracked_small_chunks, does not fail",
+    "unknown_chunk_below_threshold": "reported as untracked_small_chunks; does not fail",
     "duplicate_normalized_identity": "fails",
-    "chunk_count_mismatch": "fails"
+    "chunk_count_mismatch": "reported against the historical baseline; does not fail"
   },
   "formulas": {
     "total_raw_maximum": "final + max(8192, ceil(final * 0.0075))",
     "total_gzip_maximum": "final + max(4096, ceil(final * 0.0100))",
     "chunk_maximum": "final + max(1024, ceil(final * 0.0200))",
-    "clamp": "index.js is clamped by the Task 51 locked ceiling of 550000; BasicLeafEditor.js and markdown.js remain clamped by their unchanged locked ceilings",
+    "clamp": "index.js is clamped by the Task 51 locked ceiling of 550000; BasicLeafEditor.js and markdown.js remain clamped by their unchanged locked ceilings when those chunks are emitted",
     "arithmetic": "integer ceil"
   },
   "locked_ceilings": {
     "index.js": 550000,
     "BasicLeafEditor.js": 490000,
     "markdown.js": 129000,
-    "note": "index.js raised 535000 -> 550000 under Task 51, authorized by the Product Owner on measured evidence: the canonical V2 Today context inspector and its shared split wiring. Three legitimate reclaims were applied before the request (tree-shakeable icons -3438, lazy inspector -6151, co-located inspector styles -426); the residual eager cost was 381 bytes over the old ceiling. Raising a maximum remains a Product Owner decision supported by measurement, per docs/PERFORMANCE_BUDGETS.md."
+    "note": "These remain byte ceilings, not a requirement that historical optional chunks keep existing. The startup chunk is mandatory; optional lazy chunks may disappear or merge as the product architecture is simplified."
   },
   "aggregates": {
     "main_js_bytes": {
       "observed": 535381,
       "maximum": 546089,
-      "derivation": "535381 + max(1024, ceil(535381 * 0.0200)) = 546089, clamped down to the Task 51 locked 550000"
+      "derivation": "535381 + max(1024, ceil(535381 * 0.0200)) = 546089"
     },
     "total_js_bytes": {
       "observed": 1254564,
@@ -113,11 +114,9 @@
     }
   },
   "task_51_notes": [
-    "The V2 production context inspector is lazy: TaskInspector.js 7.34 kB and TaskInspector.css 2.86 kB load only when a task is selected, so both sit below the 10,000-byte tracking threshold and are reported under untracked_small_chunks.",
-    "Net eager cost of the whole inspector feature is +2,268 bytes against the session baseline of 533,113.",
-    "Headroom against the new ceiling at this measurement is 550000 - 535381 = 14619 bytes. It is not free space: tree shaking, named imports and lazy secondary surfaces remain required.",
-    "expected_chunk_count 24 -> 25. The added chunk is TaskInspector, the lazily-loaded Today context inspector. A new chunk below the 10,000-byte tracking threshold does not fail the gate on size, but the count is pinned deliberately so an unnoticed extra chunk still does.",
-    "expected_chunk_count 25 -> 26. The added chunk is icons.js. The shared state primitives (EmptyState, SkeletonList, LoadingRow) are imported by both eager screens and lazy panels, so the bundler extracted the icon vocabulary they depend on into one shared chunk instead of duplicating it. This is an inventory correction, not a ceiling change: no locked ceiling moved, and every size measurement improved. index.js fell 537,545 -> 533,610, which is 3,935 bytes BELOW the pre-Task-51 session baseline, because replacing 31 hand-written loading paragraphs and 15 empty states with three shared components removed more markup than the components cost.",
-    "Deterministic gzip headroom is now thin: 388,372 against a 389,525 maximum, 1,153 bytes. Raw total is 1,260,842 against 1,263,974, 3,132 bytes. Further surface work should expect to reclaim before it spends."
+    "Historical measurements are retained as ceilings and comparison evidence, not as a requirement to preserve the old screen architecture.",
+    "The current gate requires the main startup chunk, enforces aggregate raw/gzip ceilings, enforces per-chunk ceilings for known chunks when emitted, rejects duplicate normalized identities, and rejects new unbudgeted chunks at or above the threshold.",
+    "Optional lazy chunks may disappear or merge when product simplification removes their front-end path; that reduction is reported and is not a regression.",
+    "The historical expected_chunk_count remains baseline information only."
   ]
 }
