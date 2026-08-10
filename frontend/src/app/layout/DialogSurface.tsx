@@ -10,6 +10,11 @@ import * as styles from "./layout.css";
  */
 export type DialogWidth = "compact" | "standard" | "wide";
 
+const matteBackdrop = {
+  backdropFilter: "none",
+  WebkitBackdropFilter: "none",
+} as const;
+
 export function DialogBackdrop({
   children,
   className,
@@ -22,6 +27,7 @@ export function DialogBackdrop({
     <div
       {...rest}
       data-dialog-backdrop=""
+      style={matteBackdrop}
       className={className ? `${styles.dialogBackdrop} ${className}` : styles.dialogBackdrop}
     >
       {children}
@@ -110,7 +116,7 @@ export function DecisionDialog({
   });
 
   return (
-    <div className={styles.dialogBackdrop} data-dialog-backdrop="" role="presentation">
+    <div className={styles.dialogBackdrop} data-dialog-backdrop="" style={matteBackdrop} role="presentation">
       <form
         ref={dialog}
         data-dialog-surface=""
