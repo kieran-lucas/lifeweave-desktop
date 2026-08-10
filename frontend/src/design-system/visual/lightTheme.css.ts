@@ -3,74 +3,76 @@ import { createTheme } from "@vanilla-extract/css";
 import { vars } from "./contract.css";
 
 /**
- * Lifeweave Monochrome — Light acceptance palette.
+ * Lifeweave Luminous Editorial — light acceptance palette.
  *
- * Absolute chroma rule: presentation uses only white, black and neutral gray. Semantic distinction
- * is carried by value, geometry, iconography, labels and border treatment rather than hue.
+ * The product stays unmistakably a desktop productivity tool, but its identity now comes from
+ * atmospheric sky-blue light, restrained violet/rose refraction, deep ink typography and tactile
+ * translucent surfaces. Saturated colour is concentrated in interaction and authored atmosphere;
+ * content still has a quiet, high-contrast reading plane.
  */
 export const lightValues = {
   color: {
-    canvas: "#FFFFFF",
-    surface: "#FFFFFF",
-    surfaceSubtle: "#F4F4F4",
+    canvas: "#F7FAFF",
+    surface: "#FBFDFF",
+    surfaceSubtle: "#EEF4FC",
     surfaceRaised: "#FFFFFF",
-    surfaceSelected: "#F0F0F0",
-    surfaceSelectedNav: "#111111",
-    surfaceHover: "#F3F3F3",
+    surfaceSelected: "#E8EFFF",
+    surfaceSelectedNav: "#E4ECFF",
+    surfaceHover: "#F0F5FF",
 
-    textPrimary: "#111111",
-    textSecondary: "#333333",
-    textTertiary: "#666666",
-    textDisabled: "#9A9A9A",
+    textPrimary: "#17233F",
+    textSecondary: "#32415F",
+    textTertiary: "#687794",
+    textDisabled: "#9AA8BE",
     textOnAccent: "#FFFFFF",
 
-    borderHairline: "#E3E3E3",
-    borderStrong: "#BDBDBD",
+    borderHairline: "#DCE6F3",
+    borderStrong: "#BAC8DD",
 
-    accent: "#111111",
-    accentMuted: "#333333",
-    accentSoft: "#F0F0F0",
-    selectionEdge: "#111111",
+    accent: "#4E6FFF",
+    accentMuted: "#3658D9",
+    accentSoft: "#E7EDFF",
+    selectionEdge: "#5A76FF",
 
-    success: "#111111",
-    warning: "#4A4A4A",
-    danger: "#111111",
-    successSoft: "#F4F4F4",
-    warningSoft: "#F4F4F4",
-    dangerSoft: "#F4F4F4",
+    success: "#16866F",
+    warning: "#B46A1B",
+    danger: "#D94E72",
+    successSoft: "#E8F7F3",
+    warningSoft: "#FFF4E5",
+    dangerSoft: "#FFF0F4",
 
-    lifeLavender: "#FFFFFF",
-    lifeMint: "#FFFFFF",
-    lifePeach: "#FFFFFF",
-    lifeBlue: "#FFFFFF",
-    lifeCream: "#F4F4F4",
+    lifeLavender: "#F0ECFF",
+    lifeMint: "#E8F9F4",
+    lifePeach: "#FFF0EA",
+    lifeBlue: "#E9F2FF",
+    lifeCream: "#FFF8E8",
 
-    ambientContour: "transparent",
-    ambientGlowPrimary: "transparent",
-    ambientGlowSecondary: "transparent",
-    ambientAura: "transparent",
+    ambientContour: "rgba(82, 111, 224, 0.16)",
+    ambientGlowPrimary: "rgba(79, 124, 255, 0.28)",
+    ambientGlowSecondary: "rgba(163, 112, 255, 0.20)",
+    ambientAura: "rgba(90, 196, 255, 0.18)",
 
-    focusRing: "#111111",
-    backdrop: "rgba(0, 0, 0, 0.52)",
+    focusRing: "#315FFF",
+    backdrop: "rgba(17, 29, 57, 0.54)",
   },
 
   radius: {
-    small: "6px",
-    control: "8px",
-    surface: "12px",
-    floating: "14px",
+    small: "8px",
+    control: "11px",
+    surface: "18px",
+    floating: "22px",
     full: "999px",
   },
 
   elevation: {
     none: "none",
-    floating: "0 1px 2px rgba(0, 0, 0, 0.10)",
-    modal: "0 12px 30px rgba(0, 0, 0, 0.18)",
+    floating: "0 16px 42px rgba(50, 71, 118, 0.11), 0 2px 8px rgba(50, 71, 118, 0.06)",
+    modal: "0 30px 90px rgba(32, 46, 85, 0.22), 0 8px 24px rgba(32, 46, 85, 0.12)",
   },
 
   hairline: {
-    structural: "1px solid #CFCFCF",
-    subtle: "1px solid #E3E3E3",
+    structural: "1px solid #BFCDE0",
+    subtle: "1px solid #DCE6F3",
   },
 };
 
