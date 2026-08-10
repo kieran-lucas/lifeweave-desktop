@@ -7,9 +7,6 @@ param(
   [ValidateSet('shell-task','calendar-analytics-plans','life-reader-interchange','narrative','settings','foundation','full')]
   [string]$Profile,
 
-  [ValidateSet('light','dark')]
-  [string]$Theme = 'light',
-
   [ValidatePattern('^\d+x\d+$')]
   [string]$Viewport,
 
@@ -29,7 +26,7 @@ $errorLog = Join-Path $logRoot "visual-$Profile-$stamp.err.log"
 
 $env:LIFEWEAVE_AUDIT_PROFILE = $Profile
 $env:LIFEWEAVE_AUDIT_LABEL = "$Stage-$stamp"
-$env:LIFEWEAVE_AUDIT_THEME = $Theme
+$env:LIFEWEAVE_AUDIT_THEME = 'light'
 if ($Viewport) { $env:LIFEWEAVE_AUDIT_VIEWPORT = $Viewport }
 if ($VisualTags) { $env:LIFEWEAVE_VISUAL_TAGS = $VisualTags }
 if ($VisualRegression) { $env:LIFEWEAVE_VISUAL_REGRESSION = '1' }
@@ -39,8 +36,6 @@ if ($ReducedMotion) { $env:LIFEWEAVE_AUDIT_REDUCED_MOTION = '1' }
 $pnpm = (Get-Command pnpm.cmd -ErrorAction Stop).Source
 Push-Location $repo
 try {
-  # pnpm writes its command banner to stderr. Keep native stderr as evidence without allowing
-  # Windows PowerShell to promote that ordinary stream into a terminating NativeCommandError.
   $savedPreference = $ErrorActionPreference
   try {
     $ErrorActionPreference = 'Continue'
