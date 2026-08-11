@@ -3,15 +3,15 @@ import type { DocumentOutlineProjection } from "./outline";
 import * as styles from "./DocumentOutline.css";
 
 export function DocumentOutline({
+  id,
   outline,
   reducedMotion,
 }: {
+  id?: string;
   outline: DocumentOutlineProjection;
   reducedMotion: boolean;
 }) {
-  const [expanded, setExpanded] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const listId = "doc-outline-list";
 
   const activate = (id: string) => {
     setActiveId(id);
@@ -32,21 +32,9 @@ export function DocumentOutline({
   };
 
   return (
-    <nav aria-label="Document outline" className={styles.nav}>
+    <nav id={id} aria-label="Document outline" className={styles.nav}>
       <p className={styles.heading} aria-hidden="true">Contents</p>
-      <button
-        className={styles.disclosureToggle}
-        aria-expanded={expanded}
-        aria-controls={listId}
-        onClick={() => setExpanded(v => !v)}
-      >
-        <span className={styles.disclosureIcon} />
-        <span>{expanded ? "Hide outline" : "Show outline"}</span>
-      </button>
-      <ol
-        id={listId}
-        className={`${styles.list}${!expanded ? ` ${styles.listHiddenNarrow}` : ""}`}
-      >
+      <ol className={styles.list}>
         {outline.entries.map(entry => (
           <li key={entry.id}>
             <button

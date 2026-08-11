@@ -4,7 +4,7 @@ import "../design-system/visual/globalType.css";
 import { button } from "../design-system/primitives/controls.css";
 import { focusRing } from "../design-system/primitives/utilities.css";
 import { text } from "../design-system/visual/typography.css";
-import { duration, easing } from "../design-system/visual/motion.css";
+import { duration, easing, reduced } from "../design-system/visual/motion.css";
 import { gutter, space } from "./layout/tokens.css";
 
 export const appRoot = style({
@@ -142,13 +142,26 @@ export const collapseButton = style([
       "&:hover": { color: "var(--text-primary)", backgroundColor: "rgba(255, 255, 255, 0.72)" },
       "&:active": { transform: "translateY(1px)" },
     },
-    "@media": { "(prefers-reduced-motion: reduce)": { selectors: { "&:active": { transform: "none" } } } },
+    "@media": {
+      "screen and (max-width: 1180px)": { display: "none" },
+      "(prefers-reduced-motion: reduce)": { selectors: { "&:active": { transform: "none" } } },
+    },
   },
 ]);
 
-const routeIn = keyframes({
-  from: { opacity: 0.58, transform: "translateY(5px)", filter: "blur(2px)" },
-  to: { opacity: 1, transform: "translateY(0)", filter: "blur(0)" },
+const routeForward = keyframes({
+  from: { opacity: 0.18, transform: "translateX(28px) scale(.992)" },
+  to: { opacity: 1, transform: "translateX(0) scale(1)" },
+});
+
+const routeBack = keyframes({
+  from: { opacity: 0.18, transform: "translateX(-28px) scale(.992)" },
+  to: { opacity: 1, transform: "translateX(0) scale(1)" },
+});
+
+const routeFade = keyframes({
+  from: { opacity: 0.62 },
+  to: { opacity: 1 },
 });
 
 export const viewport = style({
@@ -161,10 +174,39 @@ export const viewport = style({
   padding: gutter,
   background:
     "radial-gradient(circle at 90% 2%, rgba(126, 169, 255, 0.13), transparent 30%), radial-gradient(circle at 8% 96%, rgba(173, 136, 255, 0.075), transparent 28%), transparent",
+  selectors: {
+    '&[data-destination="life"]': {
+      overflow: "hidden",
+      padding: 0,
+      scrollbarGutter: "auto",
+    },
+  },
 });
 
+globalStyle(`${viewport}[data-navigation-motion="forward"] > :not(p)`, {
+  animation: `${routeForward} ${duration.route} ${easing.standard} both`,
+});
+globalStyle(`${viewport}[data-navigation-motion="back"] > :not(p)`, {
+  animation: `${routeBack} ${duration.route} ${easing.standard} both`,
+});
 globalStyle(`${viewport} > :not(p)`, {
-  animation: `${routeIn} 300ms cubic-bezier(.2,.8,.2,1) both`,
+  transformOrigin: "center",
+  willChange: "transform, opacity",
+  "@media": {
+    "(prefers-reduced-motion: reduce)": {
+      animation: `${routeFade} ${reduced.duration} ${reduced.easing} both`,
+      transform: "none",
+      willChange: "opacity",
+    },
+  },
+});
+
+export const lifeRoute = style({
+  inlineSize: "100%",
+  blockSize: "100%",
+  minInlineSize: 0,
+  minBlockSize: 0,
+  overflow: "hidden",
 });
 
 export const heading = style({ ...text.pageTitle, margin: 0, color: "var(--text-primary)" });

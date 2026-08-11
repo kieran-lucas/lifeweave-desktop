@@ -1,5 +1,7 @@
 import { globalStyle, style } from "@vanilla-extract/css";
 import { button as sharedButton, compact } from "../../../design-system/primitives/controls.css";
+import { vars } from "../../../design-system/visual/contract.css";
+import { duration, easing } from "../../../design-system/visual/motion.css";
 import { text } from "../../../design-system/visual/typography.css";
 
 export const shell = style({ marginTop: 30, borderTop: "1px solid var(--paint-edge)", paddingTop: 24 });
@@ -16,58 +18,27 @@ export const article = style({
   backgroundColor: "#FFFFFF",
   backgroundImage: "var(--paint-grain-fine)",
 });
-export const status = style({ ...text.metadata, color: "var(--text-muted)", minHeight: 24 });
 export const recovery = style({ borderInlineStart: "3px solid var(--accent)", padding: "12px 16px", marginBottom: 20, borderRadius: "0 var(--radius-control) var(--radius-control) 0", backgroundColor: "#FFFFFF", backgroundImage: "var(--paint-grain-fine)" });
-
-export const toolbar = style({
-  position: "sticky",
-  top: 0,
-  zIndex: 1,
-  display: "flex",
-  flexWrap: "wrap",
-  gap: 3,
-  padding: "8px 9px",
-  border: "1px solid var(--paint-edge)",
-  borderRadius: "var(--radius-control)",
-  backgroundColor: "#FFFFFF",
-  backgroundImage: "var(--paint-grain-fine)",
-  boxShadow: "none",
-});
-export const toolbarButton = style([sharedButton.ghost, compact, { minInlineSize: 30, selectors: { '&[aria-pressed="true"]': { color: "#FFFFFF", backgroundColor: "var(--accent)", borderColor: "var(--accent)" } } }]);
-
-export const editor = style({
-  border: "1px solid var(--accent)",
-  borderRadius: "var(--radius-surface)",
-  padding: "22px 24px",
-  minHeight: 360,
-  backgroundColor: "#FFFFFF",
-  backgroundImage: "var(--paint-grain-fine)",
-  boxShadow: "none",
-  selectors: { "&:focus-within": { borderColor: "var(--accent)", boxShadow: "inset 3px 0 0 var(--accent)" } },
-});
 export const fileLabel = style([sharedButton.secondary, { display: "inline-flex", alignItems: "center" }]);
-export const toolbarFileLabel = style([toolbarButton, { display: "inline-flex", alignItems: "center" }]);
 export const hiddenFile = style({ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" });
 export const image = style({ display: "block", maxWidth: "100%", height: "auto", borderRadius: "var(--radius-control)", margin: "14px 0", border: "1px solid var(--paint-edge)" });
 export const missing = style({ border: "1px dashed var(--paint-edge)", borderRadius: "var(--radius-control)", padding: 14, color: "var(--text-muted)", backgroundColor: "#FFFFFF", backgroundImage: "var(--paint-grain-fine)" });
 export const table = style({ borderCollapse: "collapse", width: "100%", margin: "16px 0" });
-globalStyle(`${article} h1, ${editor} .tiptap h1`, { ...text.editorH1, marginTop: "1.6em", scrollMarginTop: "1.5rem" });
-globalStyle(`${article} h2, ${editor} .tiptap h2`, { ...text.editorH2, marginTop: "1.6em", scrollMarginTop: "1.5rem" });
-globalStyle(`${article} h3, ${editor} .tiptap h3`, { ...text.editorH3, marginTop: "1.6em", scrollMarginTop: "1.5rem" });
+globalStyle(`${article} h1`, { ...text.editorH1, marginTop: "1.6em", scrollMarginTop: "1.5rem" });
+globalStyle(`${article} h2`, { ...text.editorH2, marginTop: "1.6em", scrollMarginTop: "1.5rem" });
+globalStyle(`${article} h3`, { ...text.editorH3, marginTop: "1.6em", scrollMarginTop: "1.5rem" });
 globalStyle(`${shell} > h2`, { ...text.sectionTitle, margin: "0 0 14px" });
 globalStyle(`${article} blockquote`, { borderLeft: "3px solid var(--accent)", marginLeft: 0, padding: "10px 0 10px 18px", color: "var(--text-muted)", background: "#FFFFFF" });
 globalStyle(`${article} pre`, { overflowX: "auto", padding: 14, border: "1px solid var(--paint-edge)", borderRadius: "var(--radius-control)", backgroundColor: "#FFFFFF", backgroundImage: "var(--paint-grain-fine)" });
-globalStyle(`${article} th, ${article} td, ${editor} .tiptap th, ${editor} .tiptap td`, { border: "1px solid var(--paint-edge)", padding: 8, textAlign: "left" });
-globalStyle(`${article} th, ${editor} .tiptap th`, {
+globalStyle(`${article} th, ${article} td`, { border: "1px solid var(--paint-edge)", padding: 8, textAlign: "left" });
+globalStyle(`${article} th`, {
   fontFamily: text.editorBody.fontFamily,
   fontWeight: 400,
   backgroundColor: "#FFFFFF",
   backgroundImage: "var(--paint-grain-fine)",
   borderBlockEnd: "1px solid var(--accent)",
 });
-globalStyle(`${article} th strong, ${article} th b, ${editor} .tiptap th strong, ${editor} .tiptap th b`, { fontWeight: 400 });
-globalStyle(`${editor} .tiptap`, { minHeight: 280, outline: "none" });
-globalStyle(`${editor} .tiptap img`, { maxWidth: "100%", height: "auto" });
+globalStyle(`${article} th strong, ${article} th b`, { fontWeight: 400 });
 
 export const outlineContainer = style({ containerType: "inline-size" });
 export const outlineGrid = style({ display: "grid", gap: "1.5rem", "@container": { "(min-width: 520px)": { gridTemplateColumns: "210px minmax(0, 1fr)", alignItems: "start" } } });
@@ -88,3 +59,86 @@ export const templateOption = style({
   "@media": { "(forced-colors: active)": { selectors: { "&:has(input:checked)": { borderInlineStartWidth: 4 } } } },
 });
 globalStyle(`${templateOption} > span`, { gridColumn: 2, ...text.compactBody, color: "var(--text-muted)" });
+
+export const editorShell = style({ marginBlockStart: 28, minInlineSize: 0 });
+export const editorChrome = style({
+  position: "sticky",
+  top: 0,
+  zIndex: 2,
+  overflow: "hidden",
+  border: "1px solid var(--paint-edge)",
+  borderRadius: "var(--radius-surface) var(--radius-surface) var(--radius-control) var(--radius-control)",
+  background: vars.color.surfaceRaised,
+  boxShadow: vars.elevation.floating,
+  "@media": { "(forced-colors: active)": { background: "Canvas", borderColor: "CanvasText", boxShadow: "none" } },
+});
+export const commandRow = style({
+  minBlockSize: 58,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "flex-end",
+  gap: 8,
+  flexWrap: "wrap",
+  padding: "10px 12px 9px 14px",
+  borderBlockEnd: "1px solid var(--paint-edge)",
+  "@media": { "(max-width: 720px)": { justifyContent: "flex-start" } },
+});
+export const editorStatus = style({
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 7,
+  margin: "0 4px 0 0",
+  color: "var(--text-muted)",
+  ...text.metadata,
+  selectors: {
+    "&::before": { content: "", inlineSize: 7, blockSize: 7, flex: "0 0 7px", borderRadius: "50%", background: "currentColor" },
+    '&[data-state="1"]': { color: vars.color.warning },
+    '&[data-state="2"]': { color: vars.color.accent },
+    '&[data-state="3"]': { color: vars.color.success },
+    '&[data-state="4"]': { color: vars.color.accent },
+    '&[data-state="5"]': { color: vars.color.accent },
+    '&[data-state="6"]': { color: vars.color.danger },
+  },
+  "@media": { "(forced-colors: active)": { color: "CanvasText" } },
+});
+export const backButton = sharedButton.secondary;
+export const saveButton = sharedButton.primary;
+export const toolbar = style({ display: "flex", alignItems: "center", gap: 6, overflowX: "auto", padding: "7px 9px", scrollbarGutter: "stable" });
+export const toolbarGroup = style({ display: "inline-flex", alignItems: "center", gap: 2, flex: "0 0 auto", paddingInlineEnd: 6, borderInlineEnd: "1px solid var(--paint-edge)" });
+globalStyle(`${toolbarGroup}:last-child`, { paddingInlineEnd: 0, borderInlineEnd: 0 });
+globalStyle(`${toolbarGroup}:first-child > :first-child`, { fontWeight: 700 });
+globalStyle(`${toolbarGroup}:first-child > :nth-child(2)`, { fontStyle: "italic" });
+export const toolbarButton = style([sharedButton.ghost, compact, {
+  minInlineSize: 30,
+  minBlockSize: 30,
+  paddingInline: 9,
+  selectors: { '&[aria-pressed="true"]': { color: vars.color.textOnAccent, backgroundColor: vars.color.surfaceSelected, borderColor: vars.color.surfaceSelected } },
+  "@media": { "(forced-colors: active)": { selectors: { '&[aria-pressed="true"]': { color: "HighlightText", background: "Highlight", borderColor: "Highlight" } } } },
+}]);
+export const toolbarFileLabel = style([toolbarButton, { display: "inline-flex", alignItems: "center" }]);
+export const editorHiddenFile = style({ position: "absolute", inlineSize: 1, blockSize: 1, overflow: "hidden", clip: "rect(0 0 0 0)" });
+export const editorSurface = style({
+  minBlockSize: "clamp(420px, 58vh, 760px)",
+  marginBlockStart: 16,
+  overflow: "hidden",
+  border: "1px solid var(--paint-edge)",
+  borderRadius: "var(--radius-surface)",
+  background: vars.color.surface,
+  transition: `border-color ${duration.state} ${easing.standard}, outline-color ${duration.state} ${easing.standard}`,
+  selectors: { "&:focus-within": { borderColor: vars.color.borderStrong, outline: `2px solid ${vars.color.focusRing}`, outlineOffset: 2 } },
+  "@media": {
+    "(prefers-reduced-motion: reduce)": { transition: "none" },
+    "(forced-colors: active)": { borderColor: "CanvasText", boxShadow: "none" },
+  },
+});
+globalStyle(`${editorSurface} .tiptap`, { minBlockSize: "clamp(420px, 58vh, 760px)", boxSizing: "border-box", padding: "clamp(24px, 4vw, 48px)", outline: "none", color: "var(--text-primary)", caretColor: "var(--text-primary)", overflowWrap: "anywhere", ...text.editorBody });
+globalStyle(`${editorSurface} .tiptap > :first-child`, { marginBlockStart: 0 });
+globalStyle(`${editorSurface} .tiptap h1`, { ...text.editorH1, marginBlock: "1.55em .55em" });
+globalStyle(`${editorSurface} .tiptap h2`, { ...text.editorH2, marginBlock: "1.5em .5em" });
+globalStyle(`${editorSurface} .tiptap h3`, { ...text.editorH3, marginBlock: "1.45em .45em" });
+globalStyle(`${editorSurface} .tiptap blockquote`, { marginInline: 0, padding: "8px 0 8px 18px", borderInlineStart: "3px solid var(--accent)", color: "var(--text-muted)" });
+globalStyle(`${editorSurface} .tiptap pre`, { overflowX: "auto", padding: 14, border: "1px solid var(--paint-edge)", borderRadius: "var(--radius-control)", background: vars.color.surfaceSubtle, ...text.code });
+globalStyle(`${editorSurface} .tiptap img`, { display: "block", maxInlineSize: "100%", blockSize: "auto", marginBlock: 18, borderRadius: "var(--radius-control)" });
+globalStyle(`${editorSurface} .tiptap table`, { inlineSize: "100%", borderCollapse: "collapse", marginBlock: 18 });
+globalStyle(`${editorSurface} .tiptap th, ${editorSurface} .tiptap td`, { padding: 8, border: "1px solid var(--paint-edge)", textAlign: "start", verticalAlign: "top" });
+export const editorAlert = style({ margin: "12px 0 0", padding: "10px 12px", borderInlineStart: "3px solid var(--danger)", background: vars.color.dangerSoft, color: vars.color.danger, ...text.compactBody });

@@ -1,24 +1,270 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import axe from "axe-core";
 
-const api=vi.hoisted(()=>({save:vi.fn(),draft:vi.fn(),asset:vi.fn()}));
-const tiptap=vi.hoisted(()=>{const chain:Record<string,ReturnType<typeof vi.fn>>={};for(const name of ["focus","toggleBold","toggleItalic","toggleHeading","toggleBulletList","toggleOrderedList","toggleBlockquote","toggleCodeBlock","extendMarkRange","setLink","insertTable","setImage","run"])chain[name]=vi.fn(()=>chain);return{chain,config:undefined as undefined|{onUpdate?:()=>void}};});
-vi.mock("../../../ipc/commands",()=>({saveReaderDocument:api.save,saveReaderDraft:api.draft,importDocumentAsset:api.asset}));
-vi.mock("@tiptap/react",()=>({EditorContent:()=> <div role="textbox" aria-label="Document body"/>,useEditor:(config:{onUpdate?:()=>void})=>{tiptap.config=config;return{chain:()=>tiptap.chain,isActive:()=>false,getJSON:()=>({type:"doc",content:[{type:"paragraph",content:[{type:"text",text:"Draft"}]}]}),state:{}};}}));
-vi.mock("@tiptap/core",()=>({Node:{create:(value:unknown)=>value}}));
-vi.mock("@tiptap/extension-image",()=>({default:{extend:()=>({configure:()=>({})})}}));
-vi.mock("@tiptap/extension-link",()=>({default:{configure:()=>({})}}));
-vi.mock("@tiptap/extension-table",()=>({TableKit:{}}));
-vi.mock("@tiptap/starter-kit",()=>({default:{configure:()=>({})}}));
+const api = vi.hoisted(() => ({ save: vi.fn(), draft: vi.fn(), asset: vi.fn() }));
+const link = vi.hoisted(() => ({ config: undefined as undefined | { isAllowedUri?: (value: string) => boolean } }));
+const tiptap = vi.hoisted(() => {
+  const chain: Record<string, ReturnType<typeof vi.fn>> = {};
+  for (const name of [
+    "focus",
+    "toggleBold",
+    "toggleItalic",
+    "toggleHeading",
+    "toggleBulletList",
+    "toggleOrderedList",
+    "toggleBlockquote",
+    "toggleCodeBlock",
+    "extendMarkRange",
+    "setLink",
+    "insertTable",
+    "setImage",
+  ]) chain[name] = vi.fn(() => chain);
+  chain.run = vi.fn(() => true);
+  const editor = {
+    chain: () => chain,
+    isActive: vi.fn(() => false),
+    getJSON: () => ({ type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "Draft" }] }] }),
+  };
+  return {
+    chain,
+    editor,
+    config: undefined as undefined | {
+      autofocus?: string;
+      editorProps?: { attributes?: Record<string, string> };
+      onUpdate?: () => void;
+    },
+  };
+});
+
+vi.mock("../../../ipc/commands", () => ({
+  saveReaderDocument: api.save,
+  saveReaderDraft: api.draft,
+  importDocumentAsset: api.asset,
+}));
+vi.mock("@tiptap/react", () => ({
+  EditorContent: () => <div role="textbox" aria-label="Document body" aria-multiline="true" />,
+  useEditor: (config: typeof tiptap.config) => {
+    tiptap.config = config;
+    return tiptap.editor;
+  },
+}));
+vi.mock("@tiptap/core", () => ({ Node: { create: (value: unknown) => value } }));
+vi.mock("@tiptap/extension-image", () => ({ default: { extend: () => ({ configure: () => ({}) }) } }));
+vi.mock("@tiptap/extension-link", () => ({ default: { configure: (config: typeof link.config) => { link.config = config; return {}; } } }));
+vi.mock("@tiptap/extension-table", () => ({ TableKit: {} }));
+vi.mock("@tiptap/starter-kit", () => ({ default: { configure: () => ({}) } }));
+
 import BasicLeafEditor from "./BasicLeafEditor";
 
-const document={id:"00000000-0000-7000-8000-000000000211",life_node_id:"00000000-0000-7000-8000-000000000212",schema_version:1,revision:3,canonical_json:'{"type":"doc","content":[{"type":"paragraph"}]}',plain_text:"",updated_at:"now"};
-describe("focused Basic Leaf editor",()=>{
- beforeEach(()=>{api.save.mockResolvedValue({...document,revision:4});api.draft.mockResolvedValue({});api.asset.mockResolvedValue({asset_id:"00000000-0000-7000-8000-000000000213",original_name:"x.png",mime:"image/png",byte_size:4,width:1,height:1,status:"usable"});});
- it("exposes only the bounded Core toolbar",()=>{render(<BasicLeafEditor document={document} onCommitted={vi.fn()} onCancel={vi.fn()}/>);expect(screen.getByRole("button",{name:"Bold"})).toBeInTheDocument();expect(screen.getByRole("button",{name:"Table"})).toBeInTheDocument();expect(screen.queryByText(/scene|template|canvas/i)).not.toBeInTheDocument();});
- it("explicit Save sends canonical JSON with the authoritative revision",async()=>{const committed=vi.fn();render(<BasicLeafEditor document={document} onCommitted={committed} onCancel={vi.fn()}/>);fireEvent.click(screen.getByRole("button",{name:"Save"}));await waitFor(()=>expect(api.save).toHaveBeenCalledWith(expect.objectContaining({document_id:document.id,expected_revision:3,schema_version:1,canonical_json:expect.stringContaining("Draft")})));expect(await screen.findByRole("status")).toHaveTextContent("Saved");});
- it("failed Save exposes recovery status without leaving Edit",async()=>{api.save.mockRejectedValue(new Error("storage"));render(<BasicLeafEditor document={document} onCommitted={vi.fn()} onCancel={vi.fn()}/>);fireEvent.click(screen.getByRole("button",{name:"Save"}));expect(await screen.findByRole("alert")).toHaveTextContent(/recoverable draft is preserved/);expect(screen.getByRole("textbox",{name:"Document body"})).toBeInTheDocument();});
- it("provides accessible image import without exposing a filesystem path",()=>{render(<BasicLeafEditor document={document} onCommitted={vi.fn()} onCancel={vi.fn()}/>);const input=screen.getByLabelText("Image");expect(input).toHaveAttribute("accept","image/png,image/jpeg,image/webp,image/gif");expect(document.canonical_json).not.toMatch(/[A-Z]:\\/);});
- it("uses the shared prompt surface for links",()=>{render(<BasicLeafEditor document={document} onCommitted={vi.fn()} onCancel={vi.fn()}/>);fireEvent.click(screen.getByRole("button",{name:"Link"}));expect(screen.getByRole("dialog",{name:"Add link"})).toBeInTheDocument();const input=screen.getByLabelText("Link destination");expect(input).toHaveFocus();fireEvent.change(input,{target:{value:"https://example.com"}});fireEvent.click(screen.getByRole("button",{name:"Add link"}));expect(tiptap.chain.setLink).toHaveBeenCalledWith({href:"https://example.com"});});
- it("confirms a dirty exit without a browser-native dialog",()=>{const cancel=vi.fn();render(<BasicLeafEditor document={document} onCommitted={vi.fn()} onCancel={cancel}/>);act(()=>tiptap.config?.onUpdate?.());fireEvent.click(screen.getByRole("button",{name:"Back to Reader"}));expect(screen.getByRole("dialog",{name:"Leave Edit?"})).toBeInTheDocument();fireEvent.click(screen.getByRole("button",{name:"Cancel"}));expect(cancel).not.toHaveBeenCalled();fireEvent.click(screen.getByRole("button",{name:"Back to Reader"}));fireEvent.click(screen.getByRole("button",{name:"Leave Edit"}));expect(cancel).toHaveBeenCalledOnce();});
+const document = {
+  id: "00000000-0000-7000-8000-000000000211",
+  life_node_id: "00000000-0000-7000-8000-000000000212",
+  schema_version: 1,
+  revision: 3,
+  canonical_json: '{"type":"doc","content":[{"type":"paragraph"}]}',
+  plain_text: "",
+  updated_at: "now",
+};
+
+const markChanged = () => act(() => tiptap.config?.onUpdate?.());
+
+describe("focused Basic Leaf editor", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    tiptap.chain.run!.mockReturnValue(true);
+    api.save.mockResolvedValue({ ...document, revision: 4 });
+    api.draft.mockResolvedValue({});
+    api.asset.mockResolvedValue({
+      asset_id: "00000000-0000-7000-8000-000000000213",
+      original_name: "x.png",
+      mime: "image/png",
+      byte_size: 4,
+      width: 1,
+      height: 1,
+      status: "usable",
+    });
+  });
+
+  afterEach(() => vi.useRealTimers());
+
+  it("exposes only the bounded Core controls in one accessible toolbar", () => {
+    render(<BasicLeafEditor document={document} onCommitted={vi.fn()} onCancel={vi.fn()} />);
+
+    expect(screen.getByRole("toolbar", { name: "Formatting" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Bold" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Table" })).toBeInTheDocument();
+    expect(screen.queryByText(/scene|template|canvas/i)).not.toBeInTheDocument();
+  });
+
+  it("focuses the authored surface and gives the real editor accessible text semantics", () => {
+    render(<BasicLeafEditor document={document} onCommitted={vi.fn()} onCancel={vi.fn()} />);
+
+    expect(tiptap.config?.autofocus).toBe("end");
+    expect(tiptap.config?.editorProps?.attributes).toEqual(expect.objectContaining({
+      "aria-label": "Document body",
+      "aria-multiline": "true",
+    }));
+    expect(screen.getByRole("textbox", { name: "Document body" })).toHaveAttribute("aria-multiline", "true");
+  });
+
+  it("keeps Save changes available immediately after typing and commits the authoritative revision", async () => {
+    const committed = vi.fn();
+    render(<BasicLeafEditor document={document} onCommitted={committed} onCancel={vi.fn()} />);
+
+    const save = screen.getByRole("button", { name: "Save changes" });
+    expect(save).toBeDisabled();
+    markChanged();
+    expect(screen.getByRole("status")).toHaveTextContent("Unsaved");
+    expect(save).toBeEnabled();
+    fireEvent.click(save);
+
+    await waitFor(() => expect(api.save).toHaveBeenCalledWith(expect.objectContaining({
+      document_id: document.id,
+      expected_revision: 3,
+      schema_version: 1,
+      canonical_json: expect.stringContaining("Draft"),
+    })));
+    expect(await screen.findByRole("status")).toHaveTextContent("Saved");
+    expect(committed).toHaveBeenCalledWith(expect.objectContaining({ revision: 4 }));
+  });
+
+  it("serializes repeated explicit saves instead of racing the same revision", async () => {
+    let resolveSave!: (value: typeof document) => void;
+    api.save.mockReturnValue(new Promise((resolve) => { resolveSave = resolve; }));
+    render(<BasicLeafEditor document={document} onCommitted={vi.fn()} onCancel={vi.fn()} />);
+    markChanged();
+
+    const save = screen.getByRole("button", { name: "Save changes" });
+    fireEvent.click(save);
+    fireEvent.click(save);
+    await act(async () => { await Promise.resolve(); });
+    expect(api.save).toHaveBeenCalledOnce();
+    expect(screen.getByRole("button", { name: "Save changes" })).toBeDisabled();
+
+    resolveSave({ ...document, revision: 4 });
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Saved"));
+  });
+
+  it("debounces recovery draft and committed autosave from the latest edit", async () => {
+    vi.useFakeTimers();
+    render(<BasicLeafEditor document={document} onCommitted={vi.fn()} onCancel={vi.fn()} />);
+    markChanged();
+    await act(async () => { await vi.advanceTimersByTimeAsync(500); });
+    markChanged();
+    await act(async () => { await vi.advanceTimersByTimeAsync(999); });
+    expect(api.draft).not.toHaveBeenCalled();
+
+    await act(async () => { await vi.advanceTimersByTimeAsync(1); });
+    expect(api.draft).toHaveBeenCalledOnce();
+    expect(screen.getByRole("status")).toHaveTextContent("Draft saved");
+
+    await act(async () => { await vi.advanceTimersByTimeAsync(2000); });
+    expect(api.save).toHaveBeenCalledOnce();
+    expect(screen.getByRole("status")).toHaveTextContent("Saved");
+  });
+
+  it("does not let a slow draft overwrite the newer committed status", async () => {
+    vi.useFakeTimers();
+    let resolveDraft!: () => void;
+    api.draft.mockReturnValue(new Promise<void>((resolve) => { resolveDraft = resolve; }));
+    render(<BasicLeafEditor document={document} onCommitted={vi.fn()} onCancel={vi.fn()} />);
+    markChanged();
+    await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
+    expect(screen.getByRole("status")).toHaveTextContent("Protecting");
+
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+    expect(screen.getByRole("status")).toHaveTextContent("Saving");
+    expect(api.save).not.toHaveBeenCalled();
+    await act(async () => { resolveDraft(); await Promise.resolve(); });
+    expect(api.save).toHaveBeenCalledOnce();
+    expect(screen.getByRole("status")).toHaveTextContent("Saved");
+  });
+
+  it("serializes overlapping recovery drafts in edit order", async () => {
+    vi.useFakeTimers();
+    let resolveFirstDraft!: () => void;
+    api.draft
+      .mockImplementationOnce(() => new Promise<void>((resolve) => { resolveFirstDraft = resolve; }))
+      .mockResolvedValueOnce({});
+    render(<BasicLeafEditor document={document} onCommitted={vi.fn()} onCancel={vi.fn()} />);
+
+    markChanged();
+    await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
+    expect(api.draft).toHaveBeenCalledOnce();
+    markChanged();
+    await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
+    expect(api.draft).toHaveBeenCalledOnce();
+
+    await act(async () => { resolveFirstDraft(); await Promise.resolve(); });
+    expect(api.draft).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps the editor open with a recovery-safe error when commit fails", async () => {
+    api.save.mockRejectedValue(new Error("storage"));
+    render(<BasicLeafEditor document={document} onCommitted={vi.fn()} onCancel={vi.fn()} />);
+    markChanged();
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/Changes remain here/);
+    expect(screen.getByRole("status")).toHaveTextContent("Save failed");
+    expect(screen.getByRole("textbox", { name: "Document body" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save changes" })).toBeEnabled();
+  });
+
+  it("rejects unsafe links and explains the accepted schemes", () => {
+    render(<BasicLeafEditor document={document} onCommitted={vi.fn()} onCancel={vi.fn()} />);
+    expect(link.config?.isAllowedUri?.("javascript:alert(1)")).toBe(false);
+    expect(link.config?.isAllowedUri?.("https://example.com/path")).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "Link" }));
+    const input = screen.getByLabelText("Link destination");
+    expect(input).toHaveFocus();
+    tiptap.chain.run!.mockReturnValueOnce(false);
+    fireEvent.change(input, { target: { value: "javascript:alert(1)" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add link" }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent(/complete HTTPS/);
+    expect(tiptap.chain.setLink).toHaveBeenCalledWith({ href: "javascript:alert(1)" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Link" }));
+    const retryInput = screen.getByLabelText("Link destination");
+    fireEvent.change(retryInput, { target: { value: "https://example.com/path" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add link" }));
+    expect(tiptap.chain.setLink).toHaveBeenCalledWith({ href: "https://example.com/path" });
+    expect(screen.queryByRole("dialog", { name: "Add link" })).not.toBeInTheDocument();
+  });
+
+  it("imports an image without exposing a path and resets the picker for same-file retry", async () => {
+    render(<BasicLeafEditor document={document} onCommitted={vi.fn()} onCancel={vi.fn()} />);
+    const input = screen.getByLabelText("Image") as HTMLInputElement;
+    const file = { name: "x.png", arrayBuffer: vi.fn().mockResolvedValue(new Uint8Array([1, 2, 3, 4]).buffer) } as unknown as File;
+    Object.defineProperty(input, "files", { configurable: true, value: [file] });
+    fireEvent.change(input);
+
+    await waitFor(() => expect(api.asset).toHaveBeenCalledWith(expect.objectContaining({ original_name: "x.png" })));
+    expect(tiptap.chain.setImage).toHaveBeenCalledWith(expect.objectContaining({ alt: "x.png" }));
+    expect(input.value).toBe("");
+    expect(document.canonical_json).not.toMatch(/[A-Z]:\\/);
+  });
+
+  it("confirms a dirty exit and returns to editing when cancelled", () => {
+    const cancel = vi.fn();
+    render(<BasicLeafEditor document={document} onCommitted={vi.fn()} onCancel={cancel} />);
+    markChanged();
+    fireEvent.click(screen.getByRole("button", { name: "Back to Reader" }));
+    expect(screen.getByRole("dialog", { name: "Leave Edit?" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(cancel).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Back to Reader" })).toHaveFocus();
+
+    fireEvent.click(screen.getByRole("button", { name: "Back to Reader" }));
+    fireEvent.click(screen.getByRole("button", { name: "Leave Edit" }));
+    expect(cancel).toHaveBeenCalledOnce();
+  });
+
+  it("has no critical or serious accessibility violations in the populated editor", async () => {
+    const { container } = render(<BasicLeafEditor document={document} onCommitted={vi.fn()} onCancel={vi.fn()} />);
+    const results = await axe.run(container);
+    expect(results.violations.filter((violation) => violation.impact === "critical" || violation.impact === "serious")).toHaveLength(0);
+  });
 });

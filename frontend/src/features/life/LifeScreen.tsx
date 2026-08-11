@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getLifeBrowseProjection,
@@ -68,6 +68,11 @@ export function LifeScreen({
   const [page, setPage] = useState(0);
   const [mode, setMode] = useState<Mode>("browse");
   const [reader, setReader] = useState<LifeNodeView>();
+  const [outlineControl, setOutlineControl] = useState<{
+    nodeId: string | null;
+    available: boolean;
+    visible: boolean;
+  }>({ nodeId: null, available: false, visible: false });
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [busy, setBusy] = useState(false);
   const initialized = useRef(false);
@@ -75,6 +80,19 @@ export function LifeScreen({
   const settledEntryRequest = useRef<string | null>(null);
   const linkedNavigationGeneration = useRef(0);
   const readerHeading = useRef<HTMLHeadingElement>(null);
+
+  const reportOutlineAvailability = useCallback((available: boolean) => {
+    const activeNodeId = reader?.id;
+    if (!activeNodeId) return;
+    setOutlineControl((current) => {
+      if (current.nodeId !== activeNodeId) {
+        return { nodeId: activeNodeId, available, visible: false };
+      }
+      const visible = available ? current.visible : false;
+      if (current.available === available && current.visible === visible) return current;
+      return { ...current, available, visible };
+    });
+  }, [reader?.id]);
 
   const browse = useQuery({
     queryKey: lifeKeys.browse(nodeId, page),
@@ -264,7 +282,7 @@ export function LifeScreen({
 
   if (browse.isError || !browse.data) {
     return (
-      <PageFrame as="section" type="wide">
+      <PageFrame as="section" type="wide" flush className={styles.lifeFrame}>
         <h1>Life System</h1>
         <p role="alert">Life System could not be loaded. Your tree context is preserved.</p>
       </PageFrame>
@@ -273,10 +291,13 @@ export function LifeScreen({
 
   const projection = browse.data;
   const canBack = history.length > 0 || projection.parent !== null || mode === "reader";
+  const outlineAvailable = mode === "reader" && reader !== undefined
+    && outlineControl.nodeId === reader.id && outlineControl.available;
+  const outlineVisible = outlineAvailable && outlineControl.visible;
 
   return (
-    <PageFrame as="section" type="wide" aria-labelledby="life-workspace-heading">
-      <div className={styles.workspace}>
+    <PageFrame as="section" type="wide" flush className={styles.lifeFrame} aria-labelledby="life-workspace-heading">
+      <div className={styles.workspace} data-life-workspace="">
         <aside className={styles.navigator} aria-label="Life navigator">
           <header className={styles.navigatorHeader}>
             <button
@@ -325,6 +346,21 @@ export function LifeScreen({
               <span>{projection.selected.is_leaf ? "Leaf" : "Branch"}</span>
               <strong>{projection.selected.title}</strong>
             </div>
+          </div>
+
+          <div className={styles.navigatorTools}>
+            {outlineAvailable && (
+              <button
+                className={styles.navigatorToolButton}
+                type="button"
+                aria-pressed={outlineVisible}
+                aria-label={outlineVisible ? "Hide contents" : "Show contents"}
+                onClick={() => setOutlineControl((current) => ({ ...current, visible: !current.visible }))}
+              >
+                <Icon d={iconNote} size={16} />
+                <span>Contents</span>
+              </button>
+            )}
           </div>
 
           <div className={styles.childHeader}>
@@ -390,7 +426,7 @@ export function LifeScreen({
           )}
 
           {mode === "edit" ? (
-            <div className={styles.editCanvas}>
+            <div key={`edit-${projection.selected.id}`} className={styles.editCanvas}>
               <div className={styles.canvasEyebrow}>Structure</div>
               <h1 id="life-workspace-heading" className={styles.canvasTitle}>
                 Edit {projection.selected.title}
@@ -405,7 +441,7 @@ export function LifeScreen({
               />
             </div>
           ) : mode === "reader" && reader ? (
-            <article className={styles.readerCanvas}>
+            <article key={`reader-${reader.id}`} className={styles.readerCanvas} data-life-reader="">
               <header className={styles.readerHeader}>
                 <div className={styles.canvasEyebrow}>Life document</div>
                 <NodeIcon iconKey={reader.icon_key} size={22} />
@@ -423,8 +459,12 @@ export function LifeScreen({
                 <TagChipList tags={reader.tags} maxVisible={12} />
               </header>
 
-              <div className={styles.documentBody}>
-                <BasicLeafReader nodeId={reader.id} />
+              <div className={styles.documentBody} data-life-document-body="">
+                <BasicLeafReader
+                  nodeId={reader.id}
+                  outlineVisible={outlineVisible}
+                  onOutlineAvailabilityChange={reportOutlineAvailability}
+                />
               </div>
 
               <section className={styles.contextSection} aria-label="Related context">
@@ -439,7 +479,7 @@ export function LifeScreen({
               </section>
             </article>
           ) : (
-            <section className={styles.branchCanvas}>
+            <section key={`browse-${projection.selected.id}`} className={styles.branchCanvas}>
               <div className={styles.canvasEyebrow}>Current branch</div>
               <div className={styles.branchHeroIcon}>
                 <NodeIcon iconKey={projection.selected.icon_key} size={26} />

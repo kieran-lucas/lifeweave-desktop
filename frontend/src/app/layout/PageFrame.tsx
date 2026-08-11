@@ -19,6 +19,8 @@ type FrameProps = {
   type?: PageType;
   as?: ElementType;
   className?: string;
+  /** Removes page rhythm so an explicitly edge-to-edge route can own the complete main pane. */
+  flush?: boolean;
   /** React 19 takes `ref` as an ordinary prop; the shell uses it to move focus to the heading. */
   ref?: Ref<HTMLElement>;
   children: ReactNode;
@@ -28,6 +30,7 @@ export function PageFrame({
   type = "standard",
   as: Element = "div",
   className,
+  flush = false,
   ref,
   children,
   ...rest
@@ -39,6 +42,7 @@ export function PageFrame({
       ref={ref as Ref<never>}
       data-page-frame=""
       data-page-type={type}
+      data-page-flush={flush ? "" : undefined}
       className={className ? `${styles.pageFrame[type]} ${className}` : styles.pageFrame[type]}
     >
       {children}

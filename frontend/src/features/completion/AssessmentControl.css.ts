@@ -11,34 +11,48 @@ const settle = keyframes({
 
 export const anchor = style({
   position: "relative",
-  display: "grid",
+  display: "inline-grid",
   placeItems: "center",
-  inlineSize: 36,
   blockSize: 36,
-  flex: "0 0 36px",
+  minInlineSize: 0,
 });
 
 export const trigger = style([
   focusRing,
   {
-    width: 36,
+    minWidth: 36,
     height: 36,
-    padding: 0,
+    padding: "0 9px",
     minBlockSize: 0,
-    display: "grid",
-    placeItems: "center",
-    border: 0,
-    borderRadius: "var(--radius-full)",
-    background: "transparent",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+    border: "1px solid rgba(17, 24, 39, .12)",
+    borderRadius: 10,
+    background: "rgba(255, 255, 255, .72)",
+    color: "#555555",
     cursor: "pointer",
     selectors: {
-      "&:hover:not(:disabled)": { backgroundColor: "rgba(17, 24, 39, .055)" },
+      "&:hover:not(:disabled)": { borderColor: "rgba(17, 24, 39, .28)", backgroundColor: "#fff", color: "#111827" },
       "&:active:not(:disabled)": { transform: "scale(.94)" },
       "&:disabled": { cursor: "not-allowed", opacity: 0.34 },
     },
-    transition: `transform ${duration.check} ${easing.standard}, background-color ${duration.check} ${easing.standard}`,
+    transition: `transform ${duration.check} ${easing.standard}, border-color ${duration.check} ${easing.standard}, background-color ${duration.check} ${easing.standard}, color ${duration.check} ${easing.standard}`,
   },
 ]);
+
+export const label = style({
+  maxInlineSize: 86,
+  overflow: "hidden",
+  ...text.caption,
+  fontWeight: 700,
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+  "@media": {
+    "(max-width: 680px)": { display: "none" },
+  },
+});
 
 /**
  * Progress lives entirely inside this fixed 22px puck. State changes never alter row geometry.

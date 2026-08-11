@@ -1,22 +1,24 @@
-import { globalStyle, style } from "@vanilla-extract/css";
-import { duration, easing } from "../../design-system/visual/motion.css";
+import { globalStyle, keyframes, style } from "@vanilla-extract/css";
+import { duration, easing, reduced } from "../../design-system/visual/motion.css";
+
+export const lifeFrame = style({
+  blockSize: "100%",
+  minBlockSize: 0,
+  gap: 0,
+  paddingBlockEnd: 0,
+});
 
 export const workspace = style({
+  inlineSize: "100%",
+  blockSize: "100%",
   display: "grid",
-  gridTemplateColumns: "minmax(228px, 292px) minmax(0, 1fr)",
-  minBlockSize: "min(720px, calc(100vh - 112px))",
-  maxBlockSize: "calc(100vh - 88px)",
+  gridTemplateColumns: "15% minmax(0, 1fr)",
+  minBlockSize: 0,
   overflow: "hidden",
-  border: "1px solid #D8D8D8",
-  borderRadius: 18,
-  backgroundColor: "#FFFFFF",
-  backgroundImage: "var(--paint-grain-fine)",
-  boxShadow: "0 16px 46px rgba(0,0,0,.055)",
   "@media": {
     "(max-width: 760px)": {
       gridTemplateColumns: "1fr",
-      maxBlockSize: "none",
-      overflow: "visible",
+      overflow: "hidden",
     },
   },
 });
@@ -24,11 +26,11 @@ export const workspace = style({
 export const navigator = style({
   minInlineSize: 0,
   display: "grid",
-  gridTemplateRows: "auto auto auto auto minmax(0,1fr) auto",
+  gridTemplateRows: "auto auto auto auto auto minmax(0,1fr) auto",
   alignContent: "start",
   overflow: "hidden",
   borderInlineEnd: "1px solid #E1E1E1",
-  background: "#F7F7F5",
+  background: "rgba(247, 247, 245, .58)",
   "@media": {
     "(max-width: 760px)": {
       maxBlockSize: 360,
@@ -41,7 +43,7 @@ export const navigator = style({
 export const navigatorHeader = style({
   minBlockSize: 52,
   display: "grid",
-  gridTemplateColumns: "32px 1fr auto",
+  gridTemplateColumns: "32px minmax(0, 1fr) auto",
   alignItems: "center",
   gap: 7,
   padding: "8px 10px",
@@ -73,14 +75,13 @@ export const backButton = style({
 });
 
 export const navigatorLabel = style({
-  overflow: "hidden",
   color: "#222222",
   fontSize: 12,
   lineHeight: "16px",
   fontWeight: 730,
   letterSpacing: "-.01em",
-  textOverflow: "ellipsis",
-  whiteSpace: "nowrap",
+  overflowWrap: "anywhere",
+  whiteSpace: "normal",
 });
 
 export const editButton = style({
@@ -100,12 +101,11 @@ export const breadcrumb = style({
   alignItems: "center",
   gap: 4,
   padding: "6px 12px",
-  overflowX: "auto",
+  flexWrap: "wrap",
   color: "#A1A1A1",
   fontSize: 9,
   lineHeight: "12px",
-  whiteSpace: "nowrap",
-  scrollbarWidth: "none",
+  overflowWrap: "anywhere",
 });
 globalStyle(`${breadcrumb} > span`, { display: "inline-flex", alignItems: "center", gap: 4 });
 globalStyle(`${breadcrumb} button`, {
@@ -122,7 +122,7 @@ globalStyle(`${breadcrumb} button:focus-visible`, { outline: "1.5px solid #11111
 
 export const branchIdentity = style({
   display: "grid",
-  gridTemplateColumns: "36px minmax(0,1fr)",
+  gridTemplateColumns: "minmax(0,1fr)",
   alignItems: "center",
   gap: 9,
   padding: "12px 12px 14px",
@@ -130,7 +130,7 @@ export const branchIdentity = style({
 });
 globalStyle(`${branchIdentity} > div`, { display: "grid", gap: 1, minInlineSize: 0 });
 globalStyle(`${branchIdentity} > div > span`, { color: "#999999", fontSize: 9, fontWeight: 720, letterSpacing: ".07em", textTransform: "uppercase" });
-globalStyle(`${branchIdentity} > div > strong`, { overflow: "hidden", color: "#222222", fontSize: 13, lineHeight: "17px", fontWeight: 680, textOverflow: "ellipsis", whiteSpace: "nowrap" });
+globalStyle(`${branchIdentity} > div > strong`, { color: "#222222", fontSize: 13, lineHeight: "17px", fontWeight: 680, overflowWrap: "anywhere", whiteSpace: "normal" });
 
 export const icon = style({
   display: "inline-grid",
@@ -142,6 +142,31 @@ export const icon = style({
   borderRadius: 10,
   background: "#FFFFFF",
   color: "#333333",
+});
+globalStyle(`${branchIdentity} > ${icon}`, { display: "none" });
+
+export const navigatorTools = style({
+  padding: "7px",
+  borderBottom: "1px solid #E2E2E0",
+  selectors: { "&:empty": { display: "none" } },
+});
+
+export const navigatorToolButton = style({
+  ...quietControl,
+  inlineSize: "100%",
+  display: "flex",
+  alignItems: "center",
+  gap: 8,
+  padding: "7px 9px",
+  color: "#555555",
+  fontSize: 10,
+  lineHeight: "14px",
+  fontWeight: 680,
+  textAlign: "left",
+  selectors: {
+    ...quietControl.selectors,
+    '&[aria-pressed="true"]': { background: "#E3E3E0", color: "#111111" },
+  },
 });
 
 export const childHeader = style({
@@ -174,7 +199,7 @@ export const nodeRow = style({
   inlineSize: "100%",
   minBlockSize: 48,
   display: "grid",
-  gridTemplateColumns: "34px minmax(0,1fr) 18px",
+  gridTemplateColumns: "minmax(0,1fr)",
   alignItems: "center",
   gap: 8,
   padding: "6px 7px",
@@ -192,13 +217,13 @@ export const nodeRow = style({
     "&:focus-visible": { outline: "2px solid #111111", outlineOffset: -2 },
   },
 });
-globalStyle(`${nodeRow} ${icon}`, { inlineSize: 30, blockSize: 30, borderRadius: 8, background: "#FCFCFC" });
+globalStyle(`${nodeRow} ${icon}`, { display: "none" });
 
 export const nodeRowCopy = style({ display: "grid", gap: 1, minInlineSize: 0 });
-globalStyle(`${nodeRowCopy} > strong`, { overflow: "hidden", color: "#282828", fontSize: 11, lineHeight: "15px", fontWeight: 650, textOverflow: "ellipsis", whiteSpace: "nowrap" });
+globalStyle(`${nodeRowCopy} > strong`, { color: "#282828", fontSize: 11, lineHeight: "15px", fontWeight: 650, overflowWrap: "break-word", wordBreak: "normal", whiteSpace: "normal" });
 globalStyle(`${nodeRowCopy} > small`, { overflow: "hidden", color: "#929292", fontSize: 9, lineHeight: "12px", textOverflow: "ellipsis", whiteSpace: "nowrap" });
 
-export const rowArrow = style({ color: "#A7A7A7", transition: `transform ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}`, selectors: { [`${nodeRow}:hover &`]: { color: "#333333", transform: "translateX(2px)" } } });
+export const rowArrow = style({ display: "none" });
 
 export const noChildren = style({ margin: "8px 12px", color: "#999999", fontSize: 10, lineHeight: 1.45 });
 
@@ -223,7 +248,7 @@ export const canvas = style({
   minInlineSize: 0,
   minBlockSize: 0,
   overflowY: "auto",
-  background: "#FFFFFF",
+  background: "transparent",
   scrollbarGutter: "stable",
 });
 
@@ -237,22 +262,46 @@ export const notice = style({
   fontSize: 10,
 });
 
+const canvasEnter = keyframes({
+  from: { opacity: 0.2, transform: "translateX(22px)" },
+  to: { opacity: 1, transform: "translateX(0)" },
+});
+
+const canvasFade = keyframes({
+  from: { opacity: 0.64 },
+  to: { opacity: 1 },
+});
+
+const canvasMotion = {
+  animation: `${canvasEnter} ${duration.traversal} ${easing.standard} both`,
+  transformOrigin: "center",
+  "@media": {
+    "(prefers-reduced-motion: reduce)": {
+      animation: `${canvasFade} ${reduced.duration} ${reduced.easing} both`,
+      transform: "none",
+    },
+  },
+} as const;
+
 export const branchCanvas = style({
-  maxInlineSize: 820,
-  marginInline: "auto",
+  ...canvasMotion,
+  inlineSize: "100%",
+  boxSizing: "border-box",
   padding: "clamp(32px, 6vw, 70px) clamp(22px, 5vw, 64px) 48px",
 });
 
 export const editCanvas = style({
-  maxInlineSize: 940,
-  marginInline: "auto",
+  ...canvasMotion,
+  inlineSize: "100%",
+  boxSizing: "border-box",
   padding: "clamp(28px, 5vw, 58px) clamp(18px, 4vw, 48px) 48px",
 });
 
 export const readerCanvas = style({
-  maxInlineSize: 800,
-  marginInline: "auto",
-  padding: "clamp(34px, 6vw, 72px) clamp(24px, 5vw, 62px) 56px",
+  ...canvasMotion,
+  inlineSize: "100%",
+  boxSizing: "border-box",
+  padding: "clamp(34px, 6vh, 72px) 5% 56px",
 });
 
 export const canvasEyebrow = style({
@@ -332,6 +381,8 @@ export const readerDescription = style({
 });
 
 export const documentBody = style({
+  inlineSize: "100%",
+  maxInlineSize: "none",
   paddingBlock: "34px 42px",
   borderBottom: "1px solid #E5E5E5",
 });

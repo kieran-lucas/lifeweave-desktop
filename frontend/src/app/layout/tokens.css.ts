@@ -32,22 +32,22 @@ globalStyle(":root", {
     "--lw-space-section": "var(--lw-space-6)",
     "--lw-space-page": "var(--lw-space-8)",
 
-    // One responsive gutter for the whole application, owned by the main viewport.
-    "--lw-gutter": "clamp(24px, 3vw, 48px)",
+    // One responsive gutter for the whole application, owned by the main viewport. Desktop
+    // workspaces now use the available window instead of spending up to 96 px on outer margins.
+    "--lw-gutter": "clamp(20px, 2vw, 32px)",
 
     /*
      * Page-frame variants. These are project decisions informed by the research in ADR 0044 and by
      * baseline measurement — not experimentally proven universal optima.
      *
-     *   standard 1152  keeps prose near a comfortable measure while giving the Analytics fact grid
-     *                  three unhurried columns
-     *   wide     1440  the widest frame that still leaves visible gutter at 1920 with the sidebar
-     *                  expanded
+     *   standard fluid  application pages use the full desktop content box; prose keeps its own
+     *                   character-based reading measure rather than shrinking the whole page
+     *   wide     fluid  workspaces and canvases use every available column inside the shared gutter
      *   reading   768  a conventional single-column reading measure; replaces the ad-hoc 760 the
      *                  Reader used, so reading surfaces stop inventing their own width
      */
-    "--lw-frame-standard": "1152px",
-    "--lw-frame-wide": "1440px",
+    "--lw-frame-standard": "100%",
+    "--lw-frame-wide": "100%",
     "--lw-frame-reading": "768px",
 
     /*

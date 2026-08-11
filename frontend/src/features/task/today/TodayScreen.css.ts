@@ -2,8 +2,7 @@ import { globalStyle, style } from "@vanilla-extract/css";
 import { duration, easing } from "../../../design-system/visual/motion.css";
 
 export const dayShell = style({
-  maxInlineSize: 980,
-  marginInline: "auto",
+  inlineSize: "100%",
   display: "grid",
   gap: 20,
   minInlineSize: 0,
@@ -110,7 +109,7 @@ export const taskRow = style({
   minBlockSize: 68,
   minInlineSize: 0,
   display: "grid",
-  gridTemplateColumns: "38px minmax(0, 1fr) auto 20px",
+  gridTemplateColumns: "minmax(0, 1fr) auto 20px",
   alignItems: "center",
   gap: 8,
   padding: "8px 8px 8px 7px",
@@ -118,7 +117,7 @@ export const taskRow = style({
   borderRadius: 10,
   background: "transparent",
   color: "#222222",
-  cursor: "pointer",
+  cursor: "default",
   transition: `background-color ${duration.state} ${easing.standard}, transform ${duration.press} ${easing.standard}`,
   selectors: {
     "&:hover": { background: "#F6F6F4" },
@@ -126,11 +125,10 @@ export const taskRow = style({
     "&:focus-visible": { outline: "2px solid #111111", outlineOffset: -2 },
   },
   "@media": {
-    "(max-width: 680px)": { gridTemplateColumns: "38px minmax(0,1fr) 18px" },
+    "(max-width: 680px)": { gridTemplateColumns: "minmax(0,1fr) auto 18px" },
   },
 });
 
-export const completionSlot = style({ display: "grid", placeItems: "center" });
 export const taskCopy = style({ display: "grid", gap: 4, minInlineSize: 0 });
 globalStyle(`${taskCopy} > strong`, {
   overflow: "hidden",
@@ -173,12 +171,8 @@ globalStyle(`${taskMeta} > button:focus-visible`, { outline: "1.5px solid #11111
 export const categoryMeta = style({ display: "inline-flex", alignItems: "center", gap: 4, minInlineSize: 0 });
 globalStyle(`${categoryMeta} svg`, { inlineSize: 12, blockSize: 12 });
 
-export const timerSlot = style({
+export const assessmentSlot = style({
   justifySelf: "end",
-  opacity: .5,
-  transition: `opacity ${duration.state} ${easing.standard}`,
-  selectors: { [`${taskRow}:hover &`]: { opacity: 1 }, [`${taskRow}:focus-within &`]: { opacity: 1 } },
-  "@media": { "(max-width: 680px)": { display: "none" } },
 });
 
 export const rowArrow = style({
@@ -192,11 +186,6 @@ export const composer = style({
   display: "grid",
   gap: 18,
   minInlineSize: 0,
-  margin: -20,
-  padding: 22,
-  borderRadius: 16,
-  backgroundColor: "#FFFFFF",
-  backgroundImage: "var(--paint-grain-fine)",
   color: "#111111",
 });
 
@@ -393,20 +382,5 @@ export const timerCounter = style({ marginInlineStart: "auto", color: "#222222",
 export const timerTotal = style({ color: "#888888", fontSize: 9, fontVariantNumeric: "tabular-nums" });
 export const timerStop = style({ minBlockSize: 30, paddingInline: 9, border: "1px solid #111111", borderRadius: 8, background: "#111111", color: "#FFFFFF", fontSize: 9, fontWeight: 700, cursor: "pointer" });
 export const timerDiscard = style({ minBlockSize: 30, paddingInline: 9, border: "1px solid #D0D0D0", borderRadius: 8, background: "#FFFFFF", color: "#666666", fontSize: 9, fontWeight: 650, cursor: "pointer" });
-
-export const rowTimer = style({ display: "inline-flex", alignItems: "center", gap: 5 });
-export const rowTimerTotal = style({ color: "#888888", fontSize: 9, fontVariantNumeric: "tabular-nums" });
-export const rowTimerButton = style({
-  minBlockSize: 26,
-  paddingInline: 7,
-  border: "1px solid #D5D5D5",
-  borderRadius: 7,
-  background: "#FFFFFF",
-  color: "#555555",
-  fontSize: 9,
-  fontWeight: 680,
-  cursor: "pointer",
-  selectors: { "&:hover:not(:disabled)": { borderColor: "#AFAFAF", color: "#111111" }, "&:disabled": { opacity: .35, cursor: "default" }, "&:focus-visible": { outline: "1.5px solid #111111", outlineOffset: 2 } },
-});
 
 export { srOnly } from "../../../design-system/primitives/utilities.css";

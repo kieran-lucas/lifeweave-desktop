@@ -16,7 +16,6 @@ import {
   listCompletionStates,
   listTaskCategories,
   listTodayItems,
-  startTaskActualTime,
   stopTaskActualTime,
   undoTaskEvaluation,
   updateRecurringOccurrence,
@@ -26,7 +25,6 @@ import { localToday as getLocalToday } from "../../calendar/date";
 import { WeekStrip } from "../../calendar/WeekStrip";
 import { CategoryIcon } from "../categoryIcons";
 import { AssessmentControl } from "../../completion/AssessmentControl";
-import { ActualTimeRowControl } from "./ActualTimeRowControl";
 import { LifeAreaCombobox } from "../LifeAreaCombobox";
 import { FocusPlanCombobox } from "../FocusPlanCombobox";
 import { TagPicker } from "../../tag/TagPicker";
@@ -207,7 +205,7 @@ export function TodayScreen({
     onSelectedDateChange ? onSelectedDateChange(value) : setStandaloneDate(value);
 
   const client = useQueryClient();
-  const dialog = useRef<HTMLDivElement>(null);
+  const dialog = useRef<HTMLFormElement>(null);
   const initialField = useRef<HTMLInputElement>(null);
   const returnFocus = useRef<HTMLElement | null>(null);
   const handledFocusRequest = useRef<string | null>(null);
@@ -530,7 +528,8 @@ export function TodayScreen({
   const clockMinute = clock.getHours() * 60 + clock.getMinutes();
 
   return (
-    <PageFrame as="section" type="wide" aria-labelledby="today-heading">
+    <>
+      <PageFrame as="section" type="wide" aria-labelledby="today-heading">
       <div className={styles.dayShell}>
         <header className={styles.masthead}>
           <div className={styles.headingBlock}>
@@ -588,35 +587,21 @@ export function TodayScreen({
                   <div
                     className={styles.taskRow}
                     data-agenda-id={item.id}
+                    role="group"
+                    aria-label={`${item.title}. Double-click or press Enter to edit.`}
                     tabIndex={0}
-                    onClick={(event) => begin(item, event.currentTarget)}
+                    onDoubleClick={(event) => {
+                      const target = event.target as HTMLElement;
+                      if (target.closest("button, a, input, select, textarea, [role='option']")) return;
+                      begin(item, event.currentTarget);
+                    }}
                     onKeyDown={(event) => {
-                      if (event.key === "Enter") begin(item, event.currentTarget);
+                      if (event.key === "Enter" && event.target === event.currentTarget) {
+                        event.preventDefault();
+                        begin(item, event.currentTarget);
+                      }
                     }}
                   >
-                    <div className={styles.completionSlot} onClick={(event) => event.stopPropagation()}>
-                      <AssessmentControl
-                        itemId={item.id}
-                        states={completionStates.data ?? []}
-                        evaluation={item.evaluation}
-                        eligible={
-                          item.local_date < today ||
-                          (item.local_date === today && item.end_minute <= clockMinute)
-                        }
-                        unavailableReason={
-                          item.kind === "one_off" && item.actual_time?.active_session_id
-                            ? "Stop or discard the running timer before assessing this task"
-                            : null
-                        }
-                        open={openAssessment === item.id}
-                        onOpen={() => setOpenAssessment(item.id)}
-                        onClose={() => setOpenAssessment(null)}
-                        onSelect={(state) =>
-                          assessment.mutate({ item, state, operationId: newOperationId() })
-                        }
-                      />
-                    </div>
-
                     <div className={styles.taskCopy}>
                       <strong>{item.title}</strong>
                       <div className={styles.taskMeta}>
@@ -651,24 +636,28 @@ export function TodayScreen({
                       </div>
                     </div>
 
-                    {item.kind === "one_off" && item.actual_time && (
-                      <div className={styles.timerSlot} onClick={(event) => event.stopPropagation()}>
-                        <ActualTimeRowControl
-                          taskId={item.id}
-                          taskTitle={item.title}
-                          actual={item.actual_time}
-                          evaluated={item.evaluation !== null}
-                          otherTimerRunning={Boolean(activeTimer.data && activeTimer.data.task_id !== item.id)}
-                          pending={timer.isPending}
-                          onStart={() =>
-                            timer.mutate(() =>
-                              startTaskActualTime({ task_id: item.id, operation_id: newOperationId() }),
-                            )
-                          }
-                          onStop={(sessionId) => timer.mutate(() => stopTaskActualTime({ session_id: sessionId }))}
-                        />
-                      </div>
-                    )}
+                    <div className={styles.assessmentSlot}>
+                      <AssessmentControl
+                        itemId={item.id}
+                        states={completionStates.data ?? []}
+                        evaluation={item.evaluation}
+                        eligible={
+                          item.local_date < today ||
+                          (item.local_date === today && item.end_minute <= clockMinute)
+                        }
+                        unavailableReason={
+                          item.kind === "one_off" && item.actual_time?.active_session_id
+                            ? "Resolve the earlier running session before assessing this task"
+                            : null
+                        }
+                        open={openAssessment === item.id}
+                        onOpen={() => setOpenAssessment(item.id)}
+                        onClose={() => setOpenAssessment(null)}
+                        onSelect={(state) =>
+                          assessment.mutate({ item, state, operationId: newOperationId() })
+                        }
+                      />
+                    </div>
 
                     <Icon d={iconChevronRight} size={15} className={styles.rowArrow} />
                   </div>
@@ -679,14 +668,26 @@ export function TodayScreen({
         </div>
       </div>
 
+      </PageFrame>
+
       {open && (
         <DialogBackdrop
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="task-composer-heading"
-          ref={dialog}
+          role="presentation"
+          onPointerDown={(event: React.PointerEvent<HTMLDivElement>) => {
+            if (event.target === event.currentTarget && !save.isPending && !remove.isPending) {
+              closeComposer();
+            }
+          }}
         >
-          <DialogSurface as="form" width="standard" onSubmit={submit}>
+          <DialogSurface
+            as="form"
+            width="standard"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="task-composer-heading"
+            surfaceRef={dialog}
+            onSubmit={submit}
+          >
             <div className={styles.composer}>
               <header className={styles.composerHeader}>
                 <div>
@@ -846,6 +847,6 @@ export function TodayScreen({
           </DialogSurface>
         </DialogBackdrop>
       )}
-    </PageFrame>
+    </>
   );
 }

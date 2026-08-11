@@ -6,7 +6,7 @@ that production actually imports: runtime icon-package dependencies and dozens o
 assets would waste startup budget and weaken visual governance.
 
 The subset is emitted as one generated TSX module of named inline paths. Named exports let Vite
-remove unused glyphs. The infinity brand mark is emitted by the same pipeline so shell identity stays
+remove unused glyphs. The woven-W brand mark is emitted by the same pipeline so shell identity stays
 reproducible.
 
     python scripts/generate_visual_icons.py
@@ -59,7 +59,7 @@ HEADER = '''/*
  * Regenerate with:  python scripts/generate_visual_icons.py
  *
  * The Lifeweave icon vocabulary: a curated {count}-icon subset of Fluent System Icons plus the
- * Lifeweave infinity brand mark, vendored as inline geometry.
+ * Lifeweave woven-W brand mark, vendored as inline geometry.
  *
  * Source:  @fluentui/svg-icons {version}  (npm)
  * License: MIT — Copyright (c) Microsoft Corporation
@@ -81,7 +81,7 @@ import type {{ SVGProps }} from "react";
 
 {entries}
 
-/** Lifeweave infinity mark — continuous geometry shared with the desktop identity. */
+/** Lifeweave woven-W mark — intersecting life paths shared with the desktop identity. */
 export const iconBrand =
   "{brand_path}";
 

@@ -53,13 +53,13 @@ Global laws:
 - effects never compensate for weak hierarchy;
 - selection and focus are distinct;
 - optical quality may justify documented exceptions to literal token purity;
-- simple blue infinity brand mark only: no lightning, glow, profile/avatar, or invented shell furniture.
+- one governed woven-W brand mark only: no lightning, profile/avatar, or invented shell furniture.
 
 ## 4. Typography lock
 
 Two deliberate registers:
 
-**Productive — Segoe UI Variable optical families:** shell, Today, Calendar, Analytics, Plans, Settings, Search, dialogs, forms, dense metadata, tables/lists, graph controls, editor chrome.
+**Productive — self-hosted Be Vietnam Pro:** shell, Today, Calendar, Analytics, Plans, Settings, Search, dialogs, forms, dense metadata, tables/lists, graph controls, editor chrome.
 
 **Editorial — self-hosted Literata:** authored Basic Reader content, Narrative authored body/headings, and explicitly selected knowledge-expression moments.
 

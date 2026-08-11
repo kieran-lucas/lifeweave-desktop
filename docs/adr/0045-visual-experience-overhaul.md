@@ -382,6 +382,143 @@ dropped latin-ext                       85,912 bytes saved — every Vietnamese 
 Font bytes are separate assets and do not consume the `index.js` startup ceiling. The application is
 local-first, so these load from disk with no network transfer.
 
+### Override 3 — desktop workspaces fill the window
+
+On 2026-08-11 the Product Owner identified the remaining highest-severity visual defect: the shell
+filled a desktop window while the working surfaces were still capped and centred, making Today,
+Plans, Life and Settings read like mobile pages placed inside a desktop host. The later direction is
+that the application must fit toward both sides and behave as a resizable desktop workspace.
+
+Consequences:
+
+- `STANDARD_PAGE` and `WIDE_WORKSPACE` keep their finite taxonomy and shared `PageFrame` authority,
+  but both are fluid inside the viewport gutter rather than capped at 1152 / 1440 px;
+- the shared gutter becomes `clamp(20px, 2vw, 32px)` so maximized windows do not spend 96 px on an
+  empty outer margin;
+- at the measured Task 51 breakpoint of 1180 px and below, the shell automatically uses the 68 px navigation rail, preserving the user's
+  explicit sidebar preference for wider windows while protecting the working column during resize;
+- page-local numeric caps on the Today agenda, Focus Plan document and Life branch/edit/reader
+  canvases are removed; their workspace surfaces use the available column;
+- reading comfort remains an inner content concern: prose keeps character-based measures and the
+  dedicated `READING_PAGE` remains constrained;
+- document-root overflow, local-scroll ownership, the finite page taxonomy and every product,
+  accessibility and data invariant remain unchanged.
+
+This is a geometry refinement under the Product Owner's later explicit direction. It supersedes the
+1152 / 1440 cap values in ADR 0044 without reopening its single-authority or overflow laws.
+
+### Override 4 â€” Task interaction reset and continuous Life workspace
+
+On 2026-08-11 the Product Owner removed the Task stopwatch from the normal workflow, requested a
+clearer progress-assessment control, specified double-click-to-edit with outside-click dismissal,
+and rejected the framed Life workspace because it read as a second popup inside the application.
+
+Consequences:
+
+- Task rows expose no Start control and cannot create a new actual-time session from the UI;
+- persisted completed actual-time segments remain unchanged, and an already-running legacy session
+  receives a recovery-only Stop / Discard strip so no data-dependent workflow is stranded;
+- assessment becomes the primary trailing task status, with its current textual label visible next
+  to the non-colour-only state mark and the existing bounded four-state menu;
+- a single click on task content is passive; double-clicking non-interactive task content opens the
+  task dialog, with Enter retained as its keyboard-equivalent action and no redundant Edit button;
+- the task dialog is a single visual surface whose shared backdrop portals to the document body so
+  PageFrame containment and route-transition transforms cannot alter its viewport geometry; it
+  centres and scrolls against the application viewport, pressing its full-viewport backdrop closes
+  it, and interactions inside the surface do not;
+- Life keeps its two-pane navigation and local-scroll ownership, but its route removes the shared
+  content gutter and fills the main pane edge-to-edge in both axes. It drops the outer border,
+  rounded container, grain and floating shadow; only internal pane separators remain. The navigator
+  occupies 15% of the workspace and wraps long names, while leaf content fills the remaining pane
+  with a 5% horizontal inset and no centred reading-width cap.
+
+This later Product Owner direction changes visible interaction and presentation only. It introduces
+no schema, migration, Rust, IPC, backup-format, workflow, or generated-binding change, and it does
+not delete or reinterpret previously recorded actual-time data.
+
+### Override 5 — WebView session navigation history
+
+On 2026-08-11 the Product Owner required browser-style Back navigation, including the Back button on
+a mouse. Lifeweave's top-level destinations and the Settings Analytics subpage therefore use the
+WebView History API as their session navigation authority.
+
+Consequences:
+
+- sidebar, global-shortcut, Search-result and cross-surface Task/Life/Plan transitions push exactly
+  one versioned Lifeweave route state when the effective route changes;
+- `popstate` restores the destination, Settings subpage and viewed Today date, and clears transient
+  pending navigation and global modal state that cannot belong to the restored page;
+- changing the viewed date within the current Today page replaces the current entry instead of
+  creating a history step for every day selection;
+- malformed, unrelated and future-version WebView history states are ignored;
+- the history is window-session-only: it creates no preference, database row, schema change, Rust
+  command, IPC surface, dependency, remote service or new destination.
+
+The native WebView owns the physical mouse Back/Forward mapping. Lifeweave supplies a valid same-
+document route stack and responds to the resulting `popstate`, which also keeps WebDriver/browser
+Back and Forward semantically identical to the mouse buttons.
+
+### Override 6 — deterministic Vietnamese UI type and coherent motion
+
+On 2026-08-11 the Product Owner explicitly requested the strongest available application font and
+window-like motion across the interface. This later direction replaces Segoe UI Variable as the
+productive face while preserving the earlier separation between operational chrome and authored
+documents.
+
+Consequences:
+
+- Be Vietnam Pro is self-hosted from `@fontsource/be-vietnam-pro@5.3.0` and becomes the sole
+  productive family for navigation, controls, task rows, metadata, operational page titles and
+  display numerals. Four normal weights (400/500/600/700), each with Latin and Vietnamese subsets,
+  total 135,592 bytes. Segoe UI remains only the local fallback.
+- Literata remains the one editorial family and is restricted to authored Reader/editor bodies and
+  their document heading roles; it no longer owns operational display titles.
+- top-level route transitions use a 28 px horizontal enter: new navigation arrives from the right,
+  while `popstate` to a lower versioned history index arrives from the left. The index is validated
+  as part of the existing versioned, window-session-only history state.
+- Life browse, reader and edit canvas changes use a 22 px traversal enter. Enabled buttons share a
+  bounded one-pixel hover lift and press compression; feature recipes may refine the
+  tone but do not create continuous animation.
+- all new motion uses transform and opacity with the existing duration/easing vocabulary. There is
+  no `transition: all`, layout animation, looping ambient motion or motion dependency. Under
+  `prefers-reduced-motion: reduce`, spatial transforms are removed and context changes use the
+  existing 80 ms fade.
+
+This override changes only presentation and the already-decided session-history envelope. It adds
+no schema, migration, Rust, IPC, capability, remote asset, telemetry, workflow or generated-binding
+change. Dependency admission and asset cost are recorded in
+`docs/audits/task-51-dependency-notes.md`.
+
+### Override 7 — woven-W application identity
+
+On 2026-08-11 the Product Owner explicitly authorized independent selection and replacement of the
+application icon, superseding the earlier blue-infinity lock and the deferred brand/logo exclusion.
+Competitive image mapping showed that infinity and four-loop knot marks are heavily reused by
+connection, communication and productivity products. The selected direction therefore avoids both
+families rather than refining the generic infinity.
+
+The new mark combines two paths: an outer white W-shaped life path and a pale crossing thread. Their
+intersection creates a compact central diamond, representing many areas of life woven around the
+work currently in focus. The W directly anchors the symbol to Lifeweave without using text, while
+the crossing establishes the weave meaning absent from a plain monogram.
+
+Consequences:
+
+- `assets/brand/lifeweave-mark.svg` is the transparent monochrome shell authority and
+  `assets/brand/lifeweave-app-icon.svg` is the packaged full-colour authority;
+- the desktop icon uses the existing Lifeweave blue-to-violet family, one rounded-square field, two
+  high-contrast threads and no text, checkmark, calendar, leaf, character art, remote asset or
+  borrowed third-party geometry;
+- the generated frontend icon module consumes the same mark path, while Tauri PNG/ICO outputs at
+  32, 64, 128 and 256 px derive mechanically from the full-colour source;
+- the 32 px raster is reviewed independently rather than assuming that a 512 px render scales well;
+- this is an original repository-native SVG construction informed by Windows silhouette guidance,
+  not a traced or downloaded logo. It adds no dependency, network request, runtime code, schema,
+  migration, IPC, capability, permission, workflow or persisted data.
+
+The icon remains reversible by restoring the two canonical SVG sources, regenerating the frontend
+module and raster bundle, with no user-data consequence.
+
 ## Consequences
 
 - `frontend/src/design-system/visual/` becomes the single answer to "what colour, radius, weight or
@@ -393,8 +530,9 @@ local-first, so these load from disk with no network transfer.
 - Task 50's geometry invariants remain binding and are re-proven, not re-argued: zero document
   overflow, zero viewport overflow, zero semantic collisions, stable framing, local scroll
   ownership.
-- New dependencies are limited to self-hosted Literata, a curated Fluent System icon subset,
-  vanilla-extract recipes, and the WebdriverIO v9 visual service, each with a written rationale.
+- New dependencies are limited to self-hosted Literata and Be Vietnam Pro, a curated Fluent System
+  icon subset, vanilla-extract recipes, and the WebdriverIO v9 visual service, each with a written
+  rationale.
 - The bundle budget is measured and reported at each gate. `index.js` has 5,473 bytes of headroom at
   baseline; raising a ceiling remains a Product Owner decision supported by measurement.
 
@@ -416,8 +554,8 @@ Sigma, Cytoscape, `window-vibrancy`, second drag-and-drop library, second editor
 React canary.
 
 Still deferred and untouched: Narrative Canvas expansion, prediction, advanced Graph, tags beyond
-the existing unified system, backlinks beyond ADR 0035, Noteboard, sound design, brand and logo
-work, and every item ADR 0044 listed as not decided.
+the existing unified system, backlinks beyond ADR 0035, Noteboard, sound design, broader naming or
+brand-system work beyond the Override 7 icon, and every item ADR 0044 listed as not decided.
 
 ## Rollback
 

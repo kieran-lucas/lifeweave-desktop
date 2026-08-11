@@ -1,4 +1,5 @@
 import { useId, useRef, type FormEvent, type ReactNode, type Ref } from "react";
+import { createPortal } from "react-dom";
 
 import * as decisionStyles from "../DecisionDialog.css";
 import { useModalFocusTrap } from "../useModalFocusTrap";
@@ -19,7 +20,7 @@ export function DialogBackdrop({
   children: ReactNode;
   className?: string;
 } & Record<string, unknown>) {
-  return (
+  const backdrop = (
     <div
       {...rest}
       data-dialog-backdrop=""
@@ -28,6 +29,8 @@ export function DialogBackdrop({
       {children}
     </div>
   );
+
+  return typeof document === "undefined" ? backdrop : createPortal(backdrop, document.body);
 }
 
 export function DialogSurface({

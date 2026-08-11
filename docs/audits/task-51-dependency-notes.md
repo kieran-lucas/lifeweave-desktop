@@ -1,9 +1,9 @@
 # Task 51 — dependency admission notes
 
-One note per dependency, covering every field `docs/DEPENDENCY_POLICY.md` requires. Four
+One note per dependency, covering every field `docs/DEPENDENCY_POLICY.md` requires. Five
 dependencies were added. Nothing else on the activation prompt's recommended list was installed:
 `@base-ui/react` is explicitly conditional and the prototype did not identify a primitive that
-justifies it (§5).
+justifies it (§6).
 
 Measured impact on the shipped application, `pnpm build` with no prototype flag:
 
@@ -53,8 +53,8 @@ for removal if unused.
 
 ## 2. `@fontsource-variable/literata@5.3.0` — frontend dependency
 
-**Feature that requires it.** Slice 041 §6: the editorial family for the Today title, the inspector
-object title, Reader and document titles.
+**Feature that requires it.** Slice 041 §6 and ADR 0045 Override 6: the editorial family for
+authored Reader/editor bodies and their document headings.
 
 **Why platform code is insufficient.** Windows ships no variable serif suitable for this role.
 Georgia is static, has no optical-size or weight axis, and its Vietnamese coverage is materially
@@ -72,18 +72,17 @@ subset metadata); a different editorial face (Literata is the activation prompt'
 **License** SIL Open Font License 1.1 for the font; MIT for the packaging. Both permit
 redistribution in an application. **Advisories** none; the package contains no executable code.
 
-**Measured asset impact.** Only three of the seven subsets are imported:
+**Measured eager asset impact.** Only two of the seven normal subsets are imported:
 
 ```text
 literata-latin-wght-normal.woff2         52,496
-literata-latin-ext-wght-normal.woff2     42,656
 literata-vietnamese-wght-normal.woff2    11,408
                                         -------
-                                        106,560 bytes
+                                         63,904 bytes
 ```
 
-Cyrillic, cyrillic-ext, greek and greek-ext are deliberately **not** imported — roughly 200 KB of
-glyphs Lifeweave will never draw. Verified in `dist/assets`: exactly three woff2 files are emitted.
+Cyrillic, cyrillic-ext, greek, greek-ext and latin-ext are deliberately **not** imported. Every
+Vietnamese codepoint used by the product is present in the Vietnamese subset.
 
 Vietnamese is imported deliberately, not incidentally. `docs/ACCESSIBILITY_AND_INPUT.md` makes
 Vietnamese rendering a first-class check, and a latin-only subset renders stacked diacritics through
@@ -91,7 +90,7 @@ the fallback face at a visibly different weight.
 
 **Runtime/network.** None. Local assets, no request leaves the machine. **Accessibility** improves
 it: real Vietnamese glyphs instead of fallback substitution. **Format lock-in** none — woff2 is a
-standard. **Removal cost** low: delete three imports and one token family; headings fall back to
+standard. **Removal cost** low: delete the imports and one token family; authored content falls back to
 Georgia.
 
 ---
@@ -154,15 +153,55 @@ low; the goldens remain readable without it.
 
 ---
 
-## 5. Considered and not installed
+## 5. `@fontsource/be-vietnam-pro@5.3.0` — frontend dependency
+
+**Feature that requires it.** ADR 0045 Override 6: a deterministic, contemporary productive UI
+voice with first-class Vietnamese rendering for navigation, controls, Tasks and operational titles.
+
+**Why platform code is insufficient.** Segoe UI remains a capable zero-byte fallback, but its
+Variable/Display/Text family registration and optical resolution vary with the Windows and WebView2
+installation. A locally bundled face fixes the glyph metrics, available weights and Vietnamese
+diacritic rendering on every supported machine. Literata is intentionally retained only for
+authored long-form content and is unsuitable for dense controls.
+
+**Why this family and package.** Be Vietnam Pro is designed by Vietnamese type designers for both
+display and text use and provides complete Vietnamese coverage with a modern, compact sans voice.
+Fontsource provides versioned WOFF2 subsets that satisfy the offline `font-src 'self'` CSP; no
+remote Google Fonts request is introduced.
+
+**Alternatives.** Segoe UI (retained as fallback but not deterministic across supported Windows
+registrations); Inter (excellent general UI face but less specific to the product's Vietnamese
+language requirement); Literata everywhere (rejected because serif forms reduce density and blur
+the distinction between application chrome and authored content).
+
+**Maintenance.** Fontsource mirrors the upstream open-source font. **License** SIL Open Font License
+1.1 for the font and MIT for packaging. **Advisories/runtime behaviour** none; this package contains
+font data and metadata, no executable application code. **Network/privacy** none; all assets load
+from the packaged application.
+
+**Measured asset impact.** Exactly eight WOFF2 assets are imported:
+
+```text
+latin 400 / 500 / 600 / 700       87,244 bytes
+vietnamese 400 / 500 / 600 / 700  48,348 bytes
+                                    -------
+total                              135,592 bytes
+```
+
+Other scripts, italics and unused weights are excluded. Font bytes are separate assets and do not
+consume the `index.js` ceiling. **Removal cost** low: remove eight imports and the dependency, then
+point the three productive family aliases back to Segoe UI; persisted data is unaffected.
+
+---
+
+## 6. Considered and not installed
 
 **`@base-ui/react@1.6.0`.** Authorized for evaluation, conditional on the prototype identifying a
 concrete primitive where it beats what exists. The prototype did not: the composition's interactive
 elements are native `<button>`, a `role="tablist"` of buttons, and `role="list"`/`role="listitem"`,
-all of which already have correct semantics and keyboard behaviour. The surfaces that might justify
-it — the tag combobox, the assessment radial fan — are production surfaces that Task 51 has not
-reached, and the decision is deferred to that point rather than pre-empted. Installing it now would
-mean shipping an unused behavioural library.
+all of which already have correct semantics and keyboard behaviour. The tag combobox or another
+future genuinely complex primitive could justify it, but that decision remains deferred rather than
+pre-empted. Installing it now would mean shipping an unused behavioural library.
 
 **Everything in the prompt's §10.3 prohibition list** — Tailwind, shadcn, Material UI, full Fluent
 UI React, GSAP, Rive, PixiJS, Three.js, React Flow, Sigma, Cytoscape, Electron, `window-vibrancy`,

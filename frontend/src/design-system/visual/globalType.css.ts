@@ -1,9 +1,10 @@
 import { globalStyle } from "@vanilla-extract/css";
 
 import "./theme.css";
+import { duration, easing, reduced } from "./motion.css";
 import { family, text } from "./typography.css";
 
-/* Dense product copy stays Segoe Variable; page identity enters the editorial register. */
+/* Productive chrome is deterministic Be Vietnam Pro; authored reading keeps Literata. */
 globalStyle("body", {
   fontFamily: family.uiText,
   fontSize: text.body.fontSize,
@@ -34,6 +35,27 @@ globalStyle("button, select", {
   fontWeight: text.button.fontWeight,
   letterSpacing: text.button.letterSpacing,
   lineHeight: text.button.lineHeight,
+});
+
+/* Universal tactile baseline. Feature recipes may add tone, but every real button acknowledges
+ * hover and press with the same bounded transform vocabulary. */
+globalStyle("button", {
+  transformOrigin: "center",
+  transition:
+    `background-color ${duration.state} ${easing.standard}, border-color ${duration.state} ${easing.standard}, ` +
+    `color ${duration.state} ${easing.standard}, opacity ${duration.state} ${easing.standard}, ` +
+    `transform ${duration.press} ${easing.standard}, box-shadow ${duration.state} ${easing.standard}`,
+});
+/* `:where()` keeps this fallback below feature recipes that own a domain-specific transform. */
+globalStyle("button:where(:not(:disabled):hover)", { transform: "translateY(-1px)" });
+globalStyle("button:where(:not(:disabled):active)", { transform: "translateY(1px) scale(.975)" });
+globalStyle("button", {
+  "@media": {
+    "(prefers-reduced-motion: reduce)": {
+      transitionDuration: reduced.duration,
+      transform: "none",
+    },
+  },
 });
 
 globalStyle("input, textarea", {

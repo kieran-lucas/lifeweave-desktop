@@ -2,27 +2,24 @@
  * GENERATED FILE — do not edit by hand.
  * Regenerate with:  python scripts/generate_visual_icons.py
  *
- * The Lifeweave icon vocabulary (ADR 0045): a curated 23-icon subset of Fluent System Icons
- * plus the Lifeweave infinity brand mark, vendored as inline geometry.
+ * The Lifeweave icon vocabulary: a curated 23-icon subset of Fluent System Icons plus the
+ * Lifeweave woven-W brand mark, vendored as inline geometry.
  *
  * Source:  @fluentui/svg-icons 1.1.334  (npm)
  * License: MIT — Copyright (c) Microsoft Corporation
  *          upstream repository: github.com/microsoft/fluentui-system-icons
  *
  * The attribution deliberately omits the URL scheme: `scripts/verify_no_remote_assets.py` rejects
- * any `https?://` under `frontend/src`, and that gate is more valuable than a clickable comment.
+ * any `https?://` under `frontend/src`.
  *
- * **Each path is a separate named export, deliberately.** An earlier version kept them in one
- * `Record<IconName, string>` and let `Icon` look the path up by name. That reads nicely and cannot
- * tree-shake: a dynamic lookup forces every entry into the bundle, so production shipped all
- * 23 icons to render the seven the shell actually uses, and `index.js` went 1,551 bytes over
- * its locked ceiling. Named exports let the bundler drop what no one imports.
+ * Each path is a separate named export so the bundler can drop unused glyphs. The vocabulary may be
+ * semantically diverse, but production only pays for the names a screen imports.
  *
- * Predominantly 20px regular weight, themed with `currentColor`. Filled variants appear only where
- * state semantics benefit — a completed task, a raised priority. No colour-icon variants.
+ * Icons render through `currentColor`, so the complete vocabulary remains black/white/gray under the
+ * Monochrome Matte authority. Filled variants appear only where state semantics benefit.
  *
- * Every icon is `aria-hidden` and focusable={false}: an icon is never the accessible name. A
- * control that renders only an icon must carry its own `aria-label`.
+ * Every icon is `aria-hidden` and focusable={false}: an icon is never the accessible name. An
+ * icon-only control must carry its own `aria-label`.
  */
 import type { SVGProps } from "react";
 
@@ -118,9 +115,9 @@ export const iconMore =
 export const iconDismiss =
   "m4.09 4.22.06-.07a.5.5 0 0 1 .63-.06l.07.06L10 9.29l5.15-5.14a.5.5 0 0 1 .63-.06l.07.06c.18.17.2.44.06.63l-.06.07L10.71 10l5.14 5.15c.18.17.2.44.06.63l-.06.07a.5.5 0 0 1-.63.06l-.07-.06L10 10.71l-5.15 5.14a.5.5 0 0 1-.63.06l-.07-.06a.5.5 0 0 1-.06-.63l.06-.07L9.29 10 4.15 4.85a.5.5 0 0 1-.06-.63l.06-.07-.06.07Z";
 
-/** Lifeweave infinity mark — refined continuous geometry shared with the desktop icon. */
+/** Lifeweave woven-W mark — intersecting life paths shared with the desktop identity. */
 export const iconBrand =
-  "M10 10C7.8 6.25 6.2 4.35 4.3 4.35 2.35 4.35 1 6.8 1 10s1.35 5.65 3.3 5.65c1.9 0 3.5-1.9 5.7-5.65 2.2-3.75 3.8-5.65 5.7-5.65 1.95 0 3.3 2.45 3.3 5.65s-1.35 5.65-3.3 5.65c-1.9 0-3.5-1.9-5.7-5.65Z";
+  "M3 4.5 6.76 15.1c.32.9 1.55 1.02 2.02.2L10 13.18l1.22 2.12c.47.82 1.7.7 2.02-.2L17 4.5M6.08 10.72 10 4.18l3.92 6.54";
 
 export function Icon({
   d,

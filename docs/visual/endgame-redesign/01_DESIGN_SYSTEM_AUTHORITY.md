@@ -103,10 +103,11 @@ Rules:
 ## 8. Application icon
 
 Canonical desktop identity:
-- solid black rounded-square field;
-- centered continuous white Lifeweave infinity mark;
+- Lifeweave blue-to-violet rounded-square field;
+- centered woven-W mark: a white outer life path crossed by a pale secondary thread;
+- the paths converge on a compact diamond, expressing life areas woven around focused work;
 - strong silhouette at 16–32 px;
-- no gradient, glow, shadow, border decoration or color;
+- no text, checkmark, calendar, leaf, copied third-party geometry, remote asset or decorative shadow;
 - the shell mark and packaged Windows icon must visibly belong to the same identity system.
 
 Canonical source: `assets/brand/lifeweave-app-icon.svg`.

@@ -105,6 +105,14 @@ const pageFrameBase = style({
   paddingBlockEnd: space.page,
   containerType: "inline-size",
   containerName: "page",
+  selectors: {
+    "&[data-page-flush]": {
+      blockSize: "100%",
+      minBlockSize: 0,
+      gap: 0,
+      paddingBlockEnd: 0,
+    },
+  },
 });
 
 export const pageFrame = styleVariants({

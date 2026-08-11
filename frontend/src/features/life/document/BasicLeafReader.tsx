@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useReducedMotion } from "motion/react";
 import type { ReaderDocumentView } from "../../../ipc/generated/ReaderDocumentView";
@@ -26,7 +26,29 @@ type MarkdownImportPending = {
   preview: import("../../../ipc/generated/NarrativeMarkdownPreview").NarrativeMarkdownPreview;
 };
 
-export function BasicLeafReader({ nodeId }: { nodeId: string }) {
+function OutlineAvailabilityReporter({
+  available,
+  onChange,
+}: {
+  available: boolean;
+  onChange: ((available: boolean) => void) | undefined;
+}) {
+  useEffect(() => {
+    onChange?.(available);
+    return () => onChange?.(false);
+  }, [available, onChange]);
+  return null;
+}
+
+export function BasicLeafReader({
+  nodeId,
+  outlineVisible = true,
+  onOutlineAvailabilityChange,
+}: {
+  nodeId: string;
+  outlineVisible?: boolean;
+  onOutlineAvailabilityChange?: (available: boolean) => void;
+}) {
   const reducedMotion = useReducedMotion() ?? false;
   const client = useQueryClient();
   const [editing, setEditing] = useState(false);
@@ -204,6 +226,7 @@ export function BasicLeafReader({ nodeId }: { nodeId: string }) {
 
   return (
     <div className={styles.shell}>
+      <OutlineAvailabilityReporter available={showOutline} onChange={onOutlineAvailabilityChange} />
       <h2>Reader</h2>
       {projection.draft_state !== "none" && (
         <section className={styles.recovery} aria-labelledby="recovery-title">
@@ -225,8 +248,8 @@ export function BasicLeafReader({ nodeId }: { nodeId: string }) {
       <PortablePackageControls nodeId={nodeId} documentKind="basic_leaf" documentId={document.id} hasDraft={projection.draft_state !== "none"} />
       {notice && <p role="status" aria-live="polite">{notice}</p>}
       <div className={styles.outlineContainer}>
-        {showOutline
-          ? <div className={styles.outlineGrid}><div className={styles.outlineColumn}><DocumentOutline outline={outline} reducedMotion={reducedMotion} /></div><StaticDocument document={parsed} /></div>
+        {showOutline && outlineVisible
+          ? <div className={styles.outlineGrid}><div className={styles.outlineColumn}><DocumentOutline id="life-document-outline" outline={outline} reducedMotion={reducedMotion} /></div><StaticDocument document={parsed} /></div>
           : <StaticDocument document={parsed} />}
       </div>
     </div>

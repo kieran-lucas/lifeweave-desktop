@@ -228,8 +228,7 @@ export const planArrow = style({
 });
 
 export const document = style({
-  maxInlineSize: 880,
-  marginInline: "auto",
+  inlineSize: "100%",
   display: "grid",
   gap: 0,
   minInlineSize: 0,

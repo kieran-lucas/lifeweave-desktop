@@ -74,10 +74,22 @@ const projection = (overrides: object = {}) => ({
   ...overrides,
 });
 
-function mount(nodeId?: string) {
+function mount({
+  nodeId,
+  outlineVisible = true,
+  onOutlineAvailabilityChange,
+}: {
+  nodeId?: string;
+  outlineVisible?: boolean;
+  onOutlineAvailabilityChange?: (available: boolean) => void;
+} = {}) {
   return render(
     <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })}>
-      <BasicLeafReader nodeId={nodeId ?? baseDocRecord.life_node_id} />
+      <BasicLeafReader
+        nodeId={nodeId ?? baseDocRecord.life_node_id}
+        outlineVisible={outlineVisible}
+        {...(onOutlineAvailabilityChange ? { onOutlineAvailabilityChange } : {})}
+      />
     </QueryClientProvider>
   );
 }
@@ -226,29 +238,10 @@ describe("DocumentOutline component", () => {
     document.body.removeChild(targetEl);
   });
 
-  it("shows disclosure toggle with Show outline label by default", () => {
+  it("does not add a second disclosure control inside the document", () => {
     render(<DocumentOutline outline={twoEntryOutline} reducedMotion={false} />);
-    expect(screen.getByRole("button", { name: /Show outline/ })).toBeInTheDocument();
-  });
-
-  it("clicking disclosure toggle changes label to Hide outline", () => {
-    render(<DocumentOutline outline={twoEntryOutline} reducedMotion={false} />);
-    const toggle = screen.getByRole("button", { name: /Show outline/ });
-    fireEvent.click(toggle);
-    expect(screen.getByRole("button", { name: /Hide outline/ })).toBeInTheDocument();
-  });
-
-  it("disclosure toggle has aria-expanded=false by default", () => {
-    render(<DocumentOutline outline={twoEntryOutline} reducedMotion={false} />);
-    const toggle = screen.getByRole("button", { name: /Show outline/ });
-    expect(toggle).toHaveAttribute("aria-expanded", "false");
-  });
-
-  it("disclosure toggle has aria-expanded=true after click", () => {
-    render(<DocumentOutline outline={twoEntryOutline} reducedMotion={false} />);
-    const toggle = screen.getByRole("button", { name: /Show outline/ });
-    fireEvent.click(toggle);
-    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(screen.queryByRole("button", { name: /outline/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Introduction" })).toBeVisible();
   });
 
   it("does not show truncation note when not truncated", () => {
@@ -292,6 +285,15 @@ describe("BasicLeafReader outline integration", () => {
   it("outline is shown when document has 2+ headings", async () => {
     mount();
     expect(await screen.findByRole("navigation", { name: "Document outline" })).toBeInTheDocument();
+  });
+
+  it("reports outline availability while leaving it hidden when the parent control is off", async () => {
+    const onAvailabilityChange = vi.fn();
+    mount({ outlineVisible: false, onOutlineAvailabilityChange: onAvailabilityChange });
+
+    await waitFor(() => expect(onAvailabilityChange).toHaveBeenCalledWith(true));
+    expect(screen.queryByRole("navigation", { name: "Document outline" })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Introduction" })).toBeInTheDocument();
   });
 
   it("outline shows correct labels and levels", async () => {

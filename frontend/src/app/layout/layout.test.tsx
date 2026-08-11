@@ -42,8 +42,16 @@ describe("PageFrame", () => {
       styles.pageFrame.wide,
       styles.pageFrame.reading,
     ]);
-    // Three declared types, three distinct classes — no two page types may collapse into one width.
+    // Three declared types keep distinct semantic/test hooks even when the two desktop workspace
+    // variants are both fluid. The reading variant remains independently width-constrained.
     expect(classes.size).toBe(3);
+  });
+
+  it("marks an edge-to-edge frame without creating another page type", () => {
+    render(<PageFrame type="wide" flush aria-label="Flush workspace">content</PageFrame>);
+    const frame = screen.getByLabelText("Flush workspace");
+    expect(frame).toHaveAttribute("data-page-type", "wide");
+    expect(frame).toHaveAttribute("data-page-flush");
   });
 
   it("puts page identity and page actions on one header axis", () => {
@@ -95,8 +103,9 @@ describe("DialogSurface", () => {
       </DialogBackdrop>,
     );
     const surface = screen.getByRole("dialog");
-    // ADR 0039's modal detection depends on this exact pairing; the geometry primitive must not
-    // move, wrap, or portal it away.
+    // ADR 0039's modal detection depends on this exact pairing. The backdrop itself may portal to
+    // the document body to escape animated/container-query ancestors, but the surface stays its
+    // direct child and retains the same modal semantics.
     expect(surface).toHaveAttribute("aria-modal", "true");
     expect(surface).toHaveAttribute("data-dialog-surface");
     expect(surface).toHaveAttribute("data-dialog-width", "standard");

@@ -8,22 +8,42 @@ The immutable source is authoritative. This registry makes operational status vi
 - No account, server, collaboration, hidden telemetry, or default cloud dependency.
 - Task-first navigation; Today default. Activating the Today destination always returns the viewed
   date to the current local day.
-- The approved current Lifeweave mark is a refined single-stroke blue infinity. The shell and the
-  Windows desktop/bundle icon derive from the same local SVG source; no tile, glow, remote asset, or
-  third-party brand geometry is used.
+- Top-level destinations and the Settings Analytics subpage participate in the WebView session
+  history. Sidebar, shortcut and cross-surface navigation push one route entry; browser Back/Forward
+  (including mouse navigation buttons) restore the prior route and its viewed Today date without
+  persisting history outside the current window session.
+- Productive application chrome uses the self-hosted Be Vietnam Pro family at 400/500/600/700 with
+  Latin and Vietnamese subsets; authored Reader/editor content retains Literata. Route changes use
+  directional horizontal continuity, Life canvas changes use bounded traversal, and every enabled
+  button has shared hover/press feedback. Motion uses transform/opacity, never loops continuously,
+  and Reduced Motion replaces spatial travel with an 80 ms fade. See ADR 0045 Override 6.
+- The approved Lifeweave identity is the original woven-W mark: a white outer life path crossed by
+  a lighter thread around a central diamond on the blue-violet application field. The transparent
+  monochrome shell mark and Windows desktop/bundle icon derive from governed local SVG sources; no
+  text, checkmark, calendar, leaf, remote asset or third-party brand geometry is used. See ADR 0045
+  Override 7.
 - Task is not a card.
 - Continuous Task timeline 04:00–24:00 with required exact-minute start/end.
 - Ordinary overlaps rejected; exact-slot groups allowed.
-- Retrospective completion selection through a radial fan.
+- Retrospective completion selection through a compact, anchored status menu. The task row exposes
+  the current assessment label directly; progress is never encoded by colour alone.
 - Reminder, Windows notification, sound, snooze, and app-open streak removed.
 - Analytics is a separate destination.
 - Life Browse shows selected + direct children; full tree belongs to Life Edit; leaf opens a separate reader.
+- The Life destination is an edge-to-edge main-pane workspace with no route gutter or outer card
+  chrome; navigation/content separators remain internal to the workspace. Its navigator owns 15%
+  of the workspace width and wraps long node names. Leaf content uses the remaining pane with 5%
+  horizontal inset rather than a centred reading-width cap.
 - Reduced Motion required.
 - Data backup/restore/export are first-class and distinct from interchange.
 - Task/Life relationships are navigation-only; each one-off Task or recurring Task series links to zero or one Life node. Authority is stored on `tasks` and `task_series`; occurrences/evaluations inherit and do not store it.
 - Narrative Canvas supports 1–20 ordered scenes, three immutable built-in template IDs, and four static document-level Visual World IDs. Visual Worlds are presentation only.
 - Portable Package v1 represents one committed Basic Leaf or Narrative Canvas leaf document. Import creates a new document on a selected empty active Life leaf and excludes tree, Task, draft, history, analytics, and settings state.
-- Actual time is manual and explicit: a user starts a stopwatch on a **one-off** Task, may stop and start again, and each completed interval persists as an immutable segment. One session is active globally. Rust owns wall-clock epoch-millisecond timestamps; app close and machine sleep count as elapsed and there is no idle subtraction or surveillance of any kind. Actual time never rewrites the schedule, changes conflict rules, or completes/evaluates/scores a Task. A running timer blocks evaluation, deletion, and full backup creation. Recurring occurrences have no actual time. ADR 0037's session feature does not itself change Analytics; the completed-session Analytics projection is separately DECIDED by ADR 0040.
+- Actual-time records retain ADR 0037's integrity semantics, but the normal Task surface no longer
+  offers a stopwatch or a way to start a new session. A pre-existing active session is exposed only
+  through a bounded recovery strip with Stop and Discard so it cannot strand evaluation, deletion,
+  or backup. Historical completed segments remain immutable and available to the separately decided
+  ADR 0040 Analytics projection. No stored time is deleted or reinterpreted.
 - Planned-versus-actual Analytics is a read-only projection of completed explicit one-off Task
   sessions. Reporting uses the owning existing Task's current scheduled local date and current
   category; cross-midnight sessions are not split, running sessions contribute zero, deleted Tasks
@@ -129,14 +149,16 @@ The immutable source is authoritative. This registry makes operational status vi
   edit, delete, archive, scheduling, and search. Task 50 is prohibited, unstarted, unallocated, and
   unrecommended.
 - Lifeweave has exactly one geometry authority. Every top-level surface declares one type from a
-  finite taxonomy — `STANDARD_PAGE` 1152, `WIDE_WORKSPACE` 1440, `READING_PAGE` 768,
+  finite taxonomy — fluid `STANDARD_PAGE`, fluid `WIDE_WORKSPACE`, `READING_PAGE` 768,
   `MODAL_SURFACE` 520/720/960, `LOCAL_SCROLL_WORKSPACE` — and consumes one shared page frame, one
-  responsive gutter `clamp(24px, 3vw, 48px)`, and one 4 px-derived spacing ramp
+  responsive gutter `clamp(20px, 2vw, 32px)`, and one 4 px-derived spacing ramp
   (`4 8 12 16 24 32 48 64`). No page-local maximum width, page gutter, dialog width, or page-level
   section gap may live in domain CSS. Ordinary screens satisfy `scrollWidth <= clientWidth + 1` at
   the document root, the main viewport, and the page frame; the graph canvas, the tree canvas, and
   wide tables own their horizontal scroll locally. Concealment is prohibited: no global
   `overflow-x: hidden`, negative-margin clipping, `translateX` compensation, or `scale()` to fit.
+  At the already measured Task 51 breakpoint of 1180 px and below, the shell uses its 68 px rail so
+  resizing protects the working column without overwriting the user's wider-window sidebar choice.
   Modals are backdrop → surface → heading → status → body → footer, and form fields are
   label → control → help/error as one vertical unit with no two visible sibling controls
   intersecting. Layout invariants are proven by real-browser measurement, never by jsdom. Every
@@ -173,7 +195,7 @@ The immutable source is authoritative. This registry makes operational status vi
 
 ## OPEN — Product/UX
 
-- final brand/name beyond the approved current blue-infinity mark;
+- final product name beyond the approved current Lifeweave name;
 - final FAB icon and placement;
 - actual-time semantics beyond explicit one-off sessions and planned-versus-actual Analytics
   (recurring actual time, manual time entry, editing completed segments, and every other extension

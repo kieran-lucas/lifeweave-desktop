@@ -52,6 +52,11 @@ import { PageFrame, PageHeader } from "./layout/PageFrame";
 import { RouteErrorBoundary } from "./RouteErrorBoundary";
 import { ShortcutHelpDialog } from "./ShortcutHelpDialog";
 import {
+  compactShellQuery,
+  sidebarIsCollapsed,
+  type SidebarMode,
+} from "./shellLayout";
+import {
   analyticsShortcut,
   destinationShortcuts,
   resolveShortcutCommand,
@@ -60,6 +65,14 @@ import {
   type Destination,
   type DestinationShortcutCommand,
 } from "./keyboardShortcuts";
+import {
+  pushAppHistoryRoute,
+  readAppHistoryEntry,
+  replaceAppHistoryRoute,
+  sameAppHistoryRoute,
+  type AppHistoryRoute,
+  type SettingsView,
+} from "./navigationHistory";
 
 const GlobalSearchDialog = lazy(
   () => import("../features/search/GlobalSearchDialog"),
@@ -74,8 +87,6 @@ const destinationIcons: Record<Destination, string> = {
   settings: iconSettings,
 };
 
-type SidebarMode = "expanded" | "collapsed";
-type SettingsView = "general" | "analytics";
 type SearchNavRequest = {
   requestId: string;
   target: SearchNavigationTarget;
@@ -110,16 +121,31 @@ function readSidebarMode(): SidebarMode {
 
 export function App() {
   const queryClient = useQueryClient();
+  const initialEntry = useMemo(() => readAppHistoryEntry(window.history.state) ?? {
+    index: 0,
+    route: {
+      destination: "today" as const,
+      settingsView: "general" as const,
+      selectedDate: localToday(),
+    },
+  }, []);
+  const initialRoute: AppHistoryRoute = initialEntry.route;
   const [ipcStatus, setIpcStatus] = useState<"loading" | "ready" | "error">(
     "loading",
   );
-  const [destination, setDestination] = useState<Destination>("today");
-  const [settingsView, setSettingsView] = useState<SettingsView>("general");
-  const [selectedDate, setSelectedDate] = useState(localToday);
+  const [destination, setDestination] = useState<Destination>(initialRoute.destination);
+  const [settingsView, setSettingsView] = useState<SettingsView>(initialRoute.settingsView);
+  const [selectedDate, setSelectedDate] = useState(initialRoute.selectedDate);
+  const historyRoute = useRef(initialRoute);
+  const historyIndex = useRef(initialEntry.index);
+  const [navigationMotion, setNavigationMotion] = useState<"forward" | "back">("forward");
   const anchorLocalDate = useLocalDateRollover();
   const previousAnchor = useRef(anchorLocalDate);
   const [taskSidebarMode, setTaskSidebarMode] =
     useState<SidebarMode>(readSidebarMode);
+  const [compactViewport, setCompactViewport] = useState(
+    () => window.matchMedia(compactShellQuery).matches,
+  );
   const [lifeAutoCollapsed, setLifeAutoCollapsed] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [shortcutHelpOpen, setShortcutHelpOpen] = useState(false);
@@ -161,25 +187,52 @@ export function App() {
     setPendingNav((current) => settleNavigationEnvelope(current, requestId));
   }, []);
 
+  const commitRoute = useCallback((next: AppHistoryRoute) => {
+    if (!sameAppHistoryRoute(historyRoute.current, next)) {
+      historyIndex.current += 1;
+      pushAppHistoryRoute(window.history, next, historyIndex.current);
+      setNavigationMotion("forward");
+    }
+    historyRoute.current = next;
+    setDestination(next.destination);
+    setSettingsView(next.settingsView);
+    setSelectedDate(next.selectedDate);
+  }, []);
+
+  const replaceSelectedDate = useCallback((nextDate: string) => {
+    const next = { ...historyRoute.current, selectedDate: nextDate };
+    historyRoute.current = next;
+    replaceAppHistoryRoute(window.history, next, historyIndex.current);
+    setSelectedDate(nextDate);
+  }, []);
+
   const selectDestination = useCallback((next: Destination) => {
     setPendingNav(null);
-    if (next === "today") setSelectedDate(anchorLocalDate);
-    if (next === "settings") setSettingsView("general");
-    setDestination(next);
-  }, [anchorLocalDate]);
+    commitRoute({
+      destination: next,
+      settingsView: "general",
+      selectedDate: next === "today" ? anchorLocalDate : historyRoute.current.selectedDate,
+    });
+  }, [anchorLocalDate, commitRoute]);
 
   const openSettingsAnalytics = useCallback(() => {
     setPendingNav(null);
-    setDestination("settings");
-    setSettingsView("analytics");
-  }, []);
+    commitRoute({
+      destination: "settings",
+      settingsView: "analytics",
+      selectedDate: historyRoute.current.selectedDate,
+    });
+  }, [commitRoute]);
 
   const openSettingsSearch = useCallback(() => {
     setPendingNav(null);
-    setDestination("settings");
-    setSettingsView("general");
+    commitRoute({
+      destination: "settings",
+      settingsView: "general",
+      selectedDate: historyRoute.current.selectedDate,
+    });
     setSearchOpen(true);
-  }, []);
+  }, [commitRoute]);
 
   const openShortcutHelp = useCallback((opener: HTMLElement | null) => {
     shortcutHelpOpenerRef.current = opener;
@@ -196,9 +249,29 @@ export function App() {
 
   useEffect(() => {
     if (!pendingTodayRequestId && selectedDate === previousAnchor.current)
-      setSelectedDate(anchorLocalDate);
+      replaceSelectedDate(anchorLocalDate);
     previousAnchor.current = anchorLocalDate;
-  }, [anchorLocalDate, pendingTodayRequestId, selectedDate]);
+  }, [anchorLocalDate, pendingTodayRequestId, replaceSelectedDate, selectedDate]);
+  useEffect(() => {
+    replaceAppHistoryRoute(window.history, historyRoute.current, historyIndex.current);
+    const handlePopState = (event: PopStateEvent) => {
+      const entry = readAppHistoryEntry(event.state);
+      if (!entry) return;
+      const next = entry.route;
+      setNavigationMotion(entry.index < historyIndex.current ? "back" : "forward");
+      historyIndex.current = entry.index;
+      historyRoute.current = next;
+      setPendingNav(null);
+      setSearchOpen(false);
+      setShortcutHelpOpen(false);
+      shortcutHelpOpenerRef.current = null;
+      setDestination(next.destination);
+      setSettingsView(next.settingsView);
+      setSelectedDate(next.selectedDate);
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
   useEffect(() => {
     healthCheck()
       .then(() => setIpcStatus("ready"))
@@ -211,6 +284,13 @@ export function App() {
       /* storage is optional */
     }
   }, [taskSidebarMode]);
+  useEffect(() => {
+    const query = window.matchMedia(compactShellQuery);
+    const update = (event: MediaQueryListEvent) => setCompactViewport(event.matches);
+    setCompactViewport(query.matches);
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
   useEffect(() => {
     setLifeAutoCollapsed(destination === "life");
     requestAnimationFrame(() =>
@@ -235,24 +315,23 @@ export function App() {
   const handleSearchNavigate = (target: SearchNavigationTarget) => {
     const requestId = globalThis.crypto.randomUUID();
     if (target.kind === "today") {
-      setSelectedDate(target.local_date);
-      setDestination("today");
+      commitRoute({ destination: "today", settingsView: "general", selectedDate: target.local_date });
     } else if (target.kind === "focus_plan") {
-      setDestination("plans");
+      commitRoute({ destination: "plans", settingsView: "general", selectedDate: historyRoute.current.selectedDate });
     } else {
-      setDestination("life");
+      commitRoute({ destination: "life", settingsView: "general", selectedDate: historyRoute.current.selectedDate });
     }
     setPendingNav({ requestId, target });
   };
   const navigateToLifeNode = (nodeId: string) => {
-    setDestination("life");
+    commitRoute({ destination: "life", settingsView: "general", selectedDate: historyRoute.current.selectedDate });
     setPendingNav({
       requestId: globalThis.crypto.randomUUID(),
       target: { kind: "life_browse", node_id: nodeId },
     });
   };
   const navigateToFocusPlan = (planId: string) => {
-    setDestination("plans");
+    commitRoute({ destination: "plans", settingsView: "general", selectedDate: historyRoute.current.selectedDate });
     setPendingNav({
       requestId: globalThis.crypto.randomUUID(),
       target: { kind: "focus_plan", plan_id: planId },
@@ -263,8 +342,7 @@ export function App() {
     taskId: string | null,
     seriesId: string | null,
   ) => {
-    setSelectedDate(localDate);
-    setDestination("today");
+    commitRoute({ destination: "today", settingsView: "general", selectedDate: localDate });
     setPendingNav({
       requestId: globalThis.crypto.randomUUID(),
       target: {
@@ -277,7 +355,11 @@ export function App() {
     });
   };
 
-  const collapsed = lifeAutoCollapsed || taskSidebarMode === "collapsed";
+  const collapsed = sidebarIsCollapsed({
+    compactViewport,
+    lifeAutoCollapsed,
+    taskSidebarMode,
+  });
   const renderDestination = (command: DestinationShortcutCommand) => (
     <button
       key={command.id}
@@ -294,8 +376,7 @@ export function App() {
   );
   const activateCalendarDate = (date: string) => {
     setPendingNav(null);
-    setSelectedDate(date);
-    setDestination("today");
+    commitRoute({ destination: "today", settingsView: "general", selectedDate: date });
     requestAnimationFrame(() =>
       document.getElementById("today-heading")?.focus({ preventScroll: true }),
     );
@@ -334,7 +415,12 @@ export function App() {
           </span>
         </button>
       </nav>
-      <main className={styles.viewport} data-app-viewport="">
+      <main
+        className={styles.viewport}
+        data-app-viewport=""
+        data-destination={destination}
+        data-navigation-motion={navigationMotion}
+      >
         {ipcStatus === "loading" && (
           <p className={styles.coreStatus} aria-live="polite">
             Connecting to application core…
@@ -448,7 +534,11 @@ export function App() {
                   <button
                     type="button"
                     className={styles.settingsBackButton}
-                    onClick={() => setSettingsView("general")}
+                    onClick={() => commitRoute({
+                      destination: "settings",
+                      settingsView: "general",
+                      selectedDate: historyRoute.current.selectedDate,
+                    })}
                     aria-label="Back to Settings"
                   >
                     <Icon d={iconChevronLeft} size={18} />
@@ -467,7 +557,7 @@ export function App() {
                 <TodayScreen
                   selectedDate={selectedDate}
                   anchorLocalDate={anchorLocalDate}
-                  onSelectedDateChange={setSelectedDate}
+                  onSelectedDateChange={replaceSelectedDate}
                   onLifeNavigate={navigateToLifeNode}
                   onFocusPlanNavigate={navigateToFocusPlan}
                   focusRequest={todayFocusRequest}
@@ -506,6 +596,7 @@ export function App() {
             )}
             {destination === "life" && (
               <div
+                className={styles.lifeRoute}
                 ref={(node) => {
                   headingRef.current = node;
                 }}

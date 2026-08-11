@@ -3,11 +3,11 @@
 The packaged PNG and ICO files in this directory are generated from
 `assets/brand/lifeweave-app-icon.svg`.
 
-The application icon uses a solid black rounded-square field with the same continuous white infinity
-geometry used by the shell identity, so Windows taskbar/start-menu rendering keeps a clear silhouette
-at small sizes.
+The application icon uses a blue-to-violet rounded-square field with the same woven-W geometry used
+by the shell identity. The outer white life path and lighter crossing thread form a compact central
+diamond, so Windows taskbar/start-menu rendering retains a distinct silhouette at small sizes.
 
-`assets/brand/lifeweave-mark.svg` remains the transparent shell/glyph source used by the generated
-frontend icon module.
+`assets/brand/lifeweave-mark.svg` remains the transparent monochrome shell/glyph source used by the
+generated frontend icon module.
 
 Regenerate raster bundle files from the canonical SVG source; do not redraw individual PNG/ICO sizes independently.

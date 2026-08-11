@@ -1,41 +1,28 @@
 import { globalFontFace } from "@vanilla-extract/css";
 
+import beVietnamProLatin400 from "@fontsource/be-vietnam-pro/files/be-vietnam-pro-latin-400-normal.woff2";
+import beVietnamProLatin500 from "@fontsource/be-vietnam-pro/files/be-vietnam-pro-latin-500-normal.woff2";
+import beVietnamProLatin600 from "@fontsource/be-vietnam-pro/files/be-vietnam-pro-latin-600-normal.woff2";
+import beVietnamProLatin700 from "@fontsource/be-vietnam-pro/files/be-vietnam-pro-latin-700-normal.woff2";
+import beVietnamProVietnamese400 from "@fontsource/be-vietnam-pro/files/be-vietnam-pro-vietnamese-400-normal.woff2";
+import beVietnamProVietnamese500 from "@fontsource/be-vietnam-pro/files/be-vietnam-pro-vietnamese-500-normal.woff2";
+import beVietnamProVietnamese600 from "@fontsource/be-vietnam-pro/files/be-vietnam-pro-vietnamese-600-normal.woff2";
+import beVietnamProVietnamese700 from "@fontsource/be-vietnam-pro/files/be-vietnam-pro-vietnamese-700-normal.woff2";
 import literataLatin from "@fontsource-variable/literata/files/literata-latin-wght-normal.woff2";
 import literataVietnamese from "@fontsource-variable/literata/files/literata-vietnamese-wght-normal.woff2";
 
 /**
  * Lifeweave typography.
  *
- * Rebuilt from zero under ADR 0045's Craft-class benchmark override. Two families do all the work:
- * the platform sans for everything dense, and one authorized editorial serif for everything
- * expressive. Every role below states its family, size, weight, line height and tracking, so no
- * surface invents a `fontSize` of its own.
+ * Be Vietnam Pro is the productive UI voice: drawn by Vietnamese designers, crisp at control sizes
+ * and distinctive enough for large operational headings. Literata remains the authored long-form
+ * voice. Every role below states its family, size, weight, line height and tracking, so no surface
+ * invents a `fontSize` of its own.
  *
- * ── A measured defect this rebuild found ────────────────────────────────────────────────────
- *
- * The application declared `"Segoe UI Variable"` as its primary family in `global.css`, and the
- * governance check *required* that string. **It does not resolve.** Probed on the target engine
- * (Edge/Chromium 151.0.4129.72, the app's WebView2 build) against three independent fallback
- * baselines — monospace, serif and cursive — the umbrella name measured byte-identical to a
- * deliberately nonexistent family in all three, while the three optical-size families measured
- * distinctly and consistently:
- *
- * ```text
- * "Segoe UI Variable"           545.4 / 534.2 / 563.2  == base in all three   MISSING
- * "Segoe UI Variable Display"   532.0                                        resolves
- * "Segoe UI Variable Text"      542.8                                        resolves
- * "Segoe UI Variable Small"     559.8                                        resolves
- * "Segoe UI"                    547.9                                        resolves
- * ```
- *
- * `SegUIVar.ttf` is registered in `HKLM\...\Windows NT\CurrentVersion\Fonts`, but DirectWrite
- * exposes its named instances as three separate families rather than under the umbrella name, so
- * the first entry of the stack silently failed and every surface has been rendering in **static
- * Segoe UI** — never the variable face the design assumed.
- *
- * Selecting the correct optical size per role is therefore both the fix and the refinement: Small
- * for metadata and captions, Text for body and controls, Display for titles. That is what the
- * optical sizes are for, and no previous revision was actually getting any of them.
+ * The former Segoe UI Variable stack depended on three Windows optical family names and therefore
+ * varied with OS font registration and WebView2/DirectWrite resolution. The locally bundled
+ * productive face makes Vietnamese diacritics, weight and metrics deterministic across supported
+ * Windows installations while retaining Segoe UI as a no-network fallback.
  */
 
 /**
@@ -58,16 +45,43 @@ import literataVietnamese from "@fontsource-variable/literata/files/literata-vie
  * local-first, so these load from disk with no network transfer, and the swap window is not
  * perceptible in practice.
  */
+const PRODUCTIVE = "Be Vietnam Pro";
 const EDITORIAL = "Literata Variable";
+const latinRange =
+  "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329," +
+  "U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD";
+const vietnameseRange =
+  "U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301," +
+  "U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB";
+
+function registerProductiveFace(weight: 400 | 500 | 600 | 700, latin: string, vietnamese: string) {
+  globalFontFace(PRODUCTIVE, {
+    src: `url(${latin}) format("woff2")`,
+    fontWeight: weight,
+    fontStyle: "normal",
+    fontDisplay: "swap",
+    unicodeRange: latinRange,
+  });
+  globalFontFace(PRODUCTIVE, {
+    src: `url(${vietnamese}) format("woff2")`,
+    fontWeight: weight,
+    fontStyle: "normal",
+    fontDisplay: "swap",
+    unicodeRange: vietnameseRange,
+  });
+}
+
+registerProductiveFace(400, beVietnamProLatin400, beVietnamProVietnamese400);
+registerProductiveFace(500, beVietnamProLatin500, beVietnamProVietnamese500);
+registerProductiveFace(600, beVietnamProLatin600, beVietnamProVietnamese600);
+registerProductiveFace(700, beVietnamProLatin700, beVietnamProVietnamese700);
 
 globalFontFace(EDITORIAL, {
   src: `url(${literataLatin}) format("woff2-variations")`,
   fontWeight: "200 900",
   fontStyle: "normal",
   fontDisplay: "swap",
-  unicodeRange:
-    "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329," +
-    "U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
+  unicodeRange: latinRange,
 });
 
 globalFontFace(EDITORIAL, {
@@ -75,26 +89,23 @@ globalFontFace(EDITORIAL, {
   fontWeight: "200 900",
   fontStyle: "normal",
   fontDisplay: "swap",
-  unicodeRange:
-    "U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301," +
-    "U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB",
+  unicodeRange: vietnameseRange,
 });
 
 /**
  * The families.
  *
- * Three sans entries rather than one, because Windows ships Segoe UI Variable as three optical
- * sizes and using the right one is the difference between type that is merely scaled and type that
- * is drawn for its size. Georgia is the editorial fallback because its metrics are close enough to
- * Literata's that the swap does not reflow a paragraph.
+ * Productive aliases preserve semantic intent while resolving to one deterministic family. Georgia
+ * is the editorial fallback because its metrics are close enough to Literata's that the swap does
+ * not reflow a paragraph.
  */
 export const family = {
-  /** ≤ 12px — metadata, captions, chips. Small is drawn with looser spacing and open counters. */
-  uiSmall: '"Segoe UI Variable Small", "Segoe UI", system-ui, sans-serif',
+  /** ≤ 12px — metadata, captions and chips. */
+  uiSmall: `"${PRODUCTIVE}", "Segoe UI", system-ui, sans-serif`,
   /** 13–18px — body, task rows, controls, navigation. The workhorse. */
-  uiText: '"Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif',
-  /** > 18px — headings and numerals set large. Display is drawn tighter and finer. */
-  uiDisplay: '"Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif',
+  uiText: `"${PRODUCTIVE}", "Segoe UI", system-ui, sans-serif`,
+  /** > 18px — operational headings and numerals set large. */
+  uiDisplay: `"${PRODUCTIVE}", "Segoe UI", system-ui, sans-serif`,
   /** Titles, headings and long-form reading. */
   editorial: `"${EDITORIAL}", Georgia, "Times New Roman", serif`,
   /** Cascadia Mono ships with Windows 11; Consolas is the older-build fallback. Both verified. */
@@ -104,14 +115,13 @@ export const family = {
 /**
  * The roles. A surface picks a role; it never picks a size.
  *
- * Tracking tightens as size rises and opens as size falls, which is the correction the missing
- * optical-size axis would otherwise have made automatically.
+ * Tracking tightens as size rises and opens as size falls.
  */
 export const text = {
-  // ── Editorial: expressive, low frequency, high impact ────────────────────────────────────
+  // ── Productive display: expressive, low frequency, high impact ──────────────────────────
   /** The largest thing on any screen. Used once per surface, never twice. */
   display: {
-    fontFamily: family.editorial,
+    fontFamily: family.uiDisplay,
     fontSize: 40,
     lineHeight: "46px",
     fontWeight: 600,

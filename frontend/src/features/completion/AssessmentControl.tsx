@@ -148,6 +148,7 @@ export function AssessmentControl({
         }}
       >
         <span className={styles.ring} aria-hidden="true" />
+        <span className={styles.label}>{label}</span>
       </button>
       {open &&
         createPortal(

@@ -11,6 +11,9 @@ They may push the shared painted material language further, but they are not per
 
 ## Editorial font
 Literata is the one approved self-hosted editorial family. Do not add another display/editorial font.
+Be Vietnam Pro is separately approved by ADR 0045 Override 6 as the productive UI family. It does
+not replace Literata in authored Reader/editor content and is not authority for a second editorial
+voice.
 
 ## Domain geometry
 Life Edit, Life Graph, DnD transforms, graph/spatial coordinates, timeline/time geometry and similar domain layout may retain domain-specific geometry.
