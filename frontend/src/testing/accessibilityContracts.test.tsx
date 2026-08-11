@@ -5,20 +5,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import DeadlineQueuePanel from "../features/task/planning/DeadlineQueuePanel";
 import TaskSavedViewsPanel from "../features/task/saved-views/TaskSavedViewsPanel";
-import { TaskWorkspaceTabs } from "../features/task/planning/TaskWorkspaceTabs";
 
 /**
- * Cross-cutting accessibility contracts for Task 40.
- *
- * The per-component suites already cover their own rendering. This file asserts the invariants
- * that live *between* components and are therefore easy to lose: keyboard-trap behaviour in the
- * one hand-rolled focus cycle in the product, semantic failure announcement, and name/role/state
- * completeness plus keyboard reachability on the two most recently shipped surfaces.
- *
- * Automated DOM assertions cannot prove spoken screen-reader output or physical Windows scaling,
- * and jsdom does not evaluate `@media`, so the reduced-motion and forced-colors contracts are not
- * assertable here either. All three stay in the manual protocol at
- * docs/audits/task-40-windows-accessibility-dpi-protocol.md rather than being faked at this layer.
+ * Cross-cutting accessibility contracts that still belong to live advanced task surfaces.
+ * Retired primary-navigation contracts are intentionally absent: accessibility tests protect
+ * capabilities that exist, not historical information architecture.
  */
 
 const api = vi.hoisted(() => ({
@@ -185,7 +176,6 @@ describe("Saved View editor keyboard containment", () => {
 
     const dialog = await screen.findByRole("dialog");
     expect(dialog).toHaveAttribute("aria-modal", "true");
-    // A modal must be named, or a screen reader announces an anonymous dialog.
     expect(dialog).toHaveAccessibleName("Create Saved View");
 
     await screen.findByRole("button", { name: "Save view" });
@@ -195,17 +185,14 @@ describe("Saved View editor keyboard containment", () => {
     const first = controls[0]!;
     const last = controls.at(-1)!;
 
-    // Forward from the last control wraps to the first rather than escaping to the page behind.
     last.focus();
     fireEvent.keyDown(dialog, { key: "Tab" });
     expect(first).toHaveFocus();
 
-    // Backward from the first wraps to the last.
     first.focus();
     fireEvent.keyDown(dialog, { key: "Tab", shiftKey: true });
     expect(last).toHaveFocus();
 
-    // WCAG 2.1.2: the cycle is not a trap because Escape always leaves and restores focus.
     fireEvent.keyDown(dialog, { key: "Escape" });
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     await waitFor(() =>
@@ -225,9 +212,7 @@ describe("Saved View editor keyboard containment", () => {
 
     const alert = await within(dialog).findByRole("alert");
     expect(alert).toHaveTextContent("Name is already used.");
-    // Focus moves to the message, so the failure is not silent for a keyboard user.
     await waitFor(() => expect(alert).toHaveFocus());
-    // The draft survives the rejection; retyping a lost form is a real accessibility cost.
     expect(name).toHaveValue("Duplicate");
   });
 });
@@ -240,7 +225,6 @@ describe("Deadline queue name, role, state, and reachability", () => {
     });
     expect(open).toBeInTheDocument();
 
-    // Every control must be keyboard reachable: no positive or negative tabindex, no disabled trap.
     for (const button of container.querySelectorAll("button")) {
       expect(button).not.toHaveAttribute("tabindex");
       expect(button).toBeEnabled();
@@ -253,30 +237,11 @@ describe("Deadline queue name, role, state, and reachability", () => {
     const { container } = mountDeadlines();
     await screen.findByRole("heading", { name: /Overdue deadlines/ });
 
-    // The schedule conflict is a status; it must survive greyscale and High Contrast.
     expect(screen.getByText("Scheduled after deadline")).toBeInTheDocument();
     const times = [...container.querySelectorAll("time")].map((node) =>
       node.getAttribute("datetime"),
     );
     expect(times).toContain("2026-08-05");
     expect(times).toContain("2026-08-07");
-  });
-});
-
-describe("Today workspace tablist", () => {
-  it("exposes exactly one selected tab with a roving tabindex", () => {
-    render(
-      <>
-        <TaskWorkspaceTabs active="deadlines" onActivate={vi.fn()} />
-        {["today", "upcoming", "overdue", "deadlines", "views"].map((mode) => (
-          <div key={mode} id={`task-panel-${mode}`} role="tabpanel" aria-labelledby={`task-tab-${mode}`} />
-        ))}
-      </>,
-    );
-    const tabs = screen.getAllByRole("tab");
-    expect(tabs.filter((tab) => tab.getAttribute("aria-selected") === "true")).toHaveLength(1);
-    // Roving tabindex: exactly one stop, so Tab reaches the tablist and arrows move within it.
-    expect(tabs.filter((tab) => tab.getAttribute("tabindex") === "0")).toHaveLength(1);
-    expect(screen.getByRole("tab", { selected: true })).toHaveAccessibleName("Deadlines");
   });
 });
