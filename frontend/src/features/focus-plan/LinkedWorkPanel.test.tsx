@@ -49,7 +49,7 @@ describe("LinkedWorkPanel", () => {
       plan_id: "plan-1",
       anchor_local_date: "2026-08-06",
     });
-    expect(screen.getByText(/1 linked task and 1 recurring series/)).toBeInTheDocument();
+    expect(screen.getByText(/1 task · 1 recurring series/)).toBeInTheDocument();
 
     const rows = within(list).getAllByRole("listitem");
     expect(rows).toHaveLength(2);
@@ -57,7 +57,6 @@ describe("LinkedWorkPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: /Write the essay/ }));
     expect(navigate).toHaveBeenCalledWith("2026-08-10", "task-1", null);
 
-    // A recurring series navigates by series identity at its projected occurrence date.
     fireEvent.click(screen.getByRole("button", { name: /Weekly review/ }));
     expect(navigate).toHaveBeenCalledWith("2026-08-13", null, "series-1");
 
@@ -74,9 +73,7 @@ describe("LinkedWorkPanel", () => {
     const view = render(
       <LinkedWorkPanel planId="plan-1" anchorLocalDate="2026-08-06" />,
     );
-    expect(
-      await screen.findByText("No Tasks reference this Plan yet."),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("No linked work yet.")).toBeInTheDocument();
     view.unmount();
 
     vi.mocked(commands.getFocusPlanLinkedWork).mockRejectedValue(new Error("nope"));
