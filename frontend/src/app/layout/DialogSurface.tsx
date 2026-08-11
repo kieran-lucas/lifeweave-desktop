@@ -5,8 +5,8 @@ import { useModalFocusTrap } from "../useModalFocusTrap";
 import * as styles from "./layout.css";
 
 /**
- * Modal geometry (ADR 0044). Behaviour remains owned by each dialog; this shared shell only owns
- * containment and the visual hook used by the current matte-painted material authority.
+ * Shared dialog containment. Individual workflows own their content architecture; this shell stays
+ * deliberately neutral so a dialog never imposes a visual world on the feature using it.
  */
 export type DialogWidth = "compact" | "standard" | "wide";
 
@@ -16,9 +16,9 @@ const matteBackdrop: CSSProperties = {
 };
 
 const matteSurface: CSSProperties = {
-  backgroundColor: "var(--paint-sheet-strong)",
-  backgroundImage: "var(--paint-grain-fine), var(--paint-wash-blue)",
-  borderColor: "var(--paint-edge-strong)",
+  backgroundColor: "#FFFFFF",
+  backgroundImage: "var(--paint-grain-fine)",
+  borderColor: "#D7D7D7",
 };
 
 export function DialogBackdrop({
