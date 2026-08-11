@@ -57,17 +57,17 @@ export const ring = style({
   transition: `background ${duration.check} ${easing.standard}, border-color ${duration.check} ${easing.standard}, transform ${duration.check} ${easing.standard}`,
   selectors: {
     "&::before": {
-      content: "",
+      content: '""',
       position: "absolute",
       inset: 3,
       borderRadius: "inherit",
       background: "#111827",
       transformOrigin: "bottom",
       transform: "scaleY(0)",
-      transition: `transform 240ms cubic-bezier(.2,.8,.2,1)`,
+      transition: "transform 240ms cubic-bezier(.2,.8,.2,1)",
     },
     "&::after": {
-      content: "",
+      content: '""',
       position: "absolute",
       left: 6,
       top: 5,
@@ -150,7 +150,7 @@ export const optionMark = style({
   overflow: "hidden",
   selectors: {
     "&::before": {
-      content: "",
+      content: '""',
       position: "absolute",
       inset: 2,
       borderRadius: "50%",
