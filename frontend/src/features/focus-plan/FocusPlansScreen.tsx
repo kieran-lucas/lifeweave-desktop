@@ -21,7 +21,7 @@ import { invalidateTaskSavedViewReferenceData } from "../task/saved-views/savedV
 import { Icon, iconChevronLeft, iconPlans } from "../../design-system/visual/icons";
 import { EmptyState, SkeletonList } from "../../design-system/primitives/States";
 
-type FocusPlanEntryRequest = {
+export type FocusPlanEntryRequest = {
   requestId: string;
   planId: string;
 };
