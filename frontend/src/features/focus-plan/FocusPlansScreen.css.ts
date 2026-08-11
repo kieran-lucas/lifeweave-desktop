@@ -91,7 +91,7 @@ export const quickCreate = style({
   backgroundImage: "var(--paint-grain-fine)",
   boxShadow: "0 10px 30px rgba(0,0,0,.05)",
   "@media": {
-    "(max-width: 620px)": { gridTemplateColumns: "1fr auto", selectors: { "& > input": { gridColumn: "1 / -1" } } },
+    "(max-width: 620px)": { gridTemplateColumns: "1fr auto" },
   },
 });
 globalStyle(`${quickCreate} > input`, {
@@ -104,6 +104,9 @@ globalStyle(`${quickCreate} > input`, {
   color: "#111111",
   fontSize: 15,
   fontWeight: 600,
+  "@media": {
+    "(max-width: 620px)": { gridColumn: "1 / -1" },
+  },
 });
 globalStyle(`${quickCreate} > input::placeholder`, { color: "#999999" });
 
