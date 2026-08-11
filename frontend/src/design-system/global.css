@@ -35,8 +35,8 @@
   --paint-edge-strong: #C6C6C6;
   --paint-fiber: rgba(17, 17, 17, 0.055);
   --paint-fiber-light: rgba(255, 255, 255, 0.80);
-  --paint-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44'%3E%3Cg fill='%23111111' fill-opacity='.032'%3E%3Ccircle cx='4' cy='7' r='.65'/%3E%3Ccircle cx='23' cy='10' r='.55'/%3E%3Ccircle cx='35' cy='29' r='.6'/%3E%3Ccircle cx='12' cy='36' r='.5'/%3E%3C/g%3E%3C/svg%3E");
-  --paint-grain-fine: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='31' height='31' viewBox='0 0 31 31'%3E%3Cg fill='%23111111' fill-opacity='.021'%3E%3Ccircle cx='3' cy='5' r='.5'/%3E%3Ccircle cx='17' cy='9' r='.45'/%3E%3Ccircle cx='26' cy='21' r='.5'/%3E%3Ccircle cx='10' cy='26' r='.45'/%3E%3C/g%3E%3C/svg%3E");
+  --paint-grain: repeating-linear-gradient(0deg, rgba(17, 17, 17, 0.018) 0 1px, transparent 1px 5px);
+  --paint-grain-fine: repeating-linear-gradient(0deg, rgba(17, 17, 17, 0.012) 0 1px, transparent 1px 4px);
   --paint-wash-blue: none;
   --paint-wash-violet: none;
   --paint-wash-rose: none;
