@@ -1,257 +1,485 @@
-import { globalStyle, keyframes, style } from "@vanilla-extract/css";
-
-import { space } from "../../app/layout/tokens.css";
-import { splitWorkspace } from "../../app/layout/layout.css";
-import { text } from "../../design-system/visual/typography.css";
-import { tab as sharedTab } from "../../design-system/primitives/navigation.css";
+import { globalStyle, style } from "@vanilla-extract/css";
 import { duration, easing } from "../../design-system/visual/motion.css";
 
-const prismFloat = keyframes({
-  "0%, 100%": { transform: "translate3d(0, 0, 0) rotate(14deg)", opacity: 0.42 },
-  "50%": { transform: "translate3d(-12px, 15px, 0) rotate(19deg)", opacity: 0.66 },
-});
-
-const focusSweep = keyframes({
-  "0%, 100%": { backgroundPosition: "0% 50%" },
-  "50%": { backgroundPosition: "100% 50%" },
-});
-
-export const heading = style({ margin: 0, ...text.display, color: "var(--text-primary)", letterSpacing: "-0.045em", textShadow: "0 1px 0 rgba(255,255,255,.82)" });
-export const lede = style({ margin: 0, color: "var(--text-muted)", maxInlineSize: "58ch" });
-export const createForm = style({
-  display: "grid",
-  gridTemplateColumns: "minmax(10rem, 1fr) auto",
-  alignItems: "center",
-  gap: space.control,
-  inlineSize: "min(22rem, 100%)",
-  minInlineSize: 0,
-  padding: 4,
-  border: "1px solid rgba(188,204,229,.72)",
-  borderRadius: "14px",
-  background: "rgba(255,255,255,.62)",
-  backdropFilter: "blur(14px)",
-  boxShadow: "var(--glow-compact)",
-  "@media": { "(max-width: 700px)": { inlineSize: "100%" } },
-});
-export const portfolios = style({ display: "flex", gap: space.x3, flexWrap: "wrap", borderBottom: "1px solid rgba(191,207,231,.74)" });
-export const tab = sharedTab;
-
-export const workspace = style([
-  splitWorkspace,
-  {
-    position: "relative",
-    isolation: "isolate",
-    vars: { "--lw-split-columns": "minmax(220px, 288px) minmax(0, 1fr)" },
-    gap: space.x5,
-    padding: "clamp(16px, 2vw, 26px)",
-    border: "1px solid rgba(181, 201, 231, 0.72)",
-    borderRadius: "26px",
-    background:
-      "linear-gradient(145deg, rgba(255,255,255,.86), rgba(245,248,255,.72)), radial-gradient(circle at 86% 12%, rgba(120,102,255,.13), transparent 34%), radial-gradient(circle at 8% 92%, rgba(79,179,244,.09), transparent 28%)",
-    backdropFilter: "blur(18px) saturate(1.08)",
-    boxShadow: "var(--glow-hero), inset 0 1px 0 rgba(255,255,255,.90)",
-    selectors: {
-      "&::before": {
-        content: '""',
-        position: "absolute",
-        zIndex: 0,
-        inlineSize: 210,
-        blockSize: 300,
-        insetInlineEnd: "5%",
-        insetBlockStart: "-105px",
-        border: "1px solid rgba(112,132,224,.18)",
-        clipPath: "polygon(50% 0, 100% 74%, 52% 100%, 0 72%)",
-        background:
-          "linear-gradient(145deg, rgba(255,255,255,.52), rgba(115,143,255,.11) 38%, rgba(158,108,255,.10) 68%, rgba(255,255,255,.16))",
-        boxShadow: "inset 0 0 28px rgba(255,255,255,.64)",
-        filter: "blur(.2px)",
-        animation: `${prismFloat} 11s ease-in-out infinite`,
-        pointerEvents: "none",
-      },
-      "&::after": {
-        content: '""',
-        position: "absolute",
-        zIndex: 0,
-        inlineSize: 480,
-        blockSize: 190,
-        insetInlineEnd: "-190px",
-        insetBlockEnd: "-90px",
-        borderRadius: "50%",
-        border: "1px solid rgba(91,123,211,.11)",
-        boxShadow: "0 0 0 40px rgba(108,140,221,.025), 0 0 0 78px rgba(152,113,230,.018)",
-        transform: "rotate(-11deg)",
-        pointerEvents: "none",
-      },
-    },
-    "@media": {
-      "(prefers-reduced-motion: reduce)": { selectors: { "&::before": { animation: "none" } } },
-      "(forced-colors: active)": {
-        background: "Canvas",
-        borderColor: "CanvasText",
-        boxShadow: "none",
-        selectors: { "&::before": { display: "none" }, "&::after": { display: "none" } },
-      },
-    },
-  },
-]);
-globalStyle(`${workspace} > *`, { position: "relative", zIndex: 1 });
-
-export const listPanel = style({
-  padding: 6,
-  border: "1px solid rgba(190,205,229,.72)",
-  borderRadius: "17px",
-  background: "rgba(250,252,255,.68)",
-  backdropFilter: "blur(14px)",
-  boxShadow: "var(--glow-crystal)",
-  maxHeight: "calc(100vh - 220px)",
-  overflowY: "auto",
-  scrollbarGutter: "stable",
-  "@media": { "(max-width: 700px)": { maxHeight: "none" } },
-});
-export const planList = style({ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 3 });
-
-export const planButton = style({
-  position: "relative",
-  overflow: "hidden",
-  width: "100%",
-  display: "grid",
-  gap: 4,
-  textAlign: "left",
-  padding: "12px 11px",
-  border: "1px solid transparent",
-  borderRadius: "12px",
-  background: "rgba(255,255,255,.48)",
-  color: "inherit",
-  cursor: "pointer",
-  boxShadow: "none",
-  transition: `background-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}, border-color ${duration.state} ${easing.standard}, box-shadow ${duration.state} ${easing.standard}, transform ${duration.press} ${easing.standard}`,
+const focusOutline = {
   selectors: {
-    "&:hover": { background: "linear-gradient(110deg, rgba(248,250,255,.96), rgba(235,241,255,.84))", borderColor: "rgba(130,156,225,.30)", transform: "translateY(-1px)", boxShadow: "var(--glow-hover)" },
-    '&[aria-current="true"]': {
-      background: "linear-gradient(125deg, rgba(77,111,255,.97), rgba(111,90,235,.92))",
-      borderColor: "rgba(255,255,255,.64)",
-      color: "#FFFFFF",
-      boxShadow: "0 14px 34px rgba(78,91,214,.24), inset 0 1px 0 rgba(255,255,255,.30)",
-    },
-    '&[aria-current="true"]::after': {
-      content: '""',
-      position: "absolute",
-      inset: 0,
-      background: "linear-gradient(105deg, transparent 20%, rgba(255,255,255,.22) 45%, transparent 68%)",
-      backgroundSize: "220% 100%",
-      animation: `${focusSweep} 6s ease-in-out infinite`,
-      pointerEvents: "none",
-    },
-    "&:focus-visible": { outline: "2px solid var(--focus-ring)", outlineOffset: -2 },
+    "&:focus-visible": { outline: "2px solid #111111", outlineOffset: 2 },
+  },
+} as const;
+
+export const library = style({
+  display: "grid",
+  gap: 24,
+  minInlineSize: 0,
+});
+
+export const libraryHeader = style({
+  minBlockSize: 76,
+  display: "flex",
+  alignItems: "flex-end",
+  justifyContent: "space-between",
+  gap: 20,
+  paddingInline: 3,
+});
+
+export const libraryKicker = style({
+  display: "block",
+  marginBlockEnd: 3,
+  color: "#777777",
+  fontSize: 10,
+  lineHeight: "14px",
+  fontWeight: 760,
+  letterSpacing: ".13em",
+  textTransform: "uppercase",
+});
+
+export const libraryTitle = style({
+  margin: 0,
+  color: "#111111",
+  fontSize: "clamp(34px, 4vw, 50px)",
+  lineHeight: .98,
+  fontWeight: 720,
+  letterSpacing: "-.055em",
+});
+
+export const primaryAction = style({
+  minBlockSize: 36,
+  paddingInline: 14,
+  border: "1px solid #111111",
+  borderRadius: 10,
+  background: "#111111",
+  color: "#FFFFFF",
+  fontSize: 12,
+  fontWeight: 720,
+  cursor: "pointer",
+  transition: `transform ${duration.press} ${easing.standard}, background-color ${duration.state} ${easing.standard}`,
+  selectors: {
+    "&:hover:not(:disabled)": { background: "#292929" },
+    "&:active:not(:disabled)": { transform: "scale(.97)" },
+    "&:disabled": { opacity: .42, cursor: "not-allowed" },
+    "&:focus-visible": { outline: "2px solid #111111", outlineOffset: 3 },
+  },
+});
+
+export const secondaryAction = style({
+  minBlockSize: 36,
+  paddingInline: 13,
+  border: "1px solid #D3D3D3",
+  borderRadius: 10,
+  background: "#FFFFFF",
+  color: "#222222",
+  fontSize: 12,
+  fontWeight: 680,
+  cursor: "pointer",
+  transition: `background-color ${duration.state} ${easing.standard}, transform ${duration.press} ${easing.standard}`,
+  selectors: {
+    "&:hover": { background: "#F3F3F3" },
+    "&:active": { transform: "scale(.97)" },
+    "&:focus-visible": { outline: "2px solid #111111", outlineOffset: 2 },
+  },
+});
+
+export const quickCreate = style({
+  display: "grid",
+  gridTemplateColumns: "minmax(0, 1fr) auto auto",
+  alignItems: "center",
+  gap: 8,
+  padding: 8,
+  border: "1px solid #D5D5D5",
+  borderRadius: 14,
+  backgroundColor: "#FFFFFF",
+  backgroundImage: "var(--paint-grain-fine)",
+  boxShadow: "0 10px 30px rgba(0,0,0,.05)",
+  "@media": {
+    "(max-width: 620px)": { gridTemplateColumns: "1fr auto", selectors: { "& > input": { gridColumn: "1 / -1" } } },
+  },
+});
+globalStyle(`${quickCreate} > input`, {
+  minBlockSize: 40,
+  minInlineSize: 0,
+  paddingInline: 10,
+  border: 0,
+  outline: 0,
+  background: "transparent",
+  color: "#111111",
+  fontSize: 15,
+  fontWeight: 600,
+});
+globalStyle(`${quickCreate} > input::placeholder`, { color: "#999999" });
+
+export const error = style({
+  margin: 0,
+  padding: "10px 12px",
+  border: "1px solid #BEBEBE",
+  borderRadius: 10,
+  background: "#F7F7F7",
+  color: "#222222",
+  fontSize: 12,
+});
+
+export const portfolioNav = style({
+  display: "flex",
+  alignItems: "center",
+  gap: 18,
+  minInlineSize: 0,
+  overflowX: "auto",
+  borderBottom: "1px solid #E0E0E0",
+});
+globalStyle(`${portfolioNav} > button`, {
+  position: "relative",
+  minBlockSize: 38,
+  padding: "0 1px",
+  border: 0,
+  background: "transparent",
+  color: "#858585",
+  fontSize: 12,
+  fontWeight: 680,
+  cursor: "pointer",
+});
+globalStyle(`${portfolioNav} > button:hover`, { color: "#111111" });
+globalStyle(`${portfolioNav} > button[aria-current="page"]`, { color: "#111111" });
+globalStyle(`${portfolioNav} > button[aria-current="page"]::after`, {
+  content: '""',
+  position: "absolute",
+  insetInline: 0,
+  insetBlockEnd: -1,
+  blockSize: 2,
+  background: "#111111",
+});
+globalStyle(`${portfolioNav} > button:focus-visible`, { outline: "2px solid #111111", outlineOffset: 2 });
+
+export const planCollection = style({
+  display: "grid",
+  minInlineSize: 0,
+  borderBlockStart: "1px solid #E4E4E4",
+});
+
+export const planRow = style({
+  display: "grid",
+  gridTemplateColumns: "44px minmax(0, 1fr) auto 26px",
+  alignItems: "center",
+  gap: 14,
+  minBlockSize: 76,
+  padding: "12px 8px",
+  border: 0,
+  borderBlockEnd: "1px solid #E4E4E4",
+  background: "transparent",
+  color: "#111111",
+  textAlign: "left",
+  cursor: "pointer",
+  transition: `background-color ${duration.state} ${easing.standard}, padding-inline ${duration.state} ${easing.standard}`,
+  selectors: {
+    "&:hover": { background: "#F7F7F7", paddingInline: 12 },
+    "&:focus-visible": { outline: "2px solid #111111", outlineOffset: -2 },
   },
   "@media": {
-    "(prefers-reduced-motion: reduce)": { selectors: { "&:hover": { transform: "none" }, '&[aria-current="true"]::after': { animation: "none" } } },
-    "(forced-colors: active)": { selectors: { '&[aria-current="true"]': { background: "Highlight", color: "HighlightText", boxShadow: "none" }, '&[aria-current="true"]::after': { display: "none" } } },
+    "(max-width: 620px)": { gridTemplateColumns: "34px minmax(0, 1fr) 24px" },
   },
 });
-globalStyle(`${planButton} > strong`, { position: "relative", zIndex: 1, ...text.row, fontWeight: 680, letterSpacing: "-0.012em" });
-globalStyle(`${planButton} > span`, { position: "relative", zIndex: 1, ...text.metadata, color: "var(--text-muted)" });
-globalStyle(`${planButton}[aria-current="true"] > span`, { color: "rgba(255,255,255,.78)" });
 
-export const detailPanel = style({
-  display: "flex",
-  flexDirection: "column",
-  gap: space.x5,
-  minInlineSize: 0,
-  padding: "clamp(18px, 2.4vw, 30px)",
-  border: "1px solid rgba(190,205,229,.72)",
-  borderRadius: "19px",
-  background: "rgba(255,255,255,.76)",
-  backdropFilter: "blur(16px)",
-  boxShadow: "var(--glow-crystal-strong)",
+export const planOrdinal = style({
+  color: "#A4A4A4",
+  fontSize: 10,
+  lineHeight: "14px",
+  fontWeight: 720,
+  fontVariantNumeric: "tabular-nums",
+  letterSpacing: ".08em",
 });
-export const detailHeader = style({
-  position: "relative",
+
+export const planCopy = style({ display: "grid", gap: 3, minInlineSize: 0 });
+globalStyle(`${planCopy} > strong`, {
+  overflow: "hidden",
+  color: "#171717",
+  fontSize: 15,
+  lineHeight: "20px",
+  fontWeight: 680,
+  letterSpacing: "-.015em",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+});
+globalStyle(`${planCopy} > small`, {
+  overflow: "hidden",
+  color: "#777777",
+  fontSize: 11,
+  lineHeight: "15px",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+});
+
+export const planStatus = style({
+  padding: "4px 8px",
+  border: "1px solid #DADADA",
+  borderRadius: 999,
+  color: "#626262",
+  fontSize: 10,
+  fontWeight: 700,
+  textTransform: "capitalize",
+  "@media": { "(max-width: 620px)": { display: "none" } },
+});
+
+export const planArrow = style({
+  color: "#A6A6A6",
+  fontSize: 15,
+  transition: `transform ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}`,
+  selectors: { [`${planRow}:hover &`]: { color: "#111111", transform: "translate(2px,-2px)" } },
+});
+
+export const document = style({
+  maxInlineSize: 880,
+  marginInline: "auto",
   display: "grid",
-  gap: 4,
+  gap: 0,
   minInlineSize: 0,
-  paddingBlockEnd: space.x4,
-  borderBlockEnd: "1px solid rgba(185,202,229,.72)",
-  selectors: {
-    "&::after": {
-      content: '""',
-      position: "absolute",
-      insetInlineStart: 0,
-      insetBlockEnd: -1,
-      inlineSize: 88,
-      blockSize: 2,
-      borderRadius: 999,
-      background: "linear-gradient(90deg, var(--accent), var(--accent-violet), transparent)",
-      boxShadow: "var(--glow-dot)",
-    },
-  },
+  color: "#111111",
 });
-globalStyle(`${detailHeader} h2`, { ...text.objectTitle, margin: 0, fontSize: "clamp(1.45rem, 2vw, 1.9rem)", letterSpacing: "-0.03em", color: "var(--text-primary)" });
-export const kicker = style({ ...text.eyebrow, margin: 0, color: "var(--accent-muted)", textTransform: "uppercase", letterSpacing: "0.08em" });
-export const muted = style({ ...text.metadata, color: "var(--text-muted)", margin: 0 });
 
-export const brief = style({ display: "grid", gap: space.x4, border: 0, padding: 0, margin: 0, minInlineSize: 0 });
-export const field = style({ display: "grid", gap: 7, minInlineSize: 0, color: "var(--text-muted)", fontSize: "0.75rem", fontWeight: 680, letterSpacing: "0.025em" });
-export const input = style({
-  width: "100%",
-  boxSizing: "border-box",
-  minInlineSize: 0,
-  minBlockSize: 39,
-  padding: "9px 11px",
-  border: "1px solid rgba(185,202,229,.80)",
-  borderRadius: "11px",
-  outline: 0,
-  background: "rgba(250,252,255,.82)",
-  color: "var(--text-primary)",
-  boxShadow: "inset 0 1px 0 rgba(255,255,255,.88)",
-  transition: `border-color ${duration.state} ${easing.standard}, background-color ${duration.state} ${easing.standard}, box-shadow ${duration.state} ${easing.standard}`,
+export const documentHeader = style({
+  minBlockSize: 54,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 16,
+  borderBottom: "1px solid #E3E3E3",
+});
+
+export const backButton = style({
+  minBlockSize: 34,
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 5,
+  padding: "0 7px 0 4px",
+  border: 0,
+  borderRadius: 8,
+  background: "transparent",
+  color: "#666666",
+  fontSize: 12,
+  fontWeight: 680,
+  cursor: "pointer",
   selectors: {
-    "&:hover": { borderColor: "rgba(119,145,216,.52)" },
-    "&:focus": { borderColor: "var(--accent)", background: "#FFFFFF", boxShadow: "0 0 0 3px rgba(78,111,255,.10), inset 0 1px 0 rgba(255,255,255,.9)" },
+    "&:hover": { color: "#111111", background: "#F4F4F4" },
+    "&:focus-visible": { outline: "2px solid #111111", outlineOffset: 2 },
   },
 });
-export const createInput = style([input, { inlineSize: "100%", border: 0, background: "transparent", boxShadow: "none", selectors: { "&:focus": { boxShadow: "none", background: "transparent" } } }]);
-export const outcome = style([
-  input,
+
+export const documentActions = style({ display: "flex", alignItems: "center", gap: 7 });
+
+export const hero = style({
+  display: "grid",
+  gap: 16,
+  paddingBlock: "clamp(34px, 7vw, 72px) 34px",
+  borderBottom: "1px solid #E3E3E3",
+});
+
+export const lifecycle = style({
+  justifySelf: "start",
+  padding: "4px 8px",
+  border: "1px solid #D5D5D5",
+  borderRadius: 999,
+  color: "#666666",
+  fontSize: 9,
+  lineHeight: "12px",
+  fontWeight: 760,
+  letterSpacing: ".09em",
+  textTransform: "uppercase",
+});
+
+export const documentTitle = style({
+  maxInlineSize: "18ch",
+  margin: 0,
+  color: "#111111",
+  fontSize: "clamp(38px, 6vw, 68px)",
+  lineHeight: .97,
+  fontWeight: 700,
+  letterSpacing: "-.06em",
+  overflowWrap: "anywhere",
+});
+
+export const titleInput = style({
+  inlineSize: "100%",
+  minInlineSize: 0,
+  padding: 0,
+  border: 0,
+  borderBottom: "1px solid #BEBEBE",
+  outline: 0,
+  background: "transparent",
+  color: "#111111",
+  fontSize: "clamp(38px, 6vw, 68px)",
+  lineHeight: 1.04,
+  fontWeight: 700,
+  letterSpacing: "-.06em",
+  selectors: { "&:focus": { borderBottomColor: "#111111" } },
+});
+
+export const outcomeStatement = style({
+  maxInlineSize: "58ch",
+  margin: 0,
+  color: "#4D4D4D",
+  fontSize: "clamp(17px, 2vw, 21px)",
+  lineHeight: 1.55,
+  fontWeight: 450,
+  letterSpacing: "-.012em",
+});
+
+export const outcomeEditor = style({
+  inlineSize: "100%",
+  minBlockSize: 120,
+  resize: "vertical",
+  padding: 12,
+  border: "1px solid #D2D2D2",
+  borderRadius: 10,
+  outline: 0,
+  background: "#FAFAFA",
+  color: "#222222",
+  fontSize: 17,
+  lineHeight: 1.55,
+  selectors: { "&:focus": { borderColor: "#111111", background: "#FFFFFF" } },
+});
+
+export const factRow = style({
+  display: "grid",
+  gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+  gap: 0,
+  borderBottom: "1px solid #E3E3E3",
+  "@media": { "(max-width: 680px)": { gridTemplateColumns: "1fr" } },
+});
+globalStyle(`${factRow} > div`, { display: "grid", gap: 5, padding: "18px 16px 18px 0" });
+globalStyle(`${factRow} > div:not(:first-child)`, { paddingInlineStart: 16, borderInlineStart: "1px solid #E3E3E3" });
+globalStyle(`${factRow} > div > span`, { color: "#8A8A8A", fontSize: 9, fontWeight: 760, letterSpacing: ".09em", textTransform: "uppercase" });
+globalStyle(`${factRow} > div > strong`, { color: "#333333", fontSize: 12, fontWeight: 650 });
+
+export const factEditor = style({
+  display: "grid",
+  gap: 6,
+  padding: "14px 12px",
+  borderInlineStart: "1px solid #E3E3E3",
+  color: "#858585",
+  fontSize: 9,
+  fontWeight: 760,
+  letterSpacing: ".08em",
+  textTransform: "uppercase",
+});
+globalStyle(`${factEditor} > input, ${factEditor} > select`, {
+  minInlineSize: 0,
+  minBlockSize: 34,
+  padding: "7px 8px",
+  border: "1px solid #D3D3D3",
+  borderRadius: 8,
+  background: "#FFFFFF",
+  color: "#222222",
+  fontSize: 11,
+  textTransform: "none",
+  letterSpacing: 0,
+});
+
+export const criteriaSection = style({ paddingBlock: "34px 40px", borderBottom: "1px solid #E3E3E3" });
+export const linkedSection = style({ paddingBlock: "34px 40px", borderBottom: "1px solid #E3E3E3" });
+
+export const sectionHeading = style({
+  display: "grid",
+  gridTemplateColumns: "36px 1fr",
+  alignItems: "baseline",
+  gap: 10,
+  marginBlockEnd: 22,
+});
+export const sectionIndex = style({ color: "#AAAAAA", fontSize: 9, fontWeight: 760, letterSpacing: ".08em" });
+globalStyle(`${sectionHeading} > h2`, { margin: 0, color: "#222222", fontSize: 14, lineHeight: "20px", fontWeight: 720, letterSpacing: "-.012em" });
+
+export const criteriaList = style({ listStyle: "none", display: "grid", gap: 0, margin: 0, padding: 0 });
+globalStyle(`${criteriaList} > li`, { display: "grid", gridTemplateColumns: "36px minmax(0,1fr)", gap: 10, paddingBlock: 12, borderBottom: "1px solid #ECECEC" });
+globalStyle(`${criteriaList} > li > span`, { color: "#A3A3A3", fontSize: 9, lineHeight: "19px", fontWeight: 720 });
+globalStyle(`${criteriaList} > li > p`, { margin: 0, color: "#333333", fontSize: 14, lineHeight: 1.45 });
+
+export const criteriaEditor = style({
+  inlineSize: "100%",
+  minBlockSize: 130,
+  boxSizing: "border-box",
+  resize: "vertical",
+  padding: 12,
+  border: "1px solid #D3D3D3",
+  borderRadius: 10,
+  outline: 0,
+  background: "#FAFAFA",
+  color: "#222222",
+  lineHeight: 1.55,
+  selectors: { "&:focus": { borderColor: "#111111", background: "#FFFFFF" } },
+});
+
+export const missingContent = style({ margin: 0, color: "#999999", fontSize: 13 });
+
+export const documentFooter = style({
+  minBlockSize: 72,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 14,
+});
+
+export const startDateEditor = style({ display: "flex", alignItems: "center", gap: 8, color: "#777777", fontSize: 10, fontWeight: 700 });
+globalStyle(`${startDateEditor} > input`, { minBlockSize: 32, paddingInline: 7, border: "1px solid #D3D3D3", borderRadius: 8, background: "#FFFFFF" });
+
+export const archiveAction = style({
+  minBlockSize: 34,
+  paddingInline: 9,
+  border: 0,
+  borderRadius: 8,
+  background: "transparent",
+  color: "#8A8A8A",
+  fontSize: 11,
+  fontWeight: 650,
+  cursor: "pointer",
+  selectors: { "&:hover": { background: "#F2F2F2", color: "#222222" }, "&:focus-visible": { outline: "2px solid #111111", outlineOffset: 2 } },
+});
+
+/* Linked work is deliberately list-like, not a nested card dashboard. */
+export const linkedMeta = style({ margin: "-12px 0 16px 46px", color: "#858585", fontSize: 11 });
+export const linkedList = style({ listStyle: "none", display: "grid", gap: 0, margin: 0, padding: 0 });
+export const linkedRow = style([
+  focusOutline,
   {
-    minHeight: "126px",
-    resize: "vertical",
-    fontSize: "1.02rem",
-    lineHeight: 1.62,
-    fontWeight: 520,
-    background: "linear-gradient(145deg, rgba(252,253,255,.94), rgba(239,244,255,.82))",
-    borderColor: "rgba(145,166,224,.48)",
-    boxShadow: "var(--glow-crystal)",
+    inlineSize: "100%",
+    minBlockSize: 54,
+    display: "grid",
+    gridTemplateColumns: "minmax(0,1fr) auto",
+    alignItems: "center",
+    gap: 16,
+    padding: "10px 8px 10px 46px",
+    border: 0,
+    borderBottom: "1px solid #ECECEC",
+    background: "transparent",
+    color: "#222222",
+    textAlign: "left",
+    cursor: "pointer",
+    selectors: { "&:hover": { background: "#F8F8F8" } },
   },
 ]);
-export const criteria = style([input, { minHeight: "96px", resize: "vertical", lineHeight: 1.55 }]);
-export const twoColumns = style({ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: space.x3, "@media": { "(max-width: 700px)": { gridTemplateColumns: "1fr" } } });
-export const actions = style({ display: "flex", gap: space.x2, flexWrap: "wrap" });
+export const linkedCopy = style({ display: "grid", gap: 2, minInlineSize: 0 });
+globalStyle(`${linkedCopy} > strong`, { overflow: "hidden", fontSize: 13, fontWeight: 670, textOverflow: "ellipsis", whiteSpace: "nowrap" });
+globalStyle(`${linkedCopy} > span`, { color: "#858585", fontSize: 10 });
+export const linkedArrow = style({ color: "#A0A0A0", fontSize: 13 });
 
-globalStyle(`${actions} > button:first-child`, { boxShadow: "var(--glow-primary)" });
-
-export const advanced = style({
-  border: "1px solid rgba(190,205,229,.68)",
-  borderRadius: "12px",
-  padding: space.x2,
-  background: "rgba(247,250,255,.56)",
-});
-globalStyle(`${advanced} > summary`, { cursor: "pointer", color: "var(--text-muted)", fontSize: "0.8125rem", fontWeight: 680, listStylePosition: "inside" });
-export const advancedBody = style({ display: "grid", gap: space.x3, padding: space.x3, paddingBlockEnd: 0 });
-export const advancedActions = style({ display: "flex", gap: space.x2, flexWrap: "wrap", alignItems: "center" });
-
-export const error = style({ color: "var(--danger)", padding: "9px 11px", border: "1px solid rgba(217,78,114,.40)", borderRadius: "var(--radius-control)", backgroundColor: "rgba(255,240,244,.90)", boxShadow: "var(--glow-danger)" });
-export const emptyState = style({ display: "grid", gap: 7, alignSelf: "center", maxInlineSize: "28rem", color: "var(--text-muted)", textAlign: "center", padding: "clamp(32px, 8vh, 72px) 20px" });
-globalStyle(`${emptyState} > strong`, { color: "var(--text-primary)", fontSize: "1rem" });
-
-/* Compatibility styles for the retained but no-longer-primary ReviewsPanel. */
-export const fieldset = style({ display: "grid", gap: space.x3, border: 0, borderBlockStart: "1px solid var(--border-subtle)", padding: `${space.x3} 0 0`, margin: 0 });
-export const textarea = style([input, { minHeight: "94px", resize: "vertical" }]);
-
-globalStyle(`${detailPanel} > section`, { borderBlockStart: "1px solid rgba(190,205,229,.70)", paddingBlockStart: space.x4 });
-globalStyle(`${detailPanel} > section > h3`, { ...text.sectionTitle, margin: `0 0 ${space.x2}`, color: "var(--text-primary)" });
-globalStyle(`ol${planList} > li`, { paddingBlock: space.x3, borderBlockEnd: "1px solid var(--border-subtle)" });
-globalStyle(`ol${planList} article h4`, { margin: 0 });
-globalStyle(`ol${planList} article p`, { margin: `${space.x2} 0 0`, maxInlineSize: "68ch" });
+/* Compatibility styles retained for the non-primary ReviewsPanel. */
+export const muted = style({ margin: 0, color: "#858585", fontSize: 11, lineHeight: 1.45 });
+export const fieldset = style({ display: "grid", gap: 12, border: "1px solid #E1E1E1", borderRadius: 10, padding: 12, margin: 0 });
+export const input = style({ minBlockSize: 36, padding: "7px 9px", border: "1px solid #D3D3D3", borderRadius: 8, background: "#FFFFFF", color: "#222222" });
+export const textarea = style([input, { minBlockSize: 88, resize: "vertical" }]);
+export const actions = style({ display: "flex", gap: 8, flexWrap: "wrap" });
+export const planList = style({ listStyle: "none", display: "grid", gap: 6, margin: 0, padding: 0 });
+export const planButton = style([
+  focusOutline,
+  {
+    inlineSize: "100%",
+    display: "grid",
+    gap: 2,
+    padding: "9px 10px",
+    border: "1px solid #E2E2E2",
+    borderRadius: 9,
+    background: "#FFFFFF",
+    color: "#222222",
+    textAlign: "left",
+    cursor: "pointer",
+  },
+]);
+globalStyle(`${planButton} > strong`, { fontSize: 12, fontWeight: 680 });
+globalStyle(`${planButton} > span`, { color: "#858585", fontSize: 10 });
 
 export { srOnly } from "../../design-system/primitives/utilities.css";
