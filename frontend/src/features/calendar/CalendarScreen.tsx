@@ -4,11 +4,15 @@ import { getDayOfWeek, getLocalTimeZone, parseDate } from "@internationalized/da
 import type { CalendarDayProjection } from "../../ipc/generated/CalendarDayProjection";
 import { getMonthProjection } from "../../ipc/commands";
 import * as styles from "./CalendarScreen.css";
-import { PageFrame, PageHeader } from "../../app/layout/PageFrame";
+import { PageFrame } from "../../app/layout/PageFrame";
 import { LoadingRow } from "../../design-system/primitives/States";
 import { Icon, iconChevronLeft, iconChevronRight } from "../../design-system/visual/icons";
 
-type Props = { selectedDate: string; today: string; onActivateDate: (date: string) => void };
+type Props = {
+  selectedDate: string;
+  today: string;
+  onActivateDate: (date: string) => void;
+};
 
 function formatDuration(minutes: number) {
   const hours = Math.floor(minutes / 60);
@@ -24,22 +28,29 @@ export function CalendarScreen({ selectedDate, today, onActivateDate }: Props) {
   const [focusedDate, setFocusedDate] = useState(selectedDate);
   const refs = useRef(new Map<string, HTMLButtonElement>());
   const client = useQueryClient();
+
   const query = useQuery({
     queryKey: ["month-projection", viewMonth.year, viewMonth.month, selectedDate, today],
     queryFn: () => getMonthProjection(viewMonth.year, viewMonth.month, selectedDate, today),
     placeholderData: (previous) => previous,
   });
 
+  /*
+   * A month is always six rows. The extra row is intentional: changing months must never move
+   * the user's hands, toolbar, or surrounding app chrome just because a month happens to need a
+   * fifth or sixth week. Stable geometry is more valuable than reclaiming a few pixels.
+   */
   const grid = useMemo(() => {
     const offset = getDayOfWeek(viewMonth, locale, "mon");
     const start = viewMonth.subtract({ days: offset });
-    const count = Math.ceil((offset + viewMonth.calendar.getDaysInMonth(viewMonth)) / 7) * 7;
-    return Array.from({ length: count }, (_, index) => start.add({ days: index }));
+    return Array.from({ length: 42 }, (_, index) => start.add({ days: index }));
   }, [viewMonth, locale]);
+
   const byDate = useMemo(
     () => new Map((query.data?.days ?? []).map((day) => [day.date, day])),
     [query.data],
   );
+
   const weekday = useMemo(
     () =>
       Array.from({ length: 7 }, (_, index) =>
@@ -49,9 +60,19 @@ export function CalendarScreen({ selectedDate, today, onActivateDate }: Props) {
       ),
     [grid, locale],
   );
-  const monthLabel = new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" }).format(
-    viewMonth.toDate(getLocalTimeZone()),
-  );
+
+  const monthLabel = new Intl.DateTimeFormat(locale, {
+    month: "long",
+    year: "numeric",
+  }).format(viewMonth.toDate(getLocalTimeZone()));
+
+  useEffect(() => {
+    const selected = parseDate(selectedDate);
+    if (selected.year !== viewMonth.year || selected.month !== viewMonth.month) {
+      setViewMonth(selected.set({ day: 1 }));
+      setFocusedDate(selectedDate);
+    }
+  }, [selectedDate]);
 
   useEffect(() => {
     const previous = viewMonth.subtract({ months: 1 });
@@ -70,12 +91,18 @@ export function CalendarScreen({ selectedDate, today, onActivateDate }: Props) {
   }, [client, viewMonth, selectedDate, today]);
 
   useEffect(() => {
-    if (!grid.some((day) => day.toString() === focusedDate)) setFocusedDate(viewMonth.toString());
+    if (!grid.some((day) => day.toString() === focusedDate)) {
+      const fallback = viewMonth.toString();
+      setFocusedDate(fallback);
+      requestAnimationFrame(() => refs.current.get(fallback)?.focus());
+    }
   }, [grid, focusedDate, viewMonth]);
 
   const moveFocus = (next: string) => {
     const date = parseDate(next);
-    if (date.month !== viewMonth.month || date.year !== viewMonth.year) setViewMonth(date.set({ day: 1 }));
+    if (date.month !== viewMonth.month || date.year !== viewMonth.year) {
+      setViewMonth(date.set({ day: 1 }));
+    }
     setFocusedDate(next);
     requestAnimationFrame(() => refs.current.get(next)?.focus());
   };
@@ -84,7 +111,9 @@ export function CalendarScreen({ selectedDate, today, onActivateDate }: Props) {
     const next = viewMonth.add({ months: delta });
     setViewMonth(next);
     const current = parseDate(focusedDate);
-    const clamped = next.set({ day: Math.min(current.day, next.calendar.getDaysInMonth(next)) });
+    const clamped = next.set({
+      day: Math.min(current.day, next.calendar.getDaysInMonth(next)),
+    });
     setFocusedDate(clamped.toString());
     requestAnimationFrame(() => refs.current.get(clamped.toString())?.focus());
   };
@@ -96,8 +125,12 @@ export function CalendarScreen({ selectedDate, today, onActivateDate }: Props) {
     if (event.key === "ArrowRight") next = date.add({ days: 1 }).toString();
     if (event.key === "ArrowUp") next = date.subtract({ weeks: 1 }).toString();
     if (event.key === "ArrowDown") next = date.add({ weeks: 1 }).toString();
-    if (event.key === "Home") next = date.subtract({ days: getDayOfWeek(date, locale, "mon") }).toString();
-    if (event.key === "End") next = date.add({ days: 6 - getDayOfWeek(date, locale, "mon") }).toString();
+    if (event.key === "Home") {
+      next = date.subtract({ days: getDayOfWeek(date, locale, "mon") }).toString();
+    }
+    if (event.key === "End") {
+      next = date.add({ days: 6 - getDayOfWeek(date, locale, "mon") }).toString();
+    }
     if (event.key === "PageUp") {
       event.preventDefault();
       changeMonth(-1);
@@ -123,78 +156,118 @@ export function CalendarScreen({ selectedDate, today, onActivateDate }: Props) {
     const date = parseDate(today);
     setViewMonth(date.set({ day: 1 }));
     setFocusedDate(today);
+    requestAnimationFrame(() => refs.current.get(today)?.focus());
   };
 
   return (
     <PageFrame as="section" type="wide" aria-labelledby="calendar-heading">
-      <PageHeader
-        actions={
-          <div className={styles.actions}>
-            <button className={styles.iconAction} type="button" aria-label="Previous month" onClick={() => changeMonth(-1)}>
-              <Icon d={iconChevronLeft} size={18} />
-            </button>
-            <strong aria-live="polite" className={styles.monthLabel}>{monthLabel}</strong>
-            <button className={styles.iconAction} type="button" aria-label="Next month" onClick={() => changeMonth(1)}>
-              <Icon d={iconChevronRight} size={18} />
-            </button>
-            <button className={styles.todayAction} type="button" onClick={jumpToday}>Today</button>
+      <div className={styles.calendarShell}>
+        <header className={styles.masthead}>
+          <div className={styles.headingBlock}>
+            <span className={styles.kicker}>Calendar</span>
+            <h1 id="calendar-heading" className={styles.monthTitle} tabIndex={-1}>
+              {monthLabel}
+            </h1>
           </div>
-        }
-      >
-        <h1 id="calendar-heading" tabIndex={-1}>Calendar</h1>
-        <p className={styles.lede}>Your month, without the dashboard noise.</p>
-      </PageHeader>
+          <div className={styles.commandBar} role="toolbar" aria-label="Calendar navigation">
+            <button
+              className={styles.iconAction}
+              type="button"
+              aria-label="Previous month"
+              onClick={() => changeMonth(-1)}
+            >
+              <Icon d={iconChevronLeft} size={17} />
+            </button>
+            <button className={styles.todayAction} type="button" onClick={jumpToday}>
+              Today
+            </button>
+            <button
+              className={styles.iconAction}
+              type="button"
+              aria-label="Next month"
+              onClick={() => changeMonth(1)}
+            >
+              <Icon d={iconChevronRight} size={17} />
+            </button>
+          </div>
+        </header>
 
-      {query.isError && <p role="alert">Unable to load the calendar.</p>}
-      {query.isLoading && <LoadingRow label="Loading calendar…" />}
+        {query.isError && (
+          <p role="alert" className={styles.statusMessage}>
+            Unable to load the calendar.
+          </p>
+        )}
+        {query.isLoading && <LoadingRow label="Loading calendar…" />}
 
-      <div role="grid" aria-label={monthLabel} aria-busy={query.isFetching} className={styles.grid}>
-        <div role="row" className={styles.weekdays}>
-          {weekday.map((label, index) => <div role="columnheader" key={`${label}-${index}`}>{label}</div>)}
-        </div>
-        {Array.from({ length: grid.length / 7 }, (_, week) => (
-          <div role="row" className={styles.week} key={week}>
-            {grid.slice(week * 7, week * 7 + 7).map((date) => {
-              const value = date.toString();
-              const day = byDate.get(value);
-              const outside = date.month !== viewMonth.month;
-              return (
-                <div role="gridcell" aria-selected={value === selectedDate} className={styles.cell} key={value}>
-                  <button
-                    ref={(node) => {
-                      if (node) refs.current.set(value, node);
-                      else refs.current.delete(value);
-                    }}
-                    type="button"
-                    tabIndex={value === focusedDate ? 0 : -1}
-                    aria-label={dayLabel(date, day, locale)}
-                    aria-current={value === today ? "date" : undefined}
-                    className={styles.cellButton}
-                    data-outside={outside || undefined}
-                    onFocus={() => setFocusedDate(value)}
-                    onKeyDown={(event) => onKey(event, value)}
-                    onClick={() => onActivateDate(value)}
+        <div
+          role="grid"
+          aria-label={monthLabel}
+          aria-busy={query.isFetching}
+          className={styles.monthCanvas}
+        >
+          <div role="row" className={styles.weekdays}>
+            {weekday.map((label, index) => (
+              <div role="columnheader" key={`${label}-${index}`}>
+                {label}
+              </div>
+            ))}
+          </div>
+
+          {Array.from({ length: 6 }, (_, week) => (
+            <div role="row" className={styles.week} key={week}>
+              {grid.slice(week * 7, week * 7 + 7).map((date) => {
+                const value = date.toString();
+                const day = byDate.get(value);
+                const outside = date.month !== viewMonth.month;
+                const selected = value === selectedDate;
+                const current = value === today;
+                return (
+                  <div
+                    role="gridcell"
+                    aria-selected={selected}
+                    className={styles.cell}
+                    key={value}
                   >
-                    <span className={styles.dayNumber}>{date.day}</span>
-                    {day && day.task_count > 0 && <DaySummary day={day} />}
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        ))}
+                    <button
+                      ref={(node) => {
+                        if (node) refs.current.set(value, node);
+                        else refs.current.delete(value);
+                      }}
+                      type="button"
+                      tabIndex={value === focusedDate ? 0 : -1}
+                      aria-label={dayLabel(date, day, locale)}
+                      aria-current={current ? "date" : undefined}
+                      className={styles.cellButton}
+                      data-outside={outside || undefined}
+                      data-selected={selected || undefined}
+                      data-today={current || undefined}
+                      onFocus={() => setFocusedDate(value)}
+                      onKeyDown={(event) => onKey(event, value)}
+                      onClick={() => onActivateDate(value)}
+                    >
+                      <span className={styles.dayNumber}>{date.day}</span>
+                      {day && day.task_count > 0 && <DaySignal day={day} />}
+                      {selected && <span className={styles.openCue}>Open day</span>}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
       </div>
     </PageFrame>
   );
 }
 
-function DaySummary({ day }: { day: CalendarDayProjection }) {
+function DaySignal({ day }: { day: CalendarDayProjection }) {
+  const load = Math.max(day.morning_load_ratio, day.afternoon_load_ratio, day.evening_load_ratio);
+  const intensity = load >= 0.85 ? "high" : load >= 0.45 ? "medium" : "low";
   return (
-    <div className={styles.summary}>
+    <div className={styles.daySignal} data-intensity={intensity} aria-hidden="true">
       <span className={styles.taskCount}>{day.task_count}</span>
-      <span>{day.task_count === 1 ? "task" : "tasks"}</span>
-      <span className={styles.durationText}>{formatDuration(day.scheduled_minutes)}</span>
-      {day.has_missed && <span className={styles.needsAttention} aria-label="Past scheduled tasks are unevaluated">Review</span>}
+      <span className={styles.activityLine} />
+      {day.has_missed && <span className={styles.attentionDot} />}
     </div>
   );
 }
