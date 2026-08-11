@@ -1,238 +1,230 @@
-import { globalStyle, keyframes, style } from "@vanilla-extract/css";
-import { space } from "../../app/layout/tokens.css";
+import { style } from "@vanilla-extract/css";
 import { duration, easing } from "../../design-system/visual/motion.css";
 
-const orbitDrift = keyframes({
-  "0%, 100%": { transform: "translate3d(0, 0, 0) rotate(-8deg)", opacity: 0.48 },
-  "50%": { transform: "translate3d(-16px, 10px, 0) rotate(-5deg)", opacity: 0.72 },
-});
-
-const selectedPulse = keyframes({
-  "0%, 100%": { boxShadow: "0 0 0 1px rgba(255,255,255,.22), 0 12px 30px rgba(78,111,255,.18)" },
-  "50%": { boxShadow: "0 0 0 1px rgba(255,255,255,.34), 0 16px 38px rgba(104,91,255,.24)" },
-});
-
-export const lede = style({ margin: 0, color: "var(--text-muted)", fontSize: "0.875rem" });
-
-export const actions = style({
-  display: "flex",
-  alignItems: "center",
-  gap: 5,
+export const calendarShell = style({
+  inlineSize: "100%",
   minInlineSize: 0,
-  padding: 4,
-  border: "1px solid rgba(188, 204, 229, 0.70)",
-  borderRadius: "14px",
-  background: "rgba(255,255,255,.64)",
-  backdropFilter: "blur(14px)",
-  boxShadow: "var(--glow-compact)",
+  display: "grid",
+  gridTemplateRows: "auto minmax(0, 1fr)",
+  gap: 22,
+  color: "#111111",
 });
 
-export const monthLabel = style({
-  minInlineSize: "10.5rem",
-  textAlign: "center",
-  fontSize: "0.9375rem",
-  fontWeight: 680,
-  letterSpacing: "-0.018em",
-  fontVariantNumeric: "tabular-nums",
-  color: "var(--text-primary)",
+export const masthead = style({
+  minBlockSize: 74,
+  display: "flex",
+  alignItems: "flex-end",
+  justifyContent: "space-between",
+  gap: 24,
+  paddingInline: 4,
 });
+
+export const headingBlock = style({
+  display: "grid",
+  gap: 3,
+  minInlineSize: 0,
+});
+
+export const kicker = style({
+  color: "#777777",
+  fontSize: 11,
+  lineHeight: "16px",
+  fontWeight: 700,
+  letterSpacing: ".12em",
+  textTransform: "uppercase",
+});
+
+export const monthTitle = style({
+  margin: 0,
+  color: "#111111",
+  fontSize: "clamp(28px, 3.2vw, 42px)",
+  lineHeight: 1.04,
+  fontWeight: 720,
+  letterSpacing: "-.045em",
+});
+
+export const commandBar = style({
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 2,
+  padding: 3,
+  border: "1px solid #D9D9D9",
+  borderRadius: 12,
+  background: "#FFFFFF",
+});
+
+const command = {
+  minBlockSize: 34,
+  border: 0,
+  borderRadius: 9,
+  background: "transparent",
+  color: "#343434",
+  cursor: "pointer",
+  transition: `background-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}, transform ${duration.press} ${easing.standard}`,
+  selectors: {
+    "&:hover": { background: "#F1F1F1", color: "#111111" },
+    "&:active": { transform: "scale(.96)" },
+    "&:focus-visible": { outline: "2px solid #111111", outlineOffset: 2 },
+  },
+} as const;
 
 export const iconAction = style({
+  ...command,
+  inlineSize: 34,
   display: "inline-grid",
   placeItems: "center",
-  inlineSize: 32,
-  blockSize: 32,
   padding: 0,
-  border: "1px solid transparent",
-  borderRadius: "10px",
-  background: "transparent",
-  color: "var(--text-muted)",
-  cursor: "pointer",
-  transition: `background-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}, border-color ${duration.state} ${easing.standard}, transform ${duration.press} ${easing.standard}`,
-  selectors: {
-    "&:hover": { background: "rgba(234,240,255,.92)", borderColor: "rgba(125,151,224,.28)", color: "var(--accent-muted)", transform: "translateY(-1px)" },
-    "&:focus-visible": { outline: "2px solid var(--focus-ring)", outlineOffset: 2 },
-  },
-  "@media": { "(prefers-reduced-motion: reduce)": { selectors: { "&:hover": { transform: "none" } } } },
 });
 
 export const todayAction = style({
-  minBlockSize: 32,
-  marginInlineStart: 4,
+  ...command,
   paddingInline: 11,
-  border: "1px solid rgba(117, 144, 218, 0.32)",
-  borderRadius: "10px",
-  background: "linear-gradient(110deg, rgba(237,243,255,.96), rgba(247,244,255,.94))",
-  color: "var(--accent-muted)",
-  fontSize: "0.8125rem",
-  fontWeight: 680,
-  cursor: "pointer",
-  boxShadow: "0 5px 14px rgba(78,111,255,.08)",
-  transition: `border-color ${duration.state} ${easing.standard}, transform ${duration.press} ${easing.standard}, box-shadow ${duration.state} ${easing.standard}`,
-  selectors: {
-    "&:hover": { borderColor: "rgba(78,111,255,.52)", transform: "translateY(-1px)", boxShadow: "0 8px 20px rgba(78,111,255,.14)" },
-    "&:focus-visible": { outline: "2px solid var(--focus-ring)", outlineOffset: 2 },
-  },
-  "@media": { "(prefers-reduced-motion: reduce)": { selectors: { "&:hover": { transform: "none" } } } },
+  fontSize: 12,
+  fontWeight: 700,
 });
 
-export const grid = style({
-  position: "relative",
-  isolation: "isolate",
-  overflow: "hidden",
-  display: "grid",
-  minInlineSize: 0,
-  border: "1px solid rgba(179, 199, 229, 0.76)",
-  borderRadius: "24px",
-  background:
-    "linear-gradient(145deg, rgba(255,255,255,.90), rgba(242,247,255,.74)), radial-gradient(circle at 82% 16%, rgba(89,136,255,.18), transparent 36%), radial-gradient(circle at 16% 88%, rgba(145,112,255,.10), transparent 34%)",
-  backdropFilter: "blur(18px) saturate(1.06)",
-  boxShadow: "var(--glow-hero), inset 0 1px 0 rgba(255,255,255,.88)",
-  selectors: {
-    "&::before": {
-      content: '""',
-      position: "absolute",
-      zIndex: 0,
-      inlineSize: "640px",
-      blockSize: "340px",
-      insetInlineEnd: "-210px",
-      insetBlockStart: "-185px",
-      border: "1px solid rgba(91,124,214,.16)",
-      borderRadius: "50%",
-      boxShadow: "0 0 0 42px rgba(107,135,218,.045), 0 0 0 92px rgba(142,119,230,.03)",
-      animation: `${orbitDrift} 16s ease-in-out infinite`,
-      pointerEvents: "none",
-    },
-    "&::after": {
-      content: '""',
-      position: "absolute",
-      zIndex: 0,
-      inlineSize: 220,
-      blockSize: 220,
-      insetInlineStart: "-105px",
-      insetBlockEnd: "-125px",
-      borderRadius: "50%",
-      background: "radial-gradient(circle, rgba(255,255,255,.88) 0 4%, rgba(102,185,255,.15) 28%, rgba(152,112,255,.08) 50%, transparent 72%)",
-      pointerEvents: "none",
-    },
-  },
-  "@media": {
-    "(prefers-reduced-motion: reduce)": { selectors: { "&::before": { animation: "none" } } },
-    "(forced-colors: active)": {
-      background: "Canvas",
-      borderColor: "CanvasText",
-      boxShadow: "none",
-      selectors: { "&::before": { display: "none" }, "&::after": { display: "none" } },
-    },
-  },
+export const statusMessage = style({
+  margin: 0,
+  padding: "10px 12px",
+  border: "1px solid #D8D8D8",
+  borderRadius: 10,
+  background: "#FAFAFA",
+  color: "#333333",
+  fontSize: 13,
 });
-globalStyle(`${grid} > *`, { position: "relative", zIndex: 1 });
+
+export const monthCanvas = style({
+  minInlineSize: 0,
+  overflow: "hidden",
+  border: "1px solid #D8D8D8",
+  borderRadius: 18,
+  backgroundColor: "#FFFFFF",
+  backgroundImage: "var(--paint-grain-fine)",
+  boxShadow: "0 14px 40px rgba(0, 0, 0, .055)",
+});
 
 export const weekdays = style({
   display: "grid",
   gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
-  borderBottom: "1px solid rgba(190, 205, 229, 0.72)",
-  background: "linear-gradient(90deg, rgba(239,244,255,.70), rgba(249,247,255,.68))",
-  color: "var(--text-muted)",
+  minBlockSize: 38,
+  alignItems: "center",
+  borderBottom: "1px solid #DEDEDE",
+  background: "#FAFAFA",
+  color: "#777777",
   textAlign: "center",
-  paddingBlock: 11,
-  fontSize: "0.6875rem",
-  fontWeight: 720,
-  letterSpacing: "0.075em",
+  fontSize: 10,
+  lineHeight: "14px",
+  fontWeight: 760,
+  letterSpacing: ".1em",
   textTransform: "uppercase",
 });
 
-export const week = style({ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))" });
+export const week = style({
+  display: "grid",
+  gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
+  minBlockSize: 94,
+  selectors: {
+    "&:not(:last-child)": { borderBottom: "1px solid #E3E3E3" },
+  },
+});
 
 export const cell = style({
-  minWidth: 0,
-  minHeight: 108,
-  borderInlineStart: "1px solid rgba(205, 218, 237, 0.66)",
+  minInlineSize: 0,
+  minBlockSize: 94,
   selectors: {
-    "&:first-child": { borderInlineStart: 0 },
-    [`${week}:not(:last-child) &`]: { borderBottom: "1px solid rgba(205, 218, 237, 0.66)" },
+    "&:not(:first-child)": { borderInlineStart: "1px solid #E3E3E3" },
   },
 });
 
 export const cellButton = style({
   position: "relative",
-  overflow: "hidden",
-  width: "100%",
-  height: "100%",
-  minHeight: 108,
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "stretch",
-  justifyContent: "space-between",
-  gap: space.x2,
-  padding: "11px 12px",
+  inlineSize: "100%",
+  blockSize: "100%",
+  minBlockSize: 94,
+  display: "grid",
+  gridTemplateRows: "auto 1fr auto",
+  alignItems: "start",
+  gap: 6,
+  padding: "9px 10px 8px",
   border: 0,
-  background: "rgba(255,255,255,.46)",
-  color: "var(--text-primary)",
+  background: "transparent",
+  color: "#222222",
   textAlign: "left",
   cursor: "pointer",
-  boxShadow: "none",
-  transition: `background-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}, box-shadow ${duration.state} ${easing.standard}, transform ${duration.press} ${easing.standard}`,
+  transition: `background-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}`,
   selectors: {
-    "&[data-outside]": { color: "var(--text-disabled, #9AA8BE)", background: "rgba(248,250,255,.34)" },
-    "&:hover": { background: "linear-gradient(145deg, rgba(255,255,255,.86), rgba(232,241,255,.72))", boxShadow: "inset 0 0 0 1px rgba(111,142,222,.16)" },
-    "[aria-selected=true] &": {
-      background: "linear-gradient(145deg, rgba(77,111,255,.96), rgba(112,91,236,.92))",
-      color: "#FFFFFF",
-      animation: `${selectedPulse} 4.8s ease-in-out infinite`,
-    },
-    "&:focus-visible": { zIndex: 2, outline: "2px solid var(--focus-ring)", outlineOffset: -3 },
-  },
-  "@media": {
-    "(prefers-reduced-motion: reduce)": { selectors: { "[aria-selected=true] &": { animation: "none" } } },
-    "(forced-colors: active)": {
-      selectors: { "[aria-selected=true] &": { background: "Highlight", color: "HighlightText", animation: "none" } },
-    },
+    "&[data-outside]": { color: "#B3B3B3" },
+    "&:hover": { background: "#F7F7F7" },
+    "&[data-selected]": { background: "#111111", color: "#FFFFFF" },
+    "&:focus-visible": { zIndex: 2, outline: "2px solid #111111", outlineOffset: -3 },
+    "&[data-selected]:focus-visible": { outlineColor: "#FFFFFF" },
   },
 });
 
 export const dayNumber = style({
-  display: "inline-grid",
+  display: "grid",
   placeItems: "center",
-  inlineSize: 29,
-  blockSize: 29,
-  border: "1px solid transparent",
-  borderRadius: "var(--radius-full)",
-  fontSize: "0.8125rem",
+  inlineSize: 27,
+  blockSize: 27,
+  borderRadius: "50%",
+  fontSize: 12,
+  lineHeight: "16px",
   fontWeight: 720,
   fontVariantNumeric: "tabular-nums",
   selectors: {
-    [`${cellButton}[aria-current=date] &`]: {
-      borderColor: "var(--accent)",
-      color: "var(--accent-muted)",
-      background: "rgba(235,241,255,.88)",
-      boxShadow: "var(--glow-dot)",
+    [`${cellButton}[data-today] &`]: {
+      boxShadow: "inset 0 0 0 1.5px currentColor",
     },
-    [`${cellButton}[data-outside] &`]: { fontWeight: 500 },
-    [`[aria-selected=true] ${cellButton} &`]: { borderColor: "rgba(255,255,255,.70)", color: "#FFFFFF", background: "rgba(255,255,255,.12)", boxShadow: "none" },
   },
 });
 
-export const summary = style({
-  display: "flex",
-  alignItems: "baseline",
-  gap: 5,
+export const daySignal = style({
+  alignSelf: "end",
+  display: "grid",
+  gridTemplateColumns: "auto minmax(16px, 1fr) auto",
+  alignItems: "center",
+  gap: 6,
   minInlineSize: 0,
-  color: "var(--text-muted)",
-  fontSize: "0.6875rem",
-  lineHeight: 1.25,
+  color: "#656565",
   selectors: {
-    "[aria-selected=true] &": { color: "rgba(255,255,255,.82)" },
+    [`${cellButton}[data-selected] &`]: { color: "rgba(255,255,255,.74)" },
   },
 });
 
-export const taskCount = style({ color: "currentColor", fontSize: "0.9rem", fontWeight: 780, fontVariantNumeric: "tabular-nums" });
-export const durationText = style({ marginInlineStart: "auto", color: "currentColor", fontVariantNumeric: "tabular-nums" });
-export const needsAttention = style({
-  marginInlineStart: 3,
-  padding: "1px 5px",
-  border: "1px solid currentColor",
-  borderRadius: "var(--radius-small)",
-  fontSize: "0.625rem",
-  fontWeight: 680,
+export const taskCount = style({
+  minInlineSize: 12,
+  fontSize: 10,
+  lineHeight: "12px",
+  fontWeight: 780,
+  fontVariantNumeric: "tabular-nums",
+});
+
+export const activityLine = style({
+  blockSize: 2,
+  borderRadius: 2,
+  background: "currentColor",
+  opacity: 0.26,
+  transformOrigin: "left center",
+  selectors: {
+    [`${daySignal}[data-intensity=low] &`]: { transform: "scaleX(.32)" },
+    [`${daySignal}[data-intensity=medium] &`]: { transform: "scaleX(.64)" },
+    [`${daySignal}[data-intensity=high] &`]: { transform: "scaleX(1)" },
+  },
+});
+
+export const attentionDot = style({
+  inlineSize: 5,
+  blockSize: 5,
+  borderRadius: "50%",
+  background: "currentColor",
+});
+
+export const openCue = style({
+  alignSelf: "end",
+  color: "rgba(255,255,255,.76)",
+  fontSize: 9,
+  lineHeight: "12px",
+  fontWeight: 700,
+  letterSpacing: ".04em",
+  textTransform: "uppercase",
 });
