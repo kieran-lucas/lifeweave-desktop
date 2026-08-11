@@ -1,202 +1,412 @@
-import { globalStyle, keyframes, style } from "@vanilla-extract/css";
-import { space } from "../../../app/layout/tokens.css";
-import { button, compact } from "../../../design-system/primitives/controls.css";
-import { focusRing, focusRingInset } from "../../../design-system/primitives/utilities.css";
+import { globalStyle, style } from "@vanilla-extract/css";
 import { duration, easing } from "../../../design-system/visual/motion.css";
-import { text } from "../../../design-system/visual/typography.css";
 
-const dawnDrift = keyframes({
-  "0%, 100%": { transform: "translate3d(0, 0, 0) scale(1)" },
-  "50%": { transform: "translate3d(-20px, 12px, 0) scale(1.04)" },
-});
-
-const rayBreath = keyframes({
-  "0%, 100%": { opacity: 0.34, transform: "translate3d(0, 0, 0) rotate(-7deg)" },
-  "50%": { opacity: 0.58, transform: "translate3d(12px, -5px, 0) rotate(-5deg)" },
-});
-
-export const workspacePanel = style({
-  position: "relative",
-  isolation: "isolate",
-  overflow: "hidden",
-  display: "flex",
-  flexDirection: "column",
-  gap: space.x5,
+export const dayShell = style({
+  maxInlineSize: 980,
+  marginInline: "auto",
+  display: "grid",
+  gap: 20,
   minInlineSize: 0,
-  padding: "clamp(20px, 2.5vw, 34px)",
-  border: "1px solid rgba(183, 202, 233, 0.72)",
-  borderRadius: "28px",
-  background:
-    "linear-gradient(145deg, rgba(255,255,255,.91), rgba(246,250,255,.74)), radial-gradient(circle at 82% 10%, rgba(95,139,255,.20), transparent 34%), radial-gradient(circle at 12% 96%, rgba(160,124,255,.11), transparent 30%)",
-  backdropFilter: "blur(18px) saturate(1.08)",
-  boxShadow: "var(--glow-hero), inset 0 1px 0 rgba(255,255,255,.92)",
+});
+
+export const masthead = style({
+  minBlockSize: 88,
+  display: "flex",
+  alignItems: "flex-end",
+  justifyContent: "space-between",
+  gap: 22,
+  paddingInline: 4,
+});
+
+export const headingBlock = style({ display: "grid", gap: 2, minInlineSize: 0 });
+export const kicker = style({
+  color: "#8A8A8A",
+  fontSize: 9,
+  lineHeight: "13px",
+  fontWeight: 760,
+  letterSpacing: ".12em",
+  textTransform: "uppercase",
+});
+export const dayTitle = style({
+  margin: 0,
+  color: "#111111",
+  fontSize: "clamp(38px, 5vw, 58px)",
+  lineHeight: .98,
+  fontWeight: 700,
+  letterSpacing: "-.058em",
+});
+export const daySummary = style({
+  margin: "6px 0 0",
+  color: "#777777",
+  fontSize: 11,
+  lineHeight: "15px",
+  fontVariantNumeric: "tabular-nums",
+});
+
+export const planButton = style({
+  minBlockSize: 38,
+  paddingInline: 15,
+  border: "1px solid #111111",
+  borderRadius: 10,
+  background: "#111111",
+  color: "#FFFFFF",
+  fontSize: 12,
+  fontWeight: 720,
+  cursor: "pointer",
+  transition: `background-color ${duration.state} ${easing.standard}, transform ${duration.press} ${easing.standard}`,
   selectors: {
-    "&::before": {
-      content: '""',
-      position: "absolute",
-      zIndex: 0,
-      inlineSize: "520px",
-      blockSize: "520px",
-      insetInlineEnd: "-150px",
-      insetBlockStart: "-260px",
-      borderRadius: "50%",
-      background:
-        "radial-gradient(circle, rgba(255,255,255,.98) 0 4%, rgba(119,167,255,.22) 24%, rgba(126,111,255,.12) 48%, transparent 70%)",
-      filter: "blur(3px)",
-      animation: `${dawnDrift} 13s ease-in-out infinite`,
-      pointerEvents: "none",
-    },
-    "&::after": {
-      content: '""',
-      position: "absolute",
-      zIndex: 0,
-      inlineSize: "54%",
-      blockSize: "135%",
-      insetInlineEnd: "3%",
-      insetBlockStart: "-20%",
-      background:
-        "linear-gradient(105deg, transparent 15%, rgba(255,255,255,.08) 28%, rgba(191,221,255,.42) 42%, rgba(255,255,255,.12) 53%, transparent 67%)",
-      filter: "blur(7px)",
-      transformOrigin: "center",
-      animation: `${rayBreath} 9s ease-in-out infinite`,
-      pointerEvents: "none",
-    },
+    "&:hover": { background: "#2B2B2B" },
+    "&:active": { transform: "scale(.97)" },
+    "&:focus-visible": { outline: "2px solid #111111", outlineOffset: 3 },
+  },
+});
+
+export const inlineError = style({
+  margin: 0,
+  padding: "9px 11px",
+  border: "1px solid #C9C9C9",
+  borderRadius: 9,
+  background: "#F7F7F7",
+  color: "#333333",
+  fontSize: 11,
+});
+
+export const agenda = style({
+  minInlineSize: 0,
+  paddingBlock: 4,
+});
+
+export const agendaList = style({
+  listStyle: "none",
+  display: "grid",
+  gap: 0,
+  margin: 0,
+  padding: 0,
+  borderBlockStart: "1px solid #E1E1E1",
+});
+
+export const agendaItem = style({
+  display: "grid",
+  gridTemplateColumns: "74px minmax(0, 1fr)",
+  minInlineSize: 0,
+  borderBlockEnd: "1px solid #E5E5E5",
+  "@media": { "(max-width: 620px)": { gridTemplateColumns: "58px minmax(0,1fr)" } },
+});
+
+export const timeRail = style({
+  display: "grid",
+  alignContent: "center",
+  gap: 1,
+  minBlockSize: 68,
+  paddingInlineEnd: 14,
+  color: "#929292",
+  textAlign: "right",
+  fontVariantNumeric: "tabular-nums",
+});
+globalStyle(`${timeRail} > strong`, { color: "#555555", fontSize: 11, lineHeight: "14px", fontWeight: 680 });
+globalStyle(`${timeRail} > span`, { fontSize: 9, lineHeight: "12px" });
+
+export const taskRow = style({
+  minBlockSize: 68,
+  minInlineSize: 0,
+  display: "grid",
+  gridTemplateColumns: "38px minmax(0, 1fr) auto 20px",
+  alignItems: "center",
+  gap: 8,
+  padding: "8px 8px 8px 7px",
+  border: 0,
+  borderRadius: 10,
+  background: "transparent",
+  color: "#222222",
+  cursor: "pointer",
+  transition: `background-color ${duration.state} ${easing.standard}, transform ${duration.press} ${easing.standard}`,
+  selectors: {
+    "&:hover": { background: "#F6F6F4" },
+    "&:active": { transform: "scale(.994)" },
+    "&:focus-visible": { outline: "2px solid #111111", outlineOffset: -2 },
   },
   "@media": {
-    "(prefers-reduced-motion: reduce)": {
-      selectors: {
-        "&::before": { animation: "none" },
-        "&::after": { animation: "none" },
-      },
-    },
-    "(forced-colors: active)": {
-      background: "Canvas",
-      borderColor: "CanvasText",
-      boxShadow: "none",
-      selectors: { "&::before": { display: "none" }, "&::after": { display: "none" } },
-    },
+    "(max-width: 680px)": { gridTemplateColumns: "38px minmax(0,1fr) 18px" },
   },
 });
-globalStyle(`${workspacePanel} > *`, { position: "relative", zIndex: 1 });
 
-export const eyebrow = style({ ...text.metadata, color: "var(--accent-muted)", margin: 0, letterSpacing: "0.045em", textTransform: "uppercase", fontWeight: 700 });
-export const title = style({ ...text.display, color: "var(--text-primary)", letterSpacing: "-0.045em", textShadow: "0 1px 0 rgba(255,255,255,.85)" });
-export const create = style([button.primary, { boxShadow: "var(--glow-primary)" }]);
-export const timeline = style({ display: "flex", flexDirection: "column", gap: space.x6, minInlineSize: 0 });
-export const period = style({ display: "flex", flexDirection: "column", gap: space.x2, minInlineSize: 0 });
+export const completionSlot = style({ display: "grid", placeItems: "center" });
+export const taskCopy = style({ display: "grid", gap: 4, minInlineSize: 0 });
+globalStyle(`${taskCopy} > strong`, {
+  overflow: "hidden",
+  color: "#202020",
+  fontSize: 13,
+  lineHeight: "17px",
+  fontWeight: 670,
+  letterSpacing: "-.012em",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+});
 
-export const group_ = style({
+export const taskMeta = style({
+  display: "flex",
+  alignItems: "center",
+  gap: 7,
   minInlineSize: 0,
   overflow: "hidden",
-  border: "1px solid rgba(190, 205, 229, 0.74)",
-  borderRadius: "17px",
-  background: "rgba(255, 255, 255, 0.70)",
-  backdropFilter: "blur(14px)",
-  boxShadow: "var(--glow-crystal)",
+  color: "#8A8A8A",
+  fontSize: 9,
+  lineHeight: "12px",
+  whiteSpace: "nowrap",
+});
+globalStyle(`${taskMeta} > span`, { flex: "0 0 auto" });
+globalStyle(`${taskMeta} > button`, {
+  maxInlineSize: 150,
+  overflow: "hidden",
+  padding: 0,
+  border: 0,
+  background: "transparent",
+  color: "#747474",
+  font: "inherit",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+  cursor: "pointer",
+});
+globalStyle(`${taskMeta} > button:hover`, { color: "#111111", textDecoration: "underline" });
+globalStyle(`${taskMeta} > button:focus-visible`, { outline: "1.5px solid #111111", outlineOffset: 2 });
+
+export const categoryMeta = style({ display: "inline-flex", alignItems: "center", gap: 4, minInlineSize: 0 });
+globalStyle(`${categoryMeta} svg`, { inlineSize: 12, blockSize: 12 });
+
+export const timerSlot = style({
+  justifySelf: "end",
+  opacity: .5,
+  transition: `opacity ${duration.state} ${easing.standard}`,
+  selectors: { [`${taskRow}:hover &`]: { opacity: 1 }, [`${taskRow}:focus-within &`]: { opacity: 1 } },
+  "@media": { "(max-width: 680px)": { display: "none" } },
 });
 
-export const periodHeading = style({
-  display: "flex",
-  alignItems: "baseline",
-  justifyContent: "space-between",
-  gap: space.control,
-  margin: 0,
-  minInlineSize: 0,
-  paddingInline: 3,
+export const rowArrow = style({
+  color: "#B1B1B1",
+  transition: `color ${duration.state} ${easing.standard}, transform ${duration.state} ${easing.standard}`,
+  selectors: { [`${taskRow}:hover &`]: { color: "#555555", transform: "translateX(2px)" } },
 });
-export const periodLabel = style({ display: "inline-flex", alignItems: "center", gap: 8, minInlineSize: 0, ...text.cardTitle, color: "var(--text-primary)", letterSpacing: "-0.012em" });
-export const periodIcon = style({ inlineSize: 17, blockSize: 17, flexShrink: 0, color: "var(--accent)" });
-export const periodRange = style({ ...text.metadata, fontWeight: 500, color: "var(--text-muted)", fontVariantNumeric: "tabular-nums" });
-export const empty = style({ color: "var(--text-muted)", margin: 0 });
 
-export const group = style({
+/* Progressive task composer ------------------------------------------------ */
+export const composer = style({
   display: "grid",
-  gridTemplateColumns: "minmax(84px, 104px) minmax(0,1fr)",
-  gap: space.field,
-  paddingBlock: space.x2,
-  paddingInline: space.x2,
+  gap: 18,
   minInlineSize: 0,
-  selectors: { "&:not(:last-child)": { borderBottom: "1px solid rgba(206, 219, 238, 0.72)" } },
-  "@container": { "(max-width: 620px)": { gridTemplateColumns: "minmax(0,1fr)", gap: 2 } },
+  margin: -20,
+  padding: 22,
+  borderRadius: 16,
+  backgroundColor: "#FFFFFF",
+  backgroundImage: "var(--paint-grain-fine)",
+  color: "#111111",
 });
-export const time = style({ ...text.metadata, paddingBlock: 10, paddingInlineStart: 5, fontVariantNumeric: "tabular-nums", color: "var(--text-muted)" });
 
-export const row = style([
-  focusRing,
-  {
-    display: "grid",
-    gridTemplateColumns: "minmax(0,1fr) auto",
-    gap: space.x2,
-    alignItems: "center",
-    padding: "10px 11px",
-    cursor: "pointer",
-    minInlineSize: 0,
-    borderRadius: "12px",
-    border: "1px solid transparent",
-    background: "rgba(255,255,255,.54)",
-    boxShadow: "none",
-    transition: `background-color ${duration.state} ${easing.standard}, border-color ${duration.state} ${easing.standard}, box-shadow ${duration.state} ${easing.standard}, transform ${duration.press} ${easing.standard}`,
-    selectors: {
-      "&:hover": {
-        background: "linear-gradient(100deg, rgba(246,249,255,.96), rgba(233,241,255,.84))",
-        borderColor: "rgba(135, 160, 226, 0.35)",
-        boxShadow: "var(--glow-hover)",
-        transform: "translateY(-1px)",
-      },
-    },
-    "@media": { "(prefers-reduced-motion: reduce)": { selectors: { "&:hover": { transform: "none" } } } },
+export const composerHeader = style({
+  display: "flex",
+  alignItems: "flex-start",
+  justifyContent: "space-between",
+  gap: 16,
+});
+globalStyle(`${composerHeader} > div`, { display: "grid", gap: 2 });
+globalStyle(`${composerHeader} > div > span`, { color: "#929292", fontSize: 9, lineHeight: "12px", fontWeight: 760, letterSpacing: ".1em", textTransform: "uppercase" });
+globalStyle(`${composerHeader} h2`, { margin: 0, color: "#222222", fontSize: 15, lineHeight: "20px", fontWeight: 700, letterSpacing: "-.015em" });
+
+export const closeButton = style({
+  inlineSize: 30,
+  blockSize: 30,
+  padding: 0,
+  border: 0,
+  borderRadius: 8,
+  background: "transparent",
+  color: "#777777",
+  fontSize: 20,
+  lineHeight: 1,
+  cursor: "pointer",
+  selectors: { "&:hover": { background: "#F1F1F1", color: "#111111" }, "&:focus-visible": { outline: "2px solid #111111", outlineOffset: 2 } },
+});
+
+export const composerError = style({
+  margin: 0,
+  padding: "8px 10px",
+  border: "1px solid #C8C8C8",
+  borderRadius: 8,
+  background: "#F6F6F6",
+  color: "#333333",
+  fontSize: 11,
+});
+
+export const titleField = style({
+  inlineSize: "100%",
+  minInlineSize: 0,
+  boxSizing: "border-box",
+  padding: "8px 0 12px",
+  border: 0,
+  borderBottom: "1px solid #D8D8D8",
+  outline: 0,
+  background: "transparent",
+  color: "#111111",
+  fontSize: "clamp(22px, 3vw, 30px)",
+  lineHeight: 1.18,
+  fontWeight: 620,
+  letterSpacing: "-.035em",
+  selectors: {
+    "&::placeholder": { color: "#B0B0B0" },
+    "&:focus": { borderBottomColor: "#111111" },
   },
-]);
-
-export const rowContent = style({ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 3, minInlineSize: 0 });
-globalStyle(`${rowContent} > strong`, { ...text.row, fontWeight: 680, color: "var(--text-primary)", letterSpacing: "-0.012em" });
-export const rowDescription = style({ display: "none" });
-export const rowMeta = style({ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 7, minInlineSize: 0, color: "var(--text-muted)" });
-export const rowChip = style([button.ghost, compact, { maxInlineSize: "20rem", minBlockSize: 0, padding: 0, border: 0, textAlign: "left", justifyContent: "flex-start", overflowWrap: "anywhere", whiteSpace: "normal", color: "var(--accent-muted)", background: "transparent" }]);
-export const priorityDot = style({ display: "inline-block", inlineSize: 6, blockSize: 6, borderRadius: "var(--radius-full)", background: "linear-gradient(135deg, var(--accent), var(--accent-violet))", boxShadow: "var(--glow-dot)", flexShrink: 0 });
-export const rowActions = style({ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "flex-end", gap: 5, minInlineSize: 0, opacity: 0.4, transition: `opacity ${duration.state} ${easing.standard}` });
-globalStyle(`${row}:hover ${rowActions}`, { opacity: 1 });
-globalStyle(`${row}:focus-within ${rowActions}`, { opacity: 1 });
-export const rowEditButton = style([button.ghost, compact]);
-export const selected = style({
-  background: "linear-gradient(105deg, rgba(232,239,255,.98), rgba(245,242,255,.93))",
-  borderColor: "rgba(78, 111, 255, 0.52)",
-  boxShadow: "var(--glow-selected)",
 });
-export const assessment = style({ color: "var(--text-muted)", textAlign: "center" });
-export const category = style({ ...text.metadata, color: "var(--text-muted)" });
 
-export const wheel = style({ display: "flex", alignItems: "center", gap: space.x1, minInlineSize: 0, border: "1px solid var(--glass-border)", borderRadius: "var(--radius-control)", backgroundColor: "var(--glass-surface-strong)", boxShadow: "var(--glow-compact)", overflow: "hidden" });
-export const wheelPart = style({ display: "flex", flex: 1, minInlineSize: 0 });
-export const wheelSelect = focusRingInset;
-globalStyle(`${wheel} select`, { border: 0, borderRadius: 0, background: "transparent", minBlockSize: 38 });
-export const legend = style({ padding: `0 ${space.x1}`, fontWeight: 700 });
-export const subGroup = style({ display: "flex", flexDirection: "column", gap: space.control, margin: 0, padding: space.x3, border: "1px solid var(--glass-border)", borderRadius: "var(--radius-control)", backgroundColor: "var(--glass-surface)", backdropFilter: "blur(var(--glass-blur))", minInlineSize: 0 });
-export const checkLabel = style({ display: "inline-flex", alignItems: "center", gap: space.x1, minInlineSize: 0 });
-export const scopeList = style({ display: "flex", flexDirection: "column", gap: space.control, minInlineSize: 0 });
-export const previewList = style({ display: "flex", flexDirection: "column", gap: space.x1, margin: 0, paddingInlineStart: space.x5, color: "var(--text-muted)" });
-export const textarea = style({ minBlockSize: "5.5rem", resize: "vertical" });
-export const dateControl = style({ minInlineSize: 0, maxInlineSize: "12rem", boxSizing: "border-box" });
-export const numberControl = style({ minInlineSize: 0, maxInlineSize: "8rem", boxSizing: "border-box" });
-export const undo = style({ ...text.metadata, display: "flex", flexWrap: "wrap", alignItems: "center", alignSelf: "flex-start", gap: space.x1, margin: 0, padding: `${space.x1} ${space.x2}`, border: "1px solid var(--glass-border)", borderRadius: "var(--radius-control)", background: "var(--glass-surface)", backdropFilter: "blur(12px)", color: "var(--text-muted)", boxShadow: "var(--glow-compact)" });
-export const undoButton = button.ghost;
-export const seriesTagsNote = style({ fontSize: 11, color: "var(--text-muted)", margin: "4px 0 0" });
-export const dialogError = style({ ...text.compactBody, margin: 0, padding: `${space.x2} ${space.x3}`, border: "1px solid rgba(217,78,114,.42)", borderRadius: "var(--radius-control)", backgroundColor: "rgba(255,240,244,.92)", color: "var(--danger)", boxShadow: "var(--glow-danger)" });
-export const dialogDelete = button.destructive;
-export const dialogCancel = button.secondary;
-export const dialogSave = button.primary;
+export const scheduleBar = style({
+  display: "grid",
+  gridTemplateColumns: "1.35fr 1fr 1fr",
+  gap: 1,
+  overflow: "hidden",
+  border: "1px solid #D8D8D8",
+  borderRadius: 11,
+  background: "#D8D8D8",
+  "@media": { "(max-width: 520px)": { gridTemplateColumns: "1fr" } },
+});
+globalStyle(`${scheduleBar} > label`, { display: "grid", gap: 4, padding: "8px 10px", background: "#FAFAFA" });
+globalStyle(`${scheduleBar} > label > span`, { color: "#929292", fontSize: 8, lineHeight: "11px", fontWeight: 760, letterSpacing: ".08em", textTransform: "uppercase" });
+globalStyle(`${scheduleBar} input`, { minInlineSize: 0, minBlockSize: 24, padding: 0, border: 0, outline: 0, background: "transparent", color: "#222222", fontSize: 12, fontWeight: 620, fontVariantNumeric: "tabular-nums" });
 
-export const timerStrip = style({ display: "flex", flexWrap: "wrap", gap: space.control, alignItems: "center", padding: `${space.x2} ${space.x3}`, border: "1px solid rgba(78,111,255,.34)", borderRadius: "14px", background: "linear-gradient(100deg, rgba(239,244,255,.93), rgba(247,245,255,.88))", backdropFilter: "blur(14px)", boxShadow: "var(--glow-selected)" });
-export const timerRunning = style({ ...text.eyebrow, color: "#FFFFFF", borderRadius: "var(--radius-small)", padding: "3px 7px", background: "linear-gradient(135deg, var(--accent), var(--accent-violet))", boxShadow: "var(--glow-primary)" });
-export const timerTitle = style({ ...text.bodyStrong });
-export const timerDate = style({ ...text.metadata, color: "var(--text-muted)" });
-export const timerCounter = style({ fontVariantNumeric: "tabular-nums lining-nums", fontSize: 18, lineHeight: "24px", fontWeight: 680, marginInlineStart: "auto", color: "var(--accent-muted)" });
-export const timerTotal = style({ ...text.numeric, color: "var(--text-muted)" });
-export const timerStop = button.primary;
-export const timerDiscard = button.destructive;
-export const timerError = style({ ...text.compactBody, margin: 0, padding: `${space.x2} ${space.x3}`, border: "1px solid rgba(217,78,114,.42)", borderRadius: "var(--radius-control)", backgroundColor: "rgba(255,240,244,.92)", color: "var(--danger)" });
-export const rowTimer = style({ display: "inline-flex", gap: space.x1, alignItems: "center" });
-export const rowTimerTotal = style({ ...text.numeric, color: "var(--text-muted)" });
-export const rowTimerButton = style([button.secondary, compact]);
+globalStyle(`${scheduleBar} input:focus-visible`, { outline: "1.5px solid #111111", outlineOffset: 2 });
+
+export const detailsToggle = style({
+  justifySelf: "start",
+  minBlockSize: 30,
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 5,
+  padding: "0 7px",
+  border: 0,
+  borderRadius: 7,
+  background: "transparent",
+  color: "#777777",
+  fontSize: 10,
+  fontWeight: 680,
+  cursor: "pointer",
+  selectors: { "&:hover": { background: "#F3F3F3", color: "#222222" }, "&:focus-visible": { outline: "2px solid #111111", outlineOffset: 2 } },
+});
+export const detailsArrow = style({ transition: `transform ${duration.state} ${easing.standard}` });
+export const detailsArrowOpen = style([detailsArrow, { transform: "rotate(90deg)" }]);
+
+export const detailsPanel = style({
+  display: "grid",
+  gridTemplateColumns: "repeat(2, minmax(0,1fr))",
+  gap: 12,
+  paddingBlock: "16px 2px",
+  borderBlockStart: "1px solid #E4E4E4",
+  "@media": { "(max-width: 620px)": { gridTemplateColumns: "1fr" } },
+});
+
+export const detailField = style({
+  display: "grid",
+  alignContent: "start",
+  gap: 6,
+  minInlineSize: 0,
+  color: "#777777",
+  fontSize: 9,
+  fontWeight: 710,
+  letterSpacing: ".035em",
+});
+export const detailFieldWide = style([detailField, { gridColumn: "1 / -1" }]);
+export const fieldLabel = style({ color: "#777777", fontSize: 9, fontWeight: 710 });
+globalStyle(`${detailsPanel} input, ${detailsPanel} select, ${detailsPanel} textarea`, {
+  inlineSize: "100%",
+  minInlineSize: 0,
+  boxSizing: "border-box",
+  minBlockSize: 37,
+  padding: "8px 9px",
+  border: "1px solid #D6D6D6",
+  borderRadius: 9,
+  outline: 0,
+  background: "#FAFAFA",
+  color: "#222222",
+  fontSize: 11,
+  fontWeight: 500,
+  letterSpacing: 0,
+});
+globalStyle(`${detailsPanel} textarea`, { minBlockSize: 76, resize: "vertical", lineHeight: 1.5 });
+globalStyle(`${detailsPanel} input:focus, ${detailsPanel} select:focus, ${detailsPanel} textarea:focus`, { borderColor: "#111111", background: "#FFFFFF" });
+
+export const composerFooter = style({
+  display: "flex",
+  alignItems: "center",
+  gap: 7,
+  paddingBlockStart: 14,
+  borderBlockStart: "1px solid #E4E4E4",
+});
+export const footerSpacer = style({ flex: 1 });
+
+const footerButton = {
+  minBlockSize: 36,
+  paddingInline: 12,
+  borderRadius: 9,
+  fontSize: 11,
+  fontWeight: 700,
+  cursor: "pointer",
+  transition: `background-color ${duration.state} ${easing.standard}, transform ${duration.press} ${easing.standard}`,
+  selectors: {
+    "&:active:not(:disabled)": { transform: "scale(.97)" },
+    "&:disabled": { opacity: .42, cursor: "not-allowed" },
+    "&:focus-visible": { outline: "2px solid #111111", outlineOffset: 2 },
+  },
+} as const;
+
+export const cancelButton = style({
+  ...footerButton,
+  border: "1px solid #D4D4D4",
+  background: "#FFFFFF",
+  color: "#444444",
+  selectors: { ...footerButton.selectors, "&:hover:not(:disabled)": { background: "#F2F2F2" } },
+});
+export const saveButton = style({
+  ...footerButton,
+  border: "1px solid #111111",
+  background: "#111111",
+  color: "#FFFFFF",
+  selectors: { ...footerButton.selectors, "&:hover:not(:disabled)": { background: "#2A2A2A" } },
+});
+export const deleteButton = style({
+  ...footerButton,
+  border: 0,
+  background: "transparent",
+  color: "#8A8A8A",
+  selectors: { ...footerButton.selectors, "&:hover:not(:disabled)": { background: "#F2F2F2", color: "#222222" } },
+});
+
+/* Timer surfaces remain compact and subordinate to the agenda. */
+export const timerStrip = style({
+  display: "flex",
+  flexWrap: "wrap",
+  alignItems: "center",
+  gap: 8,
+  minBlockSize: 46,
+  padding: "7px 9px",
+  border: "1px solid #D8D8D8",
+  borderRadius: 11,
+  background: "#FAFAFA",
+});
+export const timerRunning = style({ padding: "3px 6px", borderRadius: 6, background: "#111111", color: "#FFFFFF", fontSize: 8, fontWeight: 760, letterSpacing: ".07em", textTransform: "uppercase" });
+export const timerTitle = style({ color: "#222222", fontSize: 11, fontWeight: 680 });
+export const timerDate = style({ color: "#888888", fontSize: 9 });
+export const timerCounter = style({ marginInlineStart: "auto", color: "#222222", fontSize: 15, fontWeight: 700, fontVariantNumeric: "tabular-nums" });
+export const timerTotal = style({ color: "#888888", fontSize: 9, fontVariantNumeric: "tabular-nums" });
+export const timerStop = style({ minBlockSize: 30, paddingInline: 9, border: "1px solid #111111", borderRadius: 8, background: "#111111", color: "#FFFFFF", fontSize: 9, fontWeight: 700, cursor: "pointer" });
+export const timerDiscard = style({ minBlockSize: 30, paddingInline: 9, border: "1px solid #D0D0D0", borderRadius: 8, background: "#FFFFFF", color: "#666666", fontSize: 9, fontWeight: 650, cursor: "pointer" });
+
+export const rowTimer = style({ display: "inline-flex", alignItems: "center", gap: 5 });
+export const rowTimerTotal = style({ color: "#888888", fontSize: 9, fontVariantNumeric: "tabular-nums" });
+export const rowTimerButton = style({
+  minBlockSize: 26,
+  paddingInline: 7,
+  border: "1px solid #D5D5D5",
+  borderRadius: 7,
+  background: "#FFFFFF",
+  color: "#555555",
+  fontSize: 9,
+  fontWeight: 680,
+  cursor: "pointer",
+  selectors: { "&:hover:not(:disabled)": { borderColor: "#AFAFAF", color: "#111111" }, "&:disabled": { opacity: .35, cursor: "default" }, "&:focus-visible": { outline: "1.5px solid #111111", outlineOffset: 2 } },
+});
+
 export { srOnly } from "../../../design-system/primitives/utilities.css";
-export const timelineColumn = style({ display: "flex", flexDirection: "column", gap: space.section, minInlineSize: 0 });
