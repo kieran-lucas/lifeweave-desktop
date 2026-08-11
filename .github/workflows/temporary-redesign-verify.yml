@@ -38,5 +38,17 @@ jobs:
       - name: Frontend build
         run: pnpm build
 
-      - name: Repository verification
-        run: pnpm verify
+      - name: Source integrity
+        run: pnpm source:verify
+
+      - name: Project-state governance
+        run: python scripts/check_project_state.py
+
+      - name: Generated indexes
+        run: pnpm index:check
+
+      - name: Asset, security, and hardening verification
+        run: |
+          python scripts/verify_no_remote_assets.py
+          python scripts/verify_security.py
+          python scripts/verify_hardening.py
