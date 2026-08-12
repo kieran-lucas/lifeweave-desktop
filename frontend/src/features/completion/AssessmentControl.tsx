@@ -17,12 +17,29 @@ type Props = {
   onSelect: (state: CompletionStateView) => void;
 };
 
-const compactLabels: Readonly<Record<string, string>> = {
-  none: "Clear",
+const progressLabels: Readonly<Record<string, string>> = {
+  none: "None",
   below: "Low",
   met: "Done",
   excellent: "Great",
 };
+
+function progressLabel(visualToken: string, fallback: string) {
+  return progressLabels[visualToken] ?? fallback;
+}
+
+function CheckMark() {
+  return (
+    <svg className={styles.checkMark} viewBox="0 0 20 20" aria-hidden="true">
+      <path className={styles.lowBackdrop} d="M6.25 10h7.5" />
+      <path className={styles.lowStroke} d="M6.25 10h7.5" />
+      <path className={styles.doneBackdrop} d="M5.25 10.25 8.5 13.5 14.75 7" />
+      <path className={styles.doneStroke} d="M5.25 10.25 8.5 13.5 14.75 7" />
+      <path className={styles.greatBackdrop} d="M10 4.5 11.35 8.65 15.5 10l-4.15 1.35L10 15.5l-1.35-4.15L4.5 10l4.15-1.35L10 4.5Z" />
+      <path className={styles.greatStroke} d="M10 5.4 11.1 8.9 14.6 10l-3.5 1.1L10 14.6l-1.1-3.5L5.4 10l3.5-1.1L10 5.4Z" />
+    </svg>
+  );
+}
 
 export function AssessmentControl({
   itemId,
@@ -38,7 +55,9 @@ export function AssessmentControl({
   const trigger = useRef<HTMLButtonElement>(null);
   const rail = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
-  const label = evaluation?.label ?? "Unevaluated";
+  const label = evaluation
+    ? progressLabel(evaluation.visual_token, evaluation.label)
+    : progressLabels.none!;
   const available = eligible && states.length > 0 && !unavailableReason;
 
   const position = () => {
@@ -46,8 +65,8 @@ export function AssessmentControl({
     const rect = trigger.current.getBoundingClientRect();
     const node = rail.current;
     const padding = 10;
-    const compact = window.innerWidth < 330;
-    const width = compact ? Math.max(1, window.innerWidth - padding * 2) : 232;
+    const compact = window.innerWidth < 340;
+    const width = Math.min(292, Math.max(1, window.innerWidth - padding * 2));
     const height = 58;
     const canShowAbove = rect.top >= height + padding;
     const left = Math.min(
@@ -147,7 +166,7 @@ export function AssessmentControl({
           open ? close() : onOpen();
         }}
       >
-        <span className={styles.ring} aria-hidden="true" />
+        <span className={styles.ring} aria-hidden="true"><CheckMark /></span>
         <span className={styles.label}>{label}</span>
       </button>
       {open &&
@@ -165,8 +184,8 @@ export function AssessmentControl({
                 type="button"
                 role="option"
                 aria-selected={evaluation?.state_id === state.id}
-                aria-label={state.label}
-                title={state.label}
+                aria-label={progressLabel(state.visual_token, state.label)}
+                title={progressLabel(state.visual_token, state.label)}
                 data-active={index === active}
                 data-visual={state.visual_token}
                 tabIndex={index === active ? 0 : -1}
@@ -174,8 +193,8 @@ export function AssessmentControl({
                 onKeyDown={(event) => key(event, index)}
                 onClick={() => choose(state)}
               >
-                <span className={styles.optionMark} aria-hidden="true" />
-                <span>{compactLabels[state.internal_key] ?? state.label}</span>
+                <span className={styles.optionMark} aria-hidden="true"><CheckMark /></span>
+                <span>{progressLabel(state.visual_token, state.label)}</span>
               </button>
             ))}
           </div>,

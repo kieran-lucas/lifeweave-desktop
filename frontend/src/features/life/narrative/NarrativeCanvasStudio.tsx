@@ -364,7 +364,6 @@ function SortableTimelineItem({
           {...listeners}
           aria-label="Drag to reorder timeline item"
           type="button"
-          tabIndex={0}
         >
           Drag
         </button>
@@ -421,8 +420,6 @@ function TimelineBlockEditor({
     }),
   );
 
-  const itemIds = block.items.map(it => it.id);
-
   const handleItemDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
@@ -471,7 +468,7 @@ function TimelineBlockEditor({
         onDragEnd={handleItemDragEnd}
       >
         <SortableContext
-          items={itemIds}
+          items={block.items.map(it => it.id)}
           strategy={verticalListSortingStrategy}
         >
           <div className={styles.timelineItems}>
@@ -653,7 +650,6 @@ function SortableBlockEditor({
           {...listeners}
           aria-label="Drag to reorder block"
           type="button"
-          tabIndex={0}
         >
           Drag
         </button>

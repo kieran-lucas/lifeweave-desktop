@@ -1,31 +1,126 @@
-import { globalStyle, style } from "@vanilla-extract/css";
+import { globalStyle, keyframes, style } from "@vanilla-extract/css";
 import { focusRing } from "../../design-system/primitives/utilities.css";
+import { vars } from "../../design-system/visual/contract.css";
+import { duration, easing } from "../../design-system/visual/motion.css";
 
 export const workspace = style({
   display: "grid",
-  gridTemplateColumns: "minmax(0,1fr) minmax(230px,280px)",
-  gap: 18,
-  alignItems: "start",
+  gridTemplateColumns: "minmax(0,1fr)",
+  gridTemplateRows: "minmax(0,1fr) auto",
+  gap: 8,
+  alignItems: "stretch",
+  blockSize: "100%",
+  minBlockSize: 0,
   minInlineSize: 0,
-  "@media": { "(max-width: 820px)": { gridTemplateColumns: "1fr" } },
+  selectors: {
+    '&[data-editor-open="true"]': { gridTemplateColumns: "minmax(0,1fr) minmax(240px,280px)" },
+  },
 });
 
 export const canvasViewport = style({
   position: "relative",
   minInlineSize: 0,
-  minBlockSize: 500,
-  overflow: "auto",
+  minBlockSize: 0,
+  blockSize: "100%",
+  overflow: "hidden",
   border: "1px solid #D8D8D8",
   borderRadius: 14,
   backgroundColor: "#FAFAF8",
   backgroundImage: "var(--paint-grain-fine)",
-  scrollbarGutter: "stable",
+  cursor: "grab",
+  touchAction: "none",
+  selectors: {
+    "&:focus-visible": { outline: `2px solid ${vars.color.focusRing}`, outlineOffset: 2 },
+    '&[data-panning="true"]': { cursor: "grabbing", userSelect: "none" },
+  },
 });
 
 export const canvas = style({ position: "relative", minInlineSize: "100%", minBlockSize: 480 });
 export const links = style({ position: "absolute", inset: 0, pointerEvents: "none", overflow: "visible" });
 export const positioner = style({ position: "absolute", inlineSize: 164, transform: "translate(var(--life-x),var(--life-y))" });
 export const dndOwner = style({ position: "relative" });
+const revealActions = keyframes({
+  from: { opacity: 0, transform: "translateX(-50%) translateY(-4px) scale(.98)" },
+  to: { opacity: 1, transform: "translateX(-50%) translateY(0) scale(1)" },
+});
+export const nodeActions = style({
+  position: "absolute",
+  zIndex: 6,
+  insetInlineStart: "50%",
+  insetBlockStart: "calc(100% + 7px)",
+  inlineSize: "max-content",
+  minInlineSize: 188,
+  boxSizing: "border-box",
+  display: "grid",
+  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+  gap: 3,
+  padding: 5,
+  border: `1px solid ${vars.color.borderHairline}`,
+  borderRadius: vars.radius.floating,
+  background: vars.color.surfaceRaised,
+  boxShadow: vars.elevation.floating,
+  color: vars.color.textPrimary,
+  transform: "translateX(-50%)",
+  transformOrigin: "top center",
+  animation: `${revealActions} ${duration.popover} ${easing.standard} both`,
+  selectors: {
+    "&::before": {
+      content: "",
+      position: "absolute",
+      zIndex: -1,
+      insetBlockStart: -5,
+      insetInlineStart: "calc(50% - 5px)",
+      inlineSize: 9,
+      blockSize: 9,
+      borderBlockStart: `1px solid ${vars.color.borderHairline}`,
+      borderInlineStart: `1px solid ${vars.color.borderHairline}`,
+      background: vars.color.surfaceRaised,
+      transform: "rotate(45deg)",
+    },
+  },
+  "@media": {
+    "(prefers-reduced-motion: reduce)": { animation: "none" },
+    "(forced-colors: active)": { borderColor: "CanvasText", background: "Canvas", boxShadow: "none" },
+  },
+});
+export const nodeAction = style([
+  focusRing,
+  {
+    minBlockSize: 36,
+    boxSizing: "border-box",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+    paddingInline: 9,
+    border: 0,
+    borderRadius: vars.radius.control,
+    background: "transparent",
+    color: vars.color.textPrimary,
+    whiteSpace: "nowrap",
+    fontSize: 10,
+    lineHeight: "14px",
+    fontWeight: 680,
+    cursor: "pointer",
+    transition: `background-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}`,
+    selectors: { "&:hover": { background: vars.color.surfaceHover, color: vars.color.accent }, "&:active": { background: vars.color.accentSoft } },
+    "@media": { "(prefers-reduced-motion: reduce)": { transition: "none" } },
+  },
+]);
+export const nodeActionIcon = style({
+  inlineSize: 22,
+  blockSize: 22,
+  display: "inline-grid",
+  placeItems: "center",
+  flex: "0 0 22px",
+  borderRadius: vars.radius.full,
+  background: vars.color.accentSoft,
+  color: vars.color.accent,
+  fontSize: 16,
+  lineHeight: 1,
+  fontWeight: 500,
+  "@media": { "(forced-colors: active)": { border: "1px solid ButtonText", background: "ButtonFace", color: "ButtonText" } },
+});
 
 export const nodeCard = style([
   focusRing,
@@ -73,26 +168,16 @@ export const dropBefore = style({
 });
 
 export const inspector = style({
-  position: "sticky",
-  insetBlockStart: 0,
+  gridRow: "1",
   display: "grid",
   gap: 12,
-  maxBlockSize: "calc(100dvh - 184px)",
+  minBlockSize: 0,
+  maxBlockSize: "100%",
   overflowY: "auto",
   padding: "4px 2px 24px 18px",
   borderInlineStart: "1px solid #E2E2E2",
   background: "transparent",
   scrollbarGutter: "stable",
-  "@media": {
-    "(max-width: 820px)": {
-      position: "static",
-      maxBlockSize: "none",
-      overflowY: "visible",
-      padding: "18px 0 0",
-      borderInlineStart: 0,
-      borderBlockStart: "1px solid #E2E2E2",
-    },
-  },
 });
 
 export const inspectorTitle = style({ margin: 0, color: "#222222", fontSize: 15, lineHeight: "20px", fontWeight: 720, letterSpacing: "-.018em" });
@@ -135,6 +220,7 @@ export const button = style({
     "&:focus-visible": { outline: "2px solid #111111", outlineOffset: 2 },
   },
 });
+export const closeInspector = style([button, { minInlineSize: 32, paddingInline: 7 }]);
 
 export const destructive = style([
   button,

@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { TodayItemView } from "../../../ipc/generated/TodayItemView";
@@ -97,7 +97,10 @@ describe("Today task interactions", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 
     fireEvent.doubleClick(title);
-    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    const firstEditor = screen.getByRole("dialog");
+    expect(firstEditor).toBeInTheDocument();
+    fireEvent.click(within(firstEditor).getByRole("button", { name: "More details" }));
+    expect(within(firstEditor).queryByText("Category")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
 
     row.focus();
@@ -121,12 +124,43 @@ describe("Today task interactions", () => {
   it("shows assessment as the task status and exposes no timer start control", async () => {
     mount();
     const assessment = await screen.findByRole("button", {
-      name: "Assess task. Current state: Unevaluated",
+      name: "Assess task. Current state: None",
     });
-    expect(assessment).toHaveTextContent("Unevaluated");
+    expect(assessment).toHaveTextContent("None");
     expect(screen.queryByRole("button", { name: /Start timer/i })).not.toBeInTheDocument();
 
     fireEvent.click(assessment);
     expect(screen.getByRole("listbox", { name: "Completion assessment" })).toBeInTheDocument();
+  });
+
+  it("uses the same assessment name in the task row and the option menu", async () => {
+    api.listTodayItems.mockResolvedValue([
+      {
+        ...task,
+        evaluation: {
+          state_id: "state-met",
+          label: "Met expectation",
+          visual_token: "met",
+          evaluated_at: "2026-08-11T09:00:00Z",
+          operation_id: "assessment-1",
+        },
+      },
+    ]);
+    api.listCompletionStates.mockResolvedValue([
+      { id: "state-none", internal_key: "none", label: "Not done", sort_key: 0, visual_token: "none" },
+      { id: "state-below", internal_key: "below", label: "Below expectation", sort_key: 1, visual_token: "below" },
+      { id: "state-met", internal_key: "met", label: "Met expectation", sort_key: 2, visual_token: "met" },
+      { id: "state-excellent", internal_key: "excellent", label: "Very good", sort_key: 3, visual_token: "excellent" },
+    ]);
+
+    mount();
+    const assessment = await screen.findByRole("button", {
+      name: "Assess task. Current state: Done",
+    });
+    expect(assessment).toHaveTextContent("Done");
+    expect(assessment.querySelector("svg")).toHaveAttribute("viewBox", "0 0 20 20");
+
+    fireEvent.click(assessment);
+    expect(screen.getByRole("option", { name: "Done" })).toHaveTextContent("Done");
   });
 });

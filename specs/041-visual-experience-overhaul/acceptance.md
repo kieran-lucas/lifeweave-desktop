@@ -3,6 +3,28 @@
 Task 51 closes only when all of the following are evidenced. Screenshots are review evidence and are
 never the sole proof of anything.
 
+## Product Owner Life usability amendment
+
+- Life Tree geometry proves root x < child x < grandchild x while siblings occupy distinct rows;
+- node actions are absent before selection and selection reveals only Add child and Edit node;
+- the action surface is centered against its node and closes on repeat activation, outside pointer
+  press, action selection, and Escape; Escape returns focus to the invoking node;
+- the Tree viewport has no local scrollbar; hold-drag on empty space pans both axes, hold-drag on a
+  node remains structural drag, and arrow/Shift-arrow/Home provide keyboard pan parity;
+- the compact Tree heading stays above a bordered viewport that fills the remaining Life pane, and
+  Tree mode produces no outer Life-canvas scrollbar;
+- the node editor is absent by default, opens on explicit request, and retains reorder, reparent,
+  archive/restore, tag, interchange, Browse, and undo paths;
+- the production Tiptap extension set contains no duplicate Link extension and a real-editor test
+  proves deletion and table structural transactions;
+- editor updates do not request a React rerender on every ProseMirror transaction; recovery draft
+  and committed autosave remain serialized and debounced;
+- an active table exposes keyboard-reachable controls for rows, columns, and deletion, and wide
+  table content scrolls within the editor rather than the application document.
+- opening a Focus Plan shows a compact title/lifecycle identity and a clearly dominant authored
+  outcome surface in both read and edit states, without removing facts, criteria, linked work, or
+  lifecycle controls;
+
 ## Process
 
 - the Product Owner's reference image is stored in the repository and cited as the appearance
@@ -102,9 +124,15 @@ never the sole proof of anything.
 - no IPC or database work occurs per pointer-move frame;
 - idle CPU and GPU settle on Today and Reader, demonstrated by measurement rather than claimed;
 - editor, Narrative, Graph, exporters and optional art remain lazy and out of Today startup;
+- Today is the only eager product screen; Life/tree engines, non-default routes, shortcut help and
+  task-composer-only pickers remain outside its startup graph;
+- the advisory health probe preserves the core-unavailable failure path without blocking the first
+  Today mount;
 - bundle deltas are reported in raw and gzip bytes against the recorded baseline of `index.js`
   529,527 with 5,473 bytes of headroom; any ceiling change is an explicit Product Owner decision
   supported by that measurement, never a response to a red gate.
+- the optimized production artifact measures 274,368 raw / 84,033 deterministic gzip bytes for
+  `index.js`, with an operational maximum of 279,856 and the locked 550,000-byte ceiling unchanged.
 
 ## Accessibility
 

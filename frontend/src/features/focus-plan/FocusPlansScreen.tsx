@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { listTaskLifeTargets } from "../../ipc/commands";
@@ -20,6 +20,8 @@ import { LinkedWorkPanel, type TaskNavigate } from "./LinkedWorkPanel";
 import { invalidateTaskSavedViewReferenceData } from "../task/saved-views/savedViewQueries";
 import { Icon, iconChevronLeft, iconPlans } from "../../design-system/visual/icons";
 import { EmptyState, SkeletonList } from "../../design-system/primitives/States";
+
+const PlanContentEditor = lazy(() => import("./PlanContentEditor"));
 
 export type FocusPlanEntryRequest = {
   requestId: string;
@@ -283,33 +285,36 @@ export function FocusPlansScreen({
           {error && <p className={styles.error} role="alert">{error}</p>}
 
           <div className={styles.hero}>
-            <span className={styles.lifecycle}>{selected.lifecycle}</span>
-            {editing ? (
-              <input
-                className={styles.titleInput}
-                aria-label="Plan title"
-                value={form.title}
-                onChange={(event) => updateForm("title", event.target.value)}
-              />
-            ) : (
-              <h1 id="plan-detail-heading" className={styles.documentTitle} tabIndex={-1}>
-                {selected.title}
-              </h1>
-            )}
+            <div className={styles.heroIdentity}>
+              <span className={styles.lifecycle}>{selected.lifecycle}</span>
+              {editing ? (
+                <>
+                  <h1 id="plan-detail-heading" className={styles.srOnly}>Edit plan {selected.title}</h1>
+                  <input
+                    className={styles.titleInput}
+                    aria-label="Plan title"
+                    value={form.title}
+                    onChange={(event) => updateForm("title", event.target.value)}
+                  />
+                </>
+              ) : (
+                <h1 id="plan-detail-heading" className={styles.documentTitle} tabIndex={-1}>
+                  {selected.title}
+                </h1>
+              )}
+            </div>
 
-            {editing ? (
-              <textarea
-                className={styles.outcomeEditor}
-                aria-label="Plan outcome"
-                value={form.outcome}
-                onChange={(event) => updateForm("outcome", event.target.value)}
-                placeholder="What should be true when this succeeds?"
-              />
-            ) : (
-              <p className={styles.outcomeStatement}>
-                {selected.outcome || "Define the outcome that makes this plan worth doing."}
-              </p>
-            )}
+            <section className={styles.planContent} aria-labelledby="plan-content-heading">
+              <h2 id="plan-content-heading" className={styles.srOnly}>Plan content</h2>
+              <Suspense fallback={<SkeletonList rows={4} label="Loading Plan content…" />}>
+                <PlanContentEditor
+                  key={`${selected.id}-${selected.revision}-${editing ? "edit" : "read"}`}
+                  value={editing ? form.outcome : selected.outcome}
+                  editing={editing}
+                  onChange={(outcome) => updateForm("outcome", outcome)}
+                />
+              </Suspense>
+            </section>
           </div>
 
           <div className={styles.factRow} aria-label="Plan facts">
@@ -349,7 +354,6 @@ export function FocusPlansScreen({
 
           <section className={styles.criteriaSection} aria-labelledby="criteria-heading">
             <div className={styles.sectionHeading}>
-              <span className={styles.sectionIndex}>01</span>
               <h2 id="criteria-heading">Definition of done</h2>
             </div>
             {editing ? (
@@ -372,7 +376,6 @@ export function FocusPlansScreen({
 
           <section className={styles.linkedSection} aria-labelledby="linked-heading">
             <div className={styles.sectionHeading}>
-              <span className={styles.sectionIndex}>02</span>
               <h2 id="linked-heading">Work in motion</h2>
             </div>
             <LinkedWorkPanel
@@ -409,7 +412,6 @@ export function FocusPlansScreen({
       <div className={styles.library}>
         <header className={styles.libraryHeader}>
           <div>
-            <span className={styles.libraryKicker}>Focus</span>
             <h1 id="plans-heading" className={styles.libraryTitle} tabIndex={-1}>Plans</h1>
           </div>
           <button className={styles.primaryAction} type="button" onClick={() => setCreating(true)}>
@@ -460,20 +462,17 @@ export function FocusPlansScreen({
               body="A plan should exist only when an outcome deserves sustained attention."
             />
           )}
-          {plans.map((plan, index) => (
+          {plans.map((plan) => (
             <button
               key={plan.id}
               type="button"
               className={styles.planRow}
               onClick={() => void openPlan(plan.id)}
             >
-              <span className={styles.planOrdinal}>{String(index + 1).padStart(2, "0")}</span>
               <span className={styles.planCopy}>
                 <strong>{plan.title}</strong>
                 <small>{planMeta(plan)}</small>
               </span>
-              <span className={styles.planStatus}>{plan.lifecycle}</span>
-              <span className={styles.planArrow} aria-hidden="true">↗</span>
             </button>
           ))}
         </div>

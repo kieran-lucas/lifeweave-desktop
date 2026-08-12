@@ -104,6 +104,8 @@ export const editorStatus = style({
 export const backButton = sharedButton.secondary;
 export const saveButton = sharedButton.primary;
 export const toolbar = style({ display: "flex", alignItems: "center", gap: 6, overflowX: "auto", padding: "7px 9px", scrollbarGutter: "stable" });
+export const tableTools = style({ display: "flex", alignItems: "center", gap: 5, overflowX: "auto", padding: "6px 9px", borderBlockStart: "1px solid var(--paint-edge)", background: vars.color.surfaceSubtle, scrollbarGutter: "stable" });
+export const tableHint = style({ flex: "0 0 auto", paddingInline: 4, color: "var(--text-muted)", ...text.metadata });
 export const toolbarGroup = style({ display: "inline-flex", alignItems: "center", gap: 2, flex: "0 0 auto", paddingInlineEnd: 6, borderInlineEnd: "1px solid var(--paint-edge)" });
 globalStyle(`${toolbarGroup}:last-child`, { paddingInlineEnd: 0, borderInlineEnd: 0 });
 globalStyle(`${toolbarGroup}:first-child > :first-child`, { fontWeight: 700 });
@@ -120,7 +122,8 @@ export const editorHiddenFile = style({ position: "absolute", inlineSize: 1, blo
 export const editorSurface = style({
   minBlockSize: "clamp(420px, 58vh, 760px)",
   marginBlockStart: 16,
-  overflow: "hidden",
+  overflowX: "auto",
+  overflowY: "hidden",
   border: "1px solid var(--paint-edge)",
   borderRadius: "var(--radius-surface)",
   background: vars.color.surface,
@@ -131,7 +134,7 @@ export const editorSurface = style({
     "(forced-colors: active)": { borderColor: "CanvasText", boxShadow: "none" },
   },
 });
-globalStyle(`${editorSurface} .tiptap`, { minBlockSize: "clamp(420px, 58vh, 760px)", boxSizing: "border-box", padding: "clamp(24px, 4vw, 48px)", outline: "none", color: "var(--text-primary)", caretColor: "var(--text-primary)", overflowWrap: "anywhere", ...text.editorBody });
+globalStyle(`${editorSurface} .tiptap`, { minBlockSize: "clamp(420px, 58vh, 760px)", minInlineSize: "max(100%, 520px)", boxSizing: "border-box", padding: "clamp(24px, 4vw, 48px)", outline: "none", color: "var(--text-primary)", caretColor: "var(--text-primary)", overflowWrap: "anywhere", userSelect: "text", WebkitUserSelect: "text", ...text.editorBody });
 globalStyle(`${editorSurface} .tiptap > :first-child`, { marginBlockStart: 0 });
 globalStyle(`${editorSurface} .tiptap h1`, { ...text.editorH1, marginBlock: "1.55em .55em" });
 globalStyle(`${editorSurface} .tiptap h2`, { ...text.editorH2, marginBlock: "1.5em .5em" });
@@ -139,6 +142,8 @@ globalStyle(`${editorSurface} .tiptap h3`, { ...text.editorH3, marginBlock: "1.4
 globalStyle(`${editorSurface} .tiptap blockquote`, { marginInline: 0, padding: "8px 0 8px 18px", borderInlineStart: "3px solid var(--accent)", color: "var(--text-muted)" });
 globalStyle(`${editorSurface} .tiptap pre`, { overflowX: "auto", padding: 14, border: "1px solid var(--paint-edge)", borderRadius: "var(--radius-control)", background: vars.color.surfaceSubtle, ...text.code });
 globalStyle(`${editorSurface} .tiptap img`, { display: "block", maxInlineSize: "100%", blockSize: "auto", marginBlock: 18, borderRadius: "var(--radius-control)" });
-globalStyle(`${editorSurface} .tiptap table`, { inlineSize: "100%", borderCollapse: "collapse", marginBlock: 18 });
-globalStyle(`${editorSurface} .tiptap th, ${editorSurface} .tiptap td`, { padding: 8, border: "1px solid var(--paint-edge)", textAlign: "start", verticalAlign: "top" });
+globalStyle(`${editorSurface} .tiptap table`, { inlineSize: "100%", minInlineSize: 480, tableLayout: "fixed", borderCollapse: "collapse", marginBlock: 18 });
+globalStyle(`${editorSurface} .tiptap th, ${editorSurface} .tiptap td`, { position: "relative", minInlineSize: 110, padding: "9px 10px", border: "1px solid var(--paint-edge)", textAlign: "start", verticalAlign: "top" });
+globalStyle(`${editorSurface} .tiptap th`, { background: vars.color.surfaceSubtle, fontWeight: 650 });
+globalStyle(`${editorSurface} .tiptap .selectedCell::after`, { content: "", position: "absolute", inset: 0, pointerEvents: "none", background: vars.color.accentSoft, outline: `2px solid ${vars.color.accent}` });
 export const editorAlert = style({ margin: "12px 0 0", padding: "10px 12px", borderInlineStart: "3px solid var(--danger)", background: vars.color.dangerSoft, color: vars.color.danger, ...text.compactBody });

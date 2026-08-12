@@ -5,9 +5,9 @@
 - Activation baseline: `43d0d1e822336c97527f85e1ab154fc74a61f058`.
 - Active slice: `041-visual-experience-overhaul` under
   [ADR 0045](adr/0045-visual-experience-overhaul.md).
-- Local branch `task-51-visual-experience`, created from the activation baseline. **Nothing is
-  pushed**, no PR is opened, no remote branch is modified, and the sealed workflow is untouched, per
-  explicit Product Owner instruction for this task.
+- Current branch is `main`. The Product Owner later explicitly instructed Codex to commit and push
+  all prior local work, which produced remote checkpoint `bc79621`; the newer ADR 0046 usability
+  amendment is currently local and uncommitted. The sealed workflow remains untouched.
 - Task 50 closed with art direction explicitly unallocated and deferred to a later Product Owner
   gate. Task 51 is that gate. Until activation, `START_HERE.md`, this file and Slice 040 recorded
   Task 51 as prohibited; the activation prompt is an explicit later Product Owner decision, which
@@ -23,6 +23,21 @@
   and no workflow or seal change. No product semantics change, and no Task facet is invented to
   match the reference image — Lifeweave has no subtasks and no task-to-task links, which the
   reference inspector displays.
+- **Later narrow exception.** On 2026-08-11 the Product Owner explicitly replaced the visible Life
+  Edit interaction with ADR 0046's horizontal contextual Tree and required Basic Leaf stability and
+  table usability corrections. This changes no schema, Rust, IPC, Graph or Browse semantics and is
+  recorded as an amendment rather than silently treated as presentation-only.
+- **Later composition refinement.** Tree now keeps a compact heading above a bounded viewport that
+  fills the Life pane and owns all hold-drag navigation, with no outer Tree scroll. Focus Plan detail
+  reduces title chrome and makes its authored outcome the dominant read/edit plane. No Plan or Life
+  semantics changed.
+- **Startup optimization.** The production source map was traced and Today was reduced to the eager
+  application path: secondary routes, Life/Narrative/tree engines, shortcut help, and composer-only
+  pickers now load on demand, while the advisory health probe no longer blocks the first Today
+  mount. `index.js` fell from 433,337 to 274,368 raw bytes (-36.7%) and from 130,681 to 84,033
+  deterministic gzip bytes (-35.7%); startup CSS fell from 99.10 kB to 33.68 kB (-66.0%). Total JS
+  increased 0.7% raw / 2.6% gzip as the measured code-splitting trade-off. The locked ceiling,
+  schema, Rust, IPC, workflow, and seal are unchanged.
 - Following the Task 40 and Task 50 precedent, Task 51 does **not** advance `latest_feature_task`,
   which stays 49 at `7622db3d8b2b42d69c8f497b6899c5be82e9f9a9`.
 

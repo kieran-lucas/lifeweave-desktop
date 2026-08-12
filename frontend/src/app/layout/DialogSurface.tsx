@@ -84,6 +84,8 @@ export function DecisionDialog({
   destructive = false,
   inputLabel,
   inputPlaceholder,
+  inputMode = "text",
+  inputMaxLength,
   returnFocus,
   onConfirm,
   onCancel,
@@ -95,6 +97,8 @@ export function DecisionDialog({
   destructive?: boolean;
   inputLabel?: string;
   inputPlaceholder?: string;
+  inputMode?: "text" | "url";
+  inputMaxLength?: number;
   returnFocus?: HTMLElement | null;
   onConfirm: (value: string) => void;
   onCancel: () => void;
@@ -137,7 +141,7 @@ export function DecisionDialog({
           <div className={styles.dialogBody}>
             <label className={decisionStyles.field} htmlFor={inputId}>
               {inputLabel}
-              <input ref={input} id={inputId} className={decisionStyles.input} inputMode="url" placeholder={inputPlaceholder} />
+              <input ref={input} id={inputId} className={decisionStyles.input} inputMode={inputMode} maxLength={inputMaxLength} required placeholder={inputPlaceholder} />
             </label>
           </div>
         ) : null}

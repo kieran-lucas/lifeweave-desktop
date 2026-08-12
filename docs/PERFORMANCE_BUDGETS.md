@@ -80,6 +80,28 @@ Headroom at the change is **14,619 bytes**, and it is not free space. Tree shaki
 lazy secondary surfaces, and no eager Narrative/Life/editor/art engines on the Today startup path
 all remain required. Raising a maximum again requires another measured Product Owner decision.
 
+### 2026-08-11 startup graph reduction
+
+The Today startup graph was traced from the production source map and reduced without changing the
+locked 550,000-byte ceiling. Non-default routes, Life and Narrative surfaces, drag/tree engines,
+shortcut help, and task-composer-only pickers now load at their point of use. The application shell
+also mounts Today before the non-authoritative health probe completes; a failed probe still replaces
+the route with the existing core-unavailable state.
+
+```text
+metric                    before       after       delta
+startup index.js raw      433,337      274,368     -158,969 (-36.7%)
+startup index.js gzip     130,681       84,033      -46,648 (-35.7%)
+startup CSS (Vite)         99.10 kB      33.68 kB       -66.0%
+total JS raw            1,088,234    1,096,063       +7,829 (+0.7%)
+total JS gzip             333,221      341,990       +8,769 (+2.6%)
+```
+
+The small aggregate increase is accepted code-splitting overhead in exchange for removing 36.7% of
+raw JavaScript and 66.0% of CSS from the critical startup path. The operational `index.js` maximum
+is lowered to **279,856 bytes**; the hard ceiling is unchanged. Exact evidence and the source-map
+exclusion audit are in `docs/audits/task-51-startup-optimization.md`.
+
 Run it with:
 
 ```text

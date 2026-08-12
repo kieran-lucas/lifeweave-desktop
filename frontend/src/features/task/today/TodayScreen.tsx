@@ -1,6 +1,5 @@
 import { Suspense, lazy, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { getLocalTimeZone, parseDate } from "@internationalized/date";
 import { useModalFocusTrap } from "../../../app/useModalFocusTrap";
 import type { TaskCategoryView } from "../../../ipc/generated/TaskCategoryView";
 import type { TodayItemView } from "../../../ipc/generated/TodayItemView";
@@ -21,13 +20,14 @@ import {
   updateRecurringOccurrence,
   updateTask,
 } from "../../../ipc/commands";
-import { localToday as getLocalToday } from "../../calendar/date";
+import {
+  addCalendarDays,
+  calendarDateToDate,
+  localToday as getLocalToday,
+} from "../../calendar/date";
 import { WeekStrip } from "../../calendar/WeekStrip";
 import { CategoryIcon } from "../categoryIcons";
 import { AssessmentControl } from "../../completion/AssessmentControl";
-import { LifeAreaCombobox } from "../LifeAreaCombobox";
-import { FocusPlanCombobox } from "../FocusPlanCombobox";
-import { TagPicker } from "../../tag/TagPicker";
 import { TagChipList } from "../../tag/TagChipList";
 import { invalidateTaskSavedViewProjections } from "../saved-views/savedViewQueries";
 import { PageFrame } from "../../../app/layout/PageFrame";
@@ -41,6 +41,15 @@ import * as styles from "./TodayScreen.css";
 
 const ActiveTimerStrip = lazy(() =>
   import("./ActiveTimerStrip").then((module) => ({ default: module.ActiveTimerStrip })),
+);
+const LifeAreaCombobox = lazy(() =>
+  import("../LifeAreaCombobox").then((module) => ({ default: module.LifeAreaCombobox })),
+);
+const FocusPlanCombobox = lazy(() =>
+  import("../FocusPlanCombobox").then((module) => ({ default: module.FocusPlanCombobox })),
+);
+const TagPicker = lazy(() =>
+  import("../../tag/TagPicker").then((module) => ({ default: module.TagPicker })),
 );
 
 type CommonItem = Omit<
@@ -118,14 +127,14 @@ function normalize(value: TodayItemView): TodayItem {
 
 function headingForDate(value: string, today: string) {
   if (value === today) return "Today";
-  const anchor = parseDate(today);
-  if (value === anchor.add({ days: 1 }).toString()) return "Tomorrow";
-  if (value === anchor.subtract({ days: 1 }).toString()) return "Yesterday";
+  if (value === addCalendarDays(today, 1)) return "Tomorrow";
+  if (value === addCalendarDays(today, -1)) return "Yesterday";
   return new Intl.DateTimeFormat(navigator.language || "en-US", {
     weekday: "long",
     month: "long",
     day: "numeric",
-  }).format(parseDate(value).toDate(getLocalTimeZone()));
+    timeZone: "UTC",
+  }).format(calendarDateToDate(value));
 }
 
 function minuteToTimeInput(value: number) {
@@ -740,14 +749,16 @@ export function TodayScreen({
                     <textarea value={draft.description} onChange={(event) => setDraft({ ...draft, description: event.target.value })} placeholder="Optional context" />
                   </label>
 
-                  <label className={styles.detailField}>
-                    <span>Category</span>
-                    <select value={draft.category_id} onChange={(event) => setDraft({ ...draft, category_id: event.target.value })}>
-                      {(categories.data ?? []).map((category: TaskCategoryView) => (
-                        <option key={category.id} value={category.id}>{category.name}</option>
-                      ))}
-                    </select>
-                  </label>
+                  {!editing && (
+                    <label className={styles.detailField}>
+                      <span>Category</span>
+                      <select value={draft.category_id} onChange={(event) => setDraft({ ...draft, category_id: event.target.value })}>
+                        {(categories.data ?? []).map((category: TaskCategoryView) => (
+                          <option key={category.id} value={category.id}>{category.name}</option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
 
                   <label className={styles.detailField}>
                     <span>Priority</span>
@@ -759,21 +770,25 @@ export function TodayScreen({
                   </label>
 
                   <div className={styles.detailField}>
-                    <LifeAreaCombobox
-                      value={draft.life_node_id}
-                      current={editing?.life_area}
-                      onChange={(life_node_id) => setDraft({ ...draft, life_node_id })}
-                    />
+                    <Suspense fallback={<LoadingRow label="Loading Life areas…" />}>
+                      <LifeAreaCombobox
+                        value={draft.life_node_id}
+                        current={editing?.life_area}
+                        onChange={(life_node_id) => setDraft({ ...draft, life_node_id })}
+                      />
+                    </Suspense>
                   </div>
 
                   <div className={styles.detailField}>
-                    <FocusPlanCombobox
-                      value={draft.focus_plan_id}
-                      current={editing?.focus_plan}
-                      disabled={editing?.kind === "recurring"}
-                      disabledReason="The Focus Plan belongs to the recurring series."
-                      onChange={(focus_plan_id) => setDraft({ ...draft, focus_plan_id })}
-                    />
+                    <Suspense fallback={<LoadingRow label="Loading Focus Plans…" />}>
+                      <FocusPlanCombobox
+                        value={draft.focus_plan_id}
+                        current={editing?.focus_plan}
+                        disabled={editing?.kind === "recurring"}
+                        disabledReason="The Focus Plan belongs to the recurring series."
+                        onChange={(focus_plan_id) => setDraft({ ...draft, focus_plan_id })}
+                      />
+                    </Suspense>
                   </div>
 
                   <label className={styles.detailField}>
@@ -816,11 +831,13 @@ export function TodayScreen({
                         <TagChipList tags={editing.tags} maxVisible={12} />
                       </>
                     ) : (
-                      <TagPicker
-                        selectedTags={draft.selectedTags}
-                        onChange={(next) => setDraft({ ...draft, selectedTags: next, tag_ids: next.map((tag) => tag.id) })}
-                        allowCreate
-                      />
+                      <Suspense fallback={<LoadingRow label="Loading tags…" />}>
+                        <TagPicker
+                          selectedTags={draft.selectedTags}
+                          onChange={(next) => setDraft({ ...draft, selectedTags: next, tag_ids: next.map((tag) => tag.id) })}
+                          allowCreate
+                        />
+                      </Suspense>
                     )}
                   </div>
                 </div>

@@ -93,6 +93,37 @@
 - [ ] Present frame evidence, timings and tradeoffs, then **STOP**.
 - [ ] Do not begin production reconstruction before `MOTION LOCK APPROVED` is received.
 
+## Product Owner Life usability amendment — complete
+
+- [x] Record the presentation-scope contradiction and accepted decision in ADR 0046, the registry,
+      active spec, acceptance criteria, and status.
+- [x] Keep Browse and Graph semantics unchanged while rotating only the full Tree workspace.
+- [x] Replace the visible Edit mode and permanent inspector with Tree plus node-local Add child and
+      Edit node controls; retain all advanced mutations on demand.
+- [x] Center and restyle the node action surface; dismiss it on repeat activation, outside pointer
+      press, action selection, and Escape with deterministic keyboard focus return.
+- [x] Remove Tree scrollbars and add empty-canvas hold-drag panning without stealing node drag;
+      preserve keyboard access through arrow, Shift-arrow, and Home viewport controls.
+- [x] Compact and raise the Tree heading, fit the bordered pan viewport to the remaining Life pane,
+      and prevent Tree mode from creating an outer Life-canvas scroll region.
+- [x] Recompose Focus Plan detail around a compact identity and a dominant outcome writing surface
+      while preserving every existing fact, criterion, linked-work, and lifecycle path.
+- [x] Remove the duplicate Tiptap Link extension, stable-initialize editor options, and stop
+      transaction-wide React rerenders without weakening recovery or revision safety.
+- [x] Add contextual table structure controls, local overflow, real-editor deletion/table tests,
+      focused interaction tests, and automated accessibility coverage.
+- [x] Pass 665 tests across 52 files, build, typecheck, repository verification, diff check, and performance budget
+      with BasicLeafEditor at 52,657 / 53,410 raw bytes.
+- [x] Trace the production startup graph and move non-default routes, Life/Narrative/tree engines,
+      shortcut help, and task-composer-only controls behind point-of-use lazy boundaries.
+- [x] Stop the advisory health probe from serially blocking the first Today mount while preserving
+      the existing core-unavailable failure path.
+- [x] Reduce startup `index.js` from 433,337 to 274,368 raw bytes and startup CSS from 99.10 kB to
+      33.68 kB; lock the graph with contract tests and a 279,856-byte operational maximum without
+      raising the hard ceiling.
+- [x] Record native WebView click/typing/visual verification as **NOT RUN** because the configured
+      in-app Browser runtime reported no available browser; do not infer it from jsdom.
+
 ## Stage I–L — Production reconstruction
 
 - [ ] Promote the visual foundation into production.

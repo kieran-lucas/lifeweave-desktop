@@ -16,6 +16,32 @@ testing, and interaction-performance instrumentation.
 
 Out of scope: product semantics of any kind, and every item in the Task 51 hard-exclusion list (§11).
 
+### 1.1 Product Owner usability amendment (2026-08-11)
+
+ADR 0046 records a later explicit Product Owner direction that narrowly overrides the
+presentation-only boundary above for the existing Life tree and Basic Leaf editor. It authorizes no
+new domain semantics, storage, schema, IPC, dependency, Graph behavior, or Browse projection.
+
+- The separate full-tree workspace is named **Tree**, lays generations left-to-right, and no longer
+  presents a permanent edit inspector.
+- Selecting a node reveals exactly two adjacent actions: **Add child** and **Edit node**. Add child
+  is a one-field dialog; Edit node reveals the existing advanced node controls on demand. The
+  centered floating action surface dismisses on repeat activation, action selection, outside
+  pointer press, and Escape, with keyboard focus restored to the node after Escape.
+- Basic Leaf removes duplicate editor extensions and transaction-driven React rerenders. Text
+  deletion remains native ProseMirror behavior, and an active table exposes direct add/delete row,
+  add/delete column, and delete-table controls with local horizontal overflow.
+- Existing revision checks, mutation boundaries, recovery draft/commit serialization, keyboard
+  drag parity, link protocol restrictions, and all backend authority remain unchanged.
+- The Tree viewport renders no local scrollbars. A primary-pointer hold and drag beginning on empty
+  tree space pans both axes; the same gesture beginning on a node remains node movement. Arrow keys,
+  Shift plus arrow, and Home provide keyboard pan and reset without changing tree data. A compact
+  Tree heading remains at the top of the Life pane, the bordered pan viewport receives the
+  remaining available height, and Tree mode creates no outer Life-canvas scroll region.
+- Focus Plan detail presents lifecycle and title as compact identity. Its authored outcome is the
+  dominant reading/editing surface, while facts, success criteria, linked work, and lifecycle
+  actions retain their existing meaning and remain available at a quieter visual level.
+
 ## 2. Visual authority
 
 There is exactly one location that answers "what colour, radius, weight, elevation or duration is
@@ -320,6 +346,13 @@ Bundle deltas — startup JS raw and gzip, new chunks, dependency delta, font an
 are measured and reported at each gate. `index.js` has 5,473 bytes of headroom at baseline. Raising
 a locked ceiling remains a Product Owner decision supported by measurement, per
 `docs/PERFORMANCE_BUDGETS.md`.
+
+The finalized Today startup graph contains the application shell and Today only. Non-default
+routes, Life/Narrative/tree engines, help, and task-composer-only controls are point-of-use lazy
+boundaries. The advisory health probe must retain its failure state but must not serially gate the
+first Today mount. The 2026-08-11 production trace reduced startup `index.js` from 433,337 to
+274,368 raw bytes and from 130,681 to 84,033 deterministic gzip bytes without raising a locked
+ceiling; this boundary is protected by source-level contract tests and the bundle budget.
 
 ## 15. Accessibility
 

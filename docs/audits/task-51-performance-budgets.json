@@ -3,8 +3,8 @@
   "task": 51,
   "supersedes": "docs/audits/task-49-performance-budgets.json",
   "supersedes_note": "Task 51 supersedes Task 49. Numeric byte ceilings remain the inherited safety limits; chunk topology is now informational so deliberate simplification may remove or merge optional lazy chunks.",
-  "measured_at_commit": "8acd525",
-  "baseline_evidence": "docs/audits/task-51-visual-lock.md",
+  "measured_at_commit": "local-2026-08-11-startup-optimization",
+  "baseline_evidence": "docs/audits/task-51-startup-optimization.md",
   "main_chunk": "index.js",
   "unknown_chunk_raw_bytes_threshold": 10000,
   "rules": {
@@ -31,21 +31,21 @@
   },
   "aggregates": {
     "main_js_bytes": {
-      "observed": 535381,
-      "maximum": 546089,
-      "derivation": "535381 + max(1024, ceil(535381 * 0.0200)) = 546089"
+      "observed": 274368,
+      "maximum": 279856,
+      "derivation": "274368 + max(1024, ceil(274368 * 0.0200)) = 279856"
     },
     "total_js_bytes": {
-      "observed": 1254564,
-      "maximum": 1263974,
-      "derivation": "1254564 + max(8192, ceil(1254564 * 0.0075))"
+      "observed": 1096063,
+      "maximum": 1104284,
+      "derivation": "1096063 + max(8192, ceil(1096063 * 0.0075)) = 1104284"
     },
     "total_js_gzip_bytes": {
-      "observed": 385429,
-      "maximum": 389525,
-      "derivation": "385429 + max(4096, ceil(385429 * 0.0100))"
+      "observed": 341990,
+      "maximum": 346086,
+      "derivation": "341990 + max(4096, ceil(341990 * 0.0100)) = 346086"
     },
-    "expected_chunk_count": 26
+    "expected_chunk_count": 36
   },
   "chunks": {
     "BasicLeafEditor.js": {
@@ -56,6 +56,14 @@
       "owner": "Basic Leaf editor",
       "derivation": "52362 + max(1024, ceil(52362 * 0.0200))"
     },
+    "CalendarDate.js": {
+      "observed_raw_bytes": 11325,
+      "observed_gzip_bytes": 4098,
+      "maximum_raw_bytes": 12349,
+      "class": "lazy",
+      "owner": "non-Today calendar engine",
+      "derivation": "11325 + max(1024, ceil(11325 * 0.0200)) = 12349"
+    },
     "FocusPlansScreen.js": {
       "observed_raw_bytes": 18549,
       "observed_gzip_bytes": 5168,
@@ -64,6 +72,14 @@
       "owner": "Focus Plans",
       "derivation": "18549 + max(1024, ceil(18549 * 0.0200))"
     },
+    "LifeScreen.js": {
+      "observed_raw_bytes": 62435,
+      "observed_gzip_bytes": 18713,
+      "maximum_raw_bytes": 63684,
+      "class": "lazy",
+      "owner": "Life route, tree interaction and reader shell",
+      "derivation": "62435 + max(1024, ceil(62435 * 0.0200)) = 63684"
+    },
     "NarrativeCanvasStudio.js": {
       "observed_raw_bytes": 20074,
       "observed_gzip_bytes": 5936,
@@ -71,6 +87,14 @@
       "class": "lazy",
       "owner": "Narrative Canvas studio",
       "derivation": "20074 + max(1024, ceil(20074 * 0.0200))"
+    },
+    "NarrativeVisualWorld.js": {
+      "observed_raw_bytes": 57330,
+      "observed_gzip_bytes": 18608,
+      "maximum_raw_bytes": 58477,
+      "class": "lazy",
+      "owner": "Narrative reader and visual-world presentation",
+      "derivation": "57330 + max(1024, ceil(57330 * 0.0200)) = 58477"
     },
     "TaskSavedViewsPanel.js": {
       "observed_raw_bytes": 16570,
@@ -89,12 +113,12 @@
       "derivation": "390833 + max(1024, ceil(390833 * 0.0200))"
     },
     "index.js": {
-      "observed_raw_bytes": 535381,
-      "observed_gzip_bytes": 162877,
-      "maximum_raw_bytes": 546089,
+      "observed_raw_bytes": 274368,
+      "observed_gzip_bytes": 84033,
+      "maximum_raw_bytes": 279856,
       "class": "startup",
-      "owner": "application shell and eager screens",
-      "derivation": "535381 + max(1024, ceil(535381 * 0.0200))"
+      "owner": "application shell and Today only",
+      "derivation": "274368 + max(1024, ceil(274368 * 0.0200)) = 279856"
     },
     "markdown.js": {
       "observed_raw_bytes": 116541,
@@ -117,6 +141,7 @@
     "Historical measurements are retained as ceilings and comparison evidence, not as a requirement to preserve the old screen architecture.",
     "The current gate requires the main startup chunk, enforces aggregate raw/gzip ceilings, enforces per-chunk ceilings for known chunks when emitted, rejects duplicate normalized identities, and rejects new unbudgeted chunks at or above the threshold.",
     "Optional lazy chunks may disappear or merge when product simplification removes their front-end path; that reduction is reported and is not a regression.",
-    "The historical expected_chunk_count remains baseline information only."
+    "The historical expected_chunk_count remains baseline information only.",
+    "The 2026-08-11 startup pass moved every non-default route, secondary Task composer control, Life/dnd/d3, and the internationalized calendar engine out of the Today entry graph. It lowered the operational startup ceiling without raising any locked ceiling."
   ]
 }

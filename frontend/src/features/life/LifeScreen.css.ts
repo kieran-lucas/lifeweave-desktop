@@ -250,6 +250,14 @@ export const canvas = style({
   overflowY: "auto",
   background: "transparent",
   scrollbarGutter: "stable",
+  selectors: {
+    '&[data-life-mode="edit"]': {
+      display: "flex",
+      flexDirection: "column",
+      overflow: "hidden",
+      scrollbarGutter: "auto",
+    },
+  },
 });
 
 export const notice = style({
@@ -293,8 +301,41 @@ export const branchCanvas = style({
 export const editCanvas = style({
   ...canvasMotion,
   inlineSize: "100%",
+  blockSize: "100%",
+  flex: "1 1 auto",
+  minBlockSize: 0,
   boxSizing: "border-box",
-  padding: "clamp(28px, 5vw, 58px) clamp(18px, 4vw, 48px) 48px",
+  display: "grid",
+  gridTemplateRows: "auto minmax(0, 1fr)",
+  gap: 12,
+  overflow: "hidden",
+  padding: "clamp(12px, 2vh, 18px) clamp(12px, 2vw, 24px) 12px",
+});
+
+export const treeHeader = style({
+  minInlineSize: 0,
+  display: "flex",
+  alignItems: "end",
+  justifyContent: "space-between",
+  gap: 18,
+  paddingInline: 2,
+});
+globalStyle(`${treeHeader} > div`, { minInlineSize: 0 });
+globalStyle(`${treeHeader} > p`, {
+  margin: "0 0 2px",
+  color: "#8A8A8A",
+  fontSize: 9,
+  lineHeight: "13px",
+  whiteSpace: "nowrap",
+});
+
+export const treeTitle = style({
+  margin: 0,
+  color: "#111111",
+  fontSize: "clamp(24px, 3vw, 32px)",
+  lineHeight: 1,
+  fontWeight: 700,
+  letterSpacing: "-.045em",
 });
 
 export const readerCanvas = style({
@@ -313,6 +354,7 @@ export const canvasEyebrow = style({
   letterSpacing: ".12em",
   textTransform: "uppercase",
 });
+globalStyle(`${treeHeader} ${canvasEyebrow}`, { marginBlockEnd: 4 });
 
 export const branchHeroIcon = style({ marginBlockEnd: 18 });
 

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type MouseEventHandler, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Node } from "@tiptap/core";
 import Image from "@tiptap/extension-image";
 import Link from "@tiptap/extension-link";
@@ -26,9 +26,10 @@ const Callout = Node.create({
 const AssetImage = Image.extend({
   addAttributes() { return { ...this.parent?.(), assetId: { default: null } }; },
 });
+const BasicLeafToolbar = lazy(() => import("./BasicLeafToolbar"));
 
-const extensions = [
-  StarterKit.configure({ heading: { levels: [1, 2, 3] }, horizontalRule: false, strike: false }),
+export const basicLeafExtensions = [
+  StarterKit.configure({ heading: { levels: [1, 2, 3] }, horizontalRule: false, strike: false, link: false }),
   Link.configure({
     openOnClick: false,
     protocols: ["http", "https", "mailto"],
@@ -49,56 +50,66 @@ type Props = {
 type SaveState = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 const statusText = ["Saved", "Unsaved", "Protecting…", "Draft saved", "Saving…", "Adding…", "Save failed"];
 const linkHint = "Use a complete HTTPS, HTTP, or mailto address.";
-const markControls = [["B", "Bold", "bold", "toggleBold"], ["I", "Italic", "italic", "toggleItalic"]] as const;
-const blockControls = [
-  ["Bullets", "bulletList", "toggleBulletList"],
-  ["Numbers", "orderedList", "toggleOrderedList"],
-  ["Quote", "blockquote", "toggleBlockquote"],
-  ["Code", "codeBlock", "toggleCodeBlock"],
-] as const;
-
-function ToolButton({ label, active, onClick, children = label }: {
-  label: string;
-  active?: boolean;
-  onClick: MouseEventHandler<HTMLButtonElement>;
-  children?: ReactNode;
-}) {
-  return <button type="button" className={styles.toolbarButton} aria-label={label} aria-pressed={active} onClick={onClick}>{children}</button>;
-}
-
+const editorProps = { attributes: { "aria-label": "Document body", "aria-multiline": "true" } };
 export default function BasicLeafEditor({ document, initialJson, onCommitted, onCancel }: Props) {
   const revision = useRef(document.revision);
   const changeVersion = useRef(0);
   const committedVersion = useRef(0);
   const saveQueue = useRef<Promise<void>>(Promise.resolve());
-  const [changeToken, setChangeToken] = useState(0);
+  const draftTimer = useRef<number | undefined>(undefined);
+  const commitTimer = useRef<number | undefined>(undefined);
+  const commitRef = useRef<() => void>(() => {});
   const [saveState, setSaveState] = useState<SaveState>(0);
   const [message, setMessage] = useState("");
   const [dialog, setDialog] = useState<0 | 1 | 2>(0);
   const dialogReturnFocus = useRef<HTMLElement | null>(null);
+  const initialContent = useRef(JSON.parse(initialJson ?? document.canonical_json));
 
-  const markChanged = () => {
+  const clearTimers = () => {
+    if (draftTimer.current) window.clearTimeout(draftTimer.current);
+    if (commitTimer.current) window.clearTimeout(commitTimer.current);
+  };
+
+  const markChanged = (liveEditor: { getJSON: () => unknown }) => {
     changeVersion.current += 1;
-    setChangeToken(changeVersion.current);
+    const version = changeVersion.current;
+    clearTimers();
     setMessage("");
     setSaveState((current) => current === 4 ? current : 1);
+    draftTimer.current = window.setTimeout(() => {
+      if (changeVersion.current !== version || version <= committedVersion.current) return;
+      const canonical = JSON.stringify(liveEditor.getJSON());
+      saveQueue.current = saveQueue.current.then(async () => {
+        if (changeVersion.current !== version || version <= committedVersion.current) return;
+        setSaveState((current) => current === 4 ? current : 2);
+        try {
+          await saveReaderDraft({ document_id: document.id, base_revision: revision.current, canonical_json: canonical });
+          if (changeVersion.current === version) setSaveState((current) => current === 4 ? current : 3);
+        } catch {
+          if (changeVersion.current === version) {
+            setSaveState((current) => current === 4 ? current : 6);
+            setMessage("Draft backup failed. Keep editor open and retry Save.");
+          }
+        }
+      });
+    }, 1000);
+    commitTimer.current = window.setTimeout(() => {
+      if (changeVersion.current === version && version > committedVersion.current) commitRef.current();
+    }, 3000);
   };
 
   const editor = useEditor({
-    extensions,
-    content: JSON.parse(initialJson ?? document.canonical_json),
+    extensions: basicLeafExtensions,
+    content: initialContent.current,
     autofocus: "end",
-    editorProps: {
-      attributes: {
-        "aria-label": "Document body",
-        "aria-multiline": "true",
-      },
-    },
-    onUpdate: markChanged,
+    editorProps,
+    onUpdate: ({ editor: liveEditor }) => markChanged(liveEditor),
+    shouldRerenderOnTransaction: false,
   });
 
   const commit = () => {
     if (!editor) return;
+    clearTimers();
     const version = changeVersion.current;
     if (version <= committedVersion.current) return;
     const canonical = JSON.stringify(editor.getJSON());
@@ -129,39 +140,9 @@ export default function BasicLeafEditor({ document, initialJson, onCommitted, on
       }
     });
   };
+  commitRef.current = commit;
 
-  useEffect(() => {
-    if (!editor || changeToken === 0 || changeToken <= committedVersion.current) return;
-    const version = changeToken;
-    const draftTimer = window.setTimeout(() => {
-      if (changeVersion.current !== version || version <= committedVersion.current) return;
-      const canonical = JSON.stringify(editor.getJSON());
-      saveQueue.current = saveQueue.current.then(async () => {
-        if (changeVersion.current !== version || version <= committedVersion.current) return;
-        setSaveState((current) => current === 4 ? current : 2);
-        try {
-          await saveReaderDraft({
-            document_id: document.id,
-            base_revision: revision.current,
-            canonical_json: canonical,
-          });
-          if (changeVersion.current === version) setSaveState((current) => current === 4 ? current : 3);
-        } catch {
-          if (changeVersion.current === version) {
-            setSaveState((current) => current === 4 ? current : 6);
-            setMessage("Draft backup failed. Keep editor open and retry Save.");
-          }
-        }
-      });
-    }, 1000);
-    const commitTimer = window.setTimeout(() => {
-      if (changeVersion.current === version && version > committedVersion.current) commit();
-    }, 3000);
-    return () => {
-      window.clearTimeout(draftTimer);
-      window.clearTimeout(commitTimer);
-    };
-  }, [changeToken, editor]);
+  useEffect(() => () => clearTimers(), []);
 
   if (!editor) return <LoadingRow label="Loading" />;
 
@@ -203,22 +184,7 @@ export default function BasicLeafEditor({ document, initialJson, onCommitted, on
           <button className={styles.saveButton} disabled={!dirty || busy} onClick={commit}>Save changes</button>
         </div>
 
-        <div className={styles.toolbar} role="toolbar" aria-label="Formatting">
-          <div className={styles.toolbarGroup}>
-            {markControls.map(([text, label, node, command]) => <ToolButton key={node} label={label} active={editor.isActive(node)} onClick={() => editor.chain().focus()[command]().run()}>{text}</ToolButton>)}
-          </div>
-          <div className={styles.toolbarGroup}>
-            {[1, 2, 3].map((level) => <ToolButton key={level} label={`Heading ${level}`} active={editor.isActive("heading", { level })} onClick={() => editor.chain().focus().toggleHeading({ level: level as 1 | 2 | 3 }).run()}>H{level}</ToolButton>)}
-          </div>
-          <div className={styles.toolbarGroup}>
-            {blockControls.map(([label, node, command]) => <ToolButton key={node} label={label} active={editor.isActive(node)} onClick={() => editor.chain().focus()[command]().run()} />)}
-          </div>
-          <div className={styles.toolbarGroup}>
-            <ToolButton label="Link" active={editor.isActive("link")} onClick={(event) => openDialog(1, event.currentTarget)} />
-            <ToolButton label="Table" onClick={() => editor.chain().focus().insertTable({ rows: 2, cols: 2, withHeaderRow: true }).run()} />
-            <label className={styles.toolbarFileLabel}>Image<input className={styles.editorHiddenFile} type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={(event) => { const file = event.currentTarget.files?.[0]; event.currentTarget.value = ""; void addImage(file); }} /></label>
-          </div>
-        </div>
+        <Suspense fallback={null}><BasicLeafToolbar editor={editor} onLink={invoker=>openDialog(1,invoker)} onImage={addImage}/></Suspense>
       </div>
 
       {message && <p className={styles.editorAlert} role="alert">{message}</p>}
@@ -233,6 +199,7 @@ export default function BasicLeafEditor({ document, initialJson, onCommitted, on
           confirmLabel="Add link"
           inputLabel="Link destination"
           inputPlaceholder="https://"
+          inputMode="url"
           returnFocus={dialogReturnFocus.current}
           onCancel={() => setDialog(0)}
           onConfirm={(value) => {

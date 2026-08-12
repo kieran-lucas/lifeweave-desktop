@@ -321,7 +321,7 @@ export function LifeScreen({
                 setMode((current) => (current === "edit" ? "browse" : "edit"));
               }}
             >
-              {mode === "edit" ? "Done" : "Edit"}
+              {mode === "edit" ? "Close tree" : "Tree"}
             </button>
           </header>
 
@@ -418,7 +418,7 @@ export function LifeScreen({
           )}
         </aside>
 
-        <main className={styles.canvas}>
+        <main className={styles.canvas} data-life-mode={mode}>
           {projection.resolved_from_fallback && (
             <p className={styles.notice} role="status">
               The remembered location was unavailable, so the nearest branch was opened.
@@ -426,11 +426,16 @@ export function LifeScreen({
           )}
 
           {mode === "edit" ? (
-            <div key={`edit-${projection.selected.id}`} className={styles.editCanvas}>
-              <div className={styles.canvasEyebrow}>Structure</div>
-              <h1 id="life-workspace-heading" className={styles.canvasTitle}>
-                Edit {projection.selected.title}
-              </h1>
+            <div key={`edit-${projection.selected.id}`} className={styles.editCanvas} data-life-tree-shell="">
+              <header className={styles.treeHeader} data-life-tree-header="">
+                <div>
+                  <div className={styles.canvasEyebrow}>Structure</div>
+                  <h1 id="life-workspace-heading" className={styles.treeTitle}>
+                    Life tree
+                  </h1>
+                </div>
+                <p>Hold and drag the canvas to navigate</p>
+              </header>
               <LifeEditWorkspace
                 initialNodeId={projection.selected.id}
                 onBrowse={(id) => {
@@ -509,7 +514,7 @@ export function LifeScreen({
                   compact
                   icon={iconLife}
                   title="This branch is open."
-                  body="Use Edit when you want to grow its structure."
+                  body="Open Tree when you want to grow its structure."
                 />
               )}
 

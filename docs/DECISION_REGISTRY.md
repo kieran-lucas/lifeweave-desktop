@@ -29,7 +29,17 @@ The immutable source is authoritative. This registry makes operational status vi
   the current assessment label directly; progress is never encoded by colour alone.
 - Reminder, Windows notification, sound, snooze, and app-open streak removed.
 - Analytics is a separate destination.
-- Life Browse shows selected + direct children; full tree belongs to Life Edit; leaf opens a separate reader.
+- Life Browse shows selected + direct children; the full hierarchy belongs to the separate **Tree**
+  workspace and grows left-to-right from the root. The former visible Edit mode and permanently
+  open inspector are replaced by node-local **Add child** and **Edit node** actions; advanced
+  structural controls open only after Edit node. The centered action surface closes on a repeated
+  node activation, outside pointer press, action selection, or Escape. A leaf still opens a separate
+  reader. The Tree viewport exposes no local scrollbars: holding and dragging empty canvas pans in
+  both axes, while node dragging remains structural; arrow keys pan and Home resets for keyboard
+  parity. Its compact header stays at the top of the pane, the bordered pan viewport consumes the
+  remaining available height, and the outer Life canvas does not scroll in Tree mode. Basic Leaf
+  editing uses one non-duplicated extension set, does not rerender React for every document
+  transaction, and exposes contextual row/column/table controls. See ADR 0046.
 - The Life destination is an edge-to-edge main-pane workspace with no route gutter or outer card
   chrome; navigation/content separators remain internal to the workspace. Its navigator owns 15%
   of the workspace width and wraps long node names. Leaf content uses the remaining pane with 5%
@@ -68,6 +78,9 @@ The immutable source is authoritative. This registry makes operational status vi
 - Focus Plan owns first-class variants, ordered phases, committed revisions, and one recovery draft. Rich-text bodies reuse the accepted Basic Leaf canonical value schema by value, not `reader_documents` rows.
 - Focus Plans use shared tags, a distinct `focus_plan` Search entity kind, and full-database backup authority.
 - Focus Plans have no automatic progress percentage and no reminder/notification dependency.
+- Focus Plan detail uses a compact title/lifecycle identity and gives the authored outcome the
+  dominant reading and writing plane; facts, criteria, linked work, and lifecycle actions remain
+  secondary but visible. This is presentation only and changes no Plan authority.
 - Focus Plan activity Analytics is a bounded read-only projection of existing authority over the
   Objective Analytics week/month/year periods. One-off Tasks and recurring occurrences are
   attributed through their **current** `tasks.focus_plan_id` / `task_series.focus_plan_id`, manual
@@ -84,6 +97,11 @@ The immutable source is authoritative. This registry makes operational status vi
 - Focus Plan reviews are user-authored history with a review date, required reflection, optional next focus, and idempotent creation. Creating a review changes no Plan state. Task 37 authorises creation and reading only; edit, delete, archive, scheduling, and Search indexing remain out of scope.
 - Release-candidate hardening is an allocatable roadmap candidate in its own right. Task 40 / Slice 030 activates the Hardening candidate ADR 0028 scored at 8.055 under ADR 0034, changes no product behavior, adds no migration, and is explicitly **not** a feature checkpoint: the latest feature task remained 39 until Task 41 closed.
 - The JavaScript performance gate is versioned. Task 16 and Task 40 budgets are preserved as history and superseded by a Task 41 budget v2 that tracks main, total raw, total gzip, expected chunk count, the named lazy chunks, and every chunk of at least 10,000 raw bytes under a hash-independent identity. Maxima are derived from the final observed build by documented formulas and clamped by locked ceilings; a missing critical chunk, a new unbudgeted chunk at or above 10,000 bytes, and a duplicate normalized identity are failures. Arbitrary budget inflation is not an accepted response to a red gate.
+- Today is the only eager product screen. Non-default routes, Life/Narrative/tree engines, help, and
+  task-composer-only pickers load at point of use; the advisory health probe runs after the first
+  animation frame and never serially gates the initial Today mount. The 2026-08-11 production trace
+  reduced `index.js` from 433,337 to 274,368 raw bytes and lowered its operational maximum to
+  279,856 without raising the locked 550,000-byte ceiling.
 - Quality-gate findings are corrected, never suppressed. `#[allow]`, lint-level reduction, and test exclusion are not accepted responses to a failing lint gate.
 - Machine-verifiable accessibility coverage and physical Narrator/DPI observation are distinct evidence classes. Automated DOM tests never substitute for spoken screen-reader output or physical Windows scaling, and an unobserved manual result is recorded as `NOT RUN`, never PASS.
 - The execution roadmap remains a 60-task envelope. Product Owner allocation may reuse unstarted positions without increasing the total.

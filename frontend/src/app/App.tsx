@@ -10,13 +10,33 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 
 import { healthCheck } from "../ipc/commands";
-import { FoundationScreen } from "../features/foundation/FoundationScreen";
 import { TodayScreen } from "../features/task/today/TodayScreen";
-import { CalendarScreen } from "../features/calendar/CalendarScreen";
-import { AnalyticsScreen } from "../features/analytics/AnalyticsScreen";
-import { CategoryGoals } from "../features/analytics/CategoryGoals";
-import { LifeScreen } from "../features/life/LifeScreen";
 import type { FocusPlanEntryRequest } from "../features/focus-plan/FocusPlansScreen";
+const FoundationScreen = lazy(() =>
+  import("../features/foundation/FoundationScreen").then((module) => ({
+    default: module.FoundationScreen,
+  })),
+);
+const CalendarScreen = lazy(() =>
+  import("../features/calendar/CalendarScreen").then((module) => ({
+    default: module.CalendarScreen,
+  })),
+);
+const AnalyticsScreen = lazy(() =>
+  import("../features/analytics/AnalyticsScreen").then((module) => ({
+    default: module.AnalyticsScreen,
+  })),
+);
+const CategoryGoals = lazy(() =>
+  import("../features/analytics/CategoryGoals").then((module) => ({
+    default: module.CategoryGoals,
+  })),
+);
+const LifeScreen = lazy(() =>
+  import("../features/life/LifeScreen").then((module) => ({
+    default: module.LifeScreen,
+  })),
+);
 const FocusPlansScreen = lazy(() =>
   import("../features/focus-plan/FocusPlansScreen").then((module) => ({
     default: module.FocusPlansScreen,
@@ -50,7 +70,11 @@ import { LoadingRow } from "../design-system/primitives/States";
 import * as styles from "./App.css";
 import { PageFrame, PageHeader } from "./layout/PageFrame";
 import { RouteErrorBoundary } from "./RouteErrorBoundary";
-import { ShortcutHelpDialog } from "./ShortcutHelpDialog";
+const ShortcutHelpDialog = lazy(() =>
+  import("./ShortcutHelpDialog").then((module) => ({
+    default: module.ShortcutHelpDialog,
+  })),
+);
 import {
   compactShellQuery,
   sidebarIsCollapsed,
@@ -130,9 +154,7 @@ export function App() {
     },
   }, []);
   const initialRoute: AppHistoryRoute = initialEntry.route;
-  const [ipcStatus, setIpcStatus] = useState<"loading" | "ready" | "error">(
-    "loading",
-  );
+  const [ipcStatus, setIpcStatus] = useState<"ready" | "error">("ready");
   const [destination, setDestination] = useState<Destination>(initialRoute.destination);
   const [settingsView, setSettingsView] = useState<SettingsView>(initialRoute.settingsView);
   const [selectedDate, setSelectedDate] = useState(initialRoute.selectedDate);
@@ -273,9 +295,16 @@ export function App() {
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
   useEffect(() => {
-    healthCheck()
-      .then(() => setIpcStatus("ready"))
-      .catch(() => setIpcStatus("error"));
+    let active = true;
+    const frame = requestAnimationFrame(() => {
+      healthCheck()
+        .then(() => { if (active) setIpcStatus("ready"); })
+        .catch(() => { if (active) setIpcStatus("error"); });
+    });
+    return () => {
+      active = false;
+      cancelAnimationFrame(frame);
+    };
   }, []);
   useEffect(() => {
     try {
@@ -421,11 +450,6 @@ export function App() {
         data-destination={destination}
         data-navigation-motion={navigationMotion}
       >
-        {ipcStatus === "loading" && (
-          <p className={styles.coreStatus} aria-live="polite">
-            Connecting to application core…
-          </p>
-        )}
         {ipcStatus === "error" && (
           <p className={styles.coreStatus} role="alert">
             Application core unavailable.
@@ -486,7 +510,9 @@ export function App() {
                     </button>
                   </div>
                 </section>
-                <CategoryGoals />
+                <Suspense fallback={<LoadingRow label="Loading category goals…" />}>
+                  <CategoryGoals />
+                </Suspense>
                 <Suspense fallback={<LoadingRow label="Loading tag settings…" />}>
                   <TagSettings />
                 </Suspense>
@@ -519,7 +545,9 @@ export function App() {
                 >
                   <h2 id="settings-foundation-heading">Foundation tools</h2>
                   <p>FoundationRecord verification tools.</p>
-                  <FoundationScreen />
+                  <Suspense fallback={<LoadingRow label="Loading foundation tools…" />}>
+                    <FoundationScreen />
+                  </Suspense>
                 </section>
               </PageFrame>
             )}
@@ -545,7 +573,9 @@ export function App() {
                     Settings
                   </button>
                 </PageFrame>
-                <AnalyticsScreen onPlanNavigate={navigateToFocusPlan} />
+                <Suspense fallback={<LoadingRow label="Loading analytics…" />}>
+                  <AnalyticsScreen onPlanNavigate={navigateToFocusPlan} />
+                </Suspense>
               </div>
             )}
             {destination === "today" && (
@@ -571,11 +601,13 @@ export function App() {
                   headingRef.current = node;
                 }}
               >
-                <CalendarScreen
-                  selectedDate={selectedDate}
-                  today={localToday()}
-                  onActivateDate={activateCalendarDate}
-                />
+                <Suspense fallback={<LoadingRow label="Loading calendar…" />}>
+                  <CalendarScreen
+                    selectedDate={selectedDate}
+                    today={localToday()}
+                    onActivateDate={activateCalendarDate}
+                  />
+                </Suspense>
               </div>
             )}
             {destination === "plans" && (
@@ -601,12 +633,14 @@ export function App() {
                   headingRef.current = node;
                 }}
               >
-                <LifeScreen
-                  anchorLocalDate={anchorLocalDate}
-                  onTaskNavigate={navigateToTask}
-                  entryRequest={lifeEntryRequest}
-                  onEntryRequestSettled={settleNavigationRequest}
-                />
+                <Suspense fallback={<LoadingRow label="Loading Life System…" />}>
+                  <LifeScreen
+                    anchorLocalDate={anchorLocalDate}
+                    onTaskNavigate={navigateToTask}
+                    entryRequest={lifeEntryRequest}
+                    onEntryRequestSettled={settleNavigationRequest}
+                  />
+                </Suspense>
               </div>
             )}
           </RouteErrorBoundary>
@@ -621,7 +655,11 @@ export function App() {
           />
         </Suspense>
       )}
-      {shortcutHelpOpen && <ShortcutHelpDialog onClose={closeShortcutHelp} />}
+      {shortcutHelpOpen && (
+        <Suspense>
+          <ShortcutHelpDialog onClose={closeShortcutHelp} />
+        </Suspense>
+      )}
     </div>
   );
 }

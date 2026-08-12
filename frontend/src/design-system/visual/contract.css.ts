@@ -98,6 +98,14 @@ export const vars = createThemeContract({
     modal: null,
   },
 
+  /** Material treatments for the four explicit Task assessment states. */
+  assessmentOrb: {
+    none: null,
+    low: null,
+    done: null,
+    great: null,
+  },
+
   /** Structural line roles. */
   hairline: {
     structural: null,

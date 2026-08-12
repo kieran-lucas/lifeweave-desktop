@@ -22,17 +22,6 @@ export const libraryHeader = style({
   paddingInline: 3,
 });
 
-export const libraryKicker = style({
-  display: "block",
-  marginBlockEnd: 3,
-  color: "#777777",
-  fontSize: 10,
-  lineHeight: "14px",
-  fontWeight: 760,
-  letterSpacing: ".13em",
-  textTransform: "uppercase",
-});
-
 export const libraryTitle = style({
   margin: 0,
   color: "#111111",
@@ -52,10 +41,11 @@ export const primaryAction = style({
   fontSize: 12,
   fontWeight: 720,
   cursor: "pointer",
-  transition: `transform ${duration.press} ${easing.standard}, background-color ${duration.state} ${easing.standard}`,
+  boxShadow: "0 1px 2px rgba(0,0,0,.12)",
+  transition: `transform ${duration.press} ${easing.standard}, background-color ${duration.state} ${easing.standard}, box-shadow ${duration.state} ${easing.standard}`,
   selectors: {
-    "&:hover:not(:disabled)": { background: "#292929" },
-    "&:active:not(:disabled)": { transform: "scale(.97)" },
+    "&:hover:not(:disabled)": { background: "#292929", transform: "translateY(-1px)", boxShadow: "0 6px 16px rgba(0,0,0,.14)" },
+    "&:active:not(:disabled)": { transform: "translateY(1px) scale(.99)", boxShadow: "none" },
     "&:disabled": { opacity: .42, cursor: "not-allowed" },
     "&:focus-visible": { outline: "2px solid #111111", outlineOffset: 3 },
   },
@@ -71,10 +61,11 @@ export const secondaryAction = style({
   fontSize: 12,
   fontWeight: 680,
   cursor: "pointer",
-  transition: `background-color ${duration.state} ${easing.standard}, transform ${duration.press} ${easing.standard}`,
+  boxShadow: "0 1px 2px rgba(0,0,0,.04)",
+  transition: `background-color ${duration.state} ${easing.standard}, border-color ${duration.state} ${easing.standard}, transform ${duration.press} ${easing.standard}, box-shadow ${duration.state} ${easing.standard}`,
   selectors: {
-    "&:hover": { background: "#F3F3F3" },
-    "&:active": { transform: "scale(.97)" },
+    "&:hover": { background: "#F3F3F3", borderColor: "#BEBEBE", transform: "translateY(-1px)", boxShadow: "0 5px 14px rgba(0,0,0,.08)" },
+    "&:active": { transform: "translateY(1px) scale(.99)", boxShadow: "none" },
     "&:focus-visible": { outline: "2px solid #111111", outlineOffset: 2 },
   },
 });
@@ -159,34 +150,23 @@ export const planCollection = style({
 
 export const planRow = style({
   display: "grid",
-  gridTemplateColumns: "44px minmax(0, 1fr) auto 26px",
+  gridTemplateColumns: "minmax(0, 1fr)",
   alignItems: "center",
   gap: 14,
-  minBlockSize: 76,
-  padding: "12px 8px",
+  minBlockSize: 68,
+  padding: "11px 8px",
   border: 0,
   borderBlockEnd: "1px solid #E4E4E4",
   background: "transparent",
   color: "#111111",
   textAlign: "left",
   cursor: "pointer",
-  transition: `background-color ${duration.state} ${easing.standard}, padding-inline ${duration.state} ${easing.standard}`,
+  transition: `background-color ${duration.state} ${easing.standard}, padding-inline ${duration.state} ${easing.standard}, transform ${duration.press} ${easing.standard}`,
   selectors: {
-    "&:hover": { background: "#F7F7F7", paddingInline: 12 },
+    "&:hover": { background: "#F7F7F7", paddingInline: 12, transform: "translateX(2px)" },
+    "&:active": { transform: "translateX(2px) scale(.997)" },
     "&:focus-visible": { outline: "2px solid #111111", outlineOffset: -2 },
   },
-  "@media": {
-    "(max-width: 620px)": { gridTemplateColumns: "34px minmax(0, 1fr) 24px" },
-  },
-});
-
-export const planOrdinal = style({
-  color: "#A4A4A4",
-  fontSize: 10,
-  lineHeight: "14px",
-  fontWeight: 720,
-  fontVariantNumeric: "tabular-nums",
-  letterSpacing: ".08em",
 });
 
 export const planCopy = style({ display: "grid", gap: 3, minInlineSize: 0 });
@@ -207,24 +187,6 @@ globalStyle(`${planCopy} > small`, {
   lineHeight: "15px",
   textOverflow: "ellipsis",
   whiteSpace: "nowrap",
-});
-
-export const planStatus = style({
-  padding: "4px 8px",
-  border: "1px solid #DADADA",
-  borderRadius: 999,
-  color: "#626262",
-  fontSize: 10,
-  fontWeight: 700,
-  textTransform: "capitalize",
-  "@media": { "(max-width: 620px)": { display: "none" } },
-});
-
-export const planArrow = style({
-  color: "#A6A6A6",
-  fontSize: 15,
-  transition: `transform ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}`,
-  selectors: { [`${planRow}:hover &`]: { color: "#111111", transform: "translate(2px,-2px)" } },
 });
 
 export const document = style({
@@ -267,9 +229,15 @@ export const documentActions = style({ display: "flex", alignItems: "center", ga
 
 export const hero = style({
   display: "grid",
-  gap: 16,
-  paddingBlock: "clamp(34px, 7vw, 72px) 34px",
+  gap: "clamp(22px, 4vw, 36px)",
+  paddingBlock: "clamp(20px, 3vw, 32px) 28px",
   borderBottom: "1px solid #E3E3E3",
+});
+
+export const heroIdentity = style({
+  display: "grid",
+  gap: 9,
+  minInlineSize: 0,
 });
 
 export const lifecycle = style({
@@ -286,13 +254,13 @@ export const lifecycle = style({
 });
 
 export const documentTitle = style({
-  maxInlineSize: "18ch",
+  maxInlineSize: "28ch",
   margin: 0,
   color: "#111111",
-  fontSize: "clamp(38px, 6vw, 68px)",
-  lineHeight: .97,
+  fontSize: "clamp(27px, 3.4vw, 40px)",
+  lineHeight: 1.04,
   fontWeight: 700,
-  letterSpacing: "-.06em",
+  letterSpacing: "-.045em",
   overflowWrap: "anywhere",
 });
 
@@ -305,36 +273,18 @@ export const titleInput = style({
   outline: 0,
   background: "transparent",
   color: "#111111",
-  fontSize: "clamp(38px, 6vw, 68px)",
-  lineHeight: 1.04,
+  fontSize: "clamp(27px, 3.4vw, 40px)",
+  lineHeight: 1.08,
   fontWeight: 700,
-  letterSpacing: "-.06em",
+  letterSpacing: "-.045em",
   selectors: { "&:focus": { borderBottomColor: "#111111" } },
 });
 
-export const outcomeStatement = style({
-  maxInlineSize: "58ch",
-  margin: 0,
-  color: "#4D4D4D",
-  fontSize: "clamp(17px, 2vw, 21px)",
-  lineHeight: 1.55,
-  fontWeight: 450,
-  letterSpacing: "-.012em",
-});
-
-export const outcomeEditor = style({
-  inlineSize: "100%",
-  minBlockSize: 120,
-  resize: "vertical",
-  padding: 12,
-  border: "1px solid #D2D2D2",
-  borderRadius: 10,
-  outline: 0,
-  background: "#FAFAFA",
-  color: "#222222",
-  fontSize: 17,
-  lineHeight: 1.55,
-  selectors: { "&:focus": { borderColor: "#111111", background: "#FFFFFF" } },
+export const planContent = style({
+  minBlockSize: 0,
+  display: "grid",
+  paddingInlineStart: "clamp(14px, 2vw, 20px)",
+  borderInlineStart: "2px solid #D8D8D8",
 });
 
 export const factRow = style({
@@ -373,17 +323,13 @@ globalStyle(`${factEditor} > input, ${factEditor} > select`, {
   letterSpacing: 0,
 });
 
-export const criteriaSection = style({ paddingBlock: "34px 40px", borderBottom: "1px solid #E3E3E3" });
-export const linkedSection = style({ paddingBlock: "34px 40px", borderBottom: "1px solid #E3E3E3" });
+export const criteriaSection = style({ paddingBlock: "26px 30px", borderBottom: "1px solid #E3E3E3" });
+export const linkedSection = style({ paddingBlock: "26px 30px", borderBottom: "1px solid #E3E3E3" });
 
 export const sectionHeading = style({
-  display: "grid",
-  gridTemplateColumns: "36px 1fr",
-  alignItems: "baseline",
-  gap: 10,
-  marginBlockEnd: 22,
+  display: "block",
+  marginBlockEnd: 14,
 });
-export const sectionIndex = style({ color: "#AAAAAA", fontSize: 9, fontWeight: 760, letterSpacing: ".08em" });
 globalStyle(`${sectionHeading} > h2`, { margin: 0, color: "#222222", fontSize: 14, lineHeight: "20px", fontWeight: 720, letterSpacing: "-.012em" });
 
 export const criteriaList = style({ listStyle: "none", display: "grid", gap: 0, margin: 0, padding: 0 });
@@ -433,7 +379,7 @@ export const archiveAction = style({
 });
 
 /* Linked work is deliberately list-like, not a nested card dashboard. */
-export const linkedMeta = style({ margin: "-12px 0 16px 46px", color: "#858585", fontSize: 11 });
+export const linkedMeta = style({ margin: "0 0 12px", color: "#858585", fontSize: 11 });
 export const linkedList = style({ listStyle: "none", display: "grid", gap: 0, margin: 0, padding: 0 });
 export const linkedRow = style([
   focusOutline,
@@ -444,7 +390,7 @@ export const linkedRow = style([
     gridTemplateColumns: "minmax(0,1fr) auto",
     alignItems: "center",
     gap: 16,
-    padding: "10px 8px 10px 46px",
+    padding: "10px 8px",
     border: 0,
     borderBottom: "1px solid #ECECEC",
     background: "transparent",

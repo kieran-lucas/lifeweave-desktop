@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import axe from "axe-core";
 
@@ -18,12 +18,17 @@ const tiptap = vi.hoisted(() => {
     "extendMarkRange",
     "setLink",
     "insertTable",
+    "addRowAfter",
+    "addColumnAfter",
+    "deleteRow",
+    "deleteColumn",
+    "deleteTable",
     "setImage",
   ]) chain[name] = vi.fn(() => chain);
   chain.run = vi.fn(() => true);
   const editor = {
     chain: () => chain,
-    isActive: vi.fn(() => false),
+    isActive: vi.fn((_node?: unknown) => false),
     getJSON: () => ({ type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "Draft" }] }] }),
   };
   return {
@@ -32,7 +37,7 @@ const tiptap = vi.hoisted(() => {
     config: undefined as undefined | {
       autofocus?: string;
       editorProps?: { attributes?: Record<string, string> };
-      onUpdate?: () => void;
+      onUpdate?: (value: { editor: { getJSON: () => unknown } }) => void;
     },
   };
 });
@@ -48,6 +53,7 @@ vi.mock("@tiptap/react", () => ({
     tiptap.config = config;
     return tiptap.editor;
   },
+  useEditorState: ({ selector }: { selector: (value: { editor: typeof tiptap.editor }) => unknown }) => selector({ editor: tiptap.editor }),
 }));
 vi.mock("@tiptap/core", () => ({ Node: { create: (value: unknown) => value } }));
 vi.mock("@tiptap/extension-image", () => ({ default: { extend: () => ({ configure: () => ({}) }) } }));
@@ -67,12 +73,13 @@ const document = {
   updated_at: "now",
 };
 
-const markChanged = () => act(() => tiptap.config?.onUpdate?.());
+const markChanged = () => act(() => tiptap.config?.onUpdate?.({ editor: tiptap.editor }));
 
 describe("focused Basic Leaf editor", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     tiptap.chain.run!.mockReturnValue(true);
+    tiptap.editor.isActive.mockReturnValue(false);
     api.save.mockResolvedValue({ ...document, revision: 4 });
     api.draft.mockResolvedValue({});
     api.asset.mockResolvedValue({
@@ -88,13 +95,25 @@ describe("focused Basic Leaf editor", () => {
 
   afterEach(() => vi.useRealTimers());
 
-  it("exposes only the bounded Core controls in one accessible toolbar", () => {
+  it("exposes only the bounded Core controls in one accessible toolbar", async () => {
     render(<BasicLeafEditor document={document} onCommitted={vi.fn()} onCancel={vi.fn()} />);
 
-    expect(screen.getByRole("toolbar", { name: "Formatting" })).toBeInTheDocument();
+    expect(await screen.findByRole("toolbar", { name: "Formatting" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Bold" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Table" })).toBeInTheDocument();
     expect(screen.queryByText(/scene|template|canvas/i)).not.toBeInTheDocument();
+  });
+
+  it("reveals direct row and column controls while the caret is in a table", async () => {
+    tiptap.editor.isActive.mockImplementation((node: unknown) => node === "table");
+    render(<BasicLeafEditor document={document} onCommitted={vi.fn()} onCancel={vi.fn()} />);
+
+    const tableTools = await screen.findByRole("toolbar", { name: "Table editing" });
+    fireEvent.click(within(tableTools).getByRole("button", { name: "Add row" }));
+    fireEvent.click(within(tableTools).getByRole("button", { name: "Delete table" }));
+    expect(tiptap.chain.addRowAfter).toHaveBeenCalledOnce();
+    expect(tiptap.chain.deleteTable).toHaveBeenCalledOnce();
+    expect(within(tableTools).getByText(/Tab moves between cells/)).toBeInTheDocument();
   });
 
   it("focuses the authored surface and gives the real editor accessible text semantics", () => {
@@ -219,6 +238,7 @@ describe("focused Basic Leaf editor", () => {
     fireEvent.click(screen.getByRole("button", { name: "Link" }));
     const input = screen.getByLabelText("Link destination");
     expect(input).toHaveFocus();
+    expect(input).toHaveAttribute("inputmode", "url");
     tiptap.chain.run!.mockReturnValueOnce(false);
     fireEvent.change(input, { target: { value: "javascript:alert(1)" } });
     fireEvent.click(screen.getByRole("button", { name: "Add link" }));

@@ -69,6 +69,13 @@ export const lightValues = {
     modal: "0 26px 72px rgba(0, 0, 0, 0.20), 0 7px 20px rgba(0, 0, 0, 0.09)",
   },
 
+  assessmentOrb: {
+    none: "radial-gradient(circle at 31% 25%, oklch(1 0 0) 0 14%, oklch(.88 .01 255) 33%, oklch(.62 .025 255) 72%, oklch(.42 .025 255) 100%)",
+    low: "radial-gradient(circle at 31% 25%, oklch(.98 .04 90) 0 14%, oklch(.79 .15 75) 34%, oklch(.58 .16 55) 73%, oklch(.39 .10 45) 100%)",
+    done: "radial-gradient(circle at 31% 25%, oklch(.98 .02 240) 0 14%, oklch(.73 .15 245) 34%, oklch(.55 .19 255) 73%, oklch(.36 .15 260) 100%)",
+    great: "radial-gradient(circle at 31% 25%, oklch(.98 .025 300) 0 14%, oklch(.72 .17 295) 34%, oklch(.54 .21 292) 73%, oklch(.34 .16 292) 100%)",
+  },
+
   hairline: {
     structural: "1px solid #CFCFCF",
     subtle: "1px solid #E2E2E2",

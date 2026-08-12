@@ -89,4 +89,32 @@ describe("Life leaf contents control", () => {
     fireEvent.click(screen.getByRole("button", { name: "Hide contents" }));
     await waitFor(() => expect(screen.queryByRole("navigation", { name: "Document outline" })).not.toBeInTheDocument());
   });
+
+  it("contains Tree in a dedicated pan viewport without an outer Life canvas scroll region", async () => {
+    api.browse.mockResolvedValue({
+      root_id: "life-root",
+      selected: { ...leaf, is_leaf: false, child_count: 1 },
+      parent: null,
+      children: [],
+      breadcrumb: [{ ...leaf, is_leaf: false, child_count: 1 }],
+      selected_is_pinned: false,
+      child_page: 0,
+      child_page_count: 1,
+      tree_revision: 1,
+      resolved_from_fallback: false,
+      preferred_mode: "edit",
+      viewport_anchor: null,
+    });
+
+    const { container } = render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <LifeScreen anchorLocalDate="2026-08-11" />
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByRole("heading", { name: "Life tree" })).toBeInTheDocument();
+    expect(container.querySelector("[data-life-tree-header]")).toBeInTheDocument();
+    expect(container.querySelector("[data-life-tree-shell]")).toBeInTheDocument();
+    expect(container.querySelector('main[data-life-mode="edit"]')).toBeInTheDocument();
+  });
 });
