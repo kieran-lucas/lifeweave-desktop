@@ -35,8 +35,8 @@
   --paint-edge-strong: #C6C6C6;
   --paint-fiber: rgba(17, 17, 17, 0.055);
   --paint-fiber-light: rgba(255, 255, 255, 0.80);
-  --paint-grain: repeating-linear-gradient(0deg, rgba(17, 17, 17, 0.018) 0 1px, transparent 1px 5px);
-  --paint-grain-fine: repeating-linear-gradient(0deg, rgba(17, 17, 17, 0.012) 0 1px, transparent 1px 4px);
+  --paint-grain: none;
+  --paint-grain-fine: none;
   --paint-wash-blue: none;
   --paint-wash-violet: none;
   --paint-wash-rose: none;

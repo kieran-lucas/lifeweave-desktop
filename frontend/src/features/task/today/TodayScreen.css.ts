@@ -168,17 +168,9 @@ globalStyle(`${taskMeta} > button`, {
 globalStyle(`${taskMeta} > button:hover`, { color: "#111111", textDecoration: "underline" });
 globalStyle(`${taskMeta} > button:focus-visible`, { outline: "1.5px solid #111111", outlineOffset: 2 });
 
-export const categoryMeta = style({ display: "inline-flex", alignItems: "center", gap: 4, minInlineSize: 0 });
-globalStyle(`${categoryMeta} svg`, { inlineSize: 12, blockSize: 12 });
 
 export const assessmentSlot = style({
   justifySelf: "end",
-});
-
-export const rowArrow = style({
-  color: "#B1B1B1",
-  transition: `color ${duration.state} ${easing.standard}, transform ${duration.state} ${easing.standard}`,
-  selectors: { [`${taskRow}:hover &`]: { color: "#555555", transform: "translateX(2px)" } },
 });
 
 /* Progressive task composer ------------------------------------------------ */
@@ -239,44 +231,25 @@ export const titleField = style({
   letterSpacing: "-.035em",
   selectors: {
     "&::placeholder": { color: "#B0B0B0" },
-    "&:focus": { borderBottomColor: "#111111" },
+    "&:focus": { borderBottomColor: "#111111", boxShadow: "none" },
   },
 });
+globalStyle(`${titleField}:focus, ${titleField}:focus-visible`, { outline: "none !important", boxShadow: "none !important" });
 
 export const scheduleBar = style({
   display: "grid",
   gridTemplateColumns: "1.35fr 1fr 1fr",
   gap: 1,
-  overflow: "hidden",
   border: "1px solid #D8D8D8",
   borderRadius: 11,
   background: "#D8D8D8",
   "@media": { "(max-width: 520px)": { gridTemplateColumns: "1fr" } },
 });
-globalStyle(`${scheduleBar} > label`, { display: "grid", gap: 4, padding: "8px 10px", background: "#FAFAFA" });
-globalStyle(`${scheduleBar} > label > span`, { color: "#929292", fontSize: 8, lineHeight: "11px", fontWeight: 760, letterSpacing: ".08em", textTransform: "uppercase" });
-globalStyle(`${scheduleBar} input`, { minInlineSize: 0, minBlockSize: 24, padding: 0, border: 0, outline: 0, background: "transparent", color: "#222222", fontSize: 12, fontWeight: 620, fontVariantNumeric: "tabular-nums" });
-
-globalStyle(`${scheduleBar} input:focus-visible`, { outline: "1.5px solid #111111", outlineOffset: 2 });
-
-export const detailsToggle = style({
-  justifySelf: "start",
-  minBlockSize: 30,
-  display: "inline-flex",
-  alignItems: "center",
-  gap: 5,
-  padding: "0 7px",
-  border: 0,
-  borderRadius: 7,
-  background: "transparent",
-  color: "#777777",
-  fontSize: 10,
-  fontWeight: 680,
-  cursor: "pointer",
-  selectors: { "&:hover": { background: "#F3F3F3", color: "#222222" }, "&:focus-visible": { outline: "2px solid #111111", outlineOffset: 2 } },
-});
-export const detailsArrow = style({ transition: `transform ${duration.state} ${easing.standard}` });
-export const detailsArrowOpen = style([detailsArrow, { transform: "rotate(90deg)" }]);
+export const scheduleDateField = style({ display: "grid", gap: 4, minInlineSize: 0, padding: "9px 11px", background: "#FFFFFF" });
+globalStyle(`${scheduleDateField} > span`, { color: "#777777", fontSize: 8, lineHeight: "11px", fontWeight: 760, letterSpacing: ".08em", textTransform: "uppercase" });
+globalStyle(`${scheduleDateField} > input`, { minInlineSize: 0, minBlockSize: 25, padding: "2px 4px", border: "1px solid transparent", borderRadius: 7, outline: 0, background: "#FFFFFF", color: "#111111", fontSize: 12, fontWeight: 680, fontVariantNumeric: "tabular-nums", cursor: "pointer" });
+globalStyle(`${scheduleDateField} > input:hover`, { background: "var(--accent-soft)", borderColor: "#C8D7FA" });
+globalStyle(`${scheduleDateField} > input:focus-visible`, { outline: "2px solid var(--focus-ring)", outlineOffset: 1, borderColor: "var(--accent)" });
 
 export const detailsPanel = style({
   display: "grid",

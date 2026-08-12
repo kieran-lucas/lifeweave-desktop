@@ -3,7 +3,7 @@
 The packaged PNG and ICO files in this directory are generated from
 `assets/brand/lifeweave-app-icon.svg`.
 
-The application icon uses a blue-to-violet rounded-square field with the same woven-W geometry used
+The application icon uses a solid blue rounded-square field with the same woven-W geometry used
 by the shell identity. The outer white life path and lighter crossing thread form a compact central
 diamond, so Windows taskbar/start-menu rendering retains a distinct silhouette at small sizes.
 

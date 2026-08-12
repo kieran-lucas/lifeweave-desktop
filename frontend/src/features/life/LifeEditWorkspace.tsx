@@ -51,7 +51,7 @@ function Positioner({node,point,selected,menuOpen,onSelect,onAdd,onEdit,invalid,
    <button ref={beforeDrop.setNodeRef} className={styles.dropBefore} data-over={beforeDrop.isOver} tabIndex={-1} aria-label={`Insert before ${node.title}`}/>
    <div ref={setRefs} className={styles.dndOwner}>
     <button className={styles.nodeCard} onClick={onSelect} {...sortable.attributes} {...sortable.listeners} aria-pressed={selected} aria-expanded={menuOpen} aria-controls={menuOpen?`life-node-actions-${node.id}`:undefined} data-life-edit-id={node.id}>
-      <span aria-hidden="true"><Icon d={node.is_leaf?iconNote:iconLife} size={15}/></span><span><span className={styles.compactTitle}>{node.title}</span><span className={styles.compactMeta}>{node.is_leaf?"Leaf":`${node.child_count} children`}{node.is_pinned?" · Pinned":""}</span><TagChipList tags={node.tags} /></span>
+      <span aria-hidden="true"><Icon d={node.is_leaf?iconNote:iconLife} size={15}/></span><span><span className={styles.compactTitle}>{node.title}</span>{(node.is_leaf||node.is_pinned)&&<span className={styles.compactMeta}>{[node.is_leaf?"Leaf":null,node.is_pinned?"Pinned":null].filter(Boolean).join(" · ")}</span>}<TagChipList tags={node.tags} /></span>
     </button>
     {menuOpen&&<div id={`life-node-actions-${node.id}`} className={styles.nodeActions} data-life-node-actions="" role="group" aria-label={`Actions for ${node.title}`}>
       <button type="button" className={styles.nodeAction} onClick={onAdd}><span className={styles.nodeActionIcon} aria-hidden="true">+</span><span>Add child</span></button>

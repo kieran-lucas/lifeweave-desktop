@@ -785,10 +785,7 @@ export const ambientLayer = style({ position: "absolute", inset: 0, inlineSize: 
  * than as a tint.
  */
 export const ambientGlow = style({
-  backgroundImage: `radial-gradient(760px 520px at 86% -6%, ${vars.color.ambientGlowPrimary}, transparent 68%),
-                    radial-gradient(620px 460px at 104% 40%, ${vars.color.ambientGlowSecondary}, transparent 70%),
-                    radial-gradient(520px 380px at -8% 108%, ${vars.color.ambientGlowPrimary}, transparent 70%),
-                    radial-gradient(1200px 820px at 96% 24%, ${vars.color.ambientAura}, transparent 76%)`,
+  backgroundImage: "none",
 });
 
 /** Fills the theme wrapper, which is the prototype's root box. */

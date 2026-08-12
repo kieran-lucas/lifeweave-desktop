@@ -8,34 +8,46 @@ pub fn import(markdown: &str) -> Result<String, DocumentError> {
     if markdown.len() > MAX_MARKDOWN_BYTES {
         return Err(DocumentError::Validation("Markdown is too large."));
     }
-    if markdown.contains("<script")
-        || markdown.contains("<iframe")
+    let lower = markdown.to_ascii_lowercase();
+    let has_mdx_module = markdown.lines().any(|line| {
+        let line = line.trim_start();
+        (line.starts_with("import ") || line.starts_with("export "))
+            && line.contains(" from ")
+            && (line.contains('"') || line.contains('\''))
+    });
+    if lower.contains("<script")
+        || lower.contains("<iframe")
+        || lower.contains("<style")
         || markdown.contains("{%")
         || markdown.contains("{/*")
         || markdown.contains("../")
+        || has_mdx_module
     {
         return Err(DocumentError::Validation(
             "Markdown contains unsafe or unsupported content.",
         ));
     }
     let mut content = Vec::new();
-    let mut code = false;
+    let mut code_fence: Option<String> = None;
     let mut code_lines = Vec::new();
     let lines = markdown.lines().collect::<Vec<_>>();
     let mut index = 0;
     while index < lines.len() {
         let line = lines[index];
-        if line.starts_with("```") {
-            if code {
+        if let Some(open_fence) = code_fence.as_deref() {
+            if line.trim() == open_fence {
                 content.push(json!({"type":"codeBlock","content":[{"type":"text","text":code_lines.join("\n")}]}));
                 code_lines.clear();
+                code_fence = None;
+            } else {
+                code_lines.push(line);
             }
-            code = !code;
             index += 1;
             continue;
         }
-        if code {
-            code_lines.push(line);
+        let tick_count = line.chars().take_while(|value| *value == '`').count();
+        if tick_count >= 3 {
+            code_fence = Some("`".repeat(tick_count));
             index += 1;
             continue;
         }
@@ -134,7 +146,7 @@ pub fn import(markdown: &str) -> Result<String, DocumentError> {
         content.push(node);
         index += 1;
     }
-    if code {
+    if code_fence.is_some() {
         return Err(DocumentError::Validation(
             "Markdown code fence is not closed.",
         ));
@@ -206,6 +218,12 @@ pub fn export(canonical: &str) -> Result<String, DocumentError> {
     Ok(out.trim_end().to_owned() + "\n")
 }
 fn inline(node: &Value) -> String {
+    if node.get("type").and_then(Value::as_str) == Some("hardBreak") {
+        return "  \n".to_owned();
+    }
+    if node.get("type").and_then(Value::as_str) != Some("text") {
+        return text(node);
+    }
     let text = node.get("text").and_then(Value::as_str).unwrap_or("");
     let mut value = text.to_owned();
     if let Some(marks) = node.get("marks").and_then(Value::as_array) {
@@ -233,6 +251,93 @@ fn text(node: &Value) -> String {
         .map(|a| a.iter().map(inline).collect())
         .unwrap_or_default()
 }
+
+fn render_children(n: &Value, depth: usize) -> Result<String, DocumentError> {
+    let mut body = String::new();
+    for child in n
+        .get("content")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+    {
+        render(child, &mut body, depth)?;
+    }
+    if body.trim().is_empty() {
+        body = text(n);
+    }
+    Ok(body)
+}
+
+fn render_quote_body(body: &str, out: &mut String) {
+    for line in body.trim_end().lines() {
+        if line.is_empty() {
+            out.push_str(">\n");
+        } else {
+            out.push_str("> ");
+            out.push_str(line);
+            out.push('\n');
+        }
+    }
+    out.push('\n');
+}
+
+fn code_fence(content: &str) -> String {
+    let longest_run = content
+        .split(|value| value != '`')
+        .map(str::len)
+        .max()
+        .unwrap_or(0);
+    "`".repeat(3.max(longest_run + 1))
+}
+
+fn render_list_item(
+    item: &Value,
+    out: &mut String,
+    depth: usize,
+    prefix: &str,
+) -> Result<(), DocumentError> {
+    let children = item.get("content").and_then(Value::as_array);
+    let Some(children) = children else {
+        return Ok(());
+    };
+    let mut wrote_first = false;
+    for child in children {
+        match child.get("type").and_then(Value::as_str).unwrap_or("") {
+            "paragraph" => {
+                out.push_str(&"  ".repeat(depth + usize::from(wrote_first)));
+                if !wrote_first {
+                    out.push_str(prefix);
+                }
+                out.push_str(&text(child));
+                out.push('\n');
+                wrote_first = true;
+            }
+            "bulletList" | "orderedList" => {
+                if !wrote_first {
+                    out.push_str(&"  ".repeat(depth));
+                    out.push_str(prefix);
+                    out.push('\n');
+                    wrote_first = true;
+                }
+                render(child, out, depth + 1)?;
+            }
+            _ => {
+                let rendered = render_children(child, depth + 1)?;
+                if !rendered.trim().is_empty() {
+                    out.push_str(&"  ".repeat(depth + usize::from(wrote_first)));
+                    if !wrote_first {
+                        out.push_str(prefix);
+                    }
+                    out.push_str(rendered.trim_end());
+                    out.push('\n');
+                    wrote_first = true;
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
 fn render(n: &Value, out: &mut String, depth: usize) -> Result<(), DocumentError> {
     match n.get("type").and_then(Value::as_str).unwrap_or("") {
         "heading" => {
@@ -244,7 +349,10 @@ fn render(n: &Value, out: &mut String, depth: usize) -> Result<(), DocumentError
             out.push_str(&format!("{} {}\n\n", "#".repeat(l as usize), text(n)));
         }
         "paragraph" => out.push_str(&format!("{}\n\n", text(n))),
-        "blockquote" => out.push_str(&format!("> {}\n\n", text(n))),
+        "blockquote" => {
+            let body = render_children(n, depth)?;
+            render_quote_body(&body, out);
+        }
         "callout" => {
             let variant = n
                 .get("attrs")
@@ -252,9 +360,15 @@ fn render(n: &Value, out: &mut String, depth: usize) -> Result<(), DocumentError
                 .and_then(Value::as_str)
                 .unwrap_or("note")
                 .to_uppercase();
-            out.push_str(&format!("> [!{variant}] {}\n\n", text(n)));
+            out.push_str(&format!("> [!{variant}]\n"));
+            let body = render_children(n, depth)?;
+            render_quote_body(&body, out);
         }
-        "codeBlock" => out.push_str(&format!("```\n{}\n```\n\n", text(n))),
+        "codeBlock" => {
+            let content = text(n);
+            let fence = code_fence(&content);
+            out.push_str(&format!("{fence}\n{content}\n{fence}\n\n"));
+        }
         "bulletList" | "orderedList" => {
             for (i, item) in n
                 .get("content")
@@ -268,17 +382,7 @@ fn render(n: &Value, out: &mut String, depth: usize) -> Result<(), DocumentError
                 } else {
                     format!("{}. ", i + 1)
                 };
-                out.push_str(&"  ".repeat(depth));
-                out.push_str(&prefix);
-                out.push_str(
-                    &item
-                        .get("content")
-                        .and_then(Value::as_array)
-                        .and_then(|a| a.first())
-                        .map(text)
-                        .unwrap_or_default(),
-                );
-                out.push('\n');
+                render_list_item(item, out, depth, &prefix)?;
             }
             out.push('\n');
         }
@@ -288,7 +392,13 @@ fn render(n: &Value, out: &mut String, depth: usize) -> Result<(), DocumentError
                 .and_then(|a| a.get("assetId"))
                 .and_then(Value::as_str)
                 .unwrap_or("missing");
-            out.push_str(&format!("![Local image](assets/{id})\n\n"));
+            let alt = n
+                .get("attrs")
+                .and_then(|a| a.get("alt"))
+                .and_then(Value::as_str)
+                .filter(|value| !value.is_empty())
+                .unwrap_or("Local image");
+            out.push_str(&format!("![{alt}](assets/{id})\n\n"));
         }
         "table" => {
             let rows = n.get("content").and_then(Value::as_array).unwrap();
@@ -336,7 +446,14 @@ mod tests {
     }
     #[test]
     fn rejects_html_mdx_and_traversal() {
-        for v in ["<script>x</script>", "{/*x*/}", "![x](../secret)"] {
+        for v in [
+            "<script>x</script>",
+            "<SCRIPT>x</SCRIPT>",
+            "<style>body{display:none}</style>",
+            "export x from \"package\"",
+            "{/*x*/}",
+            "![x](../secret)",
+        ] {
             assert!(import(v).is_err());
         }
     }
@@ -355,6 +472,61 @@ mod tests {
         let second = import(&exported).unwrap();
         assert!(second.contains("\"table\""));
         assert!(second.contains(id));
+    }
+
+    #[test]
+    fn exports_real_tiptap_structure_without_dropping_authored_content() {
+        let image_id = "00000000-0000-7000-8000-000000000322";
+        let canonical = serde_json::json!({
+            "type": "doc",
+            "content": [
+                {
+                    "type": "paragraph",
+                    "content": [
+                        {"type": "text", "text": "Dòng một"},
+                        {"type": "hardBreak"},
+                        {"type": "text", "text": "Dòng hai"}
+                    ]
+                },
+                {
+                    "type": "blockquote",
+                    "content": [{
+                        "type": "paragraph",
+                        "content": [{"type": "text", "text": "Quoted from Tiptap"}]
+                    }]
+                },
+                {
+                    "type": "callout",
+                    "attrs": {"variant": "warning"},
+                    "content": [{
+                        "type": "paragraph",
+                        "content": [{"type": "text", "text": "Keep this warning", "marks": [{"type": "bold"}]}]
+                    }]
+                },
+                {
+                    "type": "bulletList",
+                    "content": [{
+                        "type": "listItem",
+                        "content": [
+                            {"type": "paragraph", "content": [{"type": "text", "text": "Parent"}]},
+                            {"type": "bulletList", "content": [{
+                                "type": "listItem",
+                                "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Child"}]}]
+                            }]}
+                        ]
+                    }]
+                },
+                {"type": "image", "attrs": {"assetId": image_id, "alt": "Sơ đồ tiến độ"}}
+            ]
+        })
+        .to_string();
+
+        let exported = export(&canonical).unwrap();
+        assert!(exported.contains("Dòng một  \nDòng hai"));
+        assert!(exported.contains("> Quoted from Tiptap"));
+        assert!(exported.contains("> [!WARNING]\n> **Keep this warning**"));
+        assert!(exported.contains("- Parent\n  - Child"));
+        assert!(exported.contains(&format!("![Sơ đồ tiến độ](assets/{image_id})")));
     }
 
     #[test]
@@ -391,5 +563,22 @@ mod tests {
     fn rejects_remote_images_and_unclosed_fences() {
         assert!(import("![remote](https://example.com/image.png)").is_err());
         assert!(import("```\nunfinished").is_err());
+    }
+
+    #[test]
+    fn export_chooses_a_fence_that_cannot_truncate_code_content() {
+        let canonical = serde_json::json!({
+            "type": "doc",
+            "content": [{
+                "type": "codeBlock",
+                "content": [{"type": "text", "text": "before\n```\nafter"}]
+            }]
+        })
+        .to_string();
+
+        let exported = export(&canonical).unwrap();
+        assert!(exported.starts_with("````\n"));
+        let imported = import(&exported).unwrap();
+        assert!(imported.contains("before\\n```\\nafter"));
     }
 }

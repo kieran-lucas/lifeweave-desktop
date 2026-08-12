@@ -71,6 +71,7 @@ describe("Focus Plan detail composition", () => {
     api.get.mockResolvedValue(plan);
     api.list.mockResolvedValue([]);
     api.lifeTargets.mockResolvedValue([]);
+    api.mutate.mockResolvedValue({ plan_id: plan.id, revision: 4, created_id: null, replayed: false });
   });
 
   it("keeps identity compact and makes Plan content the primary read and edit surface", async () => {
@@ -87,5 +88,21 @@ describe("Focus Plan detail composition", () => {
 
     const accessibility = await axe.run(container);
     expect(accessibility.violations.filter((item) => item.impact === "critical" || item.impact === "serious")).toHaveLength(0);
+  });
+
+  it("sends authored Markdown to the canonical Plan mutation without conversion", async () => {
+    renderPlan();
+    await screen.findByRole("heading", { level: 1, name: plan.title });
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+
+    const markdown = "# Kết quả\n\n- **Đậm** và [liên kết](https://example.com)\n\n| Mốc | Trạng thái |\n| --- | --- |\n| Một | Xong |";
+    fireEvent.change(await screen.findByRole("textbox", { name: "Plan content" }), {
+      target: { value: markdown },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(api.mutate).toHaveBeenCalledWith(expect.objectContaining({
+      mutation: expect.objectContaining({ action: "update_plan", outcome: markdown }),
+    }));
   });
 });

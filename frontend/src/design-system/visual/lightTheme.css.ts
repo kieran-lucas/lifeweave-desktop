@@ -3,11 +3,10 @@ import { createTheme } from "@vanilla-extract/css";
 import { vars } from "./contract.css";
 
 /**
- * Lifeweave light-only monochrome palette.
+ * Lifeweave light palette with one blue interaction accent.
  *
- * Product structure, typography, density and motion carry identity. Shared primitives never inject
- * chroma into a feature surface: white stays white, ink stays ink, and neutral gray owns hierarchy.
- * Feature-specific layouts may use texture and depth, but not coloured wash, glow or glass tint.
+ * Product structure, typography, density and motion carry identity. Blue is reserved for interactive
+ * emphasis, while neutral gray owns hierarchy and semantic warning/error colours retain their meaning.
  */
 export const lightValues = {
   color: {
@@ -28,10 +27,10 @@ export const lightValues = {
     borderHairline: "#E2E2E2",
     borderStrong: "#C8C8C8",
 
-    accent: "#111111",
-    accentMuted: "#333333",
-    accentSoft: "#F1F1F1",
-    selectionEdge: "#111111",
+    accent: "#2563EB",
+    accentMuted: "#1D4ED8",
+    accentSoft: "#EAF1FF",
+    selectionEdge: "#2563EB",
 
     success: "#111111",
     warning: "#444444",
@@ -51,7 +50,7 @@ export const lightValues = {
     ambientGlowSecondary: "rgba(17, 17, 17, 0.03)",
     ambientAura: "rgba(17, 17, 17, 0.025)",
 
-    focusRing: "#111111",
+    focusRing: "#2563EB",
     backdrop: "rgba(0, 0, 0, 0.42)",
   },
 
@@ -69,11 +68,11 @@ export const lightValues = {
     modal: "0 26px 72px rgba(0, 0, 0, 0.20), 0 7px 20px rgba(0, 0, 0, 0.09)",
   },
 
-  assessmentOrb: {
-    none: "radial-gradient(circle at 31% 25%, oklch(1 0 0) 0 14%, oklch(.88 .01 255) 33%, oklch(.62 .025 255) 72%, oklch(.42 .025 255) 100%)",
-    low: "radial-gradient(circle at 31% 25%, oklch(.98 .04 90) 0 14%, oklch(.79 .15 75) 34%, oklch(.58 .16 55) 73%, oklch(.39 .10 45) 100%)",
-    done: "radial-gradient(circle at 31% 25%, oklch(.98 .02 240) 0 14%, oklch(.73 .15 245) 34%, oklch(.55 .19 255) 73%, oklch(.36 .15 260) 100%)",
-    great: "radial-gradient(circle at 31% 25%, oklch(.98 .025 300) 0 14%, oklch(.72 .17 295) 34%, oklch(.54 .21 292) 73%, oklch(.34 .16 292) 100%)",
+  assessmentCircle: {
+    none: "#5B6472",
+    low: "#B88700",
+    done: "#178248",
+    great: "#1976B8",
   },
 
   hairline: {

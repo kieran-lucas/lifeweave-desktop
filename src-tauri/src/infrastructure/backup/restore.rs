@@ -2151,6 +2151,7 @@ mod tests {
 
         let (rt, db) = make_file_runtime();
         let backups = temp_backups_dir();
+        let markdown_outcome = "# Kết quả\n\n- Giữ **Markdown** nguyên vẹn\n- [Tài liệu](https://example.com)\n\n| Mốc | Trạng thái |\n| --- | --- |\n| Một | Xong |\n\n```text\nkhông biến đổi\n```";
         let (plan_id, task_id) = rt
             .execute(|conn| {
                 let plan = plan_repository::create(
@@ -2160,7 +2161,7 @@ mod tests {
                         life_node_id: None,
                         start_date: None,
                         target_date: None,
-                        outcome: String::new(),
+                        outcome: markdown_outcome.into(),
                         success_criteria: vec![],
                         initial_variant_label: "Course first".into(),
                         operation_id: "backup-plan-create".into(),
@@ -2203,9 +2204,14 @@ mod tests {
 
         let backup_dir = PathBuf::from(backup_db(&rt, &backups).unwrap().backup_dir);
 
-        // Destroy both the relation and the review before restoring.
+        // Destroy the Markdown outcome, relation, and review before restoring.
         let mutated_task = task_id.clone();
+        let mutated_plan = plan_id.clone();
         rt.execute(move |conn| {
+            conn.execute(
+                "UPDATE focus_plans SET outcome='corrupted after backup' WHERE id=?1",
+                [mutated_plan],
+            )?;
             conn.execute(
                 "UPDATE tasks SET focus_plan_id=NULL WHERE id=?1",
                 [mutated_task],
@@ -2228,6 +2234,14 @@ mod tests {
             )
             .unwrap();
         assert_eq!(restored_link.as_deref(), Some(plan_id.as_str()));
+        let restored_outcome: String = reopened
+            .query_row(
+                "SELECT outcome FROM focus_plans WHERE id=?1",
+                [&plan_id],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(restored_outcome, markdown_outcome);
 
         let history = plan_repository::list_reviews(
             &reopened,

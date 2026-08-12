@@ -15,12 +15,11 @@ export const appRoot = style({
   overflow: "hidden",
   position: "relative",
   isolation: "isolate",
-  background:
-    "radial-gradient(circle at 82% -8%, rgba(96, 142, 255, 0.22), transparent 35%), radial-gradient(circle at 18% 110%, rgba(154, 116, 255, 0.12), transparent 32%), var(--app-background)",
+  background: "var(--app-background)",
   selectors: { "&[data-sidebar-mode=collapsed]": { gridTemplateColumns: "68px minmax(0, 1fr)" } },
 });
 
-/** A translucent navigation rail lets the active visual world breathe through the shell. */
+/** The navigation rail uses an opaque surface so its boundary stays visually explicit. */
 export const sidebar = style({
   display: "flex",
   flexDirection: "column",
@@ -29,9 +28,8 @@ export const sidebar = style({
   position: "relative",
   zIndex: 2,
   borderRight: "1px solid rgba(178, 198, 228, 0.72)",
-  background: "linear-gradient(180deg, rgba(251, 253, 255, 0.94), rgba(240, 246, 255, 0.90))",
-  backdropFilter: "blur(22px) saturate(1.12)",
-  boxShadow: "8px 0 34px rgba(52, 77, 128, 0.07), inset -1px 0 0 rgba(255, 255, 255, 0.66)",
+  background: "#FFFFFF",
+  boxShadow: "none",
   "@media": { "(forced-colors: active)": { background: "Canvas", borderRight: "1px solid CanvasText", boxShadow: "none" } },
 });
 
@@ -55,9 +53,9 @@ export const brandMark = style({
   flexShrink: 0,
   borderRadius: "13px",
   color: "#FFFFFF",
-  background: "linear-gradient(145deg, #5E7DFF 0%, #6A73F6 48%, #8E72F4 100%)",
-  border: "1px solid rgba(255, 255, 255, 0.82)",
-  boxShadow: "0 10px 25px rgba(78, 111, 255, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.46)",
+  background: "var(--accent)",
+  border: "1px solid var(--accent)",
+  boxShadow: "none",
 });
 
 export const brandGlyph = style({
@@ -92,8 +90,8 @@ export const navButton = style([
         color: "var(--accent-muted)",
         fontWeight: 700,
         borderColor: "rgba(132, 158, 230, 0.34)",
-        background: "linear-gradient(110deg, rgba(232, 239, 255, 0.96), rgba(247, 249, 255, 0.90))",
-        boxShadow: "0 8px 20px rgba(73, 102, 192, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.86)",
+        background: "var(--accent-soft)",
+        boxShadow: "none",
       },
       "&:hover:not([aria-current=page])": {
         color: "var(--text-primary)",
@@ -119,7 +117,7 @@ globalStyle(`${appRoot}[data-sidebar-mode=collapsed] .${brand}`, { fontSize: 0, 
 export const divider = style({
   height: 1,
   margin: "13px 10px",
-  background: "linear-gradient(90deg, transparent, rgba(143, 163, 196, 0.52), transparent)",
+  background: "var(--border-subtle)",
 });
 
 export const collapseButton = style([
@@ -172,8 +170,7 @@ export const viewport = style({
   overflow: "auto",
   scrollbarGutter: "stable both-edges",
   padding: gutter,
-  background:
-    "radial-gradient(circle at 90% 2%, rgba(126, 169, 255, 0.13), transparent 30%), radial-gradient(circle at 8% 96%, rgba(173, 136, 255, 0.075), transparent 28%), transparent",
+  background: "transparent",
   selectors: {
     '&[data-destination="life"]': {
       overflow: "hidden",

@@ -28,19 +28,6 @@ function progressLabel(visualToken: string, fallback: string) {
   return progressLabels[visualToken] ?? fallback;
 }
 
-function CheckMark() {
-  return (
-    <svg className={styles.checkMark} viewBox="0 0 20 20" aria-hidden="true">
-      <path className={styles.lowBackdrop} d="M6.25 10h7.5" />
-      <path className={styles.lowStroke} d="M6.25 10h7.5" />
-      <path className={styles.doneBackdrop} d="M5.25 10.25 8.5 13.5 14.75 7" />
-      <path className={styles.doneStroke} d="M5.25 10.25 8.5 13.5 14.75 7" />
-      <path className={styles.greatBackdrop} d="M10 4.5 11.35 8.65 15.5 10l-4.15 1.35L10 15.5l-1.35-4.15L4.5 10l4.15-1.35L10 4.5Z" />
-      <path className={styles.greatStroke} d="M10 5.4 11.1 8.9 14.6 10l-3.5 1.1L10 14.6l-1.1-3.5L5.4 10l3.5-1.1L10 5.4Z" />
-    </svg>
-  );
-}
-
 export function AssessmentControl({
   itemId,
   states,
@@ -166,7 +153,7 @@ export function AssessmentControl({
           open ? close() : onOpen();
         }}
       >
-        <span className={styles.ring} aria-hidden="true"><CheckMark /></span>
+        <span className={styles.ring} aria-hidden="true" />
         <span className={styles.label}>{label}</span>
       </button>
       {open &&
@@ -193,7 +180,7 @@ export function AssessmentControl({
                 onKeyDown={(event) => key(event, index)}
                 onClick={() => choose(state)}
               >
-                <span className={styles.optionMark} aria-hidden="true"><CheckMark /></span>
+                <span className={styles.optionMark} aria-hidden="true" />
                 <span>{progressLabel(state.visual_token, state.label)}</span>
               </button>
             ))}

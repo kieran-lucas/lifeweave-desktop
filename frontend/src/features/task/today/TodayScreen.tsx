@@ -26,7 +26,6 @@ import {
   localToday as getLocalToday,
 } from "../../calendar/date";
 import { WeekStrip } from "../../calendar/WeekStrip";
-import { CategoryIcon } from "../categoryIcons";
 import { AssessmentControl } from "../../completion/AssessmentControl";
 import { TagChipList } from "../../tag/TagChipList";
 import { invalidateTaskSavedViewProjections } from "../saved-views/savedViewQueries";
@@ -36,7 +35,7 @@ import {
   DialogSurface,
 } from "../../../app/layout/DialogSurface";
 import { EmptyState, LoadingRow, SkeletonList } from "../../../design-system/primitives/States";
-import { Icon, iconChevronRight, iconToday } from "../../../design-system/visual/icons";
+import { iconToday } from "../../../design-system/visual/icons";
 import * as styles from "./TodayScreen.css";
 
 const ActiveTimerStrip = lazy(() =>
@@ -50,6 +49,9 @@ const FocusPlanCombobox = lazy(() =>
 );
 const TagPicker = lazy(() =>
   import("../../tag/TagPicker").then((module) => ({ default: module.TagPicker })),
+);
+const TaskTimeWheelPicker = lazy(() =>
+  import("./TaskSchedulePickers").then((module) => ({ default: module.TaskTimeWheelPicker })),
 );
 
 type CommonItem = Omit<
@@ -137,16 +139,6 @@ function headingForDate(value: string, today: string) {
   }).format(calendarDateToDate(value));
 }
 
-function minuteToTimeInput(value: number) {
-  const safe = Math.min(Math.max(value, 0), 1439);
-  return `${String(Math.floor(safe / 60)).padStart(2, "0")}:${String(safe % 60).padStart(2, "0")}`;
-}
-
-function timeInputToMinute(value: string) {
-  const [hour, minute] = value.split(":").map(Number);
-  return (hour ?? 0) * 60 + (minute ?? 0);
-}
-
 function defaultDraft(date: string, categoryId: string): Draft {
   return {
     title: "",
@@ -221,7 +213,6 @@ export function TodayScreen({
 
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<TodayItem | null>(null);
-  const [detailsOpen, setDetailsOpen] = useState(false);
   const [draft, setDraft] = useState<Draft>(() => defaultDraft(date, "general"));
   const [repeat, setRepeat] = useState(false);
   const [repeatFrequency, setRepeatFrequency] = useState<"daily" | "weekly" | "monthly">("weekly");
@@ -506,7 +497,6 @@ export function TodayScreen({
     setDraft(item ? draftFromItem(item) : defaultDraft(date, categories.data?.[0]?.id ?? "general"));
     setRepeat(false);
     setRepeatFrequency("weekly");
-    setDetailsOpen(Boolean(item && (item.description || item.life_area || item.focus_plan || item.deadline || item.tags.length)));
     setError("");
     setOpen(true);
   }
@@ -514,7 +504,6 @@ export function TodayScreen({
   function closeComposer() {
     setOpen(false);
     setEditing(null);
-    setDetailsOpen(false);
     setError("");
     queueMicrotask(() => returnFocus.current?.focus());
   }
@@ -581,6 +570,7 @@ export function TodayScreen({
             <EmptyState
               compact
               icon={iconToday}
+              iconTone="neutral"
               title="The day is open."
               body="Plan only what deserves a place on the timeline."
             />
@@ -614,10 +604,6 @@ export function TodayScreen({
                     <div className={styles.taskCopy}>
                       <strong>{item.title}</strong>
                       <div className={styles.taskMeta}>
-                        <span className={styles.categoryMeta}>
-                          <CategoryIcon iconKey={item.category_icon_key} label={`Category ${item.category_name}`} />
-                          {item.category_name}
-                        </span>
                         {item.life_area && (
                           <button
                             type="button"
@@ -668,7 +654,6 @@ export function TodayScreen({
                       />
                     </div>
 
-                    <Icon d={iconChevronRight} size={15} className={styles.rowArrow} />
                   </div>
                 </li>
               ))}
@@ -690,7 +675,7 @@ export function TodayScreen({
         >
           <DialogSurface
             as="form"
-            width="standard"
+            width="wide"
             role="dialog"
             aria-modal="true"
             aria-labelledby="task-composer-heading"
@@ -718,32 +703,17 @@ export function TodayScreen({
               />
 
               <div className={styles.scheduleBar}>
-                <label>
+                <label className={styles.scheduleDateField}>
                   <span>Date</span>
-                  <input type="date" value={draft.local_date} onChange={(event) => setDraft({ ...draft, local_date: event.target.value })} />
+                  <input aria-label="Task date" type="date" value={draft.local_date} onChange={(event) => setDraft((current) => ({ ...current, local_date: event.target.value }))} />
                 </label>
-                <label>
-                  <span>Start</span>
-                  <input type="time" value={minuteToTimeInput(draft.start_minute)} onChange={(event) => setDraft({ ...draft, start_minute: timeInputToMinute(event.target.value) })} />
-                </label>
-                <label>
-                  <span>End</span>
-                  <input type="time" value={minuteToTimeInput(draft.end_minute)} onChange={(event) => setDraft({ ...draft, end_minute: timeInputToMinute(event.target.value) })} />
-                </label>
+                <Suspense fallback={null}>
+                  <TaskTimeWheelPicker label="Start" value={draft.start_minute} onChange={(start_minute) => setDraft((current) => ({ ...current, start_minute }))} />
+                  <TaskTimeWheelPicker label="End" value={draft.end_minute} onChange={(end_minute) => setDraft((current) => ({ ...current, end_minute }))} />
+                </Suspense>
               </div>
 
-              <button
-                type="button"
-                className={styles.detailsToggle}
-                aria-expanded={detailsOpen}
-                onClick={() => setDetailsOpen((value) => !value)}
-              >
-                <span>{detailsOpen ? "Hide details" : "More details"}</span>
-                <Icon d={iconChevronRight} size={14} className={detailsOpen ? styles.detailsArrowOpen : styles.detailsArrow} />
-              </button>
-
-              {detailsOpen && (
-                <div className={styles.detailsPanel}>
+              <div className={styles.detailsPanel}>
                   <label className={styles.detailFieldWide}>
                     <span>Notes</span>
                     <textarea value={draft.description} onChange={(event) => setDraft({ ...draft, description: event.target.value })} placeholder="Optional context" />
@@ -840,8 +810,7 @@ export function TodayScreen({
                       </Suspense>
                     )}
                   </div>
-                </div>
-              )}
+              </div>
 
               <footer className={styles.composerFooter}>
                 {editing && (

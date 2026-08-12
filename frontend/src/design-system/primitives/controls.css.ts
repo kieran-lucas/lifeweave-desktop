@@ -42,13 +42,13 @@ export const button = styleVariants({
   primary: [
     base,
     {
-      background: "linear-gradient(135deg, var(--accent), #7864EE)",
-      borderColor: "rgba(255,255,255,.38)",
+      background: "var(--accent)",
+      borderColor: "var(--accent)",
       color: "#FFFFFF",
-      boxShadow: "var(--glow-primary), inset 0 1px 0 rgba(255,255,255,.26)",
+      boxShadow: "none",
       selectors: {
-        "&:hover:not(:disabled)": { transform: "translateY(-1px)", background: "linear-gradient(135deg, #4468F0, #6E59DF)", borderColor: "rgba(255,255,255,.54)", boxShadow: "0 13px 32px rgba(70,93,218,.27), inset 0 1px 0 rgba(255,255,255,.30)" },
-        "&:active:not(:disabled)": { transform: "translateY(1px) scale(.99)", background: "linear-gradient(135deg, #3658D9, #6250C8)" },
+        "&:hover:not(:disabled)": { transform: "translateY(-1px)", background: "#1D4ED8", borderColor: "#1D4ED8", boxShadow: "none" },
+        "&:active:not(:disabled)": { transform: "translateY(1px) scale(.99)", background: "#1E40AF" },
       },
       "@media": {
         "(forced-colors: active)": { background: "Highlight", color: "HighlightText", borderColor: "Highlight", boxShadow: "none" },
@@ -60,13 +60,12 @@ export const button = styleVariants({
   secondary: [
     base,
     {
-      background: "rgba(255,255,255,.70)",
-      backdropFilter: "blur(12px)",
+      background: "#FFFFFF",
       borderColor: "var(--glass-border)",
       color: "var(--text-primary)",
-      boxShadow: "var(--glow-compact), inset 0 1px 0 rgba(255,255,255,.82)",
+      boxShadow: "none",
       selectors: {
-        "&:hover:not(:disabled)": { transform: "translateY(-1px)", background: "rgba(241,246,255,.94)", borderColor: "rgba(113,143,219,.48)", boxShadow: "var(--glow-hover)" },
+        "&:hover:not(:disabled)": { transform: "translateY(-1px)", background: "var(--accent-soft)", borderColor: "var(--accent)", boxShadow: "none" },
         "&:active:not(:disabled)": { transform: "translateY(1px) scale(.99)", backgroundColor: "var(--surface-selected)" },
       },
       "@media": {
@@ -82,7 +81,7 @@ export const button = styleVariants({
       borderColor: "transparent",
       color: "var(--text-muted)",
       selectors: {
-        "&:hover:not(:disabled)": { backgroundColor: "rgba(239,244,255,.76)", borderColor: "rgba(185,202,228,.54)", color: "var(--text-primary)" },
+        "&:hover:not(:disabled)": { backgroundColor: "var(--accent-soft)", borderColor: "var(--border-strong)", color: "var(--text-primary)" },
         "&:active:not(:disabled)": { backgroundColor: "var(--surface-selected)" },
       },
     },
@@ -96,7 +95,7 @@ export const button = styleVariants({
       color: "var(--danger)",
       boxShadow: "none",
       selectors: {
-        "&:hover:not(:disabled)": { background: "linear-gradient(135deg, #E55B7D, #C84269)", borderColor: "rgba(255,255,255,.45)", color: "#FFFFFF", boxShadow: "var(--glow-danger)" },
+        "&:hover:not(:disabled)": { background: "#C84269", borderColor: "#C84269", color: "#FFFFFF", boxShadow: "none" },
       },
       "@media": {
         "(forced-colors: active)": { background: "Canvas", color: "LinkText", borderColor: "LinkText", boxShadow: "none" },

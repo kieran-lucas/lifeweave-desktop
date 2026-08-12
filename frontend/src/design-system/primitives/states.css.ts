@@ -35,6 +35,11 @@ export const emptyMark = style({
   },
 });
 
+export const emptyMarkNeutral = style({
+  borderColor: "var(--text-primary)",
+  color: "var(--text-primary)",
+});
+
 export const emptyTitle = style({ ...text.sectionTitle, color: "var(--text-primary)", margin: 0 });
 
 export const emptyBody = style({

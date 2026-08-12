@@ -16,6 +16,7 @@ export function EmptyState({
   body,
   action,
   compact = false,
+  iconTone = "accent",
 }: {
   /** A path from `visual/icons`. Optional: a one-line empty panel does not need a mark. */
   icon?: string;
@@ -23,11 +24,12 @@ export function EmptyState({
   body?: ReactNode;
   action?: ReactNode;
   compact?: boolean;
+  iconTone?: "accent" | "neutral";
 }) {
   return (
     <div className={compact ? `${styles.empty} ${styles.emptyCompact}` : styles.empty}>
       {icon ? (
-        <span className={styles.emptyMark}>
+        <span className={iconTone === "neutral" ? `${styles.emptyMark} ${styles.emptyMarkNeutral}` : styles.emptyMark}>
           <Icon d={icon} size={compact ? 18 : 20} />
         </span>
       ) : null}

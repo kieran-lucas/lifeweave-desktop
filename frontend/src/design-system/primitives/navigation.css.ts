@@ -34,8 +34,8 @@ export const tab = style([
       '&[aria-selected="true"], &[aria-pressed="true"]': {
         color: "var(--accent-muted)",
         borderBlockEndColor: "var(--accent)",
-        background: "linear-gradient(180deg, rgba(244,247,255,.42), rgba(231,238,255,.86))",
-        boxShadow: "inset 0 -4px 12px rgba(78,111,255,.07)",
+        background: "var(--accent-soft)",
+        boxShadow: "none",
       },
       "&:disabled": { cursor: "not-allowed", opacity: 0.5 },
     },
@@ -62,8 +62,7 @@ export const segmented = style({
   border: "1px solid var(--glass-border)",
   borderRadius: "var(--radius-control)",
   background: "var(--glass-surface)",
-  backdropFilter: "blur(12px)",
-  boxShadow: "var(--glow-compact)",
+  boxShadow: "none",
 });
 
 export const segmentedItem = style([
@@ -84,10 +83,10 @@ export const segmentedItem = style([
     selectors: {
       "&:hover:not(:disabled)": { color: "var(--text-primary)", backgroundColor: "rgba(242,246,255,.78)" },
       '&[aria-selected="true"], &[aria-pressed="true"], &[aria-current="page"]': {
-        background: "linear-gradient(135deg, var(--accent), #7864EE)",
+        background: "var(--accent)",
         color: "#FFFFFF",
         borderColor: "rgba(255,255,255,.54)",
-        boxShadow: "0 7px 18px rgba(78,101,220,.18), inset 0 1px 0 rgba(255,255,255,.26)",
+        boxShadow: "none",
       },
       "&:active:not(:disabled)": { transform: "translateY(1px)" },
     },
@@ -110,8 +109,8 @@ export const segmentedItem = style([
 export const selectedRow = style({
   selectors: {
     '&[aria-current="true"], &[aria-current="page"], &[data-selected="true"]': {
-      background: "linear-gradient(100deg, rgba(232,239,255,.90), rgba(245,242,255,.78))",
-      boxShadow: "inset 3px 0 0 var(--accent), var(--glow-compact)",
+      background: "var(--accent-soft)",
+      boxShadow: "inset 3px 0 0 var(--accent)",
     },
   },
   "@media": {

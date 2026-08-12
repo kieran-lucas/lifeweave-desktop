@@ -22,6 +22,9 @@ const api = vi.hoisted(() => ({
 }));
 
 vi.mock("../../../ipc/commands", () => api);
+vi.mock("../LifeAreaCombobox", () => ({ LifeAreaCombobox: () => <div>Life area field</div> }));
+vi.mock("../FocusPlanCombobox", () => ({ FocusPlanCombobox: () => <div>Focus Plan field</div> }));
+vi.mock("../../tag/TagPicker", () => ({ TagPicker: () => <div>Tag field</div> }));
 
 const task: TodayItemView = {
   kind: "one_off",
@@ -92,6 +95,8 @@ describe("Today task interactions", () => {
     const view = mount();
     const title = await screen.findByText("Write the report");
     const row = view.container.querySelector<HTMLElement>('[data-agenda-id="task-1"]')!;
+    expect(within(row).queryByText("General")).not.toBeInTheDocument();
+    expect(row.querySelector("svg")).not.toBeInTheDocument();
 
     fireEvent.click(title);
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
@@ -99,7 +104,9 @@ describe("Today task interactions", () => {
     fireEvent.doubleClick(title);
     const firstEditor = screen.getByRole("dialog");
     expect(firstEditor).toBeInTheDocument();
-    fireEvent.click(within(firstEditor).getByRole("button", { name: "More details" }));
+    expect(firstEditor).toHaveAttribute("data-dialog-width", "wide");
+    expect(within(firstEditor).queryByRole("button", { name: /details/i })).not.toBeInTheDocument();
+    expect(within(firstEditor).getByText("Notes")).toBeInTheDocument();
     expect(within(firstEditor).queryByText("Category")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
 
@@ -158,9 +165,20 @@ describe("Today task interactions", () => {
       name: "Assess task. Current state: Done",
     });
     expect(assessment).toHaveTextContent("Done");
-    expect(assessment.querySelector("svg")).toHaveAttribute("viewBox", "0 0 20 20");
+    expect(assessment.querySelector("svg")).not.toBeInTheDocument();
 
     fireEvent.click(assessment);
     expect(screen.getByRole("option", { name: "Done" })).toHaveTextContent("Done");
+  });
+
+  it("uses the styled date field and locking time wheels in the task composer", async () => {
+    const view = mount();
+    fireEvent.click(await screen.findByRole("button", { name: "Plan task" }));
+    const dialog = screen.getByRole("dialog", { name: "Plan the moment" });
+    expect(within(dialog).getByLabelText("Task date")).toHaveValue("2026-08-11");
+    expect(dialog.querySelector('input[type="time"]')).not.toBeInTheDocument();
+    expect(await within(dialog).findByRole("button", { name: "Start time, 08:00" })).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "End time, 09:00" })).toBeInTheDocument();
+    view.unmount();
   });
 });

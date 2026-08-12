@@ -15,9 +15,8 @@ export const navCluster = style({
   padding: "4px 7px",
   border: "1px solid rgba(189,205,230,.66)",
   borderRadius: "14px",
-  background: "rgba(255,255,255,.54)",
-  backdropFilter: "blur(13px)",
-  boxShadow: "var(--glow-compact)",
+  background: "#FFFFFF",
+  boxShadow: "none",
 });
 
 export const tabs = style([
@@ -67,8 +66,7 @@ export const moreMenu = style({
   padding: 6,
   border: "1px solid rgba(179,198,228,.76)",
   borderRadius: "14px",
-  background: "rgba(250,252,255,.92)",
-  backdropFilter: "blur(18px) saturate(1.08)",
+  background: "#FFFFFF",
   boxShadow: "var(--elevation-floating)",
 });
 
@@ -85,7 +83,7 @@ export const moreItem = style({
   cursor: "pointer",
   selectors: {
     "&:hover": { background: "rgba(237,243,255,.88)", borderColor: "rgba(130,154,220,.24)" },
-    "&[aria-current=page]": { background: "linear-gradient(135deg, var(--accent), #7864EE)", borderColor: "rgba(255,255,255,.46)", color: "#FFFFFF", boxShadow: "var(--glow-primary)" },
+    "&[aria-current=page]": { background: "var(--accent)", borderColor: "var(--accent)", color: "#FFFFFF", boxShadow: "none" },
     "&:focus-visible": { outline: "2px solid var(--focus-ring)", outlineOffset: -2 },
   },
   "@media": { "(forced-colors: active)": { selectors: { "&[aria-current=page]": { background: "Highlight", color: "HighlightText", boxShadow: "none" } } } },
@@ -99,9 +97,8 @@ export const panelBody = style({
   padding: "clamp(18px, 2vw, 28px)",
   border: "1px solid rgba(184,202,230,.68)",
   borderRadius: "22px",
-  background: "linear-gradient(145deg, rgba(255,255,255,.82), rgba(243,248,255,.70))",
-  backdropFilter: "blur(15px)",
-  boxShadow: "var(--glow-crystal)",
+  background: "#FFFFFF",
+  boxShadow: "none",
 });
 export const header = style({ display: "flex", flexDirection: "column", gap: space.x1, minInlineSize: 0 });
 globalStyle(`${header} > h1`, { ...text.pageTitle, margin: 0, color: "var(--text-primary)", letterSpacing: "-0.035em" });
@@ -116,8 +113,8 @@ export const list = style({
   margin: 0,
   border: "1px solid rgba(190,205,229,.68)",
   borderRadius: "15px",
-  background: "rgba(255,255,255,.62)",
-  boxShadow: "var(--glow-compact)",
+  background: "#FFFFFF",
+  boxShadow: "none",
   overflow: "hidden",
 });
 export const row = style({
@@ -131,7 +128,7 @@ export const row = style({
   transition: "background-color 140ms ease, box-shadow 140ms ease",
   selectors: {
     "&:not(:last-child)": { borderBottom: "1px solid rgba(204,217,236,.64)" },
-    "&:hover": { background: "rgba(239,245,255,.78)", boxShadow: "inset 3px 0 0 rgba(78,111,255,.30)" },
+    "&:hover": { background: "var(--accent-soft)", boxShadow: "inset 3px 0 0 var(--accent)" },
   },
   "@container": { "(max-width: 640px)": { gridTemplateColumns: "minmax(0, 1fr)", gap: space.control } },
 });

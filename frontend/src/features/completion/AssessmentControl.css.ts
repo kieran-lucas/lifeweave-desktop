@@ -1,4 +1,4 @@
-import { globalStyle, keyframes, style } from "@vanilla-extract/css";
+import { keyframes, style } from "@vanilla-extract/css";
 import { focusRing } from "../../design-system/primitives/utilities.css";
 import { vars } from "../../design-system/visual/contract.css";
 import { duration, easing } from "../../design-system/visual/motion.css";
@@ -15,12 +15,12 @@ const railEnter = keyframes({
 });
 
 const lowSettle = keyframes({
-  "0%": { transform: "translateY(1px) scale(.9) rotate(-7deg)", opacity: 0.72 },
+  "0%": { transform: "translateY(1px) scale(.9)", opacity: 0.72 },
   "100%": { transform: "translateY(0) scale(1)", opacity: 1 },
 });
 
 const doneSettle = keyframes({
-  "0%": { transform: "translateY(1px) scale(.84) rotate(7deg)", opacity: 0.68 },
+  "0%": { transform: "translateY(1px) scale(.84)", opacity: 0.68 },
   "100%": { transform: "translateY(0) scale(1)", opacity: 1 },
 });
 
@@ -35,7 +35,7 @@ export const anchor = style({
 export const trigger = style([
   focusRing,
   {
-    minWidth: 30,
+    width: 72,
     height: 30,
     padding: "0 7px",
     minBlockSize: 0,
@@ -65,126 +65,44 @@ export const trigger = style([
 ]);
 
 export const label = style({
-  maxInlineSize: 58,
+  inlineSize: 34,
+  minInlineSize: 34,
   overflow: "hidden",
   ...text.caption,
   fontWeight: 700,
   textOverflow: "ellipsis",
   whiteSpace: "nowrap",
-  "@media": {
-    "(max-width: 680px)": { display: "none" },
-  },
-});
-
-export const checkMark = style({
-  position: "absolute",
-  inset: 0,
-  width: "100%",
-  height: "100%",
-  zIndex: 1,
-  fill: "none",
-  opacity: 0,
-  transform: "scale(.72)",
-  transformOrigin: "center",
-  transition: `opacity ${duration.check} ${easing.standard}, transform ${duration.check} ${easing.standard}`,
-});
-
-export const lowBackdrop = style({
-  fill: "none",
-  stroke: "var(--text-primary)",
-  strokeWidth: 4.2,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  opacity: 0,
-});
-
-export const lowStroke = style({
-  fill: "none",
-  stroke: "var(--surface-raised)",
-  strokeWidth: 2,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  opacity: 0,
-});
-
-export const doneBackdrop = style({
-  fill: "none",
-  stroke: "var(--text-primary)",
-  strokeWidth: 4.2,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  opacity: 0,
-});
-
-export const doneStroke = style({
-  fill: "none",
-  stroke: "var(--surface-raised)",
-  strokeWidth: 2,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  opacity: 0,
-});
-
-export const greatBackdrop = style({
-  fill: "var(--text-primary)",
-  opacity: 0,
-});
-
-export const greatStroke = style({
-  fill: "var(--surface-raised)",
-  opacity: 0,
 });
 
 /**
- * A compact, borderless material orb. Colour, label and interior glyph all carry state so the
- * assessment remains understandable without relying on colour alone.
+ * A compact flat circle paired with a persistent text label, so state never relies on colour alone.
  */
 export const ring = style({
   position: "relative",
-  width: 17,
-  height: 17,
+  inlineSize: 17,
+  minInlineSize: 17,
+  blockSize: 17,
+  aspectRatio: "1 / 1",
+  flex: "0 0 17px",
   border: 0,
   borderRadius: "50%",
-  background: vars.assessmentOrb.none,
+  background: vars.assessmentCircle.none,
   color: "var(--surface-raised)",
   overflow: "hidden",
   transformOrigin: "center",
-  boxShadow: "inset -2px -3px 5px rgba(0,0,0,.24), inset 2px 2px 3px rgba(255,255,255,.32), 0 2px 4px rgba(0,0,0,.17)",
-  transition: `transform ${duration.check} ${easing.standard}, box-shadow ${duration.check} ${easing.standard}`,
+  transition: `transform ${duration.check} ${easing.standard}`,
   selectors: {
-    "&::before": {
-      content: '""',
-      position: "absolute",
-      width: "43%",
-      height: "27%",
-      insetInlineStart: "18%",
-      insetBlockStart: "12%",
-      borderRadius: "50%",
-      background: "rgba(255,255,255,.74)",
-      transform: "rotate(-18deg)",
-      opacity: .8,
-    },
-    "&::after": {
-      content: '""',
-      position: "absolute",
-      insetInline: "20%",
-      insetBlockEnd: "7%",
-      blockSize: "15%",
-      borderRadius: "50%",
-      background: "rgba(0,0,0,.18)",
-      opacity: .65,
-    },
-    [`${trigger}[data-state=none] &`]: { background: vars.assessmentOrb.none },
+    [`${trigger}[data-state=none] &`]: { background: vars.assessmentCircle.none },
     [`${trigger}[data-state=below] &`]: {
-      background: vars.assessmentOrb.low,
+      background: vars.assessmentCircle.low,
       animation: `${lowSettle} ${duration.check} ${easing.standard} both`,
     },
     [`${trigger}[data-state=met] &`]: {
-      background: vars.assessmentOrb.done,
+      background: vars.assessmentCircle.done,
       animation: `${doneSettle} ${duration.check} ${easing.standard} both`,
     },
     [`${trigger}[data-state=excellent] &`]: {
-      background: vars.assessmentOrb.great,
+      background: vars.assessmentCircle.great,
       animation: `${markSettle} ${duration.check} ${easing.standard} both`,
     },
   },
@@ -247,19 +165,19 @@ export const option = style({
 
 export const optionMark = style({
   position: "relative",
-  width: 15,
-  height: 15,
+  inlineSize: 15,
+  blockSize: 15,
+  aspectRatio: "1 / 1",
   border: 0,
   borderRadius: "50%",
-  background: vars.assessmentOrb.none,
+  background: vars.assessmentCircle.none,
   overflow: "hidden",
   color: "var(--surface-raised)",
-  boxShadow: "inset -2px -2px 4px rgba(0,0,0,.22), inset 1px 1px 2px rgba(255,255,255,.32), 0 1px 3px rgba(0,0,0,.14)",
   selectors: {
-    [`${option}[data-visual=none] &`]: { background: vars.assessmentOrb.none },
-    [`${option}[data-visual=below] &`]: { background: vars.assessmentOrb.low },
-    [`${option}[data-visual=met] &`]: { background: vars.assessmentOrb.done },
-    [`${option}[data-visual=excellent] &`]: { background: vars.assessmentOrb.great },
+    [`${option}[data-visual=none] &`]: { background: vars.assessmentCircle.none },
+    [`${option}[data-visual=below] &`]: { background: vars.assessmentCircle.low },
+    [`${option}[data-visual=met] &`]: { background: vars.assessmentCircle.done },
+    [`${option}[data-visual=excellent] &`]: { background: vars.assessmentCircle.great },
   },
   "@media": {
     "(forced-colors: active)": {
@@ -269,26 +187,4 @@ export const optionMark = style({
       color: "CanvasText",
     },
   },
-});
-
-globalStyle(`${trigger}[data-state=below] ${ring} ${checkMark}, ${trigger}[data-state=met] ${ring} ${checkMark}, ${trigger}[data-state=excellent] ${ring} ${checkMark}`, {
-  opacity: 1,
-  transform: "scale(1)",
-});
-globalStyle(`${option}[data-visual=below] ${optionMark} ${checkMark}, ${option}[data-visual=met] ${optionMark} ${checkMark}, ${option}[data-visual=excellent] ${optionMark} ${checkMark}`, {
-  color: "var(--surface-raised)",
-  opacity: 1,
-  transform: "scale(1)",
-});
-
-globalStyle(`${trigger}[data-state=below] ${lowBackdrop}, ${trigger}[data-state=below] ${lowStroke}, ${option}[data-visual=below] ${lowBackdrop}, ${option}[data-visual=below] ${lowStroke}`, {
-  opacity: 1,
-});
-
-globalStyle(`${trigger}[data-state=met] ${doneBackdrop}, ${trigger}[data-state=met] ${doneStroke}, ${option}[data-visual=met] ${doneBackdrop}, ${option}[data-visual=met] ${doneStroke}`, {
-  opacity: 1,
-});
-
-globalStyle(`${trigger}[data-state=excellent] ${greatBackdrop}, ${trigger}[data-state=excellent] ${greatStroke}, ${option}[data-visual=excellent] ${greatBackdrop}, ${option}[data-visual=excellent] ${greatStroke}`, {
-  opacity: 1,
 });

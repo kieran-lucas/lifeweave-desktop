@@ -70,7 +70,7 @@ export const vars = createThemeContract({
      * These are semantic spectral-light roles, not a ban on expressive presentation. Current
      * surfaces may combine them with CSS/SVG procedural art, glass/refraction, gradients and
      * bounded motion while preserving content legibility and reduced-motion/forced-colors paths.
-     * `primary` carries the dominant sky-blue light; `secondary` provides violet depth; `aura`
+     * `primary` carries the dominant sky-blue light; `secondary` provides deeper blue; `aura`
      * supplies the widest atmospheric field; `contour` is for fine orbit/constellation structure.
      */
     ambientContour: null,
@@ -98,8 +98,8 @@ export const vars = createThemeContract({
     modal: null,
   },
 
-  /** Material treatments for the four explicit Task assessment states. */
-  assessmentOrb: {
+  /** Solid circle colours for the four explicit Task assessment states. */
+  assessmentCircle: {
     none: null,
     low: null,
     done: null,
