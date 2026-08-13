@@ -18,7 +18,7 @@ use crate::infrastructure::sqlite::{
     DbError,
     connection::{open_existing_file_connection, open_file_connection, open_readonly_connection},
     runtime::DatabaseRuntime,
-    task51_migration::{current_schema_version, max_supported_schema_version, run_all_migrations},
+    task52_migration::{current_schema_version, max_supported_schema_version, run_all_migrations},
     worker::DbWorkerHandle,
 };
 
@@ -864,7 +864,7 @@ mod tests {
             connection::{open_existing_file_connection, open_file_connection},
             foundation_record_repo as repo,
             runtime::DatabaseRuntime,
-            task51_migration::run_all_migrations as run_migrations,
+            task52_migration::run_all_migrations as run_migrations,
             worker::DbWorkerHandle,
         },
     };
@@ -1035,12 +1035,12 @@ mod tests {
         let result = restore_db(&runtime, package).unwrap();
         assert_eq!(
             result.schema_version,
-            crate::infrastructure::sqlite::task51_migration::TASK51_SCHEMA_VERSION
+            crate::infrastructure::sqlite::task52_migration::TASK52_SCHEMA_VERSION
         );
         let reopened = open_existing_file_connection(&db).unwrap();
         assert_eq!(
             current_schema_version(&reopened).unwrap(),
-            crate::infrastructure::sqlite::task51_migration::TASK51_SCHEMA_VERSION
+            crate::infrastructure::sqlite::task52_migration::TASK52_SCHEMA_VERSION
         );
         assert_eq!(
             reopened
@@ -1212,7 +1212,7 @@ mod tests {
         let restore_result = restore_db(&rt, &backup_dir).unwrap();
         assert_eq!(
             restore_result.schema_version,
-            crate::infrastructure::sqlite::task51_migration::TASK51_SCHEMA_VERSION
+            crate::infrastructure::sqlite::task52_migration::TASK52_SCHEMA_VERSION
         );
 
         let active = rt.execute(|conn| repo::list_active(conn)).unwrap();
@@ -1800,8 +1800,12 @@ mod tests {
         let import_root = app_root.clone();
         let imported = rt
             .execute(move |conn| {
-                scenario(conn);
-                let source = repository::export_source(conn, crate::life::domain::ROOT_ID)
+                let mut source_conn = Connection::open_in_memory()?;
+                crate::infrastructure::sqlite::task51_migration::run_all_migrations(
+                    &mut source_conn,
+                )?;
+                scenario(&source_conn);
+                let source = repository::export_source(&source_conn, crate::life::domain::ROOT_ID)
                     .map_err(|_| DbError::InvalidMigrationList)?;
                 let ticket = testing::export(&import_root, source)
                     .map_err(|_| DbError::InvalidMigrationList)?;
@@ -1847,6 +1851,21 @@ mod tests {
             })
             .unwrap();
         assert_eq!(before.len(), 6);
+        let before_counts = rt
+            .execute(|conn| {
+                Ok((
+                    conn.query_row("SELECT COUNT(*) FROM reader_documents", [], |row| {
+                        row.get::<_, i64>(0)
+                    })?,
+                    conn.query_row("SELECT COUNT(*) FROM narrative_documents", [], |row| {
+                        row.get::<_, i64>(0)
+                    })?,
+                    conn.query_row("SELECT COUNT(*) FROM life_links", [], |row| {
+                        row.get::<_, i64>(0)
+                    })?,
+                ))
+            })
+            .unwrap();
         let backups = temp_backups_dir();
         let backup = backup_db(&rt, &backups).unwrap();
 
@@ -1868,30 +1887,30 @@ mod tests {
         assert_eq!(capture(&reopened, &destination), before);
         assert_eq!(reopened.query_row("SELECT operation_kind||'|'||target_node_id FROM life_operations WHERE operation_id='backup-tree-import'", [], |row| row.get::<_, String>(0)).unwrap(), format!("import_tree|{destination}"));
         assert_eq!(
-            reopened
-                .query_row("SELECT COUNT(*) FROM reader_documents", [], |row| row
-                    .get::<_, i64>(0))
-                .unwrap(),
-            4
+            (
+                reopened
+                    .query_row("SELECT COUNT(*) FROM reader_documents", [], |row| {
+                        row.get::<_, i64>(0)
+                    })
+                    .unwrap(),
+                reopened
+                    .query_row("SELECT COUNT(*) FROM narrative_documents", [], |row| {
+                        row.get::<_, i64>(0)
+                    })
+                    .unwrap(),
+                reopened
+                    .query_row("SELECT COUNT(*) FROM life_links", [], |row| {
+                        row.get::<_, i64>(0)
+                    })
+                    .unwrap(),
+            ),
+            before_counts,
+            "restore must preserve all imported document and link rows exactly"
         );
         assert_eq!(
-            reopened
-                .query_row("SELECT COUNT(*) FROM narrative_documents", [], |row| row
-                    .get::<_, i64>(0))
+            crate::infrastructure::sqlite::task52_migration::current_schema_version(&reopened)
                 .unwrap(),
-            2
-        );
-        assert_eq!(
-            reopened
-                .query_row("SELECT COUNT(*) FROM life_links", [], |row| row
-                    .get::<_, i64>(0))
-                .unwrap(),
-            6
-        );
-        assert_eq!(
-            crate::infrastructure::sqlite::task51_migration::current_schema_version(&reopened)
-                .unwrap(),
-            28
+            29
         );
         assert_eq!(
             reopened
@@ -1931,9 +1950,9 @@ mod tests {
         let source_manifest_before = std::fs::read(package.join("manifest.json")).unwrap();
 
         let result = restore_db(&rt, &package).unwrap();
-        assert_eq!(result.schema_version, 28);
+        assert_eq!(result.schema_version, 29);
         let reopened = open_existing_file_connection(&db_path).unwrap();
-        assert_eq!(current_schema_version(&reopened).unwrap(), 28);
+        assert_eq!(current_schema_version(&reopened).unwrap(), 29);
         assert_eq!(reopened.query_row("SELECT operation_kind||'|'||after_payload FROM life_operations WHERE operation_id='schema26-branch'", [], |row| row.get::<_, String>(0)).unwrap(), "import_branch|{\"fingerprint\":\"preserved\"}");
         assert_eq!(
             reopened
@@ -1971,14 +1990,24 @@ mod tests {
         };
         let (rt, _db) = make_file_runtime();
         let backups = temp_backups_dir();
-        let created = rt
+        let (created, active_before) = rt
             .execute(|conn| {
-                life_edit::create(
+                let expected_tree_revision = conn.query_row(
+                    "SELECT tree_revision FROM life_tree_meta WHERE singleton=1",
+                    [],
+                    |row| row.get(0),
+                )?;
+                let active_before = conn.query_row(
+                    "SELECT COUNT(*) FROM life_nodes WHERE archived_at IS NULL",
+                    [],
+                    |row| row.get::<_, i64>(0),
+                )?;
+                let created = life_edit::create(
                     conn,
                     CreateLifeNodeOperationInput {
                         context: LifeOperationContext {
                             operation_id: "backup-life-edit-create".into(),
-                            expected_tree_revision: 0,
+                            expected_tree_revision,
                         },
                         parent_id: ROOT_ID.into(),
                         title: "Undoable branch".into(),
@@ -1987,7 +2016,8 @@ mod tests {
                         theme_variant: "neutral".into(),
                     },
                 )
-                .map_err(|_| crate::infrastructure::sqlite::DbError::WorkerGone)
+                .map_err(|_| crate::infrastructure::sqlite::DbError::WorkerGone)?;
+                Ok((created, active_before))
             })
             .unwrap();
         let package = PathBuf::from(backup_db(&rt, &backups).unwrap().backup_dir);
@@ -2001,12 +2031,13 @@ mod tests {
         .unwrap();
         restore_db(&rt, &package).unwrap();
         let token = created.undo_token.unwrap();
+        let expected_tree_revision = created.tree_revision;
         rt.execute(move |conn| {
             life_edit::undo(
                 conn,
                 UndoLifeOperationInput {
                     undo_token: token,
-                    expected_tree_revision: 1,
+                    expected_tree_revision,
                 },
             )
             .map_err(|_| crate::infrastructure::sqlite::DbError::WorkerGone)
@@ -2022,7 +2053,7 @@ mod tests {
             })
             .unwrap();
         assert_eq!(
-            active, 1,
+            active, active_before,
             "restored ledger must still undo the synthetic create"
         );
     }
@@ -4285,7 +4316,7 @@ mod tests {
         use crate::infrastructure::backup::lifecycle::{
             preflight_startup_check, recover_if_interrupted,
         };
-        use crate::infrastructure::sqlite::task51_migration::run_all_migrations as run_migrations;
+        use crate::infrastructure::sqlite::task52_migration::run_all_migrations as run_migrations;
         use crate::infrastructure::sqlite::{
             connection::open_existing_file_connection, runtime::DatabaseRuntime,
             worker::DbWorkerHandle,
@@ -4351,7 +4382,7 @@ mod tests {
         use crate::infrastructure::backup::lifecycle::{
             preflight_startup_check, recover_if_interrupted,
         };
-        use crate::infrastructure::sqlite::task51_migration::run_all_migrations as run_migrations;
+        use crate::infrastructure::sqlite::task52_migration::run_all_migrations as run_migrations;
         use crate::infrastructure::sqlite::{
             connection::open_existing_file_connection, runtime::DatabaseRuntime,
             worker::DbWorkerHandle,

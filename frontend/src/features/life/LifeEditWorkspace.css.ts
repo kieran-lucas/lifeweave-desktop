@@ -1,5 +1,5 @@
 import { globalStyle, keyframes, style } from "@vanilla-extract/css";
-import { focusRing } from "../../design-system/primitives/utilities.css";
+import { focusRing, srOnly } from "../../design-system/primitives/utilities.css";
 import { vars } from "../../design-system/visual/contract.css";
 import { duration, easing } from "../../design-system/visual/motion.css";
 
@@ -37,8 +37,8 @@ export const canvasViewport = style({
 
 export const canvas = style({ position: "relative", minInlineSize: "100%", minBlockSize: 480 });
 export const links = style({ position: "absolute", inset: 0, pointerEvents: "none", overflow: "visible" });
-export const positioner = style({ position: "absolute", inlineSize: 164, transform: "translate(var(--life-x),var(--life-y))" });
-export const dndOwner = style({ position: "relative" });
+export const positioner = style({ position: "absolute", inlineSize: "var(--life-node-width, 196px)", transform: "translate(var(--life-x),var(--life-y))" });
+export const nodeShell = style({ position: "relative" });
 const revealActions = keyframes({
   from: { opacity: 0, transform: "translateX(-50%) translateY(-4px) scale(.98)" },
   to: { opacity: 1, transform: "translateX(-50%) translateY(0) scale(1)" },
@@ -138,34 +138,32 @@ export const nodeCard = style([
     backgroundImage: "var(--paint-grain-fine)",
     color: "#222222",
     textAlign: "left",
-    cursor: "grab",
+    cursor: "pointer",
     transition: "background-color 130ms ease, color 130ms ease, border-color 130ms ease, transform 100ms ease",
     selectors: {
-      "&[aria-pressed=true]": { borderColor: "#111111", backgroundColor: "#111111", color: "#FFFFFF" },
+      "&[aria-pressed=true]": { borderColor: vars.color.accent, backgroundColor: vars.color.accentSoft, color: vars.color.textPrimary },
       "&:hover:not([aria-pressed=true])": { borderColor: "#A9A9A6", backgroundColor: "#F4F4F1" },
-      "&:active": { cursor: "grabbing", transform: "scale(.985)" },
+      "&:active": { transform: "scale(.985)" },
     },
     "@media": {
       "(forced-colors: active)": {
-        selectors: { "&[aria-pressed=true]": { borderColor: "Highlight", background: "Highlight", color: "HighlightText" } },
+        selectors: { "&[aria-pressed=true]": { borderColor: "Highlight", background: "Canvas", color: "CanvasText", outline: "2px solid Highlight" } },
       },
     },
   },
 ]);
 
-export const compactTitle = style({ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", fontSize: 11, lineHeight: "15px", fontWeight: 680 });
-export const compactMeta = style({ display: "block", marginBlockStart: 2, color: "#8B8B8B", fontSize: 8, lineHeight: "11px" });
-globalStyle(`${nodeCard}[aria-pressed="true"] ${compactMeta}`, { color: "rgba(255,255,255,.68)" });
-
-export const dropBefore = style({
-  position: "absolute",
-  insetInline: 0,
-  insetBlockStart: -7,
-  blockSize: 10,
-  border: 0,
-  background: "transparent",
-  selectors: { "&[data-over=true]": { background: "#111111" } },
+export const nodeIcon = style({
+  inlineSize: 28,
+  blockSize: 28,
+  display: "inline-grid",
+  placeItems: "center",
+  fontSize: 18,
+  lineHeight: 1,
 });
+export const compactTitle = style({ display: "block", whiteSpace: "normal", overflowWrap: "anywhere", fontSize: 11, lineHeight: "15px", fontWeight: 680 });
+export const compactMeta = style({ display: "block", marginBlockStart: 2, color: "#8B8B8B", fontSize: 8, lineHeight: "11px" });
+globalStyle(`${nodeCard}[aria-pressed="true"] ${compactMeta}`, { color: vars.color.textSecondary });
 
 export const inspector = style({
   gridRow: "1",
@@ -231,8 +229,7 @@ export const archived = style({ display: "grid", gap: 8, paddingBlockStart: 10, 
 export const archivedList = style({ listStyle: "none", display: "grid", gap: 4, maxBlockSize: 160, overflow: "auto", margin: 0, padding: 0 });
 export const archivedRow = style({ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, fontSize: 10 });
 export const status = style({ gridColumn: "1 / -1", minBlockSize: 20, color: "#777777", fontSize: 9 });
-export const overlay = style({ inlineSize: 164, padding: 9, border: "2px solid #111111", borderRadius: 10, background: "#FFFFFF", color: "#111111", fontSize: 10, fontWeight: 720, boxShadow: "0 10px 26px rgba(0,0,0,.12)" });
-export const preview = style({ stroke: "#111111", strokeWidth: 2, strokeDasharray: "5 4", fill: "none" });
+export { srOnly };
 
 globalStyle(`${links} path`, { stroke: "#B6B6B4", strokeWidth: 1.15, fill: "none" });
 globalStyle(`${workspace} textarea`, { resize: "vertical" });

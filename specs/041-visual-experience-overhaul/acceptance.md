@@ -9,8 +9,10 @@ never the sole proof of anything.
 - node actions are absent before selection and selection reveals only Add child and Edit node;
 - the action surface is centered against its node and closes on repeat activation, outside pointer
   press, action selection, and Escape; Escape returns focus to the invoking node;
-- the Tree viewport has no local scrollbar; hold-drag on empty space pans both axes, hold-drag on a
-  node remains structural drag, and arrow/Shift-arrow/Home provide keyboard pan parity;
+- the Tree viewport has no local scrollbar; hold-drag on empty space pans both axes, direct node
+  drag-and-drop is disabled, and arrow/Shift-arrow/Home provide keyboard pan parity;
+- node cards are wide enough to wrap complete titles without ellipsis; selection is non-black and
+  clears on repeat activation, outside pointer press, Escape, and editor close;
 - the compact Tree heading stays above a bordered viewport that fills the remaining Life pane, and
   Tree mode produces no outer Life-canvas scrollbar;
 - the node editor is absent by default, opens on explicit request, and retains reorder, reparent,
@@ -27,6 +29,11 @@ never the sole proof of anything.
   done and Linked work are not rendered while their stored authority remains unchanged;
 - Life keeps its 15% navigator width and its Life/Tree controls, breadcrumbs, selected-node context,
   child items, and supporting copy are visibly larger and remain wrapping-safe;
+- schema 28 upgrades once to schema 29; the active canonical hierarchy has exactly 53 stable nodes
+  in a 1 + 4 + 12 + 36 shape, English-only titles, semantic icons on every node, Finance under
+  Security, and final leaf Contingency & Recovery under Safety & Continuity;
+- all existing Basic Leaf documents remain attached to the same stable IDs through the hierarchy
+  correction; the final leaf retains its complete authored content;
 
 ## Product Owner Focus Plan score amendment
 

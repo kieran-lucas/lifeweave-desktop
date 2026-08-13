@@ -102,8 +102,12 @@
       Edit node controls; retain all advanced mutations on demand.
 - [x] Center and restyle the node action surface; dismiss it on repeat activation, outside pointer
       press, action selection, and Escape with deterministic keyboard focus return.
-- [x] Remove Tree scrollbars and add empty-canvas hold-drag panning without stealing node drag;
-      preserve keyboard access through arrow, Shift-arrow, and Home viewport controls.
+- [x] Remove Tree scrollbars, add empty-canvas hold-drag panning, disable direct node drag-and-drop,
+      and preserve keyboard access through arrow, Shift-arrow, and Home viewport controls.
+- [x] Widen Tree cards, wrap complete titles, replace the persistent black selected fill, and make
+      repeat activation/outside press/Escape/editor close clear selection.
+- [x] Add schema 29 to converge the stable-ID Life Focus tree to exactly 53 English-only nodes,
+      correct Finance under Security, preserve all leaf documents, and assign semantic icons.
 - [x] Compact and raise the Tree heading, fit the bordered pan viewport to the remaining Life pane,
       and prevent Tree mode from creating an outer Life-canvas scroll region.
 - [x] Recompose Focus Plan detail around a compact identity and a dominant outcome writing surface
@@ -160,9 +164,9 @@
 
 ## Standing constraints
 
-- [ ] Change no product semantics beyond the explicit manual Plan score amendment, and invent no
-      Task facet to match the reference image.
-- [ ] Keep schema 28 with no further migration, second Plan IPC command or capability.
+- [ ] Change no product semantics beyond the explicit manual Plan score amendment and later
+      Product Owner Life Focus/Tree correction; invent no Task facet to match the reference image.
+- [ ] Keep schema 29 with no further migration, second Plan IPC command or capability.
 - [ ] Add no dependency outside the four justified above.
 - [ ] Keep `.github/workflows/` and the seal byte-identical.
 - [ ] Keep Task rows non-card and Today task-first and default.

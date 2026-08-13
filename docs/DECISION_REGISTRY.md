@@ -35,11 +35,18 @@ The immutable source is authoritative. This registry makes operational status vi
   structural controls open only after Edit node. The centered action surface closes on a repeated
   node activation, outside pointer press, action selection, or Escape. A leaf still opens a separate
   reader. The Tree viewport exposes no local scrollbars: holding and dragging empty canvas pans in
-  both axes, while node dragging remains structural; arrow keys pan and Home resets for keyboard
-  parity. Its compact header stays at the top of the pane, the bordered pan viewport consumes the
+  both axes, while direct node drag-and-drop is disabled; structure changes only through the
+  explicit Move controls under Edit node. Arrow keys pan and Home resets for keyboard parity. Node
+  titles wrap in wider cards without ellipsis, and selection clears on repeat activation, outside
+  pointer press, Escape, or editor close instead of applying a persistent black fill. Its compact
+  header stays at the top of the pane, the bordered pan viewport consumes the
   remaining available height, and the outer Life canvas does not scroll in Tree mode. Basic Leaf
   editing uses one non-duplicated extension set, does not rerender React for every document
   transaction, and exposes contextual row/column/table controls. See ADR 0046.
+- Schema 29 converges the canonical Life Focus System to exactly 53 stable identities: one root,
+  four English-only domains, twelve English-only sections, and thirty-six English-only leaves.
+  Finance is a child of Security. Every canonical node has a semantic local icon; existing leaf
+  documents remain attached by stable ID, including the complete final Contingency & Recovery leaf.
 - The Life destination is an edge-to-edge main-pane workspace with no route gutter or outer card
   chrome; navigation/content separators remain internal to the workspace. Its navigator owns 15%
   of the workspace width and wraps long node names. Leaf content uses the remaining pane with 5%

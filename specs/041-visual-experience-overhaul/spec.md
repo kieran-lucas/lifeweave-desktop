@@ -291,7 +291,8 @@ when reduced motion is requested.
 
 ## 11. Hard exclusions
 
-Schema beyond 28, any migration or Rust product change beyond §1.2, any new IPC command, any new Tauri capability,
+Schema beyond 29, any migration or Rust product change beyond the explicit schema-29 Life Focus
+identity-preserving correction, any new IPC command, any new Tauri capability,
 any broadened filesystem or shell permission, any network service, any accounts or sync, any backup
 format change, and any workflow or seal change.
 

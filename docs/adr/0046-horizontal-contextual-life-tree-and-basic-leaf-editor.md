@@ -14,6 +14,10 @@ On 2026-08-13, the Product Owner refined that presentation again: Focus Plan det
 Definition of done and Linked work regions, retains their stored authority unchanged, preserves
 authored single line breaks in read mode, and uses a 70% focused frame. The Life navigator keeps
 its 15% column while increasing its navigation and child-label type for legibility.
+Later on 2026-08-13, the Product Owner explicitly disabled direct Tree node drag-and-drop, required
+dismissable non-black selection, required full untruncated node titles, and locked an English-only
+53-node Life Focus hierarchy with a meaningful semantic icon on every node. Schema 29 performs the
+identity-preserving hierarchy correction; it does not replace existing leaf documents.
 
 ## Context
 
@@ -36,10 +40,11 @@ unnecessarily difficult.
    demand; no mutation capability is deleted or duplicated. The action surface is centered on its
    node rather than offset from the icon, and closes when the node is activated again, an action is
    chosen, the pointer is pressed outside, or Escape is pressed. Escape restores focus to the node.
-4. Existing dnd-kit movement and keyboard-equivalent inspector controls remain, with the spatial
-   sorting strategy changed to rectangular geometry. The Tree viewport has no user-operated local
-   scrollbars: holding and dragging empty canvas pans it in both axes, while holding a node continues
-   to move that node. Arrow keys pan, Shift increases the step, and Home returns to the origin. The
+4. Direct node drag-and-drop is disabled. Reorder and reparent remain available only as explicit,
+   keyboard-reachable Move controls under Edit node. The Tree viewport has no user-operated local
+   scrollbars: holding and dragging empty canvas pans it in both axes, while a gesture beginning on
+   a node does not pan or move the node. Arrow keys pan, Shift increases the step, and Home returns
+   to the origin. The
    Tree title is a compact header at the top of its pane; the bordered viewport consumes the
    remaining available height and the outer Life canvas cannot scroll in Tree mode. Advanced node
    controls, when requested, scroll only inside their own bounded column.
@@ -58,10 +63,19 @@ unnecessarily difficult.
 9. The existing 15% Life navigator geometry remains unchanged. Its Life/Tree controls,
    breadcrumbs, selected-node label, child rows, metadata, and empty copy use a modestly larger
    type scale so the hierarchy remains readable without widening the navigator.
+10. Tree nodes use wider cards and wrap complete titles without ellipsis. Selection uses restrained
+    accent treatment and is cleared by repeat activation, outside pointer press, Escape, or editor
+    close. The first activation after opening Tree is never consumed by a hidden preselection.
+11. Schema 29 keeps the canonical IDs while converging titles, parentage, order, themes, pins, and
+    semantic icons to the Product Owner's exact 1 + 4 + 12 + 36 Life Focus structure. Titles are
+    English-only. Finance is under Security; Contingency & Recovery remains the final child of
+    Safety & Continuity. Existing Basic Leaf content is preserved by stable identity.
 
 ## Consequences
 
-- No migration, data rewrite, new command, capability, dependency, or remote asset is introduced.
+- Schema 29 is the only migration introduced by the later Life Focus correction. It changes no
+  table shape and preserves documents and relationships by stable node identity. No new command,
+  capability, dependency, or remote asset is introduced.
 - The stored navigation preference may continue using the existing internal `edit` value for
   compatibility; that implementation key is not presented as a user-facing mode.
 - Native browser input remains responsible for Backspace/Delete dispatch. Deterministic tests cover

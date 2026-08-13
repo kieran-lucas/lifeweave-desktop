@@ -18,6 +18,7 @@ import {
   iconLife,
   iconNote,
 } from "../../design-system/visual/icons";
+import { lifeIconGlyph } from "./lifeIconCatalog";
 
 type Mode = "browse" | "edit" | "reader";
 type HistoryEntry = {
@@ -41,12 +42,18 @@ const lifeKeys = {
 const LifeLinksPanel = lazy(() => import("./links/LifeLinksPanel"));
 
 function NodeIcon({ iconKey, size = 17 }: { iconKey: string; size?: number }) {
+  const glyph = lifeIconGlyph(iconKey);
+  const glyphSize = size >= 26 ? "large" : size >= 20 ? "medium" : "small";
   return (
     <span className={styles.icon} aria-hidden="true">
-      <Icon
-        d={iconKey === "life-leaf" || iconKey === "life-note" ? iconNote : iconLife}
-        size={size}
-      />
+      {glyph ? (
+        <span className={styles.iconGlyph} data-size={glyphSize}>{glyph}</span>
+      ) : (
+        <Icon
+          d={iconKey === "life-leaf" || iconKey === "life-note" ? iconNote : iconLife}
+          size={size}
+        />
+      )}
     </span>
   );
 }

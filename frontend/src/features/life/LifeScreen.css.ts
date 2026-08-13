@@ -123,7 +123,7 @@ globalStyle(`${breadcrumb} button:focus-visible`, { outline: "1.5px solid #11111
 
 export const branchIdentity = style({
   display: "grid",
-  gridTemplateColumns: "minmax(0,1fr)",
+  gridTemplateColumns: "34px minmax(0,1fr)",
   alignItems: "center",
   gap: 9,
   padding: "12px 12px 14px",
@@ -144,7 +144,15 @@ export const icon = style({
   background: "#FFFFFF",
   color: "#333333",
 });
-globalStyle(`${branchIdentity} > ${icon}`, { display: "none" });
+export const iconGlyph = style({
+  display: "block",
+  fontSize: 17,
+  lineHeight: 1,
+  selectors: {
+    '&[data-size="medium"]': { fontSize: 20 },
+    '&[data-size="large"]': { fontSize: 26 },
+  },
+});
 
 export const navigatorTools = style({
   padding: "7px",
@@ -200,7 +208,7 @@ export const nodeRow = style({
   inlineSize: "100%",
   minBlockSize: 48,
   display: "grid",
-  gridTemplateColumns: "minmax(0,1fr)",
+  gridTemplateColumns: "34px minmax(0,1fr)",
   alignItems: "center",
   gap: 8,
   padding: "6px 7px",
@@ -218,7 +226,6 @@ export const nodeRow = style({
     "&:focus-visible": { outline: "2px solid #111111", outlineOffset: -2 },
   },
 });
-globalStyle(`${nodeRow} ${icon}`, { display: "none" });
 
 export const nodeRowCopy = style({ display: "grid", gap: 1, minInlineSize: 0 });
 globalStyle(`${nodeRowCopy} > strong`, { color: "#282828", fontSize: 13, lineHeight: "18px", fontWeight: 650, overflowWrap: "break-word", wordBreak: "normal", whiteSpace: "normal" });
