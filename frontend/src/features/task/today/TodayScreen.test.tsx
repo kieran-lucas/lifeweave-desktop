@@ -62,7 +62,7 @@ function mount() {
   });
   return render(
     <QueryClientProvider client={client}>
-      <TodayScreen selectedDate="2026-08-11" anchorLocalDate="2026-08-11" />
+      <TodayScreen selectedDate="2026-08-11" anchorLocalDate="2026-08-12" />
     </QueryClientProvider>,
   );
 }
@@ -118,6 +118,16 @@ describe("Today task interactions", () => {
     expect(screen.queryByRole("button", { name: "Edit Write the report" })).not.toBeInTheDocument();
   });
 
+  it("does not load composer-only categories until a new task is planned", async () => {
+    mount();
+
+    await screen.findByText("Write the report");
+    expect(api.listTaskCategories).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Plan task" }));
+    await waitFor(() => expect(api.listTaskCategories).toHaveBeenCalledTimes(1));
+  });
+
   it("closes the task editor when the backdrop is pressed", async () => {
     mount();
     const title = await screen.findByText("Write the report");
@@ -134,10 +144,23 @@ describe("Today task interactions", () => {
       name: "Assess task. Current state: None",
     });
     expect(assessment).toHaveTextContent("None");
+    expect(assessment.closest('[data-agenda-id="task-1"]')?.parentElement).not.toHaveAttribute("data-completed");
     expect(screen.queryByRole("button", { name: /Start timer/i })).not.toBeInTheDocument();
 
     fireEvent.click(assessment);
     expect(screen.getByRole("listbox", { name: "Completion assessment" })).toBeInTheDocument();
+  });
+
+  it("shows the saved task description directly below its title", async () => {
+    api.listTodayItems.mockResolvedValue([
+      { ...task, description: "Outline the findings and next steps." },
+    ]);
+
+    mount();
+    const description = await screen.findByText("Outline the findings and next steps.");
+    const row = description.closest<HTMLElement>('[data-agenda-id="task-1"]');
+    expect(row).not.toBeNull();
+    expect(within(row!).getByText("Write the report")).toBeInTheDocument();
   });
 
   it("uses the same assessment name in the task row and the option menu", async () => {
@@ -166,6 +189,7 @@ describe("Today task interactions", () => {
     });
     expect(assessment).toHaveTextContent("Done");
     expect(assessment.querySelector("svg")).not.toBeInTheDocument();
+    expect(assessment.closest('[data-agenda-id="task-1"]')?.parentElement).toHaveAttribute("data-completed", "true");
 
     fireEvent.click(assessment);
     expect(screen.getByRole("option", { name: "Done" })).toHaveTextContent("Done");

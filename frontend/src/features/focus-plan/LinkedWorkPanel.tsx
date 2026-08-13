@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { getFocusPlanLinkedWork } from "../../ipc/commands";
 import type { FocusPlanLinkedWorkView } from "../../ipc/generated/FocusPlanLinkedWorkView";
 import * as styles from "./FocusPlansScreen.css";
-import { EmptyState } from "../../design-system/primitives/States";
 
 export type TaskNavigate = (
   localDate: string,
@@ -49,13 +48,7 @@ export function LinkedWorkPanel({
   }
 
   if (!work || work.items.length === 0) {
-    return (
-      <EmptyState
-        compact
-        title="No linked work yet."
-        body="Tasks connected to this plan will appear here automatically."
-      />
-    );
+    return <p className={styles.linkedMeta}>No linked work.</p>;
   }
 
   return (
@@ -85,7 +78,6 @@ export function LinkedWorkPanel({
                   <time dateTime={item.navigation_local_date}>{item.navigation_local_date}</time>
                 </span>
               </span>
-              <span className={styles.linkedArrow} aria-hidden="true">↗</span>
             </button>
           </li>
         ))}

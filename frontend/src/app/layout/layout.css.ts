@@ -118,6 +118,7 @@ const pageFrameBase = style({
 export const pageFrame = styleVariants({
   standard: [pageFrameBase, { maxInlineSize: frame.standard }],
   wide: [pageFrameBase, { maxInlineSize: frame.wide }],
+  focused: [pageFrameBase, { maxInlineSize: frame.focused }],
   reading: [pageFrameBase, { maxInlineSize: frame.reading }],
 });
 

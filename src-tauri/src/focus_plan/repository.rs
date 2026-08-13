@@ -236,7 +236,7 @@ pub fn list(conn: &Connection, input: &FocusPlanListInput) -> Result<Vec<FocusPl
     let limit = input.limit.unwrap_or(100).clamp(1, 200);
     let offset = input.offset.unwrap_or(0);
     let mut statement = conn.prepare(
-        "SELECT p.id,p.title,p.lifecycle,p.start_date,p.target_date,p.life_node_id,
+        "SELECT p.id,p.title,p.lifecycle,p.score,p.start_date,p.target_date,p.life_node_id,
                 ln.title,v.label,
                 (SELECT COUNT(*) FROM focus_plan_variants av WHERE av.plan_id=p.id AND av.archived_at IS NULL),
                 (SELECT COUNT(*) FROM focus_plan_phases ph JOIN focus_plan_variants pv ON pv.id=ph.variant_id WHERE pv.plan_id=p.id AND pv.archived_at IS NULL AND ph.archived_at IS NULL),
@@ -252,22 +252,23 @@ pub fn list(conn: &Connection, input: &FocusPlanListInput) -> Result<Vec<FocusPl
     )?;
     let rows = statement.query_map(params![filter, limit, offset], |row| {
         let lifecycle: String = row.get(2)?;
-        let tags: String = row.get(10)?;
+        let tags: String = row.get(11)?;
         Ok((
             row.get::<_, String>(0)?,
             row.get::<_, String>(1)?,
             lifecycle,
-            row.get::<_, Option<String>>(3)?,
+            row.get::<_, Option<u32>>(3)?,
             row.get::<_, Option<String>>(4)?,
             row.get::<_, Option<String>>(5)?,
             row.get::<_, Option<String>>(6)?,
-            row.get::<_, String>(7)?,
-            row.get::<_, u32>(8)?,
+            row.get::<_, Option<String>>(7)?,
+            row.get::<_, String>(8)?,
             row.get::<_, u32>(9)?,
+            row.get::<_, u32>(10)?,
             tags,
-            row.get::<_, u32>(11)?,
-            row.get::<_, String>(12)?,
-            row.get::<_, Option<String>>(13)?,
+            row.get::<_, u32>(12)?,
+            row.get::<_, String>(13)?,
+            row.get::<_, Option<String>>(14)?,
         ))
     })?;
     rows.map(|row| {
@@ -275,6 +276,7 @@ pub fn list(conn: &Connection, input: &FocusPlanListInput) -> Result<Vec<FocusPl
             id,
             title,
             lifecycle,
+            score,
             start_date,
             target_date,
             life_node_id,
@@ -291,6 +293,7 @@ pub fn list(conn: &Connection, input: &FocusPlanListInput) -> Result<Vec<FocusPl
             id,
             title,
             lifecycle: lifecycle_from_db(&lifecycle)?,
+            score,
             start_date,
             target_date,
             life_node_id,
@@ -315,16 +318,16 @@ pub fn get(conn: &Connection, plan_id: &str) -> Result<FocusPlanDetailView> {
     validate_id(plan_id, "Focus Plan ID")?;
     let plan = conn
         .query_row(
-            "SELECT p.id,p.title,p.lifecycle,p.start_date,p.target_date,p.life_node_id,ln.title,p.outcome,p.success_criteria_json,p.selected_variant_id,p.revision,p.created_at,p.updated_at,p.archived_at
+            "SELECT p.id,p.title,p.lifecycle,p.score,p.start_date,p.target_date,p.life_node_id,ln.title,p.outcome,p.success_criteria_json,p.selected_variant_id,p.revision,p.created_at,p.updated_at,p.archived_at
              FROM focus_plans p LEFT JOIN life_nodes ln ON ln.id=p.life_node_id WHERE p.id=?1",
             [plan_id],
             |row| {
                 Ok((
                     row.get::<_, String>(0)?, row.get::<_, String>(1)?, row.get::<_, String>(2)?,
-                    row.get::<_, Option<String>>(3)?, row.get::<_, Option<String>>(4)?, row.get::<_, Option<String>>(5)?,
-                    row.get::<_, Option<String>>(6)?, row.get::<_, String>(7)?, row.get::<_, String>(8)?,
-                    row.get::<_, String>(9)?, row.get::<_, u32>(10)?, row.get::<_, String>(11)?,
-                    row.get::<_, String>(12)?, row.get::<_, Option<String>>(13)?,
+                    row.get::<_, Option<u32>>(3)?, row.get::<_, Option<String>>(4)?, row.get::<_, Option<String>>(5)?,
+                    row.get::<_, Option<String>>(6)?, row.get::<_, Option<String>>(7)?, row.get::<_, String>(8)?,
+                    row.get::<_, String>(9)?, row.get::<_, String>(10)?, row.get::<_, u32>(11)?,
+                    row.get::<_, String>(12)?, row.get::<_, String>(13)?, row.get::<_, Option<String>>(14)?,
                 ))
             },
         )
@@ -412,27 +415,28 @@ pub fn get(conn: &Connection, plan_id: &str) -> Result<FocusPlanDetailView> {
         )
         .optional()?;
 
-    let success_criteria = serde_json::from_str::<Vec<String>>(&plan.8)
+    let success_criteria = serde_json::from_str::<Vec<String>>(&plan.9)
         .map_err(|_| FocusPlanError::Validation("Stored success criteria are invalid".into()))?;
     Ok(FocusPlanDetailView {
         id: plan.0,
         title: plan.1,
         lifecycle: lifecycle_from_db(&plan.2)?,
-        start_date: plan.3,
-        target_date: plan.4,
-        life_node_id: plan.5,
-        life_title: plan.6,
-        outcome: plan.7,
+        score: plan.3,
+        start_date: plan.4,
+        target_date: plan.5,
+        life_node_id: plan.6,
+        life_title: plan.7,
+        outcome: plan.8,
         success_criteria,
-        selected_variant_id: plan.9,
+        selected_variant_id: plan.10,
         variants,
         tags,
         revisions,
         recovery_draft,
-        revision: plan.10,
-        created_at: plan.11,
-        updated_at: plan.12,
-        archived: plan.13.is_some(),
+        revision: plan.11,
+        created_at: plan.12,
+        updated_at: plan.13,
+        archived: plan.14.is_some(),
     })
 }
 
@@ -523,6 +527,7 @@ pub fn create(conn: &mut Connection, input: CreateFocusPlanInput) -> Result<Focu
 fn mutation_reason(action: &FocusPlanMutationAction) -> &'static str {
     match action {
         FocusPlanMutationAction::UpdatePlan { .. } => "update_plan",
+        FocusPlanMutationAction::SetScore { .. } => "set_score",
         FocusPlanMutationAction::AddVariant { .. } => "add_variant",
         FocusPlanMutationAction::RenameVariant { .. } => "rename_variant",
         FocusPlanMutationAction::SelectVariant { .. } => "select_variant",
@@ -593,6 +598,18 @@ fn apply_mutation(
                 params![plan_id, title, lifecycle.as_str(), life_node_id, start_date, target_date, outcome, criteria_json],
             )?;
             replace_tags(tx, plan_id, tag_ids, timestamp)?;
+            None
+        }
+        FocusPlanMutationAction::SetScore { score } => {
+            if score.is_some_and(|value| !(1..=100).contains(&value)) {
+                return Err(FocusPlanError::Validation(
+                    "Focus Plan score must be between 1 and 100".into(),
+                ));
+            }
+            tx.execute(
+                "UPDATE focus_plans SET score=?2 WHERE id=?1",
+                params![plan_id, score],
+            )?;
             None
         }
         FocusPlanMutationAction::AddVariant { label } => {
@@ -1116,8 +1133,9 @@ pub fn linked_work(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::focus_plan::dto::FocusPlanPortfolio;
     use crate::infrastructure::sqlite::{
-        connection::open_memory_connection, task39_migration::run_all_migrations,
+        connection::open_memory_connection, task51_migration::run_all_migrations,
     };
 
     fn connection() -> Connection {
@@ -1168,6 +1186,53 @@ mod tests {
         assert_eq!(replay.revision, 1);
         assert!(replay.replayed);
         assert_eq!(get(&conn, &plan.id).unwrap().variants.len(), 2);
+    }
+
+    #[test]
+    fn manual_score_is_bounded_revisioned_and_does_not_complete_plan() {
+        let mut conn = connection();
+        let plan = create(&mut conn, create_input("op-create-score")).unwrap();
+
+        let invalid = mutate(
+            &mut conn,
+            MutateFocusPlanInput {
+                plan_id: plan.id.clone(),
+                expected_revision: 0,
+                operation_id: "op-score-invalid".into(),
+                mutation: FocusPlanMutationAction::SetScore { score: Some(101) },
+            },
+        )
+        .unwrap_err();
+        assert!(matches!(invalid, FocusPlanError::Validation(_)));
+        assert_eq!(get(&conn, &plan.id).unwrap().revision, 0);
+
+        let input = MutateFocusPlanInput {
+            plan_id: plan.id.clone(),
+            expected_revision: 0,
+            operation_id: "op-score".into(),
+            mutation: FocusPlanMutationAction::SetScore { score: Some(100) },
+        };
+        let result = mutate(&mut conn, input.clone()).unwrap();
+        let replay = mutate(&mut conn, input).unwrap();
+        assert_eq!(result.revision, 1);
+        assert_eq!(replay.revision, 1);
+        assert!(replay.replayed);
+
+        let detail = get(&conn, &plan.id).unwrap();
+        assert_eq!(detail.score, Some(100));
+        assert_eq!(detail.lifecycle, FocusPlanLifecycle::Draft);
+        assert_eq!(detail.revisions[0].reason, "set_score");
+        let summary = list(
+            &conn,
+            &FocusPlanListInput {
+                portfolio: FocusPlanPortfolio::Draft,
+                limit: None,
+                offset: None,
+            },
+        )
+        .unwrap();
+        assert_eq!(summary[0].score, Some(100));
+        assert_eq!(summary[0].lifecycle, FocusPlanLifecycle::Draft);
     }
 
     #[test]

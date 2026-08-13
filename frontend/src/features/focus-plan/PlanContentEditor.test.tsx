@@ -43,6 +43,13 @@ describe("Plan Markdown content editor", () => {
     expect(screen.getByText(/<script>alert/)).toBeInTheDocument();
   });
 
+  it("preserves authored line breaks in ordinary preview paragraphs", () => {
+    render(<PlanContentEditor value={"First line\nSecond line"} editing onChange={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Preview" }));
+    expect(screen.getByText(/First line/).textContent).toBe("First line\nSecond line");
+  });
+
   it("has no critical or serious accessibility violations in Write mode", async () => {
     const { container } = render(<EditablePlan initial="## Direction\n\nWrite clearly." />);
     const results = await axe.run(container);

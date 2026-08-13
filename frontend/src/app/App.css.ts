@@ -188,12 +188,10 @@ globalStyle(`${viewport}[data-navigation-motion="back"] > :not(p)`, {
 });
 globalStyle(`${viewport} > :not(p)`, {
   transformOrigin: "center",
-  willChange: "transform, opacity",
   "@media": {
     "(prefers-reduced-motion: reduce)": {
       animation: `${routeFade} ${reduced.duration} ${reduced.easing} both`,
       transform: "none",
-      willChange: "opacity",
     },
   },
 });

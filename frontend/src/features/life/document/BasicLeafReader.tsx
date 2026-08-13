@@ -26,7 +26,7 @@ type MarkdownImportPending = {
   preview: import("../../../ipc/generated/NarrativeMarkdownPreview").NarrativeMarkdownPreview;
 };
 
-function OutlineAvailabilityReporter({
+function AvailabilityReporter({
   available,
   onChange,
 }: {
@@ -226,8 +226,7 @@ export function BasicLeafReader({
 
   return (
     <div className={styles.shell}>
-      <OutlineAvailabilityReporter available={showOutline} onChange={onOutlineAvailabilityChange} />
-      <h2>Reader</h2>
+      <AvailabilityReporter available={showOutline} onChange={onOutlineAvailabilityChange} />
       {projection.draft_state !== "none" && (
         <section className={styles.recovery} aria-labelledby="recovery-title">
           <h2 id="recovery-title">Recoverable draft</h2>
@@ -238,14 +237,21 @@ export function BasicLeafReader({
           </div>
         </section>
       )}
-      <div className={styles.actions}>
-        <button className={styles.primary} onClick={() => setEditing(true)}>Edit document</button>
-        <label className={styles.fileLabel}>Import Markdown
-          <input className={styles.hiddenFile} type="file" accept="text/markdown,.md" onChange={event => void importMarkdown(event.currentTarget.files?.[0])} />
-        </label>
-        <button className={styles.button} onClick={() => void exportMarkdown()}>Export Markdown</button>
+      <div className={styles.documentCommands}>
+        <button className={styles.primary} onClick={() => setEditing(true)}>Edit</button>
+        <details className={styles.documentOptions}>
+          <summary>Options</summary>
+          <div className={styles.optionsPanel}>
+            <div className={styles.actions}>
+              <label className={styles.fileLabel}>Import Markdown
+                <input className={styles.hiddenFile} type="file" accept="text/markdown,.md" onChange={event => void importMarkdown(event.currentTarget.files?.[0])} />
+              </label>
+              <button className={styles.button} onClick={() => void exportMarkdown()}>Export Markdown</button>
+            </div>
+            <PortablePackageControls nodeId={nodeId} documentKind="basic_leaf" documentId={document.id} hasDraft={projection.draft_state !== "none"} />
+          </div>
+        </details>
       </div>
-      <PortablePackageControls nodeId={nodeId} documentKind="basic_leaf" documentId={document.id} hasDraft={projection.draft_state !== "none"} />
       {notice && <p role="status" aria-live="polite">{notice}</p>}
       <div className={styles.outlineContainer}>
         {showOutline && outlineVisible

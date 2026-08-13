@@ -234,6 +234,7 @@ export function TodayScreen({
   const categories = useQuery({
     queryKey: ["task-categories"],
     queryFn: listTaskCategories,
+    enabled: open && !editing,
   });
   const completionStates = useQuery({
     queryKey: ["completion-states"],
@@ -494,7 +495,7 @@ export function TodayScreen({
   function begin(item?: TodayItem, invoker?: HTMLElement) {
     returnFocus.current = invoker ?? document.activeElement as HTMLElement | null;
     setEditing(item ?? null);
-    setDraft(item ? draftFromItem(item) : defaultDraft(date, categories.data?.[0]?.id ?? "general"));
+    setDraft(item ? draftFromItem(item) : defaultDraft(date, "general"));
     setRepeat(false);
     setRepeatFrequency("weekly");
     setError("");
@@ -577,7 +578,11 @@ export function TodayScreen({
           ) : (
             <ol className={styles.agendaList} aria-label={`Tasks for ${date}`}>
               {ordered.map((item) => (
-                <li key={item.id} className={styles.agendaItem}>
+                <li
+                  key={item.id}
+                  className={styles.agendaItem}
+                  data-completed={(item.evaluation && item.evaluation.visual_token !== "none") || undefined}
+                >
                   <div className={styles.timeRail} aria-hidden="true">
                     <strong>{formatMinute(item.start_minute)}</strong>
                     <span>{formatMinute(item.end_minute)}</span>
@@ -603,6 +608,9 @@ export function TodayScreen({
                   >
                     <div className={styles.taskCopy}>
                       <strong>{item.title}</strong>
+                      {item.description.trim() && (
+                        <p className={styles.taskDescription}>{item.description}</p>
+                      )}
                       <div className={styles.taskMeta}>
                         {item.life_area && (
                           <button

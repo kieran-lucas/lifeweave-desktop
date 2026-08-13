@@ -40,11 +40,12 @@ describe("PageFrame", () => {
     const classes = new Set([
       styles.pageFrame.standard,
       styles.pageFrame.wide,
+      styles.pageFrame.focused,
       styles.pageFrame.reading,
     ]);
-    // Three declared types keep distinct semantic/test hooks even when the two desktop workspace
+    // Four declared types keep distinct semantic/test hooks even when the two desktop workspace
     // variants are both fluid. The reading variant remains independently width-constrained.
-    expect(classes.size).toBe(3);
+    expect(classes.size).toBe(4);
   });
 
   it("marks an edge-to-edge frame without creating another page type", () => {

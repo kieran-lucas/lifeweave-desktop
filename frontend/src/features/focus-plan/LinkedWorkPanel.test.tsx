@@ -73,7 +73,7 @@ describe("LinkedWorkPanel", () => {
     const view = render(
       <LinkedWorkPanel planId="plan-1" anchorLocalDate="2026-08-06" />,
     );
-    expect(await screen.findByText("No linked work yet.")).toBeInTheDocument();
+    expect(await screen.findByText("No linked work.")).toBeInTheDocument();
     view.unmount();
 
     vi.mocked(commands.getFocusPlanLinkedWork).mockRejectedValue(new Error("nope"));

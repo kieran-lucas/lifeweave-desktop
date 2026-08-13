@@ -93,6 +93,9 @@ pub enum FocusPlanMutationAction {
         success_criteria: Vec<String>,
         tag_ids: Vec<String>,
     },
+    SetScore {
+        score: Option<u32>,
+    },
     AddVariant {
         label: String,
     },
@@ -164,6 +167,7 @@ pub struct FocusPlanSummaryView {
     pub id: String,
     pub title: String,
     pub lifecycle: FocusPlanLifecycle,
+    pub score: Option<u32>,
     pub start_date: Option<String>,
     pub target_date: Option<String>,
     pub life_node_id: Option<String>,
@@ -228,6 +232,7 @@ pub struct FocusPlanDetailView {
     pub id: String,
     pub title: String,
     pub lifecycle: FocusPlanLifecycle,
+    pub score: Option<u32>,
     pub start_date: Option<String>,
     pub target_date: Option<String>,
     pub life_node_id: Option<String>,
@@ -370,5 +375,13 @@ mod tests {
         .unwrap();
         assert_eq!(value["action"], "add_variant");
         assert_eq!(value["label"], "Course first");
+    }
+
+    #[test]
+    fn score_mutation_serializes_nullable_manual_authority() {
+        let value =
+            serde_json::to_value(FocusPlanMutationAction::SetScore { score: Some(88) }).unwrap();
+        assert_eq!(value["action"], "set_score");
+        assert_eq!(value["score"], 88);
     }
 }

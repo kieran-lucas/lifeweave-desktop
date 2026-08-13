@@ -22,8 +22,22 @@ never the sole proof of anything.
 - an active table exposes keyboard-reachable controls for rows, columns, and deletion, and wide
   table content scrolls within the editor rather than the application document.
 - opening a Focus Plan shows a compact title/lifecycle identity and a clearly dominant authored
-  outcome surface in both read and edit states, without removing facts, criteria, linked work, or
-  lifecycle controls;
+  outcome surface in both read and edit states within a 70% focused frame; authored single line
+  breaks remain visible in read mode; facts and lifecycle actions remain visible; Definition of
+  done and Linked work are not rendered while their stored authority remains unchanged;
+- Life keeps its 15% navigator width and its Life/Tree controls, breadcrumbs, selected-node context,
+  child items, and supporting copy are visibly larger and remain wrapping-safe;
+
+## Product Owner Focus Plan score amendment
+
+- schema 27 upgrades once to schema 28 without editing migrations 1–27;
+- stored Plan score is nullable and rejects 0, values above 100, and non-integers at authority;
+- the existing optimistic/idempotent Plan mutation path persists and projects score after reopen;
+- every portfolio row has one right-aligned circular score control with a numeric accessible name;
+- mouse, keyboard, Escape, validation failure, retry, and focus restoration are deterministic;
+- colour is never the only score signal; 1–100 remains printed in the circle;
+- lifecycle `completed` strikes the title, while score 100 alone does not change lifecycle or title;
+- backup/restore preserves the score and no score-derived Analytics or automatic lifecycle exists;
 
 ## Process
 
@@ -82,7 +96,8 @@ never the sole proof of anything.
 
 ## Product behaviour preserved
 
-- every existing flow still works; no business semantics changed;
+- every existing flow still works; no business semantics changed beyond the explicit manual Plan
+  score amendment;
 - the eight global keyboard shortcuts and their chords are unchanged;
 - Task rows remain non-card; Today remains task-first, startup and default;
 - semantic periods keep their boundaries; Life Browse still shows the selected node and direct
@@ -90,8 +105,8 @@ never the sole proof of anything.
 - no category was renamed, no recurrence control removed, no metadata dropped, no error or recovery
   information hidden, and no accessibility alternative collapsed to make a screenshot match;
 - no Task facet was invented — in particular no subtasks and no task-to-task links;
-- schema remains 27 with no migration, no Rust product change, no new IPC command, no new capability,
-  no broadened permission, no network service and no backup-format change.
+- schema is 28 solely for the manual Plan score; there is no second Plan IPC command, new capability,
+  broadened permission, network service or backup-format change.
 
 ## Geometry
 

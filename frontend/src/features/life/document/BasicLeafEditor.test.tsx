@@ -35,7 +35,7 @@ const tiptap = vi.hoisted(() => {
     chain,
     editor,
     config: undefined as undefined | {
-      autofocus?: string;
+      autofocus?: boolean;
       editorProps?: { attributes?: Record<string, string> };
       onUpdate?: (value: { editor: { getJSON: () => unknown } }) => void;
     },
@@ -116,10 +116,10 @@ describe("focused Basic Leaf editor", () => {
     expect(within(tableTools).getByText(/Tab moves between cells/)).toBeInTheDocument();
   });
 
-  it("focuses the authored surface and gives the real editor accessible text semantics", () => {
+  it("does not steal scroll position on mount and gives the editor accessible text semantics", () => {
     render(<BasicLeafEditor document={document} onCommitted={vi.fn()} onCancel={vi.fn()} />);
 
-    expect(tiptap.config?.autofocus).toBe("end");
+    expect(tiptap.config?.autofocus).toBe(false);
     expect(tiptap.config?.editorProps?.attributes).toEqual(expect.objectContaining({
       "aria-label": "Document body",
       "aria-multiline": "true",

@@ -338,7 +338,7 @@ describe("BasicLeafReader outline integration", () => {
   it("editing mode hides the outline", async () => {
     mount();
     await screen.findByRole("navigation", { name: "Document outline" });
-    fireEvent.click(screen.getByRole("button", { name: "Edit document" }));
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
     await waitFor(() => expect(screen.queryByRole("navigation", { name: "Document outline" })).not.toBeInTheDocument());
   });
 

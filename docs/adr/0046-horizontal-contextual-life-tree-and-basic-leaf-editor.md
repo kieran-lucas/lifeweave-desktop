@@ -10,6 +10,10 @@ are unchanged.
 
 The Product Owner's later composition refinement in the same pass is also recorded here: it changes
 only already-authorized Task 51 presentation for the Tree shell and Focus Plan detail surface.
+On 2026-08-13, the Product Owner refined that presentation again: Focus Plan detail omits the
+Definition of done and Linked work regions, retains their stored authority unchanged, preserves
+authored single line breaks in read mode, and uses a 70% focused frame. The Life navigator keeps
+its 15% column while increasing its navigation and child-label type for legibility.
 
 ## Context
 
@@ -47,8 +51,13 @@ unnecessarily difficult.
 7. A selected table exposes add/delete row, add/delete column, and delete-table controls. Tables
    have usable cell sizing, selected-cell feedback, and local horizontal overflow.
 8. A Focus Plan detail treats its title and lifecycle as compact identity, not a page-dominating
-   hero. The authored outcome is the primary writing and reading surface; facts, criteria, linked
-   work, and lifecycle controls remain available without competing with that content plane.
+   hero. The authored outcome is the primary writing and reading surface in a 70% focused frame;
+   authored single line breaks remain visible in read mode. Facts and lifecycle controls remain
+   available without competing with that content plane. Definition of done and Linked work are no
+   longer rendered on this surface; their stored data and backend authority are not deleted.
+9. The existing 15% Life navigator geometry remains unchanged. Its Life/Tree controls,
+   breadcrumbs, selected-node label, child rows, metadata, and empty copy use a modestly larger
+   type scale so the hierarchy remains readable without widening the navigator.
 
 ## Consequences
 

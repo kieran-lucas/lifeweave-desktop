@@ -43,11 +43,13 @@ globalStyle(":root", {
      *   standard fluid  application pages use the full desktop content box; prose keeps its own
      *                   character-based reading measure rather than shrinking the whole page
      *   wide     fluid  workspaces and canvases use every available column inside the shared gutter
+     *   focused   70%  authored workspaces that deliberately retain 15% breathing room per side
      *   reading   768  a conventional single-column reading measure; replaces the ad-hoc 760 the
      *                  Reader used, so reading surfaces stop inventing their own width
      */
     "--lw-frame-standard": "100%",
     "--lw-frame-wide": "100%",
+    "--lw-frame-focused": "70%",
     "--lw-frame-reading": "768px",
 
     /*
@@ -85,6 +87,7 @@ export const gutter = "var(--lw-gutter)";
 export const frame = {
   standard: "var(--lw-frame-standard)",
   wide: "var(--lw-frame-wide)",
+  focused: "var(--lw-frame-focused)",
   reading: "var(--lw-frame-reading)",
 } as const;
 

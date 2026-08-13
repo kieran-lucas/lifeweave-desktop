@@ -7,7 +7,6 @@ import {
 import type { LifeNodeView } from "../../ipc/generated/LifeNodeView";
 import * as styles from "./LifeScreen.css";
 import { PageFrame } from "../../app/layout/PageFrame";
-import { TagChipList } from "../tag/TagChipList";
 import { LifeEditWorkspace } from "./LifeEditWorkspace";
 import { BasicLeafReader } from "./document/BasicLeafReader";
 import { RelatedTasksPanel } from "./RelatedTasksPanel";
@@ -448,8 +447,6 @@ export function LifeScreen({
           ) : mode === "reader" && reader ? (
             <article key={`reader-${reader.id}`} className={styles.readerCanvas} data-life-reader="">
               <header className={styles.readerHeader}>
-                <div className={styles.canvasEyebrow}>Life document</div>
-                <NodeIcon iconKey={reader.icon_key} size={22} />
                 <h1
                   id="life-workspace-heading"
                   className={styles.readerTitle}
@@ -458,10 +455,6 @@ export function LifeScreen({
                 >
                   {reader.title}
                 </h1>
-                {reader.short_description && (
-                  <p className={styles.readerDescription}>{reader.short_description}</p>
-                )}
-                <TagChipList tags={reader.tags} maxVisible={12} />
               </header>
 
               <div className={styles.documentBody} data-life-document-body="">
@@ -472,7 +465,8 @@ export function LifeScreen({
                 />
               </div>
 
-              <section className={styles.contextSection} aria-label="Related context">
+              <details className={styles.contextDisclosure}>
+                <summary>Related</summary>
                 <Suspense fallback={<LoadingRow label="Loading links…" />}>
                   <LifeLinksPanel nodeId={reader.id} onNavigate={openLinkedReader} />
                 </Suspense>
@@ -481,7 +475,7 @@ export function LifeScreen({
                   anchorLocalDate={anchorLocalDate}
                   onNavigate={onTaskNavigate}
                 />
-              </section>
+              </details>
             </article>
           ) : (
             <section key={`browse-${projection.selected.id}`} className={styles.branchCanvas}>

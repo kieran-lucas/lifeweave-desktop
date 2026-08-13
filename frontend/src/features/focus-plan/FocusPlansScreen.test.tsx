@@ -20,7 +20,6 @@ vi.mock("./ipc", () => ({
   mutateFocusPlan: api.mutate,
 }));
 vi.mock("../../ipc/commands", () => ({ listTaskLifeTargets: api.lifeTargets }));
-vi.mock("./LinkedWorkPanel", () => ({ LinkedWorkPanel: () => <p>Linked work</p> }));
 vi.mock("./PlanContentEditor", () => ({
   default: ({ value, editing, onChange }: { value: string; editing: boolean; onChange: (value: string) => void }) =>
     editing ? (
@@ -36,6 +35,7 @@ const plan: FocusPlanDetailView = {
   id: "plan-1",
   title: "Ship the writing system",
   lifecycle: "active",
+  score: null,
   start_date: "2026-08-01",
   target_date: "2026-09-01",
   life_node_id: null,
@@ -65,6 +65,18 @@ function renderPlan() {
   );
 }
 
+function renderLibrary() {
+  return render(
+    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <FocusPlansScreen
+        entryRequest={null}
+        onEntryRequestSettled={vi.fn()}
+        anchorLocalDate="2026-08-11"
+      />
+    </QueryClientProvider>,
+  );
+}
+
 describe("Focus Plan detail composition", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -78,13 +90,20 @@ describe("Focus Plan detail composition", () => {
     const { container } = renderPlan();
 
     expect(await screen.findByRole("heading", { level: 1, name: plan.title })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: plan.title }).closest("[data-page-frame]"))
+      .toHaveAttribute("data-page-type", "focused");
     const content = screen.getByRole("region", { name: "Plan content" });
     expect(await within(content).findByText(plan.outcome)).toBeInTheDocument();
+    expect(screen.queryByText("Updated")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Archive" })).toBeInTheDocument();
+    expect(screen.queryByText(/Definition of done/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Linked work/i)).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
     expect(screen.getByRole("heading", { level: 1, name: `Edit plan ${plan.title}` })).toBeInTheDocument();
     expect(await within(content).findByRole("textbox", { name: "Plan content" })).toHaveValue(plan.outcome);
     expect(screen.getByRole("textbox", { name: "Plan title" })).toHaveValue(plan.title);
+    expect(screen.queryByText(/Definition of done/i)).not.toBeInTheDocument();
 
     const accessibility = await axe.run(container);
     expect(accessibility.violations.filter((item) => item.impact === "critical" || item.impact === "serious")).toHaveLength(0);
@@ -104,5 +123,84 @@ describe("Focus Plan detail composition", () => {
     expect(api.mutate).toHaveBeenCalledWith(expect.objectContaining({
       mutation: expect.objectContaining({ action: "update_plan", outcome: markdown }),
     }));
+  });
+
+  it("loads completed Plans through the dedicated completed portfolio", async () => {
+    const completed = {
+      id: "plan-completed",
+      title: "Publish the handbook",
+      lifecycle: "completed" as const,
+      score: 100,
+      start_date: "2026-07-01",
+      target_date: "2026-08-01",
+      life_node_id: null,
+      life_title: null,
+      selected_variant_label: "Primary approach",
+      active_variant_count: 1,
+      active_phase_count: 0,
+      tag_names: [],
+      revision: 4,
+      updated_at: "2026-08-11T00:00:00Z",
+      archived: false,
+    };
+    api.list.mockImplementation(async ({ portfolio }: { portfolio: string }) => portfolio === "completed" ? [completed] : []);
+
+    renderLibrary();
+    fireEvent.click(screen.getByRole("button", { name: "Completed" }));
+
+    expect(await screen.findByText(completed.title)).toBeInTheDocument();
+    expect(screen.getByText(completed.title)).toHaveAttribute("data-completed");
+    expect(api.list).toHaveBeenLastCalledWith({ portfolio: "completed", limit: 200, offset: 0 });
+  });
+
+  it("sets a manual score without treating the plan as completed", async () => {
+    const active = {
+      id: plan.id,
+      title: plan.title,
+      lifecycle: "active" as const,
+      score: null,
+      start_date: plan.start_date,
+      target_date: plan.target_date,
+      life_node_id: null,
+      life_title: null,
+      selected_variant_label: "Primary approach",
+      active_variant_count: 1,
+      active_phase_count: 0,
+      tag_names: [],
+      revision: 3,
+      updated_at: plan.updated_at,
+      archived: false,
+    };
+    api.list.mockResolvedValue([active]);
+
+    const { container } = renderLibrary();
+    const scoreButton = await screen.findByRole("button", { name: `${plan.title} score: Not scored. Set score` });
+    fireEvent.click(scoreButton);
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: "Evaluate plan" })).not.toBeInTheDocument();
+    expect(document.activeElement).toBe(scoreButton);
+    fireEvent.click(scoreButton);
+
+    const dialog = screen.getByRole("dialog", { name: "Evaluate plan" });
+    const scoreInput = within(dialog).getByRole("spinbutton", { name: "Score from 1 to 100" });
+    fireEvent.change(scoreInput, { target: { value: "0" } });
+    fireEvent.submit(dialog);
+    expect(await within(dialog).findByRole("alert")).toHaveTextContent("1 to 100");
+    expect(api.mutate).not.toHaveBeenCalled();
+
+    fireEvent.change(scoreInput, { target: { value: "100" } });
+    fireEvent.submit(dialog);
+
+    expect(api.mutate).toHaveBeenCalledWith(expect.objectContaining({
+      plan_id: plan.id,
+      expected_revision: 3,
+      mutation: { action: "set_score", score: 100 },
+    }));
+    expect(await screen.findByRole("button", { name: `${plan.title} score: 100. Set score` })).toHaveTextContent("100");
+    expect(screen.getByText(plan.title)).not.toHaveAttribute("data-completed");
+    expect(document.activeElement).toBe(scoreButton);
+
+    const accessibility = await axe.run(container);
+    expect(accessibility.violations.filter((item) => item.impact === "critical" || item.impact === "serious")).toHaveLength(0);
   });
 });

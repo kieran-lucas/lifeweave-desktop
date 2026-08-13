@@ -306,7 +306,7 @@ fn verify_package(directory: &Path, expected: &BackupManifest) -> Result<(), Bac
     super::restore::validate_candidate(
         &database,
         &reopened,
-        crate::infrastructure::sqlite::task47_migration::max_supported_schema_version(),
+        crate::infrastructure::sqlite::task51_migration::max_supported_schema_version(),
     )?;
     for asset in &reopened.assets {
         let path = directory.join(&asset.relative_path);
@@ -442,7 +442,7 @@ fn compatibility_for(format_version: u32, schema_version: u32) -> BackupCompatib
     if format_version > SUPPORTED_FORMAT_VERSION {
         return BackupCompatibility::NewerFormat;
     }
-    let current = crate::infrastructure::sqlite::task47_migration::max_supported_schema_version();
+    let current = crate::infrastructure::sqlite::task51_migration::max_supported_schema_version();
     match schema_version.cmp(&current) {
         std::cmp::Ordering::Equal => BackupCompatibility::Ready,
         std::cmp::Ordering::Less => BackupCompatibility::MigrationRequired,
@@ -700,7 +700,7 @@ mod tests {
     fn make_current_file_runtime() -> (DatabaseRuntime, PathBuf) {
         let p = temp_db_path();
         let mut conn = open_file_connection(&p).unwrap();
-        crate::infrastructure::sqlite::task47_migration::run_all_migrations(&mut conn).unwrap();
+        crate::infrastructure::sqlite::task51_migration::run_all_migrations(&mut conn).unwrap();
         let worker = DbWorkerHandle::spawn(conn);
         let rt = DatabaseRuntime::new(p.clone(), worker);
         (rt, p)
@@ -759,6 +759,39 @@ mod tests {
         let dir = PathBuf::from(&result.backup_dir);
         assert!(dir.join("lifeweave.db").exists(), "backup DB missing");
         assert!(dir.join("manifest.json").exists(), "manifest missing");
+    }
+
+    #[test]
+    fn backup_preserves_manual_focus_plan_score() {
+        let (rt, _db) = make_current_file_runtime();
+        rt.execute(|conn| {
+            conn.execute_batch(
+                "BEGIN;
+                 PRAGMA defer_foreign_keys=ON;
+                 INSERT INTO focus_plans(id,selected_variant_id,title,lifecycle,outcome,success_criteria_json,score,revision,created_at,updated_at)
+                 VALUES('plan-score','variant-score','Scored plan','active','','[]',88,0,'1','1');
+                 INSERT INTO focus_plan_variants(id,plan_id,label,canonical_json,plain_text,sort_key,created_at,updated_at)
+                 VALUES('variant-score','plan-score','Primary','{\"type\":\"doc\",\"content\":[]}','',0,'1','1');
+                 COMMIT;",
+            )?;
+            Ok(())
+        })
+        .unwrap();
+
+        let backups = temp_backups_dir();
+        let result = backup_db(&rt, &backups).unwrap();
+        let backup =
+            open_file_connection(&PathBuf::from(result.backup_dir).join("lifeweave.db")).unwrap();
+        assert_eq!(
+            backup
+                .query_row(
+                    "SELECT score FROM focus_plans WHERE id='plan-score'",
+                    [],
+                    |row| row.get::<_, Option<u32>>(0),
+                )
+                .unwrap(),
+            Some(88)
+        );
     }
 
     #[test]
@@ -972,12 +1005,12 @@ mod tests {
 
     #[test]
     fn compatibility_matrix_is_version_owned_and_app_version_is_informational() {
-        assert_eq!(compatibility_for(2, 27), BackupCompatibility::Ready);
+        assert_eq!(compatibility_for(2, 28), BackupCompatibility::Ready);
         assert_eq!(
             compatibility_for(1, 26),
             BackupCompatibility::MigrationRequired
         );
-        assert_eq!(compatibility_for(2, 28), BackupCompatibility::NewerSchema);
+        assert_eq!(compatibility_for(2, 29), BackupCompatibility::NewerSchema);
         assert_eq!(compatibility_for(3, 1), BackupCompatibility::NewerFormat);
 
         let (runtime, _) = make_current_file_runtime();
@@ -1118,7 +1151,7 @@ mod tests {
             );
         }
         let newer_schema = clone_package(&source, &root, 5_000, "2026-06-01T00:00:00Z");
-        set_package_schema(&newer_schema, 28);
+        set_package_schema(&newer_schema, 29);
         let newer_format = clone_package(&source, &root, 6_000, "2026-06-02T00:00:00Z");
         let mut manifest = BackupManifest::read_from_dir(&newer_format).unwrap();
         manifest.format_version = 3;
@@ -1219,7 +1252,7 @@ mod tests {
         let root = temp_backups_dir();
         let result = create_managed_backup(&runtime, &root).unwrap();
         assert_eq!(result.backup.format_version, 2);
-        assert_eq!(result.backup.schema_version, 27);
+        assert_eq!(result.backup.schema_version, 28);
         assert_eq!(result.backup.compatibility, BackupCompatibility::Ready);
         assert_eq!(result.pruned_backup_count, 0);
         assert!(!result.retention_cleanup_pending);

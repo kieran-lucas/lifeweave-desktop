@@ -295,16 +295,11 @@ export function App() {
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
   useEffect(() => {
-    let active = true;
     const frame = requestAnimationFrame(() => {
       healthCheck()
-        .then(() => { if (active) setIpcStatus("ready"); })
-        .catch(() => { if (active) setIpcStatus("error"); });
+        .catch(() => setIpcStatus("error"));
     });
-    return () => {
-      active = false;
-      cancelAnimationFrame(frame);
-    };
+    return () => cancelAnimationFrame(frame);
   }, []);
   useEffect(() => {
     try {

@@ -348,7 +348,7 @@ mod tests {
             repository as plan_repository,
         },
         infrastructure::sqlite::{
-            connection::open_memory_connection, task47_migration::run_all_migrations,
+            connection::open_memory_connection, task51_migration::run_all_migrations,
         },
         task::{
             actual_time,
@@ -1164,11 +1164,11 @@ mod tests {
     }
 
     #[test]
-    fn schema_stays_at_twenty_seven_with_no_persistent_plan_analytics_table() {
+    fn schema_stays_at_twenty_eight_with_no_persistent_plan_analytics_table() {
         let conn = db();
         assert_eq!(
-            crate::infrastructure::sqlite::task47_migration::current_schema_version(&conn).unwrap(),
-            27
+            crate::infrastructure::sqlite::task51_migration::current_schema_version(&conn).unwrap(),
+            28
         );
         let existing: Option<String> = conn
             .query_row(

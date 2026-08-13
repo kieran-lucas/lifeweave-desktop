@@ -28,13 +28,15 @@ export const textarea = style({
   caretColor: "var(--text-primary)",
   ...text.editorBody,
 });
-export const preview = style({ minInlineSize: "max(100%, 420px)", margin: 0, padding: "clamp(22px, 3vw, 38px)", color: "var(--text-primary)", overflowWrap: "anywhere", ...text.editorBody });
+export const preview = style({ minInlineSize: "max(100%, 420px)", margin: 0, padding: 0, color: "var(--text-primary)", overflowWrap: "anywhere", ...text.editorBody });
+globalStyle(`${surface} ${preview}`, { padding: "clamp(22px, 3vw, 38px)" });
 globalStyle(`${preview} > :first-child`, { marginBlockStart: 0 });
 globalStyle(`${preview} > :last-child`, { marginBlockEnd: 0 });
+globalStyle(`${preview} p`, { whiteSpace: "pre-wrap" });
 globalStyle(`${preview} h1`, { ...text.editorH1, marginBlock: "1.45em .5em" });
 globalStyle(`${preview} h2`, { ...text.editorH2, marginBlock: "1.4em .45em" });
 globalStyle(`${preview} h3`, { ...text.editorH3, marginBlock: "1.35em .4em" });
-globalStyle(`${preview} blockquote`, { marginInline: 0, padding: "8px 0 8px 18px", borderInlineStart: "3px solid var(--accent)", color: "var(--text-muted)" });
+globalStyle(`${preview} blockquote`, { marginInline: 0, padding: "6px 0 6px 14px", borderInlineStart: "2px solid #111111", color: "var(--text-muted)" });
 globalStyle(`${preview} pre`, { overflowX: "auto", padding: 14, border: "1px solid var(--paint-edge)", borderRadius: "var(--radius-control)", background: vars.color.surfaceSubtle, ...text.code });
 globalStyle(`${preview} code`, { ...text.code });
 globalStyle(`${preview} table`, { inlineSize: "100%", minInlineSize: 420, tableLayout: "fixed", borderCollapse: "collapse", marginBlock: 18 });

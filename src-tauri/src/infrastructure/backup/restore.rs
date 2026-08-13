@@ -18,7 +18,7 @@ use crate::infrastructure::sqlite::{
     DbError,
     connection::{open_existing_file_connection, open_file_connection, open_readonly_connection},
     runtime::DatabaseRuntime,
-    task47_migration::{current_schema_version, max_supported_schema_version, run_all_migrations},
+    task51_migration::{current_schema_version, max_supported_schema_version, run_all_migrations},
     worker::DbWorkerHandle,
 };
 
@@ -864,7 +864,7 @@ mod tests {
             connection::{open_existing_file_connection, open_file_connection},
             foundation_record_repo as repo,
             runtime::DatabaseRuntime,
-            task47_migration::run_all_migrations as run_migrations,
+            task51_migration::run_all_migrations as run_migrations,
             worker::DbWorkerHandle,
         },
     };
@@ -1035,12 +1035,12 @@ mod tests {
         let result = restore_db(&runtime, package).unwrap();
         assert_eq!(
             result.schema_version,
-            crate::infrastructure::sqlite::task47_migration::TASK47_SCHEMA_VERSION
+            crate::infrastructure::sqlite::task51_migration::TASK51_SCHEMA_VERSION
         );
         let reopened = open_existing_file_connection(&db).unwrap();
         assert_eq!(
             current_schema_version(&reopened).unwrap(),
-            crate::infrastructure::sqlite::task47_migration::TASK47_SCHEMA_VERSION
+            crate::infrastructure::sqlite::task51_migration::TASK51_SCHEMA_VERSION
         );
         assert_eq!(
             reopened
@@ -1212,7 +1212,7 @@ mod tests {
         let restore_result = restore_db(&rt, &backup_dir).unwrap();
         assert_eq!(
             restore_result.schema_version,
-            crate::infrastructure::sqlite::task47_migration::TASK47_SCHEMA_VERSION
+            crate::infrastructure::sqlite::task51_migration::TASK51_SCHEMA_VERSION
         );
 
         let active = rt.execute(|conn| repo::list_active(conn)).unwrap();
@@ -1889,9 +1889,9 @@ mod tests {
             6
         );
         assert_eq!(
-            crate::infrastructure::sqlite::task47_migration::current_schema_version(&reopened)
+            crate::infrastructure::sqlite::task51_migration::current_schema_version(&reopened)
                 .unwrap(),
-            27
+            28
         );
         assert_eq!(
             reopened
@@ -1931,14 +1931,24 @@ mod tests {
         let source_manifest_before = std::fs::read(package.join("manifest.json")).unwrap();
 
         let result = restore_db(&rt, &package).unwrap();
-        assert_eq!(result.schema_version, 27);
+        assert_eq!(result.schema_version, 28);
         let reopened = open_existing_file_connection(&db_path).unwrap();
-        assert_eq!(current_schema_version(&reopened).unwrap(), 27);
+        assert_eq!(current_schema_version(&reopened).unwrap(), 28);
         assert_eq!(reopened.query_row("SELECT operation_kind||'|'||after_payload FROM life_operations WHERE operation_id='schema26-branch'", [], |row| row.get::<_, String>(0)).unwrap(), "import_branch|{\"fingerprint\":\"preserved\"}");
         assert_eq!(
             reopened
                 .query_row(
                     "SELECT COUNT(*) FROM schema_migrations WHERE version=27",
+                    [],
+                    |row| row.get::<_, i64>(0)
+                )
+                .unwrap(),
+            1
+        );
+        assert_eq!(
+            reopened
+                .query_row(
+                    "SELECT COUNT(*) FROM schema_migrations WHERE version=28",
                     [],
                     |row| row.get::<_, i64>(0)
                 )
@@ -4275,7 +4285,7 @@ mod tests {
         use crate::infrastructure::backup::lifecycle::{
             preflight_startup_check, recover_if_interrupted,
         };
-        use crate::infrastructure::sqlite::task47_migration::run_all_migrations as run_migrations;
+        use crate::infrastructure::sqlite::task51_migration::run_all_migrations as run_migrations;
         use crate::infrastructure::sqlite::{
             connection::open_existing_file_connection, runtime::DatabaseRuntime,
             worker::DbWorkerHandle,
@@ -4341,7 +4351,7 @@ mod tests {
         use crate::infrastructure::backup::lifecycle::{
             preflight_startup_check, recover_if_interrupted,
         };
-        use crate::infrastructure::sqlite::task47_migration::run_all_migrations as run_migrations;
+        use crate::infrastructure::sqlite::task51_migration::run_all_migrations as run_migrations;
         use crate::infrastructure::sqlite::{
             connection::open_existing_file_connection, runtime::DatabaseRuntime,
             worker::DbWorkerHandle,

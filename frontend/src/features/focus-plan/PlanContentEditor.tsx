@@ -96,7 +96,7 @@ function MarkdownPreview({ value }: { value: string }) {
     const paragraph = [line];
     index += 1;
     while (index < lines.length && (lines[index] ?? "").trim() && !/^(#{1,3})\s|^```|^\s*[-*]\s+|^\s*\d+\.\s+|^>\s?/.test(lines[index] ?? "")) paragraph.push(lines[index++] ?? "");
-    nodes.push(<p key={nodes.length}><InlineMarkdown value={paragraph.join(" ")} /></p>);
+    nodes.push(<p key={nodes.length}><InlineMarkdown value={paragraph.join("\n")} /></p>);
   }
   return <article className={styles.preview} aria-label="Plan content preview">{nodes}</article>;
 }

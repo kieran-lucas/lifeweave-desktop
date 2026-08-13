@@ -16,10 +16,10 @@ import {
 } from "./ipc";
 import * as styles from "./FocusPlansScreen.css";
 import { PageFrame } from "../../app/layout/PageFrame";
-import { LinkedWorkPanel, type TaskNavigate } from "./LinkedWorkPanel";
+import type { TaskNavigate } from "./LinkedWorkPanel";
 import { invalidateTaskSavedViewReferenceData } from "../task/saved-views/savedViewQueries";
-import { Icon, iconChevronLeft, iconPlans } from "../../design-system/visual/icons";
 import { EmptyState, SkeletonList } from "../../design-system/primitives/States";
+import { PlanScoreDialog } from "./PlanScoreDialog";
 
 const PlanContentEditor = lazy(() => import("./PlanContentEditor"));
 
@@ -44,6 +44,11 @@ type PlanForm = {
   outcome: string;
   criteriaText: string;
   tagIds: string[];
+};
+
+type ScoreTarget = {
+  plan: FocusPlanSummaryView;
+  invoker: HTMLButtonElement;
 };
 
 const portfolios: Array<{ id: FocusPlanPortfolio; label: string }> = [
@@ -79,11 +84,17 @@ function planMeta(plan: FocusPlanSummaryView) {
   return parts.length ? parts.join(" · ") : "No target yet";
 }
 
+function scoreBand(score: number | null) {
+  if (score === null) return "unset";
+  if (score < 40) return "low";
+  if (score < 70) return "developing";
+  if (score < 90) return "strong";
+  return "excellent";
+}
+
 export function FocusPlansScreen({
   entryRequest,
   onEntryRequestSettled,
-  anchorLocalDate,
-  onTaskNavigate,
 }: Props) {
   const queryClient = useQueryClient();
   const [portfolio, setPortfolio] = useState<FocusPlanPortfolio>("active");
@@ -96,6 +107,7 @@ export function FocusPlansScreen({
   const [createTitle, setCreateTitle] = useState("");
   const [status, setStatus] = useState<"loading" | "ready" | "saving">("loading");
   const [error, setError] = useState<string | null>(null);
+  const [scoreTarget, setScoreTarget] = useState<ScoreTarget | null>(null);
 
   const syncDetail = useCallback((plan: FocusPlanDetailView) => {
     setSelected(plan);
@@ -135,10 +147,11 @@ export function FocusPlansScreen({
   }, [loadPortfolio, portfolio]);
 
   useEffect(() => {
+    if (!editing || lifeTargets.length > 0) return;
     listTaskLifeTargets()
       .then(setLifeTargets)
       .catch((cause) => setError(messageFromError(cause)));
-  }, []);
+  }, [editing, lifeTargets.length]);
 
   useEffect(() => {
     if (!entryRequest) return;
@@ -178,6 +191,26 @@ export function FocusPlansScreen({
       }
       setStatus("ready");
       return false;
+    }
+  }
+
+  async function saveScore(plan: FocusPlanSummaryView, score: number | null): Promise<string | null> {
+    setStatus("saving");
+    try {
+      const result = await mutateFocusPlan({
+        plan_id: plan.id,
+        expected_revision: plan.revision,
+        operation_id: globalThis.crypto.randomUUID(),
+        mutation: { action: "set_score", score },
+      });
+      setPlans((current) => current.map((item) => (
+        item.id === plan.id ? { ...item, score, revision: result.revision } : item
+      )));
+      setStatus("ready");
+      return null;
+    } catch (cause) {
+      setStatus("ready");
+      return messageFromError(cause);
     }
   }
 
@@ -242,14 +275,12 @@ export function FocusPlansScreen({
   };
 
   if (selected && form) {
-    const criteria = selected.success_criteria;
     return (
-      <PageFrame as="section" type="standard" aria-labelledby="plan-detail-heading">
+      <PageFrame as="section" type="focused" aria-labelledby="plan-detail-heading">
         <article className={styles.document}>
           <header className={styles.documentHeader}>
             <button className={styles.backButton} type="button" onClick={closePlan}>
-              <Icon d={iconChevronLeft} size={16} />
-              Plans
+              Back to plans
             </button>
             <div className={styles.documentActions}>
               {!selected.archived && !editing && (
@@ -279,6 +310,16 @@ export function FocusPlansScreen({
                   </button>
                 </>
               )}
+              {!editing && (
+                <button
+                  type="button"
+                  className={styles.archiveAction}
+                  disabled={status === "saving"}
+                  onClick={() => void runMutation({ action: selected.archived ? "restore_plan" : "archive_plan" })}
+                >
+                  {selected.archived ? "Restore" : "Archive"}
+                </button>
+              )}
             </div>
           </header>
 
@@ -298,7 +339,7 @@ export function FocusPlansScreen({
                   />
                 </>
               ) : (
-                <h1 id="plan-detail-heading" className={styles.documentTitle} tabIndex={-1}>
+                <h1 id="plan-detail-heading" className={styles.documentTitle} data-completed={selected.lifecycle === "completed" ? "" : undefined} tabIndex={-1}>
                   {selected.title}
                 </h1>
               )}
@@ -317,90 +358,48 @@ export function FocusPlansScreen({
             </section>
           </div>
 
-          <div className={styles.factRow} aria-label="Plan facts">
-            {editing ? (
-              <>
-                <label className={styles.factEditor}>
-                  <span>Target</span>
-                  <input type="date" value={form.targetDate} onChange={(event) => updateForm("targetDate", event.target.value)} />
-                </label>
-                <label className={styles.factEditor}>
-                  <span>Life area</span>
-                  <select value={form.lifeNodeId} onChange={(event) => updateForm("lifeNodeId", event.target.value)}>
-                    <option value="">Unlinked</option>
-                    {lifeTargets.map((target) => (
-                      <option key={target.id} value={target.id}>{target.breadcrumb}</option>
-                    ))}
-                  </select>
-                </label>
-                <label className={styles.factEditor}>
-                  <span>Status</span>
-                  <select value={form.lifecycle} onChange={(event) => updateForm("lifecycle", event.target.value as FocusPlanLifecycle)}>
-                    <option value="draft">Draft</option>
-                    <option value="active">Active</option>
-                    <option value="paused">Paused</option>
-                    <option value="completed">Completed</option>
-                  </select>
-                </label>
-              </>
-            ) : (
-              <>
-                <div><span>Target</span><strong>{selected.target_date ?? "Open"}</strong></div>
-                <div><span>Life area</span><strong>{selected.life_title ?? "Unlinked"}</strong></div>
-                <div><span>Updated</span><strong>{selected.updated_at.slice(0, 10)}</strong></div>
-              </>
-            )}
-          </div>
-
-          <section className={styles.criteriaSection} aria-labelledby="criteria-heading">
-            <div className={styles.sectionHeading}>
-              <h2 id="criteria-heading">Definition of done</h2>
+          {(editing || selected.start_date || selected.target_date || selected.life_title) ? (
+            <div className={styles.factRow} data-editing={editing ? "" : undefined} aria-label="Plan facts">
+              {editing ? (
+                <>
+                  <label className={styles.factEditor}>
+                    <span>Start</span>
+                    <input type="date" value={form.startDate} onChange={(event) => updateForm("startDate", event.target.value)} />
+                  </label>
+                  <label className={styles.factEditor}>
+                    <span>Target</span>
+                    <input type="date" value={form.targetDate} onChange={(event) => updateForm("targetDate", event.target.value)} />
+                  </label>
+                  <label className={styles.factEditor}>
+                    <span>Life area</span>
+                    <select value={form.lifeNodeId} onChange={(event) => updateForm("lifeNodeId", event.target.value)}>
+                      <option value="">Unlinked</option>
+                      {lifeTargets.map((target) => (
+                        <option key={target.id} value={target.id}>{target.breadcrumb}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className={styles.factEditor}>
+                    <span>Status</span>
+                    <select value={form.lifecycle} onChange={(event) => updateForm("lifecycle", event.target.value as FocusPlanLifecycle)}>
+                      <option value="draft">Draft</option>
+                      <option value="active">Active</option>
+                      <option value="paused">Paused</option>
+                      <option value="completed">Completed</option>
+                    </select>
+                  </label>
+                </>
+              ) : (
+                <>
+                  {(selected.start_date || selected.target_date) ? (
+                    <div><span>Dates</span><strong>{selected.start_date ?? "No start"} – {selected.target_date ?? "No target"}</strong></div>
+                  ) : null}
+                  {selected.life_title ? <div><span>Life area</span><strong>{selected.life_title}</strong></div> : null}
+                </>
+              )}
             </div>
-            {editing ? (
-              <textarea
-                className={styles.criteriaEditor}
-                value={form.criteriaText}
-                onChange={(event) => updateForm("criteriaText", event.target.value)}
-                placeholder="One criterion per line"
-              />
-            ) : criteria.length ? (
-              <ol className={styles.criteriaList}>
-                {criteria.map((criterion, index) => (
-                  <li key={`${criterion}-${index}`}><span>{String(index + 1).padStart(2, "0")}</span><p>{criterion}</p></li>
-                ))}
-              </ol>
-            ) : (
-              <p className={styles.missingContent}>No success criteria yet.</p>
-            )}
-          </section>
+          ) : null}
 
-          <section className={styles.linkedSection} aria-labelledby="linked-heading">
-            <div className={styles.sectionHeading}>
-              <h2 id="linked-heading">Work in motion</h2>
-            </div>
-            <LinkedWorkPanel
-              planId={selected.id}
-              anchorLocalDate={anchorLocalDate}
-              onTaskNavigate={onTaskNavigate}
-            />
-          </section>
-
-          <footer className={styles.documentFooter}>
-            {editing && (
-              <label className={styles.startDateEditor}>
-                <span>Start date</span>
-                <input type="date" value={form.startDate} onChange={(event) => updateForm("startDate", event.target.value)} />
-              </label>
-            )}
-            <button
-              type="button"
-              className={styles.archiveAction}
-              disabled={status === "saving"}
-              onClick={() => void runMutation({ action: selected.archived ? "restore_plan" : "archive_plan" })}
-            >
-              {selected.archived ? "Restore plan" : "Archive plan"}
-            </button>
-          </footer>
         </article>
         <p className={styles.srOnly} aria-live="polite">{status === "saving" ? "Saving plan." : ""}</p>
       </PageFrame>
@@ -457,26 +456,41 @@ export function FocusPlansScreen({
           {status !== "loading" && plans.length === 0 && (
             <EmptyState
               compact
-              icon={iconPlans}
               title="Nothing here."
               body="A plan should exist only when an outcome deserves sustained attention."
             />
           )}
           {plans.map((plan) => (
-            <button
-              key={plan.id}
-              type="button"
-              className={styles.planRow}
-              onClick={() => void openPlan(plan.id)}
-            >
-              <span className={styles.planCopy}>
-                <strong>{plan.title}</strong>
-                <small>{planMeta(plan)}</small>
-              </span>
-            </button>
+            <div key={plan.id} className={styles.planRow}>
+              <button type="button" className={styles.planOpen} onClick={() => void openPlan(plan.id)}>
+                <span className={styles.planCopy}>
+                  <strong data-completed={plan.lifecycle === "completed" ? "" : undefined}>{plan.title}</strong>
+                  <small>{planMeta(plan)}</small>
+                </span>
+              </button>
+              <button
+                type="button"
+                className={styles.scoreButton}
+                data-score-band={scoreBand(plan.score)}
+                aria-label={`${plan.title} score: ${plan.score ?? "Not scored"}. Set score`}
+                onClick={(event) => setScoreTarget({ plan, invoker: event.currentTarget })}
+              >
+                {plan.score ?? "—"}
+              </button>
+            </div>
           ))}
         </div>
       </div>
+      {scoreTarget ? (
+        <PlanScoreDialog
+          key={`${scoreTarget.plan.id}-${scoreTarget.plan.revision}`}
+          planTitle={scoreTarget.plan.title}
+          currentScore={scoreTarget.plan.score}
+          returnFocus={scoreTarget.invoker}
+          onSave={(score) => saveScore(scoreTarget.plan, score)}
+          onClose={() => setScoreTarget(null)}
+        />
+      ) : null}
       <p className={styles.srOnly} aria-live="polite">{status === "saving" ? "Saving plan." : ""}</p>
     </PageFrame>
   );

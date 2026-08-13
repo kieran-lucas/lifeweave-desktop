@@ -14,13 +14,15 @@ every dialog, popover and menu. Plus: the visual token authority, typography, ic
 surface and depth system, dark theme, motion system, restrained ambient art, visual regression
 testing, and interaction-performance instrumentation.
 
-Out of scope: product semantics of any kind, and every item in the Task 51 hard-exclusion list (§11).
+Out of scope: product semantics of any kind except the explicit §1.2 Product Owner amendment, and
+every remaining item in the Task 51 hard-exclusion list (§11).
 
 ### 1.1 Product Owner usability amendment (2026-08-11)
 
 ADR 0046 records a later explicit Product Owner direction that narrowly overrides the
 presentation-only boundary above for the existing Life tree and Basic Leaf editor. It authorizes no
-new domain semantics, storage, schema, IPC, dependency, Graph behavior, or Browse projection.
+new domain semantics, storage, schema, IPC, dependency, Graph behavior, or Browse projection beyond
+the explicit §1.2 amendment.
 
 - The separate full-tree workspace is named **Tree**, lays generations left-to-right, and no longer
   presents a permanent edit inspector.
@@ -39,8 +41,25 @@ new domain semantics, storage, schema, IPC, dependency, Graph behavior, or Brows
   Tree heading remains at the top of the Life pane, the bordered pan viewport receives the
   remaining available height, and Tree mode creates no outer Life-canvas scroll region.
 - Focus Plan detail presents lifecycle and title as compact identity. Its authored outcome is the
-  dominant reading/editing surface, while facts, success criteria, linked work, and lifecycle
-  actions retain their existing meaning and remain available at a quieter visual level.
+  dominant reading/editing surface in a 70% focused frame, and read mode preserves authored single
+  line breaks. Facts and lifecycle actions remain available at a quieter visual level. Definition
+  of done and Linked work are omitted from this surface without deleting their stored authority.
+- The Life navigator remains 15% wide and increases the type size of Life/Tree controls,
+  breadcrumbs, selected-node context, child items, and supporting copy for legibility.
+
+### 1.2 Product Owner Focus Plan score amendment (2026-08-13)
+
+ADR 0047 records the Product Owner's explicit reversal of the prior blanket scoring prohibition.
+The authorized behavior is deliberately manual and bounded:
+
+- each Plan owns zero or one current integer score from 1 through 100;
+- migration 28 appends a nullable SQLite column with a matching CHECK; Rust repeats validation;
+- score writes reuse the existing optimistic, idempotent, revisioned Plan mutation authority;
+- the portfolio places a keyboard-reachable circular score control at the right of each Plan;
+- the circle prints the numeric value and uses restrained band colour only as redundant emphasis;
+- score never changes lifecycle or implies completion; only lifecycle `completed` strikes the title;
+- automatic scoring/formulas, score history, score Analytics, health, prediction, notifications,
+  automatic lifecycle, new dependencies, and additional top-level navigation remain prohibited.
 
 ## 2. Visual authority
 
@@ -272,7 +291,7 @@ when reduced motion is requested.
 
 ## 11. Hard exclusions
 
-Schema 28, any migration, any Rust product change, any new IPC command, any new Tauri capability,
+Schema beyond 28, any migration or Rust product change beyond §1.2, any new IPC command, any new Tauri capability,
 any broadened filesystem or shell permission, any network service, any accounts or sync, any backup
 format change, and any workflow or seal change.
 

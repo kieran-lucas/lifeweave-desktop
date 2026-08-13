@@ -1826,7 +1826,7 @@ mod tests {
     use super::*;
     use crate::focus_plan::dto::CreateFocusPlanInput;
     use crate::infrastructure::sqlite::{
-        connection::open_memory_connection, task39_migration::run_all_migrations,
+        connection::open_memory_connection, task51_migration::run_all_migrations,
     };
     use crate::tag::dto::MergeTagsInput;
     use crate::task::dto::{

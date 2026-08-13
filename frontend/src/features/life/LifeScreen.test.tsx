@@ -90,6 +90,23 @@ describe("Life leaf contents control", () => {
     await waitFor(() => expect(screen.queryByRole("navigation", { name: "Document outline" })).not.toBeInTheDocument());
   });
 
+  it("keeps the leaf header minimal and related fields collapsed", async () => {
+    const { container } = render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <LifeScreen anchorLocalDate="2026-08-11" />
+      </QueryClientProvider>,
+    );
+
+    await screen.findByRole("heading", { name: "A focused leaf" });
+    expect(container.querySelector("[data-life-reader] > header")).toBeInTheDocument();
+    expect(screen.queryByText("Life document")).not.toBeInTheDocument();
+    expect(screen.queryByText("Leaf", { selector: "header *" })).not.toBeInTheDocument();
+    const related = screen.getByText("Related").closest("details");
+    expect(related).not.toHaveAttribute("open");
+
+    expect(container.querySelector("[data-life-reader]")).toBeInTheDocument();
+  });
+
   it("contains Tree in a dedicated pan viewport without an outer Life canvas scroll region", async () => {
     api.browse.mockResolvedValue({
       root_id: "life-root",

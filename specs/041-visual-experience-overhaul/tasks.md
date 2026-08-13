@@ -123,6 +123,12 @@
       raising the hard ceiling.
 - [x] Record native WebView click/typing/visual verification as **NOT RUN** because the configured
       in-app Browser runtime reported no available browser; do not infer it from jsdom.
+- [x] Record ADR 0047 and the Product Owner's manual Focus Plan score amendment.
+- [x] Add migration 28 plus checked, revisioned Rust score authority and generated bindings.
+- [x] Add the right-aligned accessible score circle, bounded 1–100 dialog, and completed-only title
+      strike without adding a second IPC command or score-derived lifecycle behavior.
+- [x] Prove migration/reopen, backend validation, keyboard/focus behavior, accessibility, build,
+      backup compatibility, generated-binding stability, and performance budgets.
 
 ## Stage I–L — Production reconstruction
 
@@ -154,8 +160,9 @@
 
 ## Standing constraints
 
-- [ ] Change no product semantics, and invent no Task facet to match the reference image.
-- [ ] Keep schema 27 with no migration, Rust product change, IPC command or capability.
+- [ ] Change no product semantics beyond the explicit manual Plan score amendment, and invent no
+      Task facet to match the reference image.
+- [ ] Keep schema 28 with no further migration, second Plan IPC command or capability.
 - [ ] Add no dependency outside the four justified above.
 - [ ] Keep `.github/workflows/` and the seal byte-identical.
 - [ ] Keep Task rows non-card and Today task-first and default.

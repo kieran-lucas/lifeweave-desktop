@@ -77,10 +77,15 @@ The immutable source is authoritative. This registry makes operational status vi
 - Focus Plan links to zero or one active non-root Life node; one Life node may contextualize many Plans without new Life nodes.
 - Focus Plan owns first-class variants, ordered phases, committed revisions, and one recovery draft. Rich-text bodies reuse the accepted Basic Leaf canonical value schema by value, not `reader_documents` rows.
 - Focus Plans use shared tags, a distinct `focus_plan` Search entity kind, and full-database backup authority.
-- Focus Plans have no automatic progress percentage and no reminder/notification dependency.
+- Focus Plans have no automatic progress percentage and no reminder/notification dependency. A
+  later explicit Product Owner decision permits one nullable, manual current score from 1–100; it
+  never computes or changes lifecycle, phase, Task state, Analytics, health, or prediction. See
+  ADR 0047.
 - Focus Plan detail uses a compact title/lifecycle identity and gives the authored outcome the
-  dominant reading and writing plane; facts, criteria, linked work, and lifecycle actions remain
-  secondary but visible. This is presentation only and changes no Plan authority.
+  dominant reading and writing plane in a 70% focused frame. Authored single line breaks remain
+  visible in read mode. Facts and lifecycle actions remain secondary but visible; Definition of
+  done and Linked work are omitted from this surface without deleting their stored authority.
+  The 15% Life navigator retains its width and uses larger navigation and child-label type.
 - Focus Plan activity Analytics is a bounded read-only projection of existing authority over the
   Objective Analytics week/month/year periods. One-off Tasks and recurring occurrences are
   attributed through their **current** `tasks.focus_plan_id` / `task_series.focus_plan_id`, manual
@@ -95,6 +100,10 @@ The immutable source is authoritative. This registry makes operational status vi
 - Deadlines is a fourth manual tab inside the Today workspace covering anchor -30 through anchor +14 inclusive. Existing Overdue keeps its schedule-based meaning and is not renamed.
 - Task Saved Views are standalone local configurations over exactly one existing Today, Upcoming, Overdue, or Deadlines projection. Predicate v1 is a bounded Rust-validated AND-only typed AST persisted as canonical JSON; no predicate SQL or executable expression exists. Views add a fifth internal Today tab while Today remains startup/default. Task 39 / Slice 029 is complete under ADR 0033 at product checkpoint `374abcbae263be18fa785a56d656678f9bfd9c29`.
 - Focus Plan reviews are user-authored history with a review date, required reflection, optional next focus, and idempotent creation. Creating a review changes no Plan state. Task 37 authorises creation and reading only; edit, delete, archive, scheduling, and Search indexing remain out of scope.
+- Focus Plan manual score is current Plan authority under ADR 0047. Migration 28 appends one
+  nullable checked value; Rust validates 1–100; the existing revisioned `mutate_focus_plan`
+  authority owns writes. Score is not Analytics, history, health, prediction, progress, or
+  completion. Only explicit lifecycle `completed` strikes the Plan title.
 - Release-candidate hardening is an allocatable roadmap candidate in its own right. Task 40 / Slice 030 activates the Hardening candidate ADR 0028 scored at 8.055 under ADR 0034, changes no product behavior, adds no migration, and is explicitly **not** a feature checkpoint: the latest feature task remained 39 until Task 41 closed.
 - The JavaScript performance gate is versioned. Task 16 and Task 40 budgets are preserved as history and superseded by a Task 41 budget v2 that tracks main, total raw, total gzip, expected chunk count, the named lazy chunks, and every chunk of at least 10,000 raw bytes under a hash-independent identity. Maxima are derived from the final observed build by documented formulas and clamped by locked ceilings; a missing critical chunk, a new unbudgeted chunk at or above 10,000 bytes, and a duplicate normalized identity are failures. Arbitrary budget inflation is not an accepted response to a red gate.
 - Today is the only eager product screen. Non-default routes, Life/Narrative/tree engines, help, and
@@ -244,7 +253,8 @@ The immutable source is authoritative. This registry makes operational status vi
 
 - Focus Plan review edit, delete, archive, scheduling, reminders, and Search indexing remain prohibited pending a separate Product Owner decision;
 - recurring, occurrence, and override deadlines, deadline time-of-day, deadline reminders and scheduling, and deadline or lateness analytics remain prohibited pending a separate Product Owner decision;
-- automatic Plan progress, phase-to-Task relationships, Plan scoring/health/prediction, automatic
+- automatic Plan progress, phase-to-Task relationships, automatic Plan scoring, score history,
+  score Analytics, Plan health/prediction, automatic
   Plan lifecycle, and Plan analytics beyond the ADR 0043 factual activity projection remain
   prohibited (factual Focus Plan activity analytics is DECIDED — see ADR 0043);
 - prediction and opaque ML;

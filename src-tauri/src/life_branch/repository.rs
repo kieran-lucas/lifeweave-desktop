@@ -559,7 +559,7 @@ pub fn export_source(
         assets: assets_by_key.into_values().collect(),
         omissions,
         source_schema_version:
-            crate::infrastructure::sqlite::task47_migration::max_supported_schema_version(),
+            crate::infrastructure::sqlite::task51_migration::max_supported_schema_version(),
     })
 }
 
@@ -1212,7 +1212,7 @@ pub fn confirm_import(
 pub(crate) mod harness {
     use super::*;
     use crate::infrastructure::sqlite::{
-        connection::open_memory_connection, task47_migration::run_all_migrations,
+        connection::open_memory_connection, task51_migration::run_all_migrations,
     };
 
     pub fn db() -> Connection {

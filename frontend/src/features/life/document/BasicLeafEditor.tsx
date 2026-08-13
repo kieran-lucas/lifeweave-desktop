@@ -101,7 +101,7 @@ export default function BasicLeafEditor({ document, initialJson, onCommitted, on
   const editor = useEditor({
     extensions: basicLeafExtensions,
     content: initialContent.current,
-    autofocus: "end",
+    autofocus: false,
     editorProps,
     onUpdate: ({ editor: liveEditor }) => markChanged(liveEditor),
     shouldRerenderOnTransaction: false,

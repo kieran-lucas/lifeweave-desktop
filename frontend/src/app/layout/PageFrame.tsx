@@ -13,7 +13,7 @@ import * as styles from "./layout.css";
  * WebView box model, which jsdom cannot report.
  */
 
-export type PageType = "standard" | "wide" | "reading";
+export type PageType = "standard" | "wide" | "focused" | "reading";
 
 type FrameProps = {
   type?: PageType;

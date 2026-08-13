@@ -94,25 +94,38 @@ export const agendaItem = style({
 
 export const timeRail = style({
   display: "grid",
-  alignContent: "center",
-  gap: 1,
-  minBlockSize: 68,
-  paddingInlineEnd: 14,
+  gridTemplateRows: "15px 15px",
+  justifyItems: "end",
+  alignContent: "start",
+  gap: 2,
+  minBlockSize: 52,
+  boxSizing: "border-box",
+  padding: "8px 14px 7px 0",
   color: "#929292",
   textAlign: "right",
   fontVariantNumeric: "tabular-nums",
+  fontFeatureSettings: '"tnum" 1, "lnum" 1',
 });
-globalStyle(`${timeRail} > strong`, { color: "#555555", fontSize: 11, lineHeight: "14px", fontWeight: 680 });
-globalStyle(`${timeRail} > span`, { fontSize: 9, lineHeight: "12px" });
+globalStyle(`${timeRail} > strong, ${timeRail} > span`, {
+  display: "block",
+  inlineSize: "5ch",
+  textAlign: "center",
+  color: "#555555",
+  fontSize: 11,
+  lineHeight: "15px",
+  fontWeight: 600,
+  fontKerning: "none",
+});
 
 export const taskRow = style({
-  minBlockSize: 68,
+  minBlockSize: 52,
   minInlineSize: 0,
   display: "grid",
   gridTemplateColumns: "minmax(0, 1fr) auto 20px",
-  alignItems: "center",
+  alignItems: "start",
+  alignSelf: "stretch",
   gap: 8,
-  padding: "8px 8px 8px 7px",
+  padding: "8px 8px 7px 7px",
   border: 0,
   borderRadius: 10,
   background: "transparent",
@@ -129,16 +142,27 @@ export const taskRow = style({
   },
 });
 
-export const taskCopy = style({ display: "grid", gap: 4, minInlineSize: 0 });
+export const taskCopy = style({ display: "grid", alignContent: "start", gap: 3, minInlineSize: 0 });
 globalStyle(`${taskCopy} > strong`, {
-  overflow: "hidden",
   color: "#202020",
   fontSize: 13,
   lineHeight: "17px",
   fontWeight: 670,
   letterSpacing: "-.012em",
-  textOverflow: "ellipsis",
-  whiteSpace: "nowrap",
+  overflowWrap: "anywhere",
+  whiteSpace: "normal",
+});
+
+export const taskDescription = style({
+  margin: "2px 0 0",
+  paddingInlineStart: 9,
+  borderInlineStart: "2px solid var(--border-strong)",
+  color: "var(--text-primary)",
+  fontSize: 12,
+  lineHeight: "18px",
+  fontWeight: 500,
+  overflowWrap: "anywhere",
+  whiteSpace: "pre-wrap",
 });
 
 export const taskMeta = style({
@@ -152,6 +176,7 @@ export const taskMeta = style({
   lineHeight: "12px",
   whiteSpace: "nowrap",
 });
+globalStyle(`${taskMeta}:empty`, { display: "none" });
 globalStyle(`${taskMeta} > span`, { flex: "0 0 auto" });
 globalStyle(`${taskMeta} > button`, {
   maxInlineSize: 150,
@@ -171,6 +196,12 @@ globalStyle(`${taskMeta} > button:focus-visible`, { outline: "1.5px solid #11111
 
 export const assessmentSlot = style({
   justifySelf: "end",
+  alignSelf: "center",
+});
+
+globalStyle(`${agendaItem}[data-completed=true] ${taskCopy} > strong`, {
+  textDecoration: "line-through",
+  textDecorationThickness: "1.5px",
 });
 
 /* Progressive task composer ------------------------------------------------ */
@@ -238,18 +269,36 @@ globalStyle(`${titleField}:focus, ${titleField}:focus-visible`, { outline: "none
 
 export const scheduleBar = style({
   display: "grid",
-  gridTemplateColumns: "1.35fr 1fr 1fr",
+  gridTemplateColumns: "1.3fr .9fr .9fr",
+  alignItems: "stretch",
   gap: 1,
-  border: "1px solid #D8D8D8",
-  borderRadius: 11,
-  background: "#D8D8D8",
+  overflow: "visible",
+  border: "1px solid var(--border-subtle)",
+  borderRadius: "var(--radius-surface)",
+  background: "var(--border-subtle)",
   "@media": { "(max-width: 520px)": { gridTemplateColumns: "1fr" } },
 });
-export const scheduleDateField = style({ display: "grid", gap: 4, minInlineSize: 0, padding: "9px 11px", background: "#FFFFFF" });
-globalStyle(`${scheduleDateField} > span`, { color: "#777777", fontSize: 8, lineHeight: "11px", fontWeight: 760, letterSpacing: ".08em", textTransform: "uppercase" });
-globalStyle(`${scheduleDateField} > input`, { minInlineSize: 0, minBlockSize: 25, padding: "2px 4px", border: "1px solid transparent", borderRadius: 7, outline: 0, background: "#FFFFFF", color: "#111111", fontSize: 12, fontWeight: 680, fontVariantNumeric: "tabular-nums", cursor: "pointer" });
-globalStyle(`${scheduleDateField} > input:hover`, { background: "var(--accent-soft)", borderColor: "#C8D7FA" });
-globalStyle(`${scheduleDateField} > input:focus-visible`, { outline: "2px solid var(--focus-ring)", outlineOffset: 1, borderColor: "var(--accent)" });
+export const scheduleDateField = style({
+  position: "relative",
+  display: "grid",
+  gridTemplateRows: "12px 40px",
+  alignContent: "start",
+  gap: 5,
+  minInlineSize: 0,
+  boxSizing: "border-box",
+  padding: "10px 11px 11px",
+  borderStartStartRadius: "var(--radius-surface)",
+  borderEndStartRadius: "var(--radius-surface)",
+  background: "var(--surface-raised)",
+});
+globalStyle(`${scheduleDateField} > span`, { color: "var(--text-tertiary)", fontSize: 9, lineHeight: "12px", fontWeight: 760, letterSpacing: ".09em", textTransform: "uppercase" });
+globalStyle(`${scheduleDateField} > input`, { minInlineSize: 0, blockSize: 40, boxSizing: "border-box", padding: "7px 9px", border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-control)", outline: 0, background: "var(--surface-subtle)", color: "var(--text-primary)", colorScheme: "light", fontSize: 13, lineHeight: "20px", fontWeight: 720, fontVariantNumeric: "tabular-nums", fontFeatureSettings: '"tnum" 1, "lnum" 1', cursor: "pointer", transition: "background-color 140ms ease, border-color 140ms ease, box-shadow 140ms ease" });
+globalStyle(`${scheduleDateField} > input:hover`, { background: "var(--accent-soft)", borderColor: "var(--accent)" });
+globalStyle(`${scheduleDateField} > input:active`, { transform: "scale(.985)" });
+globalStyle(`${scheduleDateField} > input:focus-visible`, { outline: "2px solid var(--focus-ring)", outlineOffset: 2, borderColor: "var(--accent)" });
+globalStyle(`${scheduleDateField} > input::-webkit-calendar-picker-indicator`, { inlineSize: 16, blockSize: 16, cursor: "pointer" });
+globalStyle(`${scheduleBar} > div:last-child`, { borderStartEndRadius: "var(--radius-surface)", borderEndEndRadius: "var(--radius-surface)" });
+globalStyle(`${scheduleBar} > div:last-child > [role=dialog]`, { insetInlineStart: "auto", insetInlineEnd: 0, transformOrigin: "top right" });
 
 export const detailsPanel = style({
   display: "grid",
@@ -263,31 +312,33 @@ export const detailsPanel = style({
 export const detailField = style({
   display: "grid",
   alignContent: "start",
-  gap: 6,
+  gap: 7,
   minInlineSize: 0,
   color: "#777777",
-  fontSize: 9,
+  fontSize: 11,
+  lineHeight: "15px",
   fontWeight: 710,
   letterSpacing: ".035em",
 });
 export const detailFieldWide = style([detailField, { gridColumn: "1 / -1" }]);
-export const fieldLabel = style({ color: "#777777", fontSize: 9, fontWeight: 710 });
+export const fieldLabel = style({ color: "#777777", fontSize: 11, lineHeight: "15px", fontWeight: 710 });
 globalStyle(`${detailsPanel} input, ${detailsPanel} select, ${detailsPanel} textarea`, {
   inlineSize: "100%",
   minInlineSize: 0,
   boxSizing: "border-box",
-  minBlockSize: 37,
-  padding: "8px 9px",
+  minBlockSize: 40,
+  padding: "9px 10px",
   border: "1px solid #D6D6D6",
   borderRadius: 9,
   outline: 0,
   background: "#FAFAFA",
   color: "#222222",
-  fontSize: 11,
+  fontSize: 13,
+  lineHeight: "19px",
   fontWeight: 500,
   letterSpacing: 0,
 });
-globalStyle(`${detailsPanel} textarea`, { minBlockSize: 76, resize: "vertical", lineHeight: 1.5 });
+globalStyle(`${detailsPanel} textarea`, { minBlockSize: 84, resize: "vertical", lineHeight: 1.55 });
 globalStyle(`${detailsPanel} input:focus, ${detailsPanel} select:focus, ${detailsPanel} textarea:focus`, { borderColor: "#111111", background: "#FFFFFF" });
 
 export const composerFooter = style({

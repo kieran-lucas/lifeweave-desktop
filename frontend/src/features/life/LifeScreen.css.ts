@@ -1,5 +1,6 @@
 import { globalStyle, keyframes, style } from "@vanilla-extract/css";
 import { duration, easing, reduced } from "../../design-system/visual/motion.css";
+import { vars } from "../../design-system/visual/contract.css";
 
 export const lifeFrame = style({
   blockSize: "100%",
@@ -76,8 +77,8 @@ export const backButton = style({
 
 export const navigatorLabel = style({
   color: "#222222",
-  fontSize: 12,
-  lineHeight: "16px",
+  fontSize: 15,
+  lineHeight: "20px",
   fontWeight: 730,
   letterSpacing: "-.01em",
   overflowWrap: "anywhere",
@@ -87,7 +88,7 @@ export const navigatorLabel = style({
 export const editButton = style({
   ...quietControl,
   paddingInline: 8,
-  fontSize: 10,
+  fontSize: 12,
   fontWeight: 720,
   selectors: {
     ...quietControl.selectors,
@@ -103,8 +104,8 @@ export const breadcrumb = style({
   padding: "6px 12px",
   flexWrap: "wrap",
   color: "#A1A1A1",
-  fontSize: 9,
-  lineHeight: "12px",
+  fontSize: 11,
+  lineHeight: "15px",
   overflowWrap: "anywhere",
 });
 globalStyle(`${breadcrumb} > span`, { display: "inline-flex", alignItems: "center", gap: 4 });
@@ -129,8 +130,8 @@ export const branchIdentity = style({
   borderBottom: "1px solid #E2E2E0",
 });
 globalStyle(`${branchIdentity} > div`, { display: "grid", gap: 1, minInlineSize: 0 });
-globalStyle(`${branchIdentity} > div > span`, { color: "#999999", fontSize: 9, fontWeight: 720, letterSpacing: ".07em", textTransform: "uppercase" });
-globalStyle(`${branchIdentity} > div > strong`, { color: "#222222", fontSize: 13, lineHeight: "17px", fontWeight: 680, overflowWrap: "anywhere", whiteSpace: "normal" });
+globalStyle(`${branchIdentity} > div > span`, { color: "#999999", fontSize: 10, fontWeight: 720, letterSpacing: ".07em", textTransform: "uppercase" });
+globalStyle(`${branchIdentity} > div > strong`, { color: "#222222", fontSize: 14, lineHeight: "19px", fontWeight: 680, overflowWrap: "anywhere", whiteSpace: "normal" });
 
 export const icon = style({
   display: "inline-grid",
@@ -159,8 +160,8 @@ export const navigatorToolButton = style({
   gap: 8,
   padding: "7px 9px",
   color: "#555555",
-  fontSize: 10,
-  lineHeight: "14px",
+  fontSize: 12,
+  lineHeight: "17px",
   fontWeight: 680,
   textAlign: "left",
   selectors: {
@@ -176,7 +177,7 @@ export const childHeader = style({
   justifyContent: "space-between",
   padding: "8px 12px 4px",
   color: "#8A8A8A",
-  fontSize: 9,
+  fontSize: 10,
   fontWeight: 720,
   letterSpacing: ".08em",
   textTransform: "uppercase",
@@ -220,12 +221,12 @@ export const nodeRow = style({
 globalStyle(`${nodeRow} ${icon}`, { display: "none" });
 
 export const nodeRowCopy = style({ display: "grid", gap: 1, minInlineSize: 0 });
-globalStyle(`${nodeRowCopy} > strong`, { color: "#282828", fontSize: 11, lineHeight: "15px", fontWeight: 650, overflowWrap: "break-word", wordBreak: "normal", whiteSpace: "normal" });
-globalStyle(`${nodeRowCopy} > small`, { overflow: "hidden", color: "#929292", fontSize: 9, lineHeight: "12px", textOverflow: "ellipsis", whiteSpace: "nowrap" });
+globalStyle(`${nodeRowCopy} > strong`, { color: "#282828", fontSize: 13, lineHeight: "18px", fontWeight: 650, overflowWrap: "break-word", wordBreak: "normal", whiteSpace: "normal" });
+globalStyle(`${nodeRowCopy} > small`, { overflow: "hidden", color: "#929292", fontSize: 11, lineHeight: "15px", textOverflow: "ellipsis", whiteSpace: "nowrap" });
 
 export const rowArrow = style({ display: "none" });
 
-export const noChildren = style({ margin: "8px 12px", color: "#999999", fontSize: 10, lineHeight: 1.45 });
+export const noChildren = style({ margin: "8px 12px", color: "#999999", fontSize: 12, lineHeight: 1.45 });
 
 export const paging = style({
   minBlockSize: 38,
@@ -342,7 +343,7 @@ export const readerCanvas = style({
   ...canvasMotion,
   inlineSize: "100%",
   boxSizing: "border-box",
-  padding: "clamp(34px, 6vh, 72px) 5% 56px",
+  padding: "clamp(28px, 5vh, 56px) 5% 48px",
 });
 
 export const canvasEyebrow = style({
@@ -394,17 +395,12 @@ globalStyle(`${branchFacts} span`, { color: "#969696", fontSize: 9, fontWeight: 
 globalStyle(`${branchFacts} strong`, { color: "#333333", fontSize: 12, fontWeight: 660 });
 
 export const readerHeader = style({
-  display: "grid",
-  justifyItems: "start",
-  gap: 10,
-  paddingBlockEnd: 30,
-  borderBottom: "1px solid #E5E5E5",
+  paddingBlockEnd: 18,
 });
-globalStyle(`${readerHeader} ${icon}`, { inlineSize: 42, blockSize: 42, borderRadius: 12 });
 
 export const readerTitle = style({
   maxInlineSize: "18ch",
-  margin: "4px 0 0",
+  margin: 0,
   color: "#111111",
   fontSize: "clamp(36px, 5vw, 58px)",
   lineHeight: 1,
@@ -413,26 +409,39 @@ export const readerTitle = style({
   overflowWrap: "anywhere",
 });
 
-export const readerDescription = style({
-  maxInlineSize: "62ch",
-  margin: 0,
-  color: "#5A5A5A",
-  fontSize: 14,
-  lineHeight: 1.6,
-  whiteSpace: "pre-wrap",
-});
-
 export const documentBody = style({
   inlineSize: "100%",
   maxInlineSize: "none",
-  paddingBlock: "34px 42px",
-  borderBottom: "1px solid #E5E5E5",
+  paddingBlock: "10px 28px",
+  overflowAnchor: "none",
 });
+globalStyle(`${documentBody} > *`, {
+  minBlockSize: "clamp(500px, 68vh, 820px)",
+  overflowAnchor: "none",
+});
+
+export const contextDisclosure = style({ borderBlockStart: `1px solid ${vars.color.borderHairline}` });
+globalStyle(`${contextDisclosure} > summary`, {
+  minBlockSize: 42,
+  display: "inline-flex",
+  alignItems: "center",
+  paddingInline: 2,
+  color: vars.color.textTertiary,
+  fontSize: 10,
+  fontWeight: 700,
+  cursor: "pointer",
+  listStyle: "none",
+});
+globalStyle(`${contextDisclosure} > summary::-webkit-details-marker`, { display: "none" });
+globalStyle(`${contextDisclosure} > summary:hover`, { color: vars.color.textPrimary });
+globalStyle(`${contextDisclosure} > summary:focus-visible`, { outline: `2px solid ${vars.color.focusRing}`, outlineOffset: 2 });
+globalStyle(`${contextDisclosure} > section`, { marginBlockStart: 12, paddingBlockStart: 18, borderBlockStart: `1px solid ${vars.color.borderHairline}` });
+globalStyle(`${contextDisclosure} > section:first-of-type`, { borderBlockStart: 0 });
 
 export const contextSection = style({
   display: "grid",
   gap: 24,
-  paddingBlock: "32px 8px",
+  paddingBlock: "12px 8px 24px",
 });
 
 globalStyle(`${contextSection} > section`, { paddingBlockStart: 22, borderBlockStart: "1px solid #ECECEC" });
