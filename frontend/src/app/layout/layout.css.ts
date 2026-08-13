@@ -126,7 +126,6 @@ export const pageHeader = style({ display: "flex", flexWrap: "wrap", alignItems:
 export const pageIdentity = style({ display: "flex", flexDirection: "column", gap: space.x1, minInlineSize: 0 });
 export const pageActions = style({ display: "flex", flexWrap: "wrap", alignItems: "center", gap: space.control, minInlineSize: 0 });
 export const sectionStack = style({ display: "flex", flexDirection: "column", gap: space.section, minInlineSize: 0 });
-export const groupStack = style({ display: "flex", flexDirection: "column", gap: space.group, minInlineSize: 0 });
 
 const backdropIn = keyframes({ from: { opacity: 0 }, to: { opacity: 1 } });
 
@@ -185,9 +184,7 @@ export const dialogSurface = styleVariants({
 export const dialogHeader = style({ display: "flex", flexDirection: "column", gap: space.x1, minInlineSize: 0 });
 export const dialogBody = style({ display: "flex", flexDirection: "column", gap: space.group, minInlineSize: 0 });
 export const dialogFooter = style({ display: "flex", flexWrap: "wrap", justifyContent: "flex-end", alignItems: "center", gap: space.control, minInlineSize: 0 });
-export const dialogFooterLeading = style({ marginInlineEnd: "auto" });
 
-export const formGrid = style({ display: "grid", gridTemplateColumns: "repeat(6, minmax(0, 1fr))", gap: space.field, minInlineSize: 0 });
 const stackAtNarrow = { "@container": { "(max-width: 560px)": { gridColumn: "span 6" } } } as const;
 export const fieldSpan = styleVariants({
   full: { gridColumn: "span 6" },
@@ -195,22 +192,8 @@ export const fieldSpan = styleVariants({
   third: { gridColumn: "span 2", ...stackAtNarrow },
 });
 export const field = style({ display: "flex", flexDirection: "column", gap: space.x1, minInlineSize: 0 });
-export const fieldControl = style({ inlineSize: "100%", minInlineSize: 0, boxSizing: "border-box", minBlockSize: 38, paddingBlock: space.control, paddingInline: space.x3 });
 export const fieldHelp = style({ margin: 0, color: "var(--text-muted)" });
 globalStyle(`${dialogHeader} > h2`, { ...text.objectTitle, margin: 0 });
 globalStyle(`${dialogHeader} > p`, { ...text.compactBody, margin: 0, color: "var(--text-muted)" });
 
-export const fieldGroup = style({ display: "grid", gridTemplateColumns: "repeat(6, minmax(0, 1fr))", gap: space.field, minInlineSize: 0, margin: 0, padding: space.field, border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-surface)", backgroundColor: "#FFFFFF" });
-export const controlRow = style({ display: "flex", flexWrap: "wrap", alignItems: "center", gap: space.control, minInlineSize: 0 });
 export const scrollRegion = style({ overflowX: "auto", maxInlineSize: "100%", minInlineSize: 0 });
-
-export const splitWorkspace = style({
-  display: "grid",
-  gridTemplateColumns: "minmax(0, 1fr)",
-  gap: space.group,
-  alignItems: "start",
-  minInlineSize: 0,
-  "@container": {
-    "(min-width: 900px)": { gridTemplateColumns: "var(--lw-split-columns, minmax(0, 1fr) minmax(260px, 320px))" },
-  },
-});

@@ -24,7 +24,6 @@ import {
   richTextToPlainText,
   semanticDocumentToPlainText,
   semanticDocumentToMarkdown,
-  semanticDocumentToStaticProjection,
 } from "./shared/semantic";
 import {
   basicLeafToNarrative,

@@ -615,8 +615,6 @@ export function App() {
                   <FocusPlansScreen
                     entryRequest={focusPlanEntryRequest}
                     onEntryRequestSettled={settleNavigationRequest}
-                    anchorLocalDate={anchorLocalDate}
-                    onTaskNavigate={navigateToTask}
                   />
                 </Suspense>
               </div>

@@ -30,3 +30,22 @@ signal: a person assigns one current integer from 1 through 100 to a Plan from t
 The former blanket prohibition on Focus Plan scoring is superseded only for this manual current
 score. Automatic scoring, formulas, score history, score analytics, health, prediction, automatic
 lifecycle changes, and score-derived completion remain prohibited.
+
+## Product Owner override — scoring completes the Plan (2026-08-13)
+
+A later explicit Product Owner direction replaces the lifecycle-neutral part of the decision above:
+
+- saving a non-null manual score atomically sets the Plan lifecycle to `completed` through the same
+  optimistic, idempotent `mutate_focus_plan` operation;
+- the Plan consequently leaves Draft, Active, or Paused and appears in the Completed portfolio;
+- migration 30 converges already-scored Plans to `completed` so behavior does not depend on which
+  application version stored the score;
+- clearing a score does not silently reactivate the Plan; reopening work remains an explicit
+  lifecycle edit;
+- Active Plans carry a visible `Active` label with redundant green emphasis. Color is not the sole
+  status signal;
+- score remains manual current authority only. No formula, history, Analytics, health, prediction,
+  Task mutation, notification, or second IPC command is introduced.
+
+This override authorizes exactly the manual score → completed transition. Other automatic Plan
+lifecycle behavior remains prohibited.

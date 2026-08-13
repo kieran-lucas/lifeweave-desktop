@@ -1,13 +1,11 @@
-import { lazy, Suspense, useCallback, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
-import { listTaskLifeTargets } from "../../ipc/commands";
 import type { FocusPlanDetailView } from "../../ipc/generated/FocusPlanDetailView";
 import type { FocusPlanLifecycle } from "../../ipc/generated/FocusPlanLifecycle";
 import type { FocusPlanMutationAction } from "../../ipc/generated/FocusPlanMutationAction";
 import type { FocusPlanPortfolio } from "../../ipc/generated/FocusPlanPortfolio";
 import type { FocusPlanSummaryView } from "../../ipc/generated/FocusPlanSummaryView";
-import type { TaskLifeTargetView } from "../../ipc/generated/TaskLifeTargetView";
 import {
   createFocusPlan,
   getFocusPlan,
@@ -16,10 +14,10 @@ import {
 } from "./ipc";
 import * as styles from "./FocusPlansScreen.css";
 import { PageFrame } from "../../app/layout/PageFrame";
-import type { TaskNavigate } from "./LinkedWorkPanel";
 import { invalidateTaskSavedViewReferenceData } from "../task/saved-views/savedViewQueries";
 import { EmptyState, SkeletonList } from "../../design-system/primitives/States";
 import { PlanScoreDialog } from "./PlanScoreDialog";
+import { LifeAreaCombobox } from "../task/LifeAreaCombobox";
 
 const PlanContentEditor = lazy(() => import("./PlanContentEditor"));
 
@@ -31,8 +29,6 @@ export type FocusPlanEntryRequest = {
 type Props = {
   entryRequest: FocusPlanEntryRequest | null;
   onEntryRequestSettled: (requestId: string) => void;
-  anchorLocalDate: string;
-  onTaskNavigate?: TaskNavigate | undefined;
 };
 
 type PlanForm = {
@@ -80,8 +76,19 @@ function messageFromError(error: unknown): string {
 function planMeta(plan: FocusPlanSummaryView) {
   const parts: string[] = [];
   if (plan.life_title) parts.push(plan.life_title);
-  if (plan.target_date) parts.push(plan.target_date);
+  if (plan.target_date) parts.push(`Target ${formatPlanDate(plan.target_date)}`);
   return parts.length ? parts.join(" · ") : "No target yet";
+}
+
+function formatPlanDate(value: string) {
+  const [year, month, day] = value.split("-").map(Number);
+  if (!year || !month || !day) return value;
+  return new Intl.DateTimeFormat(navigator.language || "en-US", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(Date.UTC(year, month - 1, day)));
 }
 
 function scoreBand(score: number | null) {
@@ -97,17 +104,18 @@ export function FocusPlansScreen({
   onEntryRequestSettled,
 }: Props) {
   const queryClient = useQueryClient();
+  const completedPortfolioButton = useRef<HTMLButtonElement>(null);
   const [portfolio, setPortfolio] = useState<FocusPlanPortfolio>("active");
   const [plans, setPlans] = useState<FocusPlanSummaryView[]>([]);
   const [selected, setSelected] = useState<FocusPlanDetailView | null>(null);
   const [form, setForm] = useState<PlanForm | null>(null);
   const [editing, setEditing] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [lifeTargets, setLifeTargets] = useState<TaskLifeTargetView[]>([]);
   const [createTitle, setCreateTitle] = useState("");
   const [status, setStatus] = useState<"loading" | "ready" | "saving">("loading");
   const [error, setError] = useState<string | null>(null);
   const [scoreTarget, setScoreTarget] = useState<ScoreTarget | null>(null);
+  const scoreMovesToCompleted = useRef(false);
 
   const syncDetail = useCallback((plan: FocusPlanDetailView) => {
     setSelected(plan);
@@ -145,13 +153,6 @@ export function FocusPlansScreen({
   useEffect(() => {
     void loadPortfolio(portfolio);
   }, [loadPortfolio, portfolio]);
-
-  useEffect(() => {
-    if (!editing || lifeTargets.length > 0) return;
-    listTaskLifeTargets()
-      .then(setLifeTargets)
-      .catch((cause) => setError(messageFromError(cause)));
-  }, [editing, lifeTargets.length]);
 
   useEffect(() => {
     if (!entryRequest) return;
@@ -203,9 +204,14 @@ export function FocusPlansScreen({
         operation_id: globalThis.crypto.randomUUID(),
         mutation: { action: "set_score", score },
       });
+      await invalidateTaskSavedViewReferenceData(queryClient);
+      await queryClient.invalidateQueries({ queryKey: ["analytics"] });
       setPlans((current) => current.map((item) => (
-        item.id === plan.id ? { ...item, score, revision: result.revision } : item
+        item.id === plan.id
+          ? { ...item, score, lifecycle: score === null ? item.lifecycle : "completed", revision: result.revision }
+          : item
       )));
+      if (score !== null && portfolio !== "completed") scoreMovesToCompleted.current = true;
       setStatus("ready");
       return null;
     } catch (cause) {
@@ -274,6 +280,13 @@ export function FocusPlansScreen({
     setEditing(false);
   };
 
+  const closeScoreDialog = () => {
+    setScoreTarget(null);
+    if (!scoreMovesToCompleted.current) return;
+    scoreMovesToCompleted.current = false;
+    setPortfolio("completed");
+  };
+
   if (selected && form) {
     return (
       <PageFrame as="section" type="focused" aria-labelledby="plan-detail-heading">
@@ -327,7 +340,7 @@ export function FocusPlansScreen({
 
           <div className={styles.hero}>
             <div className={styles.heroIdentity}>
-              <span className={styles.lifecycle}>{selected.lifecycle}</span>
+              <span className={styles.lifecycle} data-lifecycle={selected.lifecycle}>{selected.lifecycle}</span>
               {editing ? (
                 <>
                   <h1 id="plan-detail-heading" className={styles.srOnly}>Edit plan {selected.title}</h1>
@@ -370,15 +383,18 @@ export function FocusPlansScreen({
                     <span>Target</span>
                     <input type="date" value={form.targetDate} onChange={(event) => updateForm("targetDate", event.target.value)} />
                   </label>
-                  <label className={styles.factEditor}>
-                    <span>Life area</span>
-                    <select value={form.lifeNodeId} onChange={(event) => updateForm("lifeNodeId", event.target.value)}>
-                      <option value="">Unlinked</option>
-                      {lifeTargets.map((target) => (
-                        <option key={target.id} value={target.id}>{target.breadcrumb}</option>
-                      ))}
-                    </select>
-                  </label>
+                  <div className={styles.factTreeEditor}>
+                    <LifeAreaCombobox
+                      value={form.lifeNodeId || null}
+                      current={selected.life_node_id && selected.life_title ? {
+                        id: selected.life_node_id,
+                        title: selected.life_title,
+                        breadcrumb: selected.life_title,
+                        archived: false,
+                      } : null}
+                      onChange={(lifeNodeId) => updateForm("lifeNodeId", lifeNodeId ?? "")}
+                    />
+                  </div>
                   <label className={styles.factEditor}>
                     <span>Status</span>
                     <select value={form.lifecycle} onChange={(event) => updateForm("lifecycle", event.target.value as FocusPlanLifecycle)}>
@@ -392,7 +408,16 @@ export function FocusPlansScreen({
               ) : (
                 <>
                   {(selected.start_date || selected.target_date) ? (
-                    <div><span>Dates</span><strong>{selected.start_date ?? "No start"} – {selected.target_date ?? "No target"}</strong></div>
+                    <>
+                      <div className={styles.dateFact}>
+                        <span>Start date</span>
+                        <strong>{selected.start_date ? <time dateTime={selected.start_date}>{formatPlanDate(selected.start_date)}</time> : "Not set"}</strong>
+                      </div>
+                      <div className={styles.dateFact}>
+                        <span>Target date</span>
+                        <strong>{selected.target_date ? <time dateTime={selected.target_date}>{formatPlanDate(selected.target_date)}</time> : "Not set"}</strong>
+                      </div>
+                    </>
                   ) : null}
                   {selected.life_title ? <div><span>Life area</span><strong>{selected.life_title}</strong></div> : null}
                 </>
@@ -443,6 +468,7 @@ export function FocusPlansScreen({
             <button
               key={item.id}
               type="button"
+              ref={item.id === "completed" ? completedPortfolioButton : undefined}
               aria-current={portfolio === item.id ? "page" : undefined}
               onClick={() => setPortfolio(item.id)}
             >
@@ -464,7 +490,10 @@ export function FocusPlansScreen({
             <div key={plan.id} className={styles.planRow}>
               <button type="button" className={styles.planOpen} onClick={() => void openPlan(plan.id)}>
                 <span className={styles.planCopy}>
-                  <strong data-completed={plan.lifecycle === "completed" ? "" : undefined}>{plan.title}</strong>
+                  <span className={styles.planTitleLine}>
+                    <strong data-completed={plan.lifecycle === "completed" ? "" : undefined}>{plan.title}</strong>
+                    {plan.lifecycle === "active" ? <span className={styles.activeBadge}>Active</span> : null}
+                  </span>
                   <small>{planMeta(plan)}</small>
                 </span>
               </button>
@@ -487,8 +516,9 @@ export function FocusPlansScreen({
           planTitle={scoreTarget.plan.title}
           currentScore={scoreTarget.plan.score}
           returnFocus={scoreTarget.invoker}
+          completedReturnFocus={completedPortfolioButton.current}
           onSave={(score) => saveScore(scoreTarget.plan, score)}
-          onClose={() => setScoreTarget(null)}
+          onClose={closeScoreDialog}
         />
       ) : null}
       <p className={styles.srOnly} aria-live="polite">{status === "saving" ? "Saving plan." : ""}</p>

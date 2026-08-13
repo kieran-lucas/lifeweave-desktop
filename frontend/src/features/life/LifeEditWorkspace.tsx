@@ -7,7 +7,6 @@ import {
   updateLifeNodeSummary,
 } from "../../ipc/commands";
 import type { LifeEditNodeView } from "../../ipc/generated/LifeEditNodeView";
-import type { LifeEditProjection } from "../../ipc/generated/LifeEditProjection";
 import type { TagSummaryView } from "../../ipc/generated/TagSummaryView";
 import * as styles from "./LifeEditWorkspace.css";
 

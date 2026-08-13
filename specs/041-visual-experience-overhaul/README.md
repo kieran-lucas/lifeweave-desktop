@@ -9,7 +9,7 @@ activation baseline: 43d0d1e822336c97527f85e1ab154fc74a61f058
 local branch: task-51-visual-experience (not pushed)
 Task 49 feature checkpoint: 7622db3d8b2b42d69c8f497b6899c5be82e9f9a9 (unchanged)
 starting schema: 27
-target schema: 28 (Product Owner Focus Plan score amendment only)
+target schema: 30 (manual score column, canonical Life tree, scored-Plan convergence)
 VISUAL LOCK: not requested — reference image not yet supplied
 MOTION LOCK: blocked on VISUAL LOCK
 ```
@@ -43,8 +43,8 @@ binding and are re-proven rather than re-argued.
 
 ## Not in this slice
 
-Except for the bounded manual Focus Plan score amendment in spec §1.2 / ADR 0047, product semantics
-of any kind. No schema beyond 28, second Plan IPC command, Tauri capability, network service,
+Except for the bounded manual Focus Plan score amendments in spec §1.2/§1.3 / ADR 0047, product
+semantics of any kind. No schema beyond 30, second Plan IPC command, Tauri capability, network service,
 backup-format change, or workflow/seal change. No framework, editor,
 drag, query, graph or layout-engine replacement. No glass, Mica, Acrylic or transparent window. No
 WebGL or animation-engine art. No new Task facet — in particular no subtasks and no task-to-task

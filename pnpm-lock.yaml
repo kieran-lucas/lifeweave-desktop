@@ -37,9 +37,6 @@ importers:
 
   frontend:
     dependencies:
-      '@dnd-kit/accessibility':
-        specifier: 3.1.1
-        version: 3.1.1(react@19.2.8)
       '@dnd-kit/core':
         specifier: 6.3.1
         version: 6.3.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)

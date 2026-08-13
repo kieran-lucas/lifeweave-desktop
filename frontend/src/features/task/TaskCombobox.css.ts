@@ -56,6 +56,30 @@ export const option = style({
   selectors: {
     "&[aria-selected=true]": { background: "var(--active-background)" },
     "&[data-active=true]": { boxShadow: "inset 2px 0 0 var(--accent)" },
+    "&[data-hierarchical]": {
+      position: "relative",
+      flexWrap: "nowrap",
+      minBlockSize: 38,
+      paddingInlineStart: `calc(${space.control} + var(--tree-indent, 0px) + 16px)`,
+    },
+    "&[data-hierarchical]::before": {
+      content: '"└"',
+      position: "absolute",
+      insetInlineStart: `calc(${space.control} + var(--tree-indent, 0px))`,
+      color: "var(--border-strong)",
+      fontSize: 11,
+    },
+    '&[data-hierarchy-depth="0"]': {
+      marginBlockStart: space.x1,
+      background: "var(--surface-subtle)",
+      fontWeight: 760,
+      letterSpacing: ".025em",
+    },
+    '&[data-hierarchy-depth="0"]::before': {
+      content: '"●"',
+      color: "var(--accent)",
+      fontSize: 7,
+    },
     "&:hover": { background: "var(--active-background)" },
   },
 });

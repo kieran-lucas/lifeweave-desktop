@@ -105,23 +105,3 @@ export const segmentedItem = style([
     },
   },
 ]);
-
-export const selectedRow = style({
-  selectors: {
-    '&[aria-current="true"], &[aria-current="page"], &[data-selected="true"]': {
-      background: "var(--accent-soft)",
-      boxShadow: "inset 3px 0 0 var(--accent)",
-    },
-  },
-  "@media": {
-    "(forced-colors: active)": {
-      selectors: {
-        '&[aria-current="true"], &[aria-current="page"], &[data-selected="true"]': {
-          outline: "1px solid Highlight",
-          outlineOffset: -1,
-          boxShadow: "none",
-        },
-      },
-    },
-  },
-});

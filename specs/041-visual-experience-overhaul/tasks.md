@@ -130,9 +130,39 @@
 - [x] Record ADR 0047 and the Product Owner's manual Focus Plan score amendment.
 - [x] Add migration 28 plus checked, revisioned Rust score authority and generated bindings.
 - [x] Add the right-aligned accessible score circle, bounded 1–100 dialog, and completed-only title
-      strike without adding a second IPC command or score-derived lifecycle behavior.
+      strike without adding a second IPC command.
 - [x] Prove migration/reopen, backend validation, keyboard/focus behavior, accessibility, build,
       backup compatibility, generated-binding stability, and performance budgets.
+
+## Product Owner Task and Plan usability amendment — deterministic verification complete
+
+- [x] Increase the Task Notes editing viewport without changing stored Task semantics.
+- [x] Present Life Area choices as visible domain/section/leaf levels in the shared picker.
+- [x] Improve Plan Start/Target date labels, formatting, type hierarchy, and vertical separation.
+- [x] Give Active Plans an explicit text badge with redundant green emphasis and forced-colors path.
+- [x] Make a non-null score complete the Plan in the existing revisioned mutation and route the UI
+      to Completed after success with deterministic focus.
+- [x] Add append-only schema 30 to converge already-scored Plans without changing unscored Plans.
+- [x] Pass focused and full frontend/Rust tests, migration/backup checks, typecheck, build,
+      governance, automated accessibility, formatting, diff checks, and strict Rust Clippy.
+- [ ] Run native visual inspection: **NOT RUN** because the configured in-app Browser runtime
+      reports no available browser.
+- [ ] Resolve the pre-existing Task 51 performance-budget mismatch: a clean `43a6677` worktree and
+      this amendment emit identical over-budget `LifeScreen.js` (65,116 B) and
+      `NarrativeCanvasStudio.js` (65,326 B) chunks. Do not inflate their locked ceilings here.
+
+## Product Owner repository cleanup
+
+- [x] Trace both frontend entry graphs and remove only production files with no reachable importer.
+- [x] Remove unused locals, exports, compatibility styles, the null Atmosphere shell, and the exact
+      duplicate monochrome brand SVG.
+- [x] Remove the redundant direct `@dnd-kit/accessibility` declaration while retaining its exact
+      transitive ownership through `@dnd-kit/core`; preserve the locked recipes dependency.
+- [x] Make unused frontend locals and parameters a permanent TypeScript error.
+- [x] Preserve Rust domains, registered IPC, migration history, generated bindings, backup
+      compatibility, historical audit evidence, and user data.
+- [x] Pass frontend typecheck and 645 tests across 48 files; pass strict Rust Clippy and 801 tests
+      with 4 intentionally ignored; pass production build, governance, security, and Python checks.
 
 ## Stage I–L — Production reconstruction
 
@@ -166,7 +196,7 @@
 
 - [ ] Change no product semantics beyond the explicit manual Plan score amendment and later
       Product Owner Life Focus/Tree correction; invent no Task facet to match the reference image.
-- [ ] Keep schema 29 with no further migration, second Plan IPC command or capability.
+- [ ] Keep schema 30 with no further migration, second Plan IPC command or capability.
 - [ ] Add no dependency outside the four justified above.
 - [ ] Keep `.github/workflows/` and the seal byte-identical.
 - [ ] Keep Task rows non-card and Today task-first and default.

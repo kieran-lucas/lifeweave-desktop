@@ -7,7 +7,6 @@ import { Fragment } from "@tiptap/pm/model";
 import type { Node as PMNode } from "@tiptap/pm/model";
 import type {
   BasicLeafContent,
-  BatchOperation,
   HistoryState,
   NarrativeSemanticBlock,
   NarrativeSemanticDocument,

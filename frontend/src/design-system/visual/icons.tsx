@@ -2,7 +2,7 @@
  * GENERATED FILE — do not edit by hand.
  * Regenerate with:  python scripts/generate_visual_icons.py
  *
- * The Lifeweave icon vocabulary: a curated 23-icon subset of Fluent System Icons plus the
+ * The Lifeweave icon vocabulary: a curated 22-icon subset of Fluent System Icons plus the
  * Lifeweave woven-W brand mark, vendored as inline geometry.
  *
  * Source:  @fluentui/svg-icons 1.1.334  (npm)
@@ -26,10 +26,6 @@ import type { SVGProps } from "react";
 /** weather_sunny_20_regular */
 export const iconToday =
   "M10 2c.28 0 .5.22.5.5v1a.5.5 0 0 1-1 0v-1c0-.28.22-.5.5-.5Zm0 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm0-1a3 3 0 1 1 0-6 3 3 0 0 1 0 6Zm7.5-2.5a.5.5 0 0 0 0-1h-1a.5.5 0 0 0 0 1h1ZM10 16c.28 0 .5.22.5.5v1a.5.5 0 0 1-1 0v-1c0-.28.22-.5.5-.5Zm-6.5-5.5a.5.5 0 0 0 0-1H2.46a.5.5 0 0 0 0 1H3.5Zm.65-6.35c.2-.2.5-.2.7 0l1 1a.5.5 0 1 1-.7.7l-1-1a.5.5 0 0 1 0-.7Zm.7 11.7a.5.5 0 0 1-.7-.7l1-1a.5.5 0 0 1 .7.7l-1 1Zm11-11.7a.5.5 0 0 0-.7 0l-1 1a.5.5 0 0 0 .7.7l1-1a.5.5 0 0 0 0-.7Zm-.7 11.7a.5.5 0 0 0 .7-.7l-1-1a.5.5 0 0 0-.7.7l1 1Z";
-
-/** weather_sunny_low_20_regular */
-export const iconMorning =
-  "M5.55 10.02c0 .33.04.66.11.98H2.5a.5.5 0 0 0 0 1h15a.5.5 0 0 0 0-1h-3.1a4.5 4.5 0 0 0-4.36-5.47c-2.48 0-4.49 2.01-4.49 4.49Zm7.83.98H6.7a3.48 3.48 0 1 1 6.68 0Zm-3.35 7.01a.5.5 0 0 0 .1-.01h-.21a.5.5 0 0 0 .1.01ZM5 4.32l.07.06.85.86A.5.5 0 0 1 5.3 6l-.07-.05-.86-.86A.5.5 0 0 1 5 4.32Zm10.67.06c.17.18.2.44.06.64l-.06.07-.86.86a.5.5 0 0 1-.76-.64l.06-.07.85-.86c.2-.2.52-.2.71 0Zm-5.65-2.36a.5.5 0 0 1 .49.41v1.3a.5.5 0 0 1-.98.1l-.01-.1v-1.2c0-.28.22-.5.5-.5ZM8.5 16a.5.5 0 0 0 0 1h3a.5.5 0 0 0 0-1h-3ZM5 14c0-.28.22-.5.5-.5h9a.5.5 0 0 1 0 1h-9A.5.5 0 0 1 5 14Z";
 
 /** calendar_ltr_20_regular */
 export const iconCalendar =

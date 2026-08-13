@@ -453,27 +453,6 @@ fn validate_block(
     Ok(())
 }
 
-fn walk_text(node: &Value) -> String {
-    if let Some(obj) = node.as_object() {
-        if obj.get("type").and_then(Value::as_str) == Some("text") {
-            return obj
-                .get("text")
-                .and_then(Value::as_str)
-                .unwrap_or("")
-                .to_owned();
-        }
-        if let Some(children) = obj.get("content").and_then(Value::as_array) {
-            return children.iter().map(walk_text).collect::<Vec<_>>().join("");
-        }
-    }
-    String::new()
-}
-
-#[allow(dead_code)]
-fn extract_rich_text(content: &Value) -> String {
-    walk_text(content)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

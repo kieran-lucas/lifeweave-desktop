@@ -14,16 +14,18 @@ type Props = {
   planTitle: string;
   currentScore: number | null;
   returnFocus: HTMLElement | null;
+  completedReturnFocus: HTMLElement | null;
   onSave: (score: number | null) => Promise<string | null>;
   onClose: () => void;
 };
 
-export function PlanScoreDialog({ planTitle, currentScore, returnFocus, onSave, onClose }: Props) {
+export function PlanScoreDialog({ planTitle, currentScore, returnFocus, completedReturnFocus, onSave, onClose }: Props) {
   const titleId = useId();
   const descriptionId = useId();
   const inputId = useId();
   const dialog = useRef<HTMLFormElement>(null);
   const input = useRef<HTMLInputElement>(null);
+  const returnTarget = useRef<HTMLElement | null>(returnFocus);
   const [value, setValue] = useState(currentScore?.toString() ?? "");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -34,6 +36,7 @@ export function PlanScoreDialog({ planTitle, currentScore, returnFocus, onSave, 
     onEscape: onClose,
     escapeEnabled: !saving,
     returnFocus,
+    returnFocusRef: returnTarget,
   });
 
   async function commit(score: number | null) {
@@ -46,6 +49,7 @@ export function PlanScoreDialog({ planTitle, currentScore, returnFocus, onSave, 
       input.current?.focus();
       return;
     }
+    returnTarget.current = score === null ? returnFocus : completedReturnFocus;
     onClose();
   }
 
@@ -79,7 +83,7 @@ export function PlanScoreDialog({ planTitle, currentScore, returnFocus, onSave, 
       >
         <DialogHeader>
           <h2 id={titleId}>Evaluate plan</h2>
-          <p id={descriptionId}>Give “{planTitle}” a manual score. This does not complete the plan.</p>
+          <p id={descriptionId}>Give “{planTitle}” a final score. Saving a score completes the plan and moves it to Completed.</p>
         </DialogHeader>
         <DialogBody>
           <label className={styles.field} htmlFor={inputId}>
@@ -119,4 +123,3 @@ export function PlanScoreDialog({ planTitle, currentScore, returnFocus, onSave, 
     </DialogBackdrop>
   );
 }
-

@@ -28,12 +28,6 @@ export const spring = {
   tactile: { type: "spring", stiffness: 520, damping: 34, mass: 0.78 },
 } as const;
 
-/** Ambient art uses only very slow, tiny transform/opacity drift. */
-export const ambient = {
-  period: "38s",
-  amplitude: "4px",
-} as const;
-
 export const reduced = {
   duration: "80ms",
   easing: easing.standard,

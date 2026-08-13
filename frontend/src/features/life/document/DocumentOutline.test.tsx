@@ -324,9 +324,7 @@ describe("BasicLeafReader outline integration", () => {
     api.get.mockResolvedValue(projection({ document: { ...baseDocRecord, canonical_json: docJson(dupDoc) } }));
     mount();
     await screen.findByRole("navigation", { name: "Document outline" });
-    const buttons = screen.getAllByRole("button", { name: "Same" });
-    // There should be 2 outline buttons for the 2 headings, but also the heading elements themselves
-    // Filter to only buttons within the nav
+    // There should be 2 outline buttons for the 2 headings.
     const nav = screen.getByRole("navigation", { name: "Document outline" });
     const navButtons = Array.from(nav.querySelectorAll("button[data-level]"));
     expect(navButtons).toHaveLength(2);

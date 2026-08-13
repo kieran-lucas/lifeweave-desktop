@@ -86,8 +86,9 @@ The immutable source is authoritative. This registry makes operational status vi
 - Focus Plans use shared tags, a distinct `focus_plan` Search entity kind, and full-database backup authority.
 - Focus Plans have no automatic progress percentage and no reminder/notification dependency. A
   later explicit Product Owner decision permits one nullable, manual current score from 1–100; it
-  never computes or changes lifecycle, phase, Task state, Analytics, health, or prediction. See
-  ADR 0047.
+  never computes phase, Task state, Analytics, health, or prediction. Saving a non-null score is the
+  one explicit lifecycle rule: it atomically completes the Plan and moves it to Completed. Clearing
+  the score does not reactivate it. See ADR 0047.
 - Focus Plan detail uses a compact title/lifecycle identity and gives the authored outcome the
   dominant reading and writing plane in a 70% focused frame. Authored single line breaks remain
   visible in read mode. Facts and lifecycle actions remain secondary but visible; Definition of
@@ -109,8 +110,9 @@ The immutable source is authoritative. This registry makes operational status vi
 - Focus Plan reviews are user-authored history with a review date, required reflection, optional next focus, and idempotent creation. Creating a review changes no Plan state. Task 37 authorises creation and reading only; edit, delete, archive, scheduling, and Search indexing remain out of scope.
 - Focus Plan manual score is current Plan authority under ADR 0047. Migration 28 appends one
   nullable checked value; Rust validates 1–100; the existing revisioned `mutate_focus_plan`
-  authority owns writes. Score is not Analytics, history, health, prediction, progress, or
-  completion. Only explicit lifecycle `completed` strikes the Plan title.
+  authority owns writes. A non-null score atomically sets lifecycle `completed`; migration 30
+  converges already-scored Plans. Score is not Analytics, history, health, prediction, or progress.
+  Active status is written as text with redundant green emphasis, never color alone.
 - Release-candidate hardening is an allocatable roadmap candidate in its own right. Task 40 / Slice 030 activates the Hardening candidate ADR 0028 scored at 8.055 under ADR 0034, changes no product behavior, adds no migration, and is explicitly **not** a feature checkpoint: the latest feature task remained 39 until Task 41 closed.
 - The JavaScript performance gate is versioned. Task 16 and Task 40 budgets are preserved as history and superseded by a Task 41 budget v2 that tracks main, total raw, total gzip, expected chunk count, the named lazy chunks, and every chunk of at least 10,000 raw bytes under a hash-independent identity. Maxima are derived from the final observed build by documented formulas and clamped by locked ceilings; a missing critical chunk, a new unbudgeted chunk at or above 10,000 bytes, and a duplicate normalized identity are failures. Arbitrary budget inflation is not an accepted response to a red gate.
 - Today is the only eager product screen. Non-default routes, Life/Narrative/tree engines, help, and
@@ -119,6 +121,14 @@ The immutable source is authoritative. This registry makes operational status vi
   reduced `index.js` from 433,337 to 274,368 raw bytes and lowered its operational maximum to
   279,856 without raising the locked 550,000-byte ceiling.
 - Quality-gate findings are corrected, never suppressed. `#[allow]`, lint-level reduction, and test exclusion are not accepted responses to a failing lint gate.
+- The 2026-08-13 repository cleanup removes only front-end modules with no import path from either
+  shipped `main.tsx` or the isolated Task 51 prototype: retired Linked Work/Reviews, Life Graph,
+  Deadline/Saved View, Task Inspector shells, their component-only tests/styles, a null Atmosphere
+  component, dead compatibility style exports, and one exact duplicate brand SVG. Domain records,
+  Rust commands, migrations, generated bindings, backup compatibility, and user data remain intact.
+  Frontend `noUnusedLocals` and `noUnusedParameters` are now permanent gates. The redundant direct
+  `@dnd-kit/accessibility` declaration is removed while the exact package remains transitively owned
+  by `@dnd-kit/core`; the locked `@vanilla-extract/recipes` decision remains unchanged.
 - Machine-verifiable accessibility coverage and physical Narrator/DPI observation are distinct evidence classes. Automated DOM tests never substitute for spoken screen-reader output or physical Windows scaling, and an unobserved manual result is recorded as `NOT RUN`, never PASS.
 - The execution roadmap remains a 60-task envelope. Product Owner allocation may reuse unstarted positions without increasing the total.
 - Task 41 / Slice 031 completes Explicit Life Links + Backlinks Core under ADR 0035 at product checkpoint `e1fe3675315c04590aabe9c9ca87ede344dafa40`. A link is one
@@ -261,8 +271,8 @@ The immutable source is authoritative. This registry makes operational status vi
 - Focus Plan review edit, delete, archive, scheduling, reminders, and Search indexing remain prohibited pending a separate Product Owner decision;
 - recurring, occurrence, and override deadlines, deadline time-of-day, deadline reminders and scheduling, and deadline or lateness analytics remain prohibited pending a separate Product Owner decision;
 - automatic Plan progress, phase-to-Task relationships, automatic Plan scoring, score history,
-  score Analytics, Plan health/prediction, automatic
-  Plan lifecycle, and Plan analytics beyond the ADR 0043 factual activity projection remain
+  score Analytics, Plan health/prediction, automatic Plan lifecycle beyond the explicit manual
+  score → completed rule, and Plan analytics beyond the ADR 0043 factual activity projection remain
   prohibited (factual Focus Plan activity analytics is DECIDED — see ADR 0043);
 - prediction and opaque ML;
 - custom user-authored Narrative templates and Visual Worlds;

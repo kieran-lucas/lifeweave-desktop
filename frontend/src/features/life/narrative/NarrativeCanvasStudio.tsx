@@ -67,19 +67,6 @@ function push(h: HistoryState, doc: ParsedNarrativeDocument): HistoryState {
   return { past, current: doc, future: [] };
 }
 
-function undo(h: HistoryState): HistoryState {
-  if (h.past.length === 0) return h;
-  const past = [...h.past];
-  const current = past.pop()!;
-  return { past, current, future: [h.current, ...h.future] };
-}
-
-function redo(h: HistoryState): HistoryState {
-  if (h.future.length === 0) return h;
-  const [current, ...future] = h.future;
-  return { past: [...h.past, h.current], current: current!, future };
-}
-
 function undoWithMaterializedCurrent(h: HistoryState, materializedCurrent: ParsedNarrativeDocument): HistoryState {
   if (h.past.length === 0) return h;
   const past = [...h.past];

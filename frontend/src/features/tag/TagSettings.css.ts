@@ -18,7 +18,6 @@ globalStyle(`${table} th:nth-child(n+2):nth-child(-n+4), ${table} td:nth-child(n
 export const archived = style({ color: "var(--text-muted)" });
 export const actions = style({ display: "flex", gap: 6, flexWrap: "wrap" });
 globalStyle(`${actions} button`, { minHeight: 26, padding: "2px 9px", borderRadius: "var(--radius-small)", ...text.button });
-export const toggleRow = style({ display: "flex", alignItems: "center", gap: 8 });
 export const mergePanel = style({ display: "flex", flexDirection: "column", gap: 8, paddingBlockStart: space.x4, borderTop: "1px solid var(--paint-edge)" });
 export const mergeRow = style({ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" });
 export const select = style([focusRing, { padding: "6px 8px", border: "1px solid var(--paint-edge)", borderRadius: "var(--radius-control)", ...text.body, backgroundColor: "#FFFFFF", backgroundImage: "var(--paint-grain-fine)", color: "var(--text-primary)" }]);

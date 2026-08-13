@@ -4,7 +4,6 @@
 // No prosemirror-model schema is loaded — zero PM dependency.
 
 import type {
-  BatchOperation,
   HistoryState,
   NarrativeSemanticBlock,
   NarrativeSemanticDocument,

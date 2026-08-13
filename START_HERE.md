@@ -17,7 +17,7 @@
 - Active task: **51 — Visual Experience Overhaul (Quiet Luminous Atlas)**
 - Active implementation specification: **`specs/041-visual-experience-overhaul/`**
 - Latest feature checkpoint: **Task 49 — Focus Plan Activity Analytics Core** (`7622db3d8b2b42d69c8f497b6899c5be82e9f9a9`)
-- Database schema: **29**
+- Database schema: **30**
 - Next action: **Implement active spec**
 
 ## Task 51 activation
@@ -34,11 +34,12 @@ Task 50 closure. The activation prompt is an explicit later Product Owner decisi
 silently reconciled — see ADR 0045 § "Authorization and the contradiction it resolves" and
 `docs/audits/task-51-visual-baseline.md` §6.3.
 
-Task 51 is a **presentation slice**. It adds a visual authority beside Task 50's geometry authority,
+Task 51 began as a **presentation slice**. It adds a visual authority beside Task 50's geometry authority,
 replaces 31 border radii, 14 shadows and 29 hardcoded hex colours with finite semantic vocabularies,
 and reconstructs the application's appearance toward the Product Owner's *Lifeweave Visual
-Baseline v1* reference image. Schema stays 27 with no migration, no Rust product change, no new IPC
-command, no new capability and no workflow or seal change, and no product semantics change.
+Baseline v1* reference image. Later explicit Product Owner amendments advance schema to 30 for the
+manual score, canonical Life correction, and scored-Plan lifecycle convergence. No new IPC command,
+capability, workflow, or seal change is introduced.
 
 Two hard stops divide the work, and neither may be inferred: `VISUAL LOCK APPROVED` before any
 production presentation file is overhauled, and `MOTION LOCK APPROVED` before production

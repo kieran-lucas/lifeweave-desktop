@@ -1,11 +1,6 @@
 import { globalStyle, style } from "@vanilla-extract/css";
 import { duration, easing } from "../../design-system/visual/motion.css";
-
-const focusOutline = {
-  selectors: {
-    "&:focus-visible": { outline: "2px solid #111111", outlineOffset: 2 },
-  },
-} as const;
+import { vars } from "../../design-system/visual/contract.css";
 
 export const library = style({
   display: "grid",
@@ -200,7 +195,14 @@ export const scoreButton = style({
 });
 
 export const planCopy = style({ display: "grid", gap: 3, minInlineSize: 0 });
-globalStyle(`${planCopy} > strong`, {
+export const planTitleLine = style({
+  display: "flex",
+  alignItems: "center",
+  gap: 8,
+  minInlineSize: 0,
+});
+globalStyle(`${planTitleLine} > strong`, {
+  minInlineSize: 0,
   overflow: "hidden",
   color: "#171717",
   fontSize: 15,
@@ -210,9 +212,44 @@ globalStyle(`${planCopy} > strong`, {
   textOverflow: "ellipsis",
   whiteSpace: "nowrap",
 });
-globalStyle(`${planCopy} > strong[data-completed]`, {
+globalStyle(`${planTitleLine} > strong[data-completed]`, {
   textDecoration: "line-through",
   textDecorationThickness: "1.5px",
+});
+export const activeBadge = style({
+  flex: "0 0 auto",
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 5,
+  minBlockSize: 22,
+  paddingInline: 8,
+  border: `1px solid color-mix(in srgb, ${vars.assessmentCircle.done} 36%, transparent)`,
+  borderRadius: vars.radius.full,
+  background: `color-mix(in srgb, ${vars.assessmentCircle.done} 10%, ${vars.color.surfaceRaised})`,
+  color: vars.assessmentCircle.done,
+  fontSize: 9.5,
+  lineHeight: "14px",
+  fontWeight: 760,
+  letterSpacing: ".035em",
+  textTransform: "uppercase",
+  selectors: {
+    "&::before": {
+      content: '""',
+      inlineSize: 6,
+      blockSize: 6,
+      borderRadius: "50%",
+      background: vars.assessmentCircle.done,
+      boxShadow: `0 0 0 3px color-mix(in srgb, ${vars.assessmentCircle.done} 13%, transparent)`,
+    },
+  },
+  "@media": {
+    "(forced-colors: active)": {
+      borderColor: "ButtonText",
+      background: "Canvas",
+      color: "ButtonText",
+      selectors: { "&::before": { background: "ButtonText", boxShadow: "none" } },
+    },
+  },
 });
 globalStyle(`${planCopy} > small`, {
   overflow: "hidden",
@@ -279,6 +316,25 @@ export const lifecycle = style({
   fontWeight: 760,
   letterSpacing: ".09em",
   textTransform: "uppercase",
+  selectors: {
+    '&[data-lifecycle="active"]': {
+      display: "inline-flex",
+      alignItems: "center",
+      gap: 6,
+      padding: "4px 9px",
+      border: `1px solid color-mix(in srgb, ${vars.assessmentCircle.done} 34%, transparent)`,
+      borderRadius: vars.radius.full,
+      background: `color-mix(in srgb, ${vars.assessmentCircle.done} 9%, ${vars.color.surfaceRaised})`,
+      color: vars.assessmentCircle.done,
+    },
+    '&[data-lifecycle="active"]::before': {
+      content: '""',
+      inlineSize: 6,
+      blockSize: 6,
+      borderRadius: "50%",
+      background: vars.assessmentCircle.done,
+    },
+  },
 });
 
 export const documentTitle = style({
@@ -321,15 +377,35 @@ export const factRow = style({
   flexWrap: "wrap",
   alignItems: "center",
   gap: "8px 20px",
-  paddingBlock: "8px 12px",
+  marginBlockStart: 18,
+  paddingBlock: "16px 12px",
+  borderBlockStart: `1px solid ${vars.color.borderHairline}`,
   selectors: {
     "&[data-editing]": { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 },
   },
   "@media": { "(max-width: 560px)": { selectors: { "&[data-editing]": { gridTemplateColumns: "1fr" } } } },
 });
 globalStyle(`${factRow} > div`, { display: "flex", alignItems: "baseline", gap: 7 });
-globalStyle(`${factRow} > div > span`, { color: "#8A8A8A", fontSize: 9, fontWeight: 760, letterSpacing: ".09em", textTransform: "uppercase" });
-globalStyle(`${factRow} > div > strong`, { color: "#333333", fontSize: 12, fontWeight: 650 });
+globalStyle(`${factRow} > div > span`, { color: "#777777", fontSize: 10, fontWeight: 760, letterSpacing: ".08em", textTransform: "uppercase" });
+globalStyle(`${factRow} > div > strong`, { color: "#222222", fontSize: 13, lineHeight: "19px", fontWeight: 680 });
+
+export const dateFact = style({
+  display: "grid !important",
+  alignItems: "start !important",
+  gap: "4px !important",
+  minInlineSize: 118,
+  paddingInlineEnd: 6,
+  fontVariantNumeric: "tabular-nums",
+});
+
+export const factTreeEditor = style({ minInlineSize: 0 });
+globalStyle(`${factTreeEditor} > div > label`, {
+  color: "#858585",
+  fontSize: 9,
+  fontWeight: 760,
+  letterSpacing: ".08em",
+  textTransform: "uppercase",
+});
 
 export const factEditor = style({
   display: "grid",
@@ -366,56 +442,5 @@ export const archiveAction = style({
   cursor: "pointer",
   selectors: { "&:hover": { background: "#F2F2F2", color: "#222222" }, "&:focus-visible": { outline: "2px solid #111111", outlineOffset: 2 } },
 });
-
-/* Linked work is deliberately list-like, not a nested card dashboard. */
-export const linkedMeta = style({ margin: "0 0 12px", color: "#858585", fontSize: 11 });
-export const linkedList = style({ listStyle: "none", display: "grid", gap: 0, margin: 0, padding: 0 });
-export const linkedRow = style([
-  focusOutline,
-  {
-    inlineSize: "100%",
-    minBlockSize: 44,
-    display: "grid",
-    gridTemplateColumns: "minmax(0,1fr)",
-    alignItems: "center",
-    gap: 16,
-    padding: "7px 0",
-    border: 0,
-    borderBottom: "1px solid #ECECEC",
-    background: "transparent",
-    color: "#222222",
-    textAlign: "left",
-    cursor: "pointer",
-    selectors: { "&:hover": { background: "#F8F8F8" } },
-  },
-]);
-export const linkedCopy = style({ display: "grid", gap: 2, minInlineSize: 0 });
-globalStyle(`${linkedCopy} > strong`, { overflow: "hidden", fontSize: 13, fontWeight: 670, textOverflow: "ellipsis", whiteSpace: "nowrap" });
-globalStyle(`${linkedCopy} > span`, { color: "#858585", fontSize: 10 });
-
-/* Compatibility styles retained for the non-primary ReviewsPanel. */
-export const muted = style({ margin: 0, color: "#858585", fontSize: 11, lineHeight: 1.45 });
-export const fieldset = style({ display: "grid", gap: 12, border: "1px solid #E1E1E1", borderRadius: 10, padding: 12, margin: 0 });
-export const input = style({ minBlockSize: 36, padding: "7px 9px", border: "1px solid #D3D3D3", borderRadius: 8, background: "#FFFFFF", color: "#222222" });
-export const textarea = style([input, { minBlockSize: 88, resize: "vertical" }]);
-export const actions = style({ display: "flex", gap: 8, flexWrap: "wrap" });
-export const planList = style({ listStyle: "none", display: "grid", gap: 6, margin: 0, padding: 0 });
-export const planButton = style([
-  focusOutline,
-  {
-    inlineSize: "100%",
-    display: "grid",
-    gap: 2,
-    padding: "9px 10px",
-    border: "1px solid #E2E2E2",
-    borderRadius: 9,
-    background: "#FFFFFF",
-    color: "#222222",
-    textAlign: "left",
-    cursor: "pointer",
-  },
-]);
-globalStyle(`${planButton} > strong`, { fontSize: 12, fontWeight: 680 });
-globalStyle(`${planButton} > span`, { color: "#858585", fontSize: 10 });
 
 export { srOnly } from "../../design-system/primitives/utilities.css";

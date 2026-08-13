@@ -33,7 +33,7 @@ use infrastructure::backup::lifecycle::{
 use infrastructure::sqlite::{
     connection::{open_existing_file_connection, open_file_connection},
     runtime::DatabaseRuntime,
-    task52_migration::run_all_migrations,
+    task53_migration::run_all_migrations,
     worker::DbWorkerHandle,
 };
 use ipc::backup::{backup_database, list_backups, restore_database};

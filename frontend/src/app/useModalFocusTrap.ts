@@ -9,6 +9,7 @@ export function useModalFocusTrap({
   escapeEnabled = true,
   active = true,
   returnFocus,
+  returnFocusRef,
 }: {
   container: RefObject<HTMLElement | null>;
   initialFocus: RefObject<HTMLElement | null>;
@@ -16,6 +17,7 @@ export function useModalFocusTrap({
   escapeEnabled?: boolean;
   active?: boolean;
   returnFocus?: HTMLElement | null | undefined;
+  returnFocusRef?: RefObject<HTMLElement | null> | undefined;
 }) {
   const escape = useRef(onEscape);
   const enabled = useRef(escapeEnabled);
@@ -49,7 +51,7 @@ export function useModalFocusTrap({
     window.addEventListener("keydown", onKey);
     return () => {
       window.removeEventListener("keydown", onKey);
-      returnFocus?.focus();
+      (returnFocusRef?.current ?? returnFocus)?.focus();
     };
-  }, [active, container, initialFocus, returnFocus]);
+  }, [active, container, initialFocus, returnFocus, returnFocusRef]);
 }

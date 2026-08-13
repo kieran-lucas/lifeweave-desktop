@@ -607,7 +607,10 @@ fn apply_mutation(
                 ));
             }
             tx.execute(
-                "UPDATE focus_plans SET score=?2 WHERE id=?1",
+                "UPDATE focus_plans
+                    SET score=?2,
+                        lifecycle=CASE WHEN ?2 IS NULL THEN lifecycle ELSE 'completed' END
+                  WHERE id=?1",
                 params![plan_id, score],
             )?;
             None
@@ -1189,7 +1192,7 @@ mod tests {
     }
 
     #[test]
-    fn manual_score_is_bounded_revisioned_and_does_not_complete_plan() {
+    fn manual_score_is_bounded_revisioned_and_completes_plan() {
         let mut conn = connection();
         let plan = create(&mut conn, create_input("op-create-score")).unwrap();
 
@@ -1220,19 +1223,45 @@ mod tests {
 
         let detail = get(&conn, &plan.id).unwrap();
         assert_eq!(detail.score, Some(100));
-        assert_eq!(detail.lifecycle, FocusPlanLifecycle::Draft);
+        assert_eq!(detail.lifecycle, FocusPlanLifecycle::Completed);
         assert_eq!(detail.revisions[0].reason, "set_score");
         let summary = list(
             &conn,
             &FocusPlanListInput {
-                portfolio: FocusPlanPortfolio::Draft,
+                portfolio: FocusPlanPortfolio::Completed,
                 limit: None,
                 offset: None,
             },
         )
         .unwrap();
         assert_eq!(summary[0].score, Some(100));
-        assert_eq!(summary[0].lifecycle, FocusPlanLifecycle::Draft);
+        assert_eq!(summary[0].lifecycle, FocusPlanLifecycle::Completed);
+        assert!(
+            list(
+                &conn,
+                &FocusPlanListInput {
+                    portfolio: FocusPlanPortfolio::Draft,
+                    limit: None,
+                    offset: None,
+                },
+            )
+            .unwrap()
+            .is_empty()
+        );
+
+        mutate(
+            &mut conn,
+            MutateFocusPlanInput {
+                plan_id: plan.id.clone(),
+                expected_revision: 1,
+                operation_id: "op-score-clear".into(),
+                mutation: FocusPlanMutationAction::SetScore { score: None },
+            },
+        )
+        .unwrap();
+        let cleared = get(&conn, &plan.id).unwrap();
+        assert_eq!(cleared.score, None);
+        assert_eq!(cleared.lifecycle, FocusPlanLifecycle::Completed);
     }
 
     #[test]

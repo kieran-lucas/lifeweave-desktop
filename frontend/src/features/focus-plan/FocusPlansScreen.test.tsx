@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import axe from "axe-core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -59,7 +59,6 @@ function renderPlan() {
       <FocusPlansScreen
         entryRequest={{ requestId: "request-1", planId: plan.id }}
         onEntryRequestSettled={vi.fn()}
-        anchorLocalDate="2026-08-11"
       />
     </QueryClientProvider>,
   );
@@ -71,7 +70,6 @@ function renderLibrary() {
       <FocusPlansScreen
         entryRequest={null}
         onEntryRequestSettled={vi.fn()}
-        anchorLocalDate="2026-08-11"
       />
     </QueryClientProvider>,
   );
@@ -96,6 +94,10 @@ describe("Focus Plan detail composition", () => {
     expect(await within(content).findByText(plan.outcome)).toBeInTheDocument();
     expect(screen.queryByText("Updated")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Archive" })).toBeInTheDocument();
+    expect(screen.getByText("Start date").parentElement?.querySelector("time"))
+      .toHaveAttribute("datetime", "2026-08-01");
+    expect(screen.getByText("Target date").parentElement?.querySelector("time"))
+      .toHaveAttribute("datetime", "2026-09-01");
     expect(screen.queryByText(/Definition of done/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/Linked work/i)).not.toBeInTheDocument();
 
@@ -153,7 +155,7 @@ describe("Focus Plan detail composition", () => {
     expect(api.list).toHaveBeenLastCalledWith({ portfolio: "completed", limit: 200, offset: 0 });
   });
 
-  it("sets a manual score without treating the plan as completed", async () => {
+  it("marks active Plans clearly and moves a scored Plan to Completed", async () => {
     const active = {
       id: plan.id,
       title: plan.title,
@@ -171,10 +173,18 @@ describe("Focus Plan detail composition", () => {
       updated_at: plan.updated_at,
       archived: false,
     };
-    api.list.mockResolvedValue([active]);
+    api.list.mockImplementation(async ({ portfolio }: { portfolio: string }) => {
+      if (portfolio === "active") return [active];
+      if (portfolio === "completed") {
+        return [{ ...active, lifecycle: "completed" as const, score: 100, revision: 4 }];
+      }
+      return [];
+    });
 
     const { container } = renderLibrary();
     const scoreButton = await screen.findByRole("button", { name: `${plan.title} score: Not scored. Set score` });
+    const activeRow = scoreButton.parentElement as HTMLElement;
+    expect(within(activeRow).getByText("Active")).toBeInTheDocument();
     fireEvent.click(scoreButton);
     fireEvent.keyDown(window, { key: "Escape" });
     expect(screen.queryByRole("dialog", { name: "Evaluate plan" })).not.toBeInTheDocument();
@@ -196,9 +206,12 @@ describe("Focus Plan detail composition", () => {
       expected_revision: 3,
       mutation: { action: "set_score", score: 100 },
     }));
-    expect(await screen.findByRole("button", { name: `${plan.title} score: 100. Set score` })).toHaveTextContent("100");
-    expect(screen.getByText(plan.title)).not.toHaveAttribute("data-completed");
-    expect(document.activeElement).toBe(scoreButton);
+    const completedScore = await screen.findByRole("button", { name: `${plan.title} score: 100. Set score` });
+    expect(completedScore).toHaveTextContent("100");
+    expect(screen.getByText(plan.title)).toHaveAttribute("data-completed");
+    expect(within(completedScore.parentElement as HTMLElement).queryByText("Active")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Completed" })).toHaveAttribute("aria-current", "page");
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: "Completed" })));
 
     const accessibility = await axe.run(container);
     expect(accessibility.violations.filter((item) => item.impact === "critical" || item.impact === "serious")).toHaveLength(0);

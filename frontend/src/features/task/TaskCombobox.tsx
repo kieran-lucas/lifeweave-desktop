@@ -1,4 +1,4 @@
-import { useId, useMemo, useState } from "react";
+import { useId, useMemo, useState, type CSSProperties } from "react";
 
 import * as layout from "../../app/layout/layout.css";
 import * as combo from "./TaskCombobox.css";
@@ -20,6 +20,8 @@ export function TaskCombobox<T extends Option>({
   options: available,
   optionLabel,
   optionMeta,
+  optionDepth,
+  hierarchical = false,
   optionValueText = optionLabel,
   optionSearchText,
   emptyMessage,
@@ -38,6 +40,8 @@ export function TaskCombobox<T extends Option>({
   options: T[];
   optionLabel: (option: T) => string;
   optionMeta: (option: T) => string;
+  optionDepth?: ((option: T) => number) | undefined;
+  hierarchical?: boolean | undefined;
   optionValueText?: ((option: T) => string) | undefined;
   optionSearchText: (option: T) => string;
   emptyMessage: string;
@@ -55,6 +59,8 @@ export function TaskCombobox<T extends Option>({
       (option) => !needle || fold(optionSearchText(option)).includes(needle),
     );
   }, [available, filter, optionSearchText]);
+  const selectedOption = available.find((option) => option.id === value);
+  const selectedText = selectedOption ? optionValueText(selectedOption) : currentText;
   const select = (index: number) => {
     const option = options[index];
     if (!option) return;
@@ -74,10 +80,11 @@ export function TaskCombobox<T extends Option>({
         role="combobox"
         aria-expanded={open}
         aria-controls={`${id}-listbox`}
+        aria-haspopup="listbox"
         aria-describedby={disabled ? `${id}-scope` : undefined}
         aria-activedescendant={open && options[active] ? `${id}-${options[active]!.id}` : undefined}
         value={filter}
-        placeholder={!currentArchived && value ? currentText : "None"}
+        placeholder={!currentArchived && value ? selectedText : "None"}
         disabled={disabled || loading}
         onFocus={() => setOpen(true)}
         onBlur={() => setOpen(false)}
@@ -116,7 +123,12 @@ export function TaskCombobox<T extends Option>({
               role="option"
               aria-selected={value === option.id}
               data-active={index === active}
+              data-hierarchical={hierarchical || undefined}
+              data-hierarchy-depth={hierarchical ? optionDepth?.(option) ?? 0 : undefined}
               key={option.id}
+              style={hierarchical ? ({
+                "--tree-indent": `${Math.max(0, optionDepth?.(option) ?? 0) * 18}px`,
+              } as CSSProperties) : undefined}
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => select(index)}
             >

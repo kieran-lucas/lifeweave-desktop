@@ -41,7 +41,6 @@ export const timelineItemDesc = style({ display: "block", color: "var(--text-mut
 export const figure = style({ margin: 0 });
 export const imageCaption = style({ ...text.metadata, color: "var(--text-muted)", marginTop: 8 });
 export const image = style({ display: "block", width: "100%", height: "auto", border: "1px solid var(--paint-edge)", borderRadius: "var(--radius-control)" });
-export const richText = style({ lineHeight: 1.72, color: "var(--text-primary)", overflowWrap: "anywhere" });
 
 export const readerTools = style({
   display: "grid",

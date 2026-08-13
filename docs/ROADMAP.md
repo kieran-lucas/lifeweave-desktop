@@ -40,12 +40,18 @@ The measured target machine — two cores and integrated graphics — is why blu
 WebGL art and per-frame shadow interpolation are excluded on measurement grounds and not only on
 taste.
 
-Task 51 is a presentation slice. Schema stays 27 with no migration, no Rust product change, no new
+Task 51 began as a presentation slice. Its initial boundary kept schema 27 with no migration, no Rust product change, no new
 IPC command, no new capability and no workflow or seal change, and no product semantics change: no
 category rename, no removed recurrence control, no dropped metadata, and no invented Task facet —
 Lifeweave has no subtasks and no task-to-task links, which the reference inspector displays. Task
 50's geometry invariants remain binding and are re-proven rather than re-argued. Following the Task
 40 and Task 50 precedent it does not advance `latest_feature_task`, which stays at 49.
+
+Later explicit Product Owner amendments authorize the bounded Life correction through schema 29 and
+the Task/Plan usability change through schema 30. The latter makes a non-null manual score complete
+its Plan, migrates already-scored Plans, adds a hierarchical Life Area picker, improves Plan dates
+and Task Notes, and marks Active with written green status. It adds no IPC command, capability,
+dependency, score formula, score history, or score Analytics.
 
 Work stays local on `task-51-visual-experience` from `43d0d1e822336c97527f85e1ab154fc74a61f058`.
 Nothing is pushed unless the Product Owner explicitly requests it.

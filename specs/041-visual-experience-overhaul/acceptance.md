@@ -43,8 +43,22 @@ never the sole proof of anything.
 - every portfolio row has one right-aligned circular score control with a numeric accessible name;
 - mouse, keyboard, Escape, validation failure, retry, and focus restoration are deterministic;
 - colour is never the only score signal; 1–100 remains printed in the circle;
-- lifecycle `completed` strikes the title, while score 100 alone does not change lifecycle or title;
-- backup/restore preserves the score and no score-derived Analytics or automatic lifecycle exists;
+- saving any non-null score atomically sets lifecycle `completed`, moves the Plan out of its former
+  portfolio into Completed, and strikes its title;
+- clearing the score does not silently reactivate the Plan;
+- schema 29 upgrades once to schema 30 and already-scored Plans converge to `completed` while
+  unscored Plans retain their lifecycle;
+- backup/restore preserves score and lifecycle, and no score-derived Analytics exists;
+
+## Product Owner Task and Plan usability amendment
+
+- Plan Start/Target dates below content are human-readable, visibly labelled, and vertically
+  separated from the authored outcome;
+- Task Notes in the create/edit dialog expose a taller multi-line viewport;
+- the Life Area picker communicates domain, section, and leaf levels visually while retaining
+  search, Arrow key selection, Enter, Escape, clear, archived-link handling, and accessible names;
+- Active Plans expose the text `Active` with redundant green emphasis in portfolio and detail;
+- the green Active treatment remains understandable in forced colors and is never color-only;
 
 ## Process
 
@@ -104,7 +118,7 @@ never the sole proof of anything.
 ## Product behaviour preserved
 
 - every existing flow still works; no business semantics changed beyond the explicit manual Plan
-  score amendment;
+  score and scored-Plan completion amendments;
 - the eight global keyboard shortcuts and their chords are unchanged;
 - Task rows remain non-card; Today remains task-first, startup and default;
 - semantic periods keep their boundaries; Life Browse still shows the selected node and direct
@@ -112,7 +126,8 @@ never the sole proof of anything.
 - no category was renamed, no recurrence control removed, no metadata dropped, no error or recovery
   information hidden, and no accessibility alternative collapsed to make a screenshot match;
 - no Task facet was invented — in particular no subtasks and no task-to-task links;
-- schema is 28 solely for the manual Plan score; there is no second Plan IPC command, new capability,
+- schema is 30 solely for the manual Plan score, canonical Life correction, and scored-Plan
+  convergence; there is no second Plan IPC command, new capability,
   broadened permission, network service or backup-format change.
 
 ## Geometry

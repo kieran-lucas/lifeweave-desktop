@@ -107,3 +107,23 @@ it("keeps keyboard-active and saved-selection states distinct", async () => {
   expect(options[0]).toHaveAttribute("data-active", "false");
   expect(options[1]).toHaveAttribute("data-active", "true");
 });
+
+it("presents Life targets in visible hierarchy levels instead of a flat list", async () => {
+  api.list.mockResolvedValue([
+    { id: "vitality", title: "VITALITY", breadcrumb: "VITALITY" },
+    { id: "body", title: "BODY", breadcrumb: "VITALITY › BODY" },
+    {
+      id: "sleep",
+      title: "Sleep & Physical Recovery",
+      breadcrumb: "VITALITY › BODY › Sleep & Physical Recovery",
+    },
+  ]);
+  mount();
+
+  fireEvent.focus(await screen.findByRole("combobox", { name: "Life area" }));
+  const options = await screen.findAllByRole("option");
+  expect(options.map((option) => option.getAttribute("data-hierarchy-depth"))).toEqual(["0", "1", "2"]);
+  expect(options[0]).toHaveTextContent("Primary life domain");
+  expect(options[1]).toHaveTextContent("Within VITALITY");
+  expect(options[2]).toHaveTextContent("Within VITALITY › BODY");
+});

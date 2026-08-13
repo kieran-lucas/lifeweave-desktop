@@ -46,7 +46,7 @@ export type NarrativeScene = {
   blocks: ParsedNarrativeBlock[];
 };
 
-// NarrativeDocument uses ParsedNarrativeBlock (includes unknowns)
+// Parsed documents include unknown blocks so newer content remains recoverable.
 export type ParsedNarrativeDocument = {
   schemaVersion: 1;
   documentId: string;
@@ -56,9 +56,6 @@ export type ParsedNarrativeDocument = {
   visualWorldId: NarrativeVisualWorldId;
   scenes: [NarrativeScene, ...NarrativeScene[]];
 };
-
-// Kept for backwards compat where callers only work with known blocks
-export type NarrativeDocument = ParsedNarrativeDocument;
 
 function assertString(v: unknown, field: string): string {
   if (typeof v !== "string") throw new Error(`${field} must be a string`);

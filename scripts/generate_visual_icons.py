@@ -30,7 +30,6 @@ BRAND_SOURCE = ROOT / "assets/brand/lifeweave-mark.svg"
 # generic symbol, but each entry still needs a real production consumer before further expansion.
 ICONS: dict[str, str] = {
     "today": "weather_sunny_20_regular",
-    "morning": "weather_sunny_low_20_regular",
     "calendar": "calendar_ltr_20_regular",
     "analytics": "data_trending_20_regular",
     "plans": "target_20_regular",

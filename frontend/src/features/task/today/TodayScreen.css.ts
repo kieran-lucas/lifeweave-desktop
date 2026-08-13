@@ -338,7 +338,7 @@ globalStyle(`${detailsPanel} input, ${detailsPanel} select, ${detailsPanel} text
   fontWeight: 500,
   letterSpacing: 0,
 });
-globalStyle(`${detailsPanel} textarea`, { minBlockSize: 84, resize: "vertical", lineHeight: 1.55 });
+globalStyle(`${detailsPanel} textarea`, { minBlockSize: 132, resize: "vertical", lineHeight: 1.55 });
 globalStyle(`${detailsPanel} input:focus, ${detailsPanel} select:focus, ${detailsPanel} textarea:focus`, { borderColor: "#111111", background: "#FFFFFF" });
 
 export const composerFooter = style({

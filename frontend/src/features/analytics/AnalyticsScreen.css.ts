@@ -1,7 +1,7 @@
 import { globalStyle, style } from "@vanilla-extract/css";
 import { space } from "../../app/layout/tokens.css";
 import { scrollRegion } from "../../app/layout/layout.css";
-import { paintSheet, paintSheetStrong, progressBar } from "../../design-system/visual/atmosphere.css";
+import { paintSheet, paintSheetStrong } from "../../design-system/visual/atmosphere.css";
 import { text } from "../../design-system/visual/typography.css";
 import { button, compact } from "../../design-system/primitives/controls.css";
 import { segmented, segmentedItem } from "../../design-system/primitives/navigation.css";
@@ -47,5 +47,3 @@ export const table = style({ borderCollapse: "collapse", width: "100%", textAlig
 export const planTable = style({ borderCollapse: "collapse", width: "100%", textAlign: "left", fontVariantNumeric: "tabular-nums" });
 globalStyle(`${table} th, ${table} td`, { borderTop: "1px solid var(--paint-edge)", padding: "9px 12px 9px 0", verticalAlign: "top" });
 globalStyle(`${planTable} th, ${planTable} td`, { borderTop: "1px solid var(--paint-edge)", padding: "9px 12px 9px 0", verticalAlign: "top" });
-export const progress = progressBar;
-export const module_ = style([paintSheet, { padding: space.x4, borderRadius: "var(--radius-surface)", minInlineSize: 0, boxShadow: "none" }]);

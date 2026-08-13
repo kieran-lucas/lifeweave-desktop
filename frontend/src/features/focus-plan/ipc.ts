@@ -7,7 +7,6 @@ import type { FocusPlanListInput } from "../../ipc/generated/FocusPlanListInput"
 import type { FocusPlanMutationResult } from "../../ipc/generated/FocusPlanMutationResult";
 import type { FocusPlanSummaryView } from "../../ipc/generated/FocusPlanSummaryView";
 import type { MutateFocusPlanInput } from "../../ipc/generated/MutateFocusPlanInput";
-import type { SaveFocusPlanDraftInput } from "../../ipc/generated/SaveFocusPlanDraftInput";
 
 export const listFocusPlans = (input: FocusPlanListInput) =>
   invoke<FocusPlanSummaryView[]>("list_focus_plans", { input });
@@ -20,9 +19,3 @@ export const createFocusPlan = (input: CreateFocusPlanInput) =>
 
 export const mutateFocusPlan = (input: MutateFocusPlanInput) =>
   invoke<FocusPlanMutationResult>("mutate_focus_plan", { input });
-
-export const saveFocusPlanDraft = (input: SaveFocusPlanDraftInput) =>
-  invoke<void>("save_focus_plan_draft", { input });
-
-export const discardFocusPlanDraft = (input: FocusPlanIdInput) =>
-  invoke<void>("discard_focus_plan_draft", { input });

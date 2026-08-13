@@ -57,9 +57,23 @@ The authorized behavior is deliberately manual and bounded:
 - score writes reuse the existing optimistic, idempotent, revisioned Plan mutation authority;
 - the portfolio places a keyboard-reachable circular score control at the right of each Plan;
 - the circle prints the numeric value and uses restrained band colour only as redundant emphasis;
-- score never changes lifecycle or implies completion; only lifecycle `completed` strikes the title;
+- saving a non-null score atomically changes lifecycle to `completed`; clearing it does not
+  reactivate the Plan;
 - automatic scoring/formulas, score history, score Analytics, health, prediction, notifications,
-  automatic lifecycle, new dependencies, and additional top-level navigation remain prohibited.
+  automatic lifecycle beyond this one manual score → completed rule, new dependencies, and
+  additional top-level navigation remain prohibited.
+
+### 1.3 Product Owner Task and Plan usability amendment (2026-08-13)
+
+- Plan dates below the authored content have clear Start/Target labels, human-readable formatting,
+  stronger type, and enough vertical separation to remain scannable.
+- The Task create/edit Notes textarea is taller so multi-line context can be reviewed while editing.
+- Life Area selection presents the canonical hierarchy in visible levels rather than as an
+  undifferentiated flat list; search and keyboard selection remain available.
+- Saving a non-null manual Plan score completes the Plan in the same revisioned mutation and moves
+  it to the Completed portfolio. Migration 30 converges already-scored Plans.
+- Active Plans have an explicit `Active` label with redundant green emphasis in both portfolio and
+  detail identity; forced-colors mode retains the text and boundary.
 
 ## 2. Visual authority
 
@@ -291,8 +305,8 @@ when reduced motion is requested.
 
 ## 11. Hard exclusions
 
-Schema beyond 29, any migration or Rust product change beyond the explicit schema-29 Life Focus
-identity-preserving correction, any new IPC command, any new Tauri capability,
+Schema beyond 30, any migration or Rust product change beyond the explicit schema-29 Life Focus
+identity-preserving correction and schema-30 scored-Plan convergence, any new IPC command, any new Tauri capability,
 any broadened filesystem or shell permission, any network service, any accounts or sync, any backup
 format change, and any workflow or seal change.
 

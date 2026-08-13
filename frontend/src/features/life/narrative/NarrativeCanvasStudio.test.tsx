@@ -6,7 +6,6 @@ import NarrativeCanvasStudio from "./NarrativeCanvasStudio";
 const DOC_ID = "019700000000-0000-7000-8000-000000000201";
 const SCENE_ID = "019700000000-0000-7000-8000-000000000202";
 const BLOCK_ID = "019700000000-0000-7000-8000-000000000203";
-const BLOCK_ID_2 = "019700000000-0000-7000-8000-000000000204";
 const CALLOUT_BLOCK_ID = "019700000000-0000-7000-8000-000000000205";
 
 const baseCanvasJson = JSON.stringify({
@@ -734,6 +733,7 @@ describe("NarrativeCanvasStudio multi-scene", () => {
     // After Redo, the restored scene (or first valid scene) should be selected
     const selected = screen.getAllByRole("tab").filter(t => t.getAttribute("aria-selected") === "true");
     expect(selected).toHaveLength(1);
+    expect(screen.getByRole("tab", { name: newTabName ?? "" })).toBeInTheDocument();
   });
 
   it("Undo preserves live Tiptap content in existing block", async () => {

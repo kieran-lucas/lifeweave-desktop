@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { createTag, listTags } from "../../ipc/commands";
 import type { TagSummaryView } from "../../ipc/generated/TagSummaryView";
 import * as styles from "./TagPicker.css";
@@ -47,8 +47,6 @@ export function TagPicker({
   const fieldsetRef = useRef<HTMLFieldSetElement>(null);
   const toggleBtnRef = useRef<HTMLButtonElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
-  const queryClient = useQueryClient();
-
   const tagsQuery = useQuery({
     queryKey: ["tags", false],
     queryFn: () => listTags(false),

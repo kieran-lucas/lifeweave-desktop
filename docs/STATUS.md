@@ -5,9 +5,9 @@
 - Activation baseline: `43d0d1e822336c97527f85e1ab154fc74a61f058`.
 - Active slice: `041-visual-experience-overhaul` under
   [ADR 0045](adr/0045-visual-experience-overhaul.md).
-- Current branch is `main`. The Product Owner later explicitly instructed Codex to commit and push
-  all prior local work, which produced remote checkpoint `bc79621`; the newer ADR 0046 usability
-  amendment is currently local and uncommitted. The sealed workflow remains untouched.
+- Current branch is `main`. The latest Product Owner-requested remote checkpoint is `43a6677`; the
+  current Task/Plan usability amendment is local and uncommitted. The sealed workflow remains
+  untouched.
 - Task 50 closed with art direction explicitly unallocated and deferred to a later Product Owner
   gate. Task 51 is that gate. Until activation, `START_HERE.md`, this file and Slice 040 recorded
   Task 51 as prohibited; the activation prompt is an explicit later Product Owner decision, which
@@ -18,7 +18,7 @@
   budget replacing nested rectangles; a context inspector column; restrained static art; dark theme
   composed deliberately; reduced motion as a designed state; visual regression; and interaction
   performance instrumentation.
-- **Presentation only.** Schema stays 27 with no migration, no Rust product change, no new IPC
+- **Initial activation boundary.** Schema stayed 27 with no migration, no Rust product change, no new IPC
   command, no new capability, no broadened permission, no network service, no backup-format change
   and no workflow or seal change. No product semantics change, and no Task facet is invented to
   match the reference image — Lifeweave has no subtasks and no task-to-task links, which the
@@ -31,6 +31,26 @@
   fills the Life pane and owns all hold-drag navigation, with no outer Tree scroll. Focus Plan detail
   reduces title chrome and makes its authored outcome the dominant read/edit plane. No Plan or Life
   semantics changed.
+- **Later Task/Plan usability amendment.** Task Notes use a taller editing viewport; Life Area
+  choices show domain/section/leaf levels; Plan dates are separated and human-readable; Active is
+  an explicit green-emphasized text status. Saving a manual score now atomically completes the Plan
+  and routes it to Completed. Append-only schema 30 converges Plans scored by older builds; no new
+  field, IPC command, capability, dependency, score Analytics, or automatic score formula is added.
+  Deterministic evidence passes after the repository cleanup: 645 frontend tests across 48 live
+  test files, 801 Rust tests with 4 ignored,
+  strict all-target/all-feature Clippy, typecheck, production build, repository verification, and
+  diff check. Native visual inspection is **NOT RUN** because the configured in-app Browser runtime
+  exposes no browser. The performance gate remains red on `LifeScreen.js` and
+  `NarrativeCanvasStudio.js`; an isolated clean build of checkpoint `43a6677` emits the same 65,116 B
+  and 65,326 B chunks, so this is recorded as pre-existing budget debt rather than hidden by raising
+  a locked ceiling.
+- **Repository cleanup.** A whole-source import/reference audit removed 3,300+ lines of unreachable
+  front-end shells, component-only tests, compatibility CSS, duplicate SVG/dependency declarations,
+  and unused local declarations without deleting any Rust domain, IPC registration, migration,
+  generated binding, or user data. Both production and prototype entry graphs now have zero
+  unexplained production TypeScript files outside their reachable closure. TypeScript now enforces
+  unused locals and parameters on every normal typecheck. Build output remains behaviorally
+  unchanged; the two pre-existing performance-budget mismatches above remain exactly the same.
 - **Startup optimization.** The production source map was traced and Today was reduced to the eager
   application path: secondary routes, Life/Narrative/tree engines, shortcut help, and composer-only
   pickers now load on demand, while the advisory health probe no longer blocks the first Today

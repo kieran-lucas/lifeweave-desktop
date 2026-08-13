@@ -29,20 +29,3 @@ export const focusRing = style({
     },
   },
 });
-
-/** Use only when overflow clipping makes the ordinary offset ring impossible. */
-export const focusRingInset = style({
-  selectors: {
-    "&:focus-visible": {
-      outline: "2px solid var(--focus-ring)",
-      outlineOffset: -2,
-    },
-  },
-  "@media": {
-    "(forced-colors: active)": {
-      selectors: {
-        "&:focus-visible": { outlineColor: "Highlight" },
-      },
-    },
-  },
-});
