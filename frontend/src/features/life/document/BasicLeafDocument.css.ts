@@ -154,8 +154,8 @@ export const editorStatus = style({
 });
 export const backButton = sharedButton.secondary;
 export const saveButton = sharedButton.primary;
-export const toolbar = style({ display: "flex", alignItems: "center", gap: 6, overflowX: "auto", padding: "7px 9px", scrollbarGutter: "stable" });
-export const tableTools = style({ display: "flex", alignItems: "center", gap: 5, overflowX: "auto", padding: "6px 9px", borderBlockStart: "1px solid var(--paint-edge)", background: vars.color.surfaceSubtle, scrollbarGutter: "stable" });
+export const toolbar = style({ display: "flex", alignItems: "center", gap: 6, overflowX: "auto", padding: "7px 9px" });
+export const tableTools = style({ display: "flex", alignItems: "center", gap: 5, overflowX: "auto", padding: "6px 9px", borderBlockStart: "1px solid var(--paint-edge)", background: vars.color.surfaceSubtle });
 export const tableHint = style({ flex: "0 0 auto", paddingInline: 4, color: "var(--text-muted)", ...text.metadata });
 export const toolbarGroup = style({ display: "inline-flex", alignItems: "center", gap: 2, flex: "0 0 auto", paddingInlineEnd: 6, borderInlineEnd: "1px solid var(--paint-edge)" });
 globalStyle(`${toolbarGroup}:last-child`, { paddingInlineEnd: 0, borderInlineEnd: 0 });

@@ -235,7 +235,7 @@ export function CalendarScreen({ selectedDate, today, onActivateDate }: Props) {
                       }}
                       type="button"
                       tabIndex={value === focusedDate ? 0 : -1}
-                      aria-label={dayLabel(date, day, locale)}
+                      aria-label={dayLabel(date, day, locale, value < today)}
                       aria-current={current ? "date" : undefined}
                       className={styles.cellButton}
                       data-outside={outside || undefined}
@@ -246,7 +246,7 @@ export function CalendarScreen({ selectedDate, today, onActivateDate }: Props) {
                       onClick={() => onActivateDate(value)}
                     >
                       <span className={styles.dayNumber}>{date.day}</span>
-                      {day && day.task_count > 0 && <DaySignal day={day} />}
+                      {day && day.task_count > 0 && <DaySignal day={day} past={value < today} />}
                       {selected && <span className={styles.openCue}>Open day</span>}
                     </button>
                   </div>
@@ -260,13 +260,16 @@ export function CalendarScreen({ selectedDate, today, onActivateDate }: Props) {
   );
 }
 
-function DaySignal({ day }: { day: CalendarDayProjection }) {
-  const load = Math.max(day.morning_load_ratio, day.afternoon_load_ratio, day.evening_load_ratio);
-  const intensity = load >= 0.85 ? "high" : load >= 0.45 ? "medium" : "low";
+export function calendarTaskLabel(day: CalendarDayProjection, past: boolean) {
+  return past
+    ? `${day.completed_task_count}/${day.task_count} done`
+    : `${day.task_count} ${day.task_count === 1 ? "task" : "tasks"}`;
+}
+
+function DaySignal({ day, past }: { day: CalendarDayProjection; past: boolean }) {
   return (
-    <div className={styles.daySignal} data-intensity={intensity} aria-hidden="true">
-      <span className={styles.taskCount}>{day.task_count}</span>
-      <span className={styles.activityLine} />
+    <div className={styles.daySignal} aria-hidden="true">
+      <span className={styles.taskCount}>{calendarTaskLabel(day, past)}</span>
       {day.has_missed && <span className={styles.attentionDot} />}
     </div>
   );
@@ -276,10 +279,14 @@ function dayLabel(
   date: ReturnType<typeof parseDate>,
   day: CalendarDayProjection | undefined,
   locale: string,
+  past: boolean,
 ) {
   const label = new Intl.DateTimeFormat(locale, { dateStyle: "full" }).format(
     date.toDate(getLocalTimeZone()),
   );
   if (!day || day.task_count === 0) return label;
-  return `${label}, ${day.task_count} tasks, ${formatDuration(day.scheduled_minutes)} scheduled${day.has_missed ? ", review needed" : ""}`;
+  const progress = past
+    ? `${day.completed_task_count} of ${day.task_count} tasks completed`
+    : `${day.task_count} tasks`;
+  return `${label}, ${progress}, ${formatDuration(day.scheduled_minutes)} scheduled${day.has_missed ? ", review needed" : ""}`;
 }

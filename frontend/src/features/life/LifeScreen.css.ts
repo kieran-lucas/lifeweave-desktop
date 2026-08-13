@@ -201,7 +201,6 @@ export const nodeList = style({
   gap: 2,
   margin: 0,
   padding: "4px 7px 10px",
-  scrollbarGutter: "stable",
 });
 
 export const nodeRow = style({
@@ -257,13 +256,11 @@ export const canvas = style({
   minBlockSize: 0,
   overflowY: "auto",
   background: "transparent",
-  scrollbarGutter: "stable",
   selectors: {
     '&[data-life-mode="edit"]': {
       display: "flex",
       flexDirection: "column",
       overflow: "hidden",
-      scrollbarGutter: "auto",
     },
   },
 });

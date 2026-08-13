@@ -2,7 +2,7 @@
  * GENERATED FILE — do not edit by hand.
  * Regenerate with:  python scripts/generate_visual_icons.py
  *
- * The Lifeweave icon vocabulary: a curated 22-icon subset of Fluent System Icons plus the
+ * The Lifeweave icon vocabulary: a curated 27-icon subset of Fluent System Icons plus the
  * Lifeweave woven-W brand mark, vendored as inline geometry.
  *
  * Source:  @fluentui/svg-icons 1.1.334  (npm)
@@ -30,6 +30,26 @@ export const iconToday =
 /** calendar_ltr_20_regular */
 export const iconCalendar =
   "M7 11a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm1 2a1 1 0 1 1-2 0 1 1 0 0 1 2 0Zm2-2a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm1 2a1 1 0 1 1-2 0 1 1 0 0 1 2 0Zm2-2a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm4-5.5A2.5 2.5 0 0 0 14.5 3h-9A2.5 2.5 0 0 0 3 5.5v9A2.5 2.5 0 0 0 5.5 17h9a2.5 2.5 0 0 0 2.5-2.5v-9ZM4 7h12v7.5c0 .83-.67 1.5-1.5 1.5h-9A1.5 1.5 0 0 1 4 14.5V7Zm1.5-3h9c.83 0 1.5.67 1.5 1.5V6H4v-.5C4 4.67 4.67 4 5.5 4Z";
+
+/** clock_20_regular */
+export const iconClock =
+  "M10 2a8 8 0 1 1 0 16 8 8 0 0 1 0-16Zm0 1a7 7 0 1 0 0 14 7 7 0 0 0 0-14Zm-.5 2a.5.5 0 0 1 .5.41V10h2.5a.5.5 0 0 1 .09 1H9.5a.5.5 0 0 1-.5-.41V5.5c0-.28.22-.5.5-.5Z";
+
+/** arrow_enter_20_regular */
+export const iconArrowEnter =
+  "M7.5 17a.5.5 0 0 1 0-1H14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H7.5a.5.5 0 0 1 0-1H14a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H7.5Zm.15-10.85c.2-.2.5-.2.7 0l3.5 3.5c.2.2.2.5 0 .7l-3.5 3.5a.5.5 0 0 1-.7-.7l2.64-2.65H1.5a.5.5 0 0 1 0-1h8.8L7.64 6.85a.5.5 0 0 1 0-.7Z";
+
+/** arrow_exit_20_regular */
+export const iconArrowExit =
+  "M12.5 17a.5.5 0 0 0 0-1H6a2 2 0 0 1-2-2V6c0-1.1.9-2 2-2h6.5a.5.5 0 0 0 0-1H6a3 3 0 0 0-3 3v8a3 3 0 0 0 3 3h6.5Zm1.15-10.85c.2-.2.5-.2.7 0l3.5 3.5c.2.2.2.5 0 .7l-3.5 3.5a.5.5 0 0 1-.7-.7l2.64-2.65H7.5a.5.5 0 0 1 0-1h8.8l-2.65-2.65a.5.5 0 0 1 0-.7Z";
+
+/** apps_20_regular */
+export const iconApps =
+  "M4.5 17A1.5 1.5 0 0 1 3 15.65V4.5c0-.78.6-1.42 1.36-1.5H9c.78 0 1.42.6 1.5 1.36v.4l2.19-2.27a1.5 1.5 0 0 1 2-.14l.12.1 2.76 2.72c.55.55.6 1.42.11 2.02l-.1.11-2.31 2.2h.23c.78 0 1.42.6 1.5 1.36v4.64c0 .78-.6 1.42-1.36 1.5H4.5Zm5-6.5H4v5c0 .22.14.4.33.47l.08.02.09.01h5v-5.5Zm6 0h-5V16h5a.5.5 0 0 0 .5-.4V11a.5.5 0 0 0-.41-.5h-.09Zm-5-2.79V9.5h1.79L10.5 7.71ZM9 4.01H4.5a.5.5 0 0 0-.5.4v5.1h5.5v-5a.5.5 0 0 0-.33-.48l-.08-.02H9Zm5.12-.84a.5.5 0 0 0-.64-.05l-.07.06-2.62 2.71a.5.5 0 0 0-.05.63l.06.07 2.61 2.62c.17.17.43.2.62.07l.08-.06 2.76-2.63a.5.5 0 0 0 .05-.64l-.05-.06-2.75-2.72Z";
+
+/** options_20_regular */
+export const iconOptions =
+  "M14.95 5a2.5 2.5 0 0 0-4.9 0H2.5a.5.5 0 0 0 0 1h7.55a2.5 2.5 0 0 0 4.9 0h2.55a.5.5 0 0 0 0-1h-2.55ZM12.5 7a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Zm-2.55 7a2.5 2.5 0 0 0-4.9 0H2.5a.5.5 0 0 0 0 1h2.55a2.5 2.5 0 0 0 4.9 0h7.55a.5.5 0 0 0 0-1H9.95ZM7.5 16a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Z";
 
 /** data_trending_20_regular */
 export const iconAnalytics =

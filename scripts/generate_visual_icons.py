@@ -31,6 +31,11 @@ BRAND_SOURCE = ROOT / "assets/brand/lifeweave-mark.svg"
 ICONS: dict[str, str] = {
     "today": "weather_sunny_20_regular",
     "calendar": "calendar_ltr_20_regular",
+    "clock": "clock_20_regular",
+    "arrowEnter": "arrow_enter_20_regular",
+    "arrowExit": "arrow_exit_20_regular",
+    "apps": "apps_20_regular",
+    "options": "options_20_regular",
     "analytics": "data_trending_20_regular",
     "plans": "target_20_regular",
     "life": "leaf_three_20_regular",

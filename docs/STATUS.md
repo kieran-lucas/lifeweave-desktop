@@ -31,7 +31,7 @@
   fills the Life pane and owns all hold-drag navigation, with no outer Tree scroll. Focus Plan detail
   reduces title chrome and makes its authored outcome the dominant read/edit plane. No Plan or Life
   semantics changed.
-- **Later Task/Plan usability amendment.** Task Notes use a taller editing viewport; Life Area
+- **Later Task/Plan usability amendment.** Task Description uses a taller editing viewport; Life Area
   choices show domain/section/leaf levels; Plan dates are separated and human-readable; Active is
   an explicit green-emphasized text status. Saving a manual score now atomically completes the Plan
   and routes it to Completed. Append-only schema 30 converges Plans scored by older builds; no new
@@ -51,6 +51,29 @@
   unexplained production TypeScript files outside their reachable closure. TypeScript now enforces
   unused locals and parameters on every normal typecheck. Build output remains behaviorally
   unchanged; the two pre-existing performance-budget mismatches above remain exactly the same.
+- **Task composer coherence amendment.** Plan Task and Edit Task now share the same styled
+  date/time, Category, Priority, Deadline, Life Area, and Focus Plan controls. Schema 31 adds the
+  approved small workstream catalog with non-overwriting idempotent inserts. The Focus Plan picker
+  uses one canonical non-archived target query and is invalidated after successful mutations on the
+  main Plans screen. Dense Life Tree leaves open contextual actions above the leaf. No recurrence,
+  Task/Plan relationship, reminder, IPC, capability, or permission semantics changed; see ADR 0048.
+  Current evidence passes at 653 frontend tests across 48 files, 804 Rust tests with 4 ignored,
+  typecheck, production build, strict all-target/all-feature Clippy, repository verification, and
+  diff check. The recomposed Edit Task surface was inspected in the running Tauri window through a
+  native `PrintWindow` capture; the wider native visual matrix remains **NOT RUN** because the
+  configured in-app Browser runtime exposes no browser. The locked performance gate remains red at
+  `LifeScreen.js` 66,339 B (2,655 B over) and `NarrativeCanvasStudio.js` 65,326 B (44,228 B over);
+  total JavaScript remains inside its locked aggregate ceiling and no ceiling was raised. A later
+  visual-only refinement fixes all time-wheel numerals to 15 px/40 px rows with smooth discrete
+  stepping, gives the Task modal and popovers governed weighty settling, and aligns Edit Plan's
+  Title/Outcome and 52 px two-column details grid with the Task composer grammar. Read-mode flex no
+  longer leaks into Edit Plan. A subsequent structural pass removes the Task composer's empty left
+  rail, unifies Schedule and Context on one six-column grid, aligns Category and Priority, renames
+  the task text field from Notes to Description, and presents Life Area as a staged
+  Domain → Section → Area picker with compact Focus Plan metadata. Native Tauri captures verify the
+  shared Context geometry and compact Focus Plan popup; automated evidence is listed below.
+  longer leaks into the Life Area editor, and the Content toolbar now holds every button and glyph
+  to one upright optical baseline.
 - **Startup optimization.** The production source map was traced and Today was reduced to the eager
   application path: secondary routes, Life/Narrative/tree engines, shortcut help, and composer-only
   pickers now load on demand, while the advisory health probe no longer blocks the first Today

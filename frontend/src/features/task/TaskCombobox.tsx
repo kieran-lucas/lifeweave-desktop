@@ -1,10 +1,14 @@
-import { useId, useMemo, useState, type CSSProperties } from "react";
+import { useId, useState } from "react";
 
 import * as layout from "../../app/layout/layout.css";
 import * as combo from "./TaskCombobox.css";
 
 const fold = (value: string) =>
   value.normalize("NFD").replace(/\p{M}/gu, "").toLocaleLowerCase();
+const parentPath = (value: string) => {
+  const boundary = value.lastIndexOf(" › ");
+  return boundary < 0 ? "" : value.slice(0, boundary);
+};
 
 type Option = { id: string };
 
@@ -20,13 +24,8 @@ export function TaskCombobox<T extends Option>({
   options: available,
   optionLabel,
   optionMeta,
-  optionDepth,
-  hierarchical = false,
-  optionValueText = optionLabel,
+  optionPath,
   optionSearchText,
-  emptyMessage,
-  errorMessage,
-  clearLabel,
   onChange,
 }: {
   label: string;
@@ -40,40 +39,49 @@ export function TaskCombobox<T extends Option>({
   options: T[];
   optionLabel: (option: T) => string;
   optionMeta: (option: T) => string;
-  optionDepth?: ((option: T) => number) | undefined;
-  hierarchical?: boolean | undefined;
-  optionValueText?: ((option: T) => string) | undefined;
+  optionPath?: ((option: T) => string) | undefined;
   optionSearchText: (option: T) => string;
-  emptyMessage: string;
-  errorMessage: string;
-  clearLabel: string;
   onChange: (value: string | null) => void;
 }) {
   const id = useId();
   const [filter, setFilter] = useState("");
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
-  const options = useMemo(() => {
-    const needle = fold(filter);
-    return available.filter(
-      (option) => !needle || fold(optionSearchText(option)).includes(needle),
-    );
-  }, [available, filter, optionSearchText]);
-  const selectedOption = available.find((option) => option.id === value);
-  const selectedText = selectedOption ? optionValueText(selectedOption) : currentText;
-  const select = (index: number) => {
+  const [path, setPath] = useState("");
+  const needle = fold(filter.trim());
+  const options = available.filter((option) =>
+    needle
+      ? fold(optionSearchText(option)).includes(needle)
+      : !optionPath || parentPath(optionPath(option)) === path,
+  );
+  const selected = available.find((option) => option.id === value);
+  const selectedText = selected ? optionLabel(selected) : currentText;
+  const hasChildren = (option: T) => Boolean(optionPath && available.some(
+    (candidate) => parentPath(optionPath(candidate)) === optionPath(option),
+  ));
+  const back = () => {
+    setPath(parentPath(path));
+    setActive(0);
+  };
+  const choose = (index: number) => {
     const option = options[index];
     if (!option) return;
-    onChange(option.id);
-    setFilter(optionValueText(option));
-    setOpen(false);
+    if (optionPath && hasChildren(option)) {
+      setPath(optionPath(option));
+      setFilter("");
+      setActive(0);
+    } else {
+      onChange(option.id);
+      setFilter("");
+      setOpen(false);
+    }
   };
 
   return (
     <div className={`${layout.field} ${combo.root}`}>
       <label htmlFor={id}>{label}</label>
       {disabled && <p className={layout.fieldHelp} id={`${id}-scope`}>{disabledReason}</p>}
-      {currentArchived && value && <p className={layout.fieldHelp}>{currentText}</p>}
+      {currentArchived && value && <span className={combo.archived}>Archived</span>}
       <input
         className={combo.input}
         id={id}
@@ -83,27 +91,30 @@ export function TaskCombobox<T extends Option>({
         aria-haspopup="listbox"
         aria-describedby={disabled ? `${id}-scope` : undefined}
         aria-activedescendant={open && options[active] ? `${id}-${options[active]!.id}` : undefined}
-        value={filter}
-        placeholder={!currentArchived && value ? selectedText : "None"}
+        value={open ? filter : selectedText ?? ""}
+        placeholder={open ? "Search…" : "None"}
         disabled={disabled || loading}
-        onFocus={() => setOpen(true)}
+        onFocus={() => {
+          setFilter("");
+          setPath("");
+          setActive(0);
+          setOpen(true);
+        }}
         onBlur={() => setOpen(false)}
         onChange={(event) => {
           setFilter(event.target.value);
           setActive(0);
-          setOpen(true);
         }}
         onKeyDown={(event) => {
           if (event.key === "ArrowDown") {
             event.preventDefault();
-            setOpen(true);
-            if (options.length > 0) setActive((index) => Math.min(index + 1, options.length - 1));
+            if (options.length) setActive((index) => Math.min(index + 1, options.length - 1));
           } else if (event.key === "ArrowUp") {
             event.preventDefault();
-            if (options.length > 0) setActive((index) => Math.max(index - 1, 0));
+            if (options.length) setActive((index) => Math.max(index - 1, 0));
           } else if (event.key === "Enter" && open) {
             event.preventDefault();
-            select(active);
+            choose(active);
           } else if (event.key === "Escape" && open) {
             event.preventDefault();
             event.stopPropagation();
@@ -111,45 +122,44 @@ export function TaskCombobox<T extends Option>({
           }
         }}
       />
-      {error && <p className={layout.fieldHelp} role="alert">{errorMessage}</p>}
+      {error && <p className={layout.fieldHelp} role="alert">{label} could not be loaded.</p>}
       {!disabled && !loading && !error && open && (
-        <ul className={combo.listbox} id={`${id}-listbox`} role="listbox">
-          {options.length === 0 ? (
-            <li className={combo.empty}>{emptyMessage}</li>
-          ) : options.map((option, index) => (
-            <li
-              className={combo.option}
-              id={`${id}-${option.id}`}
-              role="option"
-              aria-selected={value === option.id}
-              data-active={index === active}
-              data-hierarchical={hierarchical || undefined}
-              data-hierarchy-depth={hierarchical ? optionDepth?.(option) ?? 0 : undefined}
-              key={option.id}
-              style={hierarchical ? ({
-                "--tree-indent": `${Math.max(0, optionDepth?.(option) ?? 0) * 18}px`,
-              } as CSSProperties) : undefined}
-              onMouseDown={(event) => event.preventDefault()}
-              onClick={() => select(index)}
-            >
-              {optionLabel(option)}
-              <span>— {optionMeta(option)}</span>
-            </li>
-          ))}
-        </ul>
+        <div className={combo.popover} data-task-combobox-popover>
+          {optionPath && !filter.trim() && (
+            <div className={combo.treeHeader}>
+              {path && (
+                <button type="button" aria-label="Back one Life area level" onMouseDown={(event) => event.preventDefault()} onClick={back}>←</button>
+              )}
+              <strong>{path || label}</strong>
+            </div>
+          )}
+          <ul className={combo.listbox} id={`${id}-listbox`} role="listbox">
+            {options.length === 0 ? (
+              <li className={combo.empty}>No matching {label}.</li>
+            ) : options.map((option, index) => {
+              const child = hasChildren(option);
+              return (
+                <li
+                  className={combo.option}
+                  id={`${id}-${option.id}`}
+                  role="option"
+                  aria-selected={value === option.id}
+                  data-active={index === active}
+                  data-has-children={child || undefined}
+                  key={option.id}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => choose(index)}
+                >
+                  <span className={combo.optionTitle}>{optionLabel(option)}</span>
+                  {(!optionPath || filter.trim()) && <span className={combo.optionMeta}>{optionMeta(option)}</span>}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
       )}
       {value && !disabled && (
-        <button
-          className={combo.clear}
-          type="button"
-          onClick={() => {
-            onChange(null);
-            setFilter("");
-            setOpen(false);
-          }}
-        >
-          {clearLabel}
-        </button>
+        <button className={combo.clear} type="button" aria-label={`Clear ${label}`} onClick={() => onChange(null)} />
       )}
     </div>
   );

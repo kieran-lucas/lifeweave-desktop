@@ -9,12 +9,16 @@ never the sole proof of anything.
 - node actions are absent before selection and selection reveals only Add child and Edit node;
 - the action surface is centered against its node and closes on repeat activation, outside pointer
   press, action selection, and Escape; Escape returns focus to the invoking node;
-- the Tree viewport has no local scrollbar; hold-drag on empty space pans both axes, direct node
+- leaf action surfaces open above dense leaf rows while branch action surfaces remain below;
+- the Tree viewport has no local scrollbar; wheel/trackpad scrolling is damped and bounded, Shift
+  plus vertical wheel scrolls horizontally, hold-drag on empty space pans both axes, direct node
   drag-and-drop is disabled, and arrow/Shift-arrow/Home provide keyboard pan parity;
 - node cards are wide enough to wrap complete titles without ellipsis; selection is non-black and
   clears on repeat activation, outside pointer press, Escape, and editor close;
 - the compact Tree heading stays above a bordered viewport that fills the remaining Life pane, and
   Tree mode produces no outer Life-canvas scrollbar;
+- after opening Leaf 1 and then sibling Leaf 2, Life Back restores Leaf 1; the next Back restores the
+  containing branch rather than skipping the prior Reader state;
 - the node editor is absent by default, opens on explicit request, and retains reorder, reparent,
   archive/restore, tag, interchange, Browse, and undo paths;
 - the production Tiptap extension set contains no duplicate Link extension and a real-editor test
@@ -54,11 +58,41 @@ never the sole proof of anything.
 
 - Plan Start/Target dates below content are human-readable, visibly labelled, and vertically
   separated from the authored outcome;
-- Task Notes in the create/edit dialog expose a taller multi-line viewport;
-- the Life Area picker communicates domain, section, and leaf levels visually while retaining
-  search, Arrow key selection, Enter, Escape, clear, archived-link handling, and accessible names;
+- Task Description in the create/edit dialog exposes a taller multi-line viewport, while the task
+  composer exposes no Notes label;
+- the Life Area picker walks domain, section, and leaf in separate levels while retaining global
+  search, Arrow key selection, Enter, accessible back action, Escape, compact clear, archived-link handling,
+  and accessible names;
 - Active Plans expose the text `Active` with redundant green emphasis in portfolio and detail;
 - the green Active treatment remains understandable in forced colors and is never color-only;
+- Plan Task and Edit Task expose the same styled Category, Priority, schedule date/time, optional
+  Deadline, Life Area, and Focus Plan controls, subject only to existing recurrence-scope rules;
+- the date/deadline calendar has six stable weeks, month and Today actions, Arrow/Home/End/Page
+  navigation, Enter/Space selection, outside/Escape dismissal, and focus restoration;
+- the exact time wheel retains 04:00–24:00 bounds, one-minute precision, controlled wheel steps,
+  keyboard selection, outside/Escape dismissal, and focus restoration;
+- a fresh schema 31 database exposes General plus the ten approved workstreams; schema 30 upgrades
+  once, runs idempotently, and never overwrites a colliding existing Category row or its goals;
+- Category is available and editable in both new and existing one-off Task composers;
+- Plan Task and Edit Task expose the same Essentials / Schedule / Context region hierarchy in the
+  standard dialog width, retain internal scrolling at minimum height, and keep the footer visible;
+- Category, Priority, Repeat, dates, time, Life Area, Focus Plan, Tags, and footer actions use one
+  matte monochrome field/state grammar without losing explicit text, icons, focus, or selection;
+- Schedule and Context use one six-column form authority; Category and Priority share the same
+  horizontal label/control baseline, and no short Repeat label is truncated;
+- closed Life Area and Focus Plan values stay on one line, preserve their full accessible input
+  value, and do not render long clear labels above the fields;
+- modal and picker entrances use the governed route/inspector settle durations, remain compositor
+  friendly, and remove authored transforms when Reduced Motion is requested;
+- every visible time-wheel number retains the same 15 px size and 40 px row geometry before, during,
+  and after selection; selected rows never use scale, and discrete input scrolls exactly one row
+  with smooth settling;
+- Edit Plan exposes aligned Title and Outcome labels plus a two-column Plan details group; Start
+  date, Target date, Life Area, and Status share 52 px control geometry and the Task composer field
+  material without changing Plan semantics; all four fields align on the same horizontal label and
+  control baselines, and Content toolbar glyphs remain upright and optically centered;
+- the Focus Plan picker uses the canonical non-archived target projection across lifecycles and is
+  invalidated after successful Plan create, update, lifecycle, score, archive, and restore writes;
 
 ## Process
 
@@ -126,8 +160,8 @@ never the sole proof of anything.
 - no category was renamed, no recurrence control removed, no metadata dropped, no error or recovery
   information hidden, and no accessibility alternative collapsed to make a screenshot match;
 - no Task facet was invented — in particular no subtasks and no task-to-task links;
-- schema is 30 solely for the manual Plan score, canonical Life correction, and scored-Plan
-  convergence; there is no second Plan IPC command, new capability,
+- schema is 31 solely for the manual Plan score, canonical Life correction, scored-Plan
+  convergence, and the non-overwriting Task workstream seed; there is no second Plan IPC command, new capability,
   broadened permission, network service or backup-format change.
 
 ## Geometry

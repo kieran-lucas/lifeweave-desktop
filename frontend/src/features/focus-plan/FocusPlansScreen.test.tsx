@@ -54,25 +54,27 @@ const plan: FocusPlanDetailView = {
 };
 
 function renderPlan() {
-  return render(
-    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return { ...render(
+    <QueryClientProvider client={client}>
       <FocusPlansScreen
         entryRequest={{ requestId: "request-1", planId: plan.id }}
         onEntryRequestSettled={vi.fn()}
       />
     </QueryClientProvider>,
-  );
+  ), client };
 }
 
 function renderLibrary() {
-  return render(
-    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return { ...render(
+    <QueryClientProvider client={client}>
       <FocusPlansScreen
         entryRequest={null}
         onEntryRequestSettled={vi.fn()}
       />
     </QueryClientProvider>,
-  );
+  ), client };
 }
 
 describe("Focus Plan detail composition", () => {
@@ -81,6 +83,7 @@ describe("Focus Plan detail composition", () => {
     api.get.mockResolvedValue(plan);
     api.list.mockResolvedValue([]);
     api.lifeTargets.mockResolvedValue([]);
+    api.create.mockResolvedValue({ ...plan, lifecycle: "draft" });
     api.mutate.mockResolvedValue({ plan_id: plan.id, revision: 4, created_id: null, replayed: false });
   });
 
@@ -102,9 +105,16 @@ describe("Focus Plan detail composition", () => {
     expect(screen.queryByText(/Linked work/i)).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
-    expect(screen.getByRole("heading", { level: 1, name: `Edit plan ${plan.title}` })).toBeInTheDocument();
-    expect(await within(content).findByRole("textbox", { name: "Plan content" })).toHaveValue(plan.outcome);
+    expect(screen.getByRole("heading", { level: 1, name: "Edit plan" })).toBeInTheDocument();
+    expect(document.querySelector("[data-plan-editor]")).toBeInTheDocument();
+    expect(await screen.findByRole("textbox", { name: "Plan content" })).toHaveValue(plan.outcome);
     expect(screen.getByRole("textbox", { name: "Plan title" })).toHaveValue(plan.title);
+    expect(await screen.findByRole("button", { name: /Start date, Saturday, August 1, 2026/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Target date, Tuesday, September 1, 2026/ })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "Active" })).toBeChecked();
+    expect(screen.getByRole("region", { name: "Plan details" })).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Essentials" })).not.toBeInTheDocument();
+    expect(screen.getAllByRole("region", { name: /Schedule|Context/ })).toHaveLength(2);
     expect(screen.queryByText(/Definition of done/i)).not.toBeInTheDocument();
 
     const accessibility = await axe.run(container);
@@ -112,7 +122,8 @@ describe("Focus Plan detail composition", () => {
   });
 
   it("sends authored Markdown to the canonical Plan mutation without conversion", async () => {
-    renderPlan();
+    const { client } = renderPlan();
+    const invalidate = vi.spyOn(client, "invalidateQueries");
     await screen.findByRole("heading", { level: 1, name: plan.title });
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
 
@@ -120,11 +131,48 @@ describe("Focus Plan detail composition", () => {
     fireEvent.change(await screen.findByRole("textbox", { name: "Plan content" }), {
       target: { value: markdown },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
 
     expect(api.mutate).toHaveBeenCalledWith(expect.objectContaining({
       mutation: expect.objectContaining({ action: "update_plan", outcome: markdown }),
     }));
+    await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: ["focus-plan-targets"] }));
+  });
+
+  it("opens New plan directly in the full editor and persists only when submitted", async () => {
+    renderLibrary();
+    fireEvent.click(screen.getByRole("button", { name: "New plan" }));
+
+    expect(screen.getByRole("heading", { level: 1, name: "New plan" })).toBeInTheDocument();
+    expect(document.querySelector("[data-plan-editor-scroll]")).toBeInTheDocument();
+    expect(screen.queryByRole("textbox", { name: "New plan title" })).not.toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Plan title" })).toHaveValue("");
+    expect(await screen.findByRole("textbox", { name: "Plan content" })).toHaveValue("");
+    expect(screen.getByRole("radiogroup", { name: "Status" })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "Draft" })).toBeChecked();
+    const statusOptions = screen.getAllByRole("radio");
+    expect(statusOptions).toHaveLength(4);
+    statusOptions.forEach((item) => expect(item).toBeDisabled());
+    expect(screen.getByText("Starts as Draft")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByRole("textbox", { name: "Plan content" }), { target: { value: "A finished, defensible outcome." } });
+    fireEvent.change(screen.getByRole("textbox", { name: "Plan title" }), { target: { value: "Build the research baseline" } });
+    fireEvent.click(screen.getByRole("button", { name: "Create plan" }));
+
+    expect(api.create).toHaveBeenCalledWith(expect.objectContaining({
+      title: "Build the research baseline",
+      outcome: "A finished, defensible outcome.",
+      life_node_id: null,
+      start_date: null,
+      target_date: null,
+    }));
+    await screen.findByRole("heading", { level: 1, name: plan.title });
+
+    fireEvent.click(screen.getByRole("button", { name: "Back to plans" }));
+    fireEvent.click(screen.getByRole("button", { name: "New plan" }));
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.getByRole("heading", { level: 1, name: "Plans" })).toBeInTheDocument();
+    expect(api.create).toHaveBeenCalledTimes(1);
   });
 
   it("loads completed Plans through the dedicated completed portfolio", async () => {
@@ -181,7 +229,8 @@ describe("Focus Plan detail composition", () => {
       return [];
     });
 
-    const { container } = renderLibrary();
+    const { container, client } = renderLibrary();
+    const invalidate = vi.spyOn(client, "invalidateQueries");
     const scoreButton = await screen.findByRole("button", { name: `${plan.title} score: Not scored. Set score` });
     const activeRow = scoreButton.parentElement as HTMLElement;
     expect(within(activeRow).getByText("Active")).toBeInTheDocument();
@@ -212,6 +261,7 @@ describe("Focus Plan detail composition", () => {
     expect(within(completedScore.parentElement as HTMLElement).queryByText("Active")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Completed" })).toHaveAttribute("aria-current", "page");
     await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: "Completed" })));
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["focus-plan-targets"] });
 
     const accessibility = await axe.run(container);
     expect(accessibility.violations.filter((item) => item.impact === "critical" || item.impact === "serious")).toHaveLength(0);

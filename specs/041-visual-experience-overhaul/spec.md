@@ -14,7 +14,7 @@ every dialog, popover and menu. Plus: the visual token authority, typography, ic
 surface and depth system, dark theme, motion system, restrained ambient art, visual regression
 testing, and interaction-performance instrumentation.
 
-Out of scope: product semantics of any kind except the explicit §1.2 Product Owner amendment, and
+Out of scope: product semantics of any kind except the explicit §§1.2–1.4 Product Owner amendments, and
 every remaining item in the Task 51 hard-exclusion list (§11).
 
 ### 1.1 Product Owner usability amendment (2026-08-11)
@@ -22,7 +22,7 @@ every remaining item in the Task 51 hard-exclusion list (§11).
 ADR 0046 records a later explicit Product Owner direction that narrowly overrides the
 presentation-only boundary above for the existing Life tree and Basic Leaf editor. It authorizes no
 new domain semantics, storage, schema, IPC, dependency, Graph behavior, or Browse projection beyond
-the explicit §1.2 amendment.
+the explicit later amendments recorded below.
 
 - The separate full-tree workspace is named **Tree**, lays generations left-to-right, and no longer
   presents a permanent edit inspector.
@@ -35,11 +35,14 @@ the explicit §1.2 amendment.
   add/delete column, and delete-table controls with local horizontal overflow.
 - Existing revision checks, mutation boundaries, recovery draft/commit serialization, keyboard
   drag parity, link protocol restrictions, and all backend authority remain unchanged.
-- The Tree viewport renders no local scrollbars. A primary-pointer hold and drag beginning on empty
+- The Tree viewport renders no local scrollbars. Mouse-wheel and two-axis trackpad input scroll at a
+  damped, bounded speed; Shift plus a vertical wheel scrolls horizontally. A primary-pointer hold and drag beginning on empty
   tree space pans both axes; the same gesture beginning on a node remains node movement. Arrow keys,
   Shift plus arrow, and Home provide keyboard pan and reset without changing tree data. A compact
   Tree heading remains at the top of the Life pane, the bordered pan viewport receives the
   remaining available height, and Tree mode creates no outer Life-canvas scroll region.
+- Life Back restores the immediately previous Life session state; a sibling leaf-to-leaf transition
+  returns to the first leaf Reader before returning to the containing branch.
 - Focus Plan detail presents lifecycle and title as compact identity. Its authored outcome is the
   dominant reading/editing surface in a 70% focused frame, and read mode preserves authored single
   line breaks. Facts and lifecycle actions remain available at a quieter visual level. Definition
@@ -67,13 +70,54 @@ The authorized behavior is deliberately manual and bounded:
 
 - Plan dates below the authored content have clear Start/Target labels, human-readable formatting,
   stronger type, and enough vertical separation to remain scannable.
-- The Task create/edit Notes textarea is taller so multi-line context can be reviewed while editing.
-- Life Area selection presents the canonical hierarchy in visible levels rather than as an
-  undifferentiated flat list; search and keyboard selection remain available.
+- The Task create/edit Description textarea is taller so multi-line context can be reviewed while
+  editing; task copy must not call this field Notes.
+- Life Area selection presents exactly one canonical level at a time—Domain, then Section, then
+  Area—rather than mixing every node in one list; global search and keyboard selection remain
+  available. The closed field shows the concise selected title, not the full breadcrumb.
 - Saving a non-null manual Plan score completes the Plan in the same revisioned mutation and moves
   it to the Completed portfolio. Migration 30 converges already-scored Plans.
 - Active Plans have an explicit `Active` label with redundant green emphasis in both portfolio and
   detail identity; forced-colors mode retains the text and boundary.
+
+### 1.4 Product Owner Task composer coherence amendment (2026-08-13)
+
+- Plan Task and Edit Task use one coherent component set for schedule, Category, Priority,
+  Deadline, Life Area, and Focus Plan; recurrence-scope restrictions remain unchanged.
+- Schedule date and optional Deadline use the same styled local calendar; Start and End retain
+  exact one-minute 04:00–24:00 wheel selection. All popovers support keyboard operation, outside
+  dismissal, Escape, visible focus, and focus restoration.
+- Category remains a first-class Task field in both create and edit. Schema 31 adds the approved
+  small workstream catalog to fresh and upgraded databases with `INSERT OR IGNORE`, preserving all
+  existing category identity and goal metadata.
+- Priority and Repeat share the same labelled choice-control language instead of unrelated native
+  selects; stored values and recurrence authority do not change.
+- Focus Plan selection reads the canonical bounded non-archived Plan target projection and is
+  invalidated after every successful canonical Plan create/mutation/score/archive/restore path.
+- A Life Tree leaf places its contextual Add child / Edit node actions above the leaf; branches
+  retain below-node placement.
+- Create and edit use the same standard-width matte composition: a black identity header and three
+  ruled regions named Essentials, Schedule, and Context. All field labels, control heights,
+  borders, selection inversion, floating surfaces, footer actions, and responsive stacking belong
+  to one monochrome grammar; Category color metadata remains persisted but is not decorative UI.
+- The composer entrance uses the shared route settle and its popovers use the shared inspector
+  settle. Layered elevation remains opaque and monochrome: no blur, gradient, or chromatic
+  decoration is introduced merely to imply quality.
+- Exact-time wheel rows have fixed 40 px geometry and fixed 15 px numerals. Selected values may use
+  contrast and bounded font-weight changes but must not change font size or transform scale. Wheel
+  and keyboard input moves one row smoothly; direct dragging remains snap-bounded.
+- Edit Plan remains document-first, but its editing state is one aligned matte instrument. Title and
+  Outcome use explicit labels; Start date, Target date, Life Area, and Status use a two-column grid
+  with the same 52 px field height, border, radius, focus, and spacing grammar as Edit Task. Read-only
+  fact-row flex rules must not leak into this grid. Content toolbar groups and buttons share one
+  vertical center, fixed button height, upright font style, and consistent glyph baseline.
+- Schedule and Context share one six-column grid authority. Schedule fields span two columns each;
+  paired Context fields span three columns each; Tags spans all six. Compact section headings sit
+  above the fields instead of reserving an empty left rail. Category, Priority, Life Area, Focus
+  Plan, Deadline, and Repeat share a 52 px control row and aligned label baseline.
+- Life Area and Focus Plan values remain single-line and truncate safely. Their clear affordance is
+  compact and internal to the control; Focus Plan rows show lifecycle as secondary metadata without
+  changing the canonical target projection.
 
 ## 2. Visual authority
 

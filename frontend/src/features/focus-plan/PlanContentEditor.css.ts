@@ -4,7 +4,38 @@ import { duration, easing } from "../../design-system/visual/motion.css";
 import { text } from "../../design-system/visual/typography.css";
 
 export const shell = style({ display: "grid", gap: 12, minInlineSize: 0 });
+export const toolbarChrome = style({
+  position: "static",
+  insetBlockStart: "auto",
+  zIndex: "auto",
+});
+globalStyle(`${shell} [role="toolbar"]`, {
+  minBlockSize: 48,
+  boxSizing: "border-box",
+  alignItems: "center",
+  gap: 7,
+  padding: "8px 10px",
+});
+globalStyle(`${shell} [role="toolbar"] > div`, {
+  minBlockSize: 32,
+  alignItems: "center",
+  gap: 3,
+});
+globalStyle(`${shell} [role="toolbar"] button`, {
+  minBlockSize: 32,
+  display: "inline-grid",
+  placeItems: "center",
+  paddingBlock: 0,
+  lineHeight: "16px",
+  fontStyle: "normal !important",
+  fontWeight: "680 !important",
+  textAlign: "center",
+  transformOrigin: "center",
+});
+globalStyle(`${shell} [role="toolbar"] button[aria-label="Bold"]`, { fontWeight: "820 !important" });
+globalStyle(`${shell} [role="toolbar"] button[aria-label="Italic"]`, { fontStyle: "normal !important" });
 export const surface = style({
+  display: "grid",
   minBlockSize: "clamp(300px, 46vh, 600px)",
   minInlineSize: 0,
   overflowX: "auto",
@@ -18,7 +49,9 @@ export const surface = style({
 export const textarea = style({
   display: "block",
   inlineSize: "100%",
+  blockSize: "100%",
   minBlockSize: "clamp(300px, 46vh, 600px)",
+  boxSizing: "border-box",
   resize: "vertical",
   padding: "clamp(22px, 3vw, 38px)",
   border: 0,

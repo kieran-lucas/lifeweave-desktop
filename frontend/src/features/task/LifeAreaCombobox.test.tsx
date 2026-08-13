@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import axe from "axe-core";
 import { expect, it, vi } from "vitest";
@@ -39,11 +39,11 @@ it("filters diacritics, selects by keyboard, clears, and has no axe violations",
   const change = vi.fn();
   mount(change);
   const input = await screen.findByRole("combobox", { name: "Life area" });
+  fireEvent.focus(input);
   fireEvent.change(input, { target: { value: "nghien" } });
   await screen.findByRole("option", { name: /Nghiên cứu/ });
   fireEvent.keyDown(input, { key: "Enter" });
   expect(change).toHaveBeenCalledWith("study");
-  expect(input).toHaveValue("Career › Nghiên cứu");
   const results = await axe.run(document.body, {
     rules: { "color-contrast": { enabled: false } },
   });
@@ -59,9 +59,8 @@ it("shows and clears an archived current relationship", async () => {
     breadcrumb: "Old area",
     archived: true,
   });
-  expect(
-    await screen.findByText("Archived life area: Old area"),
-  ).toBeInTheDocument();
+  expect(await screen.findByText("Archived")).toBeInTheDocument();
+  expect(screen.getByRole("combobox", { name: "Life area" })).toHaveValue("Old area");
   fireEvent.click(screen.getByRole("button", { name: "Clear Life area" }));
   expect(change).toHaveBeenCalledWith(null);
 });
@@ -72,6 +71,7 @@ it("closes the popup when focus leaves the field", async () => {
   ]);
   mount();
   const input = await screen.findByRole("combobox", { name: "Life area" });
+  await waitFor(() => expect(input).toBeEnabled());
   fireEvent.focus(input);
   expect(await screen.findByRole("listbox")).toBeInTheDocument();
   fireEvent.blur(input);
@@ -94,8 +94,8 @@ it("keeps Escape inside an open popup before the parent dialog sees it", async (
 
 it("keeps keyboard-active and saved-selection states distinct", async () => {
   api.list.mockResolvedValue([
-    { id: "work", title: "Work", breadcrumb: "Life › Work" },
-    { id: "health", title: "Health", breadcrumb: "Life › Health" },
+    { id: "work", title: "Work", breadcrumb: "Work" },
+    { id: "health", title: "Health", breadcrumb: "Health" },
   ]);
   mount();
   const input = await screen.findByRole("combobox", { name: "Life area" });
@@ -108,7 +108,7 @@ it("keeps keyboard-active and saved-selection states distinct", async () => {
   expect(options[1]).toHaveAttribute("data-active", "true");
 });
 
-it("presents Life targets in visible hierarchy levels instead of a flat list", async () => {
+it("walks Life targets one hierarchy level at a time instead of mixing every node", async () => {
   api.list.mockResolvedValue([
     { id: "vitality", title: "VITALITY", breadcrumb: "VITALITY" },
     { id: "body", title: "BODY", breadcrumb: "VITALITY › BODY" },
@@ -118,12 +118,26 @@ it("presents Life targets in visible hierarchy levels instead of a flat list", a
       breadcrumb: "VITALITY › BODY › Sleep & Physical Recovery",
     },
   ]);
-  mount();
+  const change = vi.fn();
+  mount(change);
 
-  fireEvent.focus(await screen.findByRole("combobox", { name: "Life area" }));
-  const options = await screen.findAllByRole("option");
-  expect(options.map((option) => option.getAttribute("data-hierarchy-depth"))).toEqual(["0", "1", "2"]);
-  expect(options[0]).toHaveTextContent("Primary life domain");
-  expect(options[1]).toHaveTextContent("Within VITALITY");
-  expect(options[2]).toHaveTextContent("Within VITALITY › BODY");
+  const input = await screen.findByRole("combobox", { name: "Life area" });
+  await waitFor(() => expect(input).toBeEnabled());
+  fireEvent.focus(input);
+  expect(screen.getAllByText("Life area")).toHaveLength(2);
+  expect(screen.getAllByRole("option")).toHaveLength(1);
+  expect(screen.getByRole("option", { name: "VITALITY" })).toBeInTheDocument();
+
+  fireEvent.keyDown(input, { key: "Enter" });
+  expect(change).not.toHaveBeenCalled();
+  expect(screen.getByText("VITALITY")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Back one Life area level" })).toBeInTheDocument();
+  expect(screen.getByRole("option", { name: "BODY" })).toBeInTheDocument();
+
+  fireEvent.keyDown(input, { key: "Enter" });
+  expect(screen.getByText("BODY")).toBeInTheDocument();
+  expect(screen.getByRole("option", { name: "Sleep & Physical Recovery" })).toBeInTheDocument();
+
+  fireEvent.keyDown(input, { key: "Enter" });
+  expect(change).toHaveBeenCalledWith("sleep");
 });

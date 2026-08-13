@@ -107,6 +107,42 @@ describe("Life leaf contents control", () => {
     expect(container.querySelector("[data-life-reader]")).toBeInTheDocument();
   });
 
+  it("restores the immediately previous leaf before returning to its branch", async () => {
+    const firstLeaf = { ...leaf, id: "leaf-1", title: "Leaf one" };
+    const secondLeaf = { ...leaf, id: "leaf-2", title: "Leaf two" };
+    const branch = { ...leaf, id: "branch", title: "Branch", is_leaf: false, child_count: 2 };
+    api.browse.mockResolvedValue({
+      root_id: "life-root",
+      selected: branch,
+      parent: null,
+      children: [firstLeaf, secondLeaf],
+      breadcrumb: [branch],
+      selected_is_pinned: false,
+      child_page: 0,
+      child_page_count: 1,
+      tree_revision: 1,
+      resolved_from_fallback: false,
+      preferred_mode: "browse",
+      viewport_anchor: null,
+    });
+
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <LifeScreen anchorLocalDate="2026-08-11" />
+      </QueryClientProvider>,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: /Leaf one/ }));
+    expect(screen.getByRole("heading", { name: "Leaf one" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Leaf two/ }));
+    expect(screen.getByRole("heading", { name: "Leaf two" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Go back in Life System" }));
+    expect(screen.getByRole("heading", { name: "Leaf one" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Go back in Life System" }));
+    expect(screen.getByRole("heading", { name: "Branch" })).toBeInTheDocument();
+  });
+
   it("contains Tree in a dedicated pan viewport without an outer Life canvas scroll region", async () => {
     api.browse.mockResolvedValue({
       root_id: "life-root",

@@ -10,7 +10,7 @@ use super::{
     repository::TaskError,
 };
 
-pub const ALGORITHM_VERSION: i32 = 1;
+pub const ALGORITHM_VERSION: i32 = 2;
 const MORNING: (i32, i32) = (240, 720);
 const AFTERNOON: (i32, i32) = (720, 1080);
 const EVENING: (i32, i32) = (1080, 1440);
@@ -289,6 +289,7 @@ fn aggregate_day(
         is_today,
         is_selected,
         task_count: items.len() as i32,
+        completed_task_count: items.iter().filter(|item| item.evaluated).count() as i32,
         scheduled_minutes: items.iter().map(|item| item.end - item.start).sum(),
         category_icon_keys,
         extra_category_count: categories.len().saturating_sub(3) as i32,
@@ -407,6 +408,7 @@ mod tests {
             .unwrap()
             .days[1];
         assert_eq!(day.task_count, 2);
+        assert_eq!(day.completed_task_count, 0);
         assert_eq!(day.scheduled_minutes, 120);
         assert_eq!(day.morning_load_ratio, 60.0 / 480.0);
         assert!(day.has_missed);
@@ -435,6 +437,7 @@ mod tests {
         .id;
         let before = month_projection(&connection, 2026, 8, "2026-08-02", "2026-08-02").unwrap();
         assert!(before.days[0].has_missed);
+        assert_eq!(before.days[0].completed_task_count, 0);
 
         evaluation::evaluate_at(
             &mut connection,
@@ -456,10 +459,12 @@ mod tests {
         .unwrap();
         let evaluated = month_projection(&connection, 2026, 8, "2026-08-02", "2026-08-02").unwrap();
         assert!(!evaluated.days[0].has_missed);
+        assert_eq!(evaluated.days[0].completed_task_count, 1);
 
         evaluation::undo(&mut connection, "calendar-missed-operation").unwrap();
         let undone = month_projection(&connection, 2026, 8, "2026-08-02", "2026-08-02").unwrap();
         assert!(undone.days[0].has_missed);
+        assert_eq!(undone.days[0].completed_task_count, 0);
     }
 
     #[test]

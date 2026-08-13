@@ -53,6 +53,12 @@ its Plan, migrates already-scored Plans, adds a hierarchical Life Area picker, i
 and Task Notes, and marks Active with written green status. It adds no IPC command, capability,
 dependency, score formula, score history, or score Analytics.
 
+A later Task composer coherence amendment advances schema to 31 only to seed the approved compact
+workstream catalog without overwriting existing Category rows. Plan Task and Edit Task share one
+calendar/time/category/priority/deadline/relationship presentation, and Task Focus Plan targets are
+invalidated from the canonical Plans screen after successful writes. Domain cardinality,
+recurrence, reminders, IPC, capabilities, dependencies, and permissions remain unchanged.
+
 Work stays local on `task-51-visual-experience` from `43d0d1e822336c97527f85e1ab154fc74a61f058`.
 Nothing is pushed unless the Product Owner explicitly requests it.
 

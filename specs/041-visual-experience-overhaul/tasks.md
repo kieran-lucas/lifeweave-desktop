@@ -110,6 +110,10 @@
       correct Finance under Security, preserve all leaf documents, and assign semantic icons.
 - [x] Compact and raise the Tree heading, fit the bordered pan viewport to the remaining Life pane,
       and prevent Tree mode from creating an outer Life-canvas scroll region.
+- [x] Densify the 53-node Tree with measured generation widths and collision-tested vertical rhythm;
+      add damped wheel/two-axis trackpad scrolling while keeping local scrollbars hidden.
+- [x] Correct Life session snapshots so sibling leaf-to-leaf Back restores the immediately previous
+      Reader before the containing branch.
 - [x] Recompose Focus Plan detail around a compact identity and a dominant outcome writing surface
       while preserving every existing fact, criterion, linked-work, and lifecycle path.
 - [x] Remove the duplicate Tiptap Link extension, stable-initialize editor options, and stop
@@ -136,7 +140,12 @@
 
 ## Product Owner Task and Plan usability amendment — deterministic verification complete
 
-- [x] Increase the Task Notes editing viewport without changing stored Task semantics.
+- [x] Increase the Task Description editing viewport without changing stored Task semantics, and
+  remove the incorrect Notes label from the task composer.
+- [x] Replace the mixed Task-composer rail/grids with one six-column form authority and align every
+  Context label/control row to the shared 52 px geometry.
+- [x] Convert Life Area from an all-level list to a staged Domain → Section → Area picker and reduce
+  Life Area / Focus Plan closed values, clear actions, and popup metadata to a compact grammar.
 - [x] Present Life Area choices as visible domain/section/leaf levels in the shared picker.
 - [x] Improve Plan Start/Target date labels, formatting, type hierarchy, and vertical separation.
 - [x] Give Active Plans an explicit text badge with redundant green emphasis and forced-colors path.
@@ -163,6 +172,31 @@
       compatibility, historical audit evidence, and user data.
 - [x] Pass frontend typecheck and 645 tests across 48 files; pass strict Rust Clippy and 801 tests
       with 4 intentionally ignored; pass production build, governance, security, and Python checks.
+
+## Product Owner Task composer coherence amendment
+
+- [x] Use one Category picker in both Plan Task and Edit Task, with governed icon, selected text,
+      keyboard navigation, outside/Escape dismissal, and focus restoration.
+- [x] Add append-only schema 31 with ten approved workstreams through non-overwriting,
+      idempotent inserts and migration preservation tests.
+- [x] Replace the scheduled-date and optional Deadline native calendars with one accessible local
+      date grid; retain exact one-minute Start/End wheel authority and improve dismissal/focus.
+- [x] Replace mixed Priority/Repeat selects with the shared labelled choice language without
+      changing domain values or recurrence semantics.
+- [x] Share the Focus Plan target query key and invalidate it after every successful canonical Plan
+      create/mutation/score/archive/restore path.
+- [x] Place selected-leaf actions above dense rows and retain branch actions below.
+- [x] Recompose both Task paths as one standard-width matte instrument with a black identity header,
+      Essentials / Schedule / Context hierarchy, coherent monochrome controls, internal scroll,
+      sticky action footer, and automated semantic/accessibility coverage.
+- [x] Replace Task-composer snap-like entrances with governed route/inspector settling and layered
+      opaque elevation while preserving Reduced Motion and the no-blur/no-gradient authority.
+- [x] Remove time-wheel typography reflow: keep every row at 40 px and every numeral at 15 px,
+      prohibit selected-state scaling, and prove one smooth row per discrete wheel step.
+- [x] Align Edit Plan as one document-first instrument with labelled Title/Outcome fields and a
+      two-column, 52 px Start/Target/Life Area/Status control grid matching Edit Task's grammar.
+- [x] Scope read-only Plan fact layout away from edit fields and normalize the Content toolbar's
+      group heights, button centers, glyph baselines, and inherited font style.
 
 ## Stage I–L — Production reconstruction
 
@@ -196,7 +230,8 @@
 
 - [ ] Change no product semantics beyond the explicit manual Plan score amendment and later
       Product Owner Life Focus/Tree correction; invent no Task facet to match the reference image.
-- [ ] Keep schema 30 with no further migration, second Plan IPC command or capability.
+- [ ] Keep schema 31 with no further migration, second Plan IPC command or capability unless the
+      Product Owner explicitly authorizes another persisted change.
 - [ ] Add no dependency outside the four justified above.
 - [ ] Keep `.github/workflows/` and the seal byte-identical.
 - [ ] Keep Task rows non-card and Today task-first and default.

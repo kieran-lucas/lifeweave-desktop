@@ -109,7 +109,22 @@ button, input, textarea, select { font: inherit; }
 ::selection { background: #111111; color: #FFFFFF; }
 
 :focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
-* { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+
+/*
+ * Scrolling stays native while WebView2's track and thumb remain invisible across pages, dialogs,
+ * popovers, editors and horizontal tool strips. A global authority also covers future overflow
+ * containers without requiring every feature to remember a browser-specific scrollbar recipe.
+ */
+* {
+  scrollbar-width: none !important;
+  scrollbar-gutter: auto !important;
+  -ms-overflow-style: none;
+}
+*::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

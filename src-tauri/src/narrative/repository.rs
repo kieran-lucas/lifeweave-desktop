@@ -1226,7 +1226,7 @@ mod tests {
             let restore_result = restore_db(&rt, &backup_dir).unwrap();
             assert_eq!(
                 restore_result.schema_version,
-                crate::infrastructure::sqlite::task53_migration::TASK53_SCHEMA_VERSION,
+                crate::infrastructure::sqlite::task54_migration::TASK54_SCHEMA_VERSION,
                 "restore must report the current schema"
             );
         }
@@ -1234,7 +1234,7 @@ mod tests {
         // ── Session 3: verify restored state ─────────────────────────────────
         {
             let mut c = open_file_connection(&path).unwrap();
-            crate::infrastructure::sqlite::task53_migration::run_all_migrations(&mut c).unwrap();
+            crate::infrastructure::sqlite::task54_migration::run_all_migrations(&mut c).unwrap();
 
             let doc = by_id(&c, &doc_id).unwrap();
             // After restore, we should be back to revision 1

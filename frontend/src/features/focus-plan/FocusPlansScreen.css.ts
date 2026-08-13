@@ -1,6 +1,11 @@
-import { globalStyle, style } from "@vanilla-extract/css";
+import { globalStyle, keyframes, style } from "@vanilla-extract/css";
 import { duration, easing } from "../../design-system/visual/motion.css";
 import { vars } from "../../design-system/visual/contract.css";
+
+const editInstrumentEnter = keyframes({
+  from: { opacity: .82, transform: "translateY(7px) scale(.992)" },
+  to: { opacity: 1, transform: "translateY(0) scale(1)" },
+});
 
 export const library = style({
   display: "grid",
@@ -57,33 +62,6 @@ export const secondaryAction = style({
     "&:focus-visible": { outline: "2px solid #111111", outlineOffset: 2 },
   },
 });
-
-export const quickCreate = style({
-  display: "grid",
-  gridTemplateColumns: "minmax(0, 1fr) auto auto",
-  alignItems: "center",
-  gap: 8,
-  padding: 0,
-  "@media": {
-    "(max-width: 620px)": { gridTemplateColumns: "1fr auto" },
-  },
-});
-globalStyle(`${quickCreate} > input`, {
-  minBlockSize: 36,
-  minInlineSize: 0,
-  paddingInline: 10,
-  border: "1px solid #D5D5D5",
-  borderRadius: 8,
-  outline: 0,
-  background: "#FFFFFF",
-  color: "#111111",
-  fontSize: 14,
-  fontWeight: 600,
-  "@media": {
-    "(max-width: 620px)": { gridColumn: "1 / -1" },
-  },
-});
-globalStyle(`${quickCreate} > input::placeholder`, { color: "#999999" });
 
 export const error = style({
   margin: 0,
@@ -351,25 +329,10 @@ export const documentTitle = style({
   },
 });
 
-export const titleInput = style({
-  inlineSize: "100%",
-  minInlineSize: 0,
-  padding: 0,
-  border: 0,
-  borderBottom: "1px solid #BEBEBE",
-  outline: 0,
-  background: "transparent",
-  color: "#111111",
-  fontSize: "clamp(26px, 3vw, 36px)",
-  lineHeight: 1.08,
-  fontWeight: 700,
-  letterSpacing: "-.045em",
-  selectors: { "&:focus": { borderBottomColor: "#111111" } },
-});
-
 export const planContent = style({
   minBlockSize: 0,
   display: "grid",
+  gap: 8,
 });
 
 export const factRow = style({
@@ -380,10 +343,6 @@ export const factRow = style({
   marginBlockStart: 18,
   paddingBlock: "16px 12px",
   borderBlockStart: `1px solid ${vars.color.borderHairline}`,
-  selectors: {
-    "&[data-editing]": { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 },
-  },
-  "@media": { "(max-width: 560px)": { selectors: { "&[data-editing]": { gridTemplateColumns: "1fr" } } } },
 });
 globalStyle(`${factRow} > div`, { display: "flex", alignItems: "baseline", gap: 7 });
 globalStyle(`${factRow} > div > span`, { color: "#777777", fontSize: 10, fontWeight: 760, letterSpacing: ".08em", textTransform: "uppercase" });
@@ -398,38 +357,6 @@ export const dateFact = style({
   fontVariantNumeric: "tabular-nums",
 });
 
-export const factTreeEditor = style({ minInlineSize: 0 });
-globalStyle(`${factTreeEditor} > div > label`, {
-  color: "#858585",
-  fontSize: 9,
-  fontWeight: 760,
-  letterSpacing: ".08em",
-  textTransform: "uppercase",
-});
-
-export const factEditor = style({
-  display: "grid",
-  gap: 6,
-  padding: 0,
-  color: "#858585",
-  fontSize: 9,
-  fontWeight: 760,
-  letterSpacing: ".08em",
-  textTransform: "uppercase",
-});
-globalStyle(`${factEditor} > input, ${factEditor} > select`, {
-  minInlineSize: 0,
-  minBlockSize: 34,
-  padding: "7px 8px",
-  border: "1px solid #D3D3D3",
-  borderRadius: 8,
-  background: "#FFFFFF",
-  color: "#222222",
-  fontSize: 11,
-  textTransform: "none",
-  letterSpacing: 0,
-});
-
 export const archiveAction = style({
   minBlockSize: 34,
   paddingInline: 9,
@@ -441,6 +368,195 @@ export const archiveAction = style({
   fontWeight: 650,
   cursor: "pointer",
   selectors: { "&:hover": { background: "#F2F2F2", color: "#222222" }, "&:focus-visible": { outline: "2px solid #111111", outlineOffset: 2 } },
+});
+
+export const planEditorFrame = style({ minBlockSize: "100%" });
+
+export const planEditor = style({
+  inlineSize: "min(100%, 900px)",
+  minBlockSize: "100%",
+  minInlineSize: 0,
+  marginInline: "auto",
+  display: "grid",
+  gridTemplateRows: "auto auto auto",
+  overflow: "visible",
+  border: "1px solid #BDBDB9",
+  borderRadius: 17,
+  background: "#FFFFFF",
+  boxShadow: "0 3px 10px rgb(0 0 0 / .10), 0 26px 70px rgb(0 0 0 / .12)",
+  animation: `${editInstrumentEnter} ${duration.route} ${easing.standard} both`,
+  "@media": {
+    "(prefers-reduced-motion: reduce)": { animation: "none" },
+    "(max-width: 620px)": { borderRadius: 13 },
+  },
+});
+
+export const planEditorHeader = style({
+  position: "relative",
+  zIndex: 8,
+  minBlockSize: 88,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 20,
+  padding: "18px 28px",
+  borderRadius: "16px 16px 0 0",
+  background: "#111111",
+  color: "#FFFFFF",
+});
+globalStyle(`${planEditorHeader} > h1`, { margin: 0, color: "#FFFFFF", fontSize: 26, lineHeight: "32px", fontWeight: 720, letterSpacing: "-.035em" });
+globalStyle(`${planEditorHeader} > button`, {
+  position: "relative",
+  inlineSize: 42,
+  minInlineSize: 42,
+  blockSize: 42,
+  padding: 0,
+  border: "1px solid #3A3A3A",
+  borderRadius: 11,
+  background: "#1D1D1D",
+  color: "#FFFFFF",
+  cursor: "pointer",
+});
+globalStyle(`${planEditorHeader} > button > span::before, ${planEditorHeader} > button > span::after`, {
+  content: "",
+  position: "absolute",
+  insetInlineStart: 14,
+  insetBlockStart: 20,
+  inlineSize: 14,
+  blockSize: 1.5,
+  background: "currentColor",
+});
+globalStyle(`${planEditorHeader} > button > span::before`, { transform: "rotate(45deg)" });
+globalStyle(`${planEditorHeader} > button > span::after`, { transform: "rotate(-45deg)" });
+globalStyle(`${planEditorHeader} > button:hover`, { borderColor: "#5A5A5A", background: "#292929" });
+globalStyle(`${planEditorHeader} > button:focus-visible`, { outline: "2px solid #FFFFFF", outlineOffset: 3 });
+
+export const planEditorScroll = style({
+  minBlockSize: 0,
+  overflow: "visible",
+  background: "#FFFFFF",
+});
+globalStyle(`${planEditorScroll} [data-task-combobox-popover]`, {
+  insetBlockStart: "auto",
+  insetBlockEnd: "calc(100% + 7px)",
+  transformOrigin: "bottom left",
+});
+
+export const planEditorSection = style({
+  display: "grid",
+  gap: 14,
+  padding: "21px 28px 23px",
+  borderBlockEnd: "1px solid #DEDEDA",
+});
+
+export const planEditorIntro = style({
+  padding: "27px 28px 25px",
+  borderBlockEnd: "1px solid #DEDEDA",
+});
+
+export const planEditorSectionHeading = style({
+  display: "flex",
+  alignItems: "center",
+  gap: 10,
+  minInlineSize: 0,
+});
+globalStyle(`${planEditorSectionHeading} > h2`, { margin: 0, color: "#181818", fontSize: 12, lineHeight: "17px", fontWeight: 760 });
+globalStyle(`${planEditorSectionHeading} > span`, {
+  inlineSize: 28,
+  blockSize: 28,
+  flex: "0 0 28px",
+  display: "grid",
+  placeItems: "center",
+  border: "1px solid #D8D8D4",
+  borderRadius: 8,
+  background: "#F6F6F3",
+  color: "#383836",
+});
+globalStyle(`${planEditorSectionHeading} > span > svg`, { display: "block" });
+
+export const planEditorBody = style({ display: "grid", gap: 16, minInlineSize: 0 });
+export const planTitleField = style({ display: "grid", gap: 7, minInlineSize: 0, color: "#70706D", fontSize: 11, lineHeight: "14px", fontWeight: 650 });
+globalStyle(`${planTitleField} > input`, {
+  inlineSize: "100%",
+  minInlineSize: 0,
+  boxSizing: "border-box",
+  padding: "4px 0 8px",
+  border: "0 !important",
+  borderRadius: "0 !important",
+  borderBlockEnd: "1px solid #C8C8C4",
+  outline: 0,
+  background: "transparent",
+  boxShadow: "none !important",
+  color: "#111111",
+  fontSize: "clamp(22px, 3vw, 30px)",
+  lineHeight: 1.14,
+  fontWeight: 700,
+  letterSpacing: "-.035em",
+});
+globalStyle(`${planTitleField} > input:focus, ${planTitleField} > input:focus-visible`, { borderBlockEndColor: "#111111 !important", outline: "none !important", boxShadow: "none !important" });
+
+export const planOutcomeField = style({ display: "grid", gap: 8, minInlineSize: 0, color: "#70706D", fontSize: 11, lineHeight: "14px", fontWeight: 650 });
+
+export const planEditorGrid = style({
+  display: "grid",
+  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+  alignItems: "start",
+  gap: "16px 14px",
+  minInlineSize: 0,
+  overflow: "visible",
+  "@media": { "(max-width: 620px)": { gridTemplateColumns: "1fr" } },
+});
+
+export const planStatusField = style({ display: "grid", gridTemplateRows: "14px 52px", alignContent: "start", gap: 8, minInlineSize: 0, color: "#70706D", fontSize: 11, lineHeight: "14px", fontWeight: 650 });
+globalStyle(`${planStatusField} > span`, { display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 });
+globalStyle(`${planStatusField} > span > small`, { color: "#92928E", fontSize: 9, lineHeight: "12px", fontWeight: 620 });
+export const planStatusControl = style({
+  inlineSize: "100%",
+  minInlineSize: 0,
+  blockSize: 52,
+  display: "grid",
+  gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+  boxSizing: "border-box",
+  padding: 3,
+  gap: 2,
+  border: "1px solid #CBCBC8",
+  borderRadius: 11,
+  background: "#FAFAF8",
+});
+globalStyle(`${planStatusControl} > label`, { position: "relative", minInlineSize: 0, display: "grid", cursor: "pointer" });
+globalStyle(`${planStatusControl} input`, { position: "absolute", inlineSize: 1, blockSize: 1, margin: 0, opacity: 0, pointerEvents: "none" });
+globalStyle(`${planStatusControl} label > span`, {
+  minInlineSize: 0,
+  display: "grid",
+  placeItems: "center",
+  paddingInline: 4,
+  overflow: "hidden",
+  border: "1px solid transparent",
+  borderRadius: 8,
+  color: "#6A6A67",
+  fontSize: 10,
+  lineHeight: "16px",
+  fontWeight: 690,
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+  transition: `background-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}, box-shadow ${duration.state} ${easing.standard}`,
+});
+globalStyle(`${planStatusControl} label:hover > span`, { background: "#ECECE8", color: "#222222" });
+globalStyle(`${planStatusControl} input:checked + span`, { background: "#111111", color: "#FFFFFF", boxShadow: "0 2px 6px rgb(0 0 0 / .16)" });
+globalStyle(`${planStatusControl} input:focus-visible + span`, { outline: "2px solid #111111", outlineOffset: 2 });
+globalStyle(`${planStatusControl} input:disabled + span`, { cursor: "not-allowed", opacity: .56 });
+
+export const planEditorFooter = style({
+  position: "relative",
+  zIndex: 8,
+  display: "flex",
+  justifyContent: "flex-end",
+  alignItems: "center",
+  gap: 8,
+  padding: "17px 28px 18px",
+  borderBlockStart: "1px solid #DEDEDA",
+  borderRadius: "0 0 16px 16px",
+  background: "#FFFFFF",
 });
 
 export { srOnly } from "../../design-system/primitives/utilities.css";

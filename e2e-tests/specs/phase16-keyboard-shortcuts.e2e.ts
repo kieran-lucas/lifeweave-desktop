@@ -40,7 +40,7 @@ describe("Global keyboard shortcuts", () => {
     await expect($("button[aria-current='page']")).toHaveText("Settings");
 
     await chord("5");
-    await expect($("h1=Life System")).toBeDisplayed();
+    await expect($("h1#life-workspace-heading")).toBeDisplayed();
 
     // Ctrl+K moves into Settings and opens the Settings-owned Search tool.
     await chord("k");

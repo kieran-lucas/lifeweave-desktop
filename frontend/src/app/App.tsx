@@ -143,6 +143,26 @@ function readSidebarMode(): SidebarMode {
   }
 }
 
+export function scrollSettingsSection(id: string, attemptsRemaining = 60) {
+  const section = document.getElementById(id);
+  if (!section) {
+    if (attemptsRemaining > 0) {
+      requestAnimationFrame(() => scrollSettingsSection(id, attemptsRemaining - 1));
+    }
+    return;
+  }
+  const viewport = section.closest<HTMLElement>("[data-app-viewport]");
+  if (!viewport) return;
+  const top =
+    viewport.scrollTop +
+    section.getBoundingClientRect().top -
+    viewport.getBoundingClientRect().top;
+  viewport.scrollTo({
+    top,
+    behavior: "auto",
+  });
+}
+
 export function App() {
   const queryClient = useQueryClient();
   const initialEntry = useMemo(() => readAppHistoryEntry(window.history.state) ?? {
@@ -471,12 +491,37 @@ export function App() {
                     Application tools, preferences, backup and verification.
                   </p>
                 </PageHeader>
+                <div className={styles.settingsWorkspace}>
+                  <aside className={styles.settingsRail} aria-label="Settings sections">
+                    <p>Sections</p>
+                    <nav>
+                      {([
+                        ["settings-tools", "Tools"],
+                        ["settings-category-goals", "Category goals"],
+                        ["settings-tags", "Tags"],
+                        ["settings-backup", "Backup & restore"],
+                        ["settings-keyboard", "Keyboard"],
+                        ["settings-foundation", "Foundation"],
+                      ] as const).map(([id, label]) => (
+                        <button
+                          key={id}
+                          type="button"
+                          aria-controls={id}
+                          onClick={() => scrollSettingsSection(id)}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </nav>
+                  </aside>
+                  <div className={styles.settingsContent}>
                 <section
+                  id="settings-tools"
                   className={styles.settingsSection}
                   aria-labelledby="settings-tools-heading"
                 >
                   <h2 id="settings-tools-heading">Tools</h2>
-                  <p>Search the local workspace or inspect objective analytics from one place.</p>
+                  <p>Open workspace-wide utilities without leaving Settings.</p>
                   <div className={styles.settingsToolGrid}>
                     <button
                       ref={searchTriggerRef}
@@ -506,23 +551,27 @@ export function App() {
                   </div>
                 </section>
                 <Suspense fallback={<LoadingRow label="Loading category goals…" />}>
-                  <CategoryGoals />
+                  <div id="settings-category-goals" className={styles.settingsContentBlock}>
+                    <CategoryGoals />
+                  </div>
                 </Suspense>
                 <Suspense fallback={<LoadingRow label="Loading tag settings…" />}>
-                  <TagSettings />
+                  <div id="settings-tags" className={styles.settingsContentBlock}>
+                    <TagSettings />
+                  </div>
                 </Suspense>
                 <Suspense fallback={<LoadingRow label="Loading backup settings…" />}>
-                  <BackupSettings onDatabaseRestored={() => queryClient.clear()} />
+                  <div id="settings-backup" className={styles.settingsContentBlock}>
+                    <BackupSettings onDatabaseRestored={() => queryClient.clear()} />
+                  </div>
                 </Suspense>
                 <section
+                  id="settings-keyboard"
                   className={styles.settingsSection}
                   aria-labelledby="settings-keyboard-heading"
                 >
                   <h2 id="settings-keyboard-heading">Keyboard</h2>
-                  <p>
-                    Review the global shortcuts. Press {shortcutHelpShortcut.chord} anywhere outside
-                    a text field, document editor, or open dialog.
-                  </p>
+                  <p>Review global shortcuts available outside text fields, editors and dialogs.</p>
                   <div>
                     <button
                       type="button"
@@ -535,15 +584,18 @@ export function App() {
                   </div>
                 </section>
                 <section
+                  id="settings-foundation"
                   className={styles.settingsSection}
                   aria-labelledby="settings-foundation-heading"
                 >
                   <h2 id="settings-foundation-heading">Foundation tools</h2>
-                  <p>FoundationRecord verification tools.</p>
+                  <p>Low-level local verification records.</p>
                   <Suspense fallback={<LoadingRow label="Loading foundation tools…" />}>
                     <FoundationScreen />
                   </Suspense>
                 </section>
+                  </div>
+                </div>
               </PageFrame>
             )}
             {destination === "settings" && settingsView === "analytics" && (

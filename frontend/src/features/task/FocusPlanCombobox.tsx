@@ -21,6 +21,7 @@ export function FocusPlanCombobox({
   const query = useQuery({
     queryKey: ["focus-plan-targets"],
     queryFn: listFocusPlanTargets,
+    refetchOnMount: "always",
   });
   return (
     <TaskCombobox
@@ -34,11 +35,8 @@ export function FocusPlanCombobox({
       error={query.isError}
       options={query.data ?? []}
       optionLabel={(option) => option.title}
-      optionMeta={(option) => option.lifecycle}
+      optionMeta={(option) => `${option.lifecycle[0]!.toUpperCase()}${option.lifecycle.slice(1)}`}
       optionSearchText={(option) => option.title}
-      emptyMessage="No matching Focus Plans."
-      errorMessage="Focus Plans could not be loaded."
-      clearLabel="Clear Focus Plan"
       onChange={onChange}
     />
   );

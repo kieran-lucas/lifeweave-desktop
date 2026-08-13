@@ -11,11 +11,12 @@ globalStyle(`${root} > h2`, { ...text.sectionTitle, margin: 0 });
 globalStyle(`${root} > h2 + p`, { ...text.compactBody, margin: 0, color: "var(--text-muted)", maxInlineSize: "72ch" });
 
 export const editor = style({
-  display: "flex",
-  flexDirection: "column",
-  gap: space.field,
+  display: "grid",
+  gridTemplateColumns: "minmax(180px, 1fr) auto auto",
+  alignItems: "center",
+  gap: `${space.x3} ${space.x4}`,
   minInlineSize: 0,
-  padding: space.x4,
+  padding: `${space.x3} ${space.x2}`,
   border: "1px solid transparent",
   borderBottomColor: "var(--paint-edge)",
   background: "transparent",
@@ -28,12 +29,20 @@ export const editor = style({
       backgroundImage: "var(--paint-grain-fine)",
     },
   },
+  "@media": {
+    "screen and (max-width: 720px)": {
+      gridTemplateColumns: "1fr",
+      alignItems: "start",
+      paddingInline: 0,
+    },
+  },
 });
 export const heading = style({ margin: 0, ...text.cardTitle });
 export const toggle = style({ display: "inline-flex", alignItems: "center", gap: space.control, minInlineSize: 0, ...text.body });
-export const duration = style({ display: "flex", flexWrap: "wrap", alignItems: "flex-end", gap: space.field, margin: 0, inlineSize: "min(100%, 440px)", padding: space.x3, border: "1px solid var(--paint-edge)", borderRadius: "var(--radius-control)", minInlineSize: 0, backgroundColor: "var(--paint-sheet)", backgroundImage: "var(--paint-grain-fine)" });
+export const duration = style({ gridColumn: "1 / -1", display: "flex", flexWrap: "wrap", alignItems: "flex-end", gap: space.field, margin: 0, inlineSize: "min(100%, 440px)", padding: space.x3, border: "1px solid var(--paint-edge)", borderRadius: "var(--radius-control)", minInlineSize: 0, backgroundColor: "#FCFCFD", backgroundImage: "none" });
 export const legend = style({ padding: `0 ${space.x1}`, ...text.label, color: "var(--text-muted)" });
 export const unit = style({ display: "flex", flexDirection: "column", gap: space.x1, minInlineSize: 0, ...text.label, color: "var(--text-muted)" });
 export const number = style([focusRing, { inlineSize: "6rem", minInlineSize: 0, boxSizing: "border-box", minBlockSize: 36, padding: `${space.x1} ${space.control}`, border: "1px solid var(--paint-edge)", borderRadius: "var(--radius-control)", backgroundColor: "var(--paint-sheet-strong)", backgroundImage: "var(--paint-grain-fine)", color: "inherit", ...text.body }]);
 export const save = button.secondary;
-globalStyle(`${editor} > button`, { alignSelf: "flex-start" });
+globalStyle(`${editor} > button`, { justifySelf: "end", minBlockSize: 32, paddingBlock: 4, "@media": { "screen and (max-width: 720px)": { justifySelf: "start" } } });
+globalStyle(`${editor} > [role="alert"]`, { gridColumn: "1 / -1", margin: 0 });

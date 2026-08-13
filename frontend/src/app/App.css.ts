@@ -165,17 +165,23 @@ const routeFade = keyframes({
 export const viewport = style({
   position: "relative",
   zIndex: 1,
+  inlineSize: "100%",
+  maxInlineSize: "100%",
   minInlineSize: 0,
   minBlockSize: 0,
   overflow: "auto",
-  scrollbarGutter: "stable both-edges",
   padding: gutter,
   background: "transparent",
   selectors: {
+    '&[data-destination="today"]': {
+      background: "#FBFCFD",
+    },
+    '&[data-destination="settings"]': {
+      background: "#FBFCFD",
+    },
     '&[data-destination="life"]': {
       overflow: "hidden",
       padding: 0,
-      scrollbarGutter: "auto",
     },
   },
 });
@@ -207,13 +213,103 @@ export const lifeRoute = style({
 export const heading = style({ ...text.pageTitle, margin: 0, color: "var(--text-primary)" });
 export const lede = style({ ...text.body, margin: 0, color: "var(--text-muted)", maxInlineSize: "72ch" });
 
+export const settingsWorkspace = style({
+  display: "grid",
+  gridTemplateColumns: "188px minmax(0, 1fr)",
+  alignItems: "start",
+  gap: space.x6,
+  minInlineSize: 0,
+  "@media": {
+    "screen and (max-width: 900px)": {
+      gridTemplateColumns: "1fr",
+      gap: space.x4,
+    },
+  },
+});
+
+export const settingsRail = style({
+  position: "sticky",
+  insetBlockStart: 0,
+  zIndex: 1,
+  display: "grid",
+  gap: space.x2,
+  minInlineSize: 0,
+  paddingBlock: space.x3,
+  background: "#FBFCFD",
+  selectors: {
+    "&::after": {
+      content: '""',
+      position: "absolute",
+      insetBlock: space.x3,
+      insetInlineEnd: 0,
+      inlineSize: 1,
+      background: "var(--paint-edge)",
+    },
+  },
+  "@media": {
+    "screen and (max-width: 900px)": {
+      position: "static",
+      paddingBlock: 0,
+      borderBlockEnd: "1px solid var(--paint-edge)",
+      selectors: { "&::after": { display: "none" } },
+    },
+  },
+});
+globalStyle(`${settingsRail} > p`, {
+  margin: "0 14px 4px 10px",
+  color: "var(--text-muted)",
+  ...text.eyebrow,
+});
+globalStyle(`${settingsRail} > nav`, {
+  display: "grid",
+  gap: 2,
+  paddingInlineEnd: 14,
+  "@media": {
+    "screen and (max-width: 900px)": {
+      display: "flex",
+      gap: space.x1,
+      overflowX: "auto",
+      padding: `0 0 ${space.x2}`,
+    },
+  },
+});
+globalStyle(`${settingsRail} button`, {
+  minBlockSize: 34,
+  minInlineSize: 0,
+  padding: "7px 10px",
+  border: 0,
+  borderRadius: "var(--radius-control)",
+  background: "transparent",
+  color: "var(--text-muted)",
+  ...text.compactBody,
+  fontWeight: 650,
+  textAlign: "left",
+  whiteSpace: "nowrap",
+});
+globalStyle(`${settingsRail} button:hover`, { background: "#F1F3F5", color: "var(--text-primary)" });
+globalStyle(`${settingsRail} button:focus-visible`, { outline: "2px solid var(--focus-ring)", outlineOffset: 1 });
+
+export const settingsContent = style({
+  display: "flex",
+  flexDirection: "column",
+  minInlineSize: 0,
+  borderBlockEnd: "1px solid var(--paint-edge)",
+});
+
+export const settingsContentBlock = style({
+  minInlineSize: 0,
+  scrollMarginBlockStart: space.x3,
+});
+
 export const settingsSection = style({
   display: "flex",
   flexDirection: "column",
   gap: space.x2,
   minInlineSize: 0,
   paddingBlockStart: space.x5,
+  paddingBlockEnd: space.x5,
   borderTop: "1px solid var(--paint-edge)",
+  scrollMarginBlockStart: space.x3,
 });
 globalStyle(`${settingsSection} > h2`, { ...text.sectionTitle, margin: 0 });
 globalStyle(`${settingsSection} > h2 + p`, { ...text.compactBody, margin: 0, color: "var(--text-muted)", maxInlineSize: "72ch" });
@@ -234,19 +330,19 @@ export const settingsToolButton = style([
     alignItems: "center",
     gap: 12,
     minInlineSize: 0,
-    minBlockSize: 82,
-    padding: "14px 16px",
+    minBlockSize: 68,
+    padding: "12px 14px",
     border: "1px solid var(--paint-edge)",
     borderRadius: "var(--radius-surface)",
-    backgroundColor: "var(--surface-raised)",
-    backgroundImage: "var(--paint-grain-fine)",
+    backgroundColor: "#FCFCFD",
+    backgroundImage: "none",
     color: "var(--text-primary)",
     textAlign: "left",
     cursor: "pointer",
-    boxShadow: "var(--glow-crystal)",
-    transition: `border-color ${duration.state} ${easing.standard}, transform ${duration.press} ${easing.standard}`,
+    boxShadow: "none",
+    transition: `background-color ${duration.state} ${easing.standard}, border-color ${duration.state} ${easing.standard}, transform ${duration.press} ${easing.standard}`,
     selectors: {
-      "&:hover": { borderColor: "var(--accent)", transform: "translateY(-1px)" },
+      "&:hover": { borderColor: "var(--paint-edge-strong)", backgroundColor: "#F6F8FA", transform: "translateY(-1px)" },
       "&:active": { transform: "translateY(1px)" },
     },
     "@media": {

@@ -272,7 +272,7 @@ fn row(r: &rusqlite::Row<'_>) -> rusqlite::Result<TaskView> {
     })
 }
 pub fn categories(conn: &Connection) -> Result<Vec<TaskCategoryView>, TaskError> {
-    let mut st=conn.prepare("SELECT id,name,icon_key,color_key,weekly_minimum_minutes,weekly_target_minutes,goal_revision FROM task_categories WHERE archived_at IS NULL ORDER BY id")?;
+    let mut st=conn.prepare("SELECT id,name,icon_key,color_key,weekly_minimum_minutes,weekly_target_minutes,goal_revision FROM task_categories WHERE archived_at IS NULL ORDER BY CASE id WHEN 'general' THEN 0 WHEN 'english' THEN 1 WHEN 'lab-research' THEN 2 WHEN 'code-cs' THEN 3 WHEN 'physics-olympic' THEN 4 WHEN 'university' THEN 5 WHEN 'projects' THEN 6 WHEN 'finance' THEN 7 WHEN 'health' THEN 8 WHEN 'home' THEN 9 WHEN 'administration' THEN 10 ELSE 100 END,name COLLATE NOCASE,id")?;
     Ok(st
         .query_map([], |r| {
             Ok(TaskCategoryView {

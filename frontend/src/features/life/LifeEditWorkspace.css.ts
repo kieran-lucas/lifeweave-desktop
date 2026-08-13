@@ -23,6 +23,7 @@ export const canvasViewport = style({
   minBlockSize: 0,
   blockSize: "100%",
   overflow: "hidden",
+  overscrollBehavior: "contain",
   border: "1px solid #D8D8D8",
   borderRadius: 14,
   backgroundColor: "#FAFAF8",
@@ -41,6 +42,10 @@ export const positioner = style({ position: "absolute", inlineSize: "var(--life-
 export const nodeShell = style({ position: "relative" });
 const revealActions = keyframes({
   from: { opacity: 0, transform: "translateX(-50%) translateY(-4px) scale(.98)" },
+  to: { opacity: 1, transform: "translateX(-50%) translateY(0) scale(1)" },
+});
+const revealActionsAbove = keyframes({
+  from: { opacity: 0, transform: "translateX(-50%) translateY(4px) scale(.98)" },
   to: { opacity: 1, transform: "translateX(-50%) translateY(0) scale(1)" },
 });
 export const nodeActions = style({
@@ -64,6 +69,12 @@ export const nodeActions = style({
   transformOrigin: "top center",
   animation: `${revealActions} ${duration.popover} ${easing.standard} both`,
   selectors: {
+    '&[data-placement="above"]': {
+      insetBlockStart: "auto",
+      insetBlockEnd: "calc(100% + 7px)",
+      transformOrigin: "bottom center",
+      animation: `${revealActionsAbove} ${duration.popover} ${easing.standard} both`,
+    },
     "&::before": {
       content: "",
       position: "absolute",
@@ -76,6 +87,14 @@ export const nodeActions = style({
       borderInlineStart: `1px solid ${vars.color.borderHairline}`,
       background: vars.color.surfaceRaised,
       transform: "rotate(45deg)",
+    },
+    '&[data-placement="above"]::before': {
+      insetBlockStart: "auto",
+      insetBlockEnd: -5,
+      borderBlockStart: 0,
+      borderInlineStart: 0,
+      borderBlockEnd: `1px solid ${vars.color.borderHairline}`,
+      borderInlineEnd: `1px solid ${vars.color.borderHairline}`,
     },
   },
   "@media": {
@@ -175,7 +194,6 @@ export const inspector = style({
   padding: "4px 2px 24px 18px",
   borderInlineStart: "1px solid #E2E2E2",
   background: "transparent",
-  scrollbarGutter: "stable",
 });
 
 export const inspectorTitle = style({ margin: 0, color: "#222222", fontSize: 15, lineHeight: "20px", fontWeight: 720, letterSpacing: "-.018em" });

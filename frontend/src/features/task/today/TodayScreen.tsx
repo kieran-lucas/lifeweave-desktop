@@ -1,7 +1,6 @@
-import { Suspense, lazy, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { Suspense, lazy, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useModalFocusTrap } from "../../../app/useModalFocusTrap";
-import type { TaskCategoryView } from "../../../ipc/generated/TaskCategoryView";
 import type { TodayItemView } from "../../../ipc/generated/TodayItemView";
 import type { CompletionStateView } from "../../../ipc/generated/CompletionStateView";
 import type { TagSummaryView } from "../../../ipc/generated/TagSummaryView";
@@ -35,7 +34,7 @@ import {
   DialogSurface,
 } from "../../../app/layout/DialogSurface";
 import { EmptyState, LoadingRow, SkeletonList } from "../../../design-system/primitives/States";
-import { iconToday } from "../../../design-system/visual/icons";
+import { Icon, iconCalendar, iconOptions, iconToday } from "../../../design-system/visual/icons";
 import * as styles from "./TodayScreen.css";
 
 const ActiveTimerStrip = lazy(() =>
@@ -53,6 +52,32 @@ const TagPicker = lazy(() =>
 const TaskTimeWheelPicker = lazy(() =>
   import("./TaskSchedulePickers").then((module) => ({ default: module.TaskTimeWheelPicker })),
 );
+const TaskDatePicker = lazy(() =>
+  import("./TaskSchedulePickers").then((module) => ({ default: module.TaskDatePicker })),
+);
+const TaskCategoryPicker = lazy(() =>
+  import("./TaskCategoryPicker").then((module) => ({ default: module.TaskCategoryPicker })),
+);
+
+function ComposerSection({
+  id,
+  title,
+  icon,
+  children,
+}: {
+  id: string;
+  title: string;
+  icon: string;
+  children: ReactNode;
+}) {
+  return <section className={styles.composerSection} aria-labelledby={id}>
+    <header className={styles.sectionHeading}>
+      <span className={styles.sectionIcon} aria-hidden="true"><Icon d={icon} size={18} /></span>
+      <h3 id={id}>{title}</h3>
+    </header>
+    <div className={styles.sectionBody}>{children}</div>
+  </section>;
+}
 
 type CommonItem = Omit<
   TodayItemView,
@@ -206,7 +231,7 @@ export function TodayScreen({
     onSelectedDateChange ? onSelectedDateChange(value) : setStandaloneDate(value);
 
   const client = useQueryClient();
-  const dialog = useRef<HTMLFormElement>(null);
+  const dialog = useRef<HTMLElement>(null);
   const initialField = useRef<HTMLInputElement>(null);
   const returnFocus = useRef<HTMLElement | null>(null);
   const handledFocusRequest = useRef<string | null>(null);
@@ -234,7 +259,7 @@ export function TodayScreen({
   const categories = useQuery({
     queryKey: ["task-categories"],
     queryFn: listTaskCategories,
-    enabled: open && !editing,
+    enabled: open,
   });
   const completionStates = useQuery({
     queryKey: ["completion-states"],
@@ -682,70 +707,88 @@ export function TodayScreen({
           }}
         >
           <DialogSurface
-            as="form"
-            width="wide"
+            as="section"
+            width="standard"
+            className={styles.composerSurface}
             role="dialog"
             aria-modal="true"
             aria-labelledby="task-composer-heading"
             surfaceRef={dialog}
-            onSubmit={submit}
           >
-            <div className={styles.composer}>
+            <form className={styles.composer} onSubmit={submit}>
               <header className={styles.composerHeader}>
-                <div>
-                  <span>{editing ? "Task" : "New task"}</span>
-                  <h2 id="task-composer-heading">{editing ? "Edit the plan" : "Plan the moment"}</h2>
+                <div className={styles.composerHeadingCopy}>
+                  <h2 id="task-composer-heading">{editing ? "Edit task" : "Plan task"}</h2>
                 </div>
-                <button type="button" className={styles.closeButton} onClick={closeComposer} aria-label="Close task composer">×</button>
+                <button type="button" className={styles.closeButton} onClick={closeComposer} aria-label="Close task composer">
+                  <span aria-hidden="true" />
+                </button>
               </header>
 
               {error && <p role="alert" className={styles.composerError}>{error}</p>}
 
-              <input
-                ref={initialField}
-                className={styles.titleField}
-                aria-label="Task title"
-                value={draft.title}
-                placeholder="What needs your attention?"
-                onChange={(event) => setDraft({ ...draft, title: event.target.value })}
-              />
+              <section className={styles.composerIntro} aria-label="Task details">
+                <div className={styles.sectionBody}>
+                  <label className={styles.titleFieldWrap}>
+                    <span>Title</span>
+                    <input
+                      ref={initialField}
+                      className={styles.titleField}
+                      value={draft.title}
+                      placeholder="Name the task…"
+                      onChange={(event) => setDraft({ ...draft, title: event.target.value })}
+                    />
+                  </label>
 
-              <div className={styles.scheduleBar}>
-                <label className={styles.scheduleDateField}>
-                  <span>Date</span>
-                  <input aria-label="Task date" type="date" value={draft.local_date} onChange={(event) => setDraft((current) => ({ ...current, local_date: event.target.value }))} />
-                </label>
-                <Suspense fallback={null}>
-                  <TaskTimeWheelPicker label="Start" value={draft.start_minute} onChange={(start_minute) => setDraft((current) => ({ ...current, start_minute }))} />
-                  <TaskTimeWheelPicker label="End" value={draft.end_minute} onChange={(end_minute) => setDraft((current) => ({ ...current, end_minute }))} />
-                </Suspense>
-              </div>
-
-              <div className={styles.detailsPanel}>
                   <label className={styles.detailFieldWide}>
-                    <span>Notes</span>
-                    <textarea value={draft.description} onChange={(event) => setDraft({ ...draft, description: event.target.value })} placeholder="Optional context" />
+                    <span>Description</span>
+                    <textarea value={draft.description} onChange={(event) => setDraft({ ...draft, description: event.target.value })} placeholder="Describe the task or its next concrete step…" />
                   </label>
+                </div>
+              </section>
 
-                  {!editing && (
-                    <label className={styles.detailField}>
-                      <span>Category</span>
-                      <select value={draft.category_id} onChange={(event) => setDraft({ ...draft, category_id: event.target.value })}>
-                        {(categories.data ?? []).map((category: TaskCategoryView) => (
-                          <option key={category.id} value={category.id}>{category.name}</option>
-                        ))}
-                      </select>
-                    </label>
-                  )}
+              <ComposerSection id="task-schedule-heading" title="Schedule" icon={iconCalendar}>
+                  <div className={styles.scheduleBar} data-form-grid="six-column">
+                    <Suspense fallback={null}>
+                      <TaskDatePicker value={draft.local_date} today={today} onChange={(local_date) => { if (local_date) setDraft((current) => ({ ...current, local_date })); }} />
+                      <TaskTimeWheelPicker label="Start" value={draft.start_minute} onChange={(start_minute) => setDraft((current) => ({ ...current, start_minute }))} />
+                      <TaskTimeWheelPicker label="End" value={draft.end_minute} onChange={(end_minute) => setDraft((current) => ({ ...current, end_minute }))} />
+                    </Suspense>
+                  </div>
+              </ComposerSection>
 
-                  <label className={styles.detailField}>
-                    <span>Priority</span>
-                    <select value={draft.priority} onChange={(event) => setDraft({ ...draft, priority: event.target.value })}>
-                      <option value="low">Low</option>
-                      <option value="medium">Medium</option>
-                      <option value="high">High</option>
-                    </select>
-                  </label>
+              <ComposerSection id="task-context-heading" title="Context" icon={iconOptions}>
+                  <div className={styles.detailsPanel} data-form-grid="six-column">
+
+                  <Suspense fallback={<LoadingRow label="Loading categories…" />}>
+                    <TaskCategoryPicker
+                      value={draft.category_id}
+                      categories={categories.data ?? []}
+                      current={editing ? {
+                        id: editing.category_id,
+                        name: editing.category_name,
+                        icon_key: editing.category_icon_key,
+                        color_key: editing.category_color_key,
+                      } : null}
+                      loading={categories.isLoading}
+                      error={categories.isError}
+                      onChange={(category_id) => setDraft({ ...draft, category_id })}
+                    />
+                  </Suspense>
+
+                  <div className={styles.choiceField} role="group" aria-labelledby="task-priority-label">
+                    <span id="task-priority-label" className={styles.fieldLabel}>Priority</span>
+                    <div className={styles.choiceGrid} data-columns="3">
+                      {(["low", "medium", "high"] as const).map((priority) => <button
+                        key={priority}
+                        type="button"
+                        className={styles.choiceButton}
+                        data-tone={priority}
+                        aria-pressed={draft.priority === priority}
+                        onClick={() => setDraft({ ...draft, priority })}
+                      ><strong>{priority[0]!.toUpperCase()}{priority.slice(1)}</strong></button>)}
+                    </div>
+                  </div>
 
                   <div className={styles.detailField}>
                     <Suspense fallback={<LoadingRow label="Loading Life areas…" />}>
@@ -769,37 +812,38 @@ export function TodayScreen({
                     </Suspense>
                   </div>
 
-                  <label className={styles.detailField}>
-                    <span>Deadline</span>
-                    <input
-                      type="date"
+                  <Suspense fallback={<LoadingRow label="Loading deadline calendar…" />}>
+                    <TaskDatePicker
+                      label="Deadline"
+                      value={draft.deadline_local_date}
+                      today={today}
+                      optional
+                      variant="detail"
                       disabled={editing?.kind === "recurring" || repeat}
-                      value={draft.deadline_local_date ?? ""}
-                      onChange={(event) => setDraft({ ...draft, deadline_local_date: event.target.value || null })}
+                      onChange={(deadline_local_date) => setDraft({ ...draft, deadline_local_date })}
                     />
-                  </label>
+                  </Suspense>
 
                   {!editing && (
-                    <label className={styles.detailField}>
-                      <span>Repeat</span>
-                      <select
-                        value={repeat ? repeatFrequency : "none"}
-                        onChange={(event) => {
-                          const value = event.target.value;
-                          if (value === "none") setRepeat(false);
-                          else {
-                            setRepeat(true);
-                            setRepeatFrequency(value as "daily" | "weekly" | "monthly");
-                            setDraft((current) => ({ ...current, deadline_local_date: null }));
-                          }
-                        }}
-                      >
-                        <option value="none">Does not repeat</option>
-                        <option value="daily">Daily</option>
-                        <option value="weekly">Weekly</option>
-                        <option value="monthly">Monthly</option>
-                      </select>
-                    </label>
+                    <div className={styles.choiceField} role="group" aria-labelledby="task-repeat-label">
+                      <span id="task-repeat-label" className={styles.fieldLabel}>Repeat</span>
+                      <div className={styles.choiceGrid} data-columns="4">
+                        {(["none", "daily", "weekly", "monthly"] as const).map((frequency) => <button
+                          key={frequency}
+                          type="button"
+                          className={styles.choiceButton}
+                          aria-pressed={frequency === "none" ? !repeat : repeat && repeatFrequency === frequency}
+                          onClick={() => {
+                            if (frequency === "none") setRepeat(false);
+                            else {
+                              setRepeat(true);
+                              setRepeatFrequency(frequency);
+                              setDraft((current) => ({ ...current, deadline_local_date: null }));
+                            }
+                          }}
+                        ><strong>{frequency === "none" ? "One time" : frequency[0]!.toUpperCase() + frequency.slice(1)}</strong></button>)}
+                      </div>
+                    </div>
                   )}
 
                   <div className={styles.detailFieldWide}>
@@ -818,7 +862,8 @@ export function TodayScreen({
                       </Suspense>
                     )}
                   </div>
-              </div>
+                  </div>
+              </ComposerSection>
 
               <footer className={styles.composerFooter}>
                 {editing && (
@@ -837,7 +882,7 @@ export function TodayScreen({
                   {save.isPending ? "Saving…" : editing ? "Save changes" : "Add to day"}
                 </button>
               </footer>
-            </div>
+            </form>
           </DialogSurface>
         </DialogBackdrop>
       )}

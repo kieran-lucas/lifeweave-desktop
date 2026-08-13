@@ -475,6 +475,7 @@ pub struct CalendarDayProjection {
     pub is_today: bool,
     pub is_selected: bool,
     pub task_count: i32,
+    pub completed_task_count: i32,
     pub scheduled_minutes: i32,
     pub category_icon_keys: Vec<String>,
     pub extra_category_count: i32,

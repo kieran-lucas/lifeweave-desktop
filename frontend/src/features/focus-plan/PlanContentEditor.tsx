@@ -135,7 +135,7 @@ export default function PlanContentEditor({ value, editing, onChange }: { value:
 
   return (
     <div className={styles.shell}>
-      <div className={leafStyles.editorChrome}>
+      <div className={`${leafStyles.editorChrome} ${styles.toolbarChrome}`} data-plan-editor-toolbar>
         <div className={leafStyles.toolbar} role="toolbar" aria-label="Plan Markdown formatting">
           <div className={leafStyles.toolbarGroup}>
             <button type="button" className={leafStyles.toolbarButton} aria-pressed={mode === "write"} onClick={() => setMode("write")}>Write</button>

@@ -36,13 +36,18 @@ The immutable source is authoritative. This registry makes operational status vi
   node activation, outside pointer press, action selection, or Escape. A leaf still opens a separate
   reader. The Tree viewport exposes no local scrollbars: holding and dragging empty canvas pans in
   both axes, while direct node drag-and-drop is disabled; structure changes only through the
-  explicit Move controls under Edit node. Arrow keys pan and Home resets for keyboard parity. Node
+  explicit Move controls under Edit node. Mouse-wheel and two-axis trackpad input scroll the hidden-
+  scrollbar viewport through a damped, bounded delta; Shift plus a vertical wheel scrolls
+  horizontally. Arrow keys pan and Home resets for keyboard parity. Node
   titles wrap in wider cards without ellipsis, and selection clears on repeat activation, outside
   pointer press, Escape, or editor close instead of applying a persistent black fill. Its compact
   header stays at the top of the pane, the bordered pan viewport consumes the
   remaining available height, and the outer Life canvas does not scroll in Tree mode. Basic Leaf
   editing uses one non-duplicated extension set, does not rerender React for every document
   transaction, and exposes contextual row/column/table controls. See ADR 0046.
+- Life's session Back restores the immediately preceding Life state. In particular, navigating from
+  one leaf Reader directly to another records the first Reader state, so Back returns to that leaf
+  before returning to its containing branch.
 - Schema 29 converges the canonical Life Focus System to exactly 53 stable identities: one root,
   four English-only domains, twelve English-only sections, and thirty-six English-only leaves.
   Finance is a child of Security. Every canonical node has a semantic local icon; existing leaf
@@ -93,7 +98,23 @@ The immutable source is authoritative. This registry makes operational status vi
   dominant reading and writing plane in a 70% focused frame. Authored single line breaks remain
   visible in read mode. Facts and lifecycle actions remain secondary but visible; Definition of
   done and Linked work are omitted from this surface without deleting their stored authority.
-  The 15% Life navigator retains its width and uses larger navigation and child-label type.
+  The 15% Life navigator retains its width and uses larger navigation and child-label type. Edit
+  Plan is one aligned instrument: explicit Title/Outcome labels lead a two-column Start date,
+  Target date, Life Area, and Status grid whose 52 px control rhythm matches Edit Task.
+- Task create and edit use one coherent composer component set. Category remains visible in both;
+  schedule date and optional Deadline share the local calendar; Start/End retain exact one-minute
+  wheels; Priority and Repeat share labelled choice controls. Schema 31 non-destructively seeds
+  General plus the ten approved workstreams and never overwrites existing Category rows or goals.
+  Both paths use the same standard-width matte Essentials / Schedule / Context composition, black
+  identity header, monochrome selection grammar, internal scroll, and stable footer. See ADR 0048.
+- The Task composer calls its stored text field Description, not Notes. Schedule and Context share
+  one six-column/52 px layout authority. Life Area is selected one hierarchy level at a time and
+  displays the concise selected title; Focus Plan remains the canonical bounded flat projection
+  with lifecycle as secondary metadata. See ADR 0048.
+- The Task Focus Plan picker reads the same bounded non-archived projection authorized by ADR 0031,
+  refetches on composer mount, and is invalidated after every successful canonical Plans-screen
+  create, update, lifecycle, score, archive, and restore operation. Existing archived links remain
+  visible but disabled for new assignment. See ADR 0048.
 - Focus Plan activity Analytics is a bounded read-only projection of existing authority over the
   Objective Analytics week/month/year periods. One-off Tasks and recurring occurrences are
   attributed through their **current** `tasks.focus_plan_id` / `task_series.focus_plan_id`, manual

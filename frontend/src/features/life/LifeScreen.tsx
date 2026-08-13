@@ -204,13 +204,12 @@ export function LifeScreen({
     if (busy) return;
     cancelPendingEntryRequest();
     linkedNavigationGeneration.current += 1;
+    remember(mode === "reader" ? "reader" : "browse", mode === "reader" ? reader : undefined);
     if (node.is_leaf) {
-      remember("browse");
       setReader(node);
       setMode("reader");
       return;
     }
-    remember("browse");
     setReader(undefined);
     setNodeId(node.id);
     setPage(0);
@@ -440,7 +439,7 @@ export function LifeScreen({
                     Life tree
                   </h1>
                 </div>
-                <p>Hold and drag the canvas to navigate</p>
+                <p>Scroll or drag the canvas to navigate</p>
               </header>
               <LifeEditWorkspace
                 initialNodeId={projection.selected.id}

@@ -18,6 +18,9 @@ Later on 2026-08-13, the Product Owner explicitly disabled direct Tree node drag
 dismissable non-black selection, required full untruncated node titles, and locked an English-only
 53-node Life Focus hierarchy with a meaningful semantic icon on every node. Schema 29 performs the
 identity-preserving hierarchy correction; it does not replace existing leaf documents.
+The Product Owner then requested a denser whole-tree composition and controlled mouse-wheel /
+trackpad scrolling without exposing scrollbars. This is presentation and input behavior only; it
+does not change stored coordinates or structural mutation authority.
 
 ## Context
 
@@ -40,11 +43,15 @@ unnecessarily difficult.
    demand; no mutation capability is deleted or duplicated. The action surface is centered on its
    node rather than offset from the icon, and closes when the node is activated again, an action is
    chosen, the pointer is pressed outside, or Escape is pressed. Escape restores focus to the node.
+   Dense leaf rows place this surface above the selected leaf so the following sibling cannot
+   conceal it; branch actions retain their below-node placement.
 4. Direct node drag-and-drop is disabled. Reorder and reparent remain available only as explicit,
    keyboard-reachable Move controls under Edit node. The Tree viewport has no user-operated local
    scrollbars: holding and dragging empty canvas pans it in both axes, while a gesture beginning on
-   a node does not pan or move the node. Arrow keys pan, Shift increases the step, and Home returns
-   to the origin. The
+   a node does not pan or move the node. Mouse-wheel and two-axis trackpad input scroll through a
+   damped delta capped below one node row per event; Shift plus a vertical wheel scrolls
+   horizontally. Scrollbars remain visually hidden. Arrow keys pan, Shift increases the step, and
+   Home returns to the origin. The
    Tree title is a compact header at the top of its pane; the bordered viewport consumes the
    remaining available height and the outer Life canvas cannot scroll in Tree mode. Advanced node
    controls, when requested, scroll only inside their own bounded column.
@@ -70,6 +77,12 @@ unnecessarily difficult.
     semantic icons to the Product Owner's exact 1 + 4 + 12 + 36 Life Focus structure. Titles are
     English-only. Finance is under Security; Contingency & Recovery remains the final child of
     Safety & Continuity. Existing Basic Leaf content is preserved by stable identity.
+12. Tree layout uses the measured maximum card width of each generation plus one compact generation
+    gap, instead of a fixed oversized depth stride. Sibling/cousin spacing stays collision-tested
+    against the complete canonical 53-node hierarchy.
+13. Life's dedicated session history captures the actual current Reader when another sibling leaf
+    is opened. Back therefore restores Leaf 1 after `Leaf 1 -> Leaf 2`, and only the following Back
+    returns to the containing branch.
 
 ## Consequences
 

@@ -7,13 +7,14 @@ import { text } from "../../design-system/visual/typography.css";
 
 export const root = style({ display: "flex", flexDirection: "column", gap: space.x4, minInlineSize: 0, paddingBlockStart: space.x5, borderTop: "1px solid var(--paint-edge)" });
 globalStyle(`${root} > h2`, { ...text.sectionTitle, margin: 0 });
-export const tableScroll = scrollRegion;
+export const tableScroll = style([scrollRegion, { borderBlock: "1px solid var(--paint-edge)" }]);
 export const createRow = style({ display: "flex", flexWrap: "wrap", gap: space.control, alignItems: "center", minInlineSize: 0 });
 export const input = style([focusRing, { flex: 1, minInlineSize: 0, boxSizing: "border-box", padding: "7px 10px", border: "1px solid var(--paint-edge)", borderRadius: "var(--radius-control)", ...text.body, backgroundColor: "#FFFFFF", backgroundImage: "var(--paint-grain-fine)", color: "var(--text-primary)" }]);
 export const createButton = button.primary;
 export const table = style({ width: "100%", borderCollapse: "collapse", backgroundColor: "#FFFFFF", backgroundImage: "var(--paint-grain-fine)" });
-globalStyle(`${table} th`, { textAlign: "left", ...text.label, color: "var(--text-muted)", padding: "7px 8px", borderBottom: "1px solid var(--accent)", backgroundColor: "#FFFFFF" });
+globalStyle(`${table} th`, { textAlign: "left", ...text.label, color: "var(--text-muted)", padding: "8px", borderBottom: "1px solid var(--paint-edge-strong)", backgroundColor: "#F7F8FA" });
 globalStyle(`${table} td`, { padding: "8px", borderBottom: "1px solid var(--paint-edge)", ...text.compactBody, verticalAlign: "top" });
+globalStyle(`${table} tbody tr:hover`, { backgroundColor: "#FAFBFC" });
 globalStyle(`${table} th:nth-child(n+2):nth-child(-n+4), ${table} td:nth-child(n+2):nth-child(-n+4)`, { textAlign: "right", fontVariantNumeric: "tabular-nums" });
 export const archived = style({ color: "var(--text-muted)" });
 export const actions = style({ display: "flex", gap: 6, flexWrap: "wrap" });

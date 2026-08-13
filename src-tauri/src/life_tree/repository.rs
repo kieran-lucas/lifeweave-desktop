@@ -529,7 +529,7 @@ pub fn export_source(conn: &Connection, node_id: &str) -> Result<TreeExportSourc
         assets: assets_by_key.into_values().collect(),
         omissions,
         source_schema_version:
-            crate::infrastructure::sqlite::task53_migration::max_supported_schema_version(),
+            crate::infrastructure::sqlite::task54_migration::max_supported_schema_version(),
     })
 }
 

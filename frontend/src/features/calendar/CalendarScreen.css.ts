@@ -180,8 +180,7 @@ export const dayNumber = style({
 
 export const daySignal = style({
   alignSelf: "end",
-  display: "grid",
-  gridTemplateColumns: "auto minmax(16px, 1fr) auto",
+  display: "inline-flex",
   alignItems: "center",
   gap: 6,
   minInlineSize: 0,
@@ -192,24 +191,13 @@ export const daySignal = style({
 });
 
 export const taskCount = style({
-  minInlineSize: 12,
-  fontSize: 10,
-  lineHeight: "12px",
-  fontWeight: 780,
+  minInlineSize: 34,
+  fontSize: 11,
+  lineHeight: "14px",
+  fontWeight: 700,
   fontVariantNumeric: "tabular-nums",
-});
-
-export const activityLine = style({
-  blockSize: 2,
-  borderRadius: 2,
-  background: "currentColor",
-  opacity: 0.26,
-  transformOrigin: "left center",
-  selectors: {
-    [`${daySignal}[data-intensity=low] &`]: { transform: "scaleX(.32)" },
-    [`${daySignal}[data-intensity=medium] &`]: { transform: "scaleX(.64)" },
-    [`${daySignal}[data-intensity=high] &`]: { transform: "scaleX(1)" },
-  },
+  whiteSpace: "nowrap",
+  letterSpacing: ".01em",
 });
 
 export const attentionDot = style({

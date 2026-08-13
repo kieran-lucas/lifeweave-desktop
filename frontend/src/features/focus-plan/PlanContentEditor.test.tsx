@@ -15,6 +15,7 @@ describe("Plan Markdown content editor", () => {
     render(<EditablePlan />);
 
     const toolbar = screen.getByRole("toolbar", { name: "Plan Markdown formatting" });
+    expect(toolbar.parentElement).toHaveAttribute("data-plan-editor-toolbar");
     expect(screen.getByRole("button", { name: "Bold" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Table" })).toBeInTheDocument();
     expect(screen.queryByText("Image")).not.toBeInTheDocument();

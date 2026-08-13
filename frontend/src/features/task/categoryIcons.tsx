@@ -1,6 +1,7 @@
 import {
   Icon,
   iconAnalytics,
+  iconApps,
   iconCalendar,
   iconCircle,
   iconDetails,
@@ -34,9 +35,11 @@ function stableHash(value: string): number {
  */
 function iconForCategory(iconKey: string, label: string): string {
   const value = `${iconKey} ${label}`.toLowerCase();
-  if (iconKey === "category-general") return iconCircle;
+  if (iconKey === "category-general") return iconApps;
   if (/(read|study|book|english|learn|course|school)/.test(value)) return iconReader;
   if (/(plan|goal|focus|milestone|project)/.test(value)) return iconPlans;
+  if (/(code|coding|cs|technical|software|program)/.test(value)) return iconSubtasks;
+  if (/(physics|olympic|science|experiment)/.test(value)) return iconAnalytics;
   if (/(life|health|wellness|home|personal)/.test(value)) return iconLife;
   if (/(calendar|time|schedule|event|meeting|deadline)/.test(value)) return iconCalendar;
   if (/(data|analytic|metric|finance|money|budget|stat)/.test(value)) return iconAnalytics;
