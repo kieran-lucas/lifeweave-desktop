@@ -7,8 +7,6 @@ import {
 import type { LifeNodeView } from "../../ipc/generated/LifeNodeView";
 import * as styles from "./LifeScreen.css";
 import { PageFrame } from "../../app/layout/PageFrame";
-import { LifeEditWorkspace } from "./LifeEditWorkspace";
-import { BasicLeafReader } from "./document/BasicLeafReader";
 import { RelatedTasksPanel } from "./RelatedTasksPanel";
 import { EmptyState, LoadingRow } from "../../design-system/primitives/States";
 import {
@@ -40,6 +38,12 @@ const lifeKeys = {
 };
 
 const LifeLinksPanel = lazy(() => import("./links/LifeLinksPanel"));
+const LifeEditWorkspace = lazy(() =>
+  import("./LifeEditWorkspace").then((module) => ({ default: module.LifeEditWorkspace })),
+);
+const BasicLeafReader = lazy(() =>
+  import("./document/BasicLeafReader").then((module) => ({ default: module.BasicLeafReader })),
+);
 
 function NodeIcon({ iconKey, size = 17 }: { iconKey: string; size?: number }) {
   const glyph = lifeIconGlyph(iconKey);
@@ -441,14 +445,16 @@ export function LifeScreen({
                 </div>
                 <p>Scroll or drag the canvas to navigate</p>
               </header>
-              <LifeEditWorkspace
-                initialNodeId={projection.selected.id}
-                onBrowse={(id) => {
-                  setNodeId(id);
-                  setPage(0);
-                  setMode("browse");
-                }}
-              />
+              <Suspense fallback={<LoadingRow label="Loading Life tree…" />}>
+                <LifeEditWorkspace
+                  initialNodeId={projection.selected.id}
+                  onBrowse={(id) => {
+                    setNodeId(id);
+                    setPage(0);
+                    setMode("browse");
+                  }}
+                />
+              </Suspense>
             </div>
           ) : mode === "reader" && reader ? (
             <article key={`reader-${reader.id}`} className={styles.readerCanvas} data-life-reader="">
@@ -464,11 +470,13 @@ export function LifeScreen({
               </header>
 
               <div className={styles.documentBody} data-life-document-body="">
-                <BasicLeafReader
-                  nodeId={reader.id}
-                  outlineVisible={outlineVisible}
-                  onOutlineAvailabilityChange={reportOutlineAvailability}
-                />
+                <Suspense fallback={<LoadingRow label="Loading Life document…" />}>
+                  <BasicLeafReader
+                    nodeId={reader.id}
+                    outlineVisible={outlineVisible}
+                    onOutlineAvailabilityChange={reportOutlineAvailability}
+                  />
+                </Suspense>
               </div>
 
               <details className={styles.contextDisclosure}>

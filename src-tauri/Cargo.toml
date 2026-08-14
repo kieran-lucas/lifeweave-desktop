@@ -1,10 +1,10 @@
 [package]
 name = "lifeweave-desktop"
-version = "0.0.0"
+version = "1.0.0"
 description = "Windows local-first Task System + Life System"
 authors = ["Lifeweave contributors"]
 edition = "2024"
-rust-version = "1.85"
+rust-version = "1.88"
 
 [features]
 e2e-test = []
@@ -14,12 +14,12 @@ name = "lifeweave_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
-tauri-build = { version = "=2.6.2", features = [] }
+tauri-build = { version = "=2.6.3", features = [] }
 
 [dependencies]
 serde = { version = "=1.0.228", features = ["derive"] }
 serde_json = "=1.0.149"
-tauri = { version = "=2.11.2", features = [] }
+tauri = { version = "=2.11.5", features = [] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 # Stage C: dedicated SQLite worker. Bundled to avoid Windows system-SQLite version
@@ -66,6 +66,13 @@ windows-sys = { version = "0.61", features = ["Win32_Storage_FileSystem", "Win32
 
 [dev-dependencies]
 ts-rs = { version = "10", features = ["serde-compat"] }
+
+[lints.clippy]
+# Rust 1.95 promoted these two mechanical style suggestions into warnings. Rewriting every
+# historical conditional would create a broad, behavior-neutral release diff; keep the strict gate
+# for correctness lints while handling these styles in a future dedicated cleanup.
+collapsible_if = "allow"
+manual_is_multiple_of = "allow"
 
 [profile.release]
 codegen-units = 1

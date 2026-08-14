@@ -1,5 +1,6 @@
 import { globalStyle, keyframes, style } from "@vanilla-extract/css";
 import { duration, easing } from "../../../design-system/visual/motion.css";
+import { vars } from "../../../design-system/visual/contract.css";
 
 const composerEnter = keyframes({
   from: { opacity: 0, transform: "translateY(14px) scale(.982)" },
@@ -105,13 +106,14 @@ export const timeRail = style({
   gap: 2,
   minBlockSize: 52,
   boxSizing: "border-box",
-  padding: "8px 14px 7px 0",
+  padding: "9px 14px 6px 0",
   color: "#929292",
   textAlign: "right",
   fontVariantNumeric: "tabular-nums",
   fontFeatureSettings: '"tnum" 1, "lnum" 1',
 });
-globalStyle(`${timeRail} > strong, ${timeRail} > span`, {
+export const timeValue = style({});
+globalStyle(`${timeValue}`, {
   display: "block",
   inlineSize: "5ch",
   textAlign: "center",
@@ -126,7 +128,7 @@ export const taskRow = style({
   minBlockSize: 52,
   minInlineSize: 0,
   display: "grid",
-  gridTemplateColumns: "minmax(0, 1fr) auto 20px",
+  gridTemplateColumns: "minmax(0, 1fr) 20px",
   alignItems: "start",
   alignSelf: "stretch",
   gap: 8,
@@ -143,12 +145,22 @@ export const taskRow = style({
     "&:focus-visible": { outline: "2px solid #111111", outlineOffset: -2 },
   },
   "@media": {
-    "(max-width: 680px)": { gridTemplateColumns: "minmax(0,1fr) auto 18px" },
+    "(max-width: 680px)": { gridTemplateColumns: "minmax(0,1fr) 18px" },
   },
 });
 
 export const taskCopy = style({ display: "grid", alignContent: "start", gap: 3, minInlineSize: 0 });
-globalStyle(`${taskCopy} > strong`, {
+export const taskTitleLine = style({
+  display: "flex",
+  alignItems: "flex-end",
+  flexWrap: "wrap",
+  columnGap: "1ch",
+  rowGap: 3,
+  minInlineSize: 0,
+});
+globalStyle(`${taskTitleLine} > strong`, {
+  minInlineSize: 0,
+  flex: "0 1 auto",
   color: "#202020",
   fontSize: 13,
   lineHeight: "17px",
@@ -159,6 +171,7 @@ globalStyle(`${taskCopy} > strong`, {
 });
 
 export const taskDescription = style({
+  maxInlineSize: "80%",
   margin: "2px 0 0",
   paddingInlineStart: 9,
   borderInlineStart: "2px solid var(--border-strong)",
@@ -198,13 +211,66 @@ globalStyle(`${taskMeta} > button`, {
 globalStyle(`${taskMeta} > button:hover`, { color: "#111111", textDecoration: "underline" });
 globalStyle(`${taskMeta} > button:focus-visible`, { outline: "1.5px solid #111111", outlineOffset: 2 });
 
+export const priorityBadge = style({
+  inlineSize: "fit-content",
+  blockSize: 18,
+  minInlineSize: 0,
+  display: "inline-flex",
+  alignItems: "center",
+  alignSelf: "flex-end",
+  justifyContent: "flex-start",
+  flex: "0 0 auto",
+  gap: 4,
+  boxSizing: "border-box",
+  paddingInline: 5,
+  border: `1px solid ${vars.color.borderStrong}`,
+  borderRadius: vars.radius.full,
+  background: vars.color.surfaceSubtle,
+  color: vars.color.textPrimary,
+  fontSize: 9.5,
+  lineHeight: "12px",
+  fontWeight: 760,
+  letterSpacing: ".025em",
+  whiteSpace: "nowrap",
+  "@media": {
+    "(forced-colors: active)": {
+      borderColor: "CanvasText",
+      background: "Canvas",
+      color: "CanvasText",
+      forcedColorAdjust: "none",
+    },
+  },
+});
+
+export const priorityMeter = style({
+  inlineSize: 11,
+  blockSize: 10,
+  display: "block",
+  flex: "0 0 11px",
+  overflow: "visible",
+});
+globalStyle(`${priorityMeter} > rect`, {
+  fill: "currentColor",
+  opacity: .2,
+});
+globalStyle(`${priorityBadge}[data-priority="low"] ${priorityMeter} > rect:nth-child(1)`, { opacity: .7 });
+globalStyle(`${priorityBadge}[data-priority="medium"] ${priorityMeter} > rect:nth-child(-n+2)`, { opacity: .7 });
+globalStyle(`${priorityBadge}[data-priority="high"] ${priorityMeter} > rect`, { opacity: .7 });
+
+export const priorityText = style({
+  display: "inline-flex",
+  alignItems: "center",
+  alignSelf: "stretch",
+  opacity: .9,
+});
+
 
 export const assessmentSlot = style({
   justifySelf: "end",
   alignSelf: "center",
 });
 
-globalStyle(`${agendaItem}[data-completed=true] ${taskCopy} > strong`, {
+globalStyle(`${agendaItem}[data-completed=true] ${taskTitleLine} > strong`, {
   textDecoration: "line-through",
   textDecorationThickness: "1.5px",
 });

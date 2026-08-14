@@ -142,6 +142,7 @@ export function FocusPlansScreen({
   const [scoreTarget, setScoreTarget] = useState<ScoreTarget | null>(null);
   const scoreMovesToCompleted = useRef(false);
   const creating = form !== null && selected === null;
+  const portfolioKey = (value: FocusPlanPortfolio) => ["focus-plans", value] as const;
 
   const syncDetail = useCallback((plan: FocusPlanDetailView) => {
     setSelected(plan);
@@ -152,13 +153,17 @@ export function FocusPlansScreen({
     setStatus("loading");
     setError(null);
     try {
-      setPlans(await listFocusPlans({ portfolio: nextPortfolio, limit: 200, offset: 0 }));
+      setPlans(await queryClient.fetchQuery({
+        queryKey: portfolioKey(nextPortfolio),
+        queryFn: () => listFocusPlans({ portfolio: nextPortfolio, limit: 200, offset: 0 }),
+        staleTime: 30_000,
+      }));
     } catch (cause) {
       setError(messageFromError(cause));
     } finally {
       setStatus("ready");
     }
-  }, []);
+  }, [queryClient]);
 
   const openPlan = useCallback(
     async (planId: string) => {
@@ -333,6 +338,7 @@ export function FocusPlansScreen({
   };
 
   const invalidatePlanConsumers = () => Promise.all([
+    queryClient.invalidateQueries({ queryKey: ["focus-plans"] }),
     invalidateTaskSavedViewReferenceData(queryClient),
     queryClient.invalidateQueries({ queryKey: ["focus-plan-targets"] }),
     queryClient.invalidateQueries({ queryKey: ["analytics"] }),

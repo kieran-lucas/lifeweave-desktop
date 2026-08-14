@@ -12,7 +12,7 @@ export const duration = {
   inspectorState: "180ms",
   inspector: "220ms",
   reorder: "240ms",
-  route: "260ms",
+  route: "230ms",
   traversal: "300ms",
 } as const;
 

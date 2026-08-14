@@ -1,7 +1,7 @@
 import { $, browser, expect } from "@wdio/globals";
 import { createManagedBackup, restoreManagedBackup } from "../support/managedBackups.js";
 
-const task = (title: string) => $(`//div[@role="listitem"][.//strong[normalize-space()="${title}"]]`);
+const task = (title: string) => $(`//*[@role="group"][.//strong[normalize-space()="${title}"]]`);
 
 describe("Phase 2 — task backup and restore", () => {
   it("restores the selected opaque backup after a task mutation", async () => {
@@ -19,7 +19,7 @@ describe("Phase 2 — task backup and restore", () => {
     const title = $("input");
     await title.clearValue();
     await title.setValue("E2E Gamma");
-    await $("button=Save").click();
+    await $("button=Save changes").click();
     await expect(task("E2E Gamma")).toBeDisplayed();
 
     await $("button[aria-label='Settings']").click();

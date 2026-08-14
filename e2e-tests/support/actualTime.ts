@@ -137,7 +137,7 @@ export async function openToday(localDate: string) {
 }
 
 export const row = (title: string) =>
-  $(`//div[@role="listitem"][.//strong[normalize-space()="${title}"]]`);
+  $(`//*[@role="group"][.//strong[normalize-space()="${title}"]]`);
 
 export const timerStrip = () => $("section[aria-label='Running task timer']");
 

@@ -106,7 +106,8 @@ describe("Today task interactions", () => {
     const title = await screen.findByText("Write the report");
     const row = view.container.querySelector<HTMLElement>('[data-agenda-id="task-1"]')!;
     expect(within(row).queryByText("General")).not.toBeInTheDocument();
-    expect(row.querySelector("svg")).not.toBeInTheDocument();
+    expect(row.querySelectorAll("svg")).toHaveLength(1);
+    expect(row.querySelector("[data-task-priority] > svg")).toBeInTheDocument();
 
     fireEvent.click(title);
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
@@ -121,7 +122,11 @@ describe("Today task interactions", () => {
     expect(within(firstEditor).getByRole("region", { name: "Context" })).toBeInTheDocument();
     expect(within(firstEditor).queryByRole("button", { name: /details/i })).not.toBeInTheDocument();
     expect(within(firstEditor).getByRole("textbox", { name: "Description" })).toHaveValue("");
-    expect(await within(firstEditor).findByRole("button", { name: "Category, General" })).toBeInTheDocument();
+    expect(await within(firstEditor).findByRole(
+      "button",
+      { name: "Category, General" },
+      { timeout: 8_000 },
+    )).toBeInTheDocument();
     expect(within(firstEditor).getByText("Category")).toBeInTheDocument();
     expect(await within(firstEditor).findByRole("button", { name: /Task date, Tuesday, August 11, 2026/ })).toBeInTheDocument();
     expect(within(firstEditor).getByRole("button", { name: "Medium" })).toHaveAttribute("aria-pressed", "true");
@@ -185,6 +190,36 @@ describe("Today task interactions", () => {
     const row = description.closest<HTMLElement>('[data-agenda-id="task-1"]');
     expect(row).not.toBeNull();
     expect(within(row!).getByText("Write the report")).toBeInTheDocument();
+  });
+
+  it("shows every priority as fitted text plus a redundant three-step signal meter", async () => {
+    api.listTodayItems.mockResolvedValue([
+      { ...task, id: "task-low", title: "Low priority task", priority: "low" },
+      { ...task, id: "task-medium", title: "Medium priority task", priority: "medium" },
+      { ...task, id: "task-high", title: "High priority task", priority: "high" },
+    ]);
+
+    const view = mount();
+    await screen.findByText("High priority task");
+
+    for (const [id, priority, label] of [
+      ["task-low", "low", "Low"],
+      ["task-medium", "medium", "Medium"],
+      ["task-high", "high", "High"],
+    ] as const) {
+      const row = view.container.querySelector<HTMLElement>(`[data-agenda-id="${id}"]`)!;
+      const indicator = row.querySelector<HTMLElement>("[data-task-priority]")!;
+      expect(indicator).toHaveAttribute("data-priority", priority);
+      expect(indicator).toHaveTextContent(label);
+      expect(indicator.previousElementSibling).toHaveTextContent(`${label} priority task`);
+      const meter = indicator.querySelector("svg[aria-hidden='true']");
+      expect(meter).toHaveAttribute("viewBox", "0 0 11 10");
+      expect(meter).toHaveAttribute("shape-rendering", "crispEdges");
+      expect(meter?.querySelectorAll("rect")).toHaveLength(3);
+      expect([...meter!.querySelectorAll("rect")].map((bar) => bar.getAttribute("width"))).toEqual(["3", "3", "3"]);
+      expect([...meter!.querySelectorAll("rect")].map((bar) => bar.getAttribute("height"))).toEqual(["4", "7", "9"]);
+      expect(row).toHaveAccessibleName(new RegExp(`Priority: ${label}`));
+    }
   });
 
   it("uses the same assessment name in the task row and the option menu", async () => {

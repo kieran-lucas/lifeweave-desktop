@@ -4,6 +4,7 @@ import { vars } from "../../design-system/visual/contract.css";
 import { duration, easing } from "../../design-system/visual/motion.css";
 
 export const workspace = style({
+  position: "relative",
   display: "grid",
   gridTemplateColumns: "minmax(0,1fr)",
   gridTemplateRows: "minmax(0,1fr) auto",
@@ -12,9 +13,6 @@ export const workspace = style({
   blockSize: "100%",
   minBlockSize: 0,
   minInlineSize: 0,
-  selectors: {
-    '&[data-editor-open="true"]': { gridTemplateColumns: "minmax(0,1fr) minmax(240px,280px)" },
-  },
 });
 
 export const canvasViewport = style({
@@ -38,23 +36,23 @@ export const canvasViewport = style({
 
 export const canvas = style({ position: "relative", minInlineSize: "100%", minBlockSize: 480 });
 export const links = style({ position: "absolute", inset: 0, pointerEvents: "none", overflow: "visible" });
-export const positioner = style({ position: "absolute", inlineSize: "var(--life-node-width, 196px)", transform: "translate(var(--life-x),var(--life-y))" });
+export const positioner = style({ position: "absolute", zIndex: 1, inlineSize: "var(--life-node-width, 196px)", transform: "translate(var(--life-x),var(--life-y))", selectors: { '&[data-menu-open="true"]': { zIndex: 10 } } });
 export const nodeShell = style({ position: "relative" });
 const revealActions = keyframes({
-  from: { opacity: 0, transform: "translateX(-50%) translateY(-4px) scale(.98)" },
-  to: { opacity: 1, transform: "translateX(-50%) translateY(0) scale(1)" },
+  from: { opacity: 0, transform: "scale(.97)" },
+  to: { opacity: 1, transform: "scale(1)" },
 });
-const revealActionsAbove = keyframes({
-  from: { opacity: 0, transform: "translateX(-50%) translateY(4px) scale(.98)" },
-  to: { opacity: 1, transform: "translateX(-50%) translateY(0) scale(1)" },
+const revealInspector = keyframes({
+  from: { opacity: 0, transform: "translateY(7px) scale(.985)" },
+  to: { opacity: 1, transform: "translateY(0) scale(1)" },
 });
 export const nodeActions = style({
   position: "absolute",
-  zIndex: 6,
-  insetInlineStart: "50%",
-  insetBlockStart: "calc(100% + 7px)",
-  inlineSize: "max-content",
-  minInlineSize: 188,
+  zIndex: 9,
+  insetInlineStart: 0,
+  insetBlockStart: "100%",
+  inlineSize: "100%",
+  minInlineSize: 0,
   boxSizing: "border-box",
   display: "grid",
   gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
@@ -65,36 +63,15 @@ export const nodeActions = style({
   background: vars.color.surfaceRaised,
   boxShadow: vars.elevation.floating,
   color: vars.color.textPrimary,
-  transform: "translateX(-50%)",
   transformOrigin: "top center",
   animation: `${revealActions} ${duration.popover} ${easing.standard} both`,
   selectors: {
-    '&[data-placement="above"]': {
-      insetBlockStart: "auto",
-      insetBlockEnd: "calc(100% + 7px)",
-      transformOrigin: "bottom center",
-      animation: `${revealActionsAbove} ${duration.popover} ${easing.standard} both`,
-    },
-    "&::before": {
-      content: "",
-      position: "absolute",
-      zIndex: -1,
-      insetBlockStart: -5,
-      insetInlineStart: "calc(50% - 5px)",
-      inlineSize: 9,
-      blockSize: 9,
-      borderBlockStart: `1px solid ${vars.color.borderHairline}`,
-      borderInlineStart: `1px solid ${vars.color.borderHairline}`,
-      background: vars.color.surfaceRaised,
-      transform: "rotate(45deg)",
-    },
-    '&[data-placement="above"]::before': {
-      insetBlockStart: "auto",
-      insetBlockEnd: -5,
-      borderBlockStart: 0,
-      borderInlineStart: 0,
-      borderBlockEnd: `1px solid ${vars.color.borderHairline}`,
-      borderInlineEnd: `1px solid ${vars.color.borderHairline}`,
+    '&[data-action-count="1"]': {
+      insetInlineStart: "50%",
+      inlineSize: "max-content",
+      minInlineSize: 116,
+      translate: "-50% 0",
+      gridTemplateColumns: "minmax(0, 1fr)",
     },
   },
   "@media": {
@@ -110,6 +87,7 @@ export const nodeAction = style([
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
+    inlineSize: "100%",
     gap: 7,
     paddingInline: 9,
     border: 0,
@@ -185,49 +163,69 @@ export const compactMeta = style({ display: "block", marginBlockStart: 2, color:
 globalStyle(`${nodeCard}[aria-pressed="true"] ${compactMeta}`, { color: vars.color.textSecondary });
 
 export const inspector = style({
-  gridRow: "1",
+  position: "absolute",
+  zIndex: 8,
+  insetBlockStart: "var(--life-inspector-y, 14px)",
+  insetInlineStart: "var(--life-inspector-x, 14px)",
+  inlineSize: "min(400px, calc(100% - 28px))",
+  maxBlockSize: "calc(100% - 28px)",
+  boxSizing: "border-box",
   display: "grid",
-  gap: 12,
+  alignContent: "start",
+  gap: 0,
   minBlockSize: 0,
-  maxBlockSize: "100%",
   overflowY: "auto",
-  padding: "4px 2px 24px 18px",
-  borderInlineStart: "1px solid #E2E2E2",
-  background: "transparent",
+  padding: "16px 17px 18px",
+  border: `1px solid ${vars.color.borderHairline}`,
+  borderRadius: 16,
+  background: "rgba(255, 255, 255, .97)",
+  boxShadow: "0 18px 54px rgba(0, 0, 0, .16), 0 4px 14px rgba(0, 0, 0, .07)",
+  backdropFilter: "blur(14px)",
+  animation: `${revealInspector} ${duration.popover} ${easing.standard} both`,
+  "@media": {
+    "(max-width: 620px)": { inlineSize: "calc(100% - 20px)", maxBlockSize: "calc(100% - 20px)", padding: 15 },
+    "(prefers-reduced-motion: reduce)": { animation: "none" },
+    "(forced-colors: active)": { borderColor: "CanvasText", background: "Canvas", boxShadow: "none", backdropFilter: "none" },
+  },
 });
 
-export const inspectorTitle = style({ margin: 0, color: "#222222", fontSize: 15, lineHeight: "20px", fontWeight: 720, letterSpacing: "-.018em" });
-export const instructions = style({ margin: 0, color: "#909090", fontSize: 9, lineHeight: 1.45 });
-export const field = style({ display: "grid", gap: 5, color: "#777777", fontSize: 9, lineHeight: "12px", fontWeight: 710, letterSpacing: ".025em" });
+export const inspectorHeader = style({ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", alignItems: "start", gap: 14, paddingBlockEnd: 14, borderBlockEnd: "1px solid #E8E8E6" });
+export const inspectorEyebrow = style({ margin: "0 0 3px", color: "#929292", fontSize: 10, lineHeight: "14px", fontWeight: 760, letterSpacing: ".09em", textTransform: "uppercase" });
+export const inspectorTitle = style({ margin: 0, color: "#1E1E1E", fontSize: 19, lineHeight: "25px", fontWeight: 730, letterSpacing: "-.025em", overflowWrap: "anywhere" });
+export const instructions = style({ margin: "3px 0 0", color: "#838383", fontSize: 12, lineHeight: "17px" });
+export const editorSection = style({ display: "grid", gap: 12, paddingBlock: "15px 5px" });
+export const fieldGrid = style({ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: 10, "@media": { "(max-width: 420px)": { gridTemplateColumns: "1fr" } } });
+export const field = style({ display: "grid", gap: 6, color: "#5F5F5F", fontSize: 12, lineHeight: "16px", fontWeight: 690, letterSpacing: ".01em" });
 export const input = style([
   focusRing,
   {
     inlineSize: "100%",
     minInlineSize: 0,
-    minBlockSize: 35,
+    minBlockSize: 40,
     boxSizing: "border-box",
-    padding: "7px 8px",
+    padding: "9px 10px",
     border: "1px solid #D3D3D3",
     borderRadius: 8,
     background: "#FFFFFF",
     color: "#222222",
     font: "inherit",
-    fontSize: 10,
+    fontSize: 13,
+    lineHeight: "18px",
     letterSpacing: 0,
     selectors: { "&:focus": { borderColor: "#111111" } },
   },
 ]);
 
-export const actions = style({ display: "flex", gap: 6, flexWrap: "wrap" });
+export const actions = style({ display: "flex", gap: 8, flexWrap: "wrap" });
 
 export const button = style({
-  minBlockSize: 32,
-  paddingInline: 9,
+  minBlockSize: 36,
+  paddingInline: 11,
   border: "1px solid #D2D2D2",
   borderRadius: 8,
   background: "#FFFFFF",
   color: "#444444",
-  fontSize: 9,
+  fontSize: 12,
   fontWeight: 690,
   cursor: "pointer",
   selectors: {
@@ -236,19 +234,51 @@ export const button = style({
     "&:focus-visible": { outline: "2px solid #111111", outlineOffset: 2 },
   },
 });
-export const closeInspector = style([button, { minInlineSize: 32, paddingInline: 7 }]);
+export const closeInspector = style([
+  focusRing,
+  {
+    inlineSize: 36,
+    blockSize: 36,
+    flex: "0 0 36px",
+    display: "grid",
+    placeItems: "center",
+    padding: 0,
+    border: 0,
+    borderRadius: vars.radius.full,
+    background: "transparent",
+    color: "#727272",
+    cursor: "pointer",
+    transition: `background-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}, transform ${duration.press} ${easing.standard}`,
+    selectors: {
+      "&:hover": { background: "#EFEFED", color: "#111111" },
+      "&:active": { background: "#E4E4E1", transform: "scale(.92)" },
+    },
+    "@media": {
+      "(prefers-reduced-motion: reduce)": { transition: "none" },
+      "(forced-colors: active)": { border: "1px solid ButtonText", background: "ButtonFace", color: "ButtonText" },
+    },
+  },
+]);
 
 export const destructive = style([
   button,
   { color: "#555555", selectors: { "&:hover:not(:disabled)": { borderColor: "#111111", background: "#111111", color: "#FFFFFF" } } },
 ]);
 
-export const archived = style({ display: "grid", gap: 8, paddingBlockStart: 10, borderBlockStart: "1px solid #E4E4E4" });
+export const disclosure = style({ borderBlockStart: "1px solid #E8E8E6" });
+globalStyle(`${disclosure} > summary`, { minBlockSize: 44, display: "flex", alignItems: "center", justifyContent: "space-between", color: "#3F3F3F", fontSize: 12, lineHeight: "17px", fontWeight: 700, cursor: "pointer", listStyle: "none" });
+globalStyle(`${disclosure} > summary::-webkit-details-marker`, { display: "none" });
+globalStyle(`${disclosure} > summary::after`, { content: '"+"', color: "#909090", fontSize: 17, fontWeight: 400 });
+globalStyle(`${disclosure}[open] > summary::after`, { content: '"−"' });
+globalStyle(`${disclosure} > summary:hover`, { color: "#111111" });
+globalStyle(`${disclosure} > summary:focus-visible`, { outline: "2px solid #111111", outlineOffset: 2 });
+export const disclosureBody = style({ display: "grid", gap: 10, paddingBlock: "2px 14px" });
+export const subsectionTitle = style({ margin: 0, color: "#4A4A4A", fontSize: 12, lineHeight: "17px", fontWeight: 700 });
+export const archived = style({ display: "grid", gap: 8, paddingBlockStart: 10, borderBlockStart: "1px solid #E8E8E6" });
 export const archivedList = style({ listStyle: "none", display: "grid", gap: 4, maxBlockSize: 160, overflow: "auto", margin: 0, padding: 0 });
-export const archivedRow = style({ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, fontSize: 10 });
+export const archivedRow = style({ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, fontSize: 12, lineHeight: "17px" });
 export const status = style({ gridColumn: "1 / -1", minBlockSize: 20, color: "#777777", fontSize: 9 });
 export { srOnly };
 
 globalStyle(`${links} path`, { stroke: "#B6B6B4", strokeWidth: 1.15, fill: "none" });
 globalStyle(`${workspace} textarea`, { resize: "vertical" });
-globalStyle(`${inspector} > ${actions}, ${inspector} > section`, { borderBlockStart: "1px solid #E5E5E5", paddingBlockStart: 10 });

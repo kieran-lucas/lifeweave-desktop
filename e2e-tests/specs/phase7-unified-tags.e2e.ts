@@ -7,7 +7,7 @@ const UPPERCASE = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const LOWERCASE = "abcdefghijklmnopqrstuvwxyz";
 
 const taskRow = (title: string) =>
-  $(`//div[@role='listitem'][.//strong[normalize-space()="${title}"]]`);
+  $(`//*[@role='group'][.//strong[normalize-space()="${title}"]]`);
 
 const researchChip = (root: WebdriverIO.Element) =>
   root.$("./descendant::*[self::span or self::li][normalize-space()='#Research']");
@@ -39,9 +39,9 @@ async function openSearch(expectResults = true) {
 }
 
 async function createOneOffWithResearch() {
-  await $("button[aria-label='Create task']").click();
+  await $("button=Plan task").click();
   const dialog = $("[role='dialog'][aria-labelledby='task-dialog-heading']");
-  await expect(dialog.$("h2=Create task")).toBeDisplayed();
+  await expect(dialog.$("h2=Plan task")).toBeDisplayed();
   await dialog.$("//label[normalize-space()='Title']/input").setValue("E2E Tagged Task");
   await setTime(dialog, "05", "06");
   await dialog.$("button=Add tags").click();
@@ -55,9 +55,9 @@ async function createOneOffWithResearch() {
 }
 
 async function createRecurringWithResearch() {
-  await $("button[aria-label='Create task']").click();
+  await $("button=Plan task").click();
   const dialog = $("[role='dialog'][aria-labelledby='task-dialog-heading']");
-  await expect(dialog.$("h2=Create task")).toBeDisplayed();
+  await expect(dialog.$("h2=Plan task")).toBeDisplayed();
   await dialog.$("//label[normalize-space()='Title']/input").setValue(SERIES);
   await setTime(dialog, "06", "07");
   await dialog.$("button=Add tags").click();

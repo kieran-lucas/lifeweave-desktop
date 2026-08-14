@@ -12,36 +12,43 @@ import { useQueryClient } from "@tanstack/react-query";
 import { healthCheck } from "../ipc/commands";
 import { TodayScreen } from "../features/task/today/TodayScreen";
 import type { FocusPlanEntryRequest } from "../features/focus-plan/FocusPlansScreen";
-const FoundationScreen = lazy(() =>
+const loadFoundationScreen = () =>
   import("../features/foundation/FoundationScreen").then((module) => ({
     default: module.FoundationScreen,
-  })),
-);
-const CalendarScreen = lazy(() =>
+  }));
+const FoundationScreen = lazy(loadFoundationScreen);
+let calendarScreenPromise: Promise<{ default: typeof import("../features/calendar/CalendarScreen").CalendarScreen }> | undefined;
+let resolvedCalendarScreen: typeof import("../features/calendar/CalendarScreen").CalendarScreen | undefined;
+const loadCalendarScreen = () => calendarScreenPromise ??=
   import("../features/calendar/CalendarScreen").then((module) => ({
-    default: module.CalendarScreen,
-  })),
-);
-const AnalyticsScreen = lazy(() =>
+    default: resolvedCalendarScreen = module.CalendarScreen,
+  }));
+const CalendarScreen = lazy(loadCalendarScreen);
+let analyticsScreenPromise: Promise<{ default: typeof import("../features/analytics/AnalyticsScreen").AnalyticsScreen }> | undefined;
+const loadAnalyticsScreen = () => analyticsScreenPromise ??=
   import("../features/analytics/AnalyticsScreen").then((module) => ({
     default: module.AnalyticsScreen,
-  })),
-);
+  }));
+const AnalyticsScreen = lazy(loadAnalyticsScreen);
 const CategoryGoals = lazy(() =>
   import("../features/analytics/CategoryGoals").then((module) => ({
     default: module.CategoryGoals,
   })),
 );
-const LifeScreen = lazy(() =>
+let lifeScreenPromise: Promise<{ default: typeof import("../features/life/LifeScreen").LifeScreen }> | undefined;
+let resolvedLifeScreen: typeof import("../features/life/LifeScreen").LifeScreen | undefined;
+const loadLifeScreen = () => lifeScreenPromise ??=
   import("../features/life/LifeScreen").then((module) => ({
-    default: module.LifeScreen,
-  })),
-);
-const FocusPlansScreen = lazy(() =>
+    default: resolvedLifeScreen = module.LifeScreen,
+  }));
+const LifeScreen = lazy(loadLifeScreen);
+let focusPlansScreenPromise: Promise<{ default: typeof import("../features/focus-plan/FocusPlansScreen").FocusPlansScreen }> | undefined;
+let resolvedFocusPlansScreen: typeof import("../features/focus-plan/FocusPlansScreen").FocusPlansScreen | undefined;
+const loadFocusPlansScreen = () => focusPlansScreenPromise ??=
   import("../features/focus-plan/FocusPlansScreen").then((module) => ({
-    default: module.FocusPlansScreen,
-  })),
-);
+    default: resolvedFocusPlansScreen = module.FocusPlansScreen,
+  }));
+const FocusPlansScreen = lazy(loadFocusPlansScreen);
 const TagSettings = lazy(() =>
   import("../features/tag/TagSettings").then((m) => ({ default: m.TagSettings }))
 );
@@ -134,6 +141,60 @@ type LifeEntryRequest = {
 };
 const preferenceKey = "lifeweave.task-sidebar-mode.v1";
 
+function prefetchDestination(destination: Destination) {
+  if (destination === "calendar") void loadCalendarScreen();
+  else if (destination === "plans") void loadFocusPlansScreen();
+  else if (destination === "life") void loadLifeScreen();
+}
+
+function DeferredSettingsContent({
+  id,
+  label,
+  children,
+}: {
+  id: string;
+  label: string;
+  children: React.ReactNode;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const node = ref.current;
+    if (!node || ready) return;
+    if (typeof IntersectionObserver === "undefined") {
+      setReady(true);
+      return;
+    }
+    const root = node.closest<HTMLElement>("[data-app-viewport]");
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        setReady(true);
+        observer.disconnect();
+      },
+      { root, rootMargin: "60px 0px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [ready]);
+
+  return (
+    <div
+      id={id}
+      ref={ref}
+      className={styles.deferredSettingsContent}
+      data-settings-deferred={ready ? "ready" : "pending"}
+    >
+      {ready ? (
+        <Suspense fallback={<LoadingRow label={label} />}>{children}</Suspense>
+      ) : (
+        <span className={styles.deferredSettingsPlaceholder} aria-hidden="true" />
+      )}
+    </div>
+  );
+}
+
 function readSidebarMode(): SidebarMode {
   try {
     const value = window.localStorage.getItem(preferenceKey);
@@ -165,6 +226,9 @@ export function scrollSettingsSection(id: string, attemptsRemaining = 60) {
 
 export function App() {
   const queryClient = useQueryClient();
+  const CalendarRoute = resolvedCalendarScreen ?? CalendarScreen;
+  const FocusPlansRoute = resolvedFocusPlansScreen ?? FocusPlansScreen;
+  const LifeRoute = resolvedLifeScreen ?? LifeScreen;
   const initialEntry = useMemo(() => readAppHistoryEntry(window.history.state) ?? {
     index: 0,
     route: {
@@ -410,6 +474,9 @@ export function App() {
       type="button"
       className={styles.navButton}
       onClick={() => selectDestination(command.destination)}
+      onPointerEnter={() => prefetchDestination(command.destination)}
+      onPointerDown={() => prefetchDestination(command.destination)}
+      onFocus={() => prefetchDestination(command.destination)}
       aria-current={destination === command.destination ? "page" : undefined}
       aria-label={command.label}
       aria-keyshortcuts={command.ariaKeyShortcuts}
@@ -550,21 +617,15 @@ export function App() {
                     </button>
                   </div>
                 </section>
-                <Suspense fallback={<LoadingRow label="Loading category goals…" />}>
-                  <div id="settings-category-goals" className={styles.settingsContentBlock}>
+                <DeferredSettingsContent id="settings-category-goals" label="Loading category goals…">
                     <CategoryGoals />
-                  </div>
-                </Suspense>
-                <Suspense fallback={<LoadingRow label="Loading tag settings…" />}>
-                  <div id="settings-tags" className={styles.settingsContentBlock}>
+                </DeferredSettingsContent>
+                <DeferredSettingsContent id="settings-tags" label="Loading tag settings…">
                     <TagSettings />
-                  </div>
-                </Suspense>
-                <Suspense fallback={<LoadingRow label="Loading backup settings…" />}>
-                  <div id="settings-backup" className={styles.settingsContentBlock}>
+                </DeferredSettingsContent>
+                <DeferredSettingsContent id="settings-backup" label="Loading backup settings…">
                     <BackupSettings onDatabaseRestored={() => queryClient.clear()} />
-                  </div>
-                </Suspense>
+                </DeferredSettingsContent>
                 <section
                   id="settings-keyboard"
                   className={styles.settingsSection}
@@ -590,9 +651,9 @@ export function App() {
                 >
                   <h2 id="settings-foundation-heading">Foundation tools</h2>
                   <p>Low-level local verification records.</p>
-                  <Suspense fallback={<LoadingRow label="Loading foundation tools…" />}>
+                  <DeferredSettingsContent id="settings-foundation-content" label="Loading foundation tools…">
                     <FoundationScreen />
-                  </Suspense>
+                  </DeferredSettingsContent>
                 </section>
                   </div>
                 </div>
@@ -649,7 +710,7 @@ export function App() {
                 }}
               >
                 <Suspense fallback={<LoadingRow label="Loading calendar…" />}>
-                  <CalendarScreen
+                  <CalendarRoute
                     selectedDate={selectedDate}
                     today={localToday()}
                     onActivateDate={activateCalendarDate}
@@ -664,7 +725,7 @@ export function App() {
                 }}
               >
                 <Suspense fallback={<LoadingRow label="Loading plans…" />}>
-                  <FocusPlansScreen
+                  <FocusPlansRoute
                     entryRequest={focusPlanEntryRequest}
                     onEntryRequestSettled={settleNavigationRequest}
                   />
@@ -679,7 +740,7 @@ export function App() {
                 }}
               >
                 <Suspense fallback={<LoadingRow label="Loading Life System…" />}>
-                  <LifeScreen
+                  <LifeRoute
                     anchorLocalDate={anchorLocalDate}
                     onTaskNavigate={navigateToTask}
                     entryRequest={lifeEntryRequest}

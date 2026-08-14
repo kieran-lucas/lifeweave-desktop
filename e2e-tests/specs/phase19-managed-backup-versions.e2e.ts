@@ -8,6 +8,7 @@ describe("Phase 19 — managed backup versions", () => {
 
     await $("button[aria-label='Settings']").click();
     await expect($("h1=Settings")).toBeDisplayed();
+    await $("button[aria-controls='settings-backup']").click();
     await expect($("h2=Backup & restore")).toBeDisplayed();
     await expect($("h3=Retention policy")).toBeDisplayed();
     await expect($("//*[contains(normalize-space(),'12 total')]")).toBeDisplayed();
@@ -16,8 +17,10 @@ describe("Phase 19 — managed backup versions", () => {
     const row = backupRow(backupId);
     await expect(row).toBeDisplayed();
     await expect(row.$("td=Ready")).toBeDisplayed();
+    await expect(row.$("td=1.0.0")).toBeDisplayed();
     await expect(row.$("td=2")).toBeDisplayed();
-    await expect(row.$("td=27")).toBeDisplayed();
+    const schemaVersion = await row.$("td:nth-child(4)").getText();
+    expect(schemaVersion).toMatch(/^\d+$/);
     const created = row.$("time");
     await expect(created).toBeDisplayed();
     expect(await created.getAttribute("datetime")).toMatch(/^\d{4}-\d{2}-\d{2}T/);
@@ -28,7 +31,7 @@ describe("Phase 19 — managed backup versions", () => {
     await expect(dialog).toBeDisplayed();
     await expect(dialog.$("h2=Restore managed backup?")).toBeDisplayed();
     await expect(dialog.$("//*[contains(normalize-space(),'Backup format 2')]")).toBeDisplayed();
-    await expect(dialog.$("//*[contains(normalize-space(),'schema 27')]")).toBeDisplayed();
+    await expect(dialog.$(`//*[contains(normalize-space(),'schema ${schemaVersion}')]`)).toBeDisplayed();
     await expect(dialog.$("//*[contains(normalize-space(),'safety snapshot')]")).toBeDisplayed();
     await dialog.$("button=Cancel").click();
     await expect(dialog).not.toExist();

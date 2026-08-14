@@ -124,6 +124,18 @@ export const localToday = getLocalToday;
 export const formatMinute = (value: number) =>
   `${String(Math.floor(value / 60)).padStart(2, "0")}:${String(value % 60).padStart(2, "0")}`;
 
+type TaskPriority = "low" | "medium" | "high";
+
+const normalizePriority = (priority: string): TaskPriority => {
+  if (priority === "high" || priority === "low") return priority;
+  return "medium";
+};
+
+const priorityLabel = (priority: string) => {
+  const normalized = normalizePriority(priority);
+  return normalized[0]!.toUpperCase() + normalized.slice(1);
+};
+
 const newOperationId = () => globalThis.crypto.randomUUID();
 const todayItemsKey = (localDate: string, observedLocalDate: string) =>
   ["today-items", localDate, observedLocalDate] as const;
@@ -609,15 +621,15 @@ export function TodayScreen({
                   data-completed={(item.evaluation && item.evaluation.visual_token !== "none") || undefined}
                 >
                   <div className={styles.timeRail} aria-hidden="true">
-                    <strong>{formatMinute(item.start_minute)}</strong>
-                    <span>{formatMinute(item.end_minute)}</span>
+                    <strong className={styles.timeValue}>{formatMinute(item.start_minute)}</strong>
+                    <span className={styles.timeValue}>{formatMinute(item.end_minute)}</span>
                   </div>
 
                   <div
                     className={styles.taskRow}
                     data-agenda-id={item.id}
                     role="group"
-                    aria-label={`${item.title}. Double-click or press Enter to edit.`}
+                    aria-label={`${item.title}. Priority: ${priorityLabel(item.priority)}. Double-click or press Enter to edit.`}
                     tabIndex={0}
                     onDoubleClick={(event) => {
                       const target = event.target as HTMLElement;
@@ -632,7 +644,29 @@ export function TodayScreen({
                     }}
                   >
                     <div className={styles.taskCopy}>
-                      <strong>{item.title}</strong>
+                      <div className={styles.taskTitleLine}>
+                        <strong>{item.title}</strong>
+                        <span
+                          className={styles.priorityBadge}
+                          data-priority={normalizePriority(item.priority)}
+                          data-task-priority
+                        >
+                          <svg
+                            className={styles.priorityMeter}
+                            viewBox="0 0 11 10"
+                            width="11"
+                            height="10"
+                            shapeRendering="crispEdges"
+                            aria-hidden="true"
+                            focusable="false"
+                          >
+                            <rect x="0" y="6" width="3" height="4" />
+                            <rect x="4" y="3" width="3" height="7" />
+                            <rect x="8" y="1" width="3" height="9" />
+                          </svg>
+                          <span className={styles.priorityText}>{priorityLabel(item.priority)}</span>
+                        </span>
+                      </div>
                       {item.description.trim() && (
                         <p className={styles.taskDescription}>{item.description}</p>
                       )}

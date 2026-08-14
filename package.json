@@ -1,7 +1,7 @@
 {
   "name": "lifeweave-desktop",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "packageManager": "pnpm@11.17.0",
   "engines": {
     "node": "24.x",

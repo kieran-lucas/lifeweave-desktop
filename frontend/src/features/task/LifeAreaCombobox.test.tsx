@@ -135,7 +135,7 @@ it("walks Life targets one hierarchy level at a time instead of mixing every nod
   expect(screen.getByRole("option", { name: "BODY" })).toBeInTheDocument();
 
   fireEvent.keyDown(input, { key: "Enter" });
-  expect(screen.getByText("BODY")).toBeInTheDocument();
+  expect(screen.getByText("VITALITY › BODY")).toBeInTheDocument();
   expect(screen.getByRole("option", { name: "Sleep & Physical Recovery" })).toBeInTheDocument();
 
   fireEvent.keyDown(input, { key: "Enter" });

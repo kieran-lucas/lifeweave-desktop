@@ -103,6 +103,21 @@ fn init_tracing() {
         .try_init();
 }
 
+fn cleanup_stale_staging_in_background(app_data_root: std::path::PathBuf) {
+    // These sweeps are bounded, idempotent, and operate only on opaque staging artifacts older
+    // than the domain's stale threshold. They do not participate in database recovery, so keeping
+    // them on the setup thread only delays the first WebView navigation on profiles with many
+    // abandoned imports or exports.
+    std::thread::Builder::new()
+        .name("stale-staging-cleanup".into())
+        .spawn(move || {
+            portable::cleanup_stale_portable_artifacts(&app_data_root);
+            life_branch::cleanup_stale_life_branch_artifacts(&app_data_root);
+            life_tree::cleanup_stale_life_tree_artifacts(&app_data_root);
+        })
+        .expect("failed to spawn stale staging cleanup");
+}
+
 #[cfg(feature = "e2e-test")]
 fn app_data_directory(
     _app: &tauri::AppHandle,
@@ -145,9 +160,6 @@ pub fn run() {
         .setup(|app| {
             let app_data_root = app_data_directory(app.handle()).expect("app data dir unavailable");
             std::fs::create_dir_all(&app_data_root)?;
-            portable::cleanup_stale_portable_artifacts(&app_data_root);
-            life_branch::cleanup_stale_life_branch_artifacts(&app_data_root);
-            life_tree::cleanup_stale_life_tree_artifacts(&app_data_root);
             let db_path = app_data_root.join("lifeweave.db");
 
             let marker_path = db_path
@@ -166,6 +178,7 @@ pub fn run() {
 
             let worker = DbWorkerHandle::spawn(conn);
             app.manage(DatabaseRuntime::new(db_path.clone(), worker));
+            cleanup_stale_staging_in_background(app_data_root);
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

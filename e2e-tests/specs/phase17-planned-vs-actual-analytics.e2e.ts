@@ -5,12 +5,12 @@ const UNTRACKED = "E2E Analytics Untracked";
 const CONTROL = "\uE009";
 
 const taskRow = (title: string) =>
-  $(`//div[@role='listitem'][.//strong[normalize-space()='${title}']]`);
+  $(`//*[@role='group'][.//strong[normalize-space()='${title}']]`);
 
 async function createOneHourTask(title: string, startHour: string, endHour: string) {
-  await $("button[aria-label='Create task']").click();
+  await $("button=Plan task").click();
   const dialog = $("[role='dialog'][aria-labelledby='task-dialog-heading']");
-  await expect(dialog.$("h2=Create task")).toBeDisplayed();
+  await expect(dialog.$("h2=Plan task")).toBeDisplayed();
   await dialog.$("//label[normalize-space(text())='Title']/input").setValue(title);
   await dialog.$("select[aria-label='Start hour']").selectByVisibleText(startHour);
   await dialog.$("select[aria-label='Start minute']").selectByVisibleText("00");

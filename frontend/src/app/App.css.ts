@@ -301,6 +301,17 @@ export const settingsContentBlock = style({
   scrollMarginBlockStart: space.x3,
 });
 
+export const deferredSettingsContent = style({
+  minInlineSize: 0,
+  minBlockSize: "280px",
+  scrollMarginBlockStart: space.x3,
+});
+
+export const deferredSettingsPlaceholder = style({
+  display: "block",
+  minBlockSize: "280px",
+});
+
 export const settingsSection = style({
   display: "flex",
   flexDirection: "column",

@@ -68,13 +68,16 @@ pub fn backup_database(
 }
 
 #[tauri::command]
-pub fn list_backups(app: tauri::AppHandle) -> Result<Vec<BackupSummary>, IpcError> {
+pub async fn list_backups(app: tauri::AppHandle) -> Result<Vec<BackupSummary>, IpcError> {
     let root = app
         .path()
         .app_data_dir()
         .map_err(|_| IpcError::Storage)?
         .join("backups");
-    backup::list_backups(&root).map_err(backup_to_ipc)
+    tauri::async_runtime::spawn_blocking(move || backup::list_backups(&root))
+        .await
+        .map_err(|_| IpcError::Storage)?
+        .map_err(backup_to_ipc)
 }
 
 /// Restores the database from the backup at `backup_dir`.

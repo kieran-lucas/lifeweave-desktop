@@ -81,7 +81,8 @@ try {
   cargo test --manifest-path src-tauri/Cargo.toml --locked task::
   if ($LASTEXITCODE -ne 0) { throw "Task planning, deadline, evaluation, and Saved View dogfood fixtures failed." }
 
-  $installer = Join-Path $repo "src-tauri\target\release\bundle\nsis\Lifeweave_0.0.0_x64-setup.exe"
+  $releaseVersion = (Get-Content (Join-Path $repo "src-tauri\tauri.conf.json") -Raw | ConvertFrom-Json).version
+  $installer = Join-Path $repo "src-tauri\target\release\bundle\nsis\Lifeweave_${releaseVersion}_x64-setup.exe"
   if (-not (Test-Path $installer)) { throw "Run the normal production Tauri build before RC dogfood." }
   $installerInfo = Get-Item $installer
   $result = [ordered]@{

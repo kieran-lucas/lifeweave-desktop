@@ -2,7 +2,18 @@ import { $, browser, expect } from "@wdio/globals";
 
 export const backupRow = (backupId: string) => $(`tr[data-backup-id='${backupId}']`);
 
+async function openBackupSettings(): Promise<void> {
+  const create = $("button=Create backup");
+  if (await create.isExisting()) return;
+  const shortcut = $("button[aria-controls='settings-backup']");
+  await expect(shortcut).toBeDisplayed();
+  await shortcut.click();
+  await expect($("#settings-backup")).toBeDisplayed();
+  await expect(create).toBeDisplayed();
+}
+
 export async function createManagedBackup(): Promise<string> {
+  await openBackupSettings();
   await $("button=Create backup").click();
   const success = $("//p[@aria-live='polite' and contains(normalize-space(),'Backup created at')]");
   const failure = $("section[aria-labelledby='backup-settings-heading'] [role='alert']");
@@ -25,6 +36,7 @@ export async function createManagedBackup(): Promise<string> {
 }
 
 export async function restoreManagedBackup(backupId: string): Promise<void> {
+  await openBackupSettings();
   const row = backupRow(backupId);
   await expect(row).toBeDisplayed();
   await row.$("button=Restore").click();

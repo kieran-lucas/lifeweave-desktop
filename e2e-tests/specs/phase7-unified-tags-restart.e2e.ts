@@ -4,7 +4,7 @@ const UPPERCASE = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const LOWERCASE = "abcdefghijklmnopqrstuvwxyz";
 
 const taskRow = (title: string) =>
-  $(`//div[@role='listitem'][.//strong[normalize-space()="${title}"]]`);
+  $(`//*[@role='group'][.//strong[normalize-space()="${title}"]]`);
 
 const researchChip = (root: WebdriverIO.Element) =>
   root.$("./descendant::*[self::span or self::li][normalize-space()='#Research']");
