@@ -797,15 +797,32 @@ mod tests {
             },
         )
         .unwrap();
+        // Task state and fence language are stored as real values now, so a document made
+        // only of supported constructs raises no located warning. The canvas-shape notice
+        // is unrelated to Markdown fidelity and always applies.
+        assert!(
+            !preview
+                .warnings
+                .iter()
+                .any(|warning| warning.contains("Line ")),
+            "{:?}",
+            preview.warnings
+        );
+
+        // Constructs the Core schema still cannot hold are located precisely.
+        let preview = preview_markdown(
+            &c,
+            PreviewNarrativeMarkdownInput {
+                original_name: "diagnostics.md".into(),
+                markdown: "# Heading\n\n#### Too deep\n\nSee [the note](./other.md).".into(),
+            },
+        )
+        .unwrap();
         assert!(preview.warnings.iter().any(|warning| {
-            warning.contains("Line 3, column 3")
-                && warning.contains("Task-list state")
-                && warning.contains('☒')
+            warning.contains("Line 3, column 1") && warning.contains("Heading depth")
         }));
         assert!(preview.warnings.iter().any(|warning| {
-            warning.contains("Line 5, column 1")
-                && warning.contains("language metadata")
-                && warning.contains("inert code block")
+            warning.contains("Line 5, column 5") && warning.contains("./other.md")
         }));
     }
 

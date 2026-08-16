@@ -58,7 +58,6 @@ struct Frame {
     kind: &'static str,
     attrs: Option<Value>,
     content: Vec<Value>,
-    pending_task: Option<bool>,
     /// A literal callout marker in the source that GFM itself does not recognize,
     /// as its variant and its byte length.
     manual_callout: Option<(&'static str, usize)>,
@@ -72,7 +71,6 @@ impl Frame {
             kind,
             attrs,
             content: Vec::new(),
-            pending_task: None,
             manual_callout: None,
             image_target: None,
             image_alt: String::new(),
@@ -120,6 +118,9 @@ struct MarkdownBuilder<'a> {
     /// Raw text of the HTML block currently open, if any.
     html_block: Option<String>,
     html_offset: usize,
+    /// Per-column alignment of the table currently open, and the column being filled.
+    column_alignments: Vec<Alignment>,
+    column: usize,
 }
 
 impl<'a> MarkdownBuilder<'a> {
@@ -133,6 +134,8 @@ impl<'a> MarkdownBuilder<'a> {
             code_spans: Vec::new(),
             html_block: None,
             html_offset: 0,
+            column_alignments: Vec::new(),
+            column: 0,
         }
     }
 
@@ -237,31 +240,30 @@ impl<'a> MarkdownBuilder<'a> {
             }
             Event::SoftBreak => self.push_text(" "),
             Event::HardBreak => self.attach(json!({"type":"hardBreak"})),
-            Event::Rule => {
-                self.attach(json!({"type":"paragraph","content":[{"type":"text","text":"— — —"}]}));
-                self.diagnostic(
-                    "horizontal_rule",
-                    "warning",
-                    "Horizontal rule was preserved as a text separator because the Core schema has no horizontal-rule node.",
-                    span.start,
-                    "Rendered as ‘— — —’.",
-                );
-            }
+            Event::Rule => self.attach(json!({"type":"horizontalRule"})),
             Event::TaskListMarker(checked) => {
-                if let Some(frame) = self.frames.last_mut() {
-                    frame.pending_task = Some(checked);
+                // The marker arrives after the item has opened, so the item and the list
+                // that holds it are retagged in place. In a loose list a paragraph is
+                // already open on top of the item, so the item is searched for rather
+                // than assumed to be the innermost frame.
+                if let Some(item) = self
+                    .frames
+                    .iter_mut()
+                    .rev()
+                    .find(|frame| frame.kind == "listItem")
+                {
+                    item.kind = "taskItem";
+                    item.attrs = Some(json!({"checked":checked}));
                 }
-                self.diagnostic(
-                    "task_list",
-                    "warning",
-                    "Task-list state was preserved as a readable checkbox because the Core schema has no task-item node.",
-                    span.start,
-                    if checked {
-                        "Rendered as ☒ in a normal list item."
-                    } else {
-                        "Rendered as ☐ in a normal list item."
-                    },
-                );
+                if let Some(list) = self
+                    .frames
+                    .iter_mut()
+                    .rev()
+                    .find(|frame| matches!(frame.kind, "bulletList" | "orderedList"))
+                {
+                    list.kind = "taskList";
+                    list.attrs = None;
+                }
             }
             Event::Html(value) => {
                 reject_active_markup(&value)?;
@@ -297,17 +299,7 @@ impl<'a> MarkdownBuilder<'a> {
     fn start(&mut self, tag: Tag<'_>, span: Range<usize>) -> Result<(), DocumentError> {
         let offset = span.start;
         match tag {
-            Tag::Paragraph => {
-                let task = self
-                    .frames
-                    .last_mut()
-                    .and_then(|frame| frame.pending_task.take());
-                let mut frame = Frame::node("paragraph", None);
-                if let Some(checked) = task {
-                    frame.content.push(task_prefix(checked));
-                }
-                self.frames.push(frame);
-            }
+            Tag::Paragraph => self.frames.push(Frame::node("paragraph", None)),
             Tag::Heading { level, .. } => {
                 let original = heading_level(level);
                 if original > 3 {
@@ -352,18 +344,17 @@ impl<'a> MarkdownBuilder<'a> {
                         "Markdown code fence is not closed.",
                     ));
                 }
-                if let CodeBlockKind::Fenced(info) = &kind {
-                    if !info.trim().is_empty() {
-                        self.diagnostic(
-                            "code_fence_info",
-                            "info",
-                            "Fenced-code language metadata is not stored by the Core schema; the code body is preserved verbatim.",
-                            offset,
-                            "Code remains an inert code block.",
-                        );
-                    }
-                }
-                self.frames.push(Frame::node("codeBlock", None));
+                // Only the first word of the info string names the language; the rest is
+                // tooling metadata with no meaning here.
+                let language = match &kind {
+                    CodeBlockKind::Fenced(info) => info
+                        .split_whitespace()
+                        .next()
+                        .filter(|word| is_language_token(word))
+                        .map(|word| json!({"language": word})),
+                    CodeBlockKind::Indented => None,
+                };
+                self.frames.push(Frame::node("codeBlock", language));
             }
             Tag::List(start) => self.frames.push(Frame::node(
                 if start.is_some() {
@@ -375,29 +366,38 @@ impl<'a> MarkdownBuilder<'a> {
             )),
             Tag::Item => self.frames.push(Frame::node("listItem", None)),
             Tag::Table(alignments) => {
-                if alignments
-                    .iter()
-                    .any(|alignment| *alignment != Alignment::None)
-                {
-                    self.diagnostic(
-                        "table_alignment",
-                        "info",
-                        "Table alignment metadata is not stored by the Core schema; cell content and inline formatting are preserved.",
-                        offset,
-                        "Rendered with the application’s standard table alignment.",
-                    );
-                }
+                // Alignment is declared once per column in the delimiter row, so it is held
+                // here and stamped onto each cell as its column comes round.
+                self.column_alignments = alignments;
+                self.column = 0;
                 self.frames.push(Frame::node("table", None));
             }
-            Tag::TableHead => self.frames.push(Frame::node("tableHead", None)),
-            Tag::TableRow => self.frames.push(Frame::node("tableRow", None)),
+            Tag::TableHead => {
+                self.column = 0;
+                self.frames.push(Frame::node("tableHead", None));
+            }
+            Tag::TableRow => {
+                self.column = 0;
+                self.frames.push(Frame::node("tableRow", None));
+            }
             Tag::TableCell => {
                 let kind = if self.frames.iter().any(|frame| frame.kind == "tableHead") {
                     "tableHeader"
                 } else {
                     "tableCell"
                 };
-                self.frames.push(Frame::node(kind, None));
+                let align = self
+                    .column_alignments
+                    .get(self.column)
+                    .and_then(|alignment| match alignment {
+                        Alignment::Left => Some("left"),
+                        Alignment::Center => Some("center"),
+                        Alignment::Right => Some("right"),
+                        Alignment::None => None,
+                    })
+                    .map(|value| json!({"align": value}));
+                self.column += 1;
+                self.frames.push(Frame::node(kind, align));
                 self.frames.push(Frame::node("paragraph", None));
             }
             Tag::Emphasis => self.marks.push(json!({"type":"italic"})),
@@ -528,7 +528,7 @@ impl<'a> MarkdownBuilder<'a> {
         let mut frame = self.frames.pop().ok_or(DocumentError::Validation(
             "Markdown structure is unbalanced.",
         ))?;
-        if frame.kind == "listItem" {
+        if matches!(frame.kind, "listItem" | "taskItem") {
             normalize_list_item(&mut frame);
         }
         if frame.kind == "codeBlock" {
@@ -563,9 +563,6 @@ impl<'a> MarkdownBuilder<'a> {
             if frame.kind == "image" {
                 frame.image_alt.push_str(value);
                 return;
-            }
-            if let Some(checked) = frame.pending_task.take() {
-                frame.content.push(task_prefix(checked));
             }
         }
         let mut node = json!({"type":"text","text":value});
@@ -658,10 +655,6 @@ fn normalize_code_block(frame: &mut Frame) {
     if let Some(without_delimiter_newline) = text.strip_suffix('\n') {
         last["text"] = json!(without_delimiter_newline);
     }
-}
-
-fn task_prefix(checked: bool) -> Value {
-    json!({"type":"text","text":if checked { "☒ " } else { "☐ " }})
 }
 
 /// Strip a manual callout marker from a quote and re-tag it as the matching callout.
@@ -766,6 +759,17 @@ fn reject_active_markup(html: &str) -> Result<(), DocumentError> {
         ));
     }
     Ok(())
+}
+
+/// Whether a fenced-code info word is a plain language identifier.
+///
+/// The value reaches the Reader as a `language-…` class name, so anything else is treated
+/// as tooling metadata and dropped rather than stored.
+fn is_language_token(word: &str) -> bool {
+    (1..=32).contains(&word.chars().count())
+        && word
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '+' | '#' | '.' | '_' | '-'))
 }
 
 /// The text an HTML fragment would show once its tags are removed.

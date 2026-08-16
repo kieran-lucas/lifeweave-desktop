@@ -64,6 +64,9 @@ fn visit(
         "bulletList",
         "orderedList",
         "listItem",
+        "taskList",
+        "taskItem",
+        "horizontalRule",
         "blockquote",
         "callout",
         "codeBlock",
@@ -127,6 +130,41 @@ fn visit(
                 ));
             }
         }
+        "taskItem" => {
+            // Absent means unchecked; anything that is not a bool is a corrupt document
+            // rather than a default, because the tick state is user data.
+            if let Some(checked) = o.get("attrs").and_then(|attrs| attrs.get("checked")) {
+                if !checked.is_boolean() {
+                    return Err(DocumentError::Validation("Task state is unsupported."));
+                }
+            }
+        }
+        "codeBlock" => {
+            // The language reaches the Reader as a `language-…` class name, so it is held
+            // to an identifier shape rather than accepted as free text.
+            if let Some(language) = o.get("attrs").and_then(|attrs| attrs.get("language")) {
+                let value = language
+                    .as_str()
+                    .ok_or(DocumentError::Validation("Code language is unsupported."))?;
+                let shaped = (1..=32).contains(&value.chars().count())
+                    && value.chars().all(|c| {
+                        c.is_ascii_alphanumeric() || matches!(c, '+' | '#' | '.' | '_' | '-')
+                    });
+                if !shaped {
+                    return Err(DocumentError::Validation("Code language is unsupported."));
+                }
+            }
+        }
+        "tableCell" | "tableHeader" => {
+            if let Some(align) = o.get("attrs").and_then(|attrs| attrs.get("align")) {
+                let value = align
+                    .as_str()
+                    .ok_or(DocumentError::Validation("Cell alignment is unsupported."))?;
+                if !matches!(value, "left" | "center" | "right") {
+                    return Err(DocumentError::Validation("Cell alignment is unsupported."));
+                }
+            }
+        }
         "image" => {
             let id = o
                 .get("attrs")
@@ -167,7 +205,7 @@ fn visit(
                 }
             }
         }
-        "hardBreak" => text.push('\n'),
+        "hardBreak" | "horizontalRule" => text.push('\n'),
         _ => {}
     }
     if matches!(
@@ -178,6 +216,7 @@ fn visit(
             | "callout"
             | "codeBlock"
             | "listItem"
+            | "taskItem"
             | "tableCell"
             | "tableHeader"
     ) {
@@ -255,5 +294,47 @@ mod tests {
             validate(r#"{"type":"doc","content":[{"type":"orderedList","attrs":{"start":"4"}}]}"#)
                 .is_err()
         );
+    }
+
+    #[test]
+    fn accepts_rules_task_state_code_language_and_cell_alignment() {
+        let raw = r#"{"type":"doc","content":[
+            {"type":"horizontalRule"},
+            {"type":"taskList","content":[
+                {"type":"taskItem","attrs":{"checked":true},"content":[{"type":"paragraph","content":[{"type":"text","text":"done"}]}]},
+                {"type":"taskItem","content":[{"type":"paragraph","content":[{"type":"text","text":"open"}]}]}]},
+            {"type":"codeBlock","attrs":{"language":"rust"},"content":[{"type":"text","text":"fn main(){}"}]},
+            {"type":"table","content":[{"type":"tableRow","content":[
+                {"type":"tableHeader","attrs":{"align":"right"},"content":[{"type":"paragraph","content":[{"type":"text","text":"n"}]}]}]}]}]}"#;
+        let valid = validate(raw).unwrap();
+        assert!(valid.plain_text.contains("done"));
+        assert!(valid.plain_text.contains("open"));
+    }
+
+    #[test]
+    fn rejects_malformed_task_state_code_language_and_alignment() {
+        for raw in [
+            // Tick state is user data, so a non-bool is corruption rather than a default.
+            r#"{"type":"doc","content":[{"type":"taskItem","attrs":{"checked":"yes"}}]}"#,
+            // The language becomes a `language-…` class name in the Reader.
+            r#"{"type":"doc","content":[{"type":"codeBlock","attrs":{"language":"a b"}}]}"#,
+            r#"{"type":"doc","content":[{"type":"codeBlock","attrs":{"language":"<script>"}}]}"#,
+            r#"{"type":"doc","content":[{"type":"codeBlock","attrs":{"language":""}}]}"#,
+            r#"{"type":"doc","content":[{"type":"tableRow","content":[{"type":"tableCell","attrs":{"align":"middle"}}]}]}"#,
+        ] {
+            assert!(validate(raw).is_err(), "must be rejected: {raw}");
+        }
+    }
+
+    #[test]
+    fn documents_written_before_the_new_nodes_still_validate() {
+        // Documents imported under the old fallbacks hold a `— — —` paragraph and `☐`
+        // text. Widening the schema is additive and must not invalidate them.
+        let raw = r#"{"type":"doc","content":[
+            {"type":"paragraph","content":[{"type":"text","text":"— — —"}]},
+            {"type":"bulletList","content":[{"type":"listItem","content":[{"type":"paragraph","content":[{"type":"text","text":"☐ open"}]}]}]},
+            {"type":"codeBlock","content":[{"type":"text","text":"x"}]},
+            {"type":"table","content":[{"type":"tableRow","content":[{"type":"tableCell","content":[{"type":"paragraph","content":[{"type":"text","text":"c"}]}]}]}]}]}"#;
+        assert!(validate(raw).is_ok());
     }
 }

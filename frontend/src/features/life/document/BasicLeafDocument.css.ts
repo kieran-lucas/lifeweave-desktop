@@ -198,3 +198,17 @@ globalStyle(`${editorSurface} .tiptap th, ${editorSurface} .tiptap td`, { positi
 globalStyle(`${editorSurface} .tiptap th`, { background: vars.color.surfaceSubtle, fontWeight: 650 });
 globalStyle(`${editorSurface} .tiptap .selectedCell::after`, { content: "", position: "absolute", inset: 0, pointerEvents: "none", background: vars.color.accentSoft, outline: `2px solid ${vars.color.accent}` });
 export const editorAlert = style({ margin: "12px 0 0", padding: "10px 12px", borderInlineStart: "3px solid var(--danger)", background: vars.color.dangerSoft, color: vars.color.danger, ...text.compactBody });
+
+// Task lists carry their own marker, so the list bullet is suppressed and the row is
+// laid out as [checkbox][content].
+export const taskList = style({ listStyle: "none", paddingInlineStart: 0, margin: "12px 0" });
+export const taskItem = style({ display: "flex", alignItems: "flex-start", gap: 10, margin: "6px 0" });
+globalStyle(`${taskItem} > input`, { marginBlockStart: "0.28em", flexShrink: 0 });
+globalStyle(`${taskItem} > div`, { flex: 1, minInlineSize: 0 });
+globalStyle(`${taskItem} > div > p`, { margin: 0 });
+globalStyle(`${editorSurface} .tiptap ul[data-type="taskList"]`, { listStyle: "none", paddingInlineStart: 0 });
+globalStyle(`${editorSurface} .tiptap ul[data-type="taskList"] li`, { display: "flex", alignItems: "flex-start", gap: 10 });
+globalStyle(`${editorSurface} .tiptap ul[data-type="taskList"] li > label`, { display: "flex", alignItems: "center", marginBlockStart: "0.28em", flexShrink: 0 });
+globalStyle(`${editorSurface} .tiptap ul[data-type="taskList"] li > div`, { flex: 1, minInlineSize: 0 });
+globalStyle(`${editorSurface} .tiptap ul[data-type="taskList"] li > div > p`, { margin: 0 });
+globalStyle(`${editorSurface} .tiptap hr`, { border: 0, borderBlockStart: "1px solid var(--paint-edge)", marginBlock: 26 });

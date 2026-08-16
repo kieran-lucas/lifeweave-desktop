@@ -173,10 +173,8 @@ fn ordered_list_start_and_task_state_survive_a_round_trip() {
     assert!(first.contains("\"start\":4"), "{first}");
     let exported = export(&first).unwrap();
     assert!(exported.contains("4. four"), "{exported:?}");
-    assert!(
-        exported.contains('☒') && exported.contains('☐'),
-        "{exported:?}"
-    );
+    assert!(exported.contains("- [x] done"), "{exported:?}");
+    assert!(exported.contains("- [ ] todo"), "{exported:?}");
     assert_eq!(import(&exported).unwrap(), first);
 }
 
@@ -431,8 +429,16 @@ fn a_real_authored_document_imports_and_round_trips_without_loss() {
         assert!(plain.contains(excerpt), "{excerpt:?} was lost");
     }
 
-    // Every fallback is disclosed rather than applied silently.
-    for kind in ["horizontal_rule", "html_markup", "link_target"] {
+    // Rules are a real node now, so they are no longer reported as a lost detail.
+    assert!(
+        !imported
+            .diagnostics
+            .iter()
+            .any(|item| item.kind == "horizontal_rule")
+    );
+
+    // Every remaining fallback is disclosed rather than applied silently.
+    for kind in ["html_markup", "link_target"] {
         assert!(
             imported.diagnostics.iter().any(|item| item.kind == kind),
             "expected a {kind} diagnostic"
@@ -447,4 +453,150 @@ fn a_real_authored_document_imports_and_round_trips_without_loss() {
         imported.canonical_json,
         "the document changed when exported and read back"
     );
+}
+
+// --- Constructs the Core schema gained -------------------------------------------
+// Each of these was previously degraded into text and reported as a fallback, which
+// meant an ordinary Markdown file produced a wall of warnings.
+
+#[test]
+fn a_horizontal_rule_is_a_node_and_not_a_line_of_text() {
+    let imported = import_with_diagnostics("before\n\n---\n\nafter\n").unwrap();
+    let document: Value = serde_json::from_str(&imported.canonical_json).unwrap();
+    assert_eq!(document["content"][1]["type"], "horizontalRule");
+    assert!(
+        imported.diagnostics.is_empty(),
+        "{:?}",
+        imported.diagnostics
+    );
+    let exported = export(&imported.canonical_json).unwrap();
+    assert!(exported.contains("\n---\n"), "{exported:?}");
+    assert_eq!(import(&exported).unwrap(), imported.canonical_json);
+}
+
+#[test]
+fn a_paragraph_of_dashes_is_still_text_and_not_a_rule() {
+    // The exporter escapes a leading `-`, so literal text cannot become a rule and a
+    // rule cannot decay into text.
+    let canonical = doc(json!([paragraph("---")]));
+    let exported = export(&canonical).unwrap();
+    let back: Value = serde_json::from_str(&import(&exported).unwrap()).unwrap();
+    assert_eq!(back["content"][0]["type"], "paragraph");
+    assert_eq!(back["content"][0]["content"][0]["text"], "---");
+}
+
+#[test]
+fn task_state_survives_a_round_trip_as_a_real_checkbox() {
+    let imported = import_with_diagnostics("- [ ] open\n- [x] done\n").unwrap();
+    let document: Value = serde_json::from_str(&imported.canonical_json).unwrap();
+    assert_eq!(document["content"][0]["type"], "taskList");
+    assert_eq!(
+        document["content"][0]["content"][0]["attrs"]["checked"],
+        false
+    );
+    assert_eq!(
+        document["content"][0]["content"][1]["attrs"]["checked"],
+        true
+    );
+    assert!(
+        imported.diagnostics.is_empty(),
+        "{:?}",
+        imported.diagnostics
+    );
+    let exported = export(&imported.canonical_json).unwrap();
+    assert_eq!(exported, "- [ ] open\n- [x] done\n");
+    assert_eq!(import(&exported).unwrap(), imported.canonical_json);
+}
+
+#[test]
+fn a_task_list_keeps_nested_blocks_like_any_other_list() {
+    let first = import("- [x] done\n\n  note under it\n\n- [ ] open\n").unwrap();
+    let exported = export(&first).unwrap();
+    assert_eq!(import(&exported).unwrap(), first, "{exported:?}");
+    assert!(exported.contains("- [x] done"), "{exported:?}");
+}
+
+#[test]
+fn a_fence_keeps_its_language() {
+    let imported = import_with_diagnostics("```js\nconst x = 1;\n```\n").unwrap();
+    let document: Value = serde_json::from_str(&imported.canonical_json).unwrap();
+    assert_eq!(document["content"][0]["attrs"]["language"], "js");
+    assert!(
+        imported.diagnostics.is_empty(),
+        "{:?}",
+        imported.diagnostics
+    );
+    let exported = export(&imported.canonical_json).unwrap();
+    assert!(exported.starts_with("```js\n"), "{exported:?}");
+    assert_eq!(import(&exported).unwrap(), imported.canonical_json);
+}
+
+#[test]
+fn only_a_language_shaped_info_word_is_stored() {
+    // The value becomes a `language-…` class name in the Reader, so anything else is
+    // tooling metadata and is dropped rather than stored.
+    let stored = import("```js title=\"a.js\"\nx\n```\n").unwrap();
+    assert!(stored.contains("\"language\":\"js\""), "{stored}");
+    assert!(!stored.contains("title"), "{stored}");
+    let rejected = import("```<script>\nx\n```\n").unwrap();
+    assert!(!rejected.contains("language"), "{rejected}");
+}
+
+#[test]
+fn table_alignment_survives_a_round_trip() {
+    let source = "| L | C | R |\n| :--- | :---: | ---: |\n| a | b | c |\n";
+    let imported = import_with_diagnostics(source).unwrap();
+    let document: Value = serde_json::from_str(&imported.canonical_json).unwrap();
+    let header = &document["content"][0]["content"][0]["content"];
+    assert_eq!(header[0]["attrs"]["align"], "left");
+    assert_eq!(header[1]["attrs"]["align"], "center");
+    assert_eq!(header[2]["attrs"]["align"], "right");
+    // The body row carries the column's alignment too, not just the header.
+    let body = &document["content"][0]["content"][1]["content"];
+    assert_eq!(body[2]["attrs"]["align"], "right");
+    assert!(
+        imported.diagnostics.is_empty(),
+        "{:?}",
+        imported.diagnostics
+    );
+    let exported = export(&imported.canonical_json).unwrap();
+    assert!(exported.contains("| :--- | :---: | ---: |"), "{exported:?}");
+    assert_eq!(import(&exported).unwrap(), imported.canonical_json);
+}
+
+#[test]
+fn an_ordinary_document_reports_no_fallbacks_at_all() {
+    // This is the whole point of widening the schema: the constructs below are what a
+    // normal Markdown file is made of, and none of them should cost the reader a warning.
+    let source = "# Title\n\nText with **bold** and `code`.\n\n---\n\n\
+                  - [ ] open\n- [x] done\n\n\
+                  ```rust\nfn main() {}\n```\n\n\
+                  | A | B |\n| :--- | ---: |\n| 1 | 2 |\n\n\
+                  > [!NOTE]\n> A note.\n\n\
+                  1. one\n2. two\n";
+    let imported = import_with_diagnostics(source).unwrap();
+    assert!(
+        imported.diagnostics.is_empty(),
+        "an ordinary document must import cleanly, got {:?}",
+        imported.diagnostics
+    );
+    assert_eq!(
+        import(&export(&imported.canonical_json).unwrap()).unwrap(),
+        imported.canonical_json
+    );
+}
+
+#[test]
+fn a_rule_occupies_one_top_level_node_so_heading_anchors_do_not_drift() {
+    // Reader anchors are derived from a heading's index among the top-level nodes
+    // (`outline.ts::headingIdForSourceIndex`), so a rule must not change that count.
+    let document: Value =
+        serde_json::from_str(&import("# One\n\n---\n\n# Two\n").unwrap()).unwrap();
+    let kinds = document["content"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|node| node["type"].as_str().unwrap_or("?"))
+        .collect::<Vec<_>>();
+    assert_eq!(kinds, ["heading", "horizontalRule", "heading"]);
 }

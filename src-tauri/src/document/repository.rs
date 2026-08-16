@@ -427,7 +427,9 @@ mod tests {
             ImportReaderMarkdownInput {
                 document_id: document.id,
                 expected_revision: document.revision,
-                markdown: "> **bold**\n\n1. one\n2. two\n\n- [x] checked".into(),
+                markdown:
+                    "> **bold**\n\n1. one\n2. two\n\n- [x] checked\n\n---\n\n[note](./other.md)"
+                        .into(),
                 operation_id: "markdown-import".into(),
             },
         )
@@ -447,9 +449,12 @@ mod tests {
                 .count(),
             1
         );
-        assert!(imported.document.canonical_json.contains("☒ checked"));
+        // Supported constructs commit as real nodes and report nothing.
+        assert!(imported.document.canonical_json.contains("\"taskItem\""));
+        assert!(imported.document.canonical_json.contains("horizontalRule"));
+        // Only the genuinely unsupported target is reported, and it reaches the caller.
         assert_eq!(imported.diagnostics.len(), 1);
-        assert_eq!(imported.diagnostics[0].kind, "task_list");
+        assert_eq!(imported.diagnostics[0].kind, "link_target");
     }
     #[test]
     fn branch_rejected_and_stale_draft_preserved() {

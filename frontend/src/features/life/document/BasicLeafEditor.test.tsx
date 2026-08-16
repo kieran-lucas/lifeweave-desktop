@@ -58,7 +58,12 @@ vi.mock("@tiptap/react", () => ({
 vi.mock("@tiptap/core", () => ({ Node: { create: (value: unknown) => value } }));
 vi.mock("@tiptap/extension-image", () => ({ default: { extend: () => ({ configure: () => ({}) }) } }));
 vi.mock("@tiptap/extension-link", () => ({ default: { configure: (config: typeof link.config) => { link.config = config; return {}; } } }));
-vi.mock("@tiptap/extension-table", () => ({ TableKit: {} }));
+vi.mock("@tiptap/extension-table", () => ({
+  TableKit: { configure: () => ({}) },
+  TableCell: { extend: () => ({}) },
+  TableHeader: { extend: () => ({}) },
+}));
+vi.mock("@tiptap/extension-list", () => ({ TaskList: {}, TaskItem: { configure: () => ({}) } }));
 vi.mock("@tiptap/starter-kit", () => ({ default: { configure: () => ({}) } }));
 
 import BasicLeafEditor from "./BasicLeafEditor";

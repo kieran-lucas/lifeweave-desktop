@@ -2,7 +2,8 @@ import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Node } from "@tiptap/core";
 import Image from "@tiptap/extension-image";
 import Link from "@tiptap/extension-link";
-import { TableKit } from "@tiptap/extension-table";
+import { TaskItem, TaskList } from "@tiptap/extension-list";
+import { TableCell, TableHeader, TableKit } from "@tiptap/extension-table";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import type { ReaderDocumentView } from "../../../ipc/generated/ReaderDocumentView";
@@ -28,15 +29,32 @@ const AssetImage = Image.extend({
 });
 const BasicLeafToolbar = lazy(() => import("./BasicLeafToolbar"));
 
+// Column alignment is part of the document, so the cell nodes have to carry it through
+// the editor rather than losing it on the first save.
+const alignAttribute = {
+  align: {
+    default: null,
+    parseHTML: (element: HTMLElement) => element.style.textAlign || null,
+    renderHTML: (attributes: Record<string, unknown>) =>
+      attributes.align ? { style: `text-align: ${String(attributes.align)}` } : {},
+  },
+};
+const AlignedCell = TableCell.extend({ addAttributes() { return { ...this.parent?.(), ...alignAttribute }; } });
+const AlignedHeader = TableHeader.extend({ addAttributes() { return { ...this.parent?.(), ...alignAttribute }; } });
+
 export const basicLeafExtensions = [
-  StarterKit.configure({ heading: { levels: [1, 2, 3] }, horizontalRule: false, link: false }),
+  StarterKit.configure({ heading: { levels: [1, 2, 3] }, link: false }),
   Link.configure({
     openOnClick: false,
     protocols: ["http", "https", "mailto"],
     isAllowedUri: (value) => /^(https?:\/\/|mailto:)[^\s]+$/i.test(value),
   }),
   AssetImage.configure({ allowBase64: false }),
-  TableKit,
+  TableKit.configure({ tableCell: false, tableHeader: false }),
+  AlignedCell,
+  AlignedHeader,
+  TaskList,
+  TaskItem.configure({ nested: true }),
   Callout,
 ];
 

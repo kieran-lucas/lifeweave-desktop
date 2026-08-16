@@ -35,6 +35,11 @@ function marked(text: React.ReactNode, marks: BasicLeafMark[] = []) {
   }, text);
 }
 
+function cellAlign(node: BasicLeafNode): React.CSSProperties | undefined {
+  const align = node.attrs?.align;
+  return align === "left" || align === "center" || align === "right" ? { textAlign: align } : undefined;
+}
+
 function render(node: BasicLeafNode, key: number | string): React.ReactNode {
   const children = node.content?.map((child, index) => render(child, index));
   switch (node.type) {
@@ -44,15 +49,26 @@ function render(node: BasicLeafNode, key: number | string): React.ReactNode {
     case "bulletList": return <ul key={key}>{children}</ul>;
     case "orderedList": return <ol key={key} start={Number(node.attrs?.start ?? 1)}>{children}</ol>;
     case "listItem": return <li key={key}>{children}</li>;
+    case "taskList": return <ul key={key} className={styles.taskList}>{children}</ul>;
+    // The Reader is read-only for every other kind of content too, so the box shows the
+    // stored state without offering to change it. Ticking happens in Edit mode.
+    case "taskItem": return <li key={key} className={styles.taskItem}>
+      <input type="checkbox" checked={node.attrs?.checked === true} disabled readOnly />
+      <div>{children}</div>
+    </li>;
+    case "horizontalRule": return <hr key={key} />;
     case "blockquote": return <blockquote key={key}>{children}</blockquote>;
     case "callout": return <aside key={key} aria-label={`${String(node.attrs?.variant ?? "note")} callout`}>{children}</aside>;
-    case "codeBlock": return <pre key={key}><code>{node.content?.map(child => child.text ?? "").join("")}</code></pre>;
+    case "codeBlock": {
+      const language = typeof node.attrs?.language === "string" ? node.attrs.language : undefined;
+      return <pre key={key}><code className={language && `language-${language}`} data-language={language}>{node.content?.map(child => child.text ?? "").join("")}</code></pre>;
+    }
     case "hardBreak": return <br key={key} />;
     case "image": return <AssetImage key={key} assetId={String(node.attrs?.assetId ?? "")} alt={String(node.attrs?.alt ?? "")} />;
     case "table": return <table className={styles.table} key={key}><tbody>{children}</tbody></table>;
     case "tableRow": return <tr key={key}>{children}</tr>;
-    case "tableHeader": return <th key={key}>{children}</th>;
-    case "tableCell": return <td key={key}>{children}</td>;
+    case "tableHeader": return <th key={key} style={cellAlign(node)}>{children}</th>;
+    case "tableCell": return <td key={key} style={cellAlign(node)}>{children}</td>;
     default: return <div className={styles.missing} key={key}>Unsupported content can be repaired in Edit mode.</div>;
   }
 }

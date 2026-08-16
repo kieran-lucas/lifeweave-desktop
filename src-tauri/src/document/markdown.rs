@@ -565,11 +565,16 @@ fn code_fence(content: &str) -> String {
 /// instead of being flattened into the item's first paragraph. Blocks after the first
 /// are separated by a blank line, which is what keeps a second paragraph from being
 /// re-read as a lazy continuation of the first.
-fn render_list_item(item: &Value, out: &mut String, prefix: &str) -> Result<(), DocumentError> {
+fn render_list_item(
+    item: &Value,
+    out: &mut String,
+    prefix: &str,
+    marker_width: usize,
+) -> Result<(), DocumentError> {
     let Some(children) = item.get("content").and_then(Value::as_array) else {
         return Ok(());
     };
-    let continuation = " ".repeat(prefix.chars().count());
+    let continuation = " ".repeat(marker_width);
     let mut wrote_first = false;
     for child in children {
         let mut body = String::new();
@@ -654,7 +659,30 @@ fn render(n: &Value, out: &mut String) -> Result<(), DocumentError> {
         "codeBlock" => {
             let content = raw_text(n);
             let fence = code_fence(&content);
-            out.push_str(&format!("{fence}\n{content}\n{fence}\n\n"));
+            let language = n
+                .get("attrs")
+                .and_then(|attrs| attrs.get("language"))
+                .and_then(Value::as_str)
+                .unwrap_or_default();
+            out.push_str(&format!("{fence}{language}\n{content}\n{fence}\n\n"));
+        }
+        "horizontalRule" => out.push_str("---\n\n"),
+        "taskList" => {
+            for item in n
+                .get("content")
+                .and_then(Value::as_array)
+                .into_iter()
+                .flatten()
+            {
+                let checked = item
+                    .get("attrs")
+                    .and_then(|attrs| attrs.get("checked"))
+                    .and_then(Value::as_bool)
+                    .unwrap_or(false);
+                let prefix = if checked { "- [x] " } else { "- [ ] " };
+                render_list_item(item, out, prefix, "- ".len())?;
+            }
+            out.push('\n');
         }
         "bulletList" | "orderedList" => {
             let start = n
@@ -674,7 +702,7 @@ fn render(n: &Value, out: &mut String) -> Result<(), DocumentError> {
                 } else {
                     format!("{}. ", start + i as u64)
                 };
-                render_list_item(item, out, &prefix)?;
+                render_list_item(item, out, &prefix, prefix.chars().count())?;
             }
             out.push('\n');
         }
@@ -704,9 +732,23 @@ fn render(n: &Value, out: &mut String) -> Result<(), DocumentError> {
                 }
                 out.push('\n');
                 if ri == 0 {
+                    // The delimiter row is the only place GFM records column alignment.
                     out.push('|');
-                    for _ in cells {
-                        out.push_str(" --- |");
+                    for cell in cells {
+                        out.push(' ');
+                        out.push_str(
+                            match cell
+                                .get("attrs")
+                                .and_then(|attrs| attrs.get("align"))
+                                .and_then(Value::as_str)
+                            {
+                                Some("left") => ":---",
+                                Some("center") => ":---:",
+                                Some("right") => "---:",
+                                _ => "---",
+                            },
+                        );
+                        out.push_str(" |");
                     }
                     out.push('\n');
                 }
@@ -911,8 +953,9 @@ mod tests {
             2,
             "ordered runs must not split into one list per item: {serialized}"
         );
-        assert!(serialized.contains("\"text\": \"☐ Unchecked\""));
-        assert!(serialized.contains("\"text\": \"☒ Checked\""));
+        assert!(serialized.contains("\"type\": \"taskItem\""));
+        assert!(serialized.contains("\"checked\": false"));
+        assert!(serialized.contains("\"checked\": true"));
         assert!(serialized.contains("\"type\": \"hardBreak\""));
         assert!(
             plain_text.contains("~4.284 đ"),
@@ -955,26 +998,38 @@ mod tests {
     }
 
     #[test]
-    fn task_lists_preserve_checked_state_with_explicit_diagnostics() {
-        let imported =
-            import_with_diagnostics("- [ ] unchecked\n- [x] checked\n- [X] uppercase").unwrap();
-        assert!(imported.canonical_json.contains("☐ unchecked"));
-        assert!(imported.canonical_json.contains("☒ checked"));
-        assert!(imported.canonical_json.contains("☒ uppercase"));
-        assert_eq!(imported.diagnostics.len(), 3);
+    fn task_lists_preserve_checked_state_as_real_task_items() {
+        let imported = import_with_diagnostics(
+            "- [ ] unchecked
+- [x] checked
+- [X] uppercase",
+        )
+        .unwrap();
+        let document: Value = serde_json::from_str(&imported.canonical_json).unwrap();
+        let list = &document["content"][0];
+        assert_eq!(list["type"], "taskList");
+        let items = list["content"].as_array().unwrap();
+        assert_eq!(
+            items.len(),
+            3,
+            "a task run is one list: {}",
+            imported.canonical_json
+        );
+        assert_eq!(items[0]["attrs"]["checked"], false);
+        assert_eq!(items[1]["attrs"]["checked"], true);
+        assert_eq!(items[2]["attrs"]["checked"], true);
+        // The state is now a real node, so there is nothing to disclose as a fallback.
         assert!(
-            imported
-                .diagnostics
-                .iter()
-                .all(|item| item.kind == "task_list")
+            imported.diagnostics.is_empty(),
+            "{:?}",
+            imported.diagnostics
         );
         assert_eq!(
-            imported
-                .diagnostics
-                .iter()
-                .map(|item| item.line)
-                .collect::<Vec<_>>(),
-            vec![1, 2, 3]
+            export(&imported.canonical_json).unwrap(),
+            "- [ ] unchecked
+- [x] checked
+- [x] uppercase
+"
         );
     }
 
@@ -1006,11 +1061,11 @@ mod tests {
         assert!(serialized.contains('😀'));
         assert!(serialized.contains("\"type\":\"bold\""));
         assert!(serialized.contains("\"type\":\"code\""));
+        // Alignment is stored on the cells rather than reported as a lost detail.
         assert!(
-            imported
-                .diagnostics
-                .iter()
-                .any(|item| item.kind == "table_alignment")
+            imported.diagnostics.is_empty(),
+            "{:?}",
+            imported.diagnostics
         );
     }
 
@@ -1031,24 +1086,19 @@ mod tests {
     fn unsupported_surface_is_explicit_and_never_silently_drops_content() {
         let imported =
             import_with_diagnostics("---\n\n```mermaid\nflowchart LR\nA --> B\n```").unwrap();
-        assert!(imported.canonical_json.contains("— — —"));
+        assert!(imported.canonical_json.contains("horizontalRule"));
         assert!(
             imported
                 .canonical_json
                 .contains("flowchart LR\\nA --&gt; B")
                 || imported.canonical_json.contains("flowchart LR\\nA --> B")
         );
+        // A rule and a fence language are both stored now, so neither is a fallback.
+        assert!(imported.canonical_json.contains("\"language\":\"mermaid\""));
         assert!(
-            imported
-                .diagnostics
-                .iter()
-                .any(|item| item.kind == "horizontal_rule")
-        );
-        assert!(
-            imported
-                .diagnostics
-                .iter()
-                .any(|item| item.kind == "code_fence_info")
+            imported.diagnostics.is_empty(),
+            "{:?}",
+            imported.diagnostics
         );
         // Inert markup degrades to its text with a diagnostic; active markup still fails.
         let degraded = import_with_diagnostics("<b>inert html</b>").unwrap();
@@ -1099,12 +1149,7 @@ mod tests {
                 .iter()
                 .any(|item| item.kind == "heading_depth" && item.line == 4)
         );
-        assert!(
-            imported
-                .diagnostics
-                .iter()
-                .any(|item| item.kind == "horizontal_rule")
-        );
+        assert!(serialized.contains("horizontalRule"));
     }
 
     #[test]
