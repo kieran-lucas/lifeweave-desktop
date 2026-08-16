@@ -51,7 +51,9 @@ export function LeafHeader({
             ))}
           </span>
           <span className={styles.srOnly}>Direction confidence: </span>
-          <span className={styles.stateLabel}>{state.label}</span>
+          <span className={styles.stateLabel}>
+            <span className={styles.stateLabelText}>{state.label}</span>
+          </span>
         </p>
         <div className={styles.commandSlot} ref={commandSlotRef} data-life-leaf-commands="" />
       </div>
