@@ -84,6 +84,8 @@ import type { ReaderDocumentIdInput } from "./generated/ReaderDocumentIdInput";
 import type { ImportReaderMarkdownInput } from "./generated/ImportReaderMarkdownInput";
 import type { MarkdownImportView } from "./generated/MarkdownImportView";
 import type { MarkdownExportView } from "./generated/MarkdownExportView";
+import type { ConvertMarkdownInput } from "./generated/ConvertMarkdownInput";
+import type { MarkdownFragmentView } from "./generated/MarkdownFragmentView";
 import type { ImportDocumentAssetInput } from "./generated/ImportDocumentAssetInput";
 import type { DocumentAssetView } from "./generated/DocumentAssetView";
 import type { DocumentAssetIdInput } from "./generated/DocumentAssetIdInput";
@@ -281,6 +283,7 @@ export const discardReaderDraft = (input: ReaderDocumentIdInput) => invoke<Reade
 export const recoverReaderDraft = (input: ReaderDocumentIdInput) => invoke<ReaderDocumentView>("recover_reader_draft", { input });
 export const importReaderMarkdown = (input: ImportReaderMarkdownInput) => invoke<MarkdownImportView>("import_reader_markdown", { input });
 export const exportReaderMarkdown = (input: ReaderDocumentIdInput) => invoke<MarkdownExportView>("export_reader_markdown", { input });
+export const convertMarkdownFragment = (input: ConvertMarkdownInput) => invoke<MarkdownFragmentView>("convert_markdown_fragment", { input });
 export const importDocumentAsset = (input: ImportDocumentAssetInput) => invoke<DocumentAssetView>("import_document_asset", { input });
 export const getDocumentAsset = (input: DocumentAssetIdInput) => invoke<DocumentAssetBytes>("get_document_asset", { input });
 export const searchGlobal = (input: SearchGlobalInput) => invoke<GlobalSearchProjection>("search_global", { input });

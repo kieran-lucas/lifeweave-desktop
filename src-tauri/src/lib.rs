@@ -18,9 +18,9 @@ pub mod task;
 use tauri::Manager;
 
 use document::service::{
-    create_reader_document, discard_reader_draft, export_reader_markdown, get_document_asset,
-    get_reader_document, import_document_asset, import_reader_markdown, recover_reader_draft,
-    save_reader_document, save_reader_draft,
+    convert_markdown_fragment, create_reader_document, discard_reader_draft,
+    export_reader_markdown, get_document_asset, get_reader_document, import_document_asset,
+    import_reader_markdown, recover_reader_draft, save_reader_document, save_reader_draft,
 };
 use focus_plan::service::{
     create_focus_plan, create_focus_plan_review, discard_focus_plan_draft, get_focus_plan,
@@ -255,6 +255,7 @@ pub fn run() {
             recover_reader_draft,
             import_reader_markdown,
             export_reader_markdown,
+            convert_markdown_fragment,
             import_document_asset,
             get_document_asset,
             get_narrative_document,

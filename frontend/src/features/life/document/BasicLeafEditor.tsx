@@ -1,6 +1,4 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
-import { Node } from "@tiptap/core";
-import Image from "@tiptap/extension-image";
 import Link from "@tiptap/extension-link";
 import { TaskItem, TaskList } from "@tiptap/extension-list";
 import { TableCell, TableHeader, TableKit } from "@tiptap/extension-table";
@@ -11,22 +9,11 @@ import { importDocumentAsset, saveReaderDocument, saveReaderDraft } from "../../
 import { DecisionDialog } from "../../../app/layout/DialogSurface";
 import { LoadingRow } from "../../../design-system/primitives/States";
 import { operationId } from "./schema";
+import { AssetImage, Callout, IngestionGateway, InlineMath, MathBlock } from "./extensions";
+import type { IngestionNotice } from "./extensions";
 import "./BasicLeafEditor.css";
 import * as styles from "./BasicLeafDocument.css";
 
-const Callout = Node.create({
-  name: "callout",
-  group: "block",
-  content: "block+",
-  defining: true,
-  addAttributes() { return { variant: { default: "note" } }; },
-  parseHTML() { return [{ tag: "aside[data-callout]" }]; },
-  renderHTML({ HTMLAttributes }) { return ["aside", { "data-callout": HTMLAttributes.variant }, 0]; },
-});
-
-const AssetImage = Image.extend({
-  addAttributes() { return { ...this.parent?.(), assetId: { default: null } }; },
-});
 const BasicLeafToolbar = lazy(() => import("./BasicLeafToolbar"));
 
 // Column alignment is part of the document, so the cell nodes have to carry it through
@@ -42,7 +29,7 @@ const alignAttribute = {
 const AlignedCell = TableCell.extend({ addAttributes() { return { ...this.parent?.(), ...alignAttribute }; } });
 const AlignedHeader = TableHeader.extend({ addAttributes() { return { ...this.parent?.(), ...alignAttribute }; } });
 
-export const basicLeafExtensions = [
+export const buildBasicLeafExtensions = (onNotice: IngestionNotice | null = null) => [
   StarterKit.configure({ heading: { levels: [1, 2, 3] }, link: false }),
   Link.configure({
     openOnClick: false,
@@ -56,7 +43,12 @@ export const basicLeafExtensions = [
   TaskList,
   TaskItem.configure({ nested: true }),
   Callout,
+  InlineMath,
+  MathBlock,
+  IngestionGateway.configure({ onNotice }),
 ];
+
+export const basicLeafExtensions = buildBasicLeafExtensions();
 
 type Props = {
   document: ReaderDocumentView;
@@ -116,8 +108,13 @@ export default function BasicLeafEditor({ document, initialJson, onCommitted, on
     }, 3000);
   };
 
+  // Held in a ref so the extension list stays stable: rebuilding it would rebuild the
+  // editor and lose the document being edited.
+  const noticeRef = useRef<IngestionNotice>((text: string) => setMessage(text));
+  const extensions = useRef(buildBasicLeafExtensions((text: string) => noticeRef.current(text)));
+
   const editor = useEditor({
-    extensions: basicLeafExtensions,
+    extensions: extensions.current,
     content: initialContent.current,
     autofocus: false,
     editorProps,

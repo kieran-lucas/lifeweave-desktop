@@ -74,6 +74,7 @@ fn main() {
             "recover_reader_draft",
             "import_reader_markdown",
             "export_reader_markdown",
+            "convert_markdown_fragment",
             "import_document_asset",
             "get_document_asset",
             "get_narrative_document",

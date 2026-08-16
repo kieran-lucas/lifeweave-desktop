@@ -157,6 +157,9 @@ export const saveButton = sharedButton.primary;
 export const toolbar = style({ display: "flex", alignItems: "center", gap: 6, overflowX: "auto", padding: "7px 9px" });
 export const tableTools = style({ display: "flex", alignItems: "center", gap: 5, overflowX: "auto", padding: "6px 9px", borderBlockStart: "1px solid var(--paint-edge)", background: vars.color.surfaceSubtle });
 export const tableHint = style({ flex: "0 0 auto", paddingInline: 4, color: "var(--text-muted)", ...text.metadata });
+// A shortcut nobody is told about is not a feature, so the Markdown paste route names
+// itself in the toolbar rather than waiting to be discovered.
+export const pasteHint = style([tableHint, { marginInlineStart: "auto" }]);
 export const toolbarGroup = style({ display: "inline-flex", alignItems: "center", gap: 2, flex: "0 0 auto", paddingInlineEnd: 6, borderInlineEnd: "1px solid var(--paint-edge)" });
 globalStyle(`${toolbarGroup}:last-child`, { paddingInlineEnd: 0, borderInlineEnd: 0 });
 globalStyle(`${toolbarGroup}:first-child > :first-child`, { fontWeight: 700 });
@@ -212,3 +215,79 @@ globalStyle(`${editorSurface} .tiptap ul[data-type="taskList"] li > label`, { di
 globalStyle(`${editorSurface} .tiptap ul[data-type="taskList"] li > div`, { flex: 1, minInlineSize: 0 });
 globalStyle(`${editorSurface} .tiptap ul[data-type="taskList"] li > div > p`, { margin: 0 });
 globalStyle(`${editorSurface} .tiptap hr`, { border: 0, borderBlockStart: "1px solid var(--paint-edge)", marginBlock: 26 });
+
+// Reader code, math and diagram source.
+//
+// Every colour is a design-system token rather than a highlighter theme, so code reads as
+// part of this document rather than as a window from another application, and forced-colors
+// mode keeps its own palette. The rules are scoped to these classes so nothing leaks into
+// the rest of the app.
+export const codeBlock = style({
+  overflowX: "auto",
+  maxInlineSize: "100%",
+  padding: 14,
+  border: "1px solid var(--paint-edge)",
+  borderRadius: "var(--radius-control)",
+  backgroundColor: "#FFFFFF",
+  backgroundImage: "var(--paint-grain-fine)",
+  ...text.code,
+  selectors: {
+    // The language is shown quietly rather than as a badge, and only when one is stored.
+    "&[data-language]::before": {
+      content: "attr(data-language)",
+      display: "block",
+      marginBlockEnd: 8,
+      color: vars.color.textSecondary,
+      ...text.metadata,
+    },
+  },
+});
+globalStyle(`${codeBlock} code`, { display: "block", whiteSpace: "pre", tabSize: 2 });
+
+const token = (color: string, extra: Record<string, string> = {}) => ({ color, ...extra });
+const tokenRules: Record<string, Record<string, string>> = {
+  "hljs-comment, .hljs-quote": token(vars.color.textSecondary, { fontStyle: "italic" }),
+  "hljs-keyword, .hljs-selector-tag, .hljs-literal, .hljs-doctag, .hljs-name": token("#8A2E6B", { fontWeight: "650" }),
+  "hljs-string, .hljs-regexp, .hljs-addition, .hljs-attribute, .hljs-meta .hljs-string": token("#1E6A3C"),
+  "hljs-number, .hljs-symbol, .hljs-bullet, .hljs-link, .hljs-selector-attr": token("#9A4B10"),
+  "hljs-title, .hljs-section, .hljs-title.class_, .hljs-title.function_": token("#1B4F9C"),
+  "hljs-type, .hljs-built_in, .hljs-class .hljs-title, .hljs-params": token("#0F6B72"),
+  "hljs-variable, .hljs-template-variable, .hljs-attr, .hljs-selector-id": token("#7A3E00"),
+  "hljs-meta, .hljs-deletion": token(vars.color.textSecondary),
+  "hljs-emphasis": token("inherit", { fontStyle: "italic" }),
+  "hljs-strong": token("inherit", { fontWeight: "700" }),
+};
+for (const [selector, declaration] of Object.entries(tokenRules)) {
+  globalStyle(`${codeBlock} .${selector}`, declaration);
+}
+// Colour is never the only signal, and in forced-colors mode the system palette wins.
+globalStyle(`${codeBlock} span`, { "@media": { "(forced-colors: active)": { color: "CanvasText" } } });
+
+export const mathInlineView = style({ display: "inline-block", maxInlineSize: "100%", verticalAlign: "baseline" });
+export const mathBlockView = style({
+  display: "block",
+  overflowX: "auto",
+  maxInlineSize: "100%",
+  marginBlock: 18,
+  textAlign: "center",
+});
+// The typeset formula is decorative once the source is exposed; when typesetting fails the
+// source is all there is, so it becomes visible instead.
+export const mathSourceFallback = style({
+  position: "absolute",
+  inlineSize: 1,
+  blockSize: 1,
+  overflow: "hidden",
+  clip: "rect(0 0 0 0)",
+  whiteSpace: "nowrap",
+});
+globalStyle(`${mathInlineView}[data-failed] > span:first-child, ${mathBlockView}[data-failed] > span:first-child`, { display: "none" });
+globalStyle(
+  `${mathInlineView}[data-failed] .${mathSourceFallback}, ${mathBlockView}[data-failed] .${mathSourceFallback}`,
+  { position: "static", inlineSize: "auto", blockSize: "auto", clip: "auto", whiteSpace: "pre-wrap", ...text.code, color: vars.color.danger },
+);
+
+// The editor shows the stored TeX rather than a rendering of it, so a formula stays
+// readable and replaceable without an editing surface that could disagree with the source.
+export const mathSource = style({ ...text.code, padding: "0 3px", borderRadius: "var(--radius-small)", background: vars.color.surfaceSubtle });
+export const mathSourceBlock = style([mathSource, { display: "block", padding: "10px 12px", marginBlock: 16, whiteSpace: "pre-wrap" }]);

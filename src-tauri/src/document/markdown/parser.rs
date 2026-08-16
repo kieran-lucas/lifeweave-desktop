@@ -19,6 +19,10 @@ pub struct MarkdownImportResult {
 
 pub fn import_with_diagnostics(markdown: &str) -> Result<MarkdownImportResult, DocumentError> {
     validate_source(markdown)?;
+    // A byte-order mark is an encoding artefact of the file, not the first character of
+    // the author's first block. Left in place it turns `# Title` into a paragraph whose
+    // text opens with an invisible character, so every heading in the file is lost.
+    let markdown = markdown.strip_prefix('\u{FEFF}').unwrap_or(markdown);
 
     let mut options = Options::empty();
     options.insert(Options::ENABLE_TABLES);
@@ -26,6 +30,9 @@ pub fn import_with_diagnostics(markdown: &str) -> Result<MarkdownImportResult, D
     options.insert(Options::ENABLE_STRIKETHROUGH);
     options.insert(Options::ENABLE_FOOTNOTES);
     options.insert(Options::ENABLE_GFM);
+    options.insert(Options::ENABLE_MATH);
+    options.insert(Options::ENABLE_YAML_STYLE_METADATA_BLOCKS);
+    options.insert(Options::ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS);
 
     let mut builder = MarkdownBuilder::new(markdown);
     for (event, span) in Parser::new_ext(markdown, options).into_offset_iter() {
@@ -63,6 +70,8 @@ struct Frame {
     manual_callout: Option<(&'static str, usize)>,
     image_target: Option<String>,
     image_alt: String,
+    /// The label of the footnote definition this frame carries, if it is one.
+    footnote_label: Option<String>,
 }
 
 impl Frame {
@@ -74,6 +83,7 @@ impl Frame {
             manual_callout: None,
             image_target: None,
             image_alt: String::new(),
+            footnote_label: None,
         }
     }
 
@@ -277,20 +287,33 @@ impl<'a> MarkdownBuilder<'a> {
                 reject_active_markup(&value)?;
                 self.absorb_inline_html(&value, span.start);
             }
-            Event::FootnoteReference(_) => {
-                return Err(DocumentError::Validation(
-                    "Markdown footnote references are not supported; the document was not imported.",
-                ));
+            // A footnote has no node in the Core schema, but rejecting the document over
+            // one made every academic or technical Markdown file unimportable. The marker
+            // is written back as the literal text the author typed, so the reference and
+            // its definition both stay legible and stay together on export.
+            Event::FootnoteReference(label) => {
+                self.diagnostic(
+                    "footnote",
+                    "warning",
+                    "Footnotes are not linked by the Core schema; the marker was kept as text.",
+                    span.start,
+                    &format!("Kept `[^{label}]` as literal text next to its definition."),
+                );
+                self.push_text(&format!("[^{label}]"));
             }
-            Event::InlineMath(_) => {
-                return Err(DocumentError::Validation(
-                    "Inline math is not supported; the document was not imported.",
-                ));
+            Event::InlineMath(source) => {
+                self.code_spans.push(span);
+                self.attach(json!({"type":"inlineMath","attrs":{"source":source.as_ref()}}));
             }
-            Event::DisplayMath(_) => {
-                return Err(DocumentError::Validation(
-                    "Display math is not supported; the document was not imported.",
-                ));
+            Event::DisplayMath(source) => {
+                self.code_spans.push(span);
+                // The delimiters' own line breaks are not part of the formula, and a file
+                // with CRLF endings leaves a carriage return on every line of it — which
+                // is invisible in the source and reopens the block on the way back out.
+                let source = source.replace("\r\n", "\n").replace('\r', "\n");
+                self.attach(
+                    json!({"type":"mathBlock","attrs":{"source":source.trim_matches('\n')}}),
+                );
             }
         }
         Ok(())
@@ -437,15 +460,31 @@ impl<'a> MarkdownBuilder<'a> {
                 self.html_block = Some(String::new());
                 self.html_offset = offset;
             }
+            // Front matter is configuration for another tool, not prose. It is kept
+            // verbatim as inert code so an author never loses it, and its span is treated
+            // as code so a template marker inside it is quoted text rather than a payload.
             Tag::MetadataBlock(_) => {
-                return Err(DocumentError::Validation(
-                    "Markdown metadata blocks are not supported; the document was not imported.",
-                ));
+                self.code_spans.push(span);
+                self.diagnostic(
+                    "front_matter",
+                    "warning",
+                    "Front matter has no node in the Core schema and was kept as inert code.",
+                    offset,
+                    "Preserved verbatim as a code block; it is never interpreted.",
+                );
+                self.frames.push(Frame::node("codeBlock", None));
             }
-            Tag::FootnoteDefinition(_) => {
-                return Err(DocumentError::Validation(
-                    "Markdown footnote definitions are not supported; the document was not imported.",
-                ));
+            Tag::FootnoteDefinition(label) => {
+                self.diagnostic(
+                    "footnote",
+                    "warning",
+                    "A footnote definition was flattened into ordinary blocks; the Core schema has no footnote node.",
+                    offset,
+                    &format!("Kept every block of `[^{label}]` with its label as leading text."),
+                );
+                let mut frame = Frame::node("footnoteDefinition", None);
+                frame.footnote_label = Some(label.to_string());
+                self.frames.push(frame);
             }
             Tag::DefinitionList | Tag::DefinitionListTitle | Tag::DefinitionListDefinition => {
                 return Err(DocumentError::Validation(
@@ -491,13 +530,10 @@ impl<'a> MarkdownBuilder<'a> {
             | TagEnd::Item
             | TagEnd::Table
             | TagEnd::TableRow
-            | TagEnd::Image => self.close_frame()?,
+            | TagEnd::Image
+            | TagEnd::MetadataBlock(_)
+            | TagEnd::FootnoteDefinition => self.close_frame()?,
             TagEnd::HtmlBlock => self.close_html_block(),
-            TagEnd::FootnoteDefinition => {
-                return Err(DocumentError::Validation(
-                    "Markdown footnote definitions are not supported; the document was not imported.",
-                ));
-            }
             TagEnd::DefinitionList
             | TagEnd::DefinitionListTitle
             | TagEnd::DefinitionListDefinition => {
@@ -513,11 +549,6 @@ impl<'a> MarkdownBuilder<'a> {
             TagEnd::Subscript => {
                 return Err(DocumentError::Validation(
                     "Markdown subscript is not supported; the document was not imported.",
-                ));
-            }
-            TagEnd::MetadataBlock(_) => {
-                return Err(DocumentError::Validation(
-                    "Markdown metadata blocks are not supported; the document was not imported.",
                 ));
             }
         }
@@ -539,10 +570,35 @@ impl<'a> MarkdownBuilder<'a> {
                 promote_manual_callout(&mut frame, marker);
             }
         }
+        // A footnote definition is a container the Core schema has no node for. Its blocks
+        // are the author's prose, so they are lifted into the parent with the label written
+        // back in front of them; discarding the container must not discard its content.
+        if frame.kind == "footnoteDefinition" {
+            let label = frame.footnote_label.take().unwrap_or_default();
+            prepend_footnote_label(&mut frame, &label);
+            for child in frame.content {
+                self.attach(child);
+            }
+            return Ok(());
+        }
         // A paragraph that held nothing but dropped markup — an anchor target on its own
         // line — has no content to carry. Keeping the husk would leave the document with
         // blank paragraphs the source never had, which then vanish on the next round trip.
         if frame.kind == "paragraph" && frame.content.is_empty() {
+            return Ok(());
+        }
+        // Display math is a block that the parser reports inside the paragraph it
+        // interrupted. Leaving it there would nest a block inside inline content, so the
+        // paragraph is split around it and every part keeps its own place in the document.
+        if frame.kind == "paragraph"
+            && frame
+                .content
+                .iter()
+                .any(|child| child["type"] == "mathBlock")
+        {
+            for part in split_display_math(frame.content) {
+                self.attach(part);
+            }
             return Ok(());
         }
         let value = frame.into_value()?;
@@ -627,7 +683,10 @@ fn normalize_list_item(frame: &mut Frame) {
     let mut normalized = Vec::new();
     let mut inline = Vec::new();
     for child in frame.content.drain(..) {
-        if matches!(child["type"].as_str(), Some("text" | "hardBreak" | "image")) {
+        if matches!(
+            child["type"].as_str(),
+            Some("text" | "hardBreak" | "image" | "inlineMath")
+        ) {
             inline.push(child);
         } else {
             if !inline.is_empty() {
@@ -643,6 +702,75 @@ fn normalize_list_item(frame: &mut Frame) {
         normalized.push(json!({"type":"paragraph"}));
     }
     frame.content = normalized;
+}
+
+/// Write a footnote's label back in front of its first block.
+///
+/// Without it the definition's prose would sit in the document with nothing tying it to
+/// the `[^label]` marker that the reference left behind.
+fn prepend_footnote_label(frame: &mut Frame, label: &str) {
+    let marker = format!("[^{label}]: ");
+    let first_text = frame
+        .content
+        .first_mut()
+        .filter(|first| first["type"] == "paragraph")
+        .and_then(|first| first.get_mut("content"))
+        .and_then(Value::as_array_mut);
+    match first_text {
+        // Merging into an existing text node rather than inserting beside it keeps the
+        // canonical form identical to what re-importing the export produces, where the two
+        // adjacent runs would have been merged anyway.
+        Some(nodes) => match nodes.first_mut().filter(|first| first["type"] == "text") {
+            Some(first) => {
+                let joined = format!("{marker}{}", first["text"].as_str().unwrap_or_default());
+                first["text"] = json!(joined);
+            }
+            None => nodes.insert(0, json!({"type":"text","text":marker})),
+        },
+        None => frame.content.insert(
+            0,
+            json!({"type":"paragraph","content":[{"type":"text","text":marker.trim_end()}]}),
+        ),
+    }
+}
+
+fn trim_edge_text(node: Option<&mut Value>, trim: fn(&str) -> &str) {
+    if let Some(text) = node.filter(|node| node["type"] == "text") {
+        let trimmed = trim(text["text"].as_str().unwrap_or_default()).to_owned();
+        text["text"] = json!(trimmed);
+    }
+}
+
+/// Split a paragraph's inline run into paragraphs and the display-math blocks between them.
+fn split_display_math(content: Vec<Value>) -> Vec<Value> {
+    let mut out = Vec::new();
+    let mut inline: Vec<Value> = Vec::new();
+    let flush = |inline: &mut Vec<Value>, out: &mut Vec<Value>| {
+        // The math delimiter ends the paragraph before it and starts the one after, so the
+        // whitespace touching the delimiter is block padding rather than content. Trimming
+        // it here is what a re-import of the export would do, so the canonical form of a
+        // paragraph interrupted by display math is the same however it was reached.
+        trim_edge_text(inline.first_mut(), str::trim_start);
+        trim_edge_text(inline.last_mut(), str::trim_end);
+        if inline
+            .iter()
+            .any(|node| node["type"] != "hardBreak" && node["text"] != "")
+        {
+            out.push(json!({"type":"paragraph","content":std::mem::take(inline)}));
+        } else {
+            inline.clear();
+        }
+    };
+    for child in content {
+        if child["type"] == "mathBlock" {
+            flush(&mut inline, &mut out);
+            out.push(child);
+        } else {
+            inline.push(child);
+        }
+    }
+    flush(&mut inline, &mut out);
+    out
 }
 
 fn normalize_code_block(frame: &mut Frame) {

@@ -27,6 +27,7 @@ export default function BasicLeafToolbar({ editor, onLink, onImage }: { editor:E
         <Tool label="Table" run={()=>editor.chain().focus().insertTable({rows:2,cols:2,withHeaderRow:true}).run()}/>
         <label className={styles.toolbarFileLabel}>Image<input className={styles.editorHiddenFile} type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={event=>{const file=event.currentTarget.files?.[0];event.currentTarget.value="";void onImage(file);}}/></label>
       </div>
+      <span className={styles.pasteHint}>Ctrl+Shift+V pastes text as Markdown</span>
     </div>
     {active.table&&<BasicLeafTableTools editor={editor}/>}
   </>;

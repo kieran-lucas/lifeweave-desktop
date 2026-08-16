@@ -168,6 +168,8 @@ mod tests {
         MarkdownImportDiagnostic::export_all_to(&out).unwrap();
         MarkdownImportView::export_all_to(&out).unwrap();
         MarkdownExportView::export_all_to(&out).unwrap();
+        ConvertMarkdownInput::export_all_to(&out).unwrap();
+        MarkdownFragmentView::export_all_to(&out).unwrap();
         ImportDocumentAssetInput::export_all_to(&out).unwrap();
         DocumentAssetView::export_all_to(&out).unwrap();
         DocumentAssetIdInput::export_all_to(&out).unwrap();

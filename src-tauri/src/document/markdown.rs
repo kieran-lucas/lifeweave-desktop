@@ -224,15 +224,38 @@ pub fn export(canonical: &str) -> Result<String, DocumentError> {
     let valid = schema::validate(canonical)?;
     let v: Value = serde_json::from_str(&valid.canonical_json).unwrap();
     let mut out = String::new();
-    for node in v
-        .get("content")
-        .and_then(Value::as_array)
-        .into_iter()
-        .flatten()
-    {
-        render(node, &mut out)?;
-    }
+    render_sequence(v.get("content").and_then(Value::as_array), &mut out)?;
     Ok(out.trim_end().to_owned() + "\n")
+}
+
+/// Which list marker a node uses, or `None` if it is not a list.
+///
+/// A task list and a bullet list both use `-`, so for the purpose of keeping two lists
+/// apart they are the same family even though they are different nodes.
+fn list_family(kind: &str) -> Option<&'static str> {
+    match kind {
+        "orderedList" => Some("ordered"),
+        "bulletList" | "taskList" => Some("bullet"),
+        _ => None,
+    }
+}
+
+/// Render sibling blocks, keeping two adjacent lists apart.
+///
+/// CommonMark ends a list only at a different marker, so two consecutive lists written
+/// with the same one merge into a single list on re-import — the second list's items
+/// silently join the first and inherit its numbering. Alternating the marker is what keeps
+/// them two lists; it is the only difference the syntax offers.
+fn render_sequence(nodes: Option<&Vec<Value>>, out: &mut String) -> Result<(), DocumentError> {
+    let mut previous: Option<&str> = None;
+    for node in nodes.into_iter().flatten() {
+        let kind = node.get("type").and_then(Value::as_str).unwrap_or("");
+        let is_list = list_family(kind).is_some();
+        let alternate = previous.is_some_and(|last| list_family(last) == list_family(kind));
+        render_marked(node, out, alternate)?;
+        previous = is_list.then_some(kind);
+    }
+    Ok(())
 }
 /// Whether a run of inline content may emit line breaks.
 ///
@@ -261,7 +284,32 @@ fn atom(node: &Value, mode: InlineMode) -> String {
         Some("text") => {
             escape_markdown_text(node.get("text").and_then(Value::as_str).unwrap_or(""))
         }
+        // The stored TeX is verbatim: escaping it would change the formula, and it cannot
+        // contain its own delimiter because the schema refuses such a source.
+        Some("inlineMath") => match math_source(node) {
+            "" => String::new(),
+            source => single_line_cell(&format!("${source}$"), mode),
+        },
         _ => text(node, mode),
+    }
+}
+
+fn math_source(node: &Value) -> &str {
+    node.get("attrs")
+        .and_then(|attrs| attrs.get("source"))
+        .and_then(Value::as_str)
+        .unwrap_or_default()
+}
+
+/// Neutralize the one character that would end a GFM table cell early.
+///
+/// A cell is delimited by unescaped pipes, so verbatim runs that legitimately contain one
+/// — inline code, a link target, a formula — have to escape it or the row gains a column
+/// and the run is torn in half.
+fn single_line_cell(rendered: &str, mode: InlineMode) -> String {
+    match mode {
+        InlineMode::SingleLine => rendered.replace('|', "\\|"),
+        InlineMode::Block => rendered.to_owned(),
     }
 }
 
@@ -328,7 +376,7 @@ fn wrap_mark(mark: &Value, run: &[Value], applied: &[Value], mode: InlineMode) -
         return if raw.is_empty() {
             String::new()
         } else {
-            inline_code(&raw)
+            single_line_cell(&inline_code(&raw), mode)
         };
     }
     let mut opened = applied.to_vec();
@@ -348,10 +396,55 @@ fn wrap_mark(mark: &Value, run: &[Value], applied: &[Value], mode: InlineMode) -
                 .and_then(|attrs| attrs.get("href"))
                 .and_then(Value::as_str)
                 .unwrap_or("");
-            format!("[{inner}]({href})")
+            format!("[{inner}]({})", link_destination(href, mode))
         }
         _ => inner,
     }
+}
+
+/// Render a link or image target so that re-importing it yields the same target.
+///
+/// A bare destination ends at the first space or unbalanced parenthesis, so a URL holding
+/// either one was silently truncated — and with it the whole link, which re-imported as
+/// literal text. CommonMark's angle-bracket form has no such boundary.
+fn link_destination(href: &str, mode: InlineMode) -> String {
+    let balanced = {
+        let mut depth = 0i32;
+        href.chars().all(|character| {
+            match character {
+                '(' => depth += 1,
+                ')' => depth -= 1,
+                _ => {}
+            }
+            depth >= 0
+        }) && depth == 0
+    };
+    let plain = balanced
+        && !href.is_empty()
+        && !href
+            .chars()
+            .any(|c| c.is_whitespace() || c.is_control() || matches!(c, '<' | '>'));
+    let rendered = if plain {
+        href.to_owned()
+    } else {
+        let mut angled = String::with_capacity(href.len() + 2);
+        angled.push('<');
+        for character in href.chars() {
+            if matches!(character, '<' | '>' | '\\') {
+                angled.push('\\');
+            }
+            // A line break inside the angle form ends the destination, so it cannot
+            // survive as itself; a space is the closest target that still resolves.
+            angled.push(if matches!(character, '\n' | '\r') {
+                ' '
+            } else {
+                character
+            });
+        }
+        angled.push('>');
+        angled
+    };
+    single_line_cell(&rendered, mode)
 }
 
 /// Wrap a run in an emphasis delimiter that will actually re-parse as that emphasis.
@@ -372,16 +465,41 @@ fn wrap_emphasis(value: &str, delimiter: &str) -> String {
 
 fn escape_markdown_text(value: &str) -> String {
     let mut escaped = String::with_capacity(value.len());
-    for character in value.chars() {
-        if matches!(
+    let mut rest = value;
+    while let Some(character) = rest.chars().next() {
+        rest = &rest[character.len_utf8()..];
+        // `$` opens inline math, so a formula the author only wrote about would become one
+        // on the next import. `&` only matters when it opens a character reference: the
+        // parser decodes `&amp;` to `&`, so an author's literal `&amp;` would come back as
+        // a bare ampersand. An ampersand that opens nothing stays as it is.
+        let escapes = matches!(
             character,
-            '\\' | '`' | '*' | '_' | '{' | '}' | '[' | ']' | '<' | '>' | '#' | '|' | '~'
-        ) {
+            '\\' | '`' | '*' | '_' | '{' | '}' | '[' | ']' | '<' | '>' | '#' | '|' | '~' | '$'
+        ) || (character == '&' && opens_entity(rest));
+        if escapes {
             escaped.push('\\');
         }
         escaped.push(character);
     }
     escaped
+}
+
+/// Whether the text after an `&` completes a character reference the parser would decode.
+fn opens_entity(rest: &str) -> bool {
+    let body = rest.strip_prefix('#').map_or_else(
+        || {
+            rest.starts_with(|c: char| c.is_ascii_alphabetic())
+                .then(|| rest.trim_start_matches(|c: char| c.is_ascii_alphanumeric()))
+        },
+        |digits| {
+            let numeric = digits
+                .strip_prefix(['x', 'X'])
+                .map(|hex| hex.trim_start_matches(|c: char| c.is_ascii_hexdigit()))
+                .unwrap_or_else(|| digits.trim_start_matches(|c: char| c.is_ascii_digit()));
+            (numeric.len() < digits.len()).then_some(numeric)
+        },
+    );
+    body.is_some_and(|tail| tail.starts_with(';') && tail.len() < rest.len())
 }
 
 fn inline_code(value: &str) -> String {
@@ -466,6 +584,11 @@ fn escape_block_starts(rendered: &str) -> String {
 
 /// Render a block's inline content for a context that must stay on one line.
 fn single_line(node: &Value) -> String {
+    // A GFM cell holds no blocks, so display math in one is written in its inline form
+    // rather than dropped for having no inline children to render.
+    if node.get("type").and_then(Value::as_str) == Some("mathBlock") {
+        return single_line_cell(&format!("${}$", math_source(node)), InlineMode::SingleLine);
+    }
     text(node, InlineMode::SingleLine)
 }
 
@@ -507,14 +630,7 @@ fn block_text(node: &Value) -> String {
 
 fn render_children(n: &Value) -> Result<String, DocumentError> {
     let mut body = String::new();
-    for child in n
-        .get("content")
-        .and_then(Value::as_array)
-        .into_iter()
-        .flatten()
-    {
-        render(child, &mut body)?;
-    }
+    render_sequence(n.get("content").and_then(Value::as_array), &mut body)?;
     if body.trim().is_empty() {
         body = block_text(n);
     }
@@ -576,9 +692,13 @@ fn render_list_item(
     };
     let continuation = " ".repeat(marker_width);
     let mut wrote_first = false;
+    let mut previous_list: Option<&str> = None;
     for child in children {
+        let kind = child.get("type").and_then(Value::as_str).unwrap_or("");
         let mut body = String::new();
-        render(child, &mut body)?;
+        let alternate = previous_list.is_some_and(|last| list_family(last) == list_family(kind));
+        render_marked(child, &mut body, alternate)?;
+        previous_list = list_family(kind).is_some().then_some(kind);
         if body.trim().is_empty() {
             continue;
         }
@@ -626,7 +746,9 @@ fn table_cell(cell: &Value) -> String {
     blocks.join(" ")
 }
 
-fn render(n: &Value, out: &mut String) -> Result<(), DocumentError> {
+/// `alternate` asks a list to use its second marker so it does not merge with the list
+/// immediately above it. See [`render_sequence`].
+fn render_marked(n: &Value, out: &mut String, alternate: bool) -> Result<(), DocumentError> {
     match n.get("type").and_then(Value::as_str).unwrap_or("") {
         "heading" => {
             let l = n
@@ -664,23 +786,40 @@ fn render(n: &Value, out: &mut String) -> Result<(), DocumentError> {
                 .and_then(|attrs| attrs.get("language"))
                 .and_then(Value::as_str)
                 .unwrap_or_default();
-            out.push_str(&format!("{fence}{language}\n{content}\n{fence}\n\n"));
+            // An empty block has no line between its fences. Emitting one anyway put a
+            // blank line inside the block, which re-imported as a block holding "".
+            let body = if content.is_empty() {
+                String::new()
+            } else {
+                format!("{content}\n")
+            };
+            out.push_str(&format!("{fence}{language}\n{body}{fence}\n\n"));
         }
+        "mathBlock" => out.push_str(&format!("$$\n{}\n$$\n\n", math_source(n))),
         "horizontalRule" => out.push_str("---\n\n"),
         "taskList" => {
+            let bullet = if alternate { '*' } else { '-' };
             for item in n
                 .get("content")
                 .and_then(Value::as_array)
                 .into_iter()
                 .flatten()
             {
-                let checked = item
-                    .get("attrs")
-                    .and_then(|attrs| attrs.get("checked"))
-                    .and_then(Value::as_bool)
-                    .unwrap_or(false);
-                let prefix = if checked { "- [x] " } else { "- [ ] " };
-                render_list_item(item, out, prefix, "- ".len())?;
+                // A list is retagged as a task list as soon as one item carries a
+                // checkbox, so an ordinary item can sit beside task items. Giving it a
+                // checkbox it never had would turn a note into an unfinished task.
+                let prefix = match item.get("type").and_then(Value::as_str) {
+                    Some("taskItem") => {
+                        let checked = item
+                            .get("attrs")
+                            .and_then(|attrs| attrs.get("checked"))
+                            .and_then(Value::as_bool)
+                            .unwrap_or(false);
+                        format!("{bullet} [{}] ", if checked { 'x' } else { ' ' })
+                    }
+                    _ => format!("{bullet} "),
+                };
+                render_list_item(item, out, &prefix, 2)?;
             }
             out.push('\n');
         }
@@ -698,9 +837,10 @@ fn render(n: &Value, out: &mut String) -> Result<(), DocumentError> {
                 .enumerate()
             {
                 let prefix = if n["type"] == "bulletList" {
-                    "- ".into()
+                    if alternate { "* ".into() } else { "- ".into() }
                 } else {
-                    format!("{}. ", start + i as u64)
+                    let delimiter = if alternate { ')' } else { '.' };
+                    format!("{}{delimiter} ", start + i as u64)
                 };
                 render_list_item(item, out, &prefix, prefix.chars().count())?;
             }
@@ -718,6 +858,9 @@ fn render(n: &Value, out: &mut String) -> Result<(), DocumentError> {
                 .and_then(Value::as_str)
                 .filter(|value| !value.is_empty())
                 .unwrap_or("Local image");
+            // The alt text sits inside `[...]` on one line, so a bracket or newline in it
+            // would end the image early and leave the rest of the text loose in the block.
+            let alt = escape_markdown_text(alt).replace(['\n', '\r'], " ");
             out.push_str(&format!("![{alt}](assets/{id})\n\n"));
         }
         "table" => {
@@ -1115,10 +1258,25 @@ mod tests {
             import("```html\n<script>alert(1)</script>\nimport x from 'package'\n```").unwrap();
         assert!(inert.contains("<script>alert(1)</script>"));
         assert!(inert.contains("import x from 'package'"));
-        assert!(matches!(
-            import("reference[^1]\n\n[^1]: note"),
-            Err(DocumentError::Validation(message)) if message.contains("footnote")
-        ));
+        // A footnote is not linked, but it no longer costs the author the whole document:
+        // the marker and the definition both survive as the text that was written.
+        let footnoted = import_with_diagnostics("reference[^1]\n\n[^1]: note").unwrap();
+        let value: Value = serde_json::from_str(&footnoted.canonical_json).unwrap();
+        let plain = schema::validate(&footnoted.canonical_json)
+            .unwrap()
+            .plain_text;
+        assert!(plain.contains("reference[^1]"), "{value}");
+        assert!(plain.contains("[^1]: note"), "{value}");
+        assert!(
+            footnoted
+                .diagnostics
+                .iter()
+                .any(|item| item.kind == "footnote")
+        );
+        assert_eq!(
+            import(&export(&footnoted.canonical_json).unwrap()).unwrap(),
+            footnoted.canonical_json
+        );
     }
 
     #[test]

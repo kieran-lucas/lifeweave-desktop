@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-convert-markdown-fragment"
+description = "Enables the convert_markdown_fragment command without any pre-configured scope."
+commands.allow = ["convert_markdown_fragment"]
+
+[[permission]]
+identifier = "deny-convert-markdown-fragment"
+description = "Denies the convert_markdown_fragment command without any pre-configured scope."
+commands.deny = ["convert_markdown_fragment"]

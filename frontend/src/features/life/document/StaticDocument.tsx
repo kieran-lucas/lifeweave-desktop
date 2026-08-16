@@ -3,6 +3,8 @@ import { getDocumentAsset } from "../../../ipc/commands";
 import type { BasicLeafMark, BasicLeafNode } from "./schema";
 import { safeLink } from "./schema";
 import { headingIdForSourceIndex } from "./outline";
+import { CodeView } from "./CodeView";
+import { MathView } from "./MathView";
 import * as styles from "./BasicLeafDocument.css";
 import { LoadingRow } from "../../../design-system/primitives/States";
 
@@ -61,8 +63,11 @@ function render(node: BasicLeafNode, key: number | string): React.ReactNode {
     case "callout": return <aside key={key} aria-label={`${String(node.attrs?.variant ?? "note")} callout`}>{children}</aside>;
     case "codeBlock": {
       const language = typeof node.attrs?.language === "string" ? node.attrs.language : undefined;
-      return <pre key={key}><code className={language && `language-${language}`} data-language={language}>{node.content?.map(child => child.text ?? "").join("")}</code></pre>;
+      const source = node.content?.map(child => child.text ?? "").join("") ?? "";
+      return <CodeView key={key} source={source} language={language} />;
     }
+    case "inlineMath": return <MathView key={key} source={String(node.attrs?.source ?? "")} display={false} />;
+    case "mathBlock": return <MathView key={key} source={String(node.attrs?.source ?? "")} display />;
     case "hardBreak": return <br key={key} />;
     case "image": return <AssetImage key={key} assetId={String(node.attrs?.assetId ?? "")} alt={String(node.attrs?.alt ?? "")} />;
     case "table": return <table className={styles.table} key={key}><tbody>{children}</tbody></table>;

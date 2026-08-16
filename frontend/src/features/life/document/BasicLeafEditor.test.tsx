@@ -56,6 +56,15 @@ vi.mock("@tiptap/react", () => ({
   useEditorState: ({ selector }: { selector: (value: { editor: typeof tiptap.editor }) => unknown }) => selector({ editor: tiptap.editor }),
 }));
 vi.mock("@tiptap/core", () => ({ Node: { create: (value: unknown) => value } }));
+// These tests cover the editor shell — saving, drafts, dialogs. The node and paste
+// extensions have their own tests against a real ProseMirror schema.
+vi.mock("./extensions", () => ({
+  AssetImage: { configure: () => ({}) },
+  Callout: {},
+  InlineMath: {},
+  MathBlock: {},
+  IngestionGateway: { configure: () => ({}) },
+}));
 vi.mock("@tiptap/extension-image", () => ({ default: { extend: () => ({ configure: () => ({}) }) } }));
 vi.mock("@tiptap/extension-link", () => ({ default: { configure: (config: typeof link.config) => { link.config = config; return {}; } } }));
 vi.mock("@tiptap/extension-table", () => ({

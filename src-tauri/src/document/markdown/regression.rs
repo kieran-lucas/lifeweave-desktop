@@ -600,3 +600,432 @@ fn a_rule_occupies_one_top_level_node_so_heading_anchors_do_not_drift() {
         .collect::<Vec<_>>();
     assert_eq!(kinds, ["heading", "horizontalRule", "heading"]);
 }
+
+// ---------------------------------------------------------------------------------------
+// Round-trip fidelity defects found by tracing the exporter against its own importer.
+// Each one silently changed what the document said; a stable canonical form is the proof.
+// ---------------------------------------------------------------------------------------
+
+/// The invariant every case below is held to: exporting a canonical document and importing
+/// the result must produce the same canonical document.
+fn assert_round_trips(canonical: &str) -> String {
+    let markdown = export(canonical).unwrap();
+    let reimported = import(&markdown).unwrap();
+    assert_eq!(
+        reimported, canonical,
+        "export did not describe the document it came from.\nmarkdown: {markdown:?}"
+    );
+    markdown
+}
+
+#[test]
+fn a_pipe_inside_a_table_cell_does_not_add_a_column() {
+    // A GFM row ends a cell at every unescaped pipe, and inline code and link targets are
+    // written verbatim. A pipe in either one tore the cell in half and shifted the row.
+    let cell = json!({"type":"tableCell","content":[{"type":"paragraph","content":[
+        {"type":"text","text":"a|b","marks":[{"type":"code"}]},
+        {"type":"text","text":" and "},
+        {"type":"text","text":"x","marks":[{"type":"link","attrs":{"href":"https://example.com/?a=1|2"}}]}]}]});
+    let canonical = import(&export(&doc(json!([table(cell)]))).unwrap()).unwrap();
+    let value: Value = serde_json::from_str(&canonical).unwrap();
+    let row = &value["content"][0]["content"][1];
+    assert_eq!(
+        row["content"].as_array().unwrap().len(),
+        1,
+        "the row gained a column: {canonical}"
+    );
+    assert_round_trips(&canonical);
+}
+
+#[test]
+fn a_link_target_holding_a_space_stays_a_link() {
+    // A bare destination ends at the first space, so the link — and its text — re-imported
+    // as literal punctuation. The angle-bracket form has no such boundary.
+    let canonical = doc(json!([marked(
+        "label",
+        json!([{"type":"link","attrs":{"href":"https://example.com/a b(c)"}}])
+    )]));
+    let markdown = assert_round_trips(&canonical);
+    assert!(
+        markdown.contains('<'),
+        "expected an angle destination: {markdown}"
+    );
+}
+
+#[test]
+fn a_literal_character_reference_is_not_decoded_on_the_way_back_in() {
+    // The parser decodes `&amp;` to `&`, so an author who typed the reference itself got a
+    // bare ampersand back. An ampersand that opens nothing is left alone.
+    let canonical = doc(json!([paragraph(
+        "wrote &amp; meant it; Fish & Chips; A&B; &notaref"
+    )]));
+    let markdown = assert_round_trips(&canonical);
+    assert!(markdown.contains("\\&amp;"), "{markdown}");
+    assert!(markdown.contains("Fish & Chips"), "{markdown}");
+}
+
+#[test]
+fn a_dollar_sign_in_prose_does_not_become_a_formula() {
+    // Math delimiters are live now, so a paragraph that mentions two amounts would have
+    // re-imported with the text between them turned into a formula.
+    let canonical = doc(json!([paragraph("a$b$c costs $1,200 or $5")]));
+    assert_round_trips(&canonical);
+}
+
+#[test]
+fn an_empty_code_block_does_not_grow_a_blank_line() {
+    let canonical = doc(json!([{"type":"codeBlock"}]));
+    assert_round_trips(&canonical);
+}
+
+#[test]
+fn image_alt_text_cannot_end_the_image_early() {
+    let canonical = doc(json!([{"type":"image","attrs":{
+        "assetId":"00000000-0000-7000-8000-000000000001",
+        "alt":"a] (b) c"}}]));
+    assert_round_trips(&canonical);
+}
+
+#[test]
+fn a_byte_order_mark_does_not_swallow_the_first_block() {
+    // Left in place the mark makes the first line a paragraph opening with an invisible
+    // character, so a file saved by a Windows editor lost its title.
+    let with_mark = import("\u{FEFF}# Title\n\nBody").unwrap();
+    assert_eq!(with_mark, import("# Title\n\nBody").unwrap());
+}
+
+// ---------------------------------------------------------------------------------------
+// Constructs the Core schema has no node for. The contract is that they are preserved and
+// disclosed, never silently reinterpreted and never a reason to refuse the whole document.
+// ---------------------------------------------------------------------------------------
+
+#[test]
+fn a_footnote_costs_its_link_but_never_the_document() {
+    let imported = import_with_diagnostics(
+        "A claim[^src] and another[^2].\n\n[^src]: The note.\n\n[^2]: Second note.\n",
+    )
+    .unwrap();
+    let plain = crate::document::schema::validate(&imported.canonical_json)
+        .unwrap()
+        .plain_text;
+    for expected in [
+        "A claim[^src] and another[^2].",
+        "[^src]: The note.",
+        "[^2]: Second note.",
+    ] {
+        assert!(plain.contains(expected), "lost {expected:?} from {plain:?}");
+    }
+    assert_eq!(
+        imported
+            .diagnostics
+            .iter()
+            .filter(|item| item.kind == "footnote")
+            .count(),
+        4,
+        "every marker and every definition is disclosed: {:?}",
+        imported.diagnostics
+    );
+    assert_round_trips(&imported.canonical_json);
+}
+
+#[test]
+fn front_matter_is_kept_verbatim_as_inert_code() {
+    // Without the metadata extension the delimiters parsed as a rule and a setext heading,
+    // so a file's configuration silently became a heading in its prose.
+    for source in [
+        "---\ntitle: Hello\ntags: [a, b]\n---\n\n# Body\n",
+        "+++\ntitle = \"Hello\"\n+++\n\n# Body\n",
+    ] {
+        let imported = import_with_diagnostics(source).unwrap();
+        let value: Value = serde_json::from_str(&imported.canonical_json).unwrap();
+        assert_eq!(value["content"][0]["type"], "codeBlock", "{source:?}");
+        assert_eq!(value["content"][1]["type"], "heading", "{source:?}");
+        assert!(
+            imported
+                .diagnostics
+                .iter()
+                .any(|item| item.kind == "front_matter")
+        );
+        assert_round_trips(&imported.canonical_json);
+    }
+}
+
+// ---------------------------------------------------------------------------------------
+// Math. The stored value is the TeX the author wrote; nothing rendered from it is ever
+// persisted, and a formula can never open a markup or navigation surface.
+// ---------------------------------------------------------------------------------------
+
+#[test]
+fn math_is_stored_as_its_source_and_survives_every_container() {
+    let imported = import_with_diagnostics(
+        "Inline $E = mc^2$ here.\n\n\
+         $$\n\\int_0^1 x^2\\,dx\n$$\n\n\
+         - list $a_1$ item\n\n\
+         > quote $b_2$ end\n\n\
+         | H |\n| --- |\n| $c_3$ |\n",
+    )
+    .unwrap();
+    let value: Value = serde_json::from_str(&imported.canonical_json).unwrap();
+    let serialized = serde_json::to_string(&value).unwrap();
+    assert_eq!(
+        serialized.matches("\"inlineMath\"").count(),
+        4,
+        "{serialized}"
+    );
+    assert_eq!(value["content"][1]["type"], "mathBlock");
+    assert_eq!(value["content"][1]["attrs"]["source"], "\\int_0^1 x^2\\,dx");
+    assert!(
+        imported.diagnostics.is_empty(),
+        "math is represented, not degraded: {:?}",
+        imported.diagnostics
+    );
+    assert_round_trips(&imported.canonical_json);
+}
+
+#[test]
+fn display_math_splits_the_paragraph_it_interrupts_without_losing_either_side() {
+    let canonical = import("before $$a+b$$ after").unwrap();
+    let value: Value = serde_json::from_str(&canonical).unwrap();
+    let kinds = value["content"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|node| node["type"].as_str().unwrap_or("?"))
+        .collect::<Vec<_>>();
+    assert_eq!(kinds, ["paragraph", "mathBlock", "paragraph"]);
+    assert_round_trips(&canonical);
+}
+
+#[test]
+fn a_formula_cannot_carry_a_delimiter_that_would_close_it() {
+    // The source reaches a renderer verbatim, so a value that could not be written back
+    // out as the same node is a corrupt document rather than a formula.
+    for raw in [
+        r#"{"type":"doc","content":[{"type":"inlineMath","attrs":{"source":"a$b"}}]}"#,
+        r#"{"type":"doc","content":[{"type":"inlineMath","attrs":{"source":"a\nb"}}]}"#,
+        r#"{"type":"doc","content":[{"type":"mathBlock","attrs":{"source":"a$$b"}}]}"#,
+        r#"{"type":"doc","content":[{"type":"inlineMath","attrs":{"source":""}}]}"#,
+        r#"{"type":"doc","content":[{"type":"inlineMath"}]}"#,
+    ] {
+        assert!(
+            crate::document::schema::validate(raw).is_err(),
+            "must be refused: {raw}"
+        );
+    }
+    // Markup inside a formula is formula text like any other; it is never markup, because
+    // no stage between here and the renderer treats the source as HTML.
+    let imported = import("$\\text{<script>alert(1)</script>}$").unwrap();
+    assert!(imported.contains("script"), "{imported}");
+    assert_round_trips(&imported);
+}
+
+// ---------------------------------------------------------------------------------------
+// The whole corpus, held to the contract as one document.
+// ---------------------------------------------------------------------------------------
+
+#[test]
+fn the_stress_corpus_imports_round_trips_and_keeps_every_construct_it_declares() {
+    let source = include_str!("../fixtures/markdown_stress_corpus.md");
+    let imported = import_with_diagnostics(source).unwrap();
+    let value: Value = serde_json::from_str(&imported.canonical_json).unwrap();
+    let serialized = serde_json::to_string(&value).unwrap();
+    let plain = crate::document::schema::validate(&imported.canonical_json)
+        .unwrap()
+        .plain_text;
+
+    // Every construct the product declares supported is present as its own node or mark.
+    for expected in [
+        "\"heading\"",
+        "\"paragraph\"",
+        "\"bulletList\"",
+        "\"orderedList\"",
+        "\"listItem\"",
+        "\"taskList\"",
+        "\"taskItem\"",
+        "\"blockquote\"",
+        "\"callout\"",
+        "\"codeBlock\"",
+        "\"horizontalRule\"",
+        "\"table\"",
+        "\"tableHeader\"",
+        "\"tableCell\"",
+        "\"image\"",
+        "\"hardBreak\"",
+        "\"inlineMath\"",
+        "\"mathBlock\"",
+        "\"bold\"",
+        "\"italic\"",
+        "\"strike\"",
+        "\"code\"",
+        "\"link\"",
+        "\"language\":\"rust\"",
+        "\"language\":\"python\"",
+        "\"language\":\"mermaid\"",
+        "\"align\":\"left\"",
+        "\"align\":\"center\"",
+        "\"align\":\"right\"",
+        "\"checked\":true",
+        "\"checked\":false",
+        "\"variant\":\"warning\"",
+        "\"variant\":\"info\"",
+        "\"start\":4",
+    ] {
+        assert!(serialized.contains(expected), "corpus lost {expected}");
+    }
+
+    // Text the author wrote is still text, whatever the parser made of the syntax near it.
+    for expected in [
+        "Tiếng Việt có dấu",
+        "rent is $1200",
+        "snake_case_identifier",
+        "<script>alert(1)</script>",
+        "flowchart LR",
+        "still shown verbatim",
+        "[^src]: The supporting note.",
+        "unclosed strong",
+        "inline tag",
+    ] {
+        assert!(plain.contains(expected), "corpus lost {expected:?}");
+    }
+
+    // Deep nesting survives to the depth the corpus declares.
+    let mut node = value["content"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|node| node["type"] == "bulletList")
+        .unwrap();
+    let mut depth = 1;
+    while let Some(nested) = node["content"][0]["content"]
+        .as_array()
+        .and_then(|blocks| blocks.iter().find(|block| block["type"] == "bulletList"))
+    {
+        node = nested;
+        depth += 1;
+    }
+    assert_eq!(depth, 8, "nested list depth changed: {depth}");
+
+    // Only constructs with no node in the schema are disclosed, and each says which.
+    let kinds: std::collections::BTreeSet<&str> = imported
+        .diagnostics
+        .iter()
+        .map(|item| item.kind.as_str())
+        .collect();
+    assert_eq!(
+        kinds,
+        ["footnote", "heading_depth", "html_markup", "link_target"]
+            .into_iter()
+            .collect()
+    );
+    for diagnostic in &imported.diagnostics {
+        assert!(
+            diagnostic.line >= 1 && !diagnostic.fallback.is_empty(),
+            "{diagnostic:?}"
+        );
+    }
+
+    assert_round_trips(&imported.canonical_json);
+}
+
+#[test]
+fn the_stress_corpus_is_stable_under_repeated_export_and_import() {
+    // One stable round trip can still hide a form that drifts on the next pass, so the
+    // corpus is cycled until it would have to be a fixed point to keep passing.
+    let mut canonical = import(include_str!("../fixtures/markdown_stress_corpus.md")).unwrap();
+    for cycle in 0..4 {
+        let next = import(&export(&canonical).unwrap()).unwrap();
+        assert_eq!(next, canonical, "drifted on cycle {cycle}");
+        canonical = next;
+    }
+}
+
+#[test]
+fn two_adjacent_lists_stay_two_lists() {
+    // CommonMark ends a list only at a different marker, so writing both with the same one
+    // merged them: the second list's items joined the first and inherited its numbering.
+    for (first, second) in [
+        ("bulletList", "bulletList"),
+        ("orderedList", "orderedList"),
+        ("taskList", "bulletList"),
+    ] {
+        let item = |kind: &str| match kind {
+            "taskList" => json!({"type":"taskItem","attrs":{"checked":false},
+                "content":[paragraph("b")]}),
+            _ => json!({"type":"listItem","content":[paragraph("a")]}),
+        };
+        let canonical = doc(json!([
+            {"type": first, "content": [item(first)]},
+            {"type": second, "content": [item(second)]},
+        ]));
+        let markdown = export(&canonical).unwrap();
+        let value: Value = serde_json::from_str(&import(&markdown).unwrap()).unwrap();
+        assert_eq!(
+            value["content"].as_array().unwrap().len(),
+            2,
+            "{first} then {second} merged into one list: {markdown:?}"
+        );
+    }
+}
+
+#[test]
+fn a_plain_item_beside_task_items_does_not_gain_a_checkbox() {
+    // A list becomes a task list as soon as one item carries a checkbox, so an ordinary
+    // item can sit beside task items. Giving it one turned a note into an unfinished task.
+    let canonical = import("- [x] done\n- an ordinary note\n").unwrap();
+    let value: Value = serde_json::from_str(&canonical).unwrap();
+    let items = value["content"][0]["content"].as_array().unwrap();
+    assert_eq!(items[0]["type"], "taskItem");
+    assert_eq!(items[1]["type"], "listItem", "{canonical}");
+
+    let markdown = export(&canonical).unwrap();
+    assert!(markdown.contains("- an ordinary note"), "{markdown:?}");
+    assert!(!markdown.contains("- [ ] an ordinary note"), "{markdown:?}");
+    assert_eq!(import(&markdown).unwrap(), canonical);
+}
+
+#[test]
+fn a_ragged_row_is_padded_rather_than_left_short() {
+    // A row with fewer cells than the header would export a row of a different width, and
+    // a row with more would carry cells the table has no column for.
+    let canonical = import("| A | B |\n| --- | --- |\n| 1 |\n| 1 | 2 | 3 |\n").unwrap();
+    let value: Value = serde_json::from_str(&canonical).unwrap();
+    for row in value["content"][0]["content"].as_array().unwrap() {
+        assert_eq!(row["content"].as_array().unwrap().len(), 2, "{canonical}");
+    }
+    assert_round_trips(&canonical);
+}
+
+#[test]
+fn the_narrative_canvas_reaches_the_same_authority_and_accepts_what_it_produces() {
+    // Narrative rich text is validated by `document::schema`, so a construct the Markdown
+    // authority can produce has to be storable there too. A node added for Basic Leaf that
+    // Narrative refused would make the shared authority a fiction.
+    let source = "# Title\n\nInline $E = mc^2$ and a rule.\n\n$$\n\\sum_i i\n$$\n\n---\n\n\
+                  - [x] done\n- plain\n\n```rust\nfn main() {}\n```\n";
+    let canvas = crate::narrative::markdown::import_as_canvas(
+        "00000000-0000-7000-8000-000000000001",
+        "00000000-0000-7000-8000-000000000002",
+        "00000000-0000-7000-8000-000000000003",
+        "notes.md",
+        "Fallback",
+        source,
+    )
+    .expect("the shared authority must produce canvas-storable content");
+    assert!(canvas.contains("inlineMath"), "{canvas}");
+    assert!(canvas.contains("mathBlock"), "{canvas}");
+    assert!(canvas.contains("taskItem"), "{canvas}");
+    assert!(canvas.contains("horizontalRule"), "{canvas}");
+    crate::narrative::schema::validate(&canvas, None).expect("canvas schema must accept it");
+}
+
+#[test]
+fn a_file_with_windows_line_endings_imports_as_the_same_document() {
+    // A fixture's line endings are not a stable contract — git normalizes them — so the
+    // Windows form is asserted directly. Display math is the case that mattered: the
+    // parser hands its source through verbatim, so a carriage return survived on every
+    // line of a formula, invisible in the source and enough to reopen the block on export.
+    let unix = "# Title\n\nBody with $x^2$ inline.\n\n$$\n\\int_0^1 x\\,dx\n$$\n\n- item\n";
+    let windows = unix.replace('\n', "\r\n");
+    assert_eq!(import(&windows).unwrap(), import(unix).unwrap());
+    assert_round_trips(&import(&windows).unwrap());
+}

@@ -79,6 +79,23 @@ pub struct MarkdownImportDiagnostic {
     pub fallback: String,
 }
 
+/// Markdown offered for conversion without being committed to any document.
+///
+/// The paste route needs the same semantics as file import, so it calls the same authority
+/// rather than growing a second parser on the frontend.
+#[derive(Debug, Clone, Deserialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct ConvertMarkdownInput {
+    pub markdown: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct MarkdownFragmentView {
+    pub canonical_json: String,
+    pub diagnostics: Vec<MarkdownImportDiagnostic>,
+}
+
 #[derive(Debug, Clone, Serialize)]
 #[cfg_attr(test, derive(ts_rs::TS))]
 pub struct MarkdownImportView {

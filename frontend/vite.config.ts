@@ -14,6 +14,14 @@ export default defineConfig({
     target: "es2022",
     sourcemap: "hidden",
     /*
+     * A font small enough to inline would be emitted as a `data:` URI, and the production
+     * content security policy declares `font-src 'self'` — which does not match `data:`.
+     * Inlining a font therefore silently stops it loading, and the glyphs that need it fall
+     * back to whatever the system has. Fonts are always emitted as files instead; everything
+     * else keeps Vite's default threshold.
+     */
+    assetsInlineLimit: (filePath: string) => (/\.(woff2?|ttf|otf|eot)$/i.test(filePath) ? false : undefined),
+    /*
      * The Task 51 visual prototype is a second HTML entry. It is added to the production build
      * **only** when LIFEWEAVE_PROTOTYPE=1, so an ordinary `pnpm build` emits exactly the chunks it
      * emitted before Task 51 and `pnpm hardening:performance` keeps measuring the real application

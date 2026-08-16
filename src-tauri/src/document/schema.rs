@@ -72,6 +72,8 @@ fn visit(
         "codeBlock",
         "hardBreak",
         "image",
+        "inlineMath",
+        "mathBlock",
         "table",
         "tableRow",
         "tableHeader",
@@ -155,6 +157,25 @@ fn visit(
                 }
             }
         }
+        // The TeX source is the stored value; nothing rendered from it is ever persisted.
+        // A source carrying its own delimiter could not be written back out as the same
+        // node, so the delimiter is what bounds the value rather than a length alone.
+        "inlineMath" | "mathBlock" => {
+            let source = o
+                .get("attrs")
+                .and_then(|attrs| attrs.get("source"))
+                .and_then(Value::as_str)
+                .ok_or(DocumentError::Validation("Math source is missing."))?;
+            let closes_early = if kind == "inlineMath" {
+                source.contains('$') || source.contains('\n')
+            } else {
+                source.contains("$$")
+            };
+            if source.is_empty() || source.len() > 8_192 || closes_early {
+                return Err(DocumentError::Validation("Math source is unsupported."));
+            }
+            text.push_str(source);
+        }
         "tableCell" | "tableHeader" => {
             if let Some(align) = o.get("attrs").and_then(|attrs| attrs.get("align")) {
                 let value = align
@@ -219,6 +240,7 @@ fn visit(
             | "taskItem"
             | "tableCell"
             | "tableHeader"
+            | "mathBlock"
     ) {
         text.push('\n');
     }

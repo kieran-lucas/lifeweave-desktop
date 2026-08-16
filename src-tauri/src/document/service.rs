@@ -93,6 +93,23 @@ pub fn import_reader_markdown(
 ) -> Result<MarkdownImportView, IpcError> {
     run!(state, |c| repository::import_markdown(c, input))
 }
+/// Convert Markdown to canonical document JSON without touching any stored document.
+///
+/// This is the ingestion route for text the user declared to be Markdown but has not
+/// committed — the editor's Markdown paste. It shares the authority with file import, so
+/// the same source produces the same canonical content whichever way it arrived.
+#[tauri::command]
+#[tracing::instrument(skip(input))]
+pub fn convert_markdown_fragment(
+    input: ConvertMarkdownInput,
+) -> Result<MarkdownFragmentView, IpcError> {
+    let result = super::markdown::import_with_diagnostics(&input.markdown).map_err(map)?;
+    Ok(MarkdownFragmentView {
+        canonical_json: result.canonical_json,
+        diagnostics: result.diagnostics,
+    })
+}
+
 #[tauri::command]
 #[tracing::instrument(skip(state, input))]
 pub fn export_reader_markdown(
