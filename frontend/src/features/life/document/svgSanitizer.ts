@@ -81,6 +81,7 @@ const VALUE_CHARSET = /^[A-Za-z0-9_.,:%#()+\-/ \t\r\n]+$/;
 
 /** The XML namespace name, which a parser compares as a string and never dereferences. */
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
+const UTF8_ENCODER = new TextEncoder();
 
 type Validator = (value: string) => boolean;
 
@@ -391,7 +392,9 @@ function sanitizeStyle(raw: string, dropped: string[], tag: string): Record<stri
  * wrote — the Reader shows the authored source instead, which is always true.
  */
 export function sanitizeSvg(svg: string, limits: SanitizeLimits = DEFAULT_LIMITS): SanitizeResult {
-  if (svg.length > limits.maxBytes) return { ok: false, reason: "diagram is too large to display" };
+  if (UTF8_ENCODER.encode(svg).byteLength > limits.maxBytes) {
+    return { ok: false, reason: "diagram is too large to display" };
+  }
 
   const parsed = new DOMParser().parseFromString(svg, "image/svg+xml");
   if (parsed.getElementsByTagName("parsererror").length > 0) {
