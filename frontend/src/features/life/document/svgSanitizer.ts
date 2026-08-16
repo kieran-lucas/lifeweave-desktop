@@ -81,6 +81,7 @@ const VALUE_CHARSET = /^[A-Za-z0-9_.,:%#()+\-/ \t\r\n]+$/;
 
 /** The XML namespace name, which a parser compares as a string and never dereferences. */
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
+const UTF8_ENCODER = new TextEncoder();
 
 type Validator = (value: string) => boolean;
 
@@ -334,7 +335,6 @@ const CANONICAL_CASE = new Map(Object.entries({
   patternunits: "patternUnits",
   clippathunits: "clipPathUnits",
   maskunits: "maskUnits",
-  // React owns this one; passing `class` through leaves the element unstyled.
   class: "className",
 }));
 
@@ -375,8 +375,6 @@ function sanitizeStyle(raw: string, dropped: string[], tag: string): Record<stri
       if (property.length > 0) dropped.push(`${tag}{${property}}`);
       continue;
     }
-    // React writes these through the CSSOM, which the content security policy allows;
-    // an inline style *attribute* would be refused by `style-src 'self'`.
     const camel = property.replace(/-([a-z])/g, (_, letter: string) => letter.toUpperCase());
     style[camel] = value;
   }
@@ -391,7 +389,9 @@ function sanitizeStyle(raw: string, dropped: string[], tag: string): Record<stri
  * wrote — the Reader shows the authored source instead, which is always true.
  */
 export function sanitizeSvg(svg: string, limits: SanitizeLimits = DEFAULT_LIMITS): SanitizeResult {
-  if (svg.length > limits.maxBytes) return { ok: false, reason: "diagram is too large to display" };
+  if (UTF8_ENCODER.encode(svg).byteLength > limits.maxBytes) {
+    return { ok: false, reason: "diagram is too large to display" };
+  }
 
   const parsed = new DOMParser().parseFromString(svg, "image/svg+xml");
   if (parsed.getElementsByTagName("parsererror").length > 0) {
@@ -403,8 +403,6 @@ export function sanitizeSvg(svg: string, limits: SanitizeLimits = DEFAULT_LIMITS
   }
 
   const dropped: string[] = [];
-  // A bound that is exceeded is recorded here and abandons the whole walk; the first entry
-  // is the reason the caller is given.
   const refused: string[] = [];
   let nodes = 0;
 
@@ -413,8 +411,6 @@ export function sanitizeSvg(svg: string, limits: SanitizeLimits = DEFAULT_LIMITS
     if (depth > limits.maxDepth) { refused.push("diagram is nested too deeply to display"); return null; }
     if ((nodes += 1) > limits.maxNodes) { refused.push("diagram has too many parts to display"); return null; }
 
-    // `localName` is already lower-cased by the parser and, unlike `tagName`, ignores any
-    // namespace prefix an attacker could put in front of a name to disguise it.
     const tag = element.localName;
     if (!ALLOWED_TAGS.has(tag)) { dropped.push(tag); return null; }
     if (element.attributes.length > limits.maxAttributes) {
@@ -427,8 +423,6 @@ export function sanitizeSvg(svg: string, limits: SanitizeLimits = DEFAULT_LIMITS
     for (const attribute of Array.from(element.attributes)) {
       const name = attribute.localName.toLowerCase();
       if (name === "style") { style = sanitizeStyle(attribute.value, dropped, tag); continue; }
-      // Every event handler, every `href` in any namespace, and anything whose value is not
-      // a recognised value for its own property is dropped rather than repaired.
       if (!isAllowedValue(name, attribute.value.trim())) {
         dropped.push(`${tag}@${name}`);
         continue;
