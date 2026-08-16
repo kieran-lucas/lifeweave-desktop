@@ -213,7 +213,10 @@ export const state = style({
   },
 });
 
-/** The meter well is a flat, slightly denser patch of the same blue-grey material. */
+/**
+ * The well stays geometrically centred in the badge; its internal baseline is lifted three pixels
+ * so the visual mass of the ascending bars aligns with the cap-height of the state label.
+ */
 export const stateMark = style({
   boxSizing: "border-box",
   flex: "0 0 auto",
@@ -223,7 +226,7 @@ export const stateMark = style({
   gap: 2,
   inlineSize: 30,
   blockSize: 20,
-  padding: "4px 4px 3px",
+  padding: "1px 4px 6px",
   borderRadius: vars.radius.small,
   background: `color-mix(in srgb, ${vars.color.accentSoft} 72%, ${vars.color.surfaceSubtle})`,
 });
