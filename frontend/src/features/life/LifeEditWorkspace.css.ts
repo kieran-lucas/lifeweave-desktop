@@ -172,20 +172,24 @@ export const compactTitle = style({ display: "block", whiteSpace: "normal", over
  * mark carry the meaning, and the pips inherit `currentColor` so both signals stay in step.
  */
 export const confidenceBadge = style({
+  boxSizing: "border-box",
   flex: "0 0 auto",
-  display: "inline-flex",
+  display: "inline-grid",
+  gridAutoFlow: "column",
+  gridAutoColumns: "max-content",
   alignItems: "center",
   gap: 4,
-  minBlockSize: 15,
+  blockSize: 16,
   paddingInline: 5,
   border: "1px solid #E0E0DD",
   borderRadius: vars.radius.full,
   background: "#F4F4F3",
   color: "#63635F",
   fontSize: 8,
-  lineHeight: "13px",
+  lineHeight: "8px",
   fontWeight: 720,
   letterSpacing: ".01em",
+  whiteSpace: "nowrap",
   selectors: {
     '&[data-level="exploring"]': { borderColor: "#E0E0DD", background: "#F4F4F3", color: "#63635F" },
     '&[data-level="leaning"]': { borderColor: "#CBD9F7", background: "#EFF3FD", color: "#2F5EBE" },
@@ -195,39 +199,28 @@ export const confidenceBadge = style({
   "@media": { "(forced-colors: active)": { borderColor: "CanvasText", background: "Canvas", color: "CanvasText" } },
 });
 /**
- * Compact tree badges run inside a translated canvas, so their old 2px bars / 1px gaps landed on
- * fractional device pixels at common Windows scales (especially 125%). Lock the mark to a 4px grid:
- * 4px bars, 4px gaps and an 8px lane all map to integral physical pixels at 125/150/175% DPI.
+ * The compact mark and its text now share the same 8px vertical lane. Four 4px bars remain crisp,
+ * while the gap contracts to 2px so the signal is quieter without making the bar edges fractional.
  */
 export const confidenceMark = style({
-  flex: "0 0 28px",
+  flex: "0 0 22px",
   display: "grid",
   gridTemplateColumns: "repeat(4, 4px)",
   alignItems: "stretch",
-  gap: 4,
-  inlineSize: 28,
+  gap: 2,
+  inlineSize: 22,
   blockSize: 8,
 });
 export const confidencePip = style({
-  position: "relative",
   display: "block",
   inlineSize: 4,
   blockSize: 8,
-  selectors: {
-    "&::before": {
-      content: '""',
-      position: "absolute",
-      inset: 0,
-      borderRadius: "1px 1px 0 0",
-      background: "currentColor",
-      opacity: .22,
-    },
-    '&[data-active="true"]::before': { opacity: 1 },
-  },
+  borderRadius: 0,
+  background: "currentColor",
+  opacity: .24,
+  selectors: { '&[data-active="true"]': { opacity: 1 } },
   "@media": {
-    "(forced-colors: active)": {
-      selectors: { "&::before": { background: "CanvasText" } },
-    },
+    "(forced-colors: active)": { background: "CanvasText" },
   },
 });
 
