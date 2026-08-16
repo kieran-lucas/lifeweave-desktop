@@ -173,7 +173,7 @@ export const state = style({
   color: vars.color.textSecondary,
   ...text.metadata,
   fontSize: 11,
-  lineHeight: "20px",
+  lineHeight: "14px",
   fontWeight: 700,
   letterSpacing: ".055em",
   textTransform: "uppercase",
@@ -214,8 +214,22 @@ export const state = style({
 });
 
 /**
- * The well stays geometrically centred in the badge; its internal baseline is lifted three pixels
- * so the visual mass of the ascending bars aligns with the cap-height of the state label.
+ * Give the label the same 20px alignment box as the meter. The one-pixel optical correction counters
+ * the UI font's uppercase ascent on Windows without moving the badge or disturbing the meter grid.
+ */
+export const stateLabel = style({
+  boxSizing: "border-box",
+  display: "inline-flex",
+  alignItems: "center",
+  blockSize: 20,
+  lineHeight: "11px",
+  position: "relative",
+  top: 1,
+});
+
+/**
+ * The meter is geometrically centred: its tallest 12px bar sits inside a 20px well with exactly
+ * 4px above and 4px below. This keeps the top and bottom visual margins balanced.
  */
 export const stateMark = style({
   boxSizing: "border-box",
@@ -226,7 +240,7 @@ export const stateMark = style({
   gap: 2,
   inlineSize: 30,
   blockSize: 20,
-  padding: "1px 4px 6px",
+  padding: 4,
   borderRadius: vars.radius.small,
   background: `color-mix(in srgb, ${vars.color.accentSoft} 72%, ${vars.color.surfaceSubtle})`,
 });
