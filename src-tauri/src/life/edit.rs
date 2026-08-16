@@ -164,6 +164,7 @@ fn as_browse(value: LifeEditNodeView) -> LifeNodeView {
         child_count: value.child_count,
         is_leaf: value.is_leaf,
         is_pinned: value.is_pinned,
+        direction_confidence: value.direction_confidence,
         revision: value.revision,
         tags: value.tags,
     }

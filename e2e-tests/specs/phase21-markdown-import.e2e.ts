@@ -47,7 +47,7 @@ describe("Phase 21 — Markdown import fidelity", () => {
     const reader = $("article[data-life-reader]");
     await expect(reader.$("h1=Markdown Housing Regression")).toBeDisplayed();
 
-    await $("summary=Options").click();
+    await $('summary[aria-label="More leaf actions"]').click();
     const input = $("input[type='file'][accept='text/markdown,.md']");
     await expect(input).toExist();
     await browser.execute((markdown) => {

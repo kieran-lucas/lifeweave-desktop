@@ -2,7 +2,7 @@
  * GENERATED FILE — do not edit by hand.
  * Regenerate with:  python scripts/generate_visual_icons.py
  *
- * The Lifeweave icon vocabulary: a curated 27-icon subset of Fluent System Icons plus the
+ * The Lifeweave icon vocabulary: a curated 28-icon subset of Fluent System Icons plus the
  * Lifeweave woven-W brand mark, vendored as inline geometry.
  *
  * Source:  @fluentui/svg-icons 1.1.334  (npm)
@@ -114,6 +114,10 @@ export const iconNote =
 /** info_20_regular */
 export const iconDetails =
   "M10.5 8.91a.5.5 0 0 0-1 .09v4.6a.5.5 0 0 0 1-.1V8.91Zm.3-2.16a.75.75 0 1 0-1.5 0 .75.75 0 0 0 1.5 0ZM18 10a8 8 0 1 0-16 0 8 8 0 0 0 16 0ZM3 10a7 7 0 1 1 14 0 7 7 0 0 1-14 0Z";
+
+/** edit_20_regular */
+export const iconEdit =
+  "M17.18 2.93a2.97 2.97 0 0 0-4.26-.06l-9.37 9.38c-.33.33-.56.74-.66 1.2l-.88 3.94a.5.5 0 0 0 .6.6l3.93-.87c.46-.1.9-.34 1.23-.68l9.36-9.36a2.97 2.97 0 0 0 .05-4.15Zm-3.55.65a1.97 1.97 0 1 1 2.8 2.8l-.68.66-2.8-2.79.68-.67Zm-1.38 1.38 2.8 2.8-7.99 7.97c-.2.2-.46.35-.74.41l-3.16.7.7-3.18c.07-.27.2-.51.4-.7l8-8Z";
 
 /** task_list_ltr_20_regular */
 export const iconSubtasks =

@@ -48,7 +48,7 @@ fn bump(tx: &Transaction<'_>) -> Result<i32, LifeError> {
     )?)
 }
 fn node(conn: &Connection, id: &str, include_archived: bool) -> Result<LifeNodeView, LifeError> {
-    let sql = "SELECT n.id,n.title,n.short_description,n.icon_key,n.branch_theme_id,(SELECT COUNT(*) FROM life_nodes c WHERE c.parent_id=n.id AND c.archived_at IS NULL),EXISTS(SELECT 1 FROM life_node_pins p WHERE p.node_id=n.id),n.revision FROM life_nodes n WHERE n.id=?1 AND (?2 OR n.archived_at IS NULL)";
+    let sql = "SELECT n.id,n.title,n.short_description,n.icon_key,n.branch_theme_id,(SELECT COUNT(*) FROM life_nodes c WHERE c.parent_id=n.id AND c.archived_at IS NULL),EXISTS(SELECT 1 FROM life_node_pins p WHERE p.node_id=n.id),n.revision,COALESCE((SELECT level FROM life_node_direction_confidence d WHERE d.node_id=n.id),'exploring') FROM life_nodes n WHERE n.id=?1 AND (?2 OR n.archived_at IS NULL)";
     conn.query_row(sql, params![id, include_archived], |r| {
         let count: i32 = r.get(5)?;
         Ok(LifeNodeView {
@@ -60,6 +60,7 @@ fn node(conn: &Connection, id: &str, include_archived: bool) -> Result<LifeNodeV
             child_count: count,
             is_leaf: count == 0,
             is_pinned: r.get(6)?,
+            direction_confidence: r.get(8)?,
             revision: r.get(7)?,
             tags: vec![],
         })
@@ -92,7 +93,7 @@ pub fn browse(
     let total = selected.child_count as i64;
     let pages = ((total + CHILD_PAGE_SIZE - 1) / CHILD_PAGE_SIZE).max(1);
     let page = (input.child_page as i64).min(pages - 1);
-    let mut st=conn.prepare("SELECT n.id,n.title,n.short_description,n.icon_key,n.branch_theme_id,(SELECT COUNT(*) FROM life_nodes c WHERE c.parent_id=n.id AND c.archived_at IS NULL),EXISTS(SELECT 1 FROM life_node_pins p WHERE p.node_id=n.id),n.revision FROM life_nodes n WHERE n.parent_id=?1 AND n.archived_at IS NULL ORDER BY n.sort_key,n.id LIMIT ?2 OFFSET ?3")?;
+    let mut st=conn.prepare("SELECT n.id,n.title,n.short_description,n.icon_key,n.branch_theme_id,(SELECT COUNT(*) FROM life_nodes c WHERE c.parent_id=n.id AND c.archived_at IS NULL),EXISTS(SELECT 1 FROM life_node_pins p WHERE p.node_id=n.id),n.revision,COALESCE((SELECT level FROM life_node_direction_confidence d WHERE d.node_id=n.id),'exploring') FROM life_nodes n WHERE n.parent_id=?1 AND n.archived_at IS NULL ORDER BY n.sort_key,n.id LIMIT ?2 OFFSET ?3")?;
     let mut children = st
         .query_map(
             params![selected_id, CHILD_PAGE_SIZE, page * CHILD_PAGE_SIZE],
@@ -107,13 +108,14 @@ pub fn browse(
                     child_count: count,
                     is_leaf: count == 0,
                     is_pinned: r.get(6)?,
+                    direction_confidence: r.get(8)?,
                     revision: r.get(7)?,
                     tags: vec![],
                 })
             },
         )?
         .collect::<Result<Vec<_>, _>>()?;
-    let mut bc=conn.prepare("WITH RECURSIVE path(id,parent_id,title,short_description,icon_key,branch_theme_id,revision,depth) AS (SELECT id,parent_id,title,short_description,icon_key,branch_theme_id,revision,0 FROM life_nodes WHERE id=?1 UNION ALL SELECT n.id,n.parent_id,n.title,n.short_description,n.icon_key,n.branch_theme_id,n.revision,p.depth+1 FROM life_nodes n JOIN path p ON n.id=p.parent_id WHERE p.depth<128) SELECT p.id,p.title,p.short_description,p.icon_key,p.branch_theme_id,(SELECT COUNT(*) FROM life_nodes c WHERE c.parent_id=p.id AND c.archived_at IS NULL),EXISTS(SELECT 1 FROM life_node_pins pin WHERE pin.node_id=p.id),p.revision FROM path p ORDER BY p.depth DESC")?;
+    let mut bc=conn.prepare("WITH RECURSIVE path(id,parent_id,title,short_description,icon_key,branch_theme_id,revision,depth) AS (SELECT id,parent_id,title,short_description,icon_key,branch_theme_id,revision,0 FROM life_nodes WHERE id=?1 UNION ALL SELECT n.id,n.parent_id,n.title,n.short_description,n.icon_key,n.branch_theme_id,n.revision,p.depth+1 FROM life_nodes n JOIN path p ON n.id=p.parent_id WHERE p.depth<128) SELECT p.id,p.title,p.short_description,p.icon_key,p.branch_theme_id,(SELECT COUNT(*) FROM life_nodes c WHERE c.parent_id=p.id AND c.archived_at IS NULL),EXISTS(SELECT 1 FROM life_node_pins pin WHERE pin.node_id=p.id),p.revision,COALESCE((SELECT level FROM life_node_direction_confidence d WHERE d.node_id=p.id),'exploring') FROM path p ORDER BY p.depth DESC")?;
     let mut breadcrumb = bc
         .query_map(params![selected_id], |r| {
             let count: i32 = r.get(5)?;
@@ -126,6 +128,7 @@ pub fn browse(
                 child_count: count,
                 is_leaf: count == 0,
                 is_pinned: r.get(6)?,
+                direction_confidence: r.get(8)?,
                 revision: r.get(7)?,
                 tags: vec![],
             })
@@ -520,8 +523,17 @@ mod tests {
     use super::*;
     use crate::infrastructure::sqlite::{
         connection::{open_file_connection, open_memory_connection},
-        migrations::{current_schema_version, run_migrations},
+        migrations::{current_schema_version, run_migrations as run_base_migrations},
     };
+
+    /// Browse projects ADR 0050 direction confidence, whose table the schema 32 task chain adds on
+    /// top of the base chain these tests use. Mirrors the same helper in `life::edit`'s tests.
+    fn run_migrations(conn: &mut Connection) -> Result<(), crate::infrastructure::sqlite::DbError> {
+        run_base_migrations(conn)?;
+        conn.execute_batch("CREATE TABLE IF NOT EXISTS life_node_direction_confidence(node_id TEXT PRIMARY KEY NOT NULL REFERENCES life_nodes(id) ON DELETE CASCADE,level TEXT NOT NULL CHECK(level IN ('exploring','leaning','committed','core')),updated_at TEXT NOT NULL);")?;
+        Ok(())
+    }
+
     fn db() -> Connection {
         let mut c = open_memory_connection().unwrap();
         run_migrations(&mut c).unwrap();
@@ -557,6 +569,48 @@ mod tests {
             .is_err()
         );
         assert!(c.execute("INSERT INTO life_nodes VALUES('other-root',NULL,'Other','','life-root','neutral',1,NULL,'0','0',0)",[]).is_err());
+    }
+    #[test]
+    fn browse_projects_stored_direction_confidence_and_defaults_to_exploring() {
+        let mut c = db();
+        let chosen = create(&mut c, input(ROOT_ID, "Chosen")).unwrap();
+        let untouched = create(&mut c, input(ROOT_ID, "Untouched")).unwrap();
+        c.execute(
+            "INSERT INTO life_node_direction_confidence(node_id,level,updated_at) VALUES(?1,'committed','0')",
+            params![chosen.node.id],
+        )
+        .unwrap();
+
+        let root = browse(
+            &c,
+            GetLifeBrowseInput {
+                node_id: Some(ROOT_ID.into()),
+                child_page: 0,
+            },
+        )
+        .unwrap();
+        let child = |title: &str| {
+            root.children
+                .iter()
+                .find(|n| n.title == title)
+                .unwrap()
+                .direction_confidence
+                .clone()
+        };
+        assert_eq!(child("Chosen"), "committed");
+        assert_eq!(child("Untouched"), "exploring");
+
+        let selected = browse(
+            &c,
+            GetLifeBrowseInput {
+                node_id: Some(chosen.node.id.clone()),
+                child_page: 0,
+            },
+        )
+        .unwrap();
+        assert_eq!(selected.selected.direction_confidence, "committed");
+        assert_eq!(selected.breadcrumb[0].direction_confidence, "exploring");
+        assert_eq!(untouched.node.direction_confidence, "exploring");
     }
     #[test]
     fn crud_projection_is_direct_and_ordered() {

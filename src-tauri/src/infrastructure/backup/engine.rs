@@ -902,7 +902,7 @@ mod tests {
             life,
             narrative::{dto::CreateNarrativeDocumentInput, repository as narrative},
         };
-        let (rt, db) = make_file_runtime();
+        let (rt, db) = make_current_file_runtime();
         let app_root = db.parent().unwrap().to_path_buf();
         let png = assets::tiny_png();
         let asset = rt

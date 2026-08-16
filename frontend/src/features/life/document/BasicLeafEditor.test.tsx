@@ -169,6 +169,44 @@ describe("focused Basic Leaf editor", () => {
     expect(committed).toHaveBeenCalledWith(expect.objectContaining({ revision: 4 }));
   });
 
+  it("returns to the Reader once Save changes has committed the revision", async () => {
+    const committed = vi.fn();
+    const cancel = vi.fn();
+    render(<BasicLeafEditor document={document} onCommitted={committed} onCancel={cancel} />);
+    markChanged();
+
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+    await waitFor(() => expect(committed).toHaveBeenCalledOnce());
+    expect(cancel).toHaveBeenCalledOnce();
+  });
+
+  it("keeps the author in the editor when the autosave commits", async () => {
+    vi.useFakeTimers();
+    const cancel = vi.fn();
+    render(<BasicLeafEditor document={document} onCommitted={vi.fn()} onCancel={cancel} />);
+    markChanged();
+
+    await act(async () => { await vi.advanceTimersByTimeAsync(3000); });
+    expect(api.save).toHaveBeenCalledOnce();
+    expect(cancel).not.toHaveBeenCalled();
+  });
+
+  it("stays in the editor when an edit lands while Save changes is in flight", async () => {
+    let resolveSave!: (value: typeof document) => void;
+    api.save.mockReturnValue(new Promise((resolve) => { resolveSave = resolve; }));
+    const cancel = vi.fn();
+    render(<BasicLeafEditor document={document} onCommitted={vi.fn()} onCancel={cancel} />);
+    markChanged();
+
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+    await act(async () => { await Promise.resolve(); });
+    markChanged();
+    await act(async () => { resolveSave({ ...document, revision: 4 }); await Promise.resolve(); });
+
+    expect(cancel).not.toHaveBeenCalled();
+    expect(screen.getByRole("status")).toHaveTextContent("Unsaved");
+  });
+
   it("serializes repeated explicit saves instead of racing the same revision", async () => {
     let resolveSave!: (value: typeof document) => void;
     api.save.mockReturnValue(new Promise((resolve) => { resolveSave = resolve; }));

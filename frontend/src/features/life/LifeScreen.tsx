@@ -17,6 +17,7 @@ import {
   iconNote,
 } from "../../design-system/visual/icons";
 import { lifeIconGlyph } from "./lifeIconCatalog";
+import { LeafHeader } from "./LeafHeader";
 
 type Mode = "browse" | "edit" | "reader";
 export type LifeViewState = {
@@ -84,6 +85,9 @@ export function LifeScreen({
     visible: boolean;
   }>({ nodeId: null, available: false, visible: false });
   const [busy, setBusy] = useState(false);
+  // The Leaf header owns the top-right corner; the Reader owns what belongs in it. State, not a
+  // ref, because the Reader has to re-render once the slot element exists.
+  const [leafCommandSlot, setLeafCommandSlot] = useState<HTMLDivElement | null>(null);
   const initialized = useRef(false);
   const linkedNavigationGeneration = useRef(0);
   const readerHeading = useRef<HTMLHeadingElement>(null);
@@ -434,23 +438,25 @@ export function LifeScreen({
             </div>
           ) : mode === "reader" && reader ? (
             <article key={`reader-${reader.id}`} className={styles.readerCanvas} data-life-reader="">
-              <header className={styles.readerHeader}>
-                <h1
-                  id="life-workspace-heading"
-                  className={styles.readerTitle}
-                  ref={readerHeading}
-                  tabIndex={-1}
-                >
-                  {reader.title}
-                </h1>
-              </header>
+              <LeafHeader
+                node={reader}
+                headingId="life-workspace-heading"
+                headingRef={readerHeading}
+                commandSlotRef={setLeafCommandSlot}
+              />
 
               <div className={styles.documentBody} data-life-document-body="">
                 <Suspense fallback={<LoadingRow label="Loading Life document…" />}>
                   <BasicLeafReader
                     nodeId={reader.id}
+                    identity={{ title: reader.title, subtitle: reader.short_description }}
+                    commandSlot={leafCommandSlot}
                     outlineVisible={outlineVisible}
                     onOutlineAvailabilityChange={reportOutlineAvailability}
+                    onOpenInTree={() => {
+                      linkedNavigationGeneration.current += 1;
+                      onViewChange({ mode: "tree", nodeId: reader.id, readerId: null, page: 0 });
+                    }}
                   />
                 </Suspense>
               </div>

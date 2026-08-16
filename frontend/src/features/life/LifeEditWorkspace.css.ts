@@ -159,11 +159,18 @@ export const nodeIcon = style({
   lineHeight: 1,
 });
 export const nodeContent = style({ minInlineSize: 0, display: "grid", gap: 3 });
-export const nodeMetaRow = style({ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6, minInlineSize: 0 });
+/**
+ * Direction confidence is the card's only state line; leaf/pinned no longer compete with it.
+ * The extra leading separates state from identity without loosening the rest of the card.
+ */
+export const nodeMetaRow = style({ display: "flex", alignItems: "center", gap: 6, marginBlockStart: 4, minInlineSize: 0 });
 export const compactTitle = style({ display: "block", whiteSpace: "normal", overflowWrap: "anywhere", fontSize: 11, lineHeight: "15px", fontWeight: 680 });
-export const compactMeta = style({ display: "block", color: "#8B8B8B", fontSize: 8, lineHeight: "11px" });
-globalStyle(`${nodeCard}[aria-pressed="true"] ${compactMeta}`, { color: vars.color.textSecondary });
 
+/**
+ * Direction confidence reads as an ordinal ramp: unresolved gray, a cool lean, a settled green, then
+ * a deep anchor. Per ADR 0050 colour is only secondary emphasis — the label and the one-to-four pip
+ * mark carry the meaning, and the pips inherit `currentColor` so both signals stay in step.
+ */
 export const confidenceBadge = style({
   flex: "0 0 auto",
   display: "inline-flex",
@@ -171,18 +178,19 @@ export const confidenceBadge = style({
   gap: 4,
   minBlockSize: 15,
   paddingInline: 5,
-  border: `1px solid ${vars.color.borderHairline}`,
+  border: "1px solid #E0E0DD",
   borderRadius: vars.radius.full,
-  background: vars.color.surfaceSubtle,
-  color: vars.color.textSecondary,
+  background: "#F4F4F3",
+  color: "#63635F",
   fontSize: 8,
   lineHeight: "13px",
   fontWeight: 720,
   letterSpacing: ".01em",
   selectors: {
-    '&[data-level="leaning"]': { borderColor: vars.color.accentMuted, color: vars.color.accent },
-    '&[data-level="committed"]': { borderColor: vars.color.success, color: vars.color.textPrimary },
-    '&[data-level="core"]': { borderColor: vars.color.accent, background: vars.color.accentSoft, color: vars.color.textPrimary },
+    '&[data-level="exploring"]': { borderColor: "#E0E0DD", background: "#F4F4F3", color: "#63635F" },
+    '&[data-level="leaning"]': { borderColor: "#CBD9F7", background: "#EFF3FD", color: "#2F5EBE" },
+    '&[data-level="committed"]': { borderColor: "#C7E1D2", background: "#ECF5EF", color: "#216D45" },
+    '&[data-level="core"]': { borderColor: "#DAD1F1", background: "#F3F0FB", color: "#5B47A8" },
   },
   "@media": { "(forced-colors: active)": { borderColor: "CanvasText", background: "Canvas", color: "CanvasText" } },
 });

@@ -347,7 +347,9 @@ export const readerCanvas = style({
   ...canvasMotion,
   inlineSize: "100%",
   boxSizing: "border-box",
-  padding: "clamp(28px, 5vh, 56px) 5% 48px",
+  // The reading column keeps the page's own horizontal rhythm; the header centres inside it and is
+  // free to be narrower than the document below.
+  padding: "clamp(26px, 4.6vh, 52px) clamp(18px, 5%, 76px) 48px",
 });
 
 export const canvasEyebrow = style({
@@ -398,25 +400,12 @@ globalStyle(`${branchFacts} > div + div`, { paddingInlineStart: 14, borderInline
 globalStyle(`${branchFacts} span`, { color: "#969696", fontSize: 9, fontWeight: 720, letterSpacing: ".07em", textTransform: "uppercase" });
 globalStyle(`${branchFacts} strong`, { color: "#333333", fontSize: 12, fontWeight: 660 });
 
-export const readerHeader = style({
-  paddingBlockEnd: 18,
-});
-
-export const readerTitle = style({
-  maxInlineSize: "18ch",
-  margin: 0,
-  color: "#111111",
-  fontSize: "clamp(36px, 5vw, 58px)",
-  lineHeight: 1,
-  fontWeight: 700,
-  letterSpacing: "-.055em",
-  overflowWrap: "anywhere",
-});
-
 export const documentBody = style({
   inlineSize: "100%",
   maxInlineSize: "none",
-  paddingBlock: "10px 28px",
+  // The header closes with its own hairline; this is the quiet distance from that rule to the
+  // first line of the document.
+  paddingBlock: "30px 28px",
   overflowAnchor: "none",
 });
 globalStyle(`${documentBody} > *`, {

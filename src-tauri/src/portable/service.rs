@@ -479,7 +479,10 @@ mod tests {
     use super::*;
     use crate::{
         document,
-        infrastructure::sqlite::{connection::open_memory_connection, migrations::run_migrations},
+        infrastructure::sqlite::{
+            connection::open_memory_connection,
+            task55_migration::run_all_migrations as run_migrations,
+        },
         life, narrative,
         portable::domain::PortableDocumentKind,
     };

@@ -134,16 +134,33 @@ export default function BasicLeafEditor({ document, initialJson, onCommitted, on
     shouldRerenderOnTransaction: false,
   });
 
-  const commit = () => {
+  /**
+   * `andLeave` separates the two callers.
+   *
+   * Save changes is an explicit end to the editing session, so it returns the author to the Reader
+   * once the revision is committed. The three-second autosave commits the same way but must never
+   * close the editor under the author's hands, so it leaves them where they are.
+   *
+   * Either way the editor is only left with nothing outstanding: a failed save, or an edit that
+   * arrived while the save was in flight, keeps the author here with their work rather than
+   * dropping them into the Reader believing everything was written.
+   */
+  const commit = (andLeave = false) => {
     if (!editor) return;
     clearTimers();
     const version = changeVersion.current;
-    if (version <= committedVersion.current) return;
+    if (version <= committedVersion.current) {
+      if (andLeave) onCancel();
+      return;
+    }
     const canonical = JSON.stringify(editor.getJSON());
     setSaveState(4);
 
     saveQueue.current = saveQueue.current.then(async () => {
-      if (version <= committedVersion.current) return;
+      if (version <= committedVersion.current) {
+        if (andLeave) onCancel();
+        return;
+      }
       try {
         const saved = await saveReaderDocument({
           document_id: document.id,
@@ -158,6 +175,7 @@ export default function BasicLeafEditor({ document, initialJson, onCommitted, on
         setMessage("");
         if (changeVersion.current === version) {
           setSaveState(0);
+          if (andLeave) onCancel();
         } else {
           setSaveState(1);
         }
@@ -208,7 +226,7 @@ export default function BasicLeafEditor({ document, initialJson, onCommitted, on
         <div className={styles.commandRow}>
           <p className={styles.editorStatus} data-state={saveState} role="status">{statusText[saveState]}</p>
           <button className={styles.backButton} disabled={busy} onClick={(event) => { if (dirty) openDialog(2, event.currentTarget); else onCancel(); }}>Back to Reader</button>
-          <button className={styles.saveButton} disabled={!dirty || busy} onClick={commit}>Save changes</button>
+          <button className={styles.saveButton} disabled={!dirty || busy} onClick={() => commit(true)}>Save changes</button>
         </div>
 
         <Suspense fallback={null}><BasicLeafToolbar editor={editor} onLink={invoker=>openDialog(1,invoker)} onImage={addImage}/></Suspense>

@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useReducedMotion } from "motion/react";
 import type { ReaderDocumentView } from "../../../ipc/generated/ReaderDocumentView";
@@ -8,9 +9,11 @@ import { createReaderDocument, discardReaderDraft, exportReaderMarkdown, getNarr
 import { NarrativeMarkdownImportDialog } from "../narrative/NarrativeMarkdownImportDialog";
 import { operationId, parseDocument } from "./schema";
 import { buildDocumentOutline } from "./outline";
+import { repeatsLeafIdentity, type LeafIdentity } from "./leafIdentity";
 import { DocumentOutline } from "./DocumentOutline";
 import { StaticDocument } from "./StaticDocument";
 import * as styles from "./BasicLeafDocument.css";
+import { Icon, iconEdit, iconMore } from "../../../design-system/visual/icons";
 import { NarrativeCanvasReader, narrativeKey } from "../narrative/NarrativeCanvasReader";
 import { NarrativeTemplateChooser } from "../narrative/NarrativeTemplateChooser";
 import { PortablePackageControls } from "../portable/PortablePackageControls";
@@ -53,12 +56,20 @@ function AvailabilityReporter({
 
 export function BasicLeafReader({
   nodeId,
+  identity,
+  commandSlot,
   outlineVisible = true,
   onOutlineAvailabilityChange,
+  onOpenInTree,
 }: {
   nodeId: string;
+  /** What the Leaf header already shows, so the document does not repeat it. */
+  identity?: LeafIdentity;
+  /** The Leaf header's top-right corner. The commands render in place when there is none. */
+  commandSlot?: HTMLElement | null;
   outlineVisible?: boolean;
   onOutlineAvailabilityChange?: (available: boolean) => void;
+  onOpenInTree?: () => void;
 }) {
   const reducedMotion = useReducedMotion() ?? false;
   const client = useQueryClient();
@@ -235,8 +246,48 @@ export function BasicLeafReader({
     }
   };
 
-  const outline = buildDocumentOutline(parsed);
+  // The Leaf header above the document already draws the leaf's name, so an authored title line
+  // that only repeats it is left out of both the rendered document and its contents list.
+  const skipLeadingHeading = repeatsLeafIdentity(parsed, identity);
+  const full = buildDocumentOutline(parsed);
+  const outline = skipLeadingHeading
+    ? { ...full, entries: full.entries.filter(entry => entry.sourceIndex !== 0) }
+    : full;
   const showOutline = outline.entries.length >= 2;
+
+  /*
+   * The leaf's two controls: one explicit Edit, and everything else behind one quiet overflow.
+   * They belong in the Leaf header's top-right corner, so they are rendered into the slot the
+   * header exposes. The Reader keeps ownership — it is the only thing that knows a document is
+   * there to edit — and falls back to rendering them in place if the header is not mounted.
+   */
+  const commands = (
+    <div className={styles.documentCommands}>
+      <button className={styles.editCommand} onClick={() => setEditing(true)}>
+        <Icon d={iconEdit} size={15} />
+        Edit
+      </button>
+      <details className={styles.documentOptions}>
+        <summary aria-label="More leaf actions">
+          <Icon d={iconMore} size={17} />
+        </summary>
+        <div className={styles.optionsPanel}>
+          <div className={styles.actions}>
+            <label className={styles.fileLabel}>Import Markdown
+              <input className={styles.hiddenFile} type="file" accept="text/markdown,.md" onChange={event => {
+                const file = event.currentTarget.files?.[0];
+                event.currentTarget.value = "";
+                void importMarkdown(file);
+              }} />
+            </label>
+            <button className={styles.button} onClick={() => void exportMarkdown()}>Export Markdown</button>
+            {onOpenInTree && <button className={styles.button} onClick={onOpenInTree}>Open in Life tree</button>}
+          </div>
+          <PortablePackageControls nodeId={nodeId} documentKind="basic_leaf" documentId={document.id} hasDraft={projection.draft_state !== "none"} />
+        </div>
+      </details>
+    </div>
+  );
 
   return (
     <div className={styles.shell}>
@@ -251,25 +302,7 @@ export function BasicLeafReader({
           </div>
         </section>
       )}
-      <div className={styles.documentCommands}>
-        <button className={styles.primary} onClick={() => setEditing(true)}>Edit</button>
-        <details className={styles.documentOptions}>
-          <summary>Options</summary>
-          <div className={styles.optionsPanel}>
-            <div className={styles.actions}>
-              <label className={styles.fileLabel}>Import Markdown
-                <input className={styles.hiddenFile} type="file" accept="text/markdown,.md" onChange={event => {
-                  const file = event.currentTarget.files?.[0];
-                  event.currentTarget.value = "";
-                  void importMarkdown(file);
-                }} />
-              </label>
-              <button className={styles.button} onClick={() => void exportMarkdown()}>Export Markdown</button>
-            </div>
-            <PortablePackageControls nodeId={nodeId} documentKind="basic_leaf" documentId={document.id} hasDraft={projection.draft_state !== "none"} />
-          </div>
-        </details>
-      </div>
+      {commandSlot ? createPortal(commands, commandSlot) : commands}
       {notice && <p role="status" aria-live="polite">{notice}</p>}
       {markdownDiagnostics.length > 0 && (
         <ul aria-label="Markdown import fallbacks">
@@ -282,8 +315,8 @@ export function BasicLeafReader({
       )}
       <div className={styles.outlineContainer}>
         {showOutline && outlineVisible
-          ? <div className={styles.outlineGrid}><div className={styles.outlineColumn}><DocumentOutline id="life-document-outline" outline={outline} reducedMotion={reducedMotion} /></div><StaticDocument document={parsed} /></div>
-          : <StaticDocument document={parsed} />}
+          ? <div className={styles.outlineGrid}><div className={styles.outlineColumn}><DocumentOutline id="life-document-outline" outline={outline} reducedMotion={reducedMotion} /></div><StaticDocument document={parsed} skipLeadingHeading={skipLeadingHeading} /></div>
+          : <StaticDocument document={parsed} skipLeadingHeading={skipLeadingHeading} />}
       </div>
     </div>
   );

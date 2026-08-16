@@ -55,9 +55,25 @@ const leaf = {
   child_count: 0,
   is_leaf: true,
   is_pinned: false,
+  direction_confidence: "exploring",
   revision: 1,
   tags: [],
 };
+
+const projectionFor = (selected: typeof leaf) => ({
+  root_id: "life-root",
+  selected,
+  parent: null,
+  children: [],
+  breadcrumb: [selected],
+  selected_is_pinned: false,
+  child_page: 0,
+  child_page_count: 1,
+  tree_revision: 1,
+  resolved_from_fallback: false,
+  preferred_mode: "reader",
+  viewport_anchor: null,
+});
 
 describe("Life leaf contents control", () => {
   beforeEach(() => {
@@ -115,6 +131,44 @@ describe("Life leaf contents control", () => {
     expect(related).not.toHaveAttribute("open");
 
     expect(container.querySelector("[data-life-reader]")).toBeInTheDocument();
+  });
+
+  it("draws one leaf identity with its secondary name and the default level the tree card shows", async () => {
+    const { container } = render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <LifeScreen {...staticLifeProps} anchorLocalDate="2026-08-11" />
+      </QueryClientProvider>,
+    );
+
+    await screen.findByRole("heading", { name: "A focused leaf", level: 1 });
+    await waitFor(() => expect(container.querySelector("[data-life-reader]")).toBeInTheDocument());
+
+    const header = container.querySelector("[data-life-leaf-header]");
+    expect(header).toContainElement(screen.getByRole("heading", { name: "A focused leaf", level: 1 }));
+    expect(screen.getAllByRole("heading", { name: "A focused leaf" })).toHaveLength(1);
+    expect(header).toContainElement(screen.getByText("Reader fixture"));
+    // Every leaf carries a level, so the default one is shown rather than hidden.
+    expect(container.querySelector('[data-life-leaf-header] [data-level="exploring"]'))
+      .toHaveTextContent("Direction confidence: Exploring");
+  });
+
+  it("shows a deliberate state in the header's top-left corner", async () => {
+    api.browse.mockResolvedValue(projectionFor({ ...leaf, direction_confidence: "committed" }));
+    const { container } = render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <LifeScreen {...staticLifeProps} anchorLocalDate="2026-08-11" />
+      </QueryClientProvider>,
+    );
+
+    await screen.findByRole("heading", { name: "A focused leaf", level: 1 });
+    const corners = container.querySelector("[data-life-leaf-header] > div");
+    const state = container.querySelector('[data-life-leaf-header] [data-level="committed"]');
+    expect(state).toHaveTextContent("Direction confidence: Committed");
+    // The badge opens the header's corner row and the Reader's controls close it.
+    expect(corners?.firstElementChild).toBe(state);
+    expect(corners?.lastElementChild).toHaveAttribute("data-life-leaf-commands");
+    const accessibility = await axe.run(container);
+    expect(accessibility.violations.filter((violation) => violation.impact === "critical" || violation.impact === "serious")).toHaveLength(0);
   });
 
   it("restores the immediately previous leaf before returning to its branch", async () => {

@@ -95,8 +95,20 @@ function renderTopLevel(node: BasicLeafNode, index: number): React.ReactNode {
   return render(node, index);
 }
 
-export function StaticDocument({ document }: { document: BasicLeafNode }) {
+/**
+ * `skipLeadingHeading` hides the first block only when the Reader has established that it is an
+ * authored title line the Leaf header already shows. The document itself is untouched, and every
+ * remaining block keeps its original source index so heading anchors stay stable.
+ */
+export function StaticDocument({
+  document,
+  skipLeadingHeading = false,
+}: {
+  document: BasicLeafNode;
+  skipLeadingHeading?: boolean;
+}) {
   return <article className={styles.article} aria-label="Leaf document">
-    {document.content?.map((node, index) => renderTopLevel(node, index))}
+    {document.content?.map((node, index) =>
+      skipLeadingHeading && index === 0 ? null : renderTopLevel(node, index))}
   </article>;
 }

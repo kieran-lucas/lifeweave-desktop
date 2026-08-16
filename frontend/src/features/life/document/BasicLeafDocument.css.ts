@@ -48,37 +48,52 @@ globalStyle(`${article} th strong, ${article} th b`, { fontWeight: 400 });
 export const outlineContainer = style({ containerType: "inline-size" });
 export const outlineGrid = style({ display: "grid", gap: "1.5rem", "@container": { "(min-width: 520px)": { gridTemplateColumns: "210px minmax(0, 1fr)", alignItems: "start" } } });
 export const outlineColumn = style({ "@container": { "(min-width: 520px)": { position: "sticky", top: "1.5rem" } } });
+/**
+ * The Leaf reading commands.
+ *
+ * They render into the Leaf header's top-right corner, so they carry no rhythm of their own: the
+ * header owns the spacing around them and the hairline that hands the page over to the document.
+ */
 export const documentCommands = style({
   display: "flex",
   justifyContent: "flex-end",
   alignItems: "center",
-  gap: 7,
-  marginBlockEnd: 12,
+  gap: 8,
 });
+export const editCommand = style([sharedButton.secondary, { paddingInline: 14 }]);
 export const documentOptions = style({
   position: "relative",
   zIndex: 4,
 });
 globalStyle(`${documentOptions} > summary`, {
-  minBlockSize: 34,
+  minBlockSize: 32,
+  inlineSize: 32,
   display: "inline-flex",
   alignItems: "center",
-  paddingInline: 12,
+  justifyContent: "center",
   border: `1px solid ${vars.color.borderHairline}`,
   borderRadius: vars.radius.control,
-  background: vars.color.surfaceSubtle,
+  background: vars.color.surface,
   color: vars.color.textSecondary,
   ...text.metadata,
   fontWeight: 700,
   cursor: "pointer",
   listStyle: "none",
+  transition: `background-color ${duration.state} ${easing.standard}, border-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}`,
+  "@media": {
+    "(prefers-reduced-motion: reduce)": { transition: "none" },
+    "(forced-colors: active)": { borderColor: "ButtonText" },
+  },
 });
 globalStyle(`${documentOptions} > summary::-webkit-details-marker`, { display: "none" });
-globalStyle(`${documentOptions} > summary:hover`, { borderColor: vars.color.borderStrong, color: vars.color.textPrimary });
+globalStyle(`${documentOptions} > summary:hover`, { borderColor: vars.color.accent, background: vars.color.accentSoft, color: vars.color.textPrimary });
+globalStyle(`${documentOptions}[open] > summary`, { borderColor: vars.color.borderStrong, color: vars.color.textPrimary });
 globalStyle(`${documentOptions} > summary:focus-visible`, { outline: `2px solid ${vars.color.focusRing}`, outlineOffset: 2 });
 export const optionsPanel = style({
   position: "absolute",
   insetBlockStart: 42,
+  // Anchored to the overflow's own edge: the control now sits in the page's top-right corner, and a
+  // centred panel would hang off it.
   insetInlineEnd: 0,
   inlineSize: "min(320px, calc(100vw - 48px))",
   boxSizing: "border-box",

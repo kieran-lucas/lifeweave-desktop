@@ -318,7 +318,8 @@ mod tests {
     use crate::{
         infrastructure::sqlite::{
             connection::{open_file_connection, open_memory_connection},
-            migrations::run_migrations,
+            // The current schema: Life node projections read the schema 32 direction-confidence table.
+            task55_migration::run_all_migrations as run_migrations,
         },
         life,
     };

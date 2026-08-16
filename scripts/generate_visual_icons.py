@@ -52,6 +52,7 @@ ICONS: dict[str, str] = {
     "flagFilled": "flag_20_filled",
     "note": "document_text_20_regular",
     "details": "info_20_regular",
+    "edit": "edit_20_regular",
     "subtasks": "task_list_ltr_20_regular",
     "link": "link_20_regular",
     "more": "more_horizontal_20_regular",

@@ -586,7 +586,8 @@ mod tests {
     use crate::{
         infrastructure::sqlite::{
             connection::{open_file_connection, open_memory_connection},
-            migrations::run_migrations,
+            // The current schema: Life node projections read the schema 32 direction-confidence table.
+            task55_migration::run_all_migrations as run_migrations,
         },
         life,
     };
@@ -1094,7 +1095,8 @@ mod tests {
     #[test]
     fn narrative_canvas_backup_relaunch_evidence() {
         use crate::infrastructure::sqlite::{
-            connection::open_file_connection, migrations::run_migrations,
+            connection::open_file_connection,
+            task55_migration::run_all_migrations as run_migrations,
         };
         use crate::search::dto::SearchGlobalInput;
         use crate::search::repository::refresh_dirty_and_query;
@@ -1229,8 +1231,9 @@ mod tests {
             let rt = DatabaseRuntime::new(path.clone(), worker);
             let backup_result = backup_db(&rt, &backups_dir).unwrap();
             assert_eq!(
-                backup_result.schema_version, 19,
-                "backup must record schema version 19"
+                backup_result.schema_version,
+                crate::infrastructure::sqlite::task55_migration::TASK55_SCHEMA_VERSION,
+                "backup must record the schema version the database is actually on"
             );
 
             // ── Mutate: save revision 2 ───────────────────────────────────────

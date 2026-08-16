@@ -121,7 +121,7 @@ describe("Phase 22 — Markdown diagrams render safely", () => {
     await leaf.click();
     await expect($("article[data-life-reader]")).toBeDisplayed();
 
-    await $("summary=Options").click();
+    await $('summary[aria-label="More leaf actions"]').click();
     await expect($("input[type='file'][accept='text/markdown,.md']")).toExist();
     await browser.execute((source) => {
       const control = document.querySelector<HTMLInputElement>("input[type='file'][accept='text/markdown,.md']");

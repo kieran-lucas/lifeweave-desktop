@@ -20,17 +20,11 @@ import { EmptyState, LoadingRow } from "../../design-system/primitives/States";
 import { DecisionDialog } from "../../app/layout/DialogSurface";
 import { Icon, iconDetails, iconDismiss, iconLife, iconNote } from "../../design-system/visual/icons";
 import { LIFE_ICON_OPTIONS, lifeIconGlyph } from "./lifeIconCatalog";
+import { directionConfidenceOptions, type DirectionConfidence } from "./lifeDirectionConfidence";
 
 type Point=LayoutPoint;
 const legacyIcons=["life-root","life-branch","life-leaf","life-focus","life-note"];
 const themes=["neutral","blue","green","amber","violet"];
-const directionConfidenceOptions = [
- {value:"exploring",label:"Exploring",description:"Still open; this direction is being discovered."},
- {value:"leaning",label:"Leaning",description:"Promising enough to influence near-term choices."},
- {value:"committed",label:"Committed",description:"Chosen deliberately and used to guide plans."},
- {value:"core",label:"Core",description:"A durable life anchor, changed only intentionally."},
-] as const;
-type DirectionConfidence = typeof directionConfidenceOptions[number]["value"];
 const operationId=()=>`life-${crypto.randomUUID()}`;
 
 /** Life Edit geometry is the shared layout's default, so this is a pure re-export with a name. */
@@ -46,7 +40,7 @@ function Positioner({node,point,selected,menuOpen,onSelect,onOpen,onAdd,onEdit}:
  return <div ref={positionRef} className={styles.positioner} data-menu-open={menuOpen?"true":"false"} role="treeitem" aria-level={node.depth+1} aria-expanded={node.child_count?true:undefined}>
    <div className={styles.nodeShell}>
     <button className={styles.nodeCard} type="button" draggable={false} onClick={onSelect} onDoubleClick={(event)=>{event.preventDefault();onOpen();}} onKeyDown={(event)=>{if(event.key!=="Enter")return;event.preventDefault();onOpen();}} aria-keyshortcuts="Enter" aria-pressed={selected} aria-expanded={menuOpen} aria-controls={menuOpen?`life-node-actions-${node.id}`:undefined} data-life-edit-id={node.id}>
-      <span className={styles.nodeIcon} aria-hidden="true">{glyph??<Icon d={node.is_leaf?iconNote:iconLife} size={15}/>}</span><span className={styles.nodeContent}><span className={styles.compactTitle}>{node.title}</span><span className={styles.nodeMetaRow}>{(node.is_leaf||node.is_pinned)&&<span className={styles.compactMeta}>{[node.is_leaf?"Leaf":null,node.is_pinned?"Pinned":null].filter(Boolean).join(" · ")}</span>}<span className={styles.confidenceBadge} data-level={confidence.value}><span className={styles.confidenceMark} aria-hidden="true">{directionConfidenceOptions.map((_,index)=><i className={styles.confidencePip} key={index} data-active={index<=directionConfidenceOptions.indexOf(confidence)?"true":"false"}/>)}</span>{confidence.label}</span></span><TagChipList tags={node.tags} /></span>
+      <span className={styles.nodeIcon} aria-hidden="true">{glyph??<Icon d={node.is_leaf?iconNote:iconLife} size={15}/>}</span><span className={styles.nodeContent}><span className={styles.compactTitle}>{node.title}</span><span className={styles.nodeMetaRow}><span className={styles.confidenceBadge} data-level={confidence.value}><span className={styles.confidenceMark} aria-hidden="true">{directionConfidenceOptions.map((_,index)=><i className={styles.confidencePip} key={index} data-active={index<=directionConfidenceOptions.indexOf(confidence)?"true":"false"}/>)}</span>{confidence.label}</span></span><TagChipList tags={node.tags} /></span>
     </button>
     {menuOpen&&<div id={`life-node-actions-${node.id}`} className={styles.nodeActions} data-life-node-actions="" data-placement="below-card" data-action-count={node.has_document?"1":"2"} role="group" aria-label={`Actions for ${node.title}`}>{!node.has_document&&<button type="button" className={styles.nodeAction} onClick={onAdd}><span className={styles.nodeActionIcon} aria-hidden="true">+</span><span>Add child</span></button>}<button type="button" className={styles.nodeAction} onClick={onEdit}><span className={styles.nodeActionIcon} aria-hidden="true"><Icon d={iconDetails} size={13}/></span><span>Edit node</span></button></div>}
    </div>

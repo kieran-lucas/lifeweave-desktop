@@ -20,6 +20,10 @@ pub struct LifeNodeView {
     pub child_count: i32,
     pub is_leaf: bool,
     pub is_pinned: bool,
+    /// ADR 0050 direction confidence, projected from the same one-to-one table Life Edit writes.
+    /// Browse and Reader read the node's state here rather than keeping a second copy of it.
+    /// Missing rows project as `exploring`, the default level.
+    pub direction_confidence: String,
     pub revision: i32,
     pub tags: Vec<TagSummaryView>,
 }
