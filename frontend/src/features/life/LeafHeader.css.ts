@@ -157,8 +157,8 @@ const rankRise = keyframes({
 /**
  * Direction confidence is presented as a small editorial insignia rather than a generic pill. The
  * meter and the label are one compact object, but the meter gets its own quiet well so the hierarchy
- * is instantly readable. The four ascending bars encode increasing confidence spatially, while the
- * label keeps the state explicit and accessible without relying on colour.
+ * is instantly readable. A restrained blue tint gives this Life-specific metadata enough presence
+ * on the white reading plane without turning it into an interactive control or a loud status chip.
  */
 export const state = style({
   boxSizing: "border-box",
@@ -169,9 +169,10 @@ export const state = style({
   minBlockSize: 30,
   margin: 0,
   padding: "4px 9px 4px 5px",
-  border: `1px solid ${vars.color.borderHairline}`,
+  border: `1px solid color-mix(in srgb, ${vars.color.accent} 18%, ${vars.color.borderHairline})`,
   borderRadius: vars.radius.control,
-  background: vars.color.surface,
+  background: `linear-gradient(135deg, ${vars.color.surface} 22%, color-mix(in srgb, ${vars.color.accentSoft} 72%, ${vars.color.surface}) 100%)`,
+  boxShadow: `0 1px 3px color-mix(in srgb, ${vars.color.accent} 8%, transparent)`,
   color: vars.color.textSecondary,
   ...text.metadata,
   fontSize: 11,
@@ -182,23 +183,40 @@ export const state = style({
   whiteSpace: "nowrap",
   animation: `${badgeSettle} ${duration.popover} ${easing.standard} 55ms both`,
   selectors: {
-    '&[data-level="exploring"]': { color: vars.color.textTertiary },
-    '&[data-level="leaning"]': { color: vars.color.textSecondary },
-    '&[data-level="committed"]': { borderColor: vars.color.borderStrong, color: vars.color.textPrimary },
-    '&[data-level="core"]': {
-      borderColor: vars.color.borderStrong,
+    '&[data-level="exploring"]': {
+      borderColor: `color-mix(in srgb, ${vars.color.accent} 16%, ${vars.color.borderHairline})`,
+      color: vars.color.textSecondary,
+    },
+    '&[data-level="leaning"]': {
+      borderColor: `color-mix(in srgb, ${vars.color.accent} 22%, ${vars.color.borderHairline})`,
+      color: vars.color.textSecondary,
+    },
+    '&[data-level="committed"]': {
+      borderColor: `color-mix(in srgb, ${vars.color.accent} 30%, ${vars.color.borderStrong})`,
       color: vars.color.textPrimary,
+      boxShadow: `0 1px 4px color-mix(in srgb, ${vars.color.accent} 10%, transparent)`,
+    },
+    '&[data-level="core"]': {
+      borderColor: `color-mix(in srgb, ${vars.color.accent} 38%, ${vars.color.borderStrong})`,
+      background: `linear-gradient(135deg, ${vars.color.surface} 8%, color-mix(in srgb, ${vars.color.accentSoft} 88%, ${vars.color.surface}) 100%)`,
+      color: vars.color.textPrimary,
+      boxShadow: `0 1px 5px color-mix(in srgb, ${vars.color.accent} 13%, transparent)`,
     },
   },
   "@media": {
     "(prefers-reduced-motion: reduce)": {
       animation: `${badgeFade} ${reduced.duration} ${reduced.easing} both`,
     },
-    "(forced-colors: active)": { borderColor: "CanvasText", background: "Canvas", color: "CanvasText" },
+    "(forced-colors: active)": {
+      borderColor: "CanvasText",
+      background: "Canvas",
+      boxShadow: "none",
+      color: "CanvasText",
+    },
   },
 });
 
-/** A recessed meter well makes the hierarchy mark read as an insignia, not pagination dots. */
+/** A blue-tinted meter well makes the hierarchy mark visible without overpowering the label. */
 export const stateMark = style({
   boxSizing: "border-box",
   flex: "0 0 auto",
@@ -210,21 +228,22 @@ export const stateMark = style({
   blockSize: 20,
   padding: "4px 4px 3px",
   borderRadius: vars.radius.small,
-  background: vars.color.surfaceSubtle,
+  background: `color-mix(in srgb, ${vars.color.accentSoft} 82%, ${vars.color.surfaceSubtle})`,
+  boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${vars.color.accent} 10%, transparent)`,
 });
 
 /**
- * Four narrow bars form an ascending confidence meter. Unreached bars remain outlined silhouettes;
- * reached bars fill with the current text ink and rise sequentially from the shared baseline.
+ * Four narrow bars form an ascending confidence meter. Unreached bars retain a faint blue contour;
+ * reached bars use the interaction-blue ink as a decorative Life accent and rise from the baseline.
  */
 export const statePip = style({
   boxSizing: "border-box",
   flex: "0 0 auto",
   inlineSize: 3,
-  border: `1px solid ${vars.color.borderStrong}`,
+  border: `1px solid color-mix(in srgb, ${vars.color.accent} 34%, ${vars.color.borderStrong})`,
   borderRadius: 2,
   background: "transparent",
-  opacity: 0.38,
+  opacity: 0.48,
   transformOrigin: "50% 100%",
   selectors: {
     "&:nth-child(1)": { blockSize: 5 },
@@ -232,8 +251,8 @@ export const statePip = style({
     "&:nth-child(3)": { blockSize: 9 },
     "&:nth-child(4)": { blockSize: 11 },
     '&[data-active="true"]': {
-      borderColor: "currentColor",
-      background: "currentColor",
+      borderColor: vars.color.accent,
+      background: vars.color.accent,
       opacity: 1,
       animation: `${rankRise} ${duration.check} ${easing.standard} both`,
     },
