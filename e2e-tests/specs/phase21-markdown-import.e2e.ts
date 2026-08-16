@@ -61,7 +61,13 @@ describe("Phase 21 — Markdown import fidelity", () => {
 
     // Task state, rules, fence languages and cell alignment became schema nodes, so this
     // fixture no longer degrades anything and reports no fallbacks at all.
-    await expect($("[role='status']")).toHaveText(expect.stringContaining("supported formatting preserved"));
+    //
+    // Scoped to the Reader's own body. A bare `[role='status']` resolves to the first status
+    // region on the page, which — before the import round trip has set the notice — is the
+    // empty one inside the collapsed "Related" disclosure; the matcher then polls that same
+    // element for its whole timeout instead of re-querying for the notice.
+    await expect($("[data-life-document-body] p[role='status']"))
+      .toHaveText(expect.stringContaining("supported formatting preserved"));
     await expect($("ul[aria-label='Markdown import fallbacks']")).not.toExist();
 
     const rendered = await browser.execute(() => {
@@ -114,7 +120,10 @@ describe("Phase 21 — Markdown import fidelity", () => {
     expect(rendered.hasHardBreak).toBe(true);
     expect(rendered.hasTable).toBe(true);
     expect(rendered.tableBold).toBe(true);
-    expect(rendered.codeBlock).toContain("flowchart LR\nA --> B");
+    // The fence is a diagram here: the picture is drawn and the authored source stays with
+    // it, so a diagram is never the only copy of its own text.
+    expect(rendered.diagramRendered).toBe(true);
+    expect(rendered.diagramSource).toContain("flowchart LR\nA --> B");
     await expect($("[role='alert']")).not.toExist();
   });
 });

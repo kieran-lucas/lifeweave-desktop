@@ -94,7 +94,12 @@ Limits, stated rather than implied:
   `svgSanitizer.ts`, whose boundary is proved against the engine's real output in a real
   WebView2 by `e2e-tests/specs/phase22-markdown-diagrams.e2e.ts`. See ADR 0052 §32–38.
 - Diagram bounds: 8 000 characters of source, 200 edges, 512 KB of engine output, 4 000 nodes,
-  64 levels of depth, 40 attributes per element. Exceeding any of them shows the source.
+  64 levels of depth, 40 attributes per element. Exceeding any of them fails closed — the
+  whole diagram is refused and its source is shown, never a truncated picture.
+- Diagram values are allowlisted by what they are: a colour, a bounded opacity, a finite
+  length, a bounded transform list, path data, an enumerated keyword, or `url(#local-id)`.
+  Anything unrecognised — including a CSS escape or comment — is dropped. A font name is not
+  carried across at all; the document's own stylesheet supplies a diagram's typography.
 - A diagram is not interactive. `click` directives, links and remote images are removed at the
   boundary, so a diagram can never navigate or fetch.
 - The editor shows a diagram's source rather than the picture, as it does for math.

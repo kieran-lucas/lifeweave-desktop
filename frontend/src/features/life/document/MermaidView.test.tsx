@@ -50,6 +50,20 @@ describe("a diagram is drawn from its source and never replaces it", () => {
     expect(container.querySelector("code")?.textContent).toContain("flowchart LR");
   });
 
+  it("shows the source when the engine's output exceeds a hard bound", async () => {
+    // A bound that is exceeded refuses the whole picture rather than truncating it, so what
+    // the Reader shows is the text the author wrote and never a partly drawn diagram.
+    engine.render.mockResolvedValue({
+      svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">${"<g>".repeat(200)}<rect x="1"/>${"</g>".repeat(200)}</svg>`,
+    });
+    const { container } = render(<MermaidView source="flowchart LR" />);
+
+    await waitFor(() => expect(screen.getByRole("status")).toBeInTheDocument());
+    expect(screen.getByRole("status").textContent).toContain("nested too deeply");
+    expect(container.querySelector("svg")).toBeNull();
+    expect(container.querySelector("code")?.textContent).toContain("flowchart LR");
+  });
+
   it("never draws markup the engine emitted, whatever the engine returns", async () => {
     // The engine's own security mode is a second lock; this proves the door itself holds
     // even if the engine hands back something it never should.

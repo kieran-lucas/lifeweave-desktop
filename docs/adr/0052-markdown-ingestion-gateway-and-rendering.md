@@ -363,14 +363,29 @@ dropped by default, so the boundary does not need to be updated when an attack i
   dereference rather than describe.
 - **Attributes allowed**: geometry and presentation only. Every `on*` handler, and `href` in
   every namespace including `xlink`, is dropped without being inspected.
-- **Values**: a functional reference is accepted only as `url(#local-id)` — pointing inside
-  the same diagram. Every other `url(`, and anything matching `javascript:`, `vbscript:`,
-  `data:` or `expression(`, is refused.
+- **Values** are judged by the grammar of the property they belong to, never by a list of
+  dangerous spellings. Every value first passes a character gate that admits only
+  `A-Za-z0-9_.,:%#()+-/` and whitespace — a backslash and an asterisk are refused, so a CSS
+  escape (`u\72l(…)`) and a CSS comment (`u/**/rl(…)`) cannot be written at all — and is then
+  matched against what that property actually accepts: a colour (`none`, `currentColor`, a
+  hex triple/quad, a named colour from a spelled-out list, or `rgb()`/`hsl()` with numeric
+  components), a local paint reference `url(#local-id)` and nothing else functional, a
+  bounded opacity, a finite length with a unit from a short set, a bounded SVG transform
+  list of the six defined functions with numeric arguments, path data restricted to the
+  command letters and number characters SVG defines, or an enumerated keyword from that
+  attribute's own vocabulary. `marker-*`, `clip-path` and `mask` accept `none` or
+  `url(#local-id)` only. `font-family` is not carried across at all: a font name is a
+  free-form quoted string, and the diagram's typography is owned by this product's
+  stylesheet. A denial list would have to grow with every new spelling of the same request;
+  an allowlist of grammars does not, so an unrecognised value is refused by construction.
 - **Namespace prefixes** are ignored: matching is on `localName`, so `<x:script>` is the same
   as `<script>`.
-- **Bounds**: 512 KB of output, 4 000 nodes, 64 levels of depth, 40 attributes per element,
-  8 000 characters of source. A diagram that exceeds any of them falls back to its source
-  rather than being walked, because a Reader that stops responding is the worse outcome.
+- **Bounds fail closed**: 512 KB of output, 4 000 nodes, 64 levels of depth, 40 attributes
+  per element, 8 000 characters of source. Exceeding any of them abandons the whole walk and
+  returns `{ ok: false, reason }`; the Reader then shows the authored source. Nothing is
+  truncated and returned as if it were the diagram, because a picture drawn from part of what
+  an author wrote says something they did not write — and a Reader that stops responding is
+  worse than either.
 
 ### 35. The engine's stylesheet is dropped; the diagram is styled by this product
 
