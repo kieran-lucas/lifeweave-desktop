@@ -147,10 +147,13 @@ const badgeFade = keyframes({
   to: { opacity: 1 },
 });
 
-/** Confidence rises from a shared baseline; no glow or elastic finish is needed on the matte mark. */
-const rankRise = keyframes({
-  "0%": { opacity: 0.35, transform: "scaleY(.4)" },
-  "100%": { opacity: 1, transform: "scaleY(1)" },
+/**
+ * Active bars change only ink. Their geometry never animates, so fractional Windows DPI scaling
+ * cannot put individual bars onto separate compositor baselines.
+ */
+const rankInk = keyframes({
+  from: { opacity: 0.58 },
+  to: { opacity: 1 },
 });
 
 /**
@@ -239,14 +242,15 @@ export const stateLabelText = style({
 });
 
 /**
- * The meter is geometrically centred: its tallest 12px bar sits inside a 20px well with exactly
- * 4px above and 4px below. Its bar baseline is therefore fixed at y=16px for every level.
+ * The meter is one 12px-high raster lane inside a 20px well. Every bar occupies an identical
+ * 4x12px slot; only the painted pseudo-element inside that slot changes height. This gives all four
+ * bars one shared physical bottom edge even at fractional device scales such as Windows 125% DPI.
  */
 export const stateMark = style({
   boxSizing: "border-box",
   flex: "0 0 auto",
   display: "inline-flex",
-  alignItems: "flex-end",
+  alignItems: "center",
   justifyContent: "center",
   gap: 2,
   inlineSize: 30,
@@ -257,41 +261,47 @@ export const stateMark = style({
 });
 
 /**
- * The four bars sit on an integer pixel grid: 4px wide, 2px gaps and 6/8/10/12px heights. Every bar
- * silhouette stays clearly visible even when unreached, so the meter's perceived geometry no longer
- * changes between Exploring, Leaning, Committed and Core; only emphasis changes.
+ * Each flex item is the same 4x12px slot. The visible bar is an absolutely positioned ::before
+ * anchored to bottom: 0, so 6/8/10/12px heights can never participate in flex alignment or baseline
+ * rounding. Bottom corners are square as well, removing the final 1px anti-alias ambiguity at 125%.
  */
 export const statePip = style({
   boxSizing: "border-box",
-  flex: "0 0 auto",
+  position: "relative",
+  flex: "0 0 4px",
   inlineSize: 4,
-  border: 0,
-  borderRadius: 1,
-  background: `color-mix(in srgb, ${vars.color.accent} 36%, ${vars.color.surface})`,
-  opacity: 1,
-  transformOrigin: "50% 100%",
+  blockSize: 12,
   selectors: {
-    "&:nth-child(1)": { blockSize: 6 },
-    "&:nth-child(2)": { blockSize: 8 },
-    "&:nth-child(3)": { blockSize: 10 },
-    "&:nth-child(4)": { blockSize: 12 },
-    '&[data-active="true"]': {
-      background: vars.color.accentMuted,
-      animation: `${rankRise} ${duration.check} ${easing.standard} both`,
+    "&::before": {
+      content: '""',
+      position: "absolute",
+      insetInline: 0,
+      insetBlockEnd: 0,
+      borderRadius: "1px 1px 0 0",
+      background: `color-mix(in srgb, ${vars.color.accent} 36%, ${vars.color.surface})`,
     },
-    '&[data-active="true"]:nth-child(1)': { animationDelay: "120ms" },
-    '&[data-active="true"]:nth-child(2)': { animationDelay: "170ms" },
-    '&[data-active="true"]:nth-child(3)': { animationDelay: "220ms" },
-    '&[data-active="true"]:nth-child(4)': { animationDelay: "270ms" },
+    "&:nth-child(1)::before": { blockSize: 6 },
+    "&:nth-child(2)::before": { blockSize: 8 },
+    "&:nth-child(3)::before": { blockSize: 10 },
+    "&:nth-child(4)::before": { blockSize: 12 },
+    '&[data-active="true"]::before': {
+      background: vars.color.accentMuted,
+      animation: `${rankInk} ${duration.check} ${easing.standard} both`,
+    },
+    '&[data-active="true"]:nth-child(1)::before': { animationDelay: "120ms" },
+    '&[data-active="true"]:nth-child(2)::before': { animationDelay: "170ms" },
+    '&[data-active="true"]:nth-child(3)::before': { animationDelay: "220ms" },
+    '&[data-active="true"]:nth-child(4)::before': { animationDelay: "270ms" },
   },
   "@media": {
     "(prefers-reduced-motion: reduce)": {
-      selectors: { '&[data-active="true"]': { animation: "none" } },
+      selectors: { '&[data-active="true"]::before': { animation: "none" } },
     },
     "(forced-colors: active)": {
-      background: "Canvas",
-      border: "1px solid CanvasText",
-      selectors: { '&[data-active="true"]': { background: "CanvasText" } },
+      selectors: {
+        "&::before": { background: "Canvas", border: "1px solid CanvasText" },
+        '&[data-active="true"]::before': { background: "CanvasText" },
+      },
     },
   },
 });
