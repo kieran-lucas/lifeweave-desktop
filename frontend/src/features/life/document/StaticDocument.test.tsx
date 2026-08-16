@@ -82,7 +82,7 @@ describe("StaticDocument renders the constructs the Core schema gained", () => {
     );
     const headers = container.querySelectorAll("th");
     expect(headers[0]).toHaveStyle({ textAlign: "right" });
-    expect(headers[1].style.textAlign).toBe("");
+    expect(headers[1]?.style.textAlign).toBe("");
   });
 
   it("ignores an alignment value it does not recognize", () => {

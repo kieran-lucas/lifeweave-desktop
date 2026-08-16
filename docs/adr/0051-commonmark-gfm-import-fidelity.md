@@ -58,6 +58,28 @@ above had left unexamined. Both are part of this authority and are bound by the 
     the document over them made ordinary Markdown files unimportable and discarded the link
     text along with the target. Dangerous schemes still fail before commit.
 
+## The Core schema gained the four constructs that were degrading
+
+Decision 4 above kept task state, horizontal rules, fenced-code language and table alignment
+out of the schema and disclosed each as a fallback. That was content-preserving but it made an
+ordinary Markdown file import with a wall of warnings — twenty-five of them for one file — and
+left `---` as literal text and checkboxes as dead `☐` characters. Product Owner reversed it.
+
+11. `horizontalRule`, `taskList` and `taskItem` are schema nodes; `codeBlock.language`,
+    `taskItem.checked` and `tableCell`/`tableHeader` `align` are schema attributes. Names match
+    the editor's own node names, so no mapping layer sits between Tiptap and canonical JSON.
+12. The change is additive. No stored row is rewritten, no SQLite migration is added, and
+    `SCHEMA_VERSION` stays 1, matching how `code`, `strike` and ordered-list `start` were added.
+    Documents imported under the old fallbacks stay valid and keep their `— — —` and `☐` text
+    until they are imported again.
+13. `language` and `align` are validated against a fixed shape rather than accepted as free
+    text, because `language` reaches the Reader as a `language-…` class name.
+14. Checkboxes are interactive in the editor and read-only in the Reader, which is read-only
+    for every other kind of content too.
+15. The four diagnostic kinds `horizontal_rule`, `task_list`, `code_fence_info` and
+    `table_alignment` no longer exist. Diagnostics are now reserved for what genuinely cannot
+    be represented: unaddressable link targets, inert HTML, and H4–H6.
+
 ## The parser is the only Markdown scanner
 
 Line-oriented scans layered over the parser disagreed with it, in both directions: they read
