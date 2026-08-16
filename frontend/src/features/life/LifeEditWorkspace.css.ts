@@ -199,16 +199,16 @@ export const confidenceBadge = style({
   "@media": { "(forced-colors: active)": { borderColor: "CanvasText", background: "Canvas", color: "CanvasText" } },
 });
 /**
- * The compact mark and its text now share the same 8px vertical lane. Four 4px bars remain crisp,
- * while the gap contracts to 2px so the signal is quieter without making the bar edges fractional.
+ * Keep the four 4px bars rigid for sharp edges, but tighten the mark itself to exactly 20px.
+ * `space-between` absorbs the remaining 4px between three gaps without scaling the bars.
  */
 export const confidenceMark = style({
-  flex: "0 0 22px",
+  flex: "0 0 20px",
   display: "grid",
   gridTemplateColumns: "repeat(4, 4px)",
   alignItems: "stretch",
-  gap: 2,
-  inlineSize: 22,
+  justifyContent: "space-between",
+  inlineSize: 20,
   blockSize: 8,
 });
 export const confidencePip = style({
