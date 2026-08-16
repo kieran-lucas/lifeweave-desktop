@@ -17,6 +17,11 @@ ALLOWED = {
     # Bounded fixtures prove safe-link and remote-image rejection without loading them.
     "https://example.com",
     "https://example.invalid/icon.svg",
+    # XML namespace identifiers, not resources. A parser compares them as strings and never
+    # dereferences them; the SVG sanitizer's fixtures have to carry the real ones to be
+    # parsed as SVG at all. Listing them keeps the check precise rather than widening it.
+    "http://www.w3.org/2000/svg",
+    "http://www.w3.org/1999/xlink",
 }
 TEXT_SUFFIXES = {".ts", ".tsx", ".js", ".jsx", ".css", ".html", ".json", ".rs", ".toml"}
 

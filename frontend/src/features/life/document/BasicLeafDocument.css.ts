@@ -280,6 +280,45 @@ for (const [selector, declaration] of Object.entries(tokenRules)) {
 // Colour is never the only signal, and in forced-colors mode the system palette wins.
 globalStyle(`${codeBlock} span`, { "@media": { "(forced-colors: active)": { color: "CanvasText" } } });
 
+// A diagram is bounded by its own box: a hostile or merely enormous graph scrolls inside
+// the figure rather than setting the width of the document around it. The palette comes
+// from the design system, so a diagram reads as part of the page rather than importing a
+// theme from the engine that drew it.
+export const diagram = style({
+  margin: "18px 0",
+  padding: 0,
+  border: `1px solid ${vars.color.borderHairline}`,
+  borderRadius: vars.radius.control,
+  background: "#FFFFFF",
+  overflow: "hidden",
+});
+export const diagramSvg = style({
+  display: "block",
+  maxInlineSize: "100%",
+  maxBlockSize: "70vh",
+  margin: "0 auto",
+});
+globalStyle(`${diagram} > figcaption`, { padding: "8px 12px", borderBlockStart: `1px solid ${vars.color.borderHairline}`, color: vars.color.textSecondary, ...text.metadata });
+globalStyle(`${diagram}[data-state] > figcaption`, { color: vars.color.warning, borderBlockStart: 0, borderBlockEnd: `1px solid ${vars.color.borderHairline}` });
+globalStyle(`${diagram} summary`, { cursor: "pointer" });
+globalStyle(`${diagram} > figcaption pre`, { marginBlockStart: 8 });
+globalStyle(`${diagram} > pre`, { border: 0, borderRadius: 0 });
+// Mermaid's own stylesheet is stripped at the boundary, so the classes it puts on shapes
+// are styled here instead. Anything it did not class falls back to these element rules.
+globalStyle(`${diagramSvg} .node rect, ${diagramSvg} .node circle, ${diagramSvg} .node polygon, ${diagramSvg} .node path`, {
+  fill: "#FFFFFF",
+  stroke: vars.color.textPrimary,
+  strokeWidth: "1px",
+});
+globalStyle(`${diagramSvg} .edgePath path, ${diagramSvg} .flowchart-link, ${diagramSvg} line`, {
+  stroke: vars.color.textPrimary,
+  fill: "none",
+});
+globalStyle(`${diagramSvg} marker path, ${diagramSvg} .marker`, { fill: vars.color.textPrimary, stroke: vars.color.textPrimary });
+globalStyle(`${diagramSvg} text`, { fill: vars.color.textPrimary, fontFamily: text.editorBody.fontFamily });
+globalStyle(`${diagramSvg} .edgeLabel rect, ${diagramSvg} .label-container`, { fill: "#FFFFFF" });
+globalStyle(`${diagramSvg}`, { "@media": { "(forced-colors: active)": { forcedColorAdjust: "auto" } } });
+
 export const mathInlineView = style({ display: "inline-block", maxInlineSize: "100%", verticalAlign: "baseline" });
 export const mathBlockView = style({
   display: "block",

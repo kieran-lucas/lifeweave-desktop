@@ -258,6 +258,34 @@ describe("a picture with no local file behind it is reported rather than dropped
     expect(notices).toHaveLength(0);
   });
 
+  it.each([
+    ["lowercase", `<img src="https://example.com/x.png">`],
+    ["uppercase", `<IMG SRC="https://example.com/x.png">`],
+    ["mixed case", `<Img Src="https://example.com/x.png">`],
+  ])("reports a remote image written in %s, because HTML tag names are case-insensitive", (_name, html) => {
+    const { notices } = runHtml(html);
+    expect(notices[0]).toContain("1 image could not be pasted");
+  });
+
+  it("counts images across mixed casing in one fragment", () => {
+    const { notices } = runHtml(
+      `<img src="https://example.com/a.png"><IMG src="https://example.com/b.png"><Img src="https://example.com/c.png">`,
+    );
+    expect(notices[0]).toContain("3 images could not be pasted");
+  });
+
+  it("does not report a local asset written in uppercase", () => {
+    const { notices } = runHtml(`<IMG DATA-ASSET-ID="${asset}" SRC="asset:${asset}">`);
+    expect(notices).toHaveLength(0);
+  });
+
+  it("does not report text that merely contains the characters of a tag", () => {
+    // The parser is the authority, not the fast path in front of it: escaped characters in
+    // a paragraph are words, and words are not pictures.
+    const { notices } = runHtml(`<p>write &lt;IMG&gt; to embed a picture</p>`);
+    expect(notices).toHaveLength(0);
+  });
+
   it("only inspects the paste and lets ProseMirror handle it as usual", () => {
     expect(runHtml(`<p>a</p><img src="https://example.com/x.png">`).handled).toBeFalsy();
   });

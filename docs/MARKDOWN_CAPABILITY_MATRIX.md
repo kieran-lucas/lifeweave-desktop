@@ -80,7 +80,7 @@ Production-grade. A regression here is a defect.
 | Inline math `$…$` | `inlineMath.source` | typeset, source in the a11y tree | shows the source | exact |
 | Display math `$$…$$` | `mathBlock.source` | typeset block | shows the source | exact |
 | Invalid math | source unchanged | source shown in the error style | shows the source | exact |
-| Mermaid fence | `codeBlock.language: mermaid` | labelled, selectable source | plain source | exact |
+| Mermaid fence | `codeBlock.language: mermaid` | drawn diagram, source in a disclosure | plain source | exact |
 
 Limits, stated rather than implied:
 
@@ -88,12 +88,16 @@ Limits, stated rather than implied:
   text, which is what this product's documents contain. Math arrives by import or by
   Markdown paste, and a formula is changed by replacing it.
 - Math carries no marks. `**$x$**` keeps the formula and loses the bold.
-- Mermaid is not drawn. See ADR 0052 §29, which corrects §19: the blocker is not security —
-  an SVG allowlist rebuilt into React elements would need no forbidden API and no CSP change
-  — but verifiability. Mermaid needs real SVG text metrics (`getComputedTextLength`,
-  `getBBox`) that jsdom does not implement, so the allowlist standing between its output and
-  the document could never be tested against its actual output. A browser-based renderer test
-  (`scripts/run_windows_e2e.ps1`) is what would unblock it.
+- Diagrams are drawn by `mermaid` 11.16.1, but nothing it produces is stored: the canonical
+  value stays the fence, and the picture is rebuilt from that text on every read. The engine's
+  SVG is never inserted — it is parsed inert and rebuilt through the allowlist in
+  `svgSanitizer.ts`, whose boundary is proved against the engine's real output in a real
+  WebView2 by `e2e-tests/specs/phase22-markdown-diagrams.e2e.ts`. See ADR 0052 §32–38.
+- Diagram bounds: 8 000 characters of source, 200 edges, 512 KB of engine output, 4 000 nodes,
+  64 levels of depth, 40 attributes per element. Exceeding any of them shows the source.
+- A diagram is not interactive. `click` directives, links and remote images are removed at the
+  boundary, so a diagram can never navigate or fetch.
+- The editor shows a diagram's source rather than the picture, as it does for math.
 - Code over 40 000 characters is not tokenized, and an unknown language renders as plain code.
 
 ## Tier C — preserved, disclosed, never silently reinterpreted

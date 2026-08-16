@@ -256,7 +256,7 @@ default rather than inherited, so a recursive macro stays bounded whatever the l
 future default becomes. The block carries a `max-block-size` as a second bound that does not
 depend on the engine at all.
 
-### 29. Mermaid: the earlier security argument was too strong
+### 29. Mermaid: the earlier security argument was too strong *(superseded by 32–38: the deferral is closed and diagrams now render)*
 
 Decision 19 above claimed rendering Mermaid would require weakening the security policy.
 That was overstated and is corrected here. The naive integration — passing Mermaid's SVG
@@ -315,3 +315,112 @@ as written.
 as `Supported`, `PreservedInertly`, `LossyWithDiagnostic` or `SafelyRejected`, deriving the
 outcome from what the authority does rather than asserting it, and requiring a stable round
 trip in every case. "Unsupported" is not one of the four, and no category is left ambiguous.
+
+## Final pass — diagrams render, behind a boundary proved in a browser
+
+### 32. Decision 29 is superseded: Mermaid renders
+
+Decision 29 deferred diagram rendering because the sanitizer standing between the engine's
+output and the document could not be tested against that engine's actual output — jsdom has
+no SVG text metrics, so the engine cannot run there. That reasoning was sound about jsdom and
+wrong about the repository: `scripts/run_windows_e2e.ps1` drives a real WebView2 through
+`tauri-driver`, and a boundary can be proved there against output a real browser engine
+produced. Diagrams are therefore rendered, and the deferral is closed.
+
+The canonical value does not change and is not negotiable: a diagram is still
+`codeBlock(language="mermaid")` holding the text the author wrote. **Nothing rendered is
+persisted.** The picture is rebuilt from that text on every read, so the stored document is
+identical whether or not a diagram engine exists.
+
+### 33. The engine's output is untrusted generated markup
+
+`mermaid` 11.16.1 (MIT) is configured once for the application, lazily, as a module-level
+singleton: `securityLevel: "strict"` (encodes HTML in labels, disables click handlers),
+`htmlLabels: false` so no `foreignObject` is produced, `suppressErrorRendering: true` so the
+engine cannot put its own error picture into the document, `maxTextSize` at 8 000 and
+`maxEdges` at 200 — both well below the library defaults of 50 000 and 500 — and
+`deterministicIds` so the same source yields the same output.
+
+None of that is the security boundary. It is a second lock on the same door. The engine
+returns an SVG **string**, and a string of generated markup derived from user text is exactly
+what must never be inserted.
+
+### 34. The boundary is a rebuild, not a filter
+
+`svgSanitizer.ts` parses the engine's output into an inert document — never attached to the
+page, so nothing in it loads or runs — and builds a plain structural tree from only what is
+named in an allowlist. The Reader turns that tree into elements with `createElement` and a
+string tag, which can produce an element and nothing else. There is no `innerHTML`, no
+raw-markup escape hatch, and no path by which markup can become markup.
+
+Allowing rather than denying is the point: a construct this file has never heard of is
+dropped by default, so the boundary does not need to be updated when an attack is invented.
+
+- **Elements allowed**: the shapes, groups, text, gradients, markers and clip paths a diagram
+  is drawn from. `foreignObject` is absent because it reopens arbitrary HTML inside the
+  picture; `image` because a diagram has no reason to load a file; `a` because a diagram is
+  not a navigation surface; `script`, `style`, `animate` and `use` because they act or
+  dereference rather than describe.
+- **Attributes allowed**: geometry and presentation only. Every `on*` handler, and `href` in
+  every namespace including `xlink`, is dropped without being inspected.
+- **Values**: a functional reference is accepted only as `url(#local-id)` — pointing inside
+  the same diagram. Every other `url(`, and anything matching `javascript:`, `vbscript:`,
+  `data:` or `expression(`, is refused.
+- **Namespace prefixes** are ignored: matching is on `localName`, so `<x:script>` is the same
+  as `<script>`.
+- **Bounds**: 512 KB of output, 4 000 nodes, 64 levels of depth, 40 attributes per element,
+  8 000 characters of source. A diagram that exceeds any of them falls back to its source
+  rather than being walked, because a Reader that stops responding is the worse outcome.
+
+### 35. The engine's stylesheet is dropped; the diagram is styled by this product
+
+Mermaid emits a `<style>` element, which `style-src 'self'` would refuse anyway. It is
+dropped rather than parsed. A `style` **attribute** is not carried across as an attribute
+either — that too would be refused — but its declarations are read, filtered to a short list
+of safe presentation properties, value-checked, and handed to React as a style object, which
+writes them through the CSSOM. The rest of the appearance comes from a Lifeweave stylesheet
+targeting the engine's class names, so a diagram reads as part of the document rather than
+importing a theme.
+
+### 36. Failure is an ordinary outcome
+
+A diagram that cannot be parsed, cannot be sanitized, or is larger than the bounds shows a
+short reason and the source the author wrote, inside the same bounded figure. One bad diagram
+does not affect the others and cannot affect the rest of the document. A result that arrives
+after the source changed, or after the Reader moved on, is discarded. On success the source
+stays with the picture in a disclosure, so a diagram is never the only copy of its own text.
+
+### 37. What WebView2 proved that jsdom could not
+
+`e2e-tests/specs/phase22-markdown-diagrams.e2e.ts` imports a Markdown file containing a
+flowchart, a sequence diagram, a state diagram, a malformed diagram, an unknown diagram type,
+and a diagram whose labels carry `<script>`, a remote `<img>` with an `onerror` handler, an
+`<iframe>`, and a `click` directive pointing at an external URL. Against the engine's real
+output in a real browser it asserts that pictures were drawn; that no `script`, `style`,
+`iframe`, `object`, `embed`, `image`, `a`, `foreignObject`, `use` or `animate` element exists
+inside any of them; that no `on*` handler and no `href`/`src` attribute survives; that the
+window was never navigated and `window.open` never called; that no external request was made,
+checked both by instrumenting `Image` and by reading the resource timeline; that the
+malformed diagram shows its source; and that every diagram's source is still recoverable,
+including the hostile label, which appears as the characters the author typed.
+
+### 38. The security policy is unchanged
+
+The content security policy is byte-for-byte what it was before this feature:
+`script-src 'self'`, `style-src 'self'`, no `'unsafe-inline'`, no `'unsafe-eval'`, no remote
+origins. `scripts/verify_security.py` is unchanged and passes. No forbidden API was
+introduced and none was worked around.
+
+One governance file did change: `scripts/verify_no_remote_assets.py` now lists the two W3C
+**XML namespace identifiers** alongside the existing bounded-fixture entries. A namespace URI
+is compared as a string by a parser and never dereferenced, and the sanitizer's fixtures must
+carry the real ones to be parsed as SVG at all. That makes the check more precise about what
+counts as a remote resource; it does not widen what may be loaded.
+
+### 39. Foreign-image detection is case-insensitive
+
+The fast path in front of the clipboard parser tested `html.includes("<img")`. HTML tag names
+are case-insensitive and real clipboard markup uses every casing, so `<IMG>` — which older
+office suites emit — was not counted and the picture was dropped in the silence this check
+exists to prevent. The test is now `/<img\b/i`, with the parser still the authority behind it,
+so text that merely contains the characters of a tag is not counted as a picture.

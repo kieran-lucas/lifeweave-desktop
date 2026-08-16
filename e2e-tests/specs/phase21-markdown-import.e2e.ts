@@ -59,8 +59,10 @@ describe("Phase 21 — Markdown import fidelity", () => {
       control.dispatchEvent(new Event("change", { bubbles: true }));
     }, fixture);
 
-    await expect($("[role='status']")).toHaveText(expect.stringContaining("documented fallback"));
-    await expect($("ul[aria-label='Markdown import fallbacks']")).toBeDisplayed();
+    // Task state, rules, fence languages and cell alignment became schema nodes, so this
+    // fixture no longer degrades anything and reports no fallbacks at all.
+    await expect($("[role='status']")).toHaveText(expect.stringContaining("supported formatting preserved"));
+    await expect($("ul[aria-label='Markdown import fallbacks']")).not.toExist();
 
     const rendered = await browser.execute(() => {
       const article = document.querySelector<HTMLElement>("article[aria-label='Leaf document']");
@@ -83,12 +85,15 @@ describe("Phase 21 — Markdown import fidelity", () => {
         topOrderedItemCounts: ordered
           .filter((list) => !list.parentElement?.closest("ol"))
           .map((list) => Array.from(list.children).filter((child) => child.tagName === "LI").length),
-        hasUnchecked: text.includes("☐ Unchecked"),
-        hasChecked: text.includes("☒ Checked"),
+        checkboxes: Array.from(article.querySelectorAll<HTMLInputElement>("input[type='checkbox']")).map(
+          (box) => box.checked,
+        ),
+        uncheckedGlyphLeak: text.includes("☐") || text.includes("☒"),
         hasHardBreak: article.querySelector("br") !== null,
         hasTable: article.querySelector("table") !== null,
         tableBold: article.querySelector("td strong")?.textContent === "Self use",
-        codeBlock: article.querySelector("pre code")?.textContent ?? "",
+        diagramSource: article.querySelector("figure pre code")?.textContent ?? "",
+        diagramRendered: article.querySelector("figure svg") !== null,
       };
     });
 
@@ -104,8 +109,8 @@ describe("Phase 21 — Markdown import fidelity", () => {
     expect(rendered.orderedStarts).toContain(1);
     expect(rendered.orderedStarts).toContain(4);
     expect(rendered.topOrderedItemCounts).toEqual([3, 2]);
-    expect(rendered.hasUnchecked).toBe(true);
-    expect(rendered.hasChecked).toBe(true);
+    expect(rendered.checkboxes).toEqual([false, true, true]);
+    expect(rendered.uncheckedGlyphLeak).toBe(false);
     expect(rendered.hasHardBreak).toBe(true);
     expect(rendered.hasTable).toBe(true);
     expect(rendered.tableBold).toBe(true);

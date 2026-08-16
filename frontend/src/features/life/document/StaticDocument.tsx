@@ -5,6 +5,7 @@ import { safeLink } from "./schema";
 import { headingIdForSourceIndex } from "./outline";
 import { CodeView } from "./CodeView";
 import { MathView } from "./MathView";
+import { MermaidView } from "./MermaidView";
 import * as styles from "./BasicLeafDocument.css";
 import { LoadingRow } from "../../../design-system/primitives/States";
 
@@ -64,6 +65,8 @@ function render(node: BasicLeafNode, key: number | string): React.ReactNode {
     case "codeBlock": {
       const language = typeof node.attrs?.language === "string" ? node.attrs.language : undefined;
       const source = node.content?.map(child => child.text ?? "").join("") ?? "";
+      // The canonical value is the fence either way; only how it is shown differs.
+      if (language === "mermaid") return <MermaidView key={key} source={source} />;
       return <CodeView key={key} source={source} language={language} />;
     }
     case "inlineMath": return <MathView key={key} source={String(node.attrs?.source ?? "")} display={false} />;

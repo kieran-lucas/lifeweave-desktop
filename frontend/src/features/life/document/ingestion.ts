@@ -52,7 +52,12 @@ export function isLocalAssetImage(attrs: Record<string, unknown>): boolean {
  * attached to the page, so nothing in it loads, runs, or is fetched.
  */
 export function countForeignImages(html: string): number {
-  if (!html.includes("<img")) return 0;
+  // HTML tag names are case-insensitive, and real clipboard markup uses every casing —
+  // `<IMG>` from older office suites, `<Img>` from hand-written source. A case-sensitive
+  // test let those through silently, which is the exact failure this function exists to
+  // prevent. The parser below is the authority; this only avoids building a document for
+  // markup that cannot contain a picture at all.
+  if (!/<img\b/i.test(html)) return 0;
   const parsed = new DOMParser().parseFromString(html, "text/html");
   let foreign = 0;
   parsed.querySelectorAll("img").forEach(image => {
