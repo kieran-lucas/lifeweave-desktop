@@ -161,6 +161,7 @@ const rankRise = keyframes({
  * label keeps the state explicit and accessible without relying on colour.
  */
 export const state = style({
+  boxSizing: "border-box",
   flex: "0 1 auto",
   display: "inline-flex",
   alignItems: "center",
@@ -199,12 +200,13 @@ export const state = style({
 
 /** A recessed meter well makes the hierarchy mark read as an insignia, not pagination dots. */
 export const stateMark = style({
+  boxSizing: "border-box",
   flex: "0 0 auto",
   display: "inline-flex",
   alignItems: "flex-end",
   justifyContent: "center",
   gap: 2,
-  inlineSize: 25,
+  inlineSize: 26,
   blockSize: 20,
   padding: "4px 4px 3px",
   borderRadius: vars.radius.small,
@@ -216,6 +218,7 @@ export const stateMark = style({
  * reached bars fill with the current text ink and rise sequentially from the shared baseline.
  */
 export const statePip = style({
+  boxSizing: "border-box",
   flex: "0 0 auto",
   inlineSize: 3,
   border: `1px solid ${vars.color.borderStrong}`,
