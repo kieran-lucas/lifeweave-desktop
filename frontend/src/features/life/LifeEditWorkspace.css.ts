@@ -194,15 +194,41 @@ export const confidenceBadge = style({
   },
   "@media": { "(forced-colors: active)": { borderColor: "CanvasText", background: "Canvas", color: "CanvasText" } },
 });
-export const confidenceMark = style({ display: "inline-flex", alignItems: "end", gap: 1, blockSize: 7 });
+/**
+ * Compact tree badges run inside a translated canvas, so their old 2px bars / 1px gaps landed on
+ * fractional device pixels at common Windows scales (especially 125%). Lock the mark to a 4px grid:
+ * 4px bars, 4px gaps and an 8px lane all map to integral physical pixels at 125/150/175% DPI.
+ */
+export const confidenceMark = style({
+  flex: "0 0 28px",
+  display: "grid",
+  gridTemplateColumns: "repeat(4, 4px)",
+  alignItems: "stretch",
+  gap: 4,
+  inlineSize: 28,
+  blockSize: 8,
+});
 export const confidencePip = style({
+  position: "relative",
   display: "block",
-  inlineSize: 2,
-  blockSize: 7,
-  borderRadius: 1,
-  background: "currentColor",
-  opacity: .2,
-  selectors: { '&[data-active="true"]': { opacity: 1 } },
+  inlineSize: 4,
+  blockSize: 8,
+  selectors: {
+    "&::before": {
+      content: '""',
+      position: "absolute",
+      inset: 0,
+      borderRadius: "1px 1px 0 0",
+      background: "currentColor",
+      opacity: .22,
+    },
+    '&[data-active="true"]::before': { opacity: 1 },
+  },
+  "@media": {
+    "(forced-colors: active)": {
+      selectors: { "&::before": { background: "CanvasText" } },
+    },
+  },
 });
 
 export const inspector = style({
