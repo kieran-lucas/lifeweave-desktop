@@ -156,7 +156,7 @@ const rankRise = keyframes({
 /**
  * Direction confidence is a compact matte insignia. Colour is carried by a restrained blue-grey
  * surface and the meter itself; there are deliberately no gradients, glass highlights or shadows.
- * The result should feel printed into the reading plane rather than floating above it.
+ * The badge is locked to a 30px outer box so every confidence label shares identical geometry.
  */
 export const state = style({
   boxSizing: "border-box",
@@ -164,7 +164,7 @@ export const state = style({
   display: "inline-flex",
   alignItems: "center",
   gap: 8,
-  minBlockSize: 30,
+  blockSize: 30,
   margin: 0,
   padding: "4px 9px 4px 5px",
   border: `1px solid color-mix(in srgb, ${vars.color.accent} 24%, ${vars.color.borderStrong})`,
@@ -214,22 +214,33 @@ export const state = style({
 });
 
 /**
- * Give the label the same 20px alignment box as the meter. A two-pixel optical correction aligns
- * the visible glyph bottom with the meter's solid baseline on Windows without disturbing its grid.
+ * Label and meter share the exact same 20px lane. The label's content is bottom-aligned to the same
+ * y=16px baseline that the bars use (4px bottom inset); the text itself is trimmed separately below.
  */
 export const stateLabel = style({
   boxSizing: "border-box",
+  flex: "0 0 auto",
   display: "inline-flex",
-  alignItems: "center",
+  alignItems: "flex-end",
   blockSize: 20,
+  paddingBlock: 4,
+});
+
+/**
+ * Chrome/WebView2 133+ can trim font half-leading to the cap-height/alphabetic metrics. That removes
+ * the state-dependent visible drift caused by different glyph shapes without any per-label offsets.
+ * Older engines simply keep the deterministic 11px line box as a stable fallback.
+ */
+export const stateLabelText = style({
+  display: "inline-block",
   lineHeight: "11px",
-  position: "relative",
-  top: 2,
+  textBoxTrim: "trim-both",
+  textBoxEdge: "cap alphabetic",
 });
 
 /**
  * The meter is geometrically centred: its tallest 12px bar sits inside a 20px well with exactly
- * 4px above and 4px below. This keeps the top and bottom visual margins balanced.
+ * 4px above and 4px below. Its bar baseline is therefore fixed at y=16px for every level.
  */
 export const stateMark = style({
   boxSizing: "border-box",
@@ -246,8 +257,9 @@ export const stateMark = style({
 });
 
 /**
- * The four bars sit on an integer pixel grid: 4px wide, 2px gaps and 6/8/10/12px heights. Inactive
- * bars are solid muted shapes rather than 1px outlines, avoiding uneven rasterisation at this size.
+ * The four bars sit on an integer pixel grid: 4px wide, 2px gaps and 6/8/10/12px heights. Every bar
+ * silhouette stays clearly visible even when unreached, so the meter's perceived geometry no longer
+ * changes between Exploring, Leaning, Committed and Core; only emphasis changes.
  */
 export const statePip = style({
   boxSizing: "border-box",
@@ -255,7 +267,7 @@ export const statePip = style({
   inlineSize: 4,
   border: 0,
   borderRadius: 1,
-  background: `color-mix(in srgb, ${vars.color.accent} 24%, ${vars.color.surface})`,
+  background: `color-mix(in srgb, ${vars.color.accent} 36%, ${vars.color.surface})`,
   opacity: 1,
   transformOrigin: "50% 100%",
   selectors: {
