@@ -173,7 +173,7 @@ export const state = style({
   color: vars.color.textSecondary,
   ...text.metadata,
   fontSize: 11,
-  lineHeight: "14px",
+  lineHeight: "20px",
   fontWeight: 700,
   letterSpacing: ".055em",
   textTransform: "uppercase",
