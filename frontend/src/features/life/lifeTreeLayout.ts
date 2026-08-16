@@ -33,7 +33,7 @@ function dimensions(node: LayoutNode): Pick<LayoutPoint, "width" | "height"> {
   const titleWidth = Array.from(node.title ?? "").length * 7;
   return {
     width,
-    height: Math.max(62, 47 + Math.max(1, Math.ceil(titleWidth / Math.max(80, width - 58))) * 15),
+    height: Math.max(64, 49 + Math.max(1, Math.ceil(titleWidth / Math.max(80, width - 58))) * 15),
   };
 }
 

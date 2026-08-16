@@ -90,7 +90,7 @@ pub fn recover_reader_draft(
 pub fn import_reader_markdown(
     state: State<'_, DatabaseRuntime>,
     input: ImportReaderMarkdownInput,
-) -> Result<ReaderDocumentView, IpcError> {
+) -> Result<MarkdownImportView, IpcError> {
     run!(state, |c| repository::import_markdown(c, input))
 }
 #[tauri::command]

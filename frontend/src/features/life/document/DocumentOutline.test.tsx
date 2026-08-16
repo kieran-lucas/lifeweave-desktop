@@ -16,7 +16,6 @@ vi.mock("motion/react", () => ({ useReducedMotion: () => false }));
 const api = vi.hoisted(() => ({ get: vi.fn(), create: vi.fn(), discard: vi.fn(), recover: vi.fn(), importMd: vi.fn(), exportMd: vi.fn(), asset: vi.fn() }));
 vi.mock("../../../ipc/commands", () => ({ getReaderDocument: api.get, createReaderDocument: api.create, discardReaderDraft: api.discard, recoverReaderDraft: api.recover, importReaderMarkdown: api.importMd, exportReaderMarkdown: api.exportMd, getDocumentAsset: api.asset }));
 vi.mock("./BasicLeafEditor", () => ({ default: () => <div role="region" aria-label="Focused document editor">Editor loaded</div> }));
-vi.mock("./markdown", () => ({ normalizeMarkdown: async (text: string) => text }));
 
 import { DocumentOutline } from "./DocumentOutline";
 import { StaticDocument } from "./StaticDocument";
@@ -147,6 +146,30 @@ describe("StaticDocument heading IDs", () => {
   it("does not create a Tiptap editor instance", () => {
     render(<StaticDocument document={TWO_HEADING_DOC} />);
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+  });
+
+  it("renders imported code, strike, and ordered-list start semantics", () => {
+    render(<StaticDocument document={makeDoc([
+      {
+        type: "paragraph",
+        content: [
+          { type: "text", text: "code", marks: [{ type: "code" }] },
+          { type: "text", text: " removed", marks: [{ type: "strike" }] },
+        ],
+      },
+      {
+        type: "orderedList",
+        attrs: { start: 4 },
+        content: [
+          { type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: "Fourth" }] }] },
+          { type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: "Fifth" }] }] },
+        ],
+      },
+    ])} />);
+    expect(screen.getByText("code").tagName).toBe("CODE");
+    expect(screen.getByText("removed").tagName).toBe("S");
+    expect(screen.getByRole("list")).toHaveAttribute("start", "4");
+    expect(screen.getAllByRole("listitem")).toHaveLength(2);
   });
 });
 
@@ -373,15 +396,24 @@ describe("BasicLeafReader outline integration", () => {
   it("markdown import updates outline when committed document changes", async () => {
     const importedDoc = makeDoc([headingNode(1, "Imported Title"), headingNode(2, "Imported Section")]);
     const importedRecord = { ...baseDocRecord, canonical_json: docJson(importedDoc), revision: 2 };
-    api.importMd.mockResolvedValue(importedRecord);
+    api.importMd.mockResolvedValue({
+      document: importedRecord,
+      diagnostics: [{
+        kind: "task_list",
+        severity: "warning",
+        message: "Task-list state was preserved as a readable checkbox.",
+        line: 8,
+        column: 1,
+        fallback: "Rendered as ☐ in a normal list item.",
+      }],
+    });
 
     mount();
     await screen.findByRole("navigation", { name: "Document outline" });
 
     // Trigger markdown import (simulate file input change)
-    // Mock File.prototype.text so markdown normalization receives simple text
-    const mockText = vi.fn().mockResolvedValue("# Imported Title\n## Imported Section\n");
-    const file = { text: mockText, name: "test.md", type: "text/markdown" } as unknown as File;
+    const source = new TextEncoder().encode("# Imported Title\n## Imported Section\n");
+    const file = { arrayBuffer: vi.fn().mockResolvedValue(source.buffer), name: "test.md", type: "text/markdown" } as unknown as File;
     const fileInput = screen.getByLabelText("Import Markdown");
     Object.defineProperty(fileInput, "files", { value: [file], configurable: true });
     fireEvent.change(fileInput);
@@ -389,6 +421,21 @@ describe("BasicLeafReader outline integration", () => {
     await waitFor(() => {
       expect(screen.getByRole("button", { name: "Imported Title" })).toBeInTheDocument();
     }, { timeout: 3000 });
+    expect(screen.getByRole("status")).toHaveTextContent("1 documented fallback");
+    expect(screen.getByRole("list", { name: "Markdown import fallbacks" })).toHaveTextContent("Line 8, column 1");
+  });
+
+  it("markdown import reports the safe backend rejection reason", async () => {
+    api.importMd.mockRejectedValue({ code: "Validation", message: "Embedded HTML is not supported in Markdown." });
+    mount();
+    await screen.findByRole("navigation", { name: "Document outline" });
+    const source = new TextEncoder().encode("<b>unsafe</b>");
+    const file = { arrayBuffer: vi.fn().mockResolvedValue(source.buffer), name: "unsafe.md", type: "text/markdown" } as unknown as File;
+    const input = screen.getByLabelText("Import Markdown");
+    Object.defineProperty(input, "files", { value: [file], configurable: true });
+    fireEvent.change(input);
+    expect(await screen.findByRole("status")).toHaveTextContent("Markdown import rejected: Embedded HTML is not supported in Markdown.");
+    expect(screen.getByRole("status")).toHaveTextContent("committed document was not changed");
   });
 
   it("draft recovery updates outline with committed canonical JSON", async () => {

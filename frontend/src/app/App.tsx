@@ -11,7 +11,7 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { healthCheck } from "../ipc/commands";
 import { TodayScreen } from "../features/task/today/TodayScreen";
-import type { FocusPlanEntryRequest } from "../features/focus-plan/FocusPlansScreen";
+import type { FocusPlansViewState } from "../features/focus-plan/FocusPlansScreen";
 const loadFoundationScreen = () =>
   import("../features/foundation/FoundationScreen").then((module) => ({
     default: module.FoundationScreen,
@@ -97,11 +97,15 @@ import {
   type DestinationShortcutCommand,
 } from "./keyboardShortcuts";
 import {
+  appHistoryScreenKey,
+  defaultLifeHistoryView,
+  defaultPlansHistoryView,
   pushAppHistoryRoute,
   readAppHistoryEntry,
   replaceAppHistoryRoute,
   sameAppHistoryRoute,
   type AppHistoryRoute,
+  type LifeHistoryView,
   type SettingsView,
 } from "./navigationHistory";
 
@@ -133,11 +137,6 @@ type TodayFocusRequest = {
   requestId: string;
   taskId: string | null;
   seriesId: string | null;
-};
-type LifeEntryRequest = {
-  requestId: string;
-  nodeId: string;
-  mode: "browse" | "reader";
 };
 const preferenceKey = "lifeweave.task-sidebar-mode.v1";
 
@@ -235,6 +234,8 @@ export function App() {
       destination: "today" as const,
       settingsView: "general" as const,
       selectedDate: localToday(),
+      plansView: defaultPlansHistoryView,
+      lifeView: defaultLifeHistoryView,
     },
   }, []);
   const initialRoute: AppHistoryRoute = initialEntry.route;
@@ -242,9 +243,12 @@ export function App() {
   const [destination, setDestination] = useState<Destination>(initialRoute.destination);
   const [settingsView, setSettingsView] = useState<SettingsView>(initialRoute.settingsView);
   const [selectedDate, setSelectedDate] = useState(initialRoute.selectedDate);
+  const [plansView, setPlansView] = useState(initialRoute.plansView);
+  const [lifeView, setLifeView] = useState(initialRoute.lifeView);
   const historyRoute = useRef(initialRoute);
   const historyIndex = useRef(initialEntry.index);
   const [navigationMotion, setNavigationMotion] = useState<"forward" | "back">("forward");
+  const screenKey = appHistoryScreenKey({ destination, settingsView, selectedDate, plansView, lifeView });
   const anchorLocalDate = useLocalDateRollover();
   const previousAnchor = useRef(anchorLocalDate);
   const [taskSidebarMode, setTaskSidebarMode] =
@@ -269,26 +273,6 @@ export function App() {
       seriesId: pendingNav.target.series_id,
     };
   }, [pendingNav]);
-  const lifeEntryRequest = useMemo<LifeEntryRequest | null>(() => {
-    if (
-      !pendingNav ||
-      (pendingNav.target.kind !== "life_browse" &&
-        pendingNav.target.kind !== "life_reader")
-    )
-      return null;
-    return {
-      requestId: pendingNav.requestId,
-      nodeId: pendingNav.target.node_id,
-      mode: pendingNav.target.kind === "life_reader" ? "reader" : "browse",
-    };
-  }, [pendingNav]);
-  const focusPlanEntryRequest = useMemo<FocusPlanEntryRequest | null>(() => {
-    if (!pendingNav || pendingNav.target.kind !== "focus_plan") return null;
-    return {
-      requestId: pendingNav.requestId,
-      planId: pendingNav.target.plan_id,
-    };
-  }, [pendingNav]);
   const settleNavigationRequest = useCallback((requestId: string) => {
     setPendingNav((current) => settleNavigationEnvelope(current, requestId));
   }, []);
@@ -303,6 +287,8 @@ export function App() {
     setDestination(next.destination);
     setSettingsView(next.settingsView);
     setSelectedDate(next.selectedDate);
+    setPlansView(next.plansView);
+    setLifeView(next.lifeView);
   }, []);
 
   const replaceSelectedDate = useCallback((nextDate: string) => {
@@ -318,6 +304,8 @@ export function App() {
       destination: next,
       settingsView: "general",
       selectedDate: next === "today" ? anchorLocalDate : historyRoute.current.selectedDate,
+      plansView: next === "plans" ? defaultPlansHistoryView : historyRoute.current.plansView,
+      lifeView: next === "life" ? defaultLifeHistoryView : historyRoute.current.lifeView,
     });
   }, [anchorLocalDate, commitRoute]);
 
@@ -327,6 +315,8 @@ export function App() {
       destination: "settings",
       settingsView: "analytics",
       selectedDate: historyRoute.current.selectedDate,
+      plansView: historyRoute.current.plansView,
+      lifeView: historyRoute.current.lifeView,
     });
   }, [commitRoute]);
 
@@ -336,6 +326,8 @@ export function App() {
       destination: "settings",
       settingsView: "general",
       selectedDate: historyRoute.current.selectedDate,
+      plansView: historyRoute.current.plansView,
+      lifeView: historyRoute.current.lifeView,
     });
     setSearchOpen(true);
   }, [commitRoute]);
@@ -374,6 +366,8 @@ export function App() {
       setDestination(next.destination);
       setSettingsView(next.settingsView);
       setSelectedDate(next.selectedDate);
+      setPlansView(next.plansView);
+      setLifeView(next.lifeView);
     };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
@@ -423,34 +417,112 @@ export function App() {
   const handleSearchNavigate = (target: SearchNavigationTarget) => {
     const requestId = globalThis.crypto.randomUUID();
     if (target.kind === "today") {
-      commitRoute({ destination: "today", settingsView: "general", selectedDate: target.local_date });
+      commitRoute({
+        destination: "today",
+        settingsView: "general",
+        selectedDate: target.local_date,
+        plansView: historyRoute.current.plansView,
+        lifeView: historyRoute.current.lifeView,
+      });
     } else if (target.kind === "focus_plan") {
-      commitRoute({ destination: "plans", settingsView: "general", selectedDate: historyRoute.current.selectedDate });
+      commitRoute({
+        destination: "plans",
+        settingsView: "general",
+        selectedDate: historyRoute.current.selectedDate,
+        plansView: { portfolio: "active", planId: target.plan_id },
+        lifeView: historyRoute.current.lifeView,
+      });
+      setSearchOpen(false);
+      return;
     } else {
-      commitRoute({ destination: "life", settingsView: "general", selectedDate: historyRoute.current.selectedDate });
+      const mode = target.kind === "life_reader" ? "reader" : "browse";
+      commitRoute({
+        destination: "life",
+        settingsView: "general",
+        selectedDate: historyRoute.current.selectedDate,
+        plansView: historyRoute.current.plansView,
+        lifeView: {
+          mode,
+          nodeId: target.node_id,
+          readerId: mode === "reader" ? target.node_id : null,
+          page: 0,
+        },
+      });
+      setSearchOpen(false);
+      return;
     }
     setPendingNav({ requestId, target });
   };
   const navigateToLifeNode = (nodeId: string) => {
-    commitRoute({ destination: "life", settingsView: "general", selectedDate: historyRoute.current.selectedDate });
-    setPendingNav({
-      requestId: globalThis.crypto.randomUUID(),
-      target: { kind: "life_browse", node_id: nodeId },
+    commitRoute({
+      destination: "life",
+      settingsView: "general",
+      selectedDate: historyRoute.current.selectedDate,
+      plansView: historyRoute.current.plansView,
+      lifeView: { mode: "browse", nodeId, readerId: null, page: 0 },
     });
   };
   const navigateToFocusPlan = (planId: string) => {
-    commitRoute({ destination: "plans", settingsView: "general", selectedDate: historyRoute.current.selectedDate });
-    setPendingNav({
-      requestId: globalThis.crypto.randomUUID(),
-      target: { kind: "focus_plan", plan_id: planId },
+    commitRoute({
+      destination: "plans",
+      settingsView: "general",
+      selectedDate: historyRoute.current.selectedDate,
+      plansView: { portfolio: "active", planId },
+      lifeView: historyRoute.current.lifeView,
     });
   };
+
+  const navigateWithinPlans = useCallback((plansView: FocusPlansViewState) => {
+    setPendingNav(null);
+    commitRoute({
+      destination: "plans",
+      settingsView: "general",
+      selectedDate: historyRoute.current.selectedDate,
+      plansView,
+      lifeView: historyRoute.current.lifeView,
+    });
+  }, [commitRoute]);
+
+  const navigateWithinLife = useCallback((lifeView: LifeHistoryView) => {
+    setPendingNav(null);
+    commitRoute({
+      destination: "life",
+      settingsView: "general",
+      selectedDate: historyRoute.current.selectedDate,
+      plansView: historyRoute.current.plansView,
+      lifeView,
+    });
+  }, [commitRoute]);
+
+  const replaceLifeView = useCallback((lifeView: LifeHistoryView) => {
+    const next = { ...historyRoute.current, destination: "life" as const, lifeView };
+    historyRoute.current = next;
+    replaceAppHistoryRoute(window.history, next, historyIndex.current);
+    setLifeView(lifeView);
+  }, []);
+
+  const navigateBackFromPlan = useCallback(() => {
+    if (historyIndex.current > 0) {
+      window.history.back();
+      return;
+    }
+    navigateWithinPlans({
+      portfolio: historyRoute.current.plansView.portfolio,
+      planId: null,
+    });
+  }, [navigateWithinPlans]);
   const navigateToTask = (
     localDate: string,
     taskId: string | null,
     seriesId: string | null,
   ) => {
-    commitRoute({ destination: "today", settingsView: "general", selectedDate: localDate });
+    commitRoute({
+      destination: "today",
+      settingsView: "general",
+      selectedDate: localDate,
+      plansView: historyRoute.current.plansView,
+      lifeView: historyRoute.current.lifeView,
+    });
     setPendingNav({
       requestId: globalThis.crypto.randomUUID(),
       target: {
@@ -487,7 +559,13 @@ export function App() {
   );
   const activateCalendarDate = (date: string) => {
     setPendingNav(null);
-    commitRoute({ destination: "today", settingsView: "general", selectedDate: date });
+    commitRoute({
+      destination: "today",
+      settingsView: "general",
+      selectedDate: date,
+      plansView: historyRoute.current.plansView,
+      lifeView: historyRoute.current.lifeView,
+    });
     requestAnimationFrame(() =>
       document.getElementById("today-heading")?.focus({ preventScroll: true }),
     );
@@ -538,7 +616,7 @@ export function App() {
           </p>
         )}
         {ipcStatus === "ready" && (
-          <RouteErrorBoundary key={destination} destination={destination}>
+          <RouteErrorBoundary key={screenKey} destination={destination}>
             {destination === "settings" && settingsView === "general" && (
               <PageFrame
                 as="section"
@@ -674,6 +752,8 @@ export function App() {
                       destination: "settings",
                       settingsView: "general",
                       selectedDate: historyRoute.current.selectedDate,
+                      plansView: historyRoute.current.plansView,
+                      lifeView: historyRoute.current.lifeView,
                     })}
                     aria-label="Back to Settings"
                   >
@@ -726,8 +806,9 @@ export function App() {
               >
                 <Suspense fallback={<LoadingRow label="Loading plans…" />}>
                   <FocusPlansRoute
-                    entryRequest={focusPlanEntryRequest}
-                    onEntryRequestSettled={settleNavigationRequest}
+                    view={plansView}
+                    onViewChange={navigateWithinPlans}
+                    onBack={navigateBackFromPlan}
                   />
                 </Suspense>
               </div>
@@ -743,8 +824,11 @@ export function App() {
                   <LifeRoute
                     anchorLocalDate={anchorLocalDate}
                     onTaskNavigate={navigateToTask}
-                    entryRequest={lifeEntryRequest}
-                    onEntryRequestSettled={settleNavigationRequest}
+                    view={lifeView}
+                    onViewChange={navigateWithinLife}
+                    onViewReplace={replaceLifeView}
+                    onBack={() => window.history.back()}
+                    canHistoryBack={historyIndex.current > 0}
                   />
                 </Suspense>
               </div>

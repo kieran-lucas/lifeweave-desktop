@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useReducedMotion } from "motion/react";
 import type { ReaderDocumentView } from "../../../ipc/generated/ReaderDocumentView";
 import type { NarrativeDocumentView } from "../../../ipc/generated/NarrativeDocumentView";
+import type { MarkdownImportDiagnostic } from "../../../ipc/generated/MarkdownImportDiagnostic";
 import { createReaderDocument, discardReaderDraft, exportReaderMarkdown, getNarrativeDocument, getReaderDocument, importReaderMarkdown, previewNarrativeMarkdown, recoverReaderDraft } from "../../../ipc/commands";
 import { NarrativeMarkdownImportDialog } from "../narrative/NarrativeMarkdownImportDialog";
 import { operationId, parseDocument } from "./schema";
@@ -18,6 +19,16 @@ import { LoadingRow } from "../../../design-system/primitives/States";
 
 const BasicLeafEditor = lazy(() => import("./BasicLeafEditor"));
 export const documentKey = (nodeId: string) => ["life", "document", nodeId] as const;
+
+function importErrorMessage(error: unknown, fallback: string): string {
+  if (error && typeof error === "object" && "code" in error && "message" in error) {
+    const code = String(error.code);
+    const message = String(error.message);
+    if (code === "Validation" && message.length > 0) return message;
+  }
+  if (error instanceof TypeError) return "The file is not valid UTF-8 Markdown.";
+  return fallback;
+}
 
 
 type MarkdownImportPending = {
@@ -53,6 +64,7 @@ export function BasicLeafReader({
   const client = useQueryClient();
   const [editing, setEditing] = useState(false);
   const [notice, setNotice] = useState<string>();
+  const [markdownDiagnostics, setMarkdownDiagnostics] = useState<MarkdownImportDiagnostic[]>([]);
   const [markdownImport, setMarkdownImport] = useState<MarkdownImportPending | null>(null);
   const query = useQuery({ queryKey: documentKey(nodeId), queryFn: () => getReaderDocument({ life_node_id: nodeId }) });
   const narrativeQuery = useQuery({ queryKey: narrativeKey(nodeId), queryFn: () => getNarrativeDocument({ life_node_id: nodeId }) });
@@ -103,8 +115,8 @@ export function BasicLeafReader({
       const markdown = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
       const preview = await previewNarrativeMarkdown({ original_name: file.name, markdown });
       setMarkdownImport({ originalName: file.name, markdown, preview });
-    } catch {
-      setNotice("Could not read the Markdown file.");
+    } catch (error) {
+      setNotice(`Markdown preview failed: ${importErrorMessage(error, "Could not read or validate the Markdown file.")}`);
     }
   };
 
@@ -194,22 +206,24 @@ export function BasicLeafReader({
   const importMarkdown = async (file?: File) => {
     if (!file) return;
     try {
-      const { normalizeMarkdown } = await import("./markdown");
-      const normalized = await normalizeMarkdown(await file.text());
-      const value = await importReaderMarkdown({ document_id: document.id, expected_revision: document.revision, markdown: normalized, operation_id: operationId("markdown-import") });
-      committed(value);
-      setNotice("Markdown imported. Unsupported constructs were rejected before commit.");
-    } catch {
-      setNotice("Markdown import failed; the committed document was not changed.");
+      const bytes = await file.arrayBuffer();
+      const markdown = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+      const result = await importReaderMarkdown({ document_id: document.id, expected_revision: document.revision, markdown, operation_id: operationId("markdown-import") });
+      committed(result.document);
+      setMarkdownDiagnostics(result.diagnostics);
+      setNotice(result.diagnostics.length === 0
+        ? "Markdown imported with supported formatting preserved."
+        : `Markdown imported with ${result.diagnostics.length} documented fallback${result.diagnostics.length === 1 ? "" : "s"}.`);
+    } catch (error) {
+      setMarkdownDiagnostics([]);
+      setNotice(`Markdown import rejected: ${importErrorMessage(error, "The file could not be imported.")} The committed document was not changed.`);
     }
   };
 
   const exportMarkdown = async () => {
     try {
       const result = await exportReaderMarkdown({ document_id: document.id });
-      const { normalizeMarkdown } = await import("./markdown");
-      const normalized = await normalizeMarkdown(result.markdown);
-      const url = URL.createObjectURL(new Blob([normalized], { type: "text/markdown;charset=utf-8" }));
+      const url = URL.createObjectURL(new Blob([result.markdown], { type: "text/markdown;charset=utf-8" }));
       const anchor = window.document.createElement("a");
       anchor.href = url;
       anchor.download = result.file_name;
@@ -244,7 +258,11 @@ export function BasicLeafReader({
           <div className={styles.optionsPanel}>
             <div className={styles.actions}>
               <label className={styles.fileLabel}>Import Markdown
-                <input className={styles.hiddenFile} type="file" accept="text/markdown,.md" onChange={event => void importMarkdown(event.currentTarget.files?.[0])} />
+                <input className={styles.hiddenFile} type="file" accept="text/markdown,.md" onChange={event => {
+                  const file = event.currentTarget.files?.[0];
+                  event.currentTarget.value = "";
+                  void importMarkdown(file);
+                }} />
               </label>
               <button className={styles.button} onClick={() => void exportMarkdown()}>Export Markdown</button>
             </div>
@@ -253,6 +271,15 @@ export function BasicLeafReader({
         </details>
       </div>
       {notice && <p role="status" aria-live="polite">{notice}</p>}
+      {markdownDiagnostics.length > 0 && (
+        <ul aria-label="Markdown import fallbacks">
+          {markdownDiagnostics.map((diagnostic, index) => (
+            <li key={`${diagnostic.kind}-${diagnostic.line}-${diagnostic.column}-${index}`}>
+              Line {diagnostic.line}, column {diagnostic.column}: {diagnostic.message} {diagnostic.fallback}
+            </li>
+          ))}
+        </ul>
+      )}
       <div className={styles.outlineContainer}>
         {showOutline && outlineVisible
           ? <div className={styles.outlineGrid}><div className={styles.outlineColumn}><DocumentOutline id="life-document-outline" outline={outline} reducedMotion={reducedMotion} /></div><StaticDocument document={parsed} /></div>

@@ -19,18 +19,12 @@ import {
 import { lifeIconGlyph } from "./lifeIconCatalog";
 
 type Mode = "browse" | "edit" | "reader";
-type HistoryEntry = {
-  nodeId: string;
+export type LifeViewState = {
+  mode: "browse" | "tree" | "reader";
+  nodeId: string | null;
+  readerId: string | null;
   page: number;
-  mode: "browse" | "reader";
-  reader?: LifeNodeView;
 };
-
-type EntryRequest = {
-  requestId: string;
-  nodeId: string;
-  mode: "browse" | "reader";
-} | null;
 
 const lifeKeys = {
   browse: (id: string | undefined, page: number) =>
@@ -63,33 +57,40 @@ function NodeIcon({ iconKey, size = 17 }: { iconKey: string; size?: number }) {
 }
 
 export function LifeScreen({
-  entryRequest,
-  onEntryRequestSettled,
+  view,
+  onViewChange,
+  onViewReplace,
+  onBack,
+  canHistoryBack,
   onTaskNavigate,
   anchorLocalDate,
 }: {
-  entryRequest?: EntryRequest;
-  onEntryRequestSettled?: (requestId: string) => void;
+  view: LifeViewState;
+  onViewChange: (view: LifeViewState) => void;
+  onViewReplace: (view: LifeViewState) => void;
+  onBack: () => void;
+  canHistoryBack: boolean;
   onTaskNavigate?: (localDate: string, taskId: string | null, seriesId: string | null) => void;
   anchorLocalDate: string;
 }) {
   const client = useQueryClient();
-  const [nodeId, setNodeId] = useState<string>();
-  const [page, setPage] = useState(0);
-  const [mode, setMode] = useState<Mode>("browse");
+  const nodeId = view.nodeId ?? undefined;
+  const page = view.page;
+  const [mode, setMode] = useState<Mode>(view.mode === "tree" ? "edit" : view.mode);
   const [reader, setReader] = useState<LifeNodeView>();
   const [outlineControl, setOutlineControl] = useState<{
     nodeId: string | null;
     available: boolean;
     visible: boolean;
   }>({ nodeId: null, available: false, visible: false });
-  const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [busy, setBusy] = useState(false);
   const initialized = useRef(false);
-  const preparedEntryRequest = useRef<string | null>(null);
-  const settledEntryRequest = useRef<string | null>(null);
   const linkedNavigationGeneration = useRef(0);
   const readerHeading = useRef<HTMLHeadingElement>(null);
+
+  useEffect(() => () => {
+    linkedNavigationGeneration.current += 1;
+  }, []);
 
   const reportOutlineAvailability = useCallback((available: boolean) => {
     const activeNodeId = reader?.id;
@@ -110,27 +111,75 @@ export function LifeScreen({
     placeholderData: (previous) => previous,
   });
 
-  const settle = (requestId: string) => {
-    if (settledEntryRequest.current === requestId) return;
-    settledEntryRequest.current = requestId;
-    onEntryRequestSettled?.(requestId);
-  };
-
-  const cancelPendingEntryRequest = () => {
-    if (entryRequest) settle(entryRequest.requestId);
-  };
-
   useEffect(() => {
-    if (!browse.data || initialized.current) return;
-    initialized.current = true;
-    const preferred = browse.data.preferred_mode;
-    if (preferred === "reader" && browse.data.selected.is_leaf) {
-      setReader(browse.data.selected);
-      setMode("reader");
-    } else if (preferred === "edit") {
-      setMode("edit");
+    if (!browse.data) return;
+    const selected = browse.data.selected;
+
+    if (!initialized.current && view.nodeId === null) {
+      initialized.current = true;
+      const preferredMode = browse.data.preferred_mode === "edit"
+        ? "tree"
+        : browse.data.preferred_mode === "reader" && selected.is_leaf
+          ? "reader"
+          : "browse";
+      if (preferredMode === "reader") setReader(selected);
+      setMode(preferredMode === "tree" ? "edit" : preferredMode);
+      onViewReplace({
+        mode: preferredMode,
+        nodeId: selected.id,
+        readerId: preferredMode === "reader" ? selected.id : null,
+        page: browse.data.child_page,
+      });
+      return;
     }
-  }, [browse.data]);
+    initialized.current = true;
+
+    if (browse.data.resolved_from_fallback || selected.id !== view.nodeId) {
+      setReader(undefined);
+      setMode("browse");
+      onViewReplace({ mode: "browse", nodeId: selected.id, readerId: null, page: browse.data.child_page });
+      return;
+    }
+
+    if (view.mode === "tree") {
+      setReader(undefined);
+      setMode("edit");
+      return;
+    }
+    if (view.mode === "browse") {
+      setReader(undefined);
+      setMode("browse");
+      return;
+    }
+
+    const directReader = selected.id === view.readerId
+      ? selected
+      : browse.data.children.find((child) => child.id === view.readerId);
+    if (directReader?.is_leaf) {
+      setReader(directReader);
+      setMode("reader");
+      return;
+    }
+
+    const generation = linkedNavigationGeneration.current + 1;
+    linkedNavigationGeneration.current = generation;
+    const targetId = view.readerId;
+    if (!targetId) return;
+    void client.fetchQuery({
+      queryKey: lifeKeys.browse(targetId, 0),
+      queryFn: () => getLifeBrowseProjection({ node_id: targetId, child_page: 0 }),
+    }).then((target) => {
+      if (generation !== linkedNavigationGeneration.current) return;
+      if (target.resolved_from_fallback || target.selected.id !== targetId || !target.selected.is_leaf) {
+        onViewReplace({ mode: "browse", nodeId: selected.id, readerId: null, page: browse.data.child_page });
+        return;
+      }
+      onViewReplace({ mode: "reader", nodeId: targetId, readerId: targetId, page: 0 });
+    }).catch(() => {
+      if (generation !== linkedNavigationGeneration.current) return;
+      onViewReplace({ mode: "browse", nodeId: selected.id, readerId: null, page: browse.data.child_page });
+    });
+  }, [browse.data, client, onViewReplace, view.mode, view.nodeId, view.readerId]);
 
   useEffect(() => {
     if (!browse.data || !initialized.current) return;
@@ -147,96 +196,32 @@ export function LifeScreen({
     requestAnimationFrame(() => readerHeading.current?.focus({ preventScroll: true }));
   }, [mode, reader]);
 
-  useEffect(() => {
-    if (!entryRequest || !browse.data || !initialized.current) return;
-    if (settledEntryRequest.current === entryRequest.requestId) return;
-
-    const selected = browse.data.selected;
-    const directChild = browse.data.children.find((child) => child.id === entryRequest.nodeId);
-
-    if (preparedEntryRequest.current !== entryRequest.requestId) {
-      preparedEntryRequest.current = entryRequest.requestId;
-      linkedNavigationGeneration.current += 1;
-      if (entryRequest.mode === "reader" && selected.id === entryRequest.nodeId && selected.is_leaf) {
-        setReader(selected);
-        setMode("reader");
-        settle(entryRequest.requestId);
-        return;
-      }
-      if (entryRequest.mode === "reader" && directChild?.is_leaf) {
-        setReader(directChild);
-        setMode("reader");
-        settle(entryRequest.requestId);
-        return;
-      }
-      setReader(undefined);
-      setMode("browse");
-      setNodeId(entryRequest.nodeId);
-      setPage(0);
-      return;
-    }
-
-    if (browse.isFetching) return;
-    if (browse.data.resolved_from_fallback) {
-      setMode("browse");
-      settle(entryRequest.requestId);
-      return;
-    }
-    if (browse.data.selected.id !== entryRequest.nodeId) return;
-    if (entryRequest.mode === "reader" && browse.data.selected.is_leaf) {
-      setReader(browse.data.selected);
-      setMode("reader");
-    }
-    settle(entryRequest.requestId);
-  }, [browse.data, browse.isFetching, entryRequest]);
-
-  const remember = (nextMode: "browse" | "reader", currentReader?: LifeNodeView) => {
-    const currentId = browse.data?.selected.id;
-    if (!currentId) return;
-    setHistory((entries) => [
-      ...entries,
-      {
-        nodeId: currentId,
-        page,
-        mode: nextMode,
-        ...(currentReader ? { reader: currentReader } : {}),
-      },
-    ]);
-  };
 
   const openNode = (node: LifeNodeView) => {
     if (busy) return;
-    cancelPendingEntryRequest();
     linkedNavigationGeneration.current += 1;
-    remember(mode === "reader" ? "reader" : "browse", mode === "reader" ? reader : undefined);
     if (node.is_leaf) {
-      setReader(node);
-      setMode("reader");
+      onViewChange({
+        mode: "reader",
+        nodeId: browse.data?.selected.id ?? node.id,
+        readerId: node.id,
+        page,
+      });
       return;
     }
-    setReader(undefined);
-    setNodeId(node.id);
-    setPage(0);
-    setMode("browse");
+    onViewChange({ mode: "browse", nodeId: node.id, readerId: null, page: 0 });
   };
 
   const goTo = (id: string) => {
     if (browse.data?.selected.id === id) return;
-    cancelPendingEntryRequest();
     linkedNavigationGeneration.current += 1;
-    remember(mode === "reader" ? "reader" : "browse", mode === "reader" ? reader : undefined);
-    setReader(undefined);
-    setNodeId(id);
-    setPage(0);
-    setMode("browse");
+    onViewChange({ mode: "browse", nodeId: id, readerId: null, page: 0 });
   };
 
   const openLinkedReader = async (targetNodeId: string) => {
     if (busy || !reader) return;
-    cancelPendingEntryRequest();
     const generation = linkedNavigationGeneration.current + 1;
     linkedNavigationGeneration.current = generation;
-    const source = reader;
     setBusy(true);
     try {
       const target = await client.fetchQuery({
@@ -251,38 +236,28 @@ export function LifeScreen({
       ) {
         throw new Error("That Life leaf is unavailable.");
       }
-      remember("reader", source);
-      setNodeId(targetNodeId);
-      setPage(0);
-      setReader(target.selected);
-      setMode("reader");
+      onViewChange({ mode: "reader", nodeId: targetNodeId, readerId: targetNodeId, page: 0 });
     } finally {
       if (generation === linkedNavigationGeneration.current) setBusy(false);
     }
   };
 
   const back = () => {
-    cancelPendingEntryRequest();
     linkedNavigationGeneration.current += 1;
     setBusy(false);
-    const previous = history.at(-1);
-    if (previous) {
-      setHistory((entries) => entries.slice(0, -1));
-      setNodeId(previous.nodeId);
-      setPage(previous.page);
-      setReader(previous.reader);
-      setMode(previous.mode);
+    if (canHistoryBack) {
+      onBack();
+      return;
+    }
+    const currentNodeId = browse.data?.selected.id ?? view.nodeId;
+    if (mode === "reader" || mode === "edit") {
+      onViewChange({ mode: "browse", nodeId: currentNodeId, readerId: null, page });
       return;
     }
     if (browse.data?.parent) {
-      setNodeId(browse.data.parent.id);
-      setPage(0);
-      setReader(undefined);
-      setMode("browse");
+      onViewChange({ mode: "browse", nodeId: browse.data.parent.id, readerId: null, page: 0 });
       return;
     }
-    setReader(undefined);
-    setMode("browse");
   };
 
   if (browse.isLoading) {
@@ -299,7 +274,7 @@ export function LifeScreen({
   }
 
   const projection = browse.data;
-  const canBack = history.length > 0 || projection.parent !== null || mode === "reader";
+  const canBack = canHistoryBack || projection.parent !== null || mode === "reader" || mode === "edit";
   const outlineAvailable = mode === "reader" && reader !== undefined
     && outlineControl.nodeId === reader.id && outlineControl.available;
   const outlineVisible = outlineAvailable && outlineControl.visible;
@@ -324,10 +299,13 @@ export function LifeScreen({
               type="button"
               aria-pressed={mode === "edit"}
               onClick={() => {
-                cancelPendingEntryRequest();
                 linkedNavigationGeneration.current += 1;
-                setReader(undefined);
-                setMode((current) => (current === "edit" ? "browse" : "edit"));
+                onViewChange({
+                  mode: mode === "edit" ? "browse" : "tree",
+                  nodeId: projection.selected.id,
+                  readerId: null,
+                  page,
+                });
               }}
             >
               {mode === "edit" ? "Close tree" : "Tree"}
@@ -411,7 +389,7 @@ export function LifeScreen({
               <button
                 type="button"
                 disabled={page === 0}
-                onClick={() => setPage((value) => value - 1)}
+                onClick={() => onViewChange({ ...view, page: page - 1 })}
               >
                 Prev
               </button>
@@ -419,7 +397,7 @@ export function LifeScreen({
               <button
                 type="button"
                 disabled={page + 1 >= projection.child_page_count}
-                onClick={() => setPage((value) => value + 1)}
+                onClick={() => onViewChange({ ...view, page: page + 1 })}
               >
                 Next
               </button>
@@ -448,10 +426,8 @@ export function LifeScreen({
               <Suspense fallback={<LoadingRow label="Loading Life tree…" />}>
                 <LifeEditWorkspace
                   initialNodeId={projection.selected.id}
-                  onBrowse={(id) => {
-                    setNodeId(id);
-                    setPage(0);
-                    setMode("browse");
+                  onOpenNode={(id, isLeaf) => {
+                    onViewChange({ mode: isLeaf ? "reader" : "browse", nodeId: id, readerId: isLeaf ? id : null, page: 0 });
                   }}
                 />
               </Suspense>

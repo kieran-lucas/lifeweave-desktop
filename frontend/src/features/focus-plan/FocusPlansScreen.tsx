@@ -26,14 +26,15 @@ const TaskDatePicker = lazy(() =>
   import("../task/today/TaskSchedulePickers").then((module) => ({ default: module.TaskDatePicker })),
 );
 
-export type FocusPlanEntryRequest = {
-  requestId: string;
-  planId: string;
+export type FocusPlansViewState = {
+  portfolio: FocusPlanPortfolio;
+  planId: string | null;
 };
 
 type Props = {
-  entryRequest: FocusPlanEntryRequest | null;
-  onEntryRequestSettled: (requestId: string) => void;
+  view: FocusPlansViewState;
+  onViewChange: (view: FocusPlansViewState) => void;
+  onBack: () => void;
 };
 
 type PlanForm = {
@@ -101,10 +102,7 @@ function messageFromError(error: unknown): string {
 }
 
 function planMeta(plan: FocusPlanSummaryView) {
-  const parts: string[] = [];
-  if (plan.life_title) parts.push(plan.life_title);
-  if (plan.target_date) parts.push(`Target ${formatPlanDate(plan.target_date)}`);
-  return parts.length ? parts.join(" · ") : "No target yet";
+  return plan.life_title ?? plan.selected_variant_label;
 }
 
 function formatPlanDate(value: string) {
@@ -118,6 +116,29 @@ function formatPlanDate(value: string) {
   }).format(new Date(Date.UTC(year, month - 1, day)));
 }
 
+function planTimeMarker(plan: FocusPlanSummaryView) {
+  const value = plan.start_date ?? plan.target_date;
+  if (!value) return <span className={styles.unscheduledMarker}>No date</span>;
+
+  const [year, month, day] = value.split("-").map(Number);
+  if (!year || !month || !day) return <time dateTime={value}>{value}</time>;
+  const monthLabel = new Intl.DateTimeFormat(navigator.language || "en-US", {
+    month: "short",
+    timeZone: "UTC",
+  }).format(new Date(Date.UTC(year, month - 1, day)));
+  const secondaryDate = plan.start_date && plan.target_date ? formatPlanDate(plan.target_date) : null;
+
+  return <>
+    <span className={styles.timeKind}>{plan.start_date ? "Start" : "Target"}</span>
+    <time dateTime={value} aria-label={`${plan.start_date ? "Starts" : "Target"} ${formatPlanDate(value)}`}>
+      <strong>{String(day).padStart(2, "0")}</strong>
+      <span>{monthLabel}</span>
+      <small>{year}</small>
+    </time>
+    {secondaryDate ? <small className={styles.timeTarget}>to {secondaryDate}</small> : null}
+  </>;
+}
+
 function scoreBand(score: number | null) {
   if (score === null) return "unset";
   if (score < 40) return "low";
@@ -127,12 +148,13 @@ function scoreBand(score: number | null) {
 }
 
 export function FocusPlansScreen({
-  entryRequest,
-  onEntryRequestSettled,
+  view,
+  onViewChange,
+  onBack,
 }: Props) {
   const queryClient = useQueryClient();
   const completedPortfolioButton = useRef<HTMLButtonElement>(null);
-  const [portfolio, setPortfolio] = useState<FocusPlanPortfolio>("active");
+  const [portfolio, setPortfolio] = useState<FocusPlanPortfolio>(view.portfolio);
   const [plans, setPlans] = useState<FocusPlanSummaryView[]>([]);
   const [selected, setSelected] = useState<FocusPlanDetailView | null>(null);
   const [form, setForm] = useState<PlanForm | null>(null);
@@ -141,6 +163,7 @@ export function FocusPlansScreen({
   const [error, setError] = useState<string | null>(null);
   const [scoreTarget, setScoreTarget] = useState<ScoreTarget | null>(null);
   const scoreMovesToCompleted = useRef(false);
+  const requestedPlanId = useRef<string | null>(view.planId);
   const creating = form !== null && selected === null;
   const portfolioKey = (value: FocusPlanPortfolio) => ["focus-plans", value] as const;
 
@@ -170,9 +193,15 @@ export function FocusPlansScreen({
       setStatus("loading");
       setError(null);
       try {
-        syncDetail(await getFocusPlan({ plan_id: planId }));
+        const plan = await getFocusPlan({ plan_id: planId });
+        if (requestedPlanId.current !== planId) return;
+        syncDetail(plan);
         setEditing(false);
+        requestAnimationFrame(() =>
+          document.getElementById("plan-detail-heading")?.focus({ preventScroll: true }),
+        );
       } catch (cause) {
+        if (requestedPlanId.current !== planId) return;
         setError(messageFromError(cause));
       } finally {
         setStatus("ready");
@@ -186,11 +215,27 @@ export function FocusPlansScreen({
   }, [loadPortfolio, portfolio]);
 
   useEffect(() => {
-    if (!entryRequest) return;
-    void openPlan(entryRequest.planId).finally(() =>
-      onEntryRequestSettled(entryRequest.requestId),
+    setPortfolio(view.portfolio);
+  }, [view.portfolio]);
+
+  useEffect(() => {
+    if (view.portfolio !== "completed" || view.planId !== null) return;
+    requestAnimationFrame(() =>
+      completedPortfolioButton.current?.focus({ preventScroll: true }),
     );
-  }, [entryRequest, onEntryRequestSettled, openPlan]);
+  }, [view.planId, view.portfolio]);
+
+  useEffect(() => {
+    requestedPlanId.current = view.planId;
+    if (view.planId) {
+      void openPlan(view.planId);
+      return;
+    }
+    setSelected(null);
+    setForm(null);
+    setEditing(false);
+    setError(null);
+  }, [openPlan, view.planId]);
 
   useEffect(() => {
     if (!form || (!editing && selected)) return;
@@ -285,6 +330,7 @@ export function FocusPlansScreen({
         setEditing(false);
         setPortfolio("draft");
         syncDetail(plan);
+        onViewChange({ portfolio: "draft", planId: plan.id });
         await invalidatePlanConsumers();
         await loadPortfolio("draft");
       } catch (cause) {
@@ -308,9 +354,7 @@ export function FocusPlansScreen({
   }
 
   const closePlan = () => {
-    setSelected(null);
-    setForm(null);
-    setEditing(false);
+    onBack();
   };
 
   const beginCreate = () => {
@@ -335,6 +379,7 @@ export function FocusPlansScreen({
     if (!scoreMovesToCompleted.current) return;
     scoreMovesToCompleted.current = false;
     setPortfolio("completed");
+    onViewChange({ portfolio: "completed", planId: null });
   };
 
   const invalidatePlanConsumers = () => Promise.all([
@@ -444,8 +489,8 @@ export function FocusPlansScreen({
       <PageFrame as="section" type="focused" aria-labelledby="plan-detail-heading">
         <article className={styles.document}>
           <header className={styles.documentHeader}>
-            <button className={styles.backButton} type="button" onClick={closePlan}>
-              Back to plans
+            <button className={styles.backButton} type="button" onClick={closePlan} aria-label="Back to previous screen">
+              Back
             </button>
             <div className={styles.documentActions}>
               {!selected.archived && (
@@ -531,14 +576,22 @@ export function FocusPlansScreen({
               type="button"
               ref={item.id === "completed" ? completedPortfolioButton : undefined}
               aria-current={portfolio === item.id ? "page" : undefined}
-              onClick={() => setPortfolio(item.id)}
+              onClick={() => {
+                setPortfolio(item.id);
+                onViewChange({ portfolio: item.id, planId: null });
+              }}
             >
               {item.label}
             </button>
           ))}
         </nav>
 
-        <div className={styles.planCollection} aria-live="polite">
+        <div
+          className={styles.planCollection}
+          role="list"
+          aria-live="polite"
+          aria-label={`${portfolios.find((item) => item.id === portfolio)?.label ?? "Plans"} in chronological order`}
+        >
           {status === "loading" && plans.length === 0 && <SkeletonList rows={5} label="Loading plans…" />}
           {status !== "loading" && plans.length === 0 && (
             <EmptyState
@@ -548,25 +601,32 @@ export function FocusPlansScreen({
             />
           )}
           {plans.map((plan) => (
-            <div key={plan.id} className={styles.planRow}>
-              <button type="button" className={styles.planOpen} onClick={() => void openPlan(plan.id)}>
-                <span className={styles.planCopy}>
-                  <span className={styles.planTitleLine}>
-                    <strong data-completed={plan.lifecycle === "completed" ? "" : undefined}>{plan.title}</strong>
-                    {plan.lifecycle === "active" ? <span className={styles.activeBadge}>Active</span> : null}
+            <div key={plan.id} className={styles.planRow} role="listitem">
+              <div className={styles.timeMarker}>{planTimeMarker(plan)}</div>
+              <div className={styles.planSurface}>
+                <button
+                  type="button"
+                  className={styles.planOpen}
+                  onClick={() => onViewChange({ portfolio, planId: plan.id })}
+                >
+                  <span className={styles.planCopy}>
+                    <span className={styles.planTitleLine}>
+                      <strong data-completed={plan.lifecycle === "completed" ? "" : undefined}>{plan.title}</strong>
+                      {plan.lifecycle === "active" ? <span className={styles.activeBadge}>Active</span> : null}
+                    </span>
+                    <small>{planMeta(plan)}</small>
                   </span>
-                  <small>{planMeta(plan)}</small>
-                </span>
-              </button>
-              <button
-                type="button"
-                className={styles.scoreButton}
-                data-score-band={scoreBand(plan.score)}
-                aria-label={`${plan.title} score: ${plan.score ?? "Not scored"}. Set score`}
-                onClick={(event) => setScoreTarget({ plan, invoker: event.currentTarget })}
-              >
-                {plan.score ?? "—"}
-              </button>
+                </button>
+                <button
+                  type="button"
+                  className={styles.scoreButton}
+                  data-score-band={scoreBand(plan.score)}
+                  aria-label={`${plan.title} score: ${plan.score ?? "Not scored"}. Set score`}
+                  onClick={(event) => setScoreTarget({ plan, invoker: event.currentTarget })}
+                >
+                  {plan.score ?? "—"}
+                </button>
+              </div>
             </div>
           ))}
         </div>

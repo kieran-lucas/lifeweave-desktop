@@ -39,6 +39,10 @@ sha2 = "0.10"
 # Vietnamese-normalized global search. NFKD decomposition + combining-mark strip + đ→d mapping.
 # Exact-pinned so normalization output is deterministic across builds.
 unicode-normalization = "=0.1.25"
+# CommonMark parser for the shared Basic Leaf/Narrative Markdown authority (MIT license).
+# GFM tables/task markers are enabled explicitly by the adapter; HTML remains rejected. Exact pin
+# keeps event semantics durable; replaces four shipped JS parser/stringifier dependencies.
+pulldown-cmark = { version = "=0.13.4", default-features = false }
 # Task recurrence is parsed and expanded in Rust using the RFC 5545 engine
 # locked by the product specification. Both versions are exact-pinned so the
 # local-date projection cannot drift with a transitive update.

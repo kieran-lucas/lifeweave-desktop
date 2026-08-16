@@ -82,6 +82,10 @@ pub fn valid_theme(value: &str) -> bool {
     matches!(value, "neutral" | "blue" | "green" | "amber" | "violet")
 }
 
+pub fn valid_direction_confidence(value: &str) -> bool {
+    matches!(value, "exploring" | "leaning" | "committed" | "core")
+}
+
 pub fn valid_id(value: &str) -> bool {
     value == ROOT_ID || (value.len() == 36 && uuid::Uuid::parse_str(value).is_ok())
 }

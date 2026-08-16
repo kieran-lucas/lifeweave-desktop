@@ -490,11 +490,15 @@ pub fn preview_markdown(
     conn: &Connection,
     input: PreviewNarrativeMarkdownInput,
 ) -> Result<NarrativeMarkdownPreview, NarrativeError> {
-    let canonical = crate::document::markdown::import(&input.markdown).map_err(|e| match e {
-        crate::document::domain::DocumentError::Validation(msg) => NarrativeError::Validation(msg),
-        _ => NarrativeError::Validation("Markdown is too large."),
-    })?;
-    let validated = crate::document::schema::validate(&canonical)
+    let imported = crate::document::markdown::import_with_diagnostics(&input.markdown).map_err(
+        |e| match e {
+            crate::document::domain::DocumentError::Validation(msg) => {
+                NarrativeError::Validation(msg)
+            }
+            _ => NarrativeError::Validation("Markdown is too large."),
+        },
+    )?;
+    let validated = crate::document::schema::validate(&imported.canonical_json)
         .map_err(|_| NarrativeError::Validation("Markdown document structure is invalid."))?;
     let proposed_title = {
         let stem = markdown::sanitize_file_stem(&input.original_name);
@@ -506,7 +510,7 @@ pub fn preview_markdown(
     };
     let plain_text_excerpt: String = validated.plain_text.chars().take(240).collect();
     let referenced_asset_count = validated.assets.len() as i32;
-    let doc: serde_json::Value = serde_json::from_str(&canonical).unwrap_or_default();
+    let doc: serde_json::Value = serde_json::from_str(&imported.canonical_json).unwrap_or_default();
     let top_level_node_count = doc
         .get("content")
         .and_then(serde_json::Value::as_array)
@@ -516,6 +520,12 @@ pub fn preview_markdown(
         "Import creates one rich_text block. Block types, layout, and metadata are not preserved."
             .to_owned(),
     ];
+    warnings.extend(imported.diagnostics.iter().map(|diagnostic| {
+        format!(
+            "Line {}, column {} — {} {}",
+            diagnostic.line, diagnostic.column, diagnostic.message, diagnostic.fallback
+        )
+    }));
     if referenced_asset_count > 0 {
         let unavailable = validated
             .assets
@@ -774,6 +784,29 @@ mod tests {
             .map(|id| format!("![Local image](assets/{id})"))
             .collect::<Vec<_>>()
             .join("\n\n")
+    }
+
+    #[test]
+    fn preview_markdown_discloses_construct_location_and_fallback() {
+        let c = db();
+        let preview = preview_markdown(
+            &c,
+            PreviewNarrativeMarkdownInput {
+                original_name: "diagnostics.md".into(),
+                markdown: "# Heading\n\n- [x] checked\n\n```mermaid\nA --> B\n```".into(),
+            },
+        )
+        .unwrap();
+        assert!(preview.warnings.iter().any(|warning| {
+            warning.contains("Line 3, column 3")
+                && warning.contains("Task-list state")
+                && warning.contains('☒')
+        }));
+        assert!(preview.warnings.iter().any(|warning| {
+            warning.contains("Line 5, column 1")
+                && warning.contains("language metadata")
+                && warning.contains("inert code block")
+        }));
     }
 
     #[test]
@@ -1226,7 +1259,7 @@ mod tests {
             let restore_result = restore_db(&rt, &backup_dir).unwrap();
             assert_eq!(
                 restore_result.schema_version,
-                crate::infrastructure::sqlite::task54_migration::TASK54_SCHEMA_VERSION,
+                crate::infrastructure::sqlite::task55_migration::TASK55_SCHEMA_VERSION,
                 "restore must report the current schema"
             );
         }
@@ -1234,7 +1267,7 @@ mod tests {
         // ── Session 3: verify restored state ─────────────────────────────────
         {
             let mut c = open_file_connection(&path).unwrap();
-            crate::infrastructure::sqlite::task54_migration::run_all_migrations(&mut c).unwrap();
+            crate::infrastructure::sqlite::task55_migration::run_all_migrations(&mut c).unwrap();
 
             let doc = by_id(&c, &doc_id).unwrap();
             // After restore, we should be back to revision 1

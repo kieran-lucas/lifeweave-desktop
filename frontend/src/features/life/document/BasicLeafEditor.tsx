@@ -29,7 +29,7 @@ const AssetImage = Image.extend({
 const BasicLeafToolbar = lazy(() => import("./BasicLeafToolbar"));
 
 export const basicLeafExtensions = [
-  StarterKit.configure({ heading: { levels: [1, 2, 3] }, horizontalRule: false, strike: false, link: false }),
+  StarterKit.configure({ heading: { levels: [1, 2, 3] }, horizontalRule: false, link: false }),
   Link.configure({
     openOnClick: false,
     protocols: ["http", "https", "mailto"],

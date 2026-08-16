@@ -269,18 +269,22 @@ pub fn recover_draft(
 pub fn import_markdown(
     conn: &mut Connection,
     input: ImportReaderMarkdownInput,
-) -> Result<ReaderDocumentView, DocumentError> {
-    let json = markdown::import(&input.markdown)?;
-    save(
+) -> Result<MarkdownImportView, DocumentError> {
+    let imported = markdown::import_with_diagnostics(&input.markdown)?;
+    let document = save(
         conn,
         SaveReaderDocumentInput {
             document_id: input.document_id,
             expected_revision: input.expected_revision,
             schema_version: SCHEMA_VERSION,
-            canonical_json: json,
+            canonical_json: imported.canonical_json,
             operation_id: input.operation_id,
         },
-    )
+    )?;
+    Ok(MarkdownImportView {
+        document,
+        diagnostics: imported.diagnostics,
+    })
 }
 pub fn export_markdown(
     conn: &Connection,
@@ -404,6 +408,48 @@ mod tests {
                 .revision,
             2
         )
+    }
+
+    #[test]
+    fn markdown_import_commits_canonical_semantics_and_returns_fallback_diagnostics() {
+        let mut c = db();
+        let node = leaf_node(&mut c);
+        let document = create(
+            &mut c,
+            CreateReaderDocumentInput {
+                life_node_id: node,
+                operation_id: "markdown-create".into(),
+            },
+        )
+        .unwrap();
+        let imported = import_markdown(
+            &mut c,
+            ImportReaderMarkdownInput {
+                document_id: document.id,
+                expected_revision: document.revision,
+                markdown: "> **bold**\n\n1. one\n2. two\n\n- [x] checked".into(),
+                operation_id: "markdown-import".into(),
+            },
+        )
+        .unwrap();
+        assert_eq!(imported.document.revision, 1);
+        assert!(
+            imported
+                .document
+                .canonical_json
+                .contains("\"type\":\"bold\"")
+        );
+        assert_eq!(
+            imported
+                .document
+                .canonical_json
+                .matches("orderedList")
+                .count(),
+            1
+        );
+        assert!(imported.document.canonical_json.contains("☒ checked"));
+        assert_eq!(imported.diagnostics.len(), 1);
+        assert_eq!(imported.diagnostics[0].kind, "task_list");
     }
     #[test]
     fn branch_rejected_and_stale_draft_preserved() {

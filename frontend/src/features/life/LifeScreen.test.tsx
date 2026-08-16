@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import axe from "axe-core";
 
@@ -9,7 +10,7 @@ vi.mock("../../ipc/commands", () => ({
   getLifeBrowseProjection: api.browse,
   saveLifeNavigationPreference: api.savePreference,
 }));
-vi.mock("./LifeEditWorkspace", () => ({ LifeEditWorkspace: () => null }));
+vi.mock("./LifeEditWorkspace", () => ({ LifeEditWorkspace: ({ onOpenNode }: { onOpenNode: (id: string, isLeaf: boolean) => void }) => <><button onClick={() => onOpenNode("tree-branch", false)}>Mock tree branch</button><button onClick={() => onOpenNode("tree-leaf", true)}>Mock tree leaf</button></> }));
 vi.mock("./RelatedTasksPanel", () => ({ RelatedTasksPanel: () => null }));
 vi.mock("../tag/TagChipList", () => ({ TagChipList: () => null }));
 vi.mock("./links/LifeLinksPanel", () => ({ default: () => null }));
@@ -34,7 +35,16 @@ vi.mock("./document/BasicLeafReader", async () => {
   };
 });
 
-import { LifeScreen } from "./LifeScreen";
+import { LifeScreen, type LifeViewState } from "./LifeScreen";
+
+const rememberedView = { mode: "browse" as const, nodeId: null, readerId: null, page: 0 };
+const staticLifeProps = {
+  view: rememberedView,
+  onViewChange: vi.fn(),
+  onViewReplace: vi.fn(),
+  onBack: vi.fn(),
+  canHistoryBack: false,
+};
 
 const leaf = {
   id: "00000000-0000-7000-8000-000000000401",
@@ -72,7 +82,7 @@ describe("Life leaf contents control", () => {
   it("keeps Contents off by default and toggles the outline from the left navigator", async () => {
     const { container } = render(
       <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-        <LifeScreen anchorLocalDate="2026-08-11" />
+        <LifeScreen {...staticLifeProps} anchorLocalDate="2026-08-11" />
       </QueryClientProvider>,
     );
 
@@ -93,7 +103,7 @@ describe("Life leaf contents control", () => {
   it("keeps the leaf header minimal and related fields collapsed", async () => {
     const { container } = render(
       <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-        <LifeScreen anchorLocalDate="2026-08-11" />
+        <LifeScreen {...staticLifeProps} anchorLocalDate="2026-08-11" />
       </QueryClientProvider>,
     );
 
@@ -126,9 +136,28 @@ describe("Life leaf contents control", () => {
       viewport_anchor: null,
     });
 
+    function LifeHistoryHarness() {
+      const [entries, setEntries] = useState<LifeViewState[]>([{
+        mode: "browse" as const,
+        nodeId: branch.id,
+        readerId: null,
+        page: 0,
+      }]);
+      const view = entries.at(-1)!;
+      return <LifeScreen
+        key={`${view.mode}:${view.nodeId}:${view.readerId}:${view.page}`}
+        view={view}
+        onViewChange={(next) => setEntries((current) => [...current, next])}
+        onViewReplace={(next) => setEntries((current) => [...current.slice(0, -1), next])}
+        onBack={() => setEntries((current) => current.slice(0, -1))}
+        canHistoryBack={entries.length > 1}
+        anchorLocalDate="2026-08-11"
+      />;
+    }
+
     render(
       <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-        <LifeScreen anchorLocalDate="2026-08-11" />
+        <LifeHistoryHarness />
       </QueryClientProvider>,
     );
 
@@ -141,6 +170,76 @@ describe("Life leaf contents control", () => {
     expect(screen.getByRole("heading", { name: "Leaf one" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Go back in Life System" }));
     expect(screen.getByRole("heading", { name: "Branch" })).toBeInTheDocument();
+  });
+
+  it("delegates Life Back to WebView history when a prior snapshot exists", async () => {
+    const back = vi.fn();
+    const navigate = vi.fn();
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <LifeScreen
+          view={{ mode: "reader", nodeId: leaf.id, readerId: leaf.id, page: 0 }}
+          onViewChange={navigate}
+          onViewReplace={vi.fn()}
+          onBack={back}
+          canHistoryBack
+          anchorLocalDate="2026-08-11"
+        />
+      </QueryClientProvider>,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: "Go back in Life System" }));
+    expect(back).toHaveBeenCalledOnce();
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it("emits Tree as its own screen snapshot", async () => {
+    const branch = { ...leaf, id: "branch-tree", title: "Branch", is_leaf: false, child_count: 1 };
+    api.browse.mockResolvedValue({
+      root_id: "life-root",
+      selected: branch,
+      parent: null,
+      children: [],
+      breadcrumb: [branch],
+      selected_is_pinned: false,
+      child_page: 0,
+      child_page_count: 1,
+      tree_revision: 1,
+      resolved_from_fallback: false,
+      preferred_mode: "browse",
+      viewport_anchor: null,
+    });
+    const navigate = vi.fn();
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <LifeScreen
+          view={{ mode: "browse", nodeId: branch.id, readerId: null, page: 0 }}
+          onViewChange={navigate}
+          onViewReplace={vi.fn()}
+          onBack={vi.fn()}
+          canHistoryBack={false}
+          anchorLocalDate="2026-08-11"
+        />
+      </QueryClientProvider>,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: "Tree" }));
+    expect(navigate).toHaveBeenCalledWith({ mode: "tree", nodeId: branch.id, readerId: null, page: 0 });
+  });
+
+  it("routes direct Tree opens to Browse for branches and Reader for leaves", async () => {
+    const branch = { ...leaf, id: "branch-tree", title: "Branch", is_leaf: false, child_count: 1 };
+    api.browse.mockResolvedValue({
+      root_id: "life-root", selected: branch, parent: null, children: [], breadcrumb: [branch],
+      selected_is_pinned: false, child_page: 0, child_page_count: 1, tree_revision: 1,
+      resolved_from_fallback: false, preferred_mode: "edit", viewport_anchor: null,
+    });
+    const navigate = vi.fn();
+    render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><LifeScreen view={{ mode: "tree", nodeId: branch.id, readerId: null, page: 0 }} onViewChange={navigate} onViewReplace={vi.fn()} onBack={vi.fn()} canHistoryBack={false} anchorLocalDate="2026-08-11" /></QueryClientProvider>);
+    fireEvent.click(await screen.findByRole("button", { name: "Mock tree branch" }));
+    expect(navigate).toHaveBeenCalledWith({ mode: "browse", nodeId: "tree-branch", readerId: null, page: 0 });
+    fireEvent.click(screen.getByRole("button", { name: "Mock tree leaf" }));
+    expect(navigate).toHaveBeenCalledWith({ mode: "reader", nodeId: "tree-leaf", readerId: "tree-leaf", page: 0 });
   });
 
   it("contains Tree in a dedicated pan viewport without an outer Life canvas scroll region", async () => {
@@ -161,7 +260,7 @@ describe("Life leaf contents control", () => {
 
     const { container } = render(
       <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-        <LifeScreen anchorLocalDate="2026-08-11" />
+        <LifeScreen {...staticLifeProps} anchorLocalDate="2026-08-11" />
       </QueryClientProvider>,
     );
 

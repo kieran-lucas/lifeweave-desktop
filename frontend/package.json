@@ -31,11 +31,7 @@
     "d3-hierarchy": "3.1.2",
     "motion": "12.43.0",
     "react": "19.2.8",
-    "react-dom": "19.2.8",
-    "remark-gfm": "4.0.1",
-    "remark-parse": "11.0.0",
-    "remark-stringify": "11.0.0",
-    "unified": "11.0.5"
+    "react-dom": "19.2.8"
   },
   "devDependencies": {
     "@fluentui/svg-icons": "1.1.334",

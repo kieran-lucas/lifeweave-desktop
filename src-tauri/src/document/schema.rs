@@ -113,6 +113,20 @@ fn visit(
                 return Err(DocumentError::Validation("Callout variant is unsupported."));
             }
         }
+        "orderedList" => {
+            let raw_start = o.get("attrs").and_then(|attrs| attrs.get("start"));
+            let start = match raw_start {
+                Some(value) => value.as_u64().ok_or(DocumentError::Validation(
+                    "Ordered-list start is unsupported.",
+                ))?,
+                None => 1,
+            };
+            if start > 999_999_999 {
+                return Err(DocumentError::Validation(
+                    "Ordered-list start is unsupported.",
+                ));
+            }
+        }
         "image" => {
             let id = o
                 .get("attrs")
@@ -189,7 +203,7 @@ fn validate_marks(marks: Option<&Value>) -> Result<(), DocumentError> {
                 .as_object()
                 .ok_or(DocumentError::Validation("Text mark is invalid."))?;
             match o.get("type").and_then(Value::as_str) {
-                Some("bold" | "italic") => {}
+                Some("bold" | "italic" | "code" | "strike") => {}
                 Some("link") => {
                     let href = o
                         .get("attrs")
@@ -231,5 +245,15 @@ mod tests {
         ] {
             assert!(validate(raw).is_err());
         }
+    }
+
+    #[test]
+    fn accepts_additive_inline_code_strike_and_ordered_start() {
+        let raw = r#"{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"code","marks":[{"type":"code"}]},{"type":"text","text":"strike","marks":[{"type":"strike"}]}]},{"type":"orderedList","attrs":{"start":4},"content":[{"type":"listItem","content":[{"type":"paragraph","content":[{"type":"text","text":"four"}]}]}]}]}"#;
+        assert!(validate(raw).is_ok());
+        assert!(
+            validate(r#"{"type":"doc","content":[{"type":"orderedList","attrs":{"start":"4"}}]}"#)
+                .is_err()
+        );
     }
 }

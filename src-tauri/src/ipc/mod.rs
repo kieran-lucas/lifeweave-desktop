@@ -165,6 +165,8 @@ mod tests {
         SaveReaderDraftInput::export_all_to(&out).unwrap();
         ReaderDocumentIdInput::export_all_to(&out).unwrap();
         ImportReaderMarkdownInput::export_all_to(&out).unwrap();
+        MarkdownImportDiagnostic::export_all_to(&out).unwrap();
+        MarkdownImportView::export_all_to(&out).unwrap();
         MarkdownExportView::export_all_to(&out).unwrap();
         ImportDocumentAssetInput::export_all_to(&out).unwrap();
         DocumentAssetView::export_all_to(&out).unwrap();

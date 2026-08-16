@@ -158,6 +158,7 @@ pub struct EditLifeNodeMetadataInput {
     pub short_description: String,
     pub icon_key: String,
     pub theme_variant: String,
+    pub direction_confidence: String,
     pub expected_node_revision: i32,
 }
 
@@ -213,6 +214,7 @@ pub struct LifeEditNodeView {
     pub short_description: String,
     pub icon_key: String,
     pub theme_variant: String,
+    pub direction_confidence: String,
     pub sort_key: i32,
     pub depth: i32,
     pub child_count: i32,

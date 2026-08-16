@@ -53,25 +53,27 @@ const plan: FocusPlanDetailView = {
   archived: false,
 };
 
-function renderPlan() {
+function renderPlan(onViewChange = vi.fn(), onBack = vi.fn()) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return { ...render(
     <QueryClientProvider client={client}>
       <FocusPlansScreen
-        entryRequest={{ requestId: "request-1", planId: plan.id }}
-        onEntryRequestSettled={vi.fn()}
+        view={{ portfolio: "active", planId: plan.id }}
+        onViewChange={onViewChange}
+        onBack={onBack}
       />
     </QueryClientProvider>,
   ), client };
 }
 
-function renderLibrary() {
+function renderLibrary(onViewChange = vi.fn()) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return { ...render(
     <QueryClientProvider client={client}>
       <FocusPlansScreen
-        entryRequest={null}
-        onEntryRequestSettled={vi.fn()}
+        view={{ portfolio: "active", planId: null }}
+        onViewChange={onViewChange}
+        onBack={vi.fn()}
       />
     </QueryClientProvider>,
   ), client };
@@ -140,7 +142,7 @@ describe("Focus Plan detail composition", () => {
   });
 
   it("opens New plan directly in the full editor and persists only when submitted", async () => {
-    renderLibrary();
+    const library = renderLibrary();
     fireEvent.click(screen.getByRole("button", { name: "New plan" }));
 
     expect(screen.getByRole("heading", { level: 1, name: "New plan" })).toBeInTheDocument();
@@ -168,7 +170,8 @@ describe("Focus Plan detail composition", () => {
     }));
     await screen.findByRole("heading", { level: 1, name: plan.title });
 
-    fireEvent.click(screen.getByRole("button", { name: "Back to plans" }));
+    library.unmount();
+    renderLibrary();
     fireEvent.click(screen.getByRole("button", { name: "New plan" }));
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
     expect(screen.getByRole("heading", { level: 1, name: "Plans" })).toBeInTheDocument();
@@ -201,6 +204,69 @@ describe("Focus Plan detail composition", () => {
     expect(await screen.findByText(completed.title)).toBeInTheDocument();
     expect(screen.getByText(completed.title)).toHaveAttribute("data-completed");
     expect(api.list).toHaveBeenLastCalledWith({ portfolio: "completed", limit: 200, offset: 0 });
+  });
+
+  it("renders the chronological rail with dated and undated Plan markers", async () => {
+    const dated = {
+      id: plan.id,
+      title: plan.title,
+      lifecycle: "active" as const,
+      score: null,
+      start_date: "2026-08-01",
+      target_date: "2026-09-01",
+      life_node_id: null,
+      life_title: null,
+      selected_variant_label: "Primary approach",
+      active_variant_count: 1,
+      active_phase_count: 0,
+      tag_names: [],
+      revision: 3,
+      updated_at: plan.updated_at,
+      archived: false,
+    };
+    const undated = { ...dated, id: "plan-undated", title: "Keep the system calm", start_date: null, target_date: null };
+    api.list.mockResolvedValue([dated, undated]);
+
+    renderLibrary();
+
+    const chronology = await screen.findByRole("list", { name: "Active in chronological order" });
+    expect(within(chronology).getAllByRole("listitem")).toHaveLength(2);
+    expect(within(chronology).getByLabelText("Starts Aug 1, 2026")).toHaveAttribute("datetime", "2026-08-01");
+    expect(within(chronology).getByText("to Sep 1, 2026")).toBeInTheDocument();
+    expect(within(chronology).queryByText("Target Sep 1, 2026")).not.toBeInTheDocument();
+    expect(within(chronology).getByText("No date")).toBeInTheDocument();
+  });
+
+  it("emits the smallest meaningful Plans snapshots for detail and overview navigation", async () => {
+    const summary = {
+      id: plan.id,
+      title: plan.title,
+      lifecycle: "active" as const,
+      score: null,
+      start_date: plan.start_date,
+      target_date: plan.target_date,
+      life_node_id: null,
+      life_title: null,
+      selected_variant_label: "Primary approach",
+      active_variant_count: 1,
+      active_phase_count: 0,
+      tag_names: [],
+      revision: 3,
+      updated_at: plan.updated_at,
+      archived: false,
+    };
+    api.list.mockResolvedValue([summary]);
+    const navigateFromOverview = vi.fn();
+    const library = renderLibrary(navigateFromOverview);
+
+    fireEvent.click((await screen.findByText(plan.title)).closest("button")!);
+    expect(navigateFromOverview).toHaveBeenCalledWith({ portfolio: "active", planId: plan.id });
+    library.unmount();
+
+    const back = vi.fn();
+    renderPlan(vi.fn(), back);
+    fireEvent.click(await screen.findByRole("button", { name: "Back to previous screen" }));
+    expect(back).toHaveBeenCalledOnce();
   });
 
   it("marks active Plans clearly and moves a scored Plan to Completed", async () => {

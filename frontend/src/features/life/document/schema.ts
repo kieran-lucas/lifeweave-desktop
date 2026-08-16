@@ -1,4 +1,4 @@
-export type BasicLeafMark = { type: "bold" | "italic" | "link"; attrs?: { href?: string } };
+export type BasicLeafMark = { type: "bold" | "italic" | "code" | "strike" | "link"; attrs?: { href?: string } };
 export type BasicLeafNode = {
   type: string;
   text?: string;

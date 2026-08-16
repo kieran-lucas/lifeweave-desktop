@@ -247,7 +247,11 @@ pub fn list(conn: &Connection, input: &FocusPlanListInput) -> Result<Vec<FocusPl
          LEFT JOIN life_nodes ln ON ln.id=p.life_node_id
          WHERE ((?1='archived' AND p.archived_at IS NOT NULL)
             OR (?1!='archived' AND p.archived_at IS NULL AND p.lifecycle=?1))
-         ORDER BY p.updated_at DESC,p.id
+         ORDER BY
+            CASE WHEN p.start_date IS NULL AND p.target_date IS NULL THEN 1 ELSE 0 END,
+            COALESCE(p.start_date,p.target_date) ASC,
+            COALESCE(p.target_date,p.start_date) ASC,
+            p.updated_at DESC,p.id
          LIMIT ?2 OFFSET ?3",
     )?;
     let rows = statement.query_map(params![filter, limit, offset], |row| {
@@ -1169,6 +1173,45 @@ mod tests {
         assert_eq!(first.revision, 0);
         assert_eq!(first.variants.len(), 1);
         assert_eq!(first.selected_variant_id, first.variants[0].id);
+    }
+
+    #[test]
+    fn list_orders_plans_by_start_then_target_with_undated_last() {
+        let mut conn = connection();
+        let mut later = create_input("op-later");
+        later.title = "Later start".into();
+        later.start_date = Some("2026-09-01".into());
+        later.target_date = Some("2026-11-01".into());
+        create(&mut conn, later).unwrap();
+
+        let mut target_only = create_input("op-target-only");
+        target_only.title = "Earlier target".into();
+        target_only.start_date = None;
+        target_only.target_date = Some("2026-08-20".into());
+        create(&mut conn, target_only).unwrap();
+
+        let mut undated = create_input("op-undated");
+        undated.title = "Undated".into();
+        undated.start_date = None;
+        undated.target_date = None;
+        create(&mut conn, undated).unwrap();
+
+        let summaries = list(
+            &conn,
+            &FocusPlanListInput {
+                portfolio: FocusPlanPortfolio::Draft,
+                limit: None,
+                offset: None,
+            },
+        )
+        .unwrap();
+        assert_eq!(
+            summaries
+                .iter()
+                .map(|plan| plan.title.as_str())
+                .collect::<Vec<_>>(),
+            vec!["Earlier target", "Later start", "Undated"]
+        );
     }
 
     #[test]

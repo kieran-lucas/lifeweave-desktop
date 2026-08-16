@@ -1218,6 +1218,7 @@ pub(crate) mod harness {
     pub fn db() -> Connection {
         let mut conn = open_memory_connection().unwrap();
         run_all_migrations(&mut conn).unwrap();
+        conn.execute_batch("CREATE TABLE life_node_direction_confidence(node_id TEXT PRIMARY KEY NOT NULL REFERENCES life_nodes(id) ON DELETE CASCADE,level TEXT NOT NULL CHECK(level IN ('exploring','leaning','committed','core')),updated_at TEXT NOT NULL);").unwrap();
         conn
     }
 

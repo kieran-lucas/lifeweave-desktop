@@ -68,6 +68,24 @@ pub struct ImportReaderMarkdownInput {
     pub operation_id: String,
 }
 
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct MarkdownImportDiagnostic {
+    pub kind: String,
+    pub severity: String,
+    pub message: String,
+    pub line: u32,
+    pub column: u32,
+    pub fallback: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct MarkdownImportView {
+    pub document: ReaderDocumentView,
+    pub diagnostics: Vec<MarkdownImportDiagnostic>,
+}
+
 #[derive(Debug, Clone, Serialize)]
 #[cfg_attr(test, derive(ts_rs::TS))]
 pub struct MarkdownExportView {

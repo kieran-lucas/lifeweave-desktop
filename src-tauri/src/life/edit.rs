@@ -23,6 +23,8 @@ enum Before {
         description: String,
         icon: String,
         theme: String,
+        #[serde(default = "default_direction_confidence")]
+        direction_confidence: String,
     },
     Appearance {
         value: String,
@@ -36,6 +38,10 @@ enum Before {
         index: i32,
     },
     Expired,
+}
+
+fn default_direction_confidence() -> String {
+    "exploring".into()
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -127,7 +133,8 @@ fn edit_node(
                 (SELECT COUNT(*) FROM life_nodes c WHERE c.parent_id=n.id AND c.archived_at IS NULL),
                 EXISTS(SELECT 1 FROM reader_documents d WHERE d.life_node_id=n.id)
                   OR EXISTS(SELECT 1 FROM narrative_documents d WHERE d.life_node_id=n.id),
-                EXISTS(SELECT 1 FROM life_node_pins p WHERE p.node_id=n.id),n.revision
+                EXISTS(SELECT 1 FROM life_node_pins p WHERE p.node_id=n.id),n.revision,
+                COALESCE((SELECT level FROM life_node_direction_confidence d WHERE d.node_id=n.id),'exploring')
          FROM life_nodes n WHERE n.id=?1 AND (?2 OR n.archived_at IS NULL)",
         params![id, include_archived],
         |r| {
@@ -138,6 +145,7 @@ fn edit_node(
                 sort_key: r.get(6)?, depth: r.get(7)?, child_count: count,
                 is_leaf: count == 0, has_document: r.get(9)?, is_pinned: r.get(10)?,
                 revision: r.get(11)?,
+                direction_confidence: r.get(12)?,
                 tags: vec![],
             })
         },
@@ -259,7 +267,8 @@ pub fn projection(conn: &Connection) -> Result<LifeEditProjection, LifeError> {
     SELECT t.id,t.parent_id,t.title,t.short_description,t.icon_key,t.theme,t.sort_key,t.depth,COALESCE(c.count,0),
            EXISTS(SELECT 1 FROM reader_documents d WHERE d.life_node_id=t.id)
              OR EXISTS(SELECT 1 FROM narrative_documents d WHERE d.life_node_id=t.id),
-           EXISTS(SELECT 1 FROM life_node_pins p WHERE p.node_id=t.id),t.revision
+           EXISTS(SELECT 1 FROM life_node_pins p WHERE p.node_id=t.id),t.revision,
+           COALESCE((SELECT level FROM life_node_direction_confidence d WHERE d.node_id=t.id),'exploring')
       FROM tree t LEFT JOIN counts c ON c.parent_id=t.id ORDER BY t.path";
     let mut statement = conn.prepare(sql)?;
     let mut nodes = statement
@@ -279,12 +288,13 @@ pub fn projection(conn: &Connection) -> Result<LifeEditProjection, LifeError> {
                 has_document: r.get(9)?,
                 is_pinned: r.get(10)?,
                 revision: r.get(11)?,
+                direction_confidence: r.get(12)?,
                 tags: vec![],
             })
         })?
         .collect::<Result<Vec<_>, _>>()?;
     let mut archived_statement = conn.prepare(
-        "WITH RECURSIVE all_nodes(id,parent_id,depth) AS (SELECT id,parent_id,0 FROM life_nodes WHERE parent_id IS NULL UNION ALL SELECT n.id,n.parent_id,a.depth+1 FROM life_nodes n JOIN all_nodes a ON n.parent_id=a.id WHERE a.depth<4096), counts AS (SELECT parent_id,COUNT(*) count FROM life_nodes WHERE archived_at IS NULL GROUP BY parent_id) SELECT n.id,n.parent_id,n.title,n.short_description,n.icon_key,n.branch_theme_id,n.sort_key,a.depth,COALESCE(c.count,0),EXISTS(SELECT 1 FROM reader_documents d WHERE d.life_node_id=n.id) OR EXISTS(SELECT 1 FROM narrative_documents d WHERE d.life_node_id=n.id),EXISTS(SELECT 1 FROM life_node_pins p WHERE p.node_id=n.id),n.revision FROM life_nodes n JOIN all_nodes a ON a.id=n.id LEFT JOIN counts c ON c.parent_id=n.id WHERE n.archived_at IS NOT NULL ORDER BY a.depth,n.sort_key,n.id",
+        "WITH RECURSIVE all_nodes(id,parent_id,depth) AS (SELECT id,parent_id,0 FROM life_nodes WHERE parent_id IS NULL UNION ALL SELECT n.id,n.parent_id,a.depth+1 FROM life_nodes n JOIN all_nodes a ON n.parent_id=a.id WHERE a.depth<4096), counts AS (SELECT parent_id,COUNT(*) count FROM life_nodes WHERE archived_at IS NULL GROUP BY parent_id) SELECT n.id,n.parent_id,n.title,n.short_description,n.icon_key,n.branch_theme_id,n.sort_key,a.depth,COALESCE(c.count,0),EXISTS(SELECT 1 FROM reader_documents d WHERE d.life_node_id=n.id) OR EXISTS(SELECT 1 FROM narrative_documents d WHERE d.life_node_id=n.id),EXISTS(SELECT 1 FROM life_node_pins p WHERE p.node_id=n.id),n.revision,COALESCE((SELECT level FROM life_node_direction_confidence d WHERE d.node_id=n.id),'exploring') FROM life_nodes n JOIN all_nodes a ON a.id=n.id LEFT JOIN counts c ON c.parent_id=n.id WHERE n.archived_at IS NOT NULL ORDER BY a.depth,n.sort_key,n.id",
     )?;
     let mut archived_nodes = archived_statement
         .query_map([], |r| {
@@ -303,6 +313,7 @@ pub fn projection(conn: &Connection) -> Result<LifeEditProjection, LifeError> {
                 has_document: r.get(9)?,
                 is_pinned: r.get(10)?,
                 revision: r.get(11)?,
+                direction_confidence: r.get(12)?,
                 tags: vec![],
             })
         })?
@@ -450,6 +461,7 @@ pub fn metadata(
         || !domain::valid_description(&input.short_description)
         || !domain::valid_icon(&input.icon_key)
         || !domain::valid_theme(&input.theme_variant)
+        || !domain::valid_direction_confidence(&input.direction_confidence)
     {
         return Err(LifeError::Validation("Choose valid Life node details."));
     }
@@ -461,17 +473,22 @@ pub fn metadata(
     let tx = conn.transaction()?;
     check_node(&tx, &input.node_id, input.expected_node_revision, true)?;
     let old = tx.query_row(
-        "SELECT short_description,icon_key,branch_theme_id FROM life_nodes WHERE id=?1",
+        "SELECT short_description,icon_key,branch_theme_id,COALESCE((SELECT level FROM life_node_direction_confidence d WHERE d.node_id=life_nodes.id),'exploring') FROM life_nodes WHERE id=?1",
         params![input.node_id],
         |r| {
             Ok(Before::Metadata {
                 description: r.get(0)?,
                 icon: r.get(1)?,
                 theme: r.get(2)?,
+                direction_confidence: r.get(3)?,
             })
         },
     )?;
     tx.execute("UPDATE life_nodes SET short_description=?1,icon_key=?2,branch_theme_id=?3,updated_at=?4,revision=revision+1 WHERE id=?5",params![input.short_description,input.icon_key,input.theme_variant,now(),input.node_id])?;
+    tx.execute(
+        "INSERT INTO life_node_direction_confidence(node_id,level,updated_at) VALUES(?1,?2,?3) ON CONFLICT(node_id) DO UPDATE SET level=excluded.level,updated_at=excluded.updated_at",
+        params![input.node_id, input.direction_confidence, now()],
+    )?;
     let revision = finish(&tx, &input.context, "summary", &input.node_id, &old, &hash)?;
     tx.commit()?;
     result(
@@ -877,9 +894,14 @@ pub fn undo(
                 description,
                 icon,
                 theme,
+                direction_confidence,
             },
         ) => {
             tx.execute("UPDATE life_nodes SET short_description=?1,icon_key=?2,branch_theme_id=?3,updated_at=?4,revision=revision+1 WHERE id=?5",params![description,icon,theme,time,target])?;
+            tx.execute(
+                "INSERT INTO life_node_direction_confidence(node_id,level,updated_at) VALUES(?1,?2,?3) ON CONFLICT(node_id) DO UPDATE SET level=excluded.level,updated_at=excluded.updated_at",
+                params![target, direction_confidence, time],
+            )?;
         }
         ("icon", Before::Appearance { value }) => {
             tx.execute(
@@ -936,8 +958,14 @@ mod tests {
     use super::*;
     use crate::infrastructure::sqlite::{
         connection::{open_file_connection, open_memory_connection},
-        migrations::{current_schema_version, run_migrations},
+        migrations::{current_schema_version, run_migrations as run_base_migrations},
     };
+
+    fn run_migrations(conn: &mut Connection) -> Result<(), crate::infrastructure::sqlite::DbError> {
+        run_base_migrations(conn)?;
+        conn.execute_batch("CREATE TABLE IF NOT EXISTS life_node_direction_confidence(node_id TEXT PRIMARY KEY NOT NULL REFERENCES life_nodes(id) ON DELETE CASCADE,level TEXT NOT NULL CHECK(level IN ('exploring','leaning','committed','core')),updated_at TEXT NOT NULL);")?;
+        Ok(())
+    }
 
     fn db() -> Connection {
         let mut c = open_memory_connection().unwrap();
@@ -1060,11 +1088,18 @@ mod tests {
                 short_description: "Changed".into(),
                 icon_key: "life-focus".into(),
                 theme_variant: "violet".into(),
+                direction_confidence: "committed".into(),
                 expected_node_revision: current.revision,
             },
         )
         .unwrap();
         assert_eq!(changed.node.icon_key, "life-focus");
+        assert_eq!(
+            edit_node(&c, &current.id, false)
+                .unwrap()
+                .direction_confidence,
+            "committed"
+        );
         undo(
             &mut c,
             UndoLifeOperationInput {
@@ -1076,6 +1111,7 @@ mod tests {
         let restored = edit_node(&c, &current.id, false).unwrap();
         assert_eq!(restored.short_description, "About Draft");
         assert_eq!(restored.icon_key, "life-branch");
+        assert_eq!(restored.direction_confidence, "exploring");
     }
 
     #[test]

@@ -306,7 +306,7 @@ fn verify_package(directory: &Path, expected: &BackupManifest) -> Result<(), Bac
     super::restore::validate_candidate(
         &database,
         &reopened,
-        crate::infrastructure::sqlite::task54_migration::max_supported_schema_version(),
+        crate::infrastructure::sqlite::task55_migration::max_supported_schema_version(),
     )?;
     for asset in &reopened.assets {
         let path = directory.join(&asset.relative_path);
@@ -442,7 +442,7 @@ fn compatibility_for(format_version: u32, schema_version: u32) -> BackupCompatib
     if format_version > SUPPORTED_FORMAT_VERSION {
         return BackupCompatibility::NewerFormat;
     }
-    let current = crate::infrastructure::sqlite::task54_migration::max_supported_schema_version();
+    let current = crate::infrastructure::sqlite::task55_migration::max_supported_schema_version();
     match schema_version.cmp(&current) {
         std::cmp::Ordering::Equal => BackupCompatibility::Ready,
         std::cmp::Ordering::Less => BackupCompatibility::MigrationRequired,
@@ -700,7 +700,7 @@ mod tests {
     fn make_current_file_runtime() -> (DatabaseRuntime, PathBuf) {
         let p = temp_db_path();
         let mut conn = open_file_connection(&p).unwrap();
-        crate::infrastructure::sqlite::task54_migration::run_all_migrations(&mut conn).unwrap();
+        crate::infrastructure::sqlite::task55_migration::run_all_migrations(&mut conn).unwrap();
         let worker = DbWorkerHandle::spawn(conn);
         let rt = DatabaseRuntime::new(p.clone(), worker);
         (rt, p)
@@ -1017,8 +1017,12 @@ mod tests {
             compatibility_for(1, 28),
             BackupCompatibility::MigrationRequired
         );
-        assert_eq!(compatibility_for(2, 31), BackupCompatibility::Ready);
-        assert_eq!(compatibility_for(2, 32), BackupCompatibility::NewerSchema);
+        assert_eq!(
+            compatibility_for(2, 31),
+            BackupCompatibility::MigrationRequired
+        );
+        assert_eq!(compatibility_for(2, 32), BackupCompatibility::Ready);
+        assert_eq!(compatibility_for(2, 33), BackupCompatibility::NewerSchema);
         assert_eq!(compatibility_for(3, 1), BackupCompatibility::NewerFormat);
 
         let (runtime, _) = make_current_file_runtime();
@@ -1159,7 +1163,7 @@ mod tests {
             );
         }
         let newer_schema = clone_package(&source, &root, 5_000, "2026-06-01T00:00:00Z");
-        set_package_schema(&newer_schema, 32);
+        set_package_schema(&newer_schema, 33);
         let newer_format = clone_package(&source, &root, 6_000, "2026-06-02T00:00:00Z");
         let mut manifest = BackupManifest::read_from_dir(&newer_format).unwrap();
         manifest.format_version = 3;
@@ -1262,7 +1266,7 @@ mod tests {
         assert_eq!(result.backup.format_version, 2);
         assert_eq!(
             result.backup.schema_version,
-            crate::infrastructure::sqlite::task54_migration::TASK54_SCHEMA_VERSION
+            crate::infrastructure::sqlite::task55_migration::TASK55_SCHEMA_VERSION
         );
         assert_eq!(result.backup.compatibility, BackupCompatibility::Ready);
         assert_eq!(result.pruned_backup_count, 0);

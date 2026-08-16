@@ -107,23 +107,154 @@ globalStyle(`${portfolioNav} > button:focus-visible`, { outline: "2px solid #111
 export const planCollection = style({
   display: "grid",
   minInlineSize: 0,
-  borderBlockStart: "1px solid #E4E4E4",
+  margin: 0,
+  padding: 0,
+  listStyle: "none",
 });
 
 export const planRow = style({
   display: "grid",
+  gridTemplateColumns: "116px minmax(0, 1fr)",
+  alignItems: "stretch",
+  minBlockSize: 76,
+  padding: 0,
+  background: "transparent",
+  color: vars.color.textPrimary,
+  "@media": { "(max-width: 620px)": { gridTemplateColumns: "92px minmax(0, 1fr)" } },
+});
+
+export const timeMarker = style({
+  position: "relative",
+  zIndex: 0,
+  display: "grid",
+  gridTemplateColumns: "28px 1fr",
+  gridTemplateRows: "auto auto",
+  alignContent: "center",
+  alignItems: "baseline",
+  gap: "0 6px",
+  minInlineSize: 0,
+  padding: "14px 14px 10px 0",
+  color: vars.color.textSecondary,
+  fontVariantNumeric: "tabular-nums",
+  selectors: {
+    "&::before": {
+      content: '""',
+      position: "absolute",
+      zIndex: -1,
+      insetBlock: 0,
+      insetInlineEnd: 6,
+      inlineSize: 1,
+      background: vars.color.borderHairline,
+    },
+    "&::after": {
+      content: '""',
+      position: "absolute",
+      insetBlockStart: "50%",
+      insetInlineEnd: 2,
+      inlineSize: 7,
+      blockSize: 7,
+      border: `2px solid ${vars.color.canvas}`,
+      borderRadius: vars.radius.full,
+      background: vars.color.textTertiary,
+      transform: "translateY(-50%)",
+      boxShadow: `0 0 0 1px ${vars.color.borderStrong}`,
+    },
+  },
+  "@media": {
+    "(max-width: 620px)": { gridTemplateColumns: "24px 1fr", gap: "0 4px", paddingInlineEnd: 12 },
+    "(forced-colors: active)": {
+      selectors: {
+        "&::before": { background: "CanvasText" },
+        "&::after": { borderColor: "Canvas", background: "CanvasText", boxShadow: "0 0 0 1px CanvasText" },
+      },
+    },
+  },
+});
+globalStyle(`${timeMarker} > time`, { display: "contents" });
+globalStyle(`${timeMarker} > time > strong`, {
+  gridColumn: 1,
+  gridRow: "1 / span 2",
+  color: vars.color.textPrimary,
+  fontSize: 20,
+  lineHeight: "22px",
+  fontWeight: 720,
+  letterSpacing: "-.04em",
+});
+globalStyle(`${timeMarker} > time > span`, {
+  gridColumn: 2,
+  gridRow: 1,
+  position: "relative",
+  insetBlockStart: 0,
+  alignSelf: "start",
+  color: vars.color.textPrimary,
+  fontSize: 10,
+  lineHeight: "12px",
+  fontWeight: 760,
+  letterSpacing: ".07em",
+  textTransform: "uppercase",
+});
+globalStyle(`${timeMarker} > time > small`, {
+  gridColumn: 2,
+  gridRow: 2,
+  position: "relative",
+  insetBlockStart: -1,
+  alignSelf: "start",
+  color: vars.color.textTertiary,
+  fontSize: 9,
+  lineHeight: "11px",
+  fontWeight: 620,
+});
+
+export const timeKind = style({
+  position: "absolute",
+  insetBlockStart: 4,
+  insetInlineStart: 0,
+  color: vars.color.textTertiary,
+  fontSize: 8,
+  lineHeight: "10px",
+  fontWeight: 720,
+  letterSpacing: ".08em",
+  textTransform: "uppercase",
+});
+
+export const timeTarget = style({
+  gridColumn: "1 / span 2",
+  marginBlockStart: 5,
+  overflow: "hidden",
+  color: vars.color.textSecondary,
+  fontSize: 10.5,
+  lineHeight: "13px",
+  fontWeight: 720,
+  letterSpacing: "-.01em",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+});
+
+export const unscheduledMarker = style({
+  gridColumn: "1 / span 2",
+  color: vars.color.textTertiary,
+  fontSize: 9,
+  lineHeight: "12px",
+  fontWeight: 680,
+  letterSpacing: ".05em",
+  textTransform: "uppercase",
+});
+
+export const planSurface = style({
+  display: "grid",
   gridTemplateColumns: "minmax(0, 1fr) 42px",
   alignItems: "center",
   gap: 8,
-  minBlockSize: 56,
+  minInlineSize: 0,
+  marginBlock: 4,
   padding: "4px 2px 4px 0",
-  borderBlockEnd: "1px solid #E4E4E4",
+  borderBlockEnd: `1px solid ${vars.color.borderHairline}`,
   background: "transparent",
-  color: "#111111",
   transition: `background-color ${duration.state} ${easing.standard}`,
   selectors: {
-    "&:hover": { background: "#F7F7F7" },
+    "&:hover": { background: vars.color.surfaceHover },
   },
+  "@media": { "(prefers-reduced-motion: reduce)": { transition: "none" } },
 });
 
 export const planOpen = style({

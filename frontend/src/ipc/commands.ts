@@ -82,6 +82,7 @@ import type { SaveReaderDocumentInput } from "./generated/SaveReaderDocumentInpu
 import type { SaveReaderDraftInput } from "./generated/SaveReaderDraftInput";
 import type { ReaderDocumentIdInput } from "./generated/ReaderDocumentIdInput";
 import type { ImportReaderMarkdownInput } from "./generated/ImportReaderMarkdownInput";
+import type { MarkdownImportView } from "./generated/MarkdownImportView";
 import type { MarkdownExportView } from "./generated/MarkdownExportView";
 import type { ImportDocumentAssetInput } from "./generated/ImportDocumentAssetInput";
 import type { DocumentAssetView } from "./generated/DocumentAssetView";
@@ -278,7 +279,7 @@ export const saveReaderDocument = (input: SaveReaderDocumentInput) => invoke<Rea
 export const saveReaderDraft = (input: SaveReaderDraftInput) => invoke<ReaderDocumentProjection>("save_reader_draft", { input });
 export const discardReaderDraft = (input: ReaderDocumentIdInput) => invoke<ReaderDocumentProjection>("discard_reader_draft", { input });
 export const recoverReaderDraft = (input: ReaderDocumentIdInput) => invoke<ReaderDocumentView>("recover_reader_draft", { input });
-export const importReaderMarkdown = (input: ImportReaderMarkdownInput) => invoke<ReaderDocumentView>("import_reader_markdown", { input });
+export const importReaderMarkdown = (input: ImportReaderMarkdownInput) => invoke<MarkdownImportView>("import_reader_markdown", { input });
 export const exportReaderMarkdown = (input: ReaderDocumentIdInput) => invoke<MarkdownExportView>("export_reader_markdown", { input });
 export const importDocumentAsset = (input: ImportDocumentAssetInput) => invoke<DocumentAssetView>("import_document_asset", { input });
 export const getDocumentAsset = (input: DocumentAssetIdInput) => invoke<DocumentAssetBytes>("get_document_asset", { input });

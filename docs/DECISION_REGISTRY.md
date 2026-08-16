@@ -8,10 +8,12 @@ The immutable source is authoritative. This registry makes operational status vi
 - No account, server, collaboration, hidden telemetry, or default cloud dependency.
 - Task-first navigation; Today default. Activating the Today destination always returns the viewed
   date to the current local day.
-- Top-level destinations and the Settings Analytics subpage participate in the WebView session
-  history. Sidebar, shortcut and cross-surface navigation push one route entry; browser Back/Forward
-  (including mouse navigation buttons) restore the prior route and its viewed Today date without
-  persisting history outside the current window session.
+- Meaningful screen snapshots participate in the WebView session history. This includes top-level
+  destinations, Settings Analytics, Focus Plan portfolios and detail, plus Life Browse, Tree and
+  Reader identity with its branch context and child page. Sidebar, shortcut, intra-surface and
+  cross-surface navigation push one entry only when the effective snapshot changes; browser
+  Back/Forward (including mouse navigation buttons) restore the exact prior snapshot without
+  persisting history outside the current window session. See ADR 0049.
 - Productive application chrome uses the self-hosted Be Vietnam Pro family at 400/500/600/700 with
   Latin and Vietnamese subsets; authored Reader/editor content retains Literata. Route changes use
   directional horizontal continuity, Life canvas changes use bounded traversal, and every enabled
@@ -48,6 +50,12 @@ The immutable source is authoritative. This registry makes operational status vi
 - Life's session Back restores the immediately preceding Life state. In particular, navigating from
   one leaf Reader directly to another records the first Reader state, so Back returns to that leaf
   before returning to its containing branch.
+- Every Life node has one manual direction-confidence level: Exploring, Leaning, Committed, or Core.
+  It is a non-inherited statement of present commitment, never progress, probability, health, or a
+  computed score. Tree cards expose text plus a redundant ordinal mark; Edit node owns the choice.
+  Double-click opens a branch in Browse or a leaf in Reader through the ordinary session-history
+  authority, with Enter as keyboard parity while single-click retains contextual actions. Schema 32
+  persists explicit values; missing and package-imported values project as Exploring. See ADR 0050.
 - Schema 29 converges the canonical Life Focus System to exactly 53 stable identities: one root,
   four English-only domains, twelve English-only sections, and thirty-six English-only leaves.
   Finance is a child of Security. Every canonical node has a semantic local icon; existing leaf
@@ -237,6 +245,12 @@ The immutable source is authoritative. This registry makes operational status vi
   prohibited, unstarted, unallocated, and unrecommended.
 
 ## LOCKED — Technology direction
+
+- Markdown import uses one exact-pinned Rust CommonMark/GFM authority over raw UTF-8 source for
+  both Basic Leaf and Narrative Canvas. Core formatting maps to canonical nodes/marks; bounded
+  unsupported structural metadata uses explicit line/column diagnostics and readable fallbacks,
+  never silent data loss. Embedded HTML, executable/MDX modules, unsafe links, and non-local image
+  targets remain rejected before commit. See ADR 0051.
 
 - Tauri 2; React UI + Rust application core; TypeScript strict; Vite 8.
 - `rusqlite` bundled, dedicated DB worker, forward-only migration.

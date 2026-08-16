@@ -123,7 +123,7 @@ export const nodeCard = style([
   focusRing,
   {
     inlineSize: "100%",
-    minBlockSize: 62,
+    minBlockSize: 64,
     display: "grid",
     gridTemplateColumns: "28px minmax(0,1fr)",
     alignItems: "center",
@@ -158,9 +158,44 @@ export const nodeIcon = style({
   fontSize: 18,
   lineHeight: 1,
 });
+export const nodeContent = style({ minInlineSize: 0, display: "grid", gap: 3 });
+export const nodeMetaRow = style({ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6, minInlineSize: 0 });
 export const compactTitle = style({ display: "block", whiteSpace: "normal", overflowWrap: "anywhere", fontSize: 11, lineHeight: "15px", fontWeight: 680 });
-export const compactMeta = style({ display: "block", marginBlockStart: 2, color: "#8B8B8B", fontSize: 8, lineHeight: "11px" });
+export const compactMeta = style({ display: "block", color: "#8B8B8B", fontSize: 8, lineHeight: "11px" });
 globalStyle(`${nodeCard}[aria-pressed="true"] ${compactMeta}`, { color: vars.color.textSecondary });
+
+export const confidenceBadge = style({
+  flex: "0 0 auto",
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 4,
+  minBlockSize: 15,
+  paddingInline: 5,
+  border: `1px solid ${vars.color.borderHairline}`,
+  borderRadius: vars.radius.full,
+  background: vars.color.surfaceSubtle,
+  color: vars.color.textSecondary,
+  fontSize: 8,
+  lineHeight: "13px",
+  fontWeight: 720,
+  letterSpacing: ".01em",
+  selectors: {
+    '&[data-level="leaning"]': { borderColor: vars.color.accentMuted, color: vars.color.accent },
+    '&[data-level="committed"]': { borderColor: vars.color.success, color: vars.color.textPrimary },
+    '&[data-level="core"]': { borderColor: vars.color.accent, background: vars.color.accentSoft, color: vars.color.textPrimary },
+  },
+  "@media": { "(forced-colors: active)": { borderColor: "CanvasText", background: "Canvas", color: "CanvasText" } },
+});
+export const confidenceMark = style({ display: "inline-flex", alignItems: "end", gap: 1, blockSize: 7 });
+export const confidencePip = style({
+  display: "block",
+  inlineSize: 2,
+  blockSize: 7,
+  borderRadius: 1,
+  background: "currentColor",
+  opacity: .2,
+  selectors: { '&[data-active="true"]': { opacity: 1 } },
+});
 
 export const inspector = style({
   position: "absolute",
@@ -196,6 +231,53 @@ export const instructions = style({ margin: "3px 0 0", color: "#838383", fontSiz
 export const editorSection = style({ display: "grid", gap: 12, paddingBlock: "15px 5px" });
 export const fieldGrid = style({ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: 10, "@media": { "(max-width: 420px)": { gridTemplateColumns: "1fr" } } });
 export const field = style({ display: "grid", gap: 6, color: "#5F5F5F", fontSize: 12, lineHeight: "16px", fontWeight: 690, letterSpacing: ".01em" });
+export const confidenceFieldset = style({
+  display: "grid",
+  gap: 7,
+  margin: 0,
+  padding: 0,
+  border: 0,
+  color: vars.color.textSecondary,
+  fontSize: 11,
+  lineHeight: "15px",
+});
+export const confidenceLegend = style({ padding: 0, color: vars.color.textPrimary, fontSize: 12, lineHeight: "16px", fontWeight: 720 });
+export const confidenceHelp = style({ margin: 0 });
+export const confidenceOptions = style({ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 7, "@media": { "(max-width: 420px)": { gridTemplateColumns: "1fr" } } });
+export const confidenceOption = style({
+  minInlineSize: 0,
+  display: "grid",
+  gridTemplateColumns: "auto 24px minmax(0,1fr)",
+  alignItems: "start",
+  gap: 7,
+  padding: 8,
+  border: `1px solid ${vars.color.borderHairline}`,
+  borderRadius: 9,
+  background: vars.color.surface,
+  color: vars.color.textSecondary,
+  cursor: "pointer",
+  transition: `border-color ${duration.state} ${easing.standard}, background-color ${duration.state} ${easing.standard}`,
+  selectors: {
+    '&[data-selected="true"]': { borderColor: vars.color.accent, background: vars.color.accentSoft, color: vars.color.textPrimary },
+    "&:hover": { borderColor: vars.color.borderStrong },
+    "&:focus-within": { outline: `2px solid ${vars.color.accent}`, outlineOffset: 2 },
+  },
+  "@media": { "(prefers-reduced-motion: reduce)": { transition: "none" }, "(forced-colors: active)": { selectors: { '&[data-selected="true"]': { borderColor: "Highlight", background: "Canvas", color: "CanvasText" } } } },
+});
+export const confidenceRadio = style({ margin: "3px 0 0", accentColor: vars.color.accent });
+export const confidenceOptionTitle = style({ display: "block", color: "inherit", fontSize: 11, lineHeight: "15px" });
+export const confidenceOptionDescription = style({ display: "block", marginBlockStart: 2, color: vars.color.textSecondary, fontSize: 9, lineHeight: "13px", fontWeight: 500 });
+export const confidenceOptionMark = style({
+  inlineSize: 22,
+  blockSize: 22,
+  display: "grid",
+  placeItems: "center",
+  borderRadius: vars.radius.full,
+  background: vars.color.surfaceSubtle,
+  color: vars.color.textPrimary,
+  fontSize: 10,
+  fontWeight: 760,
+});
 export const input = style([
   focusRing,
   {
