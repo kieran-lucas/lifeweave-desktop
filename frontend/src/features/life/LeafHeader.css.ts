@@ -214,8 +214,8 @@ export const state = style({
 });
 
 /**
- * Give the label the same 20px alignment box as the meter. The one-pixel optical correction counters
- * the UI font's uppercase ascent on Windows without moving the badge or disturbing the meter grid.
+ * Give the label the same 20px alignment box as the meter. A two-pixel optical correction aligns
+ * the visible glyph bottom with the meter's solid baseline on Windows without disturbing its grid.
  */
 export const stateLabel = style({
   boxSizing: "border-box",
@@ -224,7 +224,7 @@ export const stateLabel = style({
   blockSize: 20,
   lineHeight: "11px",
   position: "relative",
-  top: 1,
+  top: 2,
 });
 
 /**
