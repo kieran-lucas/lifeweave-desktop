@@ -135,10 +135,10 @@ export const subtitle = style({
   textWrap: "balance",
 });
 
-/** The badge settles in as the page arrives: a short rise, never a slide across the corner. */
+/** The badge settles in after the page: a small rise and micro-scale, with no competing bounce. */
 const badgeSettle = keyframes({
-  from: { opacity: 0, transform: "translateY(5px)" },
-  to: { opacity: 1, transform: "translateY(0)" },
+  from: { opacity: 0, transform: "translateY(4px) scale(.985)" },
+  to: { opacity: 1, transform: "translateY(0) scale(1)" },
 });
 
 /** Reduced motion keeps the arrival, drops the movement. */
@@ -147,10 +147,11 @@ const badgeFade = keyframes({
   to: { opacity: 1 },
 });
 
-/** Each filled step lands after the one before it, so the mark reads as a level being counted out. */
+/** Each filled step resolves with a restrained overshoot, then settles into the level mark. */
 const pipLand = keyframes({
-  from: { opacity: 0, transform: "scale(.35)" },
-  to: { opacity: 1, transform: "scale(1)" },
+  "0%": { opacity: 0, transform: "scale(.45)" },
+  "68%": { opacity: 1, transform: "scale(1.12)" },
+  "100%": { opacity: 1, transform: "scale(1)" },
 });
 
 /**
@@ -190,7 +191,6 @@ export const state = style({
     '&[data-level="committed"]': { borderColor: vars.color.borderStrong, color: vars.color.textPrimary },
     '&[data-level="core"]': {
       borderColor: vars.color.borderStrong,
-      background: vars.color.surfaceHover,
       color: vars.color.textPrimary,
       fontWeight: 700,
     },
@@ -228,9 +228,9 @@ export const statePip = style({
       animation: `${pipLand} ${duration.check} ${easing.standard} both`,
     },
     '&[data-active="true"]:nth-child(1)': { animationDelay: "130ms" },
-    '&[data-active="true"]:nth-child(2)': { animationDelay: "170ms" },
-    '&[data-active="true"]:nth-child(3)': { animationDelay: "210ms" },
-    '&[data-active="true"]:nth-child(4)': { animationDelay: "250ms" },
+    '&[data-active="true"]:nth-child(2)': { animationDelay: "180ms" },
+    '&[data-active="true"]:nth-child(3)': { animationDelay: "230ms" },
+    '&[data-active="true"]:nth-child(4)': { animationDelay: "280ms" },
   },
   "@media": {
     "(prefers-reduced-motion: reduce)": {
