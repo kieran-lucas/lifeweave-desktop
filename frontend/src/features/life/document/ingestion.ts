@@ -38,6 +38,29 @@ export function isLocalAssetImage(attrs: Record<string, unknown>): boolean {
   return source === undefined || source === null || source === `asset:${assetId}`;
 }
 
+/**
+ * How many pictures in a clipboard fragment have no local asset behind them.
+ *
+ * These never become nodes: the image rule matches `img[data-asset-id]` only, so ProseMirror
+ * discards them while parsing and the repair pass — which runs afterwards — never sees them.
+ * Counting them here, before parsing, is the only point at which they still exist.
+ *
+ * An `img` that does carry the attribute is left to the repair pass, whether or not the
+ * identity is valid, so no image is reported twice.
+ *
+ * The fragment is parsed into an inert document rather than assigned as markup: it is never
+ * attached to the page, so nothing in it loads, runs, or is fetched.
+ */
+export function countForeignImages(html: string): number {
+  if (!html.includes("<img")) return 0;
+  const parsed = new DOMParser().parseFromString(html, "text/html");
+  let foreign = 0;
+  parsed.querySelectorAll("img").forEach(image => {
+    if (!image.hasAttribute("data-asset-id")) foreign += 1;
+  });
+  return foreign;
+}
+
 export function isSupportedMath(kind: string, source: unknown): source is string {
   if (typeof source !== "string") return false;
   if (source.length === 0 || source.length > MAX_MATH_SOURCE) return false;
@@ -127,9 +150,11 @@ export function repairSlice(slice: Slice): { slice: Slice; report: IngestionRepo
 
 export function reportMessage(report: IngestionReport): string | undefined {
   const parts: string[] = [];
+  // A picture with no `data-asset-id` at all never reaches this pass — it is counted by
+  // `countForeignImages` before parsing. What lands here names an asset that does not exist.
   if (report.droppedImages > 0) {
     parts.push(
-      `${report.droppedImages} pasted image${report.droppedImages === 1 ? " was" : "s were"} not kept; use Add image so the file is stored locally`,
+      `${report.droppedImages} image${report.droppedImages === 1 ? "" : "s"} named a file that is not in this document's store and could not be kept`,
     );
   }
   if (report.droppedMath > 0) parts.push(`${report.droppedMath} formula could not be stored`);

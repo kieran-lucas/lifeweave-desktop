@@ -122,9 +122,11 @@ a setext heading and a file's configuration silently became a heading in its pro
 
 ### Mermaid is deferred on repository evidence, not on preference
 
-19. Mermaid's render API returns an SVG **string** that the caller must insert into the
-    document. `scripts/verify_security.py` fails the build if the frontend contains
-    `innerHTML` or the React equivalent, so there is no supported way to place that output.
+19. *(Superseded by decision 29 below: this reasoning was too strong. It rules out one
+    integration, not every integration.)* Mermaid's render API returns an SVG **string**
+    that the caller must insert into the document. `scripts/verify_security.py` fails the
+    build if the frontend contains `innerHTML` or the React equivalent, so there is no
+    supported way to place that output.
     Mermaid additionally injects a `<style>` element into the SVG it generates and sets
     inline style attributes on its nodes; both are subject to `style-src`, which this app
     declares as `'self'` with no `'unsafe-inline'` — and the same script fails the build if
@@ -176,3 +178,140 @@ a setext heading and a file's configuration silently became a heading in its pro
 - **Full footnote nodes in the schema**: real linked footnotes need reference identity,
   duplicate and missing-label handling and navigation semantics. Preserving the author's text
   exactly costs nothing and loses only the link, which is disclosed.
+
+## Closure pass — what tracing the running system found
+
+The decisions above were sound; three of the things built on them were not. A second pass
+traced the runtime paths rather than the code's intentions and found each of these by
+executing it.
+
+### 24. A paste target is plugin state, mapped, not a position read back later
+
+The Markdown paste route converted through IPC and then inserted with `replaceSelection`,
+which resolves against the selection *at the time the promise settles*. A user who invoked
+the paste and then moved the caret — an ordinary thing to do during a round trip — had the
+converted content dropped into whatever they had moved to.
+
+The intended range is now registered in the gateway plugin's state and mapped through every
+intervening transaction, so it keeps pointing at the same place in the document however the
+document changes underneath it. A collapsed target associates forward, so text typed while
+waiting is followed rather than split. A target whose content is deleted collapses to the
+deletion point. The selection is only moved to the insertion when it is still sitting at the
+target — if the author moved on, taking their cursor back would be an edit they did not ask
+for. Two conversions in flight each carry their own identity and land independently, and a
+view destroyed while one is outstanding is left alone.
+
+### 25. An ingestion diagnostic is not a save status
+
+`markChanged` clears the editor's message on every edit. The paste that raises a diagnostic
+*is* an edit, so the warning was cleared by its own transaction: it was never visible for a
+single frame, and the "foreign image was dropped" path was therefore unreachable in practice
+even where it fired.
+
+Diagnostics now have their own state, their own live region (`role="status"`,
+`aria-live="polite"`) and their own lifetime: replaced by the next diagnostic or dismissed by
+the reader, never cleared by typing or by a save. Save failures keep the alert channel. The
+two have different meanings and different lifetimes and cannot share one slot.
+
+### 26. Foreign images are counted before parsing, from the clipboard event
+
+Narrowing the image rule to `img[data-asset-id]` fixed the unsavable-document defect but
+created a blind spot: a picture from a web page matches no parse rule, so ProseMirror
+discards it and the repair pass — which runs after parsing — never sees an image to report.
+Measured: the image vanished with `droppedImages: 0` and no diagnostic.
+
+The count is now taken from the raw clipboard markup on the paste and drop events, before
+parsing, using `DOMParser` on an inert document that is never attached to the page. Only
+pictures with no `data-asset-id` at all are counted there; one that carries the attribute is
+left to the repair pass, so no image is reported twice.
+
+This deliberately does not use `transformPastedHTML`. ProseMirror resolves that prop with
+`someProp`, which takes the value from the first plugin that defines one — and the view's own
+props are consulted before any plugin. Tiptap already sets an identity transform there, so a
+plugin can never own the hook. That was measured too: the gateway's transform was installed
+and never called.
+
+Alt text is not inserted as prose. It describes the picture rather than continuing the
+sentence, and injecting it would put words in the document that the author did not write
+there. The count is reported instead.
+
+### 27. The editor's schema is asserted against the validator's
+
+Three defects in a row had the same shape: the editor could hold something the Rust
+validator refuses, and the only symptom was a bare "Save failed" naming nothing. A test now
+asserts that the set of node and mark types the editor registers is exactly the set
+`document::schema` accepts, in both directions.
+
+It found a fourth on the first run: StarterKit registers an `underline` mark, binds Ctrl+U to
+it, and the validator has no such mark. Pressing Ctrl+U made the document unsavable.
+Underline is now disabled — Markdown has no syntax for it and the canonical schema
+deliberately has no mark for it.
+
+### 28. KaTeX is bounded against expansion and against geometry
+
+`trust: false` was already right. `maxSize`, however, defaults to `Infinity`, so
+`\rule{500em}{500em}` rendered at its stated size and displaced the document; measured at 500
+em before the change and capped at 10 after it. `maxExpand` is set explicitly at its current
+default rather than inherited, so a recursive macro stays bounded whatever the library's
+future default becomes. The block carries a `max-block-size` as a second bound that does not
+depend on the engine at all.
+
+### 29. Mermaid: the earlier security argument was too strong
+
+Decision 19 above claimed rendering Mermaid would require weakening the security policy.
+That was overstated and is corrected here. The naive integration — passing Mermaid's SVG
+string to `innerHTML` — is indeed blocked by `scripts/verify_security.py`, but that is an
+argument against one integration, not against all of them. Parsing the SVG with `DOMParser`
+and rebuilding it through a tag and attribute allowlist into React elements is the same
+technique this codebase already uses for code highlighting, and it needs no forbidden API
+and no CSP change.
+
+The blocker that was actually demonstrated is different: **Mermaid cannot be rendered or
+tested in this repository's automated environment.** It requires real SVG text metrics —
+`getComputedTextLength` and `getBBox` — which jsdom does not implement. Installed at
+11.16.1 and driven directly, every diagram type failed at those calls; stubbing the metrics
+on `SVGElement.prototype` did not reach the elements d3 measures and the render still failed,
+after which the attempt was stopped rather than retried further.
+
+The consequence is not that a diagram cannot be drawn in WebView2 — it can. It is that the
+allowlist standing between Mermaid's output and the document could never be tested against
+Mermaid's actual output. A sanitizer written against assumed output, for a library whose
+output is the whole attack surface, is the weakest possible security posture, and shipping
+one without a single test exercising it would be worse than not rendering the diagram.
+
+Mermaid is therefore still not rendered, and the evaluation dependency was removed rather
+than left in the manifest. The fence stays a `codeBlock` whose language is `mermaid`, with
+the source exact, labelled, selectable and copyable, and round-tripping unchanged.
+
+What would unblock it: a browser-based test environment for the renderer. The repository has
+one — `scripts/run_windows_e2e.ps1` drives a real WebView2 — so the work is well defined:
+build the allowlist renderer, and cover the allowlist, the fallback and at least one diagram
+of each supported type there rather than in jsdom. That is a feature with its own spec, not
+a hardening change.
+
+### 30. Footnotes stay preserved text, for a product reason rather than a cost one
+
+First-class footnotes were reconsidered against the seven shapes that matter, and the
+fallback handles all of them: a reference with no definition, a definition with no reference,
+duplicate definitions, several references to one definition, a definition placed before its
+reference, and a definition holding several blocks. Every one keeps all of its text, reports
+its source position, and round-trips exactly.
+
+What first-class footnotes would add is the link between the two, and that is the part this
+product does not have anywhere. Decision 10 above drops in-page anchors and reports them as
+unaddressable: intra-document navigation is deliberately not a concept here. Footnotes would
+be the first, which makes it a product decision about how documents are navigated rather
+than a fidelity fix — and it belongs in a spec, not in a hardening pass.
+
+One shape is worth stating because it looks like a gap and is not: a reference whose
+definition is missing produces no footnote event at all — the parser leaves it as ordinary
+text. Detecting it would mean scanning the source for a pattern the parser did not report,
+which is the layered-scanner mistake this authority exists to avoid. It stays text, exactly
+as written.
+
+### 31. Every syntax category has one of four declared outcomes
+
+`every_syntax_category_has_exactly_one_declared_outcome` fixes the contract for 71 categories
+as `Supported`, `PreservedInertly`, `LossyWithDiagnostic` or `SafelyRejected`, deriving the
+outcome from what the authority does rather than asserting it, and requiring a stable round
+trip in every case. "Unsupported" is not one of the four, and no category is left ambiguous.

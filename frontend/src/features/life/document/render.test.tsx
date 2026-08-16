@@ -120,3 +120,77 @@ describe("the Reader never crashes on content it does not know", () => {
     expect(screen.getByText(/repaired in Edit mode/i)).toBeInTheDocument();
   });
 });
+
+describe("a formula cannot spend unbounded resources or unbounded space", () => {
+  const mathDoc = (source: string, display = false) =>
+    doc([display
+      ? { type: "mathBlock", attrs: { source } }
+      : { type: "paragraph", content: [{ type: "inlineMath", attrs: { source } }] }]);
+
+  /** Every user-specified length KaTeX wrote into the output, in ems. */
+  function emSizes(container: HTMLElement): number[] {
+    return Array.from(container.querySelectorAll<HTMLElement>("*"))
+      .flatMap(node => [node.style.height, node.style.width, node.style.minWidth, node.style.borderRightWidth])
+      .filter(value => value.endsWith("em"))
+      .map(value => Number.parseFloat(value))
+      .filter(value => Number.isFinite(value));
+  }
+
+  it("stops a recursive macro instead of expanding forever", async () => {
+    // `maxExpand` is what makes this terminate. Without a bound the render never returns
+    // and the Reader hangs on a document that merely contains one bad formula.
+    const started = Date.now();
+    const { container } = render(<StaticDocument document={mathDoc(String.raw`\def\x{\x}\x`)} />);
+    await waitFor(() => expect(loadMathEngine()).resolves.toBeDefined());
+    await waitFor(() => expect(container.textContent).toContain(String.raw`\def`));
+    expect(Date.now() - started).toBeLessThan(10_000);
+  });
+
+  it("caps a formula that asks for absurd geometry", async () => {
+    // `maxSize` is `Infinity` by default, so this rendered at its stated size and pushed
+    // the rest of the document off the screen.
+    const { container } = render(<StaticDocument document={mathDoc(String.raw`\rule{500em}{500em}`, true)} />);
+    await waitFor(() => expect(container.querySelector(".katex")).toBeInTheDocument());
+    const sizes = emSizes(container);
+    expect(sizes.length).toBeGreaterThan(0);
+    expect(Math.max(...sizes)).toBeLessThanOrEqual(10.001);
+  });
+
+  it("still renders an ordinary complex formula in full", async () => {
+    // A cap that also broke real formulas would be a worse trade than no cap at all.
+    const { container } = render(
+      <StaticDocument document={mathDoc(String.raw`\sum_{i=1}^{n} \frac{x_i^2}{\sqrt{1+\alpha}} \in \mathbb{R}`, true)} />,
+    );
+    await waitFor(() => expect(container.querySelector(".katex-display")).toBeInTheDocument());
+    expect(container.querySelectorAll(".mfrac").length).toBeGreaterThan(0);
+    expect(container.querySelector(".katex-error")).toBeNull();
+  });
+
+  it("shows a malformed command as readable source rather than failing", async () => {
+    const { container } = render(<StaticDocument document={mathDoc(String.raw`\frac{1}{`)} />);
+    await waitFor(() => expect(loadMathEngine()).resolves.toBeDefined());
+    await waitFor(() => expect(container.textContent).toContain(String.raw`\frac{1}{`));
+  });
+
+  it("does not let an unknown command become anything but text", async () => {
+    const { container } = render(<StaticDocument document={mathDoc(String.raw`\notARealCommand{x}`)} />);
+    await waitFor(() => expect(loadMathEngine()).resolves.toBeDefined());
+    expect(container.querySelector("script")).toBeNull();
+    expect(container.textContent).toContain("notARealCommand");
+  });
+
+  it("refuses the macros that could navigate or load a resource", async () => {
+    // These are exactly what `trust: false` disables; without it a formula is a link.
+    for (const source of [
+      String.raw`\href{javascript:alert(1)}{x}`,
+      String.raw`\url{https://example.com}`,
+      String.raw`\includegraphics{x.png}`,
+    ]) {
+      const { container, unmount } = render(<StaticDocument document={mathDoc(source)} />);
+      await waitFor(() => expect(loadMathEngine()).resolves.toBeDefined());
+      expect(container.querySelector("a")).toBeNull();
+      expect(container.querySelector("img")).toBeNull();
+      unmount();
+    }
+  });
+});

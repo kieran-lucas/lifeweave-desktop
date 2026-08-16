@@ -137,7 +137,9 @@ describe("the ingestion gateway keeps the editor inside the canonical contract",
 
     expect(slice.content.childCount).toBe(0);
     expect(report.droppedImages).toBe(1);
-    expect(reportMessage(report)).toContain("Add image");
+    // The "use Add image" guidance now belongs to the clipboard preflight, which is what
+    // sees a picture with no asset at all. What reaches here names one that does not exist.
+    expect(reportMessage(report)).toContain("not in this document's store");
     expect(reportMessage({ droppedImages: 0, clampedLanguages: 0, clampedAttributes: 0, droppedMath: 0 })).toBeUndefined();
   });
 });

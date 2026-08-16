@@ -8,6 +8,11 @@ Authority: `src-tauri/src/document/markdown` (import and export), `document::sch
 `src-tauri/src/document/markdown/regression.rs` against
 `src-tauri/src/document/fixtures/markdown_stress_corpus.md`.
 
+The four outcomes below are not prose. `every_syntax_category_has_exactly_one_declared_outcome`
+fixes 71 categories to exactly one of `Supported`, `PreservedInertly`, `LossyWithDiagnostic`
+or `SafelyRejected`, derives each from what the authority actually does, and requires a
+stable round trip in every case. "Unsupported" is not one of the four.
+
 ## How to read the columns
 
 - **Canonical** — the node or mark the construct becomes, or how it is preserved.
@@ -83,9 +88,12 @@ Limits, stated rather than implied:
   text, which is what this product's documents contain. Math arrives by import or by
   Markdown paste, and a formula is changed by replacing it.
 - Math carries no marks. `**$x$**` keeps the formula and loses the bold.
-- Mermaid is not drawn. See ADR 0052 §19: the render API returns a markup string and injects
-  a `<style>` element, and drawing it would require weakening `style-src 'self'` and the
-  raw-markup ban that `scripts/verify_security.py` enforces.
+- Mermaid is not drawn. See ADR 0052 §29, which corrects §19: the blocker is not security —
+  an SVG allowlist rebuilt into React elements would need no forbidden API and no CSP change
+  — but verifiability. Mermaid needs real SVG text metrics (`getComputedTextLength`,
+  `getBBox`) that jsdom does not implement, so the allowlist standing between its output and
+  the document could never be tested against its actual output. A browser-based renderer test
+  (`scripts/run_windows_e2e.ps1`) is what would unblock it.
 - Code over 40 000 characters is not tokenized, and an unknown language renders as plain code.
 
 ## Tier C — preserved, disclosed, never silently reinterpreted
@@ -96,10 +104,14 @@ Each of these has no node in the Core schema. None of them refuses the document.
 |---|---|---|
 | Footnote reference | literal `[^label]` text | `footnote` |
 | Footnote definition | blocks kept, label as leading text | `footnote` |
+| Footnote reference with no definition | literal text, unchanged | none — the parser reports no footnote, so nothing scans for one |
+| Duplicate footnote definitions | each kept in source order with its label | `footnote` per definition |
+| Several references to one definition | each kept as text | `footnote` per reference |
+| Underline (`<u>`, Ctrl+U) | not offered by the editor and not a mark | n/a — see ADR 0052 §27 |
 | YAML / TOML front matter | inert `codeBlock`, verbatim | `front_matter` |
 | Relative link, in-page anchor, protocol-relative target | link text kept, target dropped | `link_target` |
 | Inline HTML tag | tag dropped, surrounding text kept | `html_markup` |
-| `<br>` | `hardBreak` | `html_markup` |
+| `<br>` | `hardBreak` — an exact equivalent, so it is supported rather than degraded | none |
 | HTML block carrying text | inert `codeBlock`, verbatim | `html_markup` |
 | HTML block carrying no text | dropped | `html_markup` |
 | Definition list, superscript, subscript | literal text | none — the extensions are off, so the syntax is prose |

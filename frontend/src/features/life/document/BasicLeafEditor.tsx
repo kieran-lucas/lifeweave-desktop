@@ -30,7 +30,11 @@ const AlignedCell = TableCell.extend({ addAttributes() { return { ...this.parent
 const AlignedHeader = TableHeader.extend({ addAttributes() { return { ...this.parent?.(), ...alignAttribute }; } });
 
 export const buildBasicLeafExtensions = (onNotice: IngestionNotice | null = null) => [
-  StarterKit.configure({ heading: { levels: [1, 2, 3] }, link: false }),
+  // Underline is off because the canonical schema has no such mark and Markdown has no
+  // syntax for one. Left on, StarterKit still bound Ctrl+U, and using it produced a
+  // document the validator refused — reported to the author as a bare "Save failed" with
+  // nothing naming the mark responsible.
+  StarterKit.configure({ heading: { levels: [1, 2, 3] }, link: false, underline: false }),
   Link.configure({
     openOnClick: false,
     protocols: ["http", "https", "mailto"],
@@ -71,6 +75,14 @@ export default function BasicLeafEditor({ document, initialJson, onCommitted, on
   const commitRef = useRef<() => void>(() => {});
   const [saveState, setSaveState] = useState<SaveState>(0);
   const [message, setMessage] = useState("");
+  /*
+   * An ingestion diagnostic is not a save status and cannot share its state.
+   * `markChanged` clears `message` on every edit, and the paste that produced the
+   * diagnostic *is* an edit — so the warning was cleared by its own transaction and never
+   * survived to be read. It is held separately and cleared only by the reader dismissing
+   * it or by a later ingestion event replacing it, never by ordinary typing or by a save.
+   */
+  const [notice, setNotice] = useState("");
   const [dialog, setDialog] = useState<0 | 1 | 2>(0);
   const dialogReturnFocus = useRef<HTMLElement | null>(null);
   const initialContent = useRef(JSON.parse(initialJson ?? document.canonical_json));
@@ -110,7 +122,7 @@ export default function BasicLeafEditor({ document, initialJson, onCommitted, on
 
   // Held in a ref so the extension list stays stable: rebuilding it would rebuild the
   // editor and lose the document being edited.
-  const noticeRef = useRef<IngestionNotice>((text: string) => setMessage(text));
+  const noticeRef = useRef<IngestionNotice>((text: string) => setNotice(text));
   const extensions = useRef(buildBasicLeafExtensions((text: string) => noticeRef.current(text)));
 
   const editor = useEditor({
@@ -203,6 +215,12 @@ export default function BasicLeafEditor({ document, initialJson, onCommitted, on
       </div>
 
       {message && <p className={styles.editorAlert} role="alert">{message}</p>}
+      {notice && (
+        <div className={styles.editorNotice} role="status" aria-live="polite">
+          <p>{notice}</p>
+          <button type="button" className={styles.noticeDismiss} onClick={() => setNotice("")}>Dismiss</button>
+        </div>
+      )}
       <div className={styles.editorSurface}>
         <EditorContent editor={editor} />
       </div>

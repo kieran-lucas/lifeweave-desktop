@@ -40,6 +40,14 @@ export function MathView({ source, display }: { source: string; display: boolean
           trust: false,
           strict: "ignore",
           output: "html",
+          // `maxSize` is `Infinity` by default, so `\rule{500em}{500em}` renders at its
+          // stated size and pushes the rest of the document off the screen. Ten ems is far
+          // larger than any real formula element and still bounded by the page.
+          maxSize: 10,
+          // The default is already 1000, but a bound this important should be stated rather
+          // than inherited: a recursive macro must stop expanding whatever the library's
+          // future default becomes.
+          maxExpand: 1000,
         });
       })
       // A formula that cannot be typeset must not take the document down with it: the

@@ -185,3 +185,159 @@ An <b>inline tag</b> and a line<br>break.
 | one | two | three |
 
 [an unresolved reference][missing]
+
+## Heading depth
+
+#### H4 folds to H3
+##### H5 folds to H3
+###### H6 folds to H3
+
+## Duplicate headings
+
+# Same heading
+
+# Same heading
+
+## Awkward inline runs
+
+Code with a pipe: `a|b`. Code with backticks: `` a ` b ``. Code with both: `` x|`y ``.
+
+Link with spaces: [spaced](<https://example.com/a b/c>).
+Link with parens: [parens](https://example.com/a_(b)_c).
+Link with escaped brackets: [\[bracketed\]](https://example.com/x).
+Autolink: <https://example.com/plain>.
+
+Unbroken token: qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
+
+## Invisible and directional characters
+
+Zero width: a​b. Non-breaking: a b. Word joiner family: 👩‍💻 and 🇻🇳.
+
+Bidirectional: English ‏עברית‎ back to English.
+
+## Wide table
+
+| One | Two | Three | Four | Five | Six | Seven | Eight |
+|-----|-----|------:|:----:|------|-----|-------|-------|
+| a somewhat long cell value | b | 3 | 4 | e | f | g | h |
+| `piped\|code` | [link](https://example.com) | ~~x~~ | **y** | *z* | 😀 | đ | |
+
+## More math
+
+Several in one line: $a$, $b_1$, $\gamma$, and $\frac{n}{m}$.
+
+$$
+\begin{cases} x & x > 0 \\ -x & x \le 0 \end{cases}
+$$
+
+$$
+\oint_C \mathbf{F} \cdot d\mathbf{r} = \iint_S (\nabla \times \mathbf{F}) \cdot d\mathbf{S}
+$$
+
+Malformed but harmless: $\frac{1}{$ stays text-ish, and \$100 is an escaped dollar.
+
+## Footnote shapes
+
+Two references to one note[^shared] and again[^shared].
+
+A reference whose note is missing[^nowhere] stays as written.
+
+[^shared]: The shared note.
+
+[^dup]: First definition of a duplicated label.
+
+[^dup]: Second definition of the same label.
+
+[^multi]: A note with two blocks.
+
+    The second block of that note.
+
+## Inline HTML shapes
+
+Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>V</kbd> to paste as Markdown.
+
+An <em>inline emphasis tag</em> and an <span data-x="1">inert span</span>.
+
+<!-- a standalone comment -->
+
+<details>
+<summary>A collapsible summary</summary>
+
+Body text inside the collapsible block.
+
+</details>
+
+<table><tr><td>An HTML table cell</td></tr></table>
+
+## Dialects this product does not interpret
+
+CriticMarkup: {++inserted++} {--deleted--} {~~old~>new~~} {==highlight==} {>>comment<<}
+
+Pandoc fenced div:
+
+::: warning
+Pandoc puts a class on this block.
+:::
+
+Pandoc attributes: a heading with {#id .class} markers, and `code`{.language-rust}.
+
+MkDocs admonition:
+
+!!! note "Titled"
+    Indented admonition body.
+
+Wiki links: [[Another Note]] and [[target|label]].
+
+Definition list: Term followed by a colon line.
+
+Term
+: The definition line.
+: A second definition line.
+
+Superscript and subscript: H~2~O, x^2^, and E=mc^2^.
+
+Math-adjacent dollar prose: costs $5, then $10, then $1,234.56.
+
+## Nested callouts and mixed containers
+
+> [!WARNING]
+> A warning that contains a list and a quote.
+>
+> - first
+> - second
+>
+> > A quote nested inside the callout.
+
+- A list item holding a callout:
+
+  > [!NOTE]
+  > The nested callout body.
+
+- A list item holding a task list:
+
+  - [x] nested done
+  - [ ] nested open
+
+## A longer code block
+
+```python
+def fibonacci(limit: int) -> list[int]:
+    """Return the Fibonacci numbers below `limit`."""
+    values = [0, 1]
+    while values[-1] < limit:
+        values.append(values[-1] + values[-2])
+    return [value for value in values if value < limit]
+
+
+class Example:
+    def __init__(self, name: str) -> None:
+        self.name = name
+
+    def greet(self) -> str:
+        return f"hello {self.name} | pipe | and $dollar and <tag>"
+```
+
+## Protocol-relative and relative targets
+
+A [protocol-relative](//example.com/x) target, a [relative](../sibling/file.md) target, and
+an [in-page](#duplicate-headings) target.

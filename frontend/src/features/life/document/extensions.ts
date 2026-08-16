@@ -1,10 +1,11 @@
 import { Extension, Node } from "@tiptap/core";
 import Image from "@tiptap/extension-image";
-import { Plugin, PluginKey } from "@tiptap/pm/state";
+import { Plugin, PluginKey, Selection } from "@tiptap/pm/state";
+import type { Transaction } from "@tiptap/pm/state";
 import { Fragment, Slice } from "@tiptap/pm/model";
 import type { EditorView } from "@tiptap/pm/view";
 import { convertMarkdownFragment } from "../../../ipc/commands";
-import { isLocalAssetImage, repairSlice, reportMessage, sliceFromCanonical } from "./ingestion";
+import { countForeignImages, isLocalAssetImage, repairSlice, reportMessage, sliceFromCanonical } from "./ingestion";
 import * as styles from "./BasicLeafDocument.css";
 
 const CALLOUT_VARIANTS = ["note", "info", "warning"];
@@ -110,7 +111,20 @@ export const MathBlock = Node.create({
   },
 });
 
-export const ingestionKey = new PluginKey("lifeweaveIngestion");
+/**
+ * Where a Markdown paste that is still being converted intends to land.
+ *
+ * Conversion is an IPC round trip, so the document can change before the result arrives.
+ * The range is therefore held in plugin state and mapped through every transaction in
+ * between, rather than being re-derived from wherever the cursor happens to be when the
+ * promise resolves — which would drop the content into unrelated text the user had since
+ * moved to.
+ */
+type PendingPaste = { id: number; from: number; to: number };
+type GatewayState = { pending: PendingPaste[] };
+type GatewayMeta = { kind: "open"; entry: PendingPaste } | { kind: "close"; id: number };
+
+export const ingestionKey = new PluginKey<GatewayState>("lifeweaveIngestion");
 
 export type IngestionNotice = (message: string) => void;
 
@@ -121,7 +135,27 @@ function wantsMarkdown(event: KeyboardEvent): boolean {
   return event.key.toLowerCase() === "v" && event.shiftKey && (event.ctrlKey || event.metaKey);
 }
 
-function insertCanonical(view: EditorView, canonicalJson: string): void {
+function mapPending(pending: PendingPaste[], tr: Transaction): PendingPaste[] {
+  if (!tr.docChanged) return pending;
+  return pending.map(entry => ({
+    id: entry.id,
+    // A collapsed target moves after anything typed at it, so a paste that resolves late
+    // lands after the words the user wrote while waiting rather than inside them. A range
+    // keeps covering the content it was taken from; if that content is deleted the two
+    // ends collapse to the deletion point, which is where the paste then goes.
+    from: tr.mapping.map(entry.from, entry.from === entry.to ? 1 : -1),
+    to: tr.mapping.map(entry.to, 1),
+  }));
+}
+
+/**
+ * Place converted Markdown at the range the paste was invoked on.
+ *
+ * The selection is only moved when it is still sitting at that range — that is, when the
+ * user waited. If they moved on, taking their cursor back to the insertion would be an
+ * edit they did not ask for.
+ */
+function insertCanonical(view: EditorView, canonicalJson: string, target: PendingPaste): void {
   const parsed = sliceFromCanonical(canonicalJson, view.state.schema);
   // A run that begins or ends in a paragraph joins the paragraph it lands in, which is how
   // every other paste behaves; a run that begins with a list or a table stays its own block.
@@ -130,7 +164,18 @@ function insertCanonical(view: EditorView, canonicalJson: string): void {
   const openStart = first?.type.name === "paragraph" ? 1 : 0;
   const openEnd = last?.type.name === "paragraph" ? 1 : 0;
   const content = parsed.content.size === 0 ? Fragment.empty : parsed.content;
-  view.dispatch(view.state.tr.replaceSelection(new Slice(content, openStart, openEnd)).scrollIntoView());
+
+  const limit = view.state.doc.content.size;
+  const from = Math.min(Math.max(target.from, 0), limit);
+  const to = Math.min(Math.max(target.to, from), limit);
+  const followed = view.state.selection.from === from && view.state.selection.to === to;
+
+  const tr = view.state.tr.replaceRange(from, to, new Slice(content, openStart, openEnd));
+  if (followed) {
+    tr.setSelection(Selection.near(tr.doc.resolve(Math.min(tr.mapping.map(to), tr.doc.content.size))));
+    tr.scrollIntoView();
+  }
+  view.dispatch(tr);
 }
 
 /**
@@ -149,15 +194,51 @@ function insertCanonical(view: EditorView, canonicalJson: string): void {
  */
 export const IngestionGateway = Extension.create<GatewayOptions>({
   name: "ingestionGateway",
+  /*
+   * ProseMirror asks plugins for a paste or drop handler in order and stops at the first
+   * that claims the event. The gateway has to see every one of them to report what it
+   * cannot store, so it sorts ahead of anything that might claim one first; it then returns
+   * false for everything except its own Markdown route, leaving the event to be handled
+   * normally.
+   */
+  priority: 1000,
   addOptions() { return { onNotice: null }; },
   addProseMirrorPlugins() {
     const notify = (message: string | undefined) => {
       if (message) this.options.onNotice?.(message);
     };
+    /*
+     * Tell the author about pictures the document cannot hold.
+     *
+     * The image rule matches `img[data-asset-id]` only, so a picture from a web page is
+     * discarded while ProseMirror parses and the repair pass — which runs after parsing —
+     * never sees it. The raw clipboard markup on the event is the last point at which it
+     * still exists. This deliberately reads the event rather than `transformPastedHTML`:
+     * ProseMirror resolves that prop from the view's own props before consulting any
+     * plugin, and Tiptap already sets an identity transform there, so no plugin can own it.
+     */
+    const reportForeignImages = (html: string | undefined) => {
+      const foreign = countForeignImages(html ?? "");
+      if (foreign === 0) return;
+      notify(
+        `${foreign} image${foreign === 1 ? "" : "s"} could not be pasted: an image has to be added with Add image so its file is stored on this computer.`,
+      );
+    };
     let markdownRequested = false;
+    let nextPasteId = 0;
     return [
-      new Plugin({
+      new Plugin<GatewayState>({
         key: ingestionKey,
+        state: {
+          init: () => ({ pending: [] }),
+          apply: (tr, value) => {
+            const pending = mapPending(value.pending, tr);
+            const meta = tr.getMeta(ingestionKey) as GatewayMeta | undefined;
+            if (meta?.kind === "open") return { pending: [...pending, meta.entry] };
+            if (meta?.kind === "close") return { pending: pending.filter(entry => entry.id !== meta.id) };
+            return { pending };
+          },
+        },
         props: {
           handleKeyDown: (_view, event) => {
             // The paste event itself carries no modifier state, so the intent is recorded
@@ -171,20 +252,49 @@ export const IngestionGateway = Extension.create<GatewayOptions>({
             // leaving the flag standing for whatever the next paste turns out to be.
             const requested = markdownRequested;
             markdownRequested = false;
-            if (!requested) return false;
+            if (!requested) {
+              reportForeignImages(event.clipboardData?.getData("text/html"));
+              return false;
+            }
             const text = event.clipboardData?.getData("text/plain");
             if (!text) return false;
             event.preventDefault();
+
+            const id = (nextPasteId += 1);
+            const { from, to } = view.state.selection;
+            // Registering the target as plugin state is what lets it be mapped: from here
+            // on every transaction moves it, so the paste keeps pointing at the same place
+            // in the document however the document changes around it.
+            view.dispatch(view.state.tr.setMeta(ingestionKey, { kind: "open", entry: { id, from, to } }));
+
+            const settle = (apply: (target: PendingPaste) => void) => {
+              // A view torn down while the conversion was in flight has no document left to
+              // insert into, and dispatching into it would throw.
+              if (view.isDestroyed) return;
+              const target = ingestionKey.getState(view.state)?.pending.find(entry => entry.id === id);
+              view.dispatch(view.state.tr.setMeta(ingestionKey, { kind: "close", id }));
+              if (target) apply(target);
+            };
+
             void convertMarkdownFragment({ markdown: text })
               .then(result => {
-                insertCanonical(view, result.canonical_json);
-                const dropped = result.diagnostics.length;
-                if (dropped > 0) {
-                  notify(`Pasted as Markdown with ${dropped} documented fallback${dropped === 1 ? "" : "s"}.`);
-                }
+                settle(target => {
+                  insertCanonical(view, result.canonical_json, target);
+                  const dropped = result.diagnostics.length;
+                  if (dropped > 0) {
+                    notify(`Pasted as Markdown with ${dropped} documented fallback${dropped === 1 ? "" : "s"}.`);
+                  }
+                });
               })
-              .catch(() => notify("That text could not be read as Markdown; nothing was inserted."));
+              // A conversion that failed leaves the document exactly as it was; the only
+              // thing that changes is that the user is told why nothing appeared.
+              .catch(() => settle(() => notify("That text could not be read as Markdown; nothing was inserted.")));
             return true;
+          },
+          // A drop carries the same markup as a paste and has to be told the same thing.
+          handleDrop: (_view, event) => {
+            reportForeignImages((event as DragEvent).dataTransfer?.getData("text/html"));
+            return false;
           },
           // Applies to clipboard HTML and to drops alike, so a dragged fragment cannot
           // enter through a path the clipboard rules never saw.

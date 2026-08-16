@@ -1029,3 +1029,321 @@ fn a_file_with_windows_line_endings_imports_as_the_same_document() {
     assert_eq!(import(&windows).unwrap(), import(unix).unwrap());
     assert_round_trips(&import(&windows).unwrap());
 }
+
+// ---------------------------------------------------------------------------------------
+// The declared outcome of every syntax category this product has an opinion about.
+//
+// "Unsupported" is not an outcome. Each category resolves to exactly one of four, and the
+// table is the contract: a construct that silently changed category would fail here rather
+// than reach a user's document.
+// ---------------------------------------------------------------------------------------
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Outcome {
+    /// Recognized as a node or a mark of its own.
+    Supported,
+    /// Kept exactly as authored, carrying no meaning the product claims to understand.
+    PreservedInertly,
+    /// Represented approximately, with a diagnostic naming what changed and where.
+    LossyWithDiagnostic,
+    /// Refused before commit; the stored document is not touched.
+    SafelyRejected,
+}
+
+use Outcome::{LossyWithDiagnostic, PreservedInertly, SafelyRejected, Supported};
+
+/// Whether anything in the document is more than plain text in a paragraph.
+fn carries_meaning(node: &Value) -> bool {
+    let kind = node["type"].as_str().unwrap_or_default();
+    if !matches!(kind, "doc" | "paragraph" | "text") {
+        return true;
+    }
+    if node
+        .get("marks")
+        .and_then(Value::as_array)
+        .is_some_and(|marks| !marks.is_empty())
+    {
+        return true;
+    }
+    node["content"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .any(carries_meaning)
+}
+
+/// What the authority actually did with `markdown`, derived rather than asserted.
+fn classify(markdown: &str) -> Outcome {
+    let Ok(imported) = import_with_diagnostics(markdown) else {
+        return SafelyRejected;
+    };
+    // Whatever happened, the result has to survive a round trip; a category that cannot is
+    // not one of the four outcomes at all.
+    assert_round_trips(&imported.canonical_json);
+    if !imported.diagnostics.is_empty() {
+        return LossyWithDiagnostic;
+    }
+    let value: Value = serde_json::from_str(&imported.canonical_json).unwrap();
+    if carries_meaning(&value) {
+        Supported
+    } else {
+        PreservedInertly
+    }
+}
+
+#[test]
+fn every_syntax_category_has_exactly_one_declared_outcome() {
+    let asset = "assets/00000000-0000-7000-8000-000000000001";
+    let cases: Vec<(&str, String, Outcome)> = vec![
+        // Tier A — the declared contract.
+        ("atx heading", "# H".into(), Supported),
+        ("setext heading", "H\n===".into(), Supported),
+        ("emphasis and strong", "*a* **b** ***c***".into(), Supported),
+        ("strikethrough", "~~a~~".into(), Supported),
+        ("inline code with pipe", "`a|b`".into(), Supported),
+        (
+            "fenced code",
+            "```rust\nfn main() {}\n```".into(),
+            Supported,
+        ),
+        ("tilde fence", "~~~py\nx\n~~~".into(), Supported),
+        ("indented code", "    x = 1".into(), Supported),
+        ("thematic break", "---".into(), Supported),
+        ("bullet list", "- a\n- b".into(), Supported),
+        ("ordered list with start", "4. a\n5. b".into(), Supported),
+        ("task list", "- [x] a\n- [ ] b".into(), Supported),
+        ("blockquote", "> a".into(), Supported),
+        ("gfm alert", "> [!NOTE]\n> a".into(), Supported),
+        (
+            "table with alignment",
+            "| a |\n|:-:|\n| b |".into(),
+            Supported,
+        ),
+        ("safe link", "[a](https://example.com)".into(), Supported),
+        ("mailto link", "[a](mailto:x@example.com)".into(), Supported),
+        ("autolink", "<https://example.com>".into(), Supported),
+        ("local image", format!("![alt]({asset})"), Supported),
+        ("hard break", "a  \nb".into(), Supported),
+        ("br tag", "a<br>b".into(), Supported),
+        (
+            "ragged table",
+            "| a | b |\n|---|---|\n| 1 |".into(),
+            Supported,
+        ),
+        // Text that is only ever text: the syntax around it is decoded, not interpreted.
+        ("escapes", "\\* \\_ \\#".into(), PreservedInertly),
+        ("entities", "&amp; &lt; &copy;".into(), PreservedInertly),
+        (
+            "unicode and emoji",
+            "Tiếng Việt 中文 👨‍👩‍👧‍👦".into(),
+            PreservedInertly,
+        ),
+        (
+            "bidi and zero width",
+            "a\u{200B}b \u{202E}c\u{202C}".into(),
+            PreservedInertly,
+        ),
+        ("nbsp", "a\u{00A0}b".into(), PreservedInertly),
+        ("malformed emphasis", "**unclosed".into(), PreservedInertly),
+        // Tier B — represented, with a stated limit.
+        ("inline math", "$x^2$".into(), Supported),
+        ("display math", "$$\nx^2\n$$".into(), Supported),
+        (
+            "mermaid fence",
+            "```mermaid\nflowchart LR\nA-->B\n```".into(),
+            Supported,
+        ),
+        (
+            "unknown code language",
+            "```nosuchlang\nx\n```".into(),
+            Supported,
+        ),
+        // Tier C — preserved or reported, never silently reinterpreted.
+        ("heading below H3", "#### deep".into(), LossyWithDiagnostic),
+        (
+            "footnote reference and definition",
+            "a[^1]\n\n[^1]: n".into(),
+            LossyWithDiagnostic,
+        ),
+        (
+            "footnote reference with no definition",
+            "a[^none]".into(),
+            PreservedInertly,
+        ),
+        (
+            "duplicate footnote definitions",
+            "a[^1]\n\n[^1]: x\n\n[^1]: y".into(),
+            LossyWithDiagnostic,
+        ),
+        (
+            "yaml front matter",
+            "---\na: b\n---\n\n# T".into(),
+            LossyWithDiagnostic,
+        ),
+        (
+            "toml front matter",
+            "+++\na = 1\n+++\n\n# T".into(),
+            LossyWithDiagnostic,
+        ),
+        ("relative link", "[a](./x.md)".into(), LossyWithDiagnostic),
+        ("in-page anchor", "[a](#x)".into(), LossyWithDiagnostic),
+        (
+            "protocol-relative link",
+            "[a](//example.com)".into(),
+            LossyWithDiagnostic,
+        ),
+        (
+            "inert inline tag",
+            "a <b>bold</b> c".into(),
+            LossyWithDiagnostic,
+        ),
+        ("kbd tag", "<kbd>Ctrl</kbd>".into(), LossyWithDiagnostic),
+        (
+            "html comment",
+            "<!-- x -->\n\na".into(),
+            LossyWithDiagnostic,
+        ),
+        (
+            "details block",
+            "<details><summary>s</summary>\n\nb\n\n</details>".into(),
+            LossyWithDiagnostic,
+        ),
+        (
+            "html table",
+            "<table><tr><td>c</td></tr></table>".into(),
+            LossyWithDiagnostic,
+        ),
+        ("definition list", "T\n: D".into(), PreservedInertly),
+        (
+            "superscript and subscript",
+            "H~2~O x^2^".into(),
+            PreservedInertly,
+        ),
+        ("criticmarkup", "{++a++} {--b--}".into(), PreservedInertly),
+        (
+            "pandoc fenced div",
+            "::: warning\nx\n:::".into(),
+            PreservedInertly,
+        ),
+        (
+            "pandoc attributes",
+            "a {#id .class}".into(),
+            PreservedInertly,
+        ),
+        (
+            "mkdocs admonition",
+            "!!! note\n    x".into(),
+            PreservedInertly,
+        ),
+        ("wiki link", "[[Page]]".into(), PreservedInertly),
+        ("dollar prose", "costs $5 and $10".into(), PreservedInertly),
+        // Refused before commit.
+        (
+            "script tag",
+            "<script>alert(1)</script>".into(),
+            SafelyRejected,
+        ),
+        (
+            "iframe tag",
+            "<iframe src=\"x\"></iframe>".into(),
+            SafelyRejected,
+        ),
+        ("style tag", "<style>a{}</style>".into(), SafelyRejected),
+        (
+            "svg tag",
+            "<svg><circle r=\"5\"/></svg>".into(),
+            SafelyRejected,
+        ),
+        (
+            "event handler attribute",
+            "<b onclick=\"x()\">a</b>".into(),
+            SafelyRejected,
+        ),
+        (
+            "javascript link",
+            "[a](javascript:alert(1))".into(),
+            SafelyRejected,
+        ),
+        (
+            "javascript link mixed case",
+            "[a](JaVaScRiPt:alert(1))".into(),
+            SafelyRejected,
+        ),
+        ("vbscript link", "[a](vbscript:x)".into(), SafelyRejected),
+        (
+            "data html link",
+            "[a](data:text/html,<b>x</b>)".into(),
+            SafelyRejected,
+        ),
+        (
+            "file link",
+            "[a](file:///etc/passwd)".into(),
+            SafelyRejected,
+        ),
+        (
+            "remote image",
+            "![a](https://example.com/x.png)".into(),
+            SafelyRejected,
+        ),
+        (
+            "traversal image",
+            "![a](assets/../../secret)".into(),
+            SafelyRejected,
+        ),
+        (
+            "non-uuid asset",
+            "![a](assets/not-a-uuid)".into(),
+            SafelyRejected,
+        ),
+        ("mdx module", "import x from \"pkg\"".into(), SafelyRejected),
+        ("liquid template", "{% raw %}".into(), SafelyRejected),
+        ("jsx comment", "{/* x */}".into(), SafelyRejected),
+        ("unclosed fence", "```rust\nx".into(), SafelyRejected),
+    ];
+
+    let mut wrong = Vec::new();
+    for (name, markdown, expected) in &cases {
+        let actual = classify(markdown);
+        if actual != *expected {
+            wrong.push(format!("{name}: expected {expected:?}, got {actual:?}"));
+        }
+    }
+    assert!(
+        wrong.is_empty(),
+        "category outcomes changed:\n{}",
+        wrong.join("\n")
+    );
+
+    // Every one of the four outcomes is exercised, so the table cannot quietly collapse
+    // into "everything is preserved" and keep passing.
+    for outcome in [
+        Supported,
+        PreservedInertly,
+        LossyWithDiagnostic,
+        SafelyRejected,
+    ] {
+        assert!(
+            cases.iter().any(|(_, _, expected)| *expected == outcome),
+            "no category covers {outcome:?}"
+        );
+    }
+}
+
+#[test]
+fn dangerous_code_inside_a_fence_is_prose_and_never_a_rejection() {
+    // The rejections above are decided from parser events, so the same strings quoted as
+    // code are content. A document about security must remain importable.
+    let quoted = format!(
+        "```html\n{}\n```\n\n`{}`\n",
+        "<script>alert(1)</script>\n<iframe src=\"x\"></iframe>\n<svg onload=\"x\">",
+        "javascript:alert(1)"
+    );
+    let imported = import(&quoted).unwrap();
+    for expected in ["<script>", "<iframe", "<svg onload", "javascript:alert(1)"] {
+        assert!(
+            imported.contains(expected),
+            "lost {expected:?} from a code fence"
+        );
+    }
+    assert_round_trips(&imported);
+}

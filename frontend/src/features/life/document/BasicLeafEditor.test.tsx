@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import axe from "axe-core";
 
 const api = vi.hoisted(() => ({ save: vi.fn(), draft: vi.fn(), asset: vi.fn() }));
+// The gateway hands the editor its ingestion diagnostics through this callback.
+const gateway = vi.hoisted(() => ({ notify: undefined as undefined | ((message: string) => void) }));
 const link = vi.hoisted(() => ({ config: undefined as undefined | { isAllowedUri?: (value: string) => boolean } }));
 const tiptap = vi.hoisted(() => {
   const chain: Record<string, ReturnType<typeof vi.fn>> = {};
@@ -63,7 +65,12 @@ vi.mock("./extensions", () => ({
   Callout: {},
   InlineMath: {},
   MathBlock: {},
-  IngestionGateway: { configure: () => ({}) },
+  IngestionGateway: {
+    configure: (options: { onNotice?: (message: string) => void }) => {
+      gateway.notify = options.onNotice;
+      return {};
+    },
+  },
 }));
 vi.mock("@tiptap/extension-image", () => ({ default: { extend: () => ({ configure: () => ({}) }) } }));
 vi.mock("@tiptap/extension-link", () => ({ default: { configure: (config: typeof link.config) => { link.config = config; return {}; } } }));
@@ -294,6 +301,50 @@ describe("focused Basic Leaf editor", () => {
     fireEvent.click(screen.getByRole("button", { name: "Back to Reader" }));
     fireEvent.click(screen.getByRole("button", { name: "Leave Edit" }));
     expect(cancel).toHaveBeenCalledOnce();
+  });
+
+  it("keeps an ingestion warning readable through the edit that produced it", async () => {
+    // The paste that raises the warning is itself an edit, so `markChanged` used to clear
+    // the message in the same tick and the warning was never visible for a single frame.
+    render(<BasicLeafEditor document={document} onCommitted={vi.fn()} onCancel={vi.fn()} />);
+    act(() => gateway.notify?.("2 images could not be pasted."));
+    expect(screen.getByText("2 images could not be pasted.").closest("div")).toHaveAttribute("role", "status");
+
+    markChanged();
+    expect(screen.getByText("2 images could not be pasted.")).toBeInTheDocument();
+
+    markChanged();
+    await waitFor(() => expect(screen.getByText("Draft saved")).toBeInTheDocument());
+    expect(screen.getByText("2 images could not be pasted.")).toBeInTheDocument();
+  });
+
+  it("announces the warning politely and lets the reader dismiss it", () => {
+    render(<BasicLeafEditor document={document} onCommitted={vi.fn()} onCancel={vi.fn()} />);
+    act(() => gateway.notify?.("An image could not be pasted."));
+    const region = screen.getByText("An image could not be pasted.").closest("div");
+    expect(region).toHaveAttribute("aria-live", "polite");
+
+    fireEvent.click(screen.getByRole("button", { name: "Dismiss" }));
+    expect(screen.queryByText("An image could not be pasted.")).not.toBeInTheDocument();
+  });
+
+  it("replaces a warning with the next one rather than stacking them", () => {
+    render(<BasicLeafEditor document={document} onCommitted={vi.fn()} onCancel={vi.fn()} />);
+    act(() => gateway.notify?.("First warning."));
+    act(() => gateway.notify?.("Second warning."));
+    expect(screen.queryByText("First warning.")).not.toBeInTheDocument();
+    expect(screen.getByText("Second warning.")).toBeInTheDocument();
+  });
+
+  it("keeps a save failure and an ingestion warning apart", () => {
+    // They are different kinds of message with different lifetimes; sharing one slot meant
+    // whichever arrived last erased the other.
+    api.save.mockRejectedValue(new Error("nope"));
+    render(<BasicLeafEditor document={document} onCommitted={vi.fn()} onCancel={vi.fn()} />);
+    act(() => gateway.notify?.("An image could not be pasted."));
+    markChanged();
+    expect(screen.getByText("An image could not be pasted.")).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
   it("has no critical or serious accessibility violations in the populated editor", async () => {

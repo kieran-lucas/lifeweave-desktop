@@ -200,6 +200,23 @@ globalStyle(`${editorSurface} .tiptap table`, { inlineSize: "100%", minInlineSiz
 globalStyle(`${editorSurface} .tiptap th, ${editorSurface} .tiptap td`, { position: "relative", minInlineSize: 110, padding: "9px 10px", border: "1px solid var(--paint-edge)", textAlign: "start", verticalAlign: "top" });
 globalStyle(`${editorSurface} .tiptap th`, { background: vars.color.surfaceSubtle, fontWeight: 650 });
 globalStyle(`${editorSurface} .tiptap .selectedCell::after`, { content: "", position: "absolute", inset: 0, pointerEvents: "none", background: vars.color.accentSoft, outline: `2px solid ${vars.color.accent}` });
+// An ingestion diagnostic is information, not a failure, so it is styled as a warning
+// rather than in the danger palette the save-failure alert uses.
+export const editorNotice = style({
+  display: "flex",
+  alignItems: "flex-start",
+  gap: 12,
+  margin: "12px 0 0",
+  padding: "10px 12px",
+  borderInlineStart: `3px solid ${vars.color.warning}`,
+  background: vars.color.surfaceSubtle,
+  color: vars.color.textPrimary,
+  ...text.compactBody,
+  "@media": { "(forced-colors: active)": { borderInlineStartColor: "CanvasText", background: "Canvas" } },
+});
+globalStyle(`${editorNotice} > p`, { margin: 0, flex: 1, minInlineSize: 0 });
+export const noticeDismiss = style([sharedButton.ghost, compact, { flex: "0 0 auto" }]);
+
 export const editorAlert = style({ margin: "12px 0 0", padding: "10px 12px", borderInlineStart: "3px solid var(--danger)", background: vars.color.dangerSoft, color: vars.color.danger, ...text.compactBody });
 
 // Task lists carry their own marker, so the list bullet is suppressed and the row is
@@ -266,8 +283,11 @@ globalStyle(`${codeBlock} span`, { "@media": { "(forced-colors: active)": { colo
 export const mathInlineView = style({ display: "inline-block", maxInlineSize: "100%", verticalAlign: "baseline" });
 export const mathBlockView = style({
   display: "block",
-  overflowX: "auto",
+  overflow: "auto",
   maxInlineSize: "100%",
+  // A second bound, independent of the engine's own `maxSize`: whatever a formula asks
+  // for, it is scrolled inside its own box rather than allowed to displace the document.
+  maxBlockSize: "60vh",
   marginBlock: 18,
   textAlign: "center",
 });
