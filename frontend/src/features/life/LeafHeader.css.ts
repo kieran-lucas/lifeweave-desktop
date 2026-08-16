@@ -135,9 +135,9 @@ export const subtitle = style({
   textWrap: "balance",
 });
 
-/** The badge settles in after the page: a small rise and micro-scale, with no competing bounce. */
+/** The compact insignia resolves after the reading plane without calling attention to itself. */
 const badgeSettle = keyframes({
-  from: { opacity: 0, transform: "translateY(4px) scale(.985)" },
+  from: { opacity: 0, transform: "translateY(3px) scale(.98)" },
   to: { opacity: 1, transform: "translateY(0) scale(1)" },
 });
 
@@ -147,44 +147,39 @@ const badgeFade = keyframes({
   to: { opacity: 1 },
 });
 
-/** Each filled step resolves with a restrained overshoot, then settles into the level mark. */
-const pipLand = keyframes({
-  "0%": { opacity: 0, transform: "scale(.45)" },
-  "68%": { opacity: 1, transform: "scale(1.12)" },
-  "100%": { opacity: 1, transform: "scale(1)" },
+/** Confidence is a rising signal: reached bars grow from their baseline, then settle once. */
+const rankRise = keyframes({
+  "0%": { opacity: 0.25, transform: "scaleY(.28)" },
+  "72%": { opacity: 1, transform: "scaleY(1.08)" },
+  "100%": { opacity: 1, transform: "scaleY(1)" },
 });
 
 /**
- * State is metadata, so it is drawn at metadata weight: a hairline pill in the top-left corner, no
- * fill of its own beyond the quiet surface, and the level spelled out. The one-to-four mark repeats
- * the level without relying on colour, which is what ADR 0050 asks of every surface that shows it —
- * and it is the same mark the Life tree card carries, so the two read as one fact. Every leaf has a
- * level, so the badge is always present; the mark, not its presence, carries the difference.
- *
- * The ramp is drawn in ink, not hue. This theme reserves blue for interactive emphasis and gives
- * hierarchy to neutral grey, so a firmer direction reads as a firmer edge and darker text rather
- * than as a new colour: quiet and tertiary at `exploring`, full contrast and a perceivable border by
- * `core`. Colour therefore adds nothing the label and the mark do not already say.
+ * Direction confidence is presented as a small editorial insignia rather than a generic pill. The
+ * meter and the label are one compact object, but the meter gets its own quiet well so the hierarchy
+ * is instantly readable. The four ascending bars encode increasing confidence spatially, while the
+ * label keeps the state explicit and accessible without relying on colour.
  */
 export const state = style({
   flex: "0 1 auto",
   display: "inline-flex",
   alignItems: "center",
   gap: 8,
-  minBlockSize: 28,
+  minBlockSize: 30,
   margin: 0,
-  paddingInline: 11,
+  padding: "4px 9px 4px 5px",
   border: `1px solid ${vars.color.borderHairline}`,
-  borderRadius: vars.radius.full,
-  background: vars.color.surfaceSubtle,
+  borderRadius: vars.radius.control,
+  background: vars.color.surface,
   color: vars.color.textSecondary,
   ...text.metadata,
-  fontWeight: 600,
-  letterSpacing: ".012em",
+  fontSize: 11,
+  lineHeight: "14px",
+  fontWeight: 700,
+  letterSpacing: ".055em",
+  textTransform: "uppercase",
   whiteSpace: "nowrap",
-  // The reading canvas is already arriving under it, so the badge waits a beat and lands after the
-  // page rather than travelling with it. One motion at a time, in order.
-  animation: `${badgeSettle} ${duration.popover} ${easing.standard} 60ms both`,
+  animation: `${badgeSettle} ${duration.popover} ${easing.standard} 55ms both`,
   selectors: {
     '&[data-level="exploring"]': { color: vars.color.textTertiary },
     '&[data-level="leaning"]': { color: vars.color.textSecondary },
@@ -192,7 +187,6 @@ export const state = style({
     '&[data-level="core"]': {
       borderColor: vars.color.borderStrong,
       color: vars.color.textPrimary,
-      fontWeight: 700,
     },
   },
   "@media": {
@@ -203,34 +197,47 @@ export const state = style({
   },
 });
 
+/** A recessed meter well makes the hierarchy mark read as an insignia, not pagination dots. */
 export const stateMark = style({
+  flex: "0 0 auto",
   display: "inline-flex",
-  alignItems: "center",
-  gap: 3.5,
+  alignItems: "flex-end",
+  justifyContent: "center",
+  gap: 2,
+  inlineSize: 25,
+  blockSize: 20,
+  padding: "4px 4px 3px",
+  borderRadius: vars.radius.small,
+  background: vars.color.surfaceSubtle,
 });
 
 /**
- * A step is either reached or not: reached steps are solid and inherit the badge's ink, the rest are
- * hairline rings of the same size, so the mark keeps its shape at every level and only its weight
- * changes. Reached steps land in sequence; the rings are already there, because an empty step is not
- * an event worth animating.
+ * Four narrow bars form an ascending confidence meter. Unreached bars remain outlined silhouettes;
+ * reached bars fill with the current text ink and rise sequentially from the shared baseline.
  */
 export const statePip = style({
-  inlineSize: 5,
-  blockSize: 5,
-  borderRadius: vars.radius.full,
+  flex: "0 0 auto",
+  inlineSize: 3,
+  border: `1px solid ${vars.color.borderStrong}`,
+  borderRadius: 2,
   background: "transparent",
-  boxShadow: `inset 0 0 0 1px ${vars.color.borderStrong}`,
+  opacity: 0.38,
+  transformOrigin: "50% 100%",
   selectors: {
+    "&:nth-child(1)": { blockSize: 5 },
+    "&:nth-child(2)": { blockSize: 7 },
+    "&:nth-child(3)": { blockSize: 9 },
+    "&:nth-child(4)": { blockSize: 11 },
     '&[data-active="true"]': {
+      borderColor: "currentColor",
       background: "currentColor",
-      boxShadow: "none",
-      animation: `${pipLand} ${duration.check} ${easing.standard} both`,
+      opacity: 1,
+      animation: `${rankRise} ${duration.check} ${easing.standard} both`,
     },
-    '&[data-active="true"]:nth-child(1)': { animationDelay: "130ms" },
-    '&[data-active="true"]:nth-child(2)': { animationDelay: "180ms" },
-    '&[data-active="true"]:nth-child(3)': { animationDelay: "230ms" },
-    '&[data-active="true"]:nth-child(4)': { animationDelay: "280ms" },
+    '&[data-active="true"]:nth-child(1)': { animationDelay: "120ms" },
+    '&[data-active="true"]:nth-child(2)': { animationDelay: "170ms" },
+    '&[data-active="true"]:nth-child(3)': { animationDelay: "220ms" },
+    '&[data-active="true"]:nth-child(4)': { animationDelay: "270ms" },
   },
   "@media": {
     "(prefers-reduced-motion: reduce)": {
@@ -238,8 +245,8 @@ export const statePip = style({
     },
     "(forced-colors: active)": {
       background: "Canvas",
-      boxShadow: "none",
-      border: "1px solid CanvasText",
+      borderColor: "CanvasText",
+      opacity: 1,
       selectors: { '&[data-active="true"]': { background: "CanvasText" } },
     },
   },
