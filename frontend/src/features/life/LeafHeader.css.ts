@@ -147,18 +147,16 @@ const badgeFade = keyframes({
   to: { opacity: 1 },
 });
 
-/** Confidence is a rising signal: reached bars grow from their baseline, then settle once. */
+/** Confidence rises from a shared baseline; no glow or elastic finish is needed on the matte mark. */
 const rankRise = keyframes({
-  "0%": { opacity: 0.25, transform: "scaleY(.28)" },
-  "72%": { opacity: 1, transform: "scaleY(1.08)" },
+  "0%": { opacity: 0.35, transform: "scaleY(.4)" },
   "100%": { opacity: 1, transform: "scaleY(1)" },
 });
 
 /**
- * Direction confidence is presented as a small editorial insignia rather than a generic pill. The
- * meter and the label are one compact object, but the meter gets its own quiet well so the hierarchy
- * is instantly readable. A restrained blue tint gives this Life-specific metadata enough presence
- * on the white reading plane without turning it into an interactive control or a loud status chip.
+ * Direction confidence is a compact matte insignia. Colour is carried by a restrained blue-grey
+ * surface and the meter itself; there are deliberately no gradients, glass highlights or shadows.
+ * The result should feel printed into the reading plane rather than floating above it.
  */
 export const state = style({
   boxSizing: "border-box",
@@ -169,10 +167,9 @@ export const state = style({
   minBlockSize: 30,
   margin: 0,
   padding: "4px 9px 4px 5px",
-  border: `1px solid color-mix(in srgb, ${vars.color.accent} 18%, ${vars.color.borderHairline})`,
+  border: `1px solid color-mix(in srgb, ${vars.color.accent} 24%, ${vars.color.borderStrong})`,
   borderRadius: vars.radius.control,
-  background: `linear-gradient(135deg, ${vars.color.surface} 22%, color-mix(in srgb, ${vars.color.accentSoft} 72%, ${vars.color.surface}) 100%)`,
-  boxShadow: `0 1px 3px color-mix(in srgb, ${vars.color.accent} 8%, transparent)`,
+  background: `color-mix(in srgb, ${vars.color.accentSoft} 44%, ${vars.color.surfaceSubtle})`,
   color: vars.color.textSecondary,
   ...text.metadata,
   fontSize: 11,
@@ -184,23 +181,24 @@ export const state = style({
   animation: `${badgeSettle} ${duration.popover} ${easing.standard} 55ms both`,
   selectors: {
     '&[data-level="exploring"]': {
-      borderColor: `color-mix(in srgb, ${vars.color.accent} 16%, ${vars.color.borderHairline})`,
+      borderColor: `color-mix(in srgb, ${vars.color.accent} 22%, ${vars.color.borderStrong})`,
+      background: `color-mix(in srgb, ${vars.color.accentSoft} 38%, ${vars.color.surfaceSubtle})`,
       color: vars.color.textSecondary,
     },
     '&[data-level="leaning"]': {
-      borderColor: `color-mix(in srgb, ${vars.color.accent} 22%, ${vars.color.borderHairline})`,
+      borderColor: `color-mix(in srgb, ${vars.color.accent} 28%, ${vars.color.borderStrong})`,
+      background: `color-mix(in srgb, ${vars.color.accentSoft} 44%, ${vars.color.surfaceSubtle})`,
       color: vars.color.textSecondary,
     },
     '&[data-level="committed"]': {
-      borderColor: `color-mix(in srgb, ${vars.color.accent} 30%, ${vars.color.borderStrong})`,
+      borderColor: `color-mix(in srgb, ${vars.color.accent} 36%, ${vars.color.borderStrong})`,
+      background: `color-mix(in srgb, ${vars.color.accentSoft} 50%, ${vars.color.surfaceSubtle})`,
       color: vars.color.textPrimary,
-      boxShadow: `0 1px 4px color-mix(in srgb, ${vars.color.accent} 10%, transparent)`,
     },
     '&[data-level="core"]': {
-      borderColor: `color-mix(in srgb, ${vars.color.accent} 38%, ${vars.color.borderStrong})`,
-      background: `linear-gradient(135deg, ${vars.color.surface} 8%, color-mix(in srgb, ${vars.color.accentSoft} 88%, ${vars.color.surface}) 100%)`,
+      borderColor: `color-mix(in srgb, ${vars.color.accent} 44%, ${vars.color.borderStrong})`,
+      background: `color-mix(in srgb, ${vars.color.accentSoft} 58%, ${vars.color.surfaceSubtle})`,
       color: vars.color.textPrimary,
-      boxShadow: `0 1px 5px color-mix(in srgb, ${vars.color.accent} 13%, transparent)`,
     },
   },
   "@media": {
@@ -210,13 +208,12 @@ export const state = style({
     "(forced-colors: active)": {
       borderColor: "CanvasText",
       background: "Canvas",
-      boxShadow: "none",
       color: "CanvasText",
     },
   },
 });
 
-/** A blue-tinted meter well makes the hierarchy mark visible without overpowering the label. */
+/** The meter well is a flat, slightly denser patch of the same blue-grey material. */
 export const stateMark = style({
   boxSizing: "border-box",
   flex: "0 0 auto",
@@ -224,36 +221,33 @@ export const stateMark = style({
   alignItems: "flex-end",
   justifyContent: "center",
   gap: 2,
-  inlineSize: 26,
+  inlineSize: 30,
   blockSize: 20,
   padding: "4px 4px 3px",
   borderRadius: vars.radius.small,
-  background: `color-mix(in srgb, ${vars.color.accentSoft} 82%, ${vars.color.surfaceSubtle})`,
-  boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${vars.color.accent} 10%, transparent)`,
+  background: `color-mix(in srgb, ${vars.color.accentSoft} 72%, ${vars.color.surfaceSubtle})`,
 });
 
 /**
- * Four narrow bars form an ascending confidence meter. Unreached bars retain a faint blue contour;
- * reached bars use the interaction-blue ink as a decorative Life accent and rise from the baseline.
+ * The four bars sit on an integer pixel grid: 4px wide, 2px gaps and 6/8/10/12px heights. Inactive
+ * bars are solid muted shapes rather than 1px outlines, avoiding uneven rasterisation at this size.
  */
 export const statePip = style({
   boxSizing: "border-box",
   flex: "0 0 auto",
-  inlineSize: 3,
-  border: `1px solid color-mix(in srgb, ${vars.color.accent} 34%, ${vars.color.borderStrong})`,
-  borderRadius: 2,
-  background: "transparent",
-  opacity: 0.48,
+  inlineSize: 4,
+  border: 0,
+  borderRadius: 1,
+  background: `color-mix(in srgb, ${vars.color.accent} 24%, ${vars.color.surface})`,
+  opacity: 1,
   transformOrigin: "50% 100%",
   selectors: {
-    "&:nth-child(1)": { blockSize: 5 },
-    "&:nth-child(2)": { blockSize: 7 },
-    "&:nth-child(3)": { blockSize: 9 },
-    "&:nth-child(4)": { blockSize: 11 },
+    "&:nth-child(1)": { blockSize: 6 },
+    "&:nth-child(2)": { blockSize: 8 },
+    "&:nth-child(3)": { blockSize: 10 },
+    "&:nth-child(4)": { blockSize: 12 },
     '&[data-active="true"]': {
-      borderColor: vars.color.accent,
-      background: vars.color.accent,
-      opacity: 1,
+      background: vars.color.accentMuted,
       animation: `${rankRise} ${duration.check} ${easing.standard} both`,
     },
     '&[data-active="true"]:nth-child(1)': { animationDelay: "120ms" },
@@ -267,8 +261,7 @@ export const statePip = style({
     },
     "(forced-colors: active)": {
       background: "Canvas",
-      borderColor: "CanvasText",
-      opacity: 1,
+      border: "1px solid CanvasText",
       selectors: { '&[data-active="true"]': { background: "CanvasText" } },
     },
   },
