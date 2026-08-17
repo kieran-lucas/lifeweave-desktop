@@ -811,7 +811,7 @@ fn load_active_node_tags_tx(
 mod tests {
     use super::*;
     use crate::infrastructure::sqlite::{
-        connection::open_memory_connection, task51_migration::run_all_migrations,
+        connection::open_memory_connection, task56_migration::run_all_migrations,
     };
 
     fn db() -> Connection {
@@ -1522,6 +1522,7 @@ mod tests {
         let plan = crate::focus_plan::repository::create(
             &mut conn,
             crate::focus_plan::dto::CreateFocusPlanInput {
+                priority: crate::focus_plan::dto::FocusPlanPriority::Normal,
                 title: "AI Foundations".into(),
                 life_node_id: None,
                 start_date: None,

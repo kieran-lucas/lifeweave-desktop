@@ -348,7 +348,7 @@ mod tests {
             repository as plan_repository,
         },
         infrastructure::sqlite::{
-            connection::open_memory_connection, task51_migration::run_all_migrations,
+            connection::open_memory_connection, task56_migration::run_all_migrations,
         },
         task::{
             actual_time,
@@ -375,6 +375,7 @@ mod tests {
         plan_repository::create(
             conn,
             CreateFocusPlanInput {
+                priority: crate::focus_plan::dto::FocusPlanPriority::Normal,
                 title: title.into(),
                 life_node_id: None,
                 start_date: None,
@@ -1005,6 +1006,7 @@ mod tests {
                 mutation: FocusPlanMutationAction::UpdatePlan {
                     title: "Completed".into(),
                     lifecycle: FocusPlanLifecycle::Completed,
+                    priority: crate::focus_plan::dto::FocusPlanPriority::Normal,
                     life_node_id: None,
                     start_date: None,
                     target_date: None,
@@ -1163,12 +1165,14 @@ mod tests {
         );
     }
 
+    /// ADR 0043: the activity projection is computed, never stored. The schema must sit exactly at
+    /// the migration head — this module may not introduce a step of its own.
     #[test]
-    fn schema_stays_at_twenty_eight_with_no_persistent_plan_analytics_table() {
+    fn schema_stays_at_the_head_with_no_persistent_plan_analytics_table() {
         let conn = db();
         assert_eq!(
-            crate::infrastructure::sqlite::task51_migration::current_schema_version(&conn).unwrap(),
-            28
+            crate::infrastructure::sqlite::task56_migration::current_schema_version(&conn).unwrap(),
+            crate::infrastructure::sqlite::task56_migration::max_supported_schema_version()
         );
         let existing: Option<String> = conn
             .query_row(

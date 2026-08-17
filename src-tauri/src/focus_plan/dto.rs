@@ -21,6 +21,32 @@ impl FocusPlanLifecycle {
     }
 }
 
+/// How much of the user's attention a Plan currently deserves, ordered most to least urgent.
+///
+/// ADR 0053: this is deliberately a Plan-specific vocabulary rather than the Task `low|medium|high`
+/// scale. A Plan spans weeks to months, so `critical` has to mean something a Task-level `high`
+/// never does, and `normal` is the neutral level every Plan starts at.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub enum FocusPlanPriority {
+    Critical,
+    High,
+    Normal,
+    Low,
+}
+
+impl FocusPlanPriority {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Critical => "critical",
+            Self::High => "high",
+            Self::Normal => "normal",
+            Self::Low => "low",
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 #[cfg_attr(test, derive(ts_rs::TS))]
@@ -56,6 +82,7 @@ pub struct FocusPlanListInput {
 #[cfg_attr(test, derive(ts_rs::TS))]
 pub struct CreateFocusPlanInput {
     pub title: String,
+    pub priority: FocusPlanPriority,
     pub life_node_id: Option<String>,
     pub start_date: Option<String>,
     pub target_date: Option<String>,
@@ -86,6 +113,7 @@ pub enum FocusPlanMutationAction {
     UpdatePlan {
         title: String,
         lifecycle: FocusPlanLifecycle,
+        priority: FocusPlanPriority,
         life_node_id: Option<String>,
         start_date: Option<String>,
         target_date: Option<String>,
@@ -167,6 +195,7 @@ pub struct FocusPlanSummaryView {
     pub id: String,
     pub title: String,
     pub lifecycle: FocusPlanLifecycle,
+    pub priority: FocusPlanPriority,
     pub score: Option<u32>,
     pub start_date: Option<String>,
     pub target_date: Option<String>,
@@ -232,6 +261,7 @@ pub struct FocusPlanDetailView {
     pub id: String,
     pub title: String,
     pub lifecycle: FocusPlanLifecycle,
+    pub priority: FocusPlanPriority,
     pub score: Option<u32>,
     pub start_date: Option<String>,
     pub target_date: Option<String>,
@@ -364,6 +394,18 @@ mod tests {
         assert_eq!(
             serde_json::to_string(&FocusPlanLifecycle::Active).unwrap(),
             "\"active\""
+        );
+    }
+
+    #[test]
+    fn priority_serializes_as_stable_snake_case() {
+        assert_eq!(
+            serde_json::to_string(&FocusPlanPriority::Critical).unwrap(),
+            "\"critical\""
+        );
+        assert_eq!(
+            serde_json::to_string(&FocusPlanPriority::Normal).unwrap(),
+            "\"normal\""
         );
     }
 

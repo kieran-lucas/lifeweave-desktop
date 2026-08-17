@@ -5,6 +5,7 @@ import type { FocusPlanDetailView } from "../../ipc/generated/FocusPlanDetailVie
 import type { FocusPlanLifecycle } from "../../ipc/generated/FocusPlanLifecycle";
 import type { FocusPlanMutationAction } from "../../ipc/generated/FocusPlanMutationAction";
 import type { FocusPlanPortfolio } from "../../ipc/generated/FocusPlanPortfolio";
+import type { FocusPlanPriority } from "../../ipc/generated/FocusPlanPriority";
 import type { FocusPlanSummaryView } from "../../ipc/generated/FocusPlanSummaryView";
 import {
   createFocusPlan,
@@ -40,6 +41,7 @@ type Props = {
 type PlanForm = {
   title: string;
   lifecycle: FocusPlanLifecycle;
+  priority: FocusPlanPriority;
   lifeNodeId: string;
   startDate: string;
   targetDate: string;
@@ -58,10 +60,43 @@ const portfolios: Array<{ id: FocusPlanPortfolio; label: string }> = [
   { id: "completed", label: "Completed" },
 ];
 
+// Most urgent first, matching the order the backend sorts a portfolio by.
+const priorities: Array<{ id: FocusPlanPriority; label: string }> = [
+  { id: "critical", label: "Critical" },
+  { id: "high", label: "High" },
+  { id: "normal", label: "Normal" },
+  { id: "low", label: "Low" },
+];
+
+const priorityLabel = (priority: FocusPlanPriority) =>
+  priorities.find((item) => item.id === priority)?.label ?? "Normal";
+
+// The meter states the level as shape, so the badge never depends on its tone alone.
+function PlanPriorityBadge({ priority }: { priority: FocusPlanPriority }) {
+  return <span className={styles.priorityBadge} data-priority={priority} data-plan-priority>
+    <svg
+      className={styles.priorityMeter}
+      viewBox="0 0 15 10"
+      width="15"
+      height="10"
+      shapeRendering="crispEdges"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <rect x="0" y="7" width="3" height="3" />
+      <rect x="4" y="5" width="3" height="5" />
+      <rect x="8" y="3" width="3" height="7" />
+      <rect x="12" y="0" width="3" height="10" />
+    </svg>
+    <span className={styles.priorityText}>{priorityLabel(priority)}</span>
+  </span>;
+}
+
 function formFromPlan(plan: FocusPlanDetailView): PlanForm {
   return {
     title: plan.title,
     lifecycle: plan.lifecycle,
+    priority: plan.priority,
     lifeNodeId: plan.life_node_id ?? "",
     startDate: plan.start_date ?? "",
     targetDate: plan.target_date ?? "",
@@ -73,6 +108,7 @@ function emptyPlanForm(): PlanForm {
   return {
     title: "",
     lifecycle: "draft",
+    priority: "normal",
     lifeNodeId: "",
     startDate: "",
     targetDate: "",
@@ -99,10 +135,6 @@ function messageFromError(error: unknown): string {
   if (typeof error === "string") return error;
   if (error && typeof error === "object" && "message" in error) return String(error.message);
   return "The operation could not be completed.";
-}
-
-function planMeta(plan: FocusPlanSummaryView) {
-  return plan.life_title ?? plan.selected_variant_label;
 }
 
 function formatPlanDate(value: string) {
@@ -319,6 +351,7 @@ export function FocusPlansScreen({
       try {
         const plan = await createFocusPlan({
           title: form.title.trim(),
+          priority: form.priority,
           life_node_id: form.lifeNodeId || null,
           start_date: form.startDate || null,
           target_date: form.targetDate || null,
@@ -343,6 +376,7 @@ export function FocusPlansScreen({
       action: "update_plan",
       title: form.title,
       lifecycle: form.lifecycle,
+      priority: form.priority,
       life_node_id: form.lifeNodeId || null,
       start_date: form.startDate || null,
       target_date: form.targetDate || null,
@@ -468,6 +502,23 @@ export function FocusPlansScreen({
                   )}
                 </div>
               </div>
+              <div className={styles.planStatusField}>
+                <span id="plan-priority-label">Priority<small>Orders the portfolio</small></span>
+                <div className={styles.planStatusControl} role="radiogroup" aria-label="Priority">
+                  {priorities.map((item) =>
+                    <label key={item.id}>
+                      <input
+                        type="radio"
+                        name="plan-priority"
+                        value={item.id}
+                        checked={form.priority === item.id}
+                        onChange={() => updateForm("priority", item.id)}
+                      />
+                      <span>{item.label}</span>
+                    </label>
+                  )}
+                </div>
+              </div>
             </div>
           </EditorSection>
           </div>
@@ -513,7 +564,10 @@ export function FocusPlansScreen({
 
           <div className={styles.hero}>
             <div className={styles.heroIdentity}>
-              <span className={styles.lifecycle} data-lifecycle={selected.lifecycle}>{selected.lifecycle}</span>
+              <div className={styles.heroBadges}>
+                <span className={styles.lifecycle} data-lifecycle={selected.lifecycle}>{selected.lifecycle}</span>
+                <PlanPriorityBadge priority={selected.priority} />
+              </div>
               <h1 id="plan-detail-heading" className={styles.documentTitle} data-completed={selected.lifecycle === "completed" ? "" : undefined} tabIndex={-1}>
                 {selected.title}
               </h1>
@@ -612,9 +666,10 @@ export function FocusPlansScreen({
                   <span className={styles.planCopy}>
                     <span className={styles.planTitleLine}>
                       <strong data-completed={plan.lifecycle === "completed" ? "" : undefined}>{plan.title}</strong>
-                      {plan.lifecycle === "active" ? <span className={styles.activeBadge}>Active</span> : null}
                     </span>
-                    <small>{planMeta(plan)}</small>
+                    <span className={styles.planMetaLine}>
+                      <PlanPriorityBadge priority={plan.priority} />
+                    </span>
                   </span>
                 </button>
                 <button

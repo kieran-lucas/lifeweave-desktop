@@ -35,6 +35,7 @@ const plan: FocusPlanDetailView = {
   id: "plan-1",
   title: "Ship the writing system",
   lifecycle: "active",
+  priority: "high",
   score: null,
   start_date: "2026-08-01",
   target_date: "2026-09-01",
@@ -152,18 +153,26 @@ describe("Focus Plan detail composition", () => {
     expect(await screen.findByRole("textbox", { name: "Plan content" })).toHaveValue("");
     expect(screen.getByRole("radiogroup", { name: "Status" })).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: "Draft" })).toBeChecked();
-    const statusOptions = screen.getAllByRole("radio");
+    const statusOptions = within(screen.getByRole("radiogroup", { name: "Status" })).getAllByRole("radio");
     expect(statusOptions).toHaveLength(4);
     statusOptions.forEach((item) => expect(item).toBeDisabled());
     expect(screen.getByText("Starts as Draft")).toBeInTheDocument();
 
+    // Priority is the one Context control a brand-new Plan may still choose.
+    const priorityOptions = within(screen.getByRole("radiogroup", { name: "Priority" })).getAllByRole("radio");
+    expect(priorityOptions).toHaveLength(4);
+    priorityOptions.forEach((item) => expect(item).toBeEnabled());
+    expect(screen.getByRole("radio", { name: "Normal" })).toBeChecked();
+
     fireEvent.change(screen.getByRole("textbox", { name: "Plan content" }), { target: { value: "A finished, defensible outcome." } });
     fireEvent.change(screen.getByRole("textbox", { name: "Plan title" }), { target: { value: "Build the research baseline" } });
+    fireEvent.click(screen.getByRole("radio", { name: "Critical" }));
     fireEvent.click(screen.getByRole("button", { name: "Create plan" }));
 
     expect(api.create).toHaveBeenCalledWith(expect.objectContaining({
       title: "Build the research baseline",
       outcome: "A finished, defensible outcome.",
+      priority: "critical",
       life_node_id: null,
       start_date: null,
       target_date: null,
@@ -178,10 +187,35 @@ describe("Focus Plan detail composition", () => {
     expect(api.create).toHaveBeenCalledTimes(1);
   });
 
+  it("shows the saved priority on the Plan and saves a changed level through update_plan", async () => {
+    const { container } = renderPlan();
+    await screen.findByRole("heading", { level: 1, name: plan.title });
+
+    const badge = screen.getByText("High").closest("[data-plan-priority]");
+    expect(badge).toHaveAttribute("data-priority", "high");
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    expect(await screen.findByRole("radiogroup", { name: "Priority" })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "High" })).toBeChecked();
+
+    fireEvent.click(screen.getByRole("radio", { name: "Low" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+
+    expect(api.mutate).toHaveBeenCalledWith(expect.objectContaining({
+      plan_id: plan.id,
+      expected_revision: plan.revision,
+      mutation: expect.objectContaining({ action: "update_plan", priority: "low" }),
+    }));
+
+    const accessibility = await axe.run(container);
+    expect(accessibility.violations.filter((item) => item.impact === "critical" || item.impact === "serious")).toHaveLength(0);
+  });
+
   it("loads completed Plans through the dedicated completed portfolio", async () => {
     const completed = {
       id: "plan-completed",
       title: "Publish the handbook",
+      priority: "low" as const,
       lifecycle: "completed" as const,
       score: 100,
       start_date: "2026-07-01",
@@ -210,6 +244,7 @@ describe("Focus Plan detail composition", () => {
     const dated = {
       id: plan.id,
       title: plan.title,
+      priority: "normal" as const,
       lifecycle: "active" as const,
       score: null,
       start_date: "2026-08-01",
@@ -241,6 +276,7 @@ describe("Focus Plan detail composition", () => {
     const summary = {
       id: plan.id,
       title: plan.title,
+      priority: "normal" as const,
       lifecycle: "active" as const,
       score: null,
       start_date: plan.start_date,
@@ -269,10 +305,11 @@ describe("Focus Plan detail composition", () => {
     expect(back).toHaveBeenCalledOnce();
   });
 
-  it("marks active Plans clearly and moves a scored Plan to Completed", async () => {
+  it("marks each Plan with its priority and moves a scored Plan to Completed", async () => {
     const active = {
       id: plan.id,
       title: plan.title,
+      priority: "critical" as const,
       lifecycle: "active" as const,
       score: null,
       start_date: plan.start_date,
@@ -299,7 +336,11 @@ describe("Focus Plan detail composition", () => {
     const invalidate = vi.spyOn(client, "invalidateQueries");
     const scoreButton = await screen.findByRole("button", { name: `${plan.title} score: Not scored. Set score` });
     const activeRow = scoreButton.parentElement as HTMLElement;
-    expect(within(activeRow).getByText("Active")).toBeInTheDocument();
+    const priority = within(activeRow).getByText("Critical");
+    expect(priority.closest("[data-plan-priority]")).toHaveAttribute("data-priority", "critical");
+    // The badge sits under the title, not beside it, so the title line stays a single unbroken read.
+    expect(within(activeRow).getByText(plan.title).parentElement)
+      .not.toBe(priority.closest("[data-plan-priority]")?.parentElement);
     fireEvent.click(scoreButton);
     fireEvent.keyDown(window, { key: "Escape" });
     expect(screen.queryByRole("dialog", { name: "Evaluate plan" })).not.toBeInTheDocument();
@@ -324,7 +365,8 @@ describe("Focus Plan detail composition", () => {
     const completedScore = await screen.findByRole("button", { name: `${plan.title} score: 100. Set score` });
     expect(completedScore).toHaveTextContent("100");
     expect(screen.getByText(plan.title)).toHaveAttribute("data-completed");
-    expect(within(completedScore.parentElement as HTMLElement).queryByText("Active")).not.toBeInTheDocument();
+    // Scoring changes lifecycle only; the Plan keeps the priority the user gave it.
+    expect(within(completedScore.parentElement as HTMLElement).getByText("Critical")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Completed" })).toHaveAttribute("aria-current", "page");
     await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: "Completed" })));
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ["focus-plan-targets"] });

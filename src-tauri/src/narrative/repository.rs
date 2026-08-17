@@ -587,7 +587,7 @@ mod tests {
         infrastructure::sqlite::{
             connection::{open_file_connection, open_memory_connection},
             // The current schema: Life node projections read the schema 32 direction-confidence table.
-            task55_migration::run_all_migrations as run_migrations,
+            task56_migration::run_all_migrations as run_migrations,
         },
         life,
     };
@@ -1096,7 +1096,7 @@ mod tests {
     fn narrative_canvas_backup_relaunch_evidence() {
         use crate::infrastructure::sqlite::{
             connection::open_file_connection,
-            task55_migration::run_all_migrations as run_migrations,
+            task56_migration::run_all_migrations as run_migrations,
         };
         use crate::search::dto::SearchGlobalInput;
         use crate::search::repository::refresh_dirty_and_query;
@@ -1232,7 +1232,7 @@ mod tests {
             let backup_result = backup_db(&rt, &backups_dir).unwrap();
             assert_eq!(
                 backup_result.schema_version,
-                crate::infrastructure::sqlite::task55_migration::TASK55_SCHEMA_VERSION,
+                crate::infrastructure::sqlite::task56_migration::TASK56_SCHEMA_VERSION,
                 "backup must record the schema version the database is actually on"
             );
 
@@ -1279,7 +1279,7 @@ mod tests {
             let restore_result = restore_db(&rt, &backup_dir).unwrap();
             assert_eq!(
                 restore_result.schema_version,
-                crate::infrastructure::sqlite::task55_migration::TASK55_SCHEMA_VERSION,
+                crate::infrastructure::sqlite::task56_migration::TASK56_SCHEMA_VERSION,
                 "restore must report the current schema"
             );
         }
@@ -1287,7 +1287,7 @@ mod tests {
         // ── Session 3: verify restored state ─────────────────────────────────
         {
             let mut c = open_file_connection(&path).unwrap();
-            crate::infrastructure::sqlite::task55_migration::run_all_migrations(&mut c).unwrap();
+            crate::infrastructure::sqlite::task56_migration::run_all_migrations(&mut c).unwrap();
 
             let doc = by_id(&c, &doc_id).unwrap();
             // After restore, we should be back to revision 1

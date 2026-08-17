@@ -325,48 +325,103 @@ globalStyle(`${planTitleLine} > strong[data-completed]`, {
   textDecoration: "line-through",
   textDecorationThickness: "1.5px",
 });
-export const activeBadge = style({
+/**
+ * Priority tones, as ink / border / fill triads.
+ *
+ * The typed colour contract is deliberately monochrome — `danger` and `warning` both resolve to
+ * near-black in Luminous Editorial Light — so graded semantics live as literal hex in feature CSS,
+ * the way the score dial a few rules above already does.
+ *
+ * The ramp rises grey → brown → green → blue, the same progression the theme's `assessmentCircle`
+ * ramp already uses (`none` #5B6472, `low` #B88700, `done` #178248, `great` #1976B8). Each ink here
+ * is that token deepened until it clears WCAG AA on its own fill at this 9.5px / 760 weight, which
+ * the raw tokens do not: 4.8 / 6.3 / 5.9 / 5.7 against 3.1 and 4.5 for the originals.
+ *
+ * This is intentionally a cool-rises ramp, not a red-alarm one. Nothing in it means danger.
+ */
+const priorityTone = {
+  critical: { ink: "#15679F", border: "#BBD6EA", fill: "#F1F7FC" },
+  high: { ink: "#146F3E", border: "#BEDCC8", fill: "#F2F9F5" },
+  normal: { ink: "#7B5330", border: "#E4D3C2", fill: "#FBF7F3" },
+  low: { ink: "#666E79", border: "#E1E3E6", fill: "#F7F8F8" },
+} as const;
+
+// The four-step meter carries the level as shape, so the tone is never the only signal.
+export const priorityBadge = style({
+  inlineSize: "fit-content",
+  blockSize: 18,
   flex: "0 0 auto",
   display: "inline-flex",
   alignItems: "center",
-  gap: 5,
-  minBlockSize: 22,
-  paddingInline: 8,
-  border: `1px solid color-mix(in srgb, ${vars.assessmentCircle.done} 36%, transparent)`,
+  gap: 4,
+  boxSizing: "border-box",
+  paddingInline: 6,
+  border: `1px solid ${priorityTone.normal.border}`,
   borderRadius: vars.radius.full,
-  background: `color-mix(in srgb, ${vars.assessmentCircle.done} 10%, ${vars.color.surfaceRaised})`,
-  color: vars.assessmentCircle.done,
+  background: priorityTone.normal.fill,
+  color: priorityTone.normal.ink,
   fontSize: 9.5,
-  lineHeight: "14px",
+  lineHeight: "12px",
   fontWeight: 760,
   letterSpacing: ".035em",
   textTransform: "uppercase",
+  whiteSpace: "nowrap",
   selectors: {
-    "&::before": {
-      content: '""',
-      inlineSize: 6,
-      blockSize: 6,
-      borderRadius: "50%",
-      background: vars.assessmentCircle.done,
-      boxShadow: `0 0 0 3px color-mix(in srgb, ${vars.assessmentCircle.done} 13%, transparent)`,
+    '&[data-priority="critical"]': {
+      borderColor: priorityTone.critical.border,
+      background: priorityTone.critical.fill,
+      color: priorityTone.critical.ink,
+    },
+    '&[data-priority="high"]': {
+      borderColor: priorityTone.high.border,
+      background: priorityTone.high.fill,
+      color: priorityTone.high.ink,
+    },
+    '&[data-priority="low"]': {
+      borderColor: priorityTone.low.border,
+      background: priorityTone.low.fill,
+      color: priorityTone.low.ink,
     },
   },
   "@media": {
     "(forced-colors: active)": {
-      borderColor: "ButtonText",
+      borderColor: "CanvasText",
       background: "Canvas",
-      color: "ButtonText",
-      selectors: { "&::before": { background: "ButtonText", boxShadow: "none" } },
+      color: "CanvasText",
+      forcedColorAdjust: "none",
     },
   },
 });
-globalStyle(`${planCopy} > small`, {
-  overflow: "hidden",
-  color: "#777777",
-  fontSize: 11,
-  lineHeight: "15px",
-  textOverflow: "ellipsis",
-  whiteSpace: "nowrap",
+
+export const priorityMeter = style({
+  inlineSize: 15,
+  blockSize: 10,
+  display: "block",
+  flex: "0 0 15px",
+  overflow: "visible",
+});
+// Bars fill and firm up together, so the meter reads as one rising gesture rather than a count.
+globalStyle(`${priorityMeter} > rect`, { fill: "currentColor", opacity: .2 });
+globalStyle(`${priorityBadge}[data-priority="low"] ${priorityMeter} > rect:nth-child(1)`, { opacity: .82 });
+globalStyle(`${priorityBadge}[data-priority="normal"] ${priorityMeter} > rect:nth-child(-n+2)`, { opacity: .86 });
+globalStyle(`${priorityBadge}[data-priority="high"] ${priorityMeter} > rect:nth-child(-n+3)`, { opacity: .92 });
+globalStyle(`${priorityBadge}[data-priority="critical"] ${priorityMeter} > rect`, { opacity: 1 });
+
+export const priorityText = style({
+  display: "inline-flex",
+  alignItems: "center",
+  alignSelf: "stretch",
+  opacity: .92,
+});
+// Carries the priority badge on its own line under the title. The row states the Plan and how much
+// it matters; variant label and Life area belong to the Plan itself, not to the overview.
+// The extra lead separates the badge from the title baseline so the two read as distinct claims.
+export const planMetaLine = style({
+  display: "flex",
+  alignItems: "center",
+  gap: 7,
+  marginBlockStart: 4,
+  minInlineSize: 0,
 });
 
 export const document = style({
@@ -414,6 +469,13 @@ export const hero = style({
 export const heroIdentity = style({
   display: "grid",
   gap: 5,
+  minInlineSize: 0,
+});
+
+export const heroBadges = style({
+  display: "flex",
+  alignItems: "center",
+  gap: 9,
   minInlineSize: 0,
 });
 

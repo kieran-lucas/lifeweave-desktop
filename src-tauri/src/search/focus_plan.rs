@@ -232,7 +232,7 @@ mod tests {
     use crate::{
         focus_plan::{dto::CreateFocusPlanInput, repository as focus_plan_repository},
         infrastructure::sqlite::{
-            connection::open_memory_connection, task51_migration::run_all_migrations,
+            connection::open_memory_connection, task56_migration::run_all_migrations,
         },
     };
 
@@ -243,6 +243,7 @@ mod tests {
         let plan = focus_plan_repository::create(
             &mut conn,
             CreateFocusPlanInput {
+                priority: crate::focus_plan::dto::FocusPlanPriority::Normal,
                 title: "AI Foundations".into(),
                 life_node_id: None,
                 start_date: Some("2026-08-15".into()),
@@ -280,6 +281,7 @@ mod tests {
         let plan = focus_plan_repository::create(
             &mut conn,
             CreateFocusPlanInput {
+                priority: crate::focus_plan::dto::FocusPlanPriority::Normal,
                 title: "Temporary Strategy".into(),
                 life_node_id: None,
                 start_date: None,

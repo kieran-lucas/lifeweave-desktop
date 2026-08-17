@@ -481,7 +481,7 @@ mod tests {
         document,
         infrastructure::sqlite::{
             connection::open_memory_connection,
-            task55_migration::run_all_migrations as run_migrations,
+            task56_migration::run_all_migrations as run_migrations,
         },
         life, narrative,
         portable::domain::PortableDocumentKind,

@@ -319,7 +319,7 @@ mod tests {
         infrastructure::sqlite::{
             connection::{open_file_connection, open_memory_connection},
             // The current schema: Life node projections read the schema 32 direction-confidence table.
-            task55_migration::run_all_migrations as run_migrations,
+            task56_migration::run_all_migrations as run_migrations,
         },
         life,
     };

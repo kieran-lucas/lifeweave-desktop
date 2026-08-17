@@ -8,6 +8,7 @@ fn export_focus_plan_bindings() {
         .expect("CARGO_MANIFEST_DIR has no parent")
         .join("frontend/src/ipc/generated/");
     FocusPlanLifecycle::export_all_to(&out).unwrap();
+    FocusPlanPriority::export_all_to(&out).unwrap();
     FocusPlanPortfolio::export_all_to(&out).unwrap();
     FocusPlanListInput::export_all_to(&out).unwrap();
     CreateFocusPlanInput::export_all_to(&out).unwrap();

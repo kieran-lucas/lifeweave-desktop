@@ -17,7 +17,7 @@
 - Active task: **51 — Visual Experience Overhaul (Quiet Luminous Atlas)**
 - Active implementation specification: **`specs/041-visual-experience-overhaul/`**
 - Latest feature checkpoint: **Task 49 — Focus Plan Activity Analytics Core** (`7622db3d8b2b42d69c8f497b6899c5be82e9f9a9`)
-- Database schema: **31**
+- Database schema: **33**
 - Next action: **Implement active spec**
 
 ## Task 51 activation

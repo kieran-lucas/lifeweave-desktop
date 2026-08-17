@@ -141,7 +141,16 @@ The immutable source is authoritative. This registry makes operational status vi
   nullable checked value; Rust validates 1–100; the existing revisioned `mutate_focus_plan`
   authority owns writes. A non-null score atomically sets lifecycle `completed`; migration 30
   converges already-scored Plans. Score is not Analytics, history, health, prediction, or progress.
-  Active status is written as text with redundant green emphasis, never color alone.
+  Active status is written as text with redundant green emphasis, never color alone. The portfolio
+  `Active` row label is superseded by the ADR 0053 priority badge; lifecycle stays visible through
+  the portfolio tab, the completed strike-through, and the detail lifecycle badge.
+- Focus Plan priority is current Plan authority under ADR 0053. Migration 33 appends one required
+  checked value on a deliberately Plan-specific scale `critical | high | normal | low`, defaulting
+  to `normal`; Task priority `low | medium | high` is unchanged and the two scales stay independent.
+  The existing revisioned `mutate_focus_plan` `update_plan` action owns writes. Priority is the
+  first portfolio sort key ahead of the released date ordering. The badge prints the level name
+  beside a four-step meter, never color alone. Priority is not Analytics, history, automation,
+  scheduling, search context, or portable-package content.
 - Release-candidate hardening is an allocatable roadmap candidate in its own right. Task 40 / Slice 030 activates the Hardening candidate ADR 0028 scored at 8.055 under ADR 0034, changes no product behavior, adds no migration, and is explicitly **not** a feature checkpoint: the latest feature task remained 39 until Task 41 closed.
 - The JavaScript performance gate is versioned. Task 16 and Task 40 budgets are preserved as history and superseded by a Task 41 budget v2 that tracks main, total raw, total gzip, expected chunk count, the named lazy chunks, and every chunk of at least 10,000 raw bytes under a hash-independent identity. Maxima are derived from the final observed build by documented formulas and clamped by locked ceilings; a missing critical chunk, a new unbudgeted chunk at or above 10,000 bytes, and a duplicate normalized identity are failures. Arbitrary budget inflation is not an accepted response to a red gate.
 - Today is the only eager product screen. Non-default routes, Life/Narrative/tree engines, help, and
@@ -309,6 +318,10 @@ The immutable source is authoritative. This registry makes operational status vi
   score Analytics, Plan health/prediction, automatic Plan lifecycle beyond the explicit manual
   score → completed rule, and Plan analytics beyond the ADR 0043 factual activity projection remain
   prohibited (factual Focus Plan activity analytics is DECIDED — see ADR 0043);
+- automatic or inferred Plan priority, priority history, priority Analytics, priority-driven
+  lifecycle or scheduling, priority-based Task mutation, priority in the Search index or portable
+  package, and portfolio filtering or grouping by priority remain prohibited (the manual
+  four-level Plan priority itself is DECIDED — see ADR 0053);
 - prediction and opaque ML;
 - custom user-authored Narrative templates and Visual Worlds;
 - cross-scene block drag and scene-level independent presentation;

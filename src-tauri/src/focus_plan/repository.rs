@@ -7,7 +7,7 @@ use uuid::Uuid;
 use super::dto::{
     CreateFocusPlanInput, CreateFocusPlanReviewInput, FocusPlanDetailView, FocusPlanLifecycle,
     FocusPlanLinkedWorkInput, FocusPlanLinkedWorkView, FocusPlanListInput, FocusPlanMutationAction,
-    FocusPlanMutationResult, FocusPlanPhaseView, FocusPlanRecoveryDraftView,
+    FocusPlanMutationResult, FocusPlanPhaseView, FocusPlanPriority, FocusPlanRecoveryDraftView,
     FocusPlanReviewHistoryView, FocusPlanReviewListInput, FocusPlanReviewView,
     FocusPlanRevisionView, FocusPlanSummaryView, FocusPlanTagView, FocusPlanVariantView,
     MutateFocusPlanInput, SaveFocusPlanDraftInput,
@@ -52,6 +52,18 @@ pub(crate) fn lifecycle_from_db(value: &str) -> Result<FocusPlanLifecycle> {
         "completed" => Ok(FocusPlanLifecycle::Completed),
         _ => Err(FocusPlanError::Validation(
             "stored Focus Plan lifecycle is invalid".into(),
+        )),
+    }
+}
+
+pub(crate) fn priority_from_db(value: &str) -> Result<FocusPlanPriority> {
+    match value {
+        "critical" => Ok(FocusPlanPriority::Critical),
+        "high" => Ok(FocusPlanPriority::High),
+        "normal" => Ok(FocusPlanPriority::Normal),
+        "low" => Ok(FocusPlanPriority::Low),
+        _ => Err(FocusPlanError::Validation(
+            "stored Focus Plan priority is invalid".into(),
         )),
     }
 }
@@ -236,7 +248,7 @@ pub fn list(conn: &Connection, input: &FocusPlanListInput) -> Result<Vec<FocusPl
     let limit = input.limit.unwrap_or(100).clamp(1, 200);
     let offset = input.offset.unwrap_or(0);
     let mut statement = conn.prepare(
-        "SELECT p.id,p.title,p.lifecycle,p.score,p.start_date,p.target_date,p.life_node_id,
+        "SELECT p.id,p.title,p.lifecycle,p.priority,p.score,p.start_date,p.target_date,p.life_node_id,
                 ln.title,v.label,
                 (SELECT COUNT(*) FROM focus_plan_variants av WHERE av.plan_id=p.id AND av.archived_at IS NULL),
                 (SELECT COUNT(*) FROM focus_plan_phases ph JOIN focus_plan_variants pv ON pv.id=ph.variant_id WHERE pv.plan_id=p.id AND pv.archived_at IS NULL AND ph.archived_at IS NULL),
@@ -248,6 +260,7 @@ pub fn list(conn: &Connection, input: &FocusPlanListInput) -> Result<Vec<FocusPl
          WHERE ((?1='archived' AND p.archived_at IS NOT NULL)
             OR (?1!='archived' AND p.archived_at IS NULL AND p.lifecycle=?1))
          ORDER BY
+            CASE p.priority WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'normal' THEN 2 ELSE 3 END,
             CASE WHEN p.start_date IS NULL AND p.target_date IS NULL THEN 1 ELSE 0 END,
             COALESCE(p.start_date,p.target_date) ASC,
             COALESCE(p.target_date,p.start_date) ASC,
@@ -256,23 +269,25 @@ pub fn list(conn: &Connection, input: &FocusPlanListInput) -> Result<Vec<FocusPl
     )?;
     let rows = statement.query_map(params![filter, limit, offset], |row| {
         let lifecycle: String = row.get(2)?;
-        let tags: String = row.get(11)?;
+        let priority: String = row.get(3)?;
+        let tags: String = row.get(12)?;
         Ok((
             row.get::<_, String>(0)?,
             row.get::<_, String>(1)?,
             lifecycle,
-            row.get::<_, Option<u32>>(3)?,
-            row.get::<_, Option<String>>(4)?,
+            priority,
+            row.get::<_, Option<u32>>(4)?,
             row.get::<_, Option<String>>(5)?,
             row.get::<_, Option<String>>(6)?,
             row.get::<_, Option<String>>(7)?,
-            row.get::<_, String>(8)?,
-            row.get::<_, u32>(9)?,
+            row.get::<_, Option<String>>(8)?,
+            row.get::<_, String>(9)?,
             row.get::<_, u32>(10)?,
+            row.get::<_, u32>(11)?,
             tags,
-            row.get::<_, u32>(12)?,
-            row.get::<_, String>(13)?,
-            row.get::<_, Option<String>>(14)?,
+            row.get::<_, u32>(13)?,
+            row.get::<_, String>(14)?,
+            row.get::<_, Option<String>>(15)?,
         ))
     })?;
     rows.map(|row| {
@@ -280,6 +295,7 @@ pub fn list(conn: &Connection, input: &FocusPlanListInput) -> Result<Vec<FocusPl
             id,
             title,
             lifecycle,
+            priority,
             score,
             start_date,
             target_date,
@@ -297,6 +313,7 @@ pub fn list(conn: &Connection, input: &FocusPlanListInput) -> Result<Vec<FocusPl
             id,
             title,
             lifecycle: lifecycle_from_db(&lifecycle)?,
+            priority: priority_from_db(&priority)?,
             score,
             start_date,
             target_date,
@@ -322,16 +339,17 @@ pub fn get(conn: &Connection, plan_id: &str) -> Result<FocusPlanDetailView> {
     validate_id(plan_id, "Focus Plan ID")?;
     let plan = conn
         .query_row(
-            "SELECT p.id,p.title,p.lifecycle,p.score,p.start_date,p.target_date,p.life_node_id,ln.title,p.outcome,p.success_criteria_json,p.selected_variant_id,p.revision,p.created_at,p.updated_at,p.archived_at
+            "SELECT p.id,p.title,p.lifecycle,p.priority,p.score,p.start_date,p.target_date,p.life_node_id,ln.title,p.outcome,p.success_criteria_json,p.selected_variant_id,p.revision,p.created_at,p.updated_at,p.archived_at
              FROM focus_plans p LEFT JOIN life_nodes ln ON ln.id=p.life_node_id WHERE p.id=?1",
             [plan_id],
             |row| {
                 Ok((
                     row.get::<_, String>(0)?, row.get::<_, String>(1)?, row.get::<_, String>(2)?,
-                    row.get::<_, Option<u32>>(3)?, row.get::<_, Option<String>>(4)?, row.get::<_, Option<String>>(5)?,
-                    row.get::<_, Option<String>>(6)?, row.get::<_, Option<String>>(7)?, row.get::<_, String>(8)?,
-                    row.get::<_, String>(9)?, row.get::<_, String>(10)?, row.get::<_, u32>(11)?,
-                    row.get::<_, String>(12)?, row.get::<_, String>(13)?, row.get::<_, Option<String>>(14)?,
+                    row.get::<_, String>(3)?, row.get::<_, Option<u32>>(4)?, row.get::<_, Option<String>>(5)?,
+                    row.get::<_, Option<String>>(6)?, row.get::<_, Option<String>>(7)?, row.get::<_, Option<String>>(8)?,
+                    row.get::<_, String>(9)?, row.get::<_, String>(10)?, row.get::<_, String>(11)?,
+                    row.get::<_, u32>(12)?, row.get::<_, String>(13)?, row.get::<_, String>(14)?,
+                    row.get::<_, Option<String>>(15)?,
                 ))
             },
         )
@@ -419,28 +437,29 @@ pub fn get(conn: &Connection, plan_id: &str) -> Result<FocusPlanDetailView> {
         )
         .optional()?;
 
-    let success_criteria = serde_json::from_str::<Vec<String>>(&plan.9)
+    let success_criteria = serde_json::from_str::<Vec<String>>(&plan.10)
         .map_err(|_| FocusPlanError::Validation("Stored success criteria are invalid".into()))?;
     Ok(FocusPlanDetailView {
         id: plan.0,
         title: plan.1,
         lifecycle: lifecycle_from_db(&plan.2)?,
-        score: plan.3,
-        start_date: plan.4,
-        target_date: plan.5,
-        life_node_id: plan.6,
-        life_title: plan.7,
-        outcome: plan.8,
+        priority: priority_from_db(&plan.3)?,
+        score: plan.4,
+        start_date: plan.5,
+        target_date: plan.6,
+        life_node_id: plan.7,
+        life_title: plan.8,
+        outcome: plan.9,
         success_criteria,
-        selected_variant_id: plan.10,
+        selected_variant_id: plan.11,
         variants,
         tags,
         revisions,
         recovery_draft,
-        revision: plan.11,
-        created_at: plan.12,
-        updated_at: plan.13,
-        archived: plan.14.is_some(),
+        revision: plan.12,
+        created_at: plan.13,
+        updated_at: plan.14,
+        archived: plan.15.is_some(),
     })
 }
 
@@ -508,8 +527,8 @@ pub fn create(conn: &mut Connection, input: CreateFocusPlanInput) -> Result<Focu
         .map_err(|_| FocusPlanError::Validation("Success criteria are invalid".into()))?;
     let tx = conn.transaction()?;
     tx.execute(
-        "INSERT INTO focus_plans(id,life_node_id,selected_variant_id,title,lifecycle,start_date,target_date,outcome,success_criteria_json,revision,created_at,updated_at) VALUES(?1,?2,?3,?4,'draft',?5,?6,?7,?8,0,?9,?9)",
-        params![plan_id, input.life_node_id, variant_id, title, input.start_date, input.target_date, input.outcome, criteria_json, timestamp],
+        "INSERT INTO focus_plans(id,life_node_id,selected_variant_id,title,lifecycle,priority,start_date,target_date,outcome,success_criteria_json,revision,created_at,updated_at) VALUES(?1,?2,?3,?4,'draft',?5,?6,?7,?8,?9,0,?10,?10)",
+        params![plan_id, input.life_node_id, variant_id, title, input.priority.as_str(), input.start_date, input.target_date, input.outcome, criteria_json, timestamp],
     )?;
     tx.execute(
         "INSERT INTO focus_plan_variants(id,plan_id,label,canonical_json,plain_text,sort_key,created_at,updated_at) VALUES(?1,?2,?3,'{\"type\":\"doc\",\"content\":[]}','',0,?4,?4)",
@@ -579,6 +598,7 @@ fn apply_mutation(
         FocusPlanMutationAction::UpdatePlan {
             title,
             lifecycle,
+            priority,
             life_node_id,
             start_date,
             target_date,
@@ -598,8 +618,8 @@ fn apply_mutation(
             let criteria_json = serde_json::to_string(&criteria)
                 .map_err(|_| FocusPlanError::Validation("Success criteria are invalid".into()))?;
             tx.execute(
-                "UPDATE focus_plans SET title=?2,lifecycle=?3,life_node_id=?4,start_date=?5,target_date=?6,outcome=?7,success_criteria_json=?8 WHERE id=?1",
-                params![plan_id, title, lifecycle.as_str(), life_node_id, start_date, target_date, outcome, criteria_json],
+                "UPDATE focus_plans SET title=?2,lifecycle=?3,priority=?4,life_node_id=?5,start_date=?6,target_date=?7,outcome=?8,success_criteria_json=?9 WHERE id=?1",
+                params![plan_id, title, lifecycle.as_str(), priority.as_str(), life_node_id, start_date, target_date, outcome, criteria_json],
             )?;
             replace_tags(tx, plan_id, tag_ids, timestamp)?;
             None
@@ -1142,7 +1162,7 @@ mod tests {
     use super::*;
     use crate::focus_plan::dto::FocusPlanPortfolio;
     use crate::infrastructure::sqlite::{
-        connection::open_memory_connection, task51_migration::run_all_migrations,
+        connection::open_memory_connection, task56_migration::run_all_migrations,
     };
 
     fn connection() -> Connection {
@@ -1153,6 +1173,7 @@ mod tests {
 
     fn create_input(operation_id: &str) -> CreateFocusPlanInput {
         CreateFocusPlanInput {
+            priority: crate::focus_plan::dto::FocusPlanPriority::Normal,
             title: "AI Foundations".into(),
             life_node_id: None,
             start_date: Some("2026-08-15".into()),
@@ -1212,6 +1233,104 @@ mod tests {
                 .collect::<Vec<_>>(),
             vec!["Earlier target", "Later start", "Undated"]
         );
+    }
+
+    #[test]
+    fn priority_outranks_dates_and_survives_the_revision_snapshot() {
+        let mut conn = connection();
+
+        // Identical dates on every Plan, so only priority can decide the order.
+        let mut low = create_input("op-low");
+        low.title = "Low".into();
+        low.priority = FocusPlanPriority::Low;
+        create(&mut conn, low).unwrap();
+
+        let mut critical = create_input("op-critical");
+        critical.title = "Critical".into();
+        critical.priority = FocusPlanPriority::Critical;
+        let critical = create(&mut conn, critical).unwrap();
+
+        let mut normal = create_input("op-normal");
+        normal.title = "Normal".into();
+        create(&mut conn, normal).unwrap();
+
+        let mut high = create_input("op-high");
+        high.title = "High".into();
+        high.priority = FocusPlanPriority::High;
+        create(&mut conn, high).unwrap();
+
+        // A Plan created without an explicit choice lands on the neutral level.
+        assert_eq!(
+            get(&conn, &critical.id).unwrap().priority,
+            FocusPlanPriority::Critical
+        );
+
+        let titles = |conn: &Connection| {
+            list(
+                conn,
+                &FocusPlanListInput {
+                    portfolio: FocusPlanPortfolio::Draft,
+                    limit: None,
+                    offset: None,
+                },
+            )
+            .unwrap()
+            .into_iter()
+            .map(|plan| plan.title)
+            .collect::<Vec<_>>()
+        };
+        assert_eq!(titles(&conn), vec!["Critical", "High", "Normal", "Low"]);
+
+        // Demoting the top Plan re-sorts the portfolio and advances the revision exactly once.
+        mutate(
+            &mut conn,
+            MutateFocusPlanInput {
+                plan_id: critical.id.clone(),
+                expected_revision: critical.revision,
+                operation_id: "op-demote".into(),
+                mutation: FocusPlanMutationAction::UpdatePlan {
+                    title: critical.title.clone(),
+                    lifecycle: critical.lifecycle,
+                    priority: FocusPlanPriority::Low,
+                    life_node_id: None,
+                    start_date: critical.start_date.clone(),
+                    target_date: critical.target_date.clone(),
+                    outcome: critical.outcome.clone(),
+                    success_criteria: critical.success_criteria.clone(),
+                    tag_ids: vec![],
+                },
+            },
+        )
+        .unwrap();
+
+        let demoted = get(&conn, &critical.id).unwrap();
+        assert_eq!(demoted.priority, FocusPlanPriority::Low);
+        assert_eq!(demoted.revision, critical.revision + 1);
+        assert_eq!(titles(&conn), vec!["High", "Normal", "Critical", "Low"]);
+
+        // Recovery must be able to restore the priority, so the committed revision has to carry it.
+        let snapshot: serde_json::Value = serde_json::from_str(
+            &conn
+                .query_row(
+                    "SELECT canonical_json FROM focus_plan_revisions WHERE plan_id=?1 ORDER BY revision DESC LIMIT 1",
+                    [&critical.id],
+                    |row| row.get::<_, String>(0),
+                )
+                .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(snapshot["priority"], "low");
+    }
+
+    #[test]
+    fn stored_priority_outside_the_plan_scale_is_rejected() {
+        let mut conn = connection();
+        let plan = create(&mut conn, create_input("op-create")).unwrap();
+        conn.execute(
+            "UPDATE focus_plans SET priority='medium' WHERE id=?1",
+            [&plan.id],
+        )
+        .unwrap_err();
     }
 
     #[test]
@@ -1519,6 +1638,7 @@ mod tests {
                 mutation: FocusPlanMutationAction::UpdatePlan {
                     title: plan.title.clone(),
                     lifecycle: plan.lifecycle,
+                    priority: plan.priority,
                     life_node_id: plan.life_node_id.clone(),
                     start_date: plan.start_date.clone(),
                     target_date: plan.target_date.clone(),
@@ -1551,6 +1671,7 @@ mod tests {
                 mutation: FocusPlanMutationAction::UpdatePlan {
                     title: "AI Foundations Updated".into(),
                     lifecycle: hidden.lifecycle,
+                    priority: hidden.priority,
                     life_node_id: hidden.life_node_id,
                     start_date: hidden.start_date,
                     target_date: hidden.target_date,

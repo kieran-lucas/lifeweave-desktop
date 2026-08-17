@@ -460,7 +460,7 @@ pub fn confirm_import(
 mod tests {
     use super::*;
     use crate::infrastructure::sqlite::{
-        connection::open_memory_connection, task55_migration::run_all_migrations as run_migrations,
+        connection::open_memory_connection, task56_migration::run_all_migrations as run_migrations,
     };
     fn leaf(conn: &mut Connection, title: &str) -> String {
         crate::life::repository::create(

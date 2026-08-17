@@ -1826,7 +1826,7 @@ mod tests {
     use super::*;
     use crate::focus_plan::dto::CreateFocusPlanInput;
     use crate::infrastructure::sqlite::{
-        connection::open_memory_connection, task51_migration::run_all_migrations,
+        connection::open_memory_connection, task56_migration::run_all_migrations,
     };
     use crate::tag::dto::MergeTagsInput;
     use crate::task::dto::{
@@ -2562,6 +2562,7 @@ mod tests {
         let plan = crate::focus_plan::repository::create(
             &mut conn,
             CreateFocusPlanInput {
+                priority: crate::focus_plan::dto::FocusPlanPriority::Normal,
                 title: "Plan A".into(),
                 life_node_id: None,
                 start_date: None,
@@ -2835,6 +2836,7 @@ mod tests {
         let plan = crate::focus_plan::repository::create(
             &mut conn,
             CreateFocusPlanInput {
+                priority: crate::focus_plan::dto::FocusPlanPriority::Normal,
                 title: "Plan A".into(),
                 life_node_id: None,
                 start_date: None,

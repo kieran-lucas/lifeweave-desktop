@@ -6,7 +6,7 @@
   "latest_closed_slice": 40,
   "latest_feature_task": 49,
   "latest_feature_checkpoint": "7622db3d8b2b42d69c8f497b6899c5be82e9f9a9",
-  "database_schema_version": 31,
+  "database_schema_version": 33,
   "active_spec": "specs/041-visual-experience-overhaul",
   "next_action": "implement_active_spec",
   "forbidden_feature_jump": true,
