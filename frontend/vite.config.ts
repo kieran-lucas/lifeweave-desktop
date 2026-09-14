@@ -12,7 +12,9 @@ export default defineConfig({
   envPrefix: ["VITE_", "TAURI_"],
   build: {
     target: "es2022",
-    sourcemap: "hidden",
+    // Tauri embeds every dist file, including hidden source maps. Keep diagnostic maps
+    // opt-in so installed releases do not carry editor/diagram source that runtime never reads.
+    sourcemap: process.env.LIFEWEAVE_SOURCEMAPS === "1" ? "hidden" : false,
     /*
      * A font small enough to inline would be emitted as a `data:` URI, and the production
      * content security policy declares `font-src 'self'` — which does not match `data:`.

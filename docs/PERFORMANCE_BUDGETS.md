@@ -109,6 +109,12 @@ pnpm build
 pnpm hardening:performance
 ```
 
+Production builds omit source maps because Tauri embeds every file in `frontend/dist`, including
+hidden maps. For local module attribution, opt in before building with
+`$env:LIFEWEAVE_SOURCEMAPS = '1'; pnpm build`, then remove the variable with
+`Remove-Item Env:LIFEWEAVE_SOURCEMAPS` and rebuild before packaging a normal release. The bundle
+budget measures emitted JavaScript and works in either mode.
+
 Budget v2 tracks `main_js_bytes`, `total_js_bytes`, `total_js_gzip_bytes`, `expected_chunk_count`,
 and every emitted chunk of at least 10,000 raw bytes, keyed by an identity that strips only the
 terminal content hash so a rebuild never reads as a new chunk. Sizes are raw bytes plus gzip
