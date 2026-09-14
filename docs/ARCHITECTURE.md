@@ -113,6 +113,14 @@ Use sparingly for genuine broadcast:
 
 Components do not call `invoke()` directly.
 
+The application command dispatcher runs the generated Tauri handler on the blocking pool. Command
+decoding, synchronous service calls, database waits, and response serialization must not block the
+native window thread or an async executor worker. The generated handler retains command/ACL
+validation; unknown commands reject explicitly. SQLite worker admission and backup/restore exclusion
+remain authoritative, including when requests arrive concurrently.
+Synchronous handlers retain mutual exclusion across their entire execution (including multi-query
+and filesystem work); this dispatch change does not make formerly sequential services concurrent.
+
 ## 7. Database architecture
 
 ### Connection

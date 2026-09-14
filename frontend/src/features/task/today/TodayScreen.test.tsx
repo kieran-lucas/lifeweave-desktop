@@ -113,7 +113,7 @@ describe("Today task interactions", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 
     fireEvent.doubleClick(title);
-    const firstEditor = screen.getByRole("dialog", { name: "Edit task" });
+    const firstEditor = await screen.findByRole("dialog", { name: "Edit task" });
     expect(firstEditor).toBeInTheDocument();
     expect(firstEditor).toHaveAttribute("data-dialog-width", "standard");
     expect(within(firstEditor).getByRole("region", { name: "Task details" })).toBeInTheDocument();
@@ -161,6 +161,7 @@ describe("Today task interactions", () => {
     mount();
     const title = await screen.findByText("Write the report");
     fireEvent.doubleClick(title);
+    await screen.findByRole("dialog");
 
     const backdrop = document.querySelector<HTMLElement>("[data-dialog-backdrop]")!;
     fireEvent.pointerDown(backdrop);
@@ -257,8 +258,8 @@ describe("Today task interactions", () => {
   it("uses the styled date field and locking time wheels in the task composer", async () => {
     const view = mount();
     fireEvent.click(await screen.findByRole("button", { name: "Plan task" }));
-    const dialog = screen.getByRole("dialog", { name: "Plan task" });
-    const dateTrigger = within(dialog).getByRole("button", { name: /Task date, Tuesday, August 11, 2026/ });
+    const dialog = await screen.findByRole("dialog", { name: "Plan task" });
+    const dateTrigger = await within(dialog).findByRole("button", { name: /Task date, Tuesday, August 11, 2026/ });
     fireEvent.click(dateTrigger);
     const calendar = within(dialog).getByRole("dialog", { name: "Choose task date" });
     fireEvent.click(within(calendar).getByRole("gridcell", { name: "Thursday, August 13, 2026" }));
@@ -285,7 +286,13 @@ describe("Today task interactions", () => {
   it("keeps the recomposed task instrument semantically grouped and axe clean", async () => {
     mount();
     fireEvent.click(await screen.findByRole("button", { name: "Plan task" }));
-    const dialog = screen.getByRole("dialog", { name: "Plan task" });
+    const dialog = await screen.findByRole("dialog", { name: "Plan task" });
+    await Promise.all([
+      within(dialog).findByRole("button", { name: /Task date,/ }),
+      within(dialog).findByRole("button", { name: /Start time,/ }),
+      within(dialog).findByRole("button", { name: /End time,/ }),
+      within(dialog).findByRole("button", { name: /Category,/ }),
+    ]);
     expect(within(dialog).getByRole("textbox", { name: "Title" })).toBeInTheDocument();
     expect(within(dialog).getByRole("textbox", { name: "Description" })).toBeInTheDocument();
     expect(within(dialog).queryByText("Notes")).not.toBeInTheDocument();

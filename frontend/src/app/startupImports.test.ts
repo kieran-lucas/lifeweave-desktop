@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import appSource from "./App.tsx?raw";
 import todaySource from "../features/task/today/TodayScreen.tsx?raw";
+import composerSource from "../features/task/today/TaskComposer.tsx?raw";
+import deferredComposerSource from "../features/task/today/DeferredTaskComposer.tsx?raw";
 import weekSource from "../features/calendar/WeekStrip.tsx?raw";
 import dateSource from "../features/calendar/date.ts?raw";
 
@@ -21,8 +23,11 @@ describe("Today startup import boundary", () => {
   });
 
   it("defers composer-only relation and tag controls", () => {
+    expect(todaySource).toContain("<DeferredTaskComposer");
+    expect(deferredComposerSource).toContain('void import("./TaskComposer").then(');
+    expect(deferredComposerSource).not.toMatch(/^import .+ from ["']\.\/TaskComposer["']/m);
     for (const moduleName of ["LifeAreaCombobox", "FocusPlanCombobox", "TagPicker"]) {
-      expect(todaySource).toContain(`const ${moduleName} = lazy(`);
+      expect(composerSource).toContain(`const ${moduleName} = lazy(`);
       expect(todaySource).not.toMatch(new RegExp(`import\\s+\\{\\s*${moduleName}\\s*\\}`));
     }
   });

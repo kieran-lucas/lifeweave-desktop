@@ -1,4 +1,6 @@
 import { $, browser, expect } from "@wdio/globals";
+import { mkdir } from "node:fs/promises";
+import { resolve } from "node:path";
 
 const task = (title: string) => $(`//*[@role="group"][.//strong[normalize-space()="${title}"]]`);
 
@@ -22,6 +24,25 @@ describe("Phase 1 - current task lifecycle", () => {
     await $("button=Plan task").click();
     const createDialog = $("[role='dialog'][aria-labelledby='task-composer-heading']");
     await expect(createDialog.$("h2=Plan task")).toBeDisplayed();
+    const titleInput = createDialog.$("//label[.//span[normalize-space()='Title']]/input");
+    await expect(titleInput).toBeFocused();
+    const geometry = await browser.execute(() => {
+      const dialog = document.querySelector<HTMLElement>("[role='dialog'][aria-labelledby='task-composer-heading']")!;
+      const viewport = document.querySelector<HTMLElement>("[data-app-viewport]")!;
+      const box = dialog.getBoundingClientRect();
+      return {
+        pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        viewportOverflow: viewport.scrollWidth - viewport.clientWidth,
+        left: box.left, right: box.right, width: window.innerWidth,
+      };
+    });
+    expect(geometry.pageOverflow).toBeLessThanOrEqual(1);
+    expect(geometry.viewportOverflow).toBeLessThanOrEqual(1);
+    expect(geometry.left).toBeGreaterThanOrEqual(0);
+    expect(geometry.right).toBeLessThanOrEqual(geometry.width + 1);
+    const artifacts = resolve("../target/e2e-artifacts/performance");
+    await mkdir(artifacts, { recursive: true });
+    await browser.saveScreenshot(resolve(artifacts, "task-composer.png"));
     await createDialog.$("//label[.//span[normalize-space()='Title']]/input").setValue("E2E Alpha");
     await createDialog.$("button=Add to day").click();
 
@@ -38,5 +59,10 @@ describe("Phase 1 - current task lifecycle", () => {
     await expect(task("E2E Beta")).toBeDisplayed();
     await expect(task("E2E Alpha")).not.toExist();
     await expect($("[role='alert']")).not.toExist();
+    await $("button=Plan task").click();
+    await expect($("h2=Plan task")).toBeDisplayed();
+    await browser.keys("Escape");
+    await expect($("[role='dialog'][aria-labelledby='task-composer-heading']")).not.toExist();
+    await expect($("button=Plan task")).toBeFocused();
   });
 });

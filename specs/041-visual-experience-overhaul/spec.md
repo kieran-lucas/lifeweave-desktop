@@ -432,6 +432,22 @@ first Today mount. The 2026-08-11 production trace reduced startup `index.js` fr
 274,368 raw bytes and from 130,681 to 84,033 deterministic gzip bytes without raising a locked
 ceiling; this boundary is protected by source-level contract tests and the bundle budget.
 
+### Product Owner performance amendment — 2026-09-13
+
+The Product Owner authorizes startup and interaction optimizations, followed by packaging and
+replacement of the installed Desktop application. Task-composer code, styles, draft state, and
+mutations load only when the composer opens. Editing a draft must not rerender the Today rows.
+The existing form, persistence, invalidation, keyboard, and focus behavior remains equivalent.
+Native command dispatch uses the blocking pool so synchronous command work and database waits do
+not block the window thread. The generated command/ACL handler and DatabaseRuntime remain the
+authorities; unknown commands must settle with an error. No migration, DTO, capability, dependency,
+product feature, or motion-language change is authorized by this optimization.
+
+Measure emitted startup assets and a dense typing fixture before/after. Record native startup
+trials separately from bundle and jsdom evidence, including environmental limitations. Verify the
+installed payload, Desktop shortcut, and unchanged database fingerprints after replacement.
+Evidence: `docs/audits/2026-09-13-startup-responsiveness.md`.
+
 ## 15. Accessibility
 
 WCAG 2.2 AA for core flows, preserved and re-tested: native semantics first, keyboard parity,

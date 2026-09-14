@@ -181,7 +181,7 @@ pub fn run() {
             cleanup_stale_staging_in_background(app_data_root);
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![
+        .invoke_handler(ipc::dispatch::off_main_thread(tauri::generate_handler![
             ipc::health_check,
             create_foundation_record,
             list_foundation_records,
@@ -300,7 +300,7 @@ pub fn run() {
             list_focus_plan_reviews,
             create_focus_plan_review,
             get_focus_plan_analytics_projection,
-        ])
+        ]))
         .run(tauri::generate_context!())
         .expect("failed to run Lifeweave");
 }

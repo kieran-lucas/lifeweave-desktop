@@ -1,4 +1,5 @@
 pub mod backup;
+pub mod dispatch;
 pub mod error;
 pub mod foundation_record;
 pub mod search;
