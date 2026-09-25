@@ -40,7 +40,7 @@ export const composerHeader = style({
   justifyContent: "space-between",
   gap: 24,
   padding: "24px 28px 23px",
-  background: "linear-gradient(180deg, #FBFCFF, #F4F8FD)",
+  background: vars.color.surface,
   color: vars.color.textPrimary,
   borderBlockEnd: `1px solid ${vars.color.borderHairline}`,
   "@media": {

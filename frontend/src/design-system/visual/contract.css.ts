@@ -25,6 +25,8 @@ export const vars = createThemeContract({
     surfaceRaised: null,
     /** Tonal selection fill. See `selectionEdge` — this may never be the sole state signal. */
     surfaceSelected: null,
+    /** Neutral selection for state menus where semantic status colors already carry meaning. */
+    surfaceSelectedNeutral: null,
     /** Navigation selection may use a distinct tint from content selection. */
     surfaceSelectedNav: null,
     surfaceHover: null,

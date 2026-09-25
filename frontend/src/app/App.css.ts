@@ -15,7 +15,7 @@ export const appRoot = style({
   overflow: "hidden",
   position: "relative",
   isolation: "isolate",
-  background: "radial-gradient(ellipse 90% 65% at 90% 4%, rgba(190, 218, 255, .20), transparent 72%), radial-gradient(ellipse 75% 65% at 4% 100%, rgba(215, 232, 255, .14), transparent 72%), var(--app-background)",
+  background: "var(--app-background)",
   selectors: { "&[data-sidebar-mode=collapsed]": { gridTemplateColumns: "68px minmax(0, 1fr)" } },
 });
 
@@ -28,7 +28,7 @@ export const sidebar = style({
   position: "relative",
   zIndex: 2,
   borderRight: "1px solid var(--border-subtle)",
-  background: "linear-gradient(180deg, #F7F9FD, #F0F5FB)",
+  background: "var(--sidebar-background)",
   boxShadow: "inset -1px 0 rgba(255,255,255,.7)",
   "@media": { "(forced-colors: active)": { background: "Canvas", borderRight: "1px solid CanvasText", boxShadow: "none" } },
 });
@@ -175,7 +175,7 @@ export const viewport = style({
   minBlockSize: 0,
   overflow: "auto",
   padding: gutter,
-  background: "radial-gradient(ellipse 85% 60% at 95% 0%, rgba(211,230,255,.24), transparent 74%), transparent",
+  background: "transparent",
   selectors: {
     '&[data-destination="today"]': {
       background: "transparent",
@@ -349,7 +349,7 @@ export const settingsToolButton = style([
     padding: "12px 14px",
     border: "1px solid var(--paint-edge)",
     borderRadius: "var(--radius-surface)",
-    backgroundColor: "#FCFDFF",
+    backgroundColor: "#FFFFFF",
     backgroundImage: "none",
     color: "var(--text-primary)",
     textAlign: "left",

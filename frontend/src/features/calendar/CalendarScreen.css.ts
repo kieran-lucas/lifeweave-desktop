@@ -110,7 +110,7 @@ export const weekdays = style({
   minBlockSize: 38,
   alignItems: "center",
   borderBottom: `1px solid ${vars.color.borderHairline}`,
-  background: "#F8FAFE",
+  background: vars.color.surface,
   color: vars.color.textTertiary,
   textAlign: "center",
   fontSize: 10,

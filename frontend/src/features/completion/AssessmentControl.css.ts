@@ -159,7 +159,7 @@ export const option = style({
     "&:active": { transform: "translateY(1px) scale(.98)" },
     "&:focus-visible": { outline: "2px solid var(--focus-ring)", outlineOffset: -2 },
     "&[data-active=true]": { backgroundColor: "var(--surface-hover)", color: "var(--text-primary)" },
-    "&[aria-selected=true]": { backgroundColor: "var(--text-primary)", color: "var(--surface-raised)" },
+    "&[aria-selected=true]": { backgroundColor: vars.color.surfaceSelectedNeutral, color: vars.color.textPrimary, boxShadow: `inset 0 0 0 1px ${vars.color.borderStrong}`, fontWeight: 750 },
   },
 });
 

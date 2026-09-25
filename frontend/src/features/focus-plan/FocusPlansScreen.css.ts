@@ -595,7 +595,7 @@ export const planEditorHeader = style({
   gap: 20,
   padding: "18px 28px",
   borderRadius: "16px 16px 0 0",
-  background: "linear-gradient(180deg, #FBFCFF, #F4F8FD)",
+  background: vars.color.surface,
   color: vars.color.textPrimary,
   borderBlockEnd: `1px solid ${vars.color.borderHairline}`,
 });

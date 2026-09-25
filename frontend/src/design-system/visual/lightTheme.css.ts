@@ -10,13 +10,14 @@ import { vars } from "./contract.css";
  */
 export const lightValues = {
   color: {
-    canvas: "#F3F7FD",
-    surface: "#F4F7FC",
-    surfaceSubtle: "#EDF3FA",
+    canvas: "#FFFFFF",
+    surface: "#FAFAFB",
+    surfaceSubtle: "#F6F7F8",
     surfaceRaised: "#FFFFFF",
     surfaceSelected: "#EAF3FF",
+    surfaceSelectedNeutral: "#E5E7EA",
     surfaceSelectedNav: "#E9F2FF",
-    surfaceHover: "#F2F7FD",
+    surfaceHover: "#F3F4F6",
 
     textPrimary: "#222934",
     textSecondary: "#4B5564",
@@ -24,8 +25,8 @@ export const lightValues = {
     textDisabled: "#9BA5B3",
     textOnAccent: "#FFFFFF",
 
-    borderHairline: "#DFE7F1",
-    borderStrong: "#C7D5E6",
+    borderHairline: "#E2E5E9",
+    borderStrong: "#C9CED5",
 
     accent: "#326FD3",
     accentMuted: "#245BC0",
@@ -76,8 +77,8 @@ export const lightValues = {
   },
 
   hairline: {
-    structural: "1px solid #C7D5E6",
-    subtle: "1px solid #DFE7F1",
+    structural: "1px solid #C9CED5",
+    subtle: "1px solid #E2E5E9",
   },
 };
 

@@ -59,6 +59,13 @@ describe("Visual redesign desktop review", () => {
     await expect($("h1=Today")).toBeDisplayed();
     await expect($("[role='group'][aria-label^='Review weekly priorities.'] button[aria-label='Assess task. Current state: Done']")).toBeDisplayed();
     await capture("today-dense-1536x864.png");
+    await $("[role='group'][aria-label^='Review weekly priorities.'] button[aria-label='Assess task. Current state: Done']").click();
+    const assessment = $("[role='listbox'][aria-label='Completion assessment']");
+    await expect(assessment).toBeDisplayed();
+    const selectedFill = await assessment.$("[role='option'][aria-selected='true']").getCSSProperty("background-color");
+    expect(Number(selectedFill.value.match(/\d+/)?.[0])).toBeGreaterThan(180);
+    await capture("assessment-rail-1536x864.png");
+    await browser.keys("Escape");
     await $("button[aria-label='Calendar']").click();
     await $("button[aria-label='Next month']").click();
     await $("button[aria-label='Previous month']").click();

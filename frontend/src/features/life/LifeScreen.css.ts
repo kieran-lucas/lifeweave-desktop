@@ -31,7 +31,7 @@ export const navigator = style({
   alignContent: "start",
   overflow: "hidden",
   borderInlineEnd: `1px solid ${vars.color.borderHairline}`,
-  background: "linear-gradient(180deg, #F8FAFE, #F1F6FC)",
+  background: vars.color.surface,
   "@media": {
     "(max-width: 760px)": {
       maxBlockSize: 360,
@@ -256,7 +256,7 @@ export const canvas = style({
   minInlineSize: 0,
   minBlockSize: 0,
   overflowY: "auto",
-  background: "radial-gradient(ellipse 90% 55% at 85% 0%, rgba(211,230,255,.18), transparent 76%), transparent",
+  background: vars.color.canvas,
   selectors: {
     '&[data-life-mode="edit"]': {
       display: "flex",
