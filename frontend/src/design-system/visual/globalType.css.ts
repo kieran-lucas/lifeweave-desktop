@@ -4,7 +4,7 @@ import "./theme.css";
 import { duration, easing, reduced } from "./motion.css";
 import { family, text } from "./typography.css";
 
-/* Productive chrome is deterministic Be Vietnam Pro; authored reading keeps Literata. */
+/* Productive chrome uses local Lexend; authored reading keeps Literata. */
 globalStyle("body", {
   fontFamily: family.uiText,
   fontSize: text.body.fontSize,

@@ -1,7 +1,7 @@
 /* Lifeweave's neutral light material layer. */
 :root {
   color-scheme: light;
-  font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  font-family: "Lexend Variable", "Segoe UI", system-ui, sans-serif;
   color: var(--text-primary);
   background: var(--app-background);
   font-synthesis: none;

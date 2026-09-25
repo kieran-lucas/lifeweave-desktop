@@ -1,23 +1,15 @@
 import { globalFontFace } from "@vanilla-extract/css";
 
-import beVietnamProLatin400 from "@fontsource/be-vietnam-pro/files/be-vietnam-pro-latin-400-normal.woff2";
-import beVietnamProLatin500 from "@fontsource/be-vietnam-pro/files/be-vietnam-pro-latin-500-normal.woff2";
-import beVietnamProLatin600 from "@fontsource/be-vietnam-pro/files/be-vietnam-pro-latin-600-normal.woff2";
-import beVietnamProLatin700 from "@fontsource/be-vietnam-pro/files/be-vietnam-pro-latin-700-normal.woff2";
-import beVietnamProVietnamese400 from "@fontsource/be-vietnam-pro/files/be-vietnam-pro-vietnamese-400-normal.woff2";
-import beVietnamProVietnamese500 from "@fontsource/be-vietnam-pro/files/be-vietnam-pro-vietnamese-500-normal.woff2";
-import beVietnamProVietnamese600 from "@fontsource/be-vietnam-pro/files/be-vietnam-pro-vietnamese-600-normal.woff2";
-import beVietnamProVietnamese700 from "@fontsource/be-vietnam-pro/files/be-vietnam-pro-vietnamese-700-normal.woff2";
+import lexendLatin from "@fontsource-variable/lexend/files/lexend-latin-wght-normal.woff2";
+import lexendVietnamese from "@fontsource-variable/lexend/files/lexend-vietnamese-wght-normal.woff2";
 import literataLatin from "@fontsource-variable/literata/files/literata-latin-wght-normal.woff2";
 import literataVietnamese from "@fontsource-variable/literata/files/literata-vietnamese-wght-normal.woff2";
 
 /**
  * Lifeweave typography.
  *
- * Be Vietnam Pro is the productive UI voice: drawn by Vietnamese designers, crisp at control sizes
- * and distinctive enough for large operational headings. Literata remains the authored long-form
- * voice. Every role below states its family, size, weight, line height and tracking, so no surface
- * invents a `fontSize` of its own.
+ * Lexend is the productive UI voice. Literata remains the authored long-form voice. Every role
+ * below states its family, size, weight, line height and tracking.
  *
  * The former Segoe UI Variable stack depended on three Windows optical family names and therefore
  * varied with OS font registration and WebView2/DirectWrite resolution. The locally bundled
@@ -45,7 +37,7 @@ import literataVietnamese from "@fontsource-variable/literata/files/literata-vie
  * local-first, so these load from disk with no network transfer, and the swap window is not
  * perceptible in practice.
  */
-const PRODUCTIVE = "Be Vietnam Pro";
+const PRODUCTIVE = "Lexend Variable";
 const EDITORIAL = "Literata Variable";
 const latinRange =
   "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329," +
@@ -54,27 +46,21 @@ const vietnameseRange =
   "U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301," +
   "U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB";
 
-function registerProductiveFace(weight: 400 | 500 | 600 | 700, latin: string, vietnamese: string) {
-  globalFontFace(PRODUCTIVE, {
-    src: `url(${latin}) format("woff2")`,
-    fontWeight: weight,
-    fontStyle: "normal",
-    fontDisplay: "swap",
-    unicodeRange: latinRange,
-  });
-  globalFontFace(PRODUCTIVE, {
-    src: `url(${vietnamese}) format("woff2")`,
-    fontWeight: weight,
-    fontStyle: "normal",
-    fontDisplay: "swap",
-    unicodeRange: vietnameseRange,
-  });
-}
+globalFontFace(PRODUCTIVE, {
+  src: `url(${lexendLatin}) format("woff2-variations")`,
+  fontWeight: "100 900",
+  fontStyle: "normal",
+  fontDisplay: "swap",
+  unicodeRange: latinRange,
+});
 
-registerProductiveFace(400, beVietnamProLatin400, beVietnamProVietnamese400);
-registerProductiveFace(500, beVietnamProLatin500, beVietnamProVietnamese500);
-registerProductiveFace(600, beVietnamProLatin600, beVietnamProVietnamese600);
-registerProductiveFace(700, beVietnamProLatin700, beVietnamProVietnamese700);
+globalFontFace(PRODUCTIVE, {
+  src: `url(${lexendVietnamese}) format("woff2-variations")`,
+  fontWeight: "100 900",
+  fontStyle: "normal",
+  fontDisplay: "swap",
+  unicodeRange: vietnameseRange,
+});
 
 globalFontFace(EDITORIAL, {
   src: `url(${literataLatin}) format("woff2-variations")`,

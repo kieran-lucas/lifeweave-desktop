@@ -14,8 +14,8 @@ The immutable source is authoritative. This registry makes operational status vi
   cross-surface navigation push one entry only when the effective snapshot changes; browser
   Back/Forward (including mouse navigation buttons) restore the exact prior snapshot without
   persisting history outside the current window session. See ADR 0049.
-- Productive application chrome uses the self-hosted Be Vietnam Pro family at 400/500/600/700 with
-  Latin and Vietnamese subsets; authored Reader/editor content retains Literata. Route changes use
+- Productive application chrome uses the self-hosted Lexend Variable family with Latin and
+  Vietnamese subsets (ADR 0054); authored Reader/editor content retains Literata. Route changes use
   directional horizontal continuity, Life canvas changes use bounded traversal, and every enabled
   button has shared hover/press feedback. Motion uses transform/opacity, never loops continuously,
   and Reduced Motion replaces spatial travel with an 80 ms fade. See ADR 0045 Override 6.

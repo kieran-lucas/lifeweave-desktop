@@ -43,10 +43,10 @@ importers:
       '@dnd-kit/sortable':
         specifier: 10.0.0
         version: 10.0.0(@dnd-kit/core@6.3.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)
-      '@fontsource-variable/literata':
+      '@fontsource-variable/lexend':
         specifier: 5.3.0
         version: 5.3.0
-      '@fontsource/be-vietnam-pro':
+      '@fontsource-variable/literata':
         specifier: 5.3.0
         version: 5.3.0
       '@internationalized/date':
@@ -519,11 +519,11 @@ packages:
   '@fluentui/svg-icons@1.1.334':
     resolution: {integrity: sha512-VeKTChgi+iyMj4ecbuKRTGlzzTf6x5v5mD25l8+4DVf7f85dydrmEsWmVITRaoKWxGPMDZsiXqWUSCcXPukvEw==}
 
+  '@fontsource-variable/lexend@5.3.0':
+    resolution: {integrity: sha512-3SXtiZ8rFbT0oaPzEboCG5RM3jtyhpNxandh1jWNLqvrJRfV/eP3R+GGw+o5e3hS1uqmAGutKxSvaWG5oyrimA==}
+
   '@fontsource-variable/literata@5.3.0':
     resolution: {integrity: sha512-1Jw7xvOcoGyB83lxB2nG4bfNbqtX2/TTbdh9sHAOmU064SvmSdulDtA5RBu5JYWf64fdaKX7xU+z3GO1T2bCHA==}
-
-  '@fontsource/be-vietnam-pro@5.3.0':
-    resolution: {integrity: sha512-xhAQBGHDxP5BF8IJxedy5MoWUmc1DlPCcZbMLhvnPkf8TaYCbbUVs3LjpuJ4BYdTrdiCLaewNaY8z+owq/FqFw==}
 
   '@iconify/types@2.0.0':
     resolution: {integrity: sha512-+wluvCrRhXrhyOmRDJ3q8mux9JkKy5SJ/v8ol2tu4FVjyYvtEzkc/3pK15ET6RKg4b4w4BmTk1+gsCUhf21Ykg==}
@@ -4274,9 +4274,9 @@ snapshots:
 
   '@fluentui/svg-icons@1.1.334': {}
 
-  '@fontsource-variable/literata@5.3.0': {}
+  '@fontsource-variable/lexend@5.3.0': {}
 
-  '@fontsource/be-vietnam-pro@5.3.0': {}
+  '@fontsource-variable/literata@5.3.0': {}
 
   '@iconify/types@2.0.0': {}
 
