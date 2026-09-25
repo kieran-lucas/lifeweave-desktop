@@ -1,5 +1,6 @@
 import { style } from "@vanilla-extract/css";
 import { duration, easing } from "../../design-system/visual/motion.css";
+import { vars } from "../../design-system/visual/contract.css";
 
 export const calendarShell = style({
   inlineSize: "100%",
@@ -7,7 +8,7 @@ export const calendarShell = style({
   display: "grid",
   gridTemplateRows: "auto minmax(0, 1fr)",
   gap: 22,
-  color: "#111111",
+  color: vars.color.textPrimary,
 });
 
 export const masthead = style({
@@ -26,7 +27,7 @@ export const headingBlock = style({
 });
 
 export const kicker = style({
-  color: "#777777",
+  color: vars.color.textTertiary,
   fontSize: 11,
   lineHeight: "16px",
   fontWeight: 700,
@@ -36,7 +37,7 @@ export const kicker = style({
 
 export const monthTitle = style({
   margin: 0,
-  color: "#111111",
+  color: vars.color.textPrimary,
   fontSize: "clamp(28px, 3.2vw, 42px)",
   lineHeight: 1.04,
   fontWeight: 720,
@@ -48,9 +49,10 @@ export const commandBar = style({
   alignItems: "center",
   gap: 2,
   padding: 3,
-  border: "1px solid #D9D9D9",
+  border: `1px solid ${vars.color.borderHairline}`,
   borderRadius: 12,
-  background: "#FFFFFF",
+  background: vars.color.surfaceRaised,
+  boxShadow: "0 2px 8px rgba(31, 48, 75, .045)",
 });
 
 const command = {
@@ -58,13 +60,13 @@ const command = {
   border: 0,
   borderRadius: 9,
   background: "transparent",
-  color: "#343434",
+  color: vars.color.textSecondary,
   cursor: "pointer",
   transition: `background-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}, transform ${duration.press} ${easing.standard}`,
   selectors: {
-    "&:hover": { background: "#F1F1F1", color: "#111111" },
+    "&:hover": { background: vars.color.surfaceHover, color: vars.color.textPrimary },
     "&:active": { transform: "scale(.96)" },
-    "&:focus-visible": { outline: "2px solid #111111", outlineOffset: 2 },
+    "&:focus-visible": { outline: `2px solid ${vars.color.focusRing}`, outlineOffset: 2 },
   },
 } as const;
 
@@ -86,21 +88,20 @@ export const todayAction = style({
 export const statusMessage = style({
   margin: 0,
   padding: "10px 12px",
-  border: "1px solid #D8D8D8",
-  borderRadius: 10,
-  background: "#FAFAFA",
-  color: "#333333",
+  border: `1px solid ${vars.color.borderHairline}`,
+  borderRadius: vars.radius.control,
+  background: vars.color.surfaceSubtle,
+  color: vars.color.textSecondary,
   fontSize: 13,
 });
 
 export const monthCanvas = style({
   minInlineSize: 0,
   overflow: "hidden",
-  border: "1px solid #D8D8D8",
-  borderRadius: 18,
-  backgroundColor: "#FFFFFF",
-  backgroundImage: "var(--paint-grain-fine)",
-  boxShadow: "0 14px 40px rgba(0, 0, 0, .055)",
+  border: `1px solid ${vars.color.borderHairline}`,
+  borderRadius: vars.radius.surface,
+  backgroundColor: vars.color.surfaceRaised,
+  boxShadow: "0 10px 32px rgba(31, 48, 75, .07), 0 2px 6px rgba(31, 48, 75, .035)",
 });
 
 export const weekdays = style({
@@ -108,9 +109,9 @@ export const weekdays = style({
   gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
   minBlockSize: 38,
   alignItems: "center",
-  borderBottom: "1px solid #DEDEDE",
-  background: "#FAFAFA",
-  color: "#777777",
+  borderBottom: `1px solid ${vars.color.borderHairline}`,
+  background: "#F8FAFE",
+  color: vars.color.textTertiary,
   textAlign: "center",
   fontSize: 10,
   lineHeight: "14px",
@@ -124,7 +125,7 @@ export const week = style({
   gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
   minBlockSize: 94,
   selectors: {
-    "&:not(:last-child)": { borderBottom: "1px solid #E3E3E3" },
+    "&:not(:last-child)": { borderBottom: `1px solid ${vars.color.borderHairline}` },
   },
 });
 
@@ -132,7 +133,7 @@ export const cell = style({
   minInlineSize: 0,
   minBlockSize: 94,
   selectors: {
-    "&:not(:first-child)": { borderInlineStart: "1px solid #E3E3E3" },
+    "&:not(:first-child)": { borderInlineStart: `1px solid ${vars.color.borderHairline}` },
   },
 });
 
@@ -147,17 +148,18 @@ export const cellButton = style({
   gap: 6,
   padding: "9px 10px 8px",
   border: 0,
+  borderRadius: 0,
   background: "transparent",
-  color: "#222222",
+  boxShadow: "none",
+  color: vars.color.textPrimary,
   textAlign: "left",
   cursor: "pointer",
   transition: `background-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}`,
   selectors: {
-    "&[data-outside]": { color: "#B3B3B3" },
-    "&:hover": { background: "#F7F7F7" },
-    "&[data-selected]": { background: "#111111", color: "#FFFFFF" },
-    "&:focus-visible": { zIndex: 2, outline: "2px solid #111111", outlineOffset: -3 },
-    "&[data-selected]:focus-visible": { outlineColor: "#FFFFFF" },
+    "&[data-outside]": { color: vars.color.textDisabled },
+    "&:hover": { background: vars.color.surfaceHover },
+    "&[data-selected]": { background: vars.color.surfaceSelected, color: vars.color.textPrimary, boxShadow: `inset 0 0 0 1.5px ${vars.color.selectionEdge}` },
+    "&:focus-visible": { zIndex: 2, outline: `2px solid ${vars.color.focusRing}`, outlineOffset: -3 },
   },
 });
 
@@ -173,7 +175,8 @@ export const dayNumber = style({
   fontVariantNumeric: "tabular-nums",
   selectors: {
     [`${cellButton}[data-today] &`]: {
-      boxShadow: "inset 0 0 0 1.5px currentColor",
+      boxShadow: `inset 0 0 0 1.5px ${vars.color.accent}`,
+      color: vars.color.accentMuted,
     },
   },
 });
@@ -184,9 +187,9 @@ export const daySignal = style({
   alignItems: "center",
   gap: 6,
   minInlineSize: 0,
-  color: "#656565",
+  color: vars.color.textTertiary,
   selectors: {
-    [`${cellButton}[data-selected] &`]: { color: "rgba(255,255,255,.74)" },
+    [`${cellButton}[data-selected] &`]: { color: vars.color.accentMuted },
   },
 });
 
@@ -209,7 +212,7 @@ export const attentionDot = style({
 
 export const openCue = style({
   alignSelf: "end",
-  color: "rgba(255,255,255,.76)",
+  color: vars.color.accentMuted,
   fontSize: 9,
   lineHeight: "12px",
   fontWeight: 700,

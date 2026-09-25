@@ -31,7 +31,7 @@ export const trigger = style({
     "&:hover:not(:disabled)": { borderColor: "#8D8D89", background: "#FFFFFF", boxShadow: "0 7px 18px rgb(0 0 0 / .055)" },
     "&:active:not(:disabled)": { transform: "translateY(1px)" },
     "&:focus-visible": { outline: `2px solid ${vars.color.focusRing}`, outlineOffset: 2 },
-    "&[aria-expanded=true]": { borderColor: "#111111", background: "#FFFFFF", boxShadow: "0 0 0 3px rgb(17 17 17 / .07)" },
+    "&[aria-expanded=true]": { borderColor: vars.color.accentMuted, background: vars.color.surfaceRaised, boxShadow: `0 0 0 3px ${vars.color.accentSoft}` },
     "&:disabled": { cursor: "not-allowed", opacity: .58 },
   },
 });
@@ -47,10 +47,10 @@ export const popover = style({
   inlineSize: "min(430px, calc(100vw - 64px))",
   boxSizing: "border-box",
   padding: 9,
-  border: "1px solid #171717",
+  border: `1px solid ${vars.color.borderStrong}`,
   borderRadius: 13,
   background: "#FFFFFF",
-  boxShadow: "0 2px 5px rgb(0 0 0 / .09), 0 18px 46px rgb(0 0 0 / .18), 0 42px 88px rgb(0 0 0 / .10)",
+  boxShadow: vars.elevation.modal,
   animation: `${enter} ${duration.inspector} ${easing.standard} both`,
   transformOrigin: "bottom left",
   "@media": { "(prefers-reduced-motion: reduce)": { animation: "none" } },
@@ -80,11 +80,11 @@ export const option = style({
   selectors: {
     "&:hover": { background: "#F5F6F8", borderColor: "#D6D8DB" },
     "&:focus-visible": { outline: `2px solid ${vars.color.focusRing}`, outlineOffset: -1 },
-    "&[aria-selected=true]": { background: "#111111", borderColor: "#111111", color: "#FFFFFF" },
+    "&[aria-selected=true]": { background: vars.color.accentSoft, borderColor: vars.color.accentMuted, color: vars.color.textPrimary },
   },
 });
 globalStyle(`${option} > span:nth-child(2)`, { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" });
 export const optionIcon = style({ display: "grid", placeItems: "center", inlineSize: 26, blockSize: 26, border: "1px solid #D9DBDE", borderRadius: 7, background: "#F7F8FA", color: "#292929" });
-globalStyle(`${option}[aria-selected="true"] ${optionIcon}`, { borderColor: "#5A5A5A", background: "#2B2B2B", color: "#FFFFFF" });
+globalStyle(`${option}[aria-selected="true"] ${optionIcon}`, { borderColor: vars.color.accentMuted, background: vars.color.surfaceRaised, color: vars.color.accent });
 export const check = style({ visibility: "hidden", color: "currentColor", fontSize: 12, fontWeight: 850 });
 globalStyle(`${option}[aria-selected="true"] ${check}`, { visibility: "visible" });

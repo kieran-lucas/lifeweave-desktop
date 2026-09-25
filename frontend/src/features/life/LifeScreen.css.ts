@@ -30,13 +30,13 @@ export const navigator = style({
   gridTemplateRows: "auto auto auto auto auto minmax(0,1fr) auto",
   alignContent: "start",
   overflow: "hidden",
-  borderInlineEnd: "1px solid #E1E1E1",
-  background: "rgba(247, 247, 245, .58)",
+  borderInlineEnd: `1px solid ${vars.color.borderHairline}`,
+  background: "linear-gradient(180deg, #F8FAFE, #F1F6FC)",
   "@media": {
     "(max-width: 760px)": {
       maxBlockSize: 360,
       borderInlineEnd: 0,
-      borderBlockEnd: "1px solid #E1E1E1",
+      borderBlockEnd: `1px solid ${vars.color.borderHairline}`,
     },
   },
 });
@@ -48,7 +48,7 @@ export const navigatorHeader = style({
   alignItems: "center",
   gap: 7,
   padding: "8px 10px",
-  borderBottom: "1px solid #E2E2E0",
+  borderBottom: `1px solid ${vars.color.borderHairline}`,
 });
 
 const quietControl = {
@@ -56,14 +56,14 @@ const quietControl = {
   border: 0,
   borderRadius: 8,
   background: "transparent",
-  color: "#666666",
+  color: vars.color.textTertiary,
   cursor: "pointer",
   transition: `background-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}, transform ${duration.press} ${easing.standard}`,
   selectors: {
-    "&:hover:not(:disabled)": { background: "#EAEAE7", color: "#111111" },
+    "&:hover:not(:disabled)": { background: vars.color.surfaceHover, color: vars.color.textPrimary },
     "&:active:not(:disabled)": { transform: "scale(.96)" },
     "&:disabled": { opacity: .3, cursor: "default" },
-    "&:focus-visible": { outline: "2px solid #111111", outlineOffset: 2 },
+    "&:focus-visible": { outline: `2px solid ${vars.color.focusRing}`, outlineOffset: 2 },
   },
 } as const;
 
@@ -76,7 +76,7 @@ export const backButton = style({
 });
 
 export const navigatorLabel = style({
-  color: "#222222",
+  color: vars.color.textPrimary,
   fontSize: 15,
   lineHeight: "20px",
   fontWeight: 730,
@@ -92,7 +92,7 @@ export const editButton = style({
   fontWeight: 720,
   selectors: {
     ...quietControl.selectors,
-    '&[aria-pressed="true"]': { background: "#111111", color: "#FFFFFF" },
+    '&[aria-pressed="true"]': { background: vars.color.surfaceSelected, color: vars.color.accentMuted, boxShadow: `inset 0 0 0 1px ${vars.color.selectionEdge}` },
   },
 });
 
@@ -127,7 +127,7 @@ export const branchIdentity = style({
   alignItems: "center",
   gap: 9,
   padding: "12px 12px 14px",
-  borderBottom: "1px solid #E2E2E0",
+  borderBottom: `1px solid ${vars.color.borderHairline}`,
 });
 globalStyle(`${branchIdentity} > div`, { display: "grid", gap: 1, minInlineSize: 0 });
 globalStyle(`${branchIdentity} > div > span`, { color: "#999999", fontSize: 10, fontWeight: 720, letterSpacing: ".07em", textTransform: "uppercase" });
@@ -139,10 +139,11 @@ export const icon = style({
   inlineSize: 34,
   blockSize: 34,
   flex: "0 0 34px",
-  border: "1px solid #D5D5D3",
-  borderRadius: 10,
+  border: `1px solid ${vars.color.borderHairline}`,
+  borderRadius: vars.radius.control,
   background: "#FFFFFF",
-  color: "#333333",
+  color: vars.color.textSecondary,
+  boxShadow: "0 2px 7px rgba(31, 48, 75, .05)",
 });
 export const iconGlyph = style({
   display: "block",
@@ -156,7 +157,7 @@ export const iconGlyph = style({
 
 export const navigatorTools = style({
   padding: "7px",
-  borderBottom: "1px solid #E2E2E0",
+  borderBottom: `1px solid ${vars.color.borderHairline}`,
   selectors: { "&:empty": { display: "none" } },
 });
 
@@ -174,7 +175,7 @@ export const navigatorToolButton = style({
   textAlign: "left",
   selectors: {
     ...quietControl.selectors,
-    '&[aria-pressed="true"]': { background: "#E3E3E0", color: "#111111" },
+    '&[aria-pressed="true"]': { background: vars.color.surfaceSelected, color: vars.color.accentMuted },
   },
 });
 
@@ -219,10 +220,10 @@ export const nodeRow = style({
   cursor: "pointer",
   transition: `background-color ${duration.state} ${easing.standard}, transform ${duration.press} ${easing.standard}`,
   selectors: {
-    "&:hover:not(:disabled)": { background: "#EAEAE7" },
+    "&:hover:not(:disabled)": { background: vars.color.surfaceHover },
     "&:active:not(:disabled)": { transform: "scale(.985)" },
     "&:disabled": { opacity: .5, cursor: "wait" },
-    "&:focus-visible": { outline: "2px solid #111111", outlineOffset: -2 },
+    "&:focus-visible": { outline: `2px solid ${vars.color.focusRing}`, outlineOffset: -2 },
   },
 });
 
@@ -241,7 +242,7 @@ export const paging = style({
   alignItems: "center",
   gap: 5,
   padding: "5px 8px",
-  borderTop: "1px solid #E2E2E0",
+  borderTop: `1px solid ${vars.color.borderHairline}`,
   color: "#8A8A8A",
   fontSize: 9,
   fontVariantNumeric: "tabular-nums",
@@ -255,7 +256,7 @@ export const canvas = style({
   minInlineSize: 0,
   minBlockSize: 0,
   overflowY: "auto",
-  background: "transparent",
+  background: "radial-gradient(ellipse 90% 55% at 85% 0%, rgba(211,230,255,.18), transparent 76%), transparent",
   selectors: {
     '&[data-life-mode="edit"]': {
       display: "flex",
@@ -336,7 +337,7 @@ globalStyle(`${treeHeader} > p`, {
 
 export const treeTitle = style({
   margin: 0,
-  color: "#111111",
+  color: vars.color.textPrimary,
   fontSize: "clamp(24px, 3vw, 32px)",
   lineHeight: 1,
   fontWeight: 700,
@@ -370,8 +371,8 @@ globalStyle(`${branchHeroIcon} ${icon}`, { inlineSize: 48, blockSize: 48, border
 export const canvasTitle = style({
   maxInlineSize: "17ch",
   margin: 0,
-  color: "#111111",
-  fontSize: "clamp(34px, 5.2vw, 60px)",
+  color: vars.color.textPrimary,
+  fontSize: "clamp(34px, 4.6vw, 52px)",
   lineHeight: .99,
   fontWeight: 700,
   letterSpacing: "-.055em",
@@ -381,7 +382,7 @@ export const canvasTitle = style({
 export const branchDescription = style({
   maxInlineSize: "60ch",
   margin: "18px 0 0",
-  color: "#4F4F4F",
+  color: vars.color.textSecondary,
   fontSize: 15,
   lineHeight: 1.65,
   whiteSpace: "pre-wrap",
@@ -392,8 +393,8 @@ export const branchFacts = style({
   display: "grid",
   gridTemplateColumns: "repeat(2, minmax(0, 160px))",
   gap: 0,
-  marginBlock: "34px 42px",
-  borderBlock: "1px solid #E5E5E5",
+  marginBlock: "26px 32px",
+  borderBlock: `1px solid ${vars.color.borderHairline}`,
 });
 globalStyle(`${branchFacts} > div`, { display: "grid", gap: 3, padding: "14px 14px 14px 0" });
 globalStyle(`${branchFacts} > div + div`, { paddingInlineStart: 14, borderInlineStart: "1px solid #E5E5E5" });

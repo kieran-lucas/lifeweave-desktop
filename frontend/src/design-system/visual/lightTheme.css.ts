@@ -10,62 +10,62 @@ import { vars } from "./contract.css";
  */
 export const lightValues = {
   color: {
-    canvas: "#FFFFFF",
-    surface: "#FFFFFF",
-    surfaceSubtle: "#F6F6F4",
+    canvas: "#F3F7FD",
+    surface: "#F4F7FC",
+    surfaceSubtle: "#EDF3FA",
     surfaceRaised: "#FFFFFF",
-    surfaceSelected: "#111111",
-    surfaceSelectedNav: "#111111",
-    surfaceHover: "#F2F2F0",
+    surfaceSelected: "#EAF3FF",
+    surfaceSelectedNav: "#E9F2FF",
+    surfaceHover: "#F2F7FD",
 
-    textPrimary: "#111111",
-    textSecondary: "#3D3D3D",
-    textTertiary: "#777777",
-    textDisabled: "#AAAAAA",
+    textPrimary: "#222934",
+    textSecondary: "#4B5564",
+    textTertiary: "#657184",
+    textDisabled: "#9BA5B3",
     textOnAccent: "#FFFFFF",
 
-    borderHairline: "#E2E2E2",
-    borderStrong: "#C8C8C8",
+    borderHairline: "#DFE7F1",
+    borderStrong: "#C7D5E6",
 
-    accent: "#2563EB",
-    accentMuted: "#1D4ED8",
-    accentSoft: "#EAF1FF",
-    selectionEdge: "#2563EB",
+    accent: "#326FD3",
+    accentMuted: "#245BC0",
+    accentSoft: "#E9F3FF",
+    selectionEdge: "#3475DB",
 
-    success: "#111111",
-    warning: "#444444",
-    danger: "#111111",
-    successSoft: "#F2F2F2",
-    warningSoft: "#F4F4F4",
-    dangerSoft: "#EEEEEE",
+    success: "#267553",
+    warning: "#926222",
+    danger: "#B34B55",
+    successSoft: "#ECF7F1",
+    warningSoft: "#FFF5E8",
+    dangerSoft: "#FFF0F1",
 
-    lifeLavender: "#F7F7F7",
-    lifeMint: "#F5F5F5",
-    lifePeach: "#F3F3F3",
-    lifeBlue: "#F1F1F1",
-    lifeCream: "#F8F8F6",
+    lifeLavender: "#F5F4FF",
+    lifeMint: "#F0F8F5",
+    lifePeach: "#FFF6F2",
+    lifeBlue: "#F0F6FE",
+    lifeCream: "#FBF9F2",
 
-    ambientContour: "rgba(17, 17, 17, 0.08)",
-    ambientGlowPrimary: "rgba(17, 17, 17, 0.04)",
-    ambientGlowSecondary: "rgba(17, 17, 17, 0.03)",
-    ambientAura: "rgba(17, 17, 17, 0.025)",
+    ambientContour: "rgba(80, 125, 190, 0.07)",
+    ambientGlowPrimary: "rgba(125, 180, 255, 0.10)",
+    ambientGlowSecondary: "rgba(140, 175, 230, 0.07)",
+    ambientAura: "rgba(145, 190, 255, 0.055)",
 
-    focusRing: "#2563EB",
-    backdrop: "rgba(0, 0, 0, 0.42)",
+    focusRing: "#3475DB",
+    backdrop: "rgba(33, 45, 65, 0.30)",
   },
 
   radius: {
-    small: "8px",
-    control: "10px",
-    surface: "16px",
-    floating: "18px",
+    small: "9px",
+    control: "11px",
+    surface: "18px",
+    floating: "20px",
     full: "999px",
   },
 
   elevation: {
     none: "none",
-    floating: "0 12px 32px rgba(0, 0, 0, 0.10), 0 2px 7px rgba(0, 0, 0, 0.05)",
-    modal: "0 26px 72px rgba(0, 0, 0, 0.20), 0 7px 20px rgba(0, 0, 0, 0.09)",
+    floating: "0 10px 28px rgba(31, 48, 75, .10), 0 2px 6px rgba(31, 48, 75, .055)",
+    modal: "0 26px 72px rgba(31, 48, 75, .17), 0 7px 20px rgba(31, 48, 75, .08)",
   },
 
   assessmentCircle: {
@@ -76,8 +76,8 @@ export const lightValues = {
   },
 
   hairline: {
-    structural: "1px solid #CFCFCF",
-    subtle: "1px solid #E2E2E2",
+    structural: "1px solid #C7D5E6",
+    subtle: "1px solid #DFE7F1",
   },
 };
 

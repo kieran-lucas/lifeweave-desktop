@@ -35,6 +35,7 @@ $allPhases = @(
   'phase18-life-tree-interchange-restart.e2e.ts',
   'phase19-managed-backup-versions.e2e.ts',
   'phase20-daily-ux.e2e.ts',
+  'visual-redesign.e2e.ts',
   'phase21-markdown-import.e2e.ts',
   'phase22-markdown-diagrams.e2e.ts'
 )

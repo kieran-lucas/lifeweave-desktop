@@ -3,7 +3,7 @@ import { assignVars, globalStyle } from "@vanilla-extract/css";
 import { vars } from "./contract.css";
 import { lightValues } from "./lightTheme.css";
 
-/** Lifeweave has one runtime product theme: Luminous Editorial Light. */
+/** Lifeweave has one runtime light theme. */
 globalStyle(":root", { vars: assignVars(vars, lightValues) });
 
 /** Compatibility aliases used by legacy feature CSS while surfaces converge on the typed contract. */

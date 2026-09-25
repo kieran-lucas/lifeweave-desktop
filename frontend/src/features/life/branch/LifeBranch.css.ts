@@ -11,7 +11,7 @@ export const fileLabel = style([button, { display: "inline-flex" }]);
 export { srOnly as hiddenFile } from "../../../design-system/primitives/utilities.css";
 export const reason = style({ margin: 0, ...text.metadata, color: "var(--text-muted)" });
 
-export const backdrop = style([dialogBackdrop, { backdropFilter: "none", WebkitBackdropFilter: "none" }]);
+export const backdrop = dialogBackdrop;
 const matteDialog = { backgroundColor: "var(--paint-sheet-strong)", backgroundImage: "var(--paint-grain-fine), var(--paint-wash-blue)", borderColor: "var(--paint-edge-strong)" } as const;
 export const dialog = style([dialogSurface.standard, matteDialog, { "@media": { "(forced-colors: active)": { border: "1px solid currentColor", background: "Canvas", color: "CanvasText" } } }]);
 export const treeDialog = style([dialogSurface.wide, matteDialog, { "@media": { "(forced-colors: active)": { border: "1px solid currentColor", background: "Canvas", color: "CanvasText" } } }]);

@@ -22,8 +22,4 @@ export const input = style({
 export const error = style({ margin: "10px 0 0", color: "#A12E31", fontSize: 12.5, lineHeight: 1.45 });
 export const cancel = button.secondary;
 export const clear = button.ghost;
-export const save = style([
-  button.primary,
-  { background: "#111111", borderColor: "#111111", selectors: { "&:hover:not(:disabled)": { background: "#2C2C2C", borderColor: "#2C2C2C" } } },
-]);
-
+export const save = button.primary;

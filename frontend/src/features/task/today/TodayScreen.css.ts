@@ -20,7 +20,7 @@ export const masthead = style({
 
 export const headingBlock = style({ display: "grid", gap: 2, minInlineSize: 0 });
 export const kicker = style({
-  color: "#8A8A8A",
+  color: vars.color.textTertiary,
   fontSize: 9,
   lineHeight: "13px",
   fontWeight: 760,
@@ -29,7 +29,7 @@ export const kicker = style({
 });
 export const dayTitle = style({
   margin: 0,
-  color: "#111111",
+  color: vars.color.textPrimary,
   fontSize: "clamp(38px, 5vw, 58px)",
   lineHeight: .98,
   fontWeight: 700,
@@ -37,7 +37,7 @@ export const dayTitle = style({
 });
 export const daySummary = style({
   margin: "6px 0 0",
-  color: "#777777",
+  color: vars.color.textTertiary,
   fontSize: 11,
   lineHeight: "15px",
   fontVariantNumeric: "tabular-nums",
@@ -46,18 +46,19 @@ export const daySummary = style({
 export const planButton = style({
   minBlockSize: 38,
   paddingInline: 15,
-  border: "1px solid #111111",
+  border: `1px solid ${vars.color.accent}`,
   borderRadius: 10,
-  background: "#111111",
+  background: vars.color.accent,
   color: "#FFFFFF",
   fontSize: 12,
   fontWeight: 720,
   cursor: "pointer",
   transition: `background-color ${duration.state} ${easing.standard}, transform ${duration.press} ${easing.standard}`,
+  boxShadow: "0 5px 14px rgba(40, 96, 185, .14)",
   selectors: {
-    "&:hover": { background: "#2B2B2B" },
+    "&:hover": { background: vars.color.accentMuted, boxShadow: vars.elevation.floating },
     "&:active": { transform: "scale(.97)" },
-    "&:focus-visible": { outline: "2px solid #111111", outlineOffset: 3 },
+    "&:focus-visible": { outline: `2px solid ${vars.color.focusRing}`, outlineOffset: 3 },
   },
 });
 
@@ -82,14 +83,14 @@ export const agendaList = style({
   gap: 0,
   margin: 0,
   padding: 0,
-  borderBlockStart: "1px solid #E1E1E1",
+  borderBlockStart: `1px solid ${vars.color.borderHairline}`,
 });
 
 export const agendaItem = style({
   display: "grid",
   gridTemplateColumns: "74px minmax(0, 1fr)",
   minInlineSize: 0,
-  borderBlockEnd: "1px solid #E5E5E5",
+  borderBlockEnd: `1px solid ${vars.color.borderHairline}`,
   "@media": { "(max-width: 620px)": { gridTemplateColumns: "58px minmax(0,1fr)" } },
 });
 
@@ -102,7 +103,7 @@ export const timeRail = style({
   minBlockSize: 52,
   boxSizing: "border-box",
   padding: "9px 14px 6px 0",
-  color: "#929292",
+  color: vars.color.textTertiary,
   textAlign: "right",
   fontVariantNumeric: "tabular-nums",
   fontFeatureSettings: '"tnum" 1, "lnum" 1',
@@ -135,9 +136,9 @@ export const taskRow = style({
   cursor: "default",
   transition: `background-color ${duration.state} ${easing.standard}, transform ${duration.press} ${easing.standard}`,
   selectors: {
-    "&:hover": { background: "#F4F6F8" },
+    "&:hover": { background: vars.color.surfaceHover },
     "&:active": { transform: "scale(.994)" },
-    "&:focus-visible": { outline: "2px solid #111111", outlineOffset: -2 },
+    "&:focus-visible": { outline: `2px solid ${vars.color.focusRing}`, outlineOffset: -2 },
   },
   "@media": {
     "(max-width: 680px)": { gridTemplateColumns: "minmax(0,1fr) 18px" },
@@ -156,7 +157,7 @@ export const taskTitleLine = style({
 globalStyle(`${taskTitleLine} > strong`, {
   minInlineSize: 0,
   flex: "0 1 auto",
-  color: "#202020",
+  color: vars.color.textPrimary,
   fontSize: 13,
   lineHeight: "17px",
   fontWeight: 670,
@@ -184,7 +185,7 @@ export const taskMeta = style({
   gap: 7,
   minInlineSize: 0,
   overflow: "hidden",
-  color: "#8A8A8A",
+  color: vars.color.textTertiary,
   fontSize: 9,
   lineHeight: "12px",
   whiteSpace: "nowrap",
@@ -283,12 +284,12 @@ export const timerStrip = style({
   borderRadius: 11,
   background: "#FAFAFA",
 });
-export const timerRunning = style({ padding: "3px 6px", borderRadius: 6, background: "#111111", color: "#FFFFFF", fontSize: 8, fontWeight: 760, letterSpacing: ".07em", textTransform: "uppercase" });
+export const timerRunning = style({ padding: "3px 6px", borderRadius: 6, background: vars.color.accentSoft, color: vars.color.accentMuted, fontSize: 8, fontWeight: 760, letterSpacing: ".07em", textTransform: "uppercase" });
 export const timerTitle = style({ color: "#222222", fontSize: 11, fontWeight: 680 });
 export const timerDate = style({ color: "#888888", fontSize: 9 });
 export const timerCounter = style({ marginInlineStart: "auto", color: "#222222", fontSize: 15, fontWeight: 700, fontVariantNumeric: "tabular-nums" });
 export const timerTotal = style({ color: "#888888", fontSize: 9, fontVariantNumeric: "tabular-nums" });
-export const timerStop = style({ minBlockSize: 30, paddingInline: 9, border: "1px solid #111111", borderRadius: 8, background: "#111111", color: "#FFFFFF", fontSize: 9, fontWeight: 700, cursor: "pointer" });
+export const timerStop = style({ minBlockSize: 30, paddingInline: 9, border: `1px solid ${vars.color.accent}`, borderRadius: 8, background: vars.color.accent, color: "#FFFFFF", fontSize: 9, fontWeight: 700, cursor: "pointer" });
 export const timerDiscard = style({ minBlockSize: 30, paddingInline: 9, border: "1px solid #D0D0D0", borderRadius: 8, background: "#FFFFFF", color: "#666666", fontSize: 9, fontWeight: 650, cursor: "pointer" });
 
 export { srOnly } from "../../../design-system/primitives/utilities.css";

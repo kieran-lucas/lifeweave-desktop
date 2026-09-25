@@ -11,7 +11,7 @@ globalStyle("button, select", {
   paddingInline: space.x3,
   border: "1px solid var(--paint-edge)",
   borderRadius: "var(--radius-control)",
-  backgroundColor: "#FFFFFF",
+  backgroundColor: "var(--surface-raised)",
   backgroundImage: "var(--paint-grain-fine)",
   color: "var(--text-primary)",
   cursor: "pointer",
@@ -30,10 +30,10 @@ globalStyle("input:not([type=checkbox]):not([type=radio]):not([type=range]), tex
   paddingInline: space.x3,
   border: "1px solid var(--paint-edge)",
   borderRadius: "var(--radius-control)",
-  backgroundColor: "#FFFFFF",
+  backgroundColor: "var(--surface-raised)",
   backgroundImage: "var(--paint-grain-fine)",
   color: "var(--text-primary)",
-  boxShadow: "none",
+  boxShadow: "0 1px 2px rgba(31, 48, 75, .05)",
   transition: `border-color ${duration.state} ${easing.standard}`,
 });
 globalStyle("textarea", { padding: space.control, minBlockSize: 68 });
@@ -129,7 +129,7 @@ export const sectionStack = style({ display: "flex", flexDirection: "column", ga
 
 const backdropIn = keyframes({ from: { opacity: 0 }, to: { opacity: 1 } });
 
-/** Flat dimming plane only. Backdrop blur is globally forbidden by the current visual authority. */
+/** A restrained backdrop separates temporary decisions from the workspace. */
 export const dialogBackdrop = style({
   position: "fixed",
   inset: 0,
@@ -138,8 +138,8 @@ export const dialogBackdrop = style({
   placeItems: "center",
   padding: space.group,
   background: "var(--backdrop)",
-  backdropFilter: "none",
-  WebkitBackdropFilter: "none",
+  backdropFilter: "blur(3px)",
+  WebkitBackdropFilter: "blur(3px)",
   animation: `${backdropIn} ${duration.popover} ${easing.standard}`,
   "@media": {
     "(prefers-reduced-motion: reduce)": { animation: `${backdropIn} ${reduced.duration} linear` },
@@ -162,9 +162,8 @@ const dialogSurfaceBase = style({
   padding: space.group,
   borderRadius: "var(--radius-floating)",
   backgroundColor: "#FFFFFF",
-  backgroundImage: "var(--paint-grain-fine)",
-  border: "1px solid var(--accent)",
-  boxShadow: "none",
+  border: "1px solid var(--border-subtle)",
+  boxShadow: "var(--elevation-modal)",
   color: "var(--text-primary)",
   containerType: "inline-size",
   containerName: "dialog",

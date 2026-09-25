@@ -1,5 +1,5 @@
 /**
- * Lifeweave motion vocabulary — Matte Anime Painted Atlas.
+ * Lifeweave motion vocabulary.
  *
  * The goal is continuity, not spectacle. State commits first; movement only explains the change.
  * Consumers animate transform/opacity/paint tone and avoid layout, blur and large filter animation.

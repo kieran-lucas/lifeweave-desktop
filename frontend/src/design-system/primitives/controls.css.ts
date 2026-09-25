@@ -45,10 +45,10 @@ export const button = styleVariants({
       background: "var(--accent)",
       borderColor: "var(--accent)",
       color: "#FFFFFF",
-      boxShadow: "none",
+      boxShadow: "0 2px 5px rgba(31, 48, 75, .07)",
       selectors: {
-        "&:hover:not(:disabled)": { transform: "translateY(-1px)", background: "#1D4ED8", borderColor: "#1D4ED8", boxShadow: "none" },
-        "&:active:not(:disabled)": { transform: "translateY(1px) scale(.99)", background: "#1E40AF" },
+        "&:hover:not(:disabled)": { transform: "translateY(-1px)", background: "var(--accent-muted)", borderColor: "var(--accent-muted)", boxShadow: "var(--elevation-floating)" },
+        "&:active:not(:disabled)": { transform: "translateY(1px) scale(.99)", background: "#214EA5" },
       },
       "@media": {
         "(forced-colors: active)": { background: "Highlight", color: "HighlightText", borderColor: "Highlight", boxShadow: "none" },
@@ -63,9 +63,9 @@ export const button = styleVariants({
       background: "#FFFFFF",
       borderColor: "var(--glass-border)",
       color: "var(--text-primary)",
-      boxShadow: "none",
+      boxShadow: "0 1px 2px rgba(31, 48, 75, .05), 0 5px 16px rgba(31, 48, 75, .04)",
       selectors: {
-        "&:hover:not(:disabled)": { transform: "translateY(-1px)", background: "var(--accent-soft)", borderColor: "var(--accent)", boxShadow: "none" },
+        "&:hover:not(:disabled)": { transform: "translateY(-1px)", background: "var(--accent-soft)", borderColor: "var(--accent)", boxShadow: "0 5px 16px rgba(31, 48, 75, .08)" },
         "&:active:not(:disabled)": { transform: "translateY(1px) scale(.99)", backgroundColor: "var(--surface-selected)" },
       },
       "@media": {

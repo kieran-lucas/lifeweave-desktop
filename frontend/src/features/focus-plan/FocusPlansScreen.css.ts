@@ -23,7 +23,7 @@ export const libraryHeader = style({
 
 export const libraryTitle = style({
   margin: 0,
-  color: "#111111",
+  color: vars.color.textPrimary,
   fontSize: "clamp(28px, 3vw, 34px)",
   lineHeight: 1,
   fontWeight: 700,
@@ -33,33 +33,34 @@ export const libraryTitle = style({
 export const primaryAction = style({
   minBlockSize: 36,
   paddingInline: 14,
-  border: "1px solid #111111",
-  borderRadius: 8,
-  background: "#111111",
+  border: `1px solid ${vars.color.accent}`,
+  borderRadius: vars.radius.control,
+  background: vars.color.accent,
   color: "#FFFFFF",
   fontSize: 12,
   fontWeight: 720,
   cursor: "pointer",
   selectors: {
-    "&:hover:not(:disabled)": { background: "#292929" },
+    "&:hover:not(:disabled)": { background: vars.color.accentMuted, boxShadow: vars.elevation.floating },
     "&:disabled": { opacity: .42, cursor: "not-allowed" },
-    "&:focus-visible": { outline: "2px solid #111111", outlineOffset: 3 },
+    "&:focus-visible": { outline: `2px solid ${vars.color.focusRing}`, outlineOffset: 3 },
   },
 });
 
 export const secondaryAction = style({
   minBlockSize: 36,
   paddingInline: 13,
-  border: "1px solid #D3D3D3",
-  borderRadius: 8,
+  border: `1px solid ${vars.color.borderHairline}`,
+  borderRadius: vars.radius.control,
   background: "#FFFFFF",
-  color: "#222222",
+  color: vars.color.textPrimary,
+  boxShadow: "0 1px 2px rgba(31, 48, 75, .05)",
   fontSize: 12,
   fontWeight: 680,
   cursor: "pointer",
   selectors: {
-    "&:hover": { background: "#F3F3F3", borderColor: "#BEBEBE" },
-    "&:focus-visible": { outline: "2px solid #111111", outlineOffset: 2 },
+    "&:hover": { background: vars.color.surfaceHover, borderColor: vars.color.borderStrong },
+    "&:focus-visible": { outline: `2px solid ${vars.color.focusRing}`, outlineOffset: 2 },
   },
 });
 
@@ -79,7 +80,7 @@ export const portfolioNav = style({
   gap: 14,
   minInlineSize: 0,
   overflowX: "auto",
-  borderBottom: "1px solid #E0E0E0",
+  borderBottom: `1px solid ${vars.color.borderHairline}`,
 });
 globalStyle(`${portfolioNav} > button`, {
   position: "relative",
@@ -87,22 +88,22 @@ globalStyle(`${portfolioNav} > button`, {
   padding: "0 1px",
   border: 0,
   background: "transparent",
-  color: "#858585",
+  color: vars.color.textTertiary,
   fontSize: 12,
   fontWeight: 680,
   cursor: "pointer",
 });
-globalStyle(`${portfolioNav} > button:hover`, { color: "#111111" });
-globalStyle(`${portfolioNav} > button[aria-current="page"]`, { color: "#111111" });
+globalStyle(`${portfolioNav} > button:hover`, { color: vars.color.textPrimary });
+globalStyle(`${portfolioNav} > button[aria-current="page"]`, { color: vars.color.accentMuted });
 globalStyle(`${portfolioNav} > button[aria-current="page"]::after`, {
   content: '""',
   position: "absolute",
   insetInline: 0,
   insetBlockEnd: -1,
   blockSize: 2,
-  background: "#111111",
+  background: vars.color.accent,
 });
-globalStyle(`${portfolioNav} > button:focus-visible`, { outline: "2px solid #111111", outlineOffset: 2 });
+globalStyle(`${portfolioNav} > button:focus-visible`, { outline: `2px solid ${vars.color.focusRing}`, outlineOffset: 2 });
 
 export const planCollection = style({
   display: "grid",
@@ -144,7 +145,7 @@ export const timeMarker = style({
       insetBlock: 0,
       insetInlineEnd: 6,
       inlineSize: 1,
-      background: vars.color.borderHairline,
+      background: vars.color.borderStrong,
     },
     "&::after": {
       content: '""',
@@ -155,7 +156,7 @@ export const timeMarker = style({
       blockSize: 7,
       border: `2px solid ${vars.color.canvas}`,
       borderRadius: vars.radius.full,
-      background: vars.color.textTertiary,
+      background: vars.color.accent,
       transform: "translateY(-50%)",
       boxShadow: `0 0 0 1px ${vars.color.borderStrong}`,
     },
@@ -249,10 +250,11 @@ export const planSurface = style({
   marginBlock: 4,
   padding: "4px 2px 4px 0",
   borderBlockEnd: `1px solid ${vars.color.borderHairline}`,
+  borderRadius: vars.radius.control,
   background: "transparent",
   transition: `background-color ${duration.state} ${easing.standard}`,
   selectors: {
-    "&:hover": { background: vars.color.surfaceHover },
+    "&:hover": { background: vars.color.surfaceHover, boxShadow: "inset 0 0 0 1px rgba(52,117,219,.10)" },
   },
   "@media": { "(prefers-reduced-motion: reduce)": { transition: "none" } },
 });
@@ -265,11 +267,11 @@ export const planOpen = style({
   padding: "8px 8px 8px 6px",
   border: 0,
   background: "transparent",
-  color: "#111111",
+  color: vars.color.textPrimary,
   textAlign: "left",
   cursor: "pointer",
   selectors: {
-    "&:focus-visible": { outline: "2px solid #111111", outlineOffset: -2, borderRadius: 8 },
+    "&:focus-visible": { outline: `2px solid ${vars.color.focusRing}`, outlineOffset: -2, borderRadius: 8 },
   },
 });
 
@@ -313,7 +315,7 @@ export const planTitleLine = style({
 globalStyle(`${planTitleLine} > strong`, {
   minInlineSize: 0,
   overflow: "hidden",
-  color: "#171717",
+  color: vars.color.textPrimary,
   fontSize: 15,
   lineHeight: "20px",
   fontWeight: 680,
@@ -328,9 +330,8 @@ globalStyle(`${planTitleLine} > strong[data-completed]`, {
 /**
  * Priority tones, as ink / border / fill triads.
  *
- * The typed colour contract is deliberately monochrome — `danger` and `warning` both resolve to
- * near-black in Luminous Editorial Light — so graded semantics live as literal hex in feature CSS,
- * the way the score dial a few rules above already does.
+ * Priority uses a restrained graded ramp because each level needs to remain distinct in a dense
+ * portfolio. The four-step meter also carries the level without relying on color alone.
  *
  * The ramp rises grey → brown → green → blue, the same progression the theme's `assessmentCircle`
  * ramp already uses (`none` #5B6472, `low` #B88700, `done` #178248, `great` #1976B8). Each ink here
@@ -573,10 +574,10 @@ export const planEditor = style({
   display: "grid",
   gridTemplateRows: "auto auto auto",
   overflow: "visible",
-  border: "1px solid #BDBDB9",
+  border: `1px solid ${vars.color.borderHairline}`,
   borderRadius: 17,
   background: "#FFFFFF",
-  boxShadow: "0 3px 10px rgb(0 0 0 / .10), 0 26px 70px rgb(0 0 0 / .12)",
+  boxShadow: vars.elevation.modal,
   animation: `${editInstrumentEnter} ${duration.route} ${easing.standard} both`,
   "@media": {
     "(prefers-reduced-motion: reduce)": { animation: "none" },
@@ -594,20 +595,21 @@ export const planEditorHeader = style({
   gap: 20,
   padding: "18px 28px",
   borderRadius: "16px 16px 0 0",
-  background: "#111111",
-  color: "#FFFFFF",
+  background: "linear-gradient(180deg, #FBFCFF, #F4F8FD)",
+  color: vars.color.textPrimary,
+  borderBlockEnd: `1px solid ${vars.color.borderHairline}`,
 });
-globalStyle(`${planEditorHeader} > h1`, { margin: 0, color: "#FFFFFF", fontSize: 26, lineHeight: "32px", fontWeight: 720, letterSpacing: "-.035em" });
+globalStyle(`${planEditorHeader} > h1`, { margin: 0, color: vars.color.textPrimary, fontSize: 26, lineHeight: "32px", fontWeight: 720, letterSpacing: "-.035em" });
 globalStyle(`${planEditorHeader} > button`, {
   position: "relative",
   inlineSize: 42,
   minInlineSize: 42,
   blockSize: 42,
   padding: 0,
-  border: "1px solid #3A3A3A",
+  border: `1px solid ${vars.color.borderHairline}`,
   borderRadius: 11,
-  background: "#1D1D1D",
-  color: "#FFFFFF",
+  background: "#FFFFFF",
+  color: vars.color.textSecondary,
   cursor: "pointer",
 });
 globalStyle(`${planEditorHeader} > button > span::before, ${planEditorHeader} > button > span::after`, {
@@ -621,8 +623,8 @@ globalStyle(`${planEditorHeader} > button > span::before, ${planEditorHeader} > 
 });
 globalStyle(`${planEditorHeader} > button > span::before`, { transform: "rotate(45deg)" });
 globalStyle(`${planEditorHeader} > button > span::after`, { transform: "rotate(-45deg)" });
-globalStyle(`${planEditorHeader} > button:hover`, { borderColor: "#5A5A5A", background: "#292929" });
-globalStyle(`${planEditorHeader} > button:focus-visible`, { outline: "2px solid #FFFFFF", outlineOffset: 3 });
+globalStyle(`${planEditorHeader} > button:hover`, { borderColor: vars.color.borderStrong, background: vars.color.surfaceHover });
+globalStyle(`${planEditorHeader} > button:focus-visible`, { outline: `2px solid ${vars.color.focusRing}`, outlineOffset: 3 });
 
 export const planEditorScroll = style({
   minBlockSize: 0,
@@ -735,8 +737,8 @@ globalStyle(`${planStatusControl} label > span`, {
   transition: `background-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}, box-shadow ${duration.state} ${easing.standard}`,
 });
 globalStyle(`${planStatusControl} label:hover > span`, { background: "#ECECE8", color: "#222222" });
-globalStyle(`${planStatusControl} input:checked + span`, { background: "#111111", color: "#FFFFFF", boxShadow: "0 2px 6px rgb(0 0 0 / .16)" });
-globalStyle(`${planStatusControl} input:focus-visible + span`, { outline: "2px solid #111111", outlineOffset: 2 });
+globalStyle(`${planStatusControl} input:checked + span`, { background: vars.color.accentSoft, color: vars.color.accentMuted, boxShadow: `inset 0 0 0 1px ${vars.color.selectionEdge}` });
+globalStyle(`${planStatusControl} input:focus-visible + span`, { outline: `2px solid ${vars.color.focusRing}`, outlineOffset: 2 });
 globalStyle(`${planStatusControl} input:disabled + span`, { cursor: "not-allowed", opacity: .56 });
 
 export const planEditorFooter = style({

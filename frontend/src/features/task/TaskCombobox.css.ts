@@ -1,6 +1,7 @@
 import { globalStyle, keyframes, style } from "@vanilla-extract/css";
 
 import { duration, easing } from "../../design-system/visual/motion.css";
+import { vars } from "../../design-system/visual/contract.css";
 
 const listEnter = keyframes({
   from: { opacity: 0, transform: "translateY(-3px) scale(.985)" },
@@ -67,8 +68,8 @@ export const input = style({
   transition: `border-color ${duration.inspectorState} ${easing.standard}, background-color ${duration.inspectorState} ${easing.standard}, box-shadow ${duration.inspectorState} ${easing.standard}`,
   selectors: {
     "&:hover:not(:disabled)": { borderColor: "#8D8D89", background: "#FFFFFF" },
-    "&:focus": { borderColor: "#111111", background: "#FFFFFF", boxShadow: "0 0 0 3px rgb(17 17 17 / .07)" },
-    "&:focus-visible": { outline: "2px solid #111111", outlineOffset: 2 },
+    "&:focus": { borderColor: vars.color.accentMuted, background: vars.color.surfaceRaised, boxShadow: `0 0 0 3px ${vars.color.accentSoft}` },
+    "&:focus-visible": { outline: `2px solid ${vars.color.focusRing}`, outlineOffset: 2 },
     "&:disabled": { cursor: "not-allowed", opacity: .52 },
     "&::placeholder": { color: "#858585", opacity: 1 },
   },
@@ -127,10 +128,10 @@ export const popover = style({
   minInlineSize: 0,
   boxSizing: "border-box",
   padding: 7,
-  border: "1px solid #1C1C1C",
+  border: `1px solid ${vars.color.borderStrong}`,
   borderRadius: 13,
   background: "#FFFFFF",
-  boxShadow: "0 3px 8px rgb(0 0 0 / .10), 0 20px 54px rgb(0 0 0 / .18)",
+  boxShadow: vars.elevation.modal,
   animation: `${listEnter} ${duration.inspector} ${easing.standard} both`,
   transformOrigin: "top left",
   "@media": {
@@ -221,9 +222,9 @@ export const option = style({
       transform: "rotate(-45deg)",
     },
     "&[data-active=true]": { borderColor: "#C4C7CA", background: "#F5F6F8" },
-    "&[aria-selected=true]": { borderColor: "#111111", background: "#111111", color: "#FFFFFF" },
+    "&[aria-selected=true]": { borderColor: vars.color.accentMuted, background: vars.color.accentSoft, color: vars.color.textPrimary },
     "&:hover": { borderColor: "#D3D5D8", background: "#F5F6F8" },
-    "&[aria-selected=true]:hover": { borderColor: "#111111", background: "#292929" },
+    "&[aria-selected=true]:hover": { borderColor: vars.color.accent, background: vars.color.accentSoft },
   },
 });
 
@@ -246,7 +247,7 @@ export const optionMeta = style({
   textOverflow: "ellipsis",
   whiteSpace: "nowrap",
 });
-globalStyle(`${option}[aria-selected="true"] ${optionMeta}`, { color: "#D3D3D3" });
+globalStyle(`${option}[aria-selected="true"] ${optionMeta}`, { color: vars.color.textSecondary });
 
 export const empty = style({ padding: "10px", color: "#777773", fontSize: 10, lineHeight: "14px" });
 

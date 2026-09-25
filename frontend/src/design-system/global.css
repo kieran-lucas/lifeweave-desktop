@@ -1,4 +1,4 @@
-/* Lifeweave — light-only monochrome material layer. */
+/* Lifeweave's cool, quiet material layer. */
 :root {
   color-scheme: light;
   font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
@@ -11,28 +11,27 @@
   --layer-modal: 10;
   --layer-overlay: 40;
 
-  /* Compatibility names remain zero-chroma so old consumers cannot reintroduce colour. */
-  --accent-violet: #555555;
-  --accent-cyan: #777777;
-  --accent-rose: #444444;
-  --accent-ice: #E8E8E8;
+  --accent-violet: #6D77B8;
+  --accent-cyan: #5486B9;
+  --accent-rose: #B76D7E;
+  --accent-ice: #EAF3FF;
 
   --art-aura-primary: transparent;
   --art-aura-secondary: transparent;
   --art-aura-cool: transparent;
   --art-aura-rose: transparent;
-  --art-line: rgba(17, 17, 17, 0.08);
-  --art-line-strong: rgba(17, 17, 17, 0.14);
+  --art-line: rgba(80, 125, 190, 0.055);
+  --art-line-strong: rgba(80, 125, 190, 0.1);
   --art-glint: rgba(255, 255, 255, 0.92);
   --art-petal: transparent;
 
-  --paint-canvas: #FFFFFF;
-  --paint-board: #F6F6F4;
-  --paint-sheet: #FFFFFF;
+  --paint-canvas: #F3F7FD;
+  --paint-board: #EDF3FA;
+  --paint-sheet: #FBFCFF;
   --paint-sheet-strong: #FFFFFF;
-  --paint-selected: #111111;
-  --paint-edge: #E0E0E0;
-  --paint-edge-strong: #C6C6C6;
+  --paint-selected: #EAF3FF;
+  --paint-edge: #DFE7F1;
+  --paint-edge-strong: #C7D5E6;
   --paint-fiber: rgba(17, 17, 17, 0.055);
   --paint-fiber-light: rgba(255, 255, 255, 0.80);
   --paint-grain: none;
@@ -41,25 +40,23 @@
   --paint-wash-violet: none;
   --paint-wash-rose: none;
 
-  /* Historical glass aliases are intentionally opaque. */
-  --glass-surface: #FFFFFF;
+  --glass-surface: #FBFCFF;
   --glass-surface-strong: #FFFFFF;
-  --glass-border: #D6D6D6;
-  --glass-border-hot: #AFAFAF;
+  --glass-border: #D5E0EE;
+  --glass-border-hot: #A8BFDF;
   --glass-highlight: transparent;
   --glass-blur: 0px;
 
-  /* Depth is neutral and sparse; no coloured bloom. */
-  --glow-selected: 0 0 0 1px rgba(17, 17, 17, 0.22);
+  --glow-selected: 0 0 0 1px rgba(52, 117, 219, 0.24);
   --glow-focus: 0 0 0 2px var(--focus-ring);
-  --glow-primary: 0 8px 24px rgba(0, 0, 0, 0.10);
-  --glow-crystal: 0 12px 34px rgba(0, 0, 0, 0.075);
-  --glow-crystal-strong: 0 18px 46px rgba(0, 0, 0, 0.11);
-  --glow-hero: 0 26px 64px rgba(0, 0, 0, 0.10);
-  --glow-hover: 0 10px 26px rgba(0, 0, 0, 0.075);
-  --glow-compact: 0 5px 15px rgba(0, 0, 0, 0.07);
+  --glow-primary: 0 8px 24px rgba(31, 48, 75, 0.10);
+  --glow-crystal: 0 12px 34px rgba(31, 48, 75, 0.075);
+  --glow-crystal-strong: 0 18px 46px rgba(31, 48, 75, 0.11);
+  --glow-hero: 0 26px 64px rgba(31, 48, 75, 0.10);
+  --glow-hover: 0 10px 26px rgba(31, 48, 75, 0.075);
+  --glow-compact: 0 5px 15px rgba(31, 48, 75, 0.07);
   --glow-dot: none;
-  --glow-danger: 0 8px 22px rgba(0, 0, 0, 0.09);
+  --glow-danger: 0 8px 22px rgba(120, 48, 68, 0.09);
 }
 
 * { box-sizing: border-box; }
@@ -67,7 +64,7 @@ html, body, #root {
   min-width: 0;
   height: 100%;
   margin: 0;
-  background: #FFFFFF;
+  background: var(--app-background);
 }
 button, input, textarea, select { font: inherit; }
 
@@ -78,35 +75,35 @@ button, input, textarea, select { font: inherit; }
 :root input:not([type=checkbox]):not([type=radio]):not([type=range]),
 :root textarea,
 :root select {
-  border-color: #D4D4D4;
+  border-color: var(--paint-edge-strong);
   background-color: #FFFFFF;
   background-image: var(--paint-grain-fine);
   color: var(--text-primary);
-  box-shadow: none;
+  box-shadow: 0 1px 2px rgba(31, 48, 75, .035);
 }
 
 :root input:not([type=checkbox]):not([type=radio]):not([type=range]):hover,
 :root textarea:hover,
 :root select:hover {
-  border-color: #B8B8B8;
+  border-color: #A8BFDF;
   background-color: #FFFFFF;
 }
 
 :root input:not([type=checkbox]):not([type=radio]):not([type=range]):focus-visible,
 :root textarea:focus-visible,
 :root select:focus-visible {
-  border-color: #111111;
+  border-color: var(--focus-ring);
   background-color: #FFFFFF;
-  box-shadow: 0 0 0 2px rgba(17, 17, 17, 0.08);
+  box-shadow: 0 0 0 3px rgba(52, 117, 219, 0.12);
 }
 
 :root fieldset {
-  border-color: #D8D8D8;
+  border-color: var(--paint-edge);
   background-color: #FFFFFF;
   background-image: var(--paint-grain-fine);
 }
 
-::selection { background: #111111; color: #FFFFFF; }
+::selection { background: #DCEBFF; color: #202B3C; }
 
 :focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 

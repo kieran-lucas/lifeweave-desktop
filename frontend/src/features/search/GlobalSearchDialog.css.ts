@@ -8,8 +8,8 @@ export const overlay = style([dialogBackdrop, {
   alignItems: "flex-start",
   justifyContent: "center",
   paddingTop: "clamp(48px, 12vh, 120px)",
-  backdropFilter: "none",
-  WebkitBackdropFilter: "none",
+  backdropFilter: "blur(3px)",
+  WebkitBackdropFilter: "blur(3px)",
 }]);
 
 export const card = style([
@@ -19,9 +19,8 @@ export const card = style([
     padding: 0,
     gap: 0,
     backgroundColor: "#FFFFFF",
-    backgroundImage: "var(--paint-grain-fine)",
-    borderColor: "var(--accent)",
-    boxShadow: "none",
+    borderColor: "var(--paint-edge-strong)",
+    boxShadow: "var(--elevation-modal)",
   },
 ]);
 
@@ -39,7 +38,7 @@ export const option = style({
   textAlign: "left",
   border: "1px solid transparent",
   borderRadius: "var(--radius-small)",
-  backgroundColor: "#FFFFFF",
+  backgroundColor: "var(--surface-hover)",
   backgroundImage: "var(--paint-grain-fine)",
   padding: "9px 10px",
   cursor: "pointer",

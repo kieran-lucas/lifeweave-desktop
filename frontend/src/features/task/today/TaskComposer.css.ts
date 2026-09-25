@@ -1,5 +1,6 @@
 import { globalStyle, keyframes, style } from "@vanilla-extract/css";
 import { duration, easing } from "../../../design-system/visual/motion.css";
+import { vars } from "../../../design-system/visual/contract.css";
 
 const composerEnter = keyframes({
   from: { opacity: 0, transform: "translateY(14px) scale(.982)" },
@@ -10,10 +11,10 @@ export const composerSurface = style({
   padding: "0 !important",
   overflowX: "hidden",
   overflowY: "auto",
-  border: "1px solid #171717 !important",
+  border: "1px solid var(--paint-edge-strong) !important",
   borderRadius: "18px !important",
-  background: "#F8F9FA !important",
-  boxShadow: "0 2px 7px rgb(0 0 0 / .14), 0 26px 72px rgb(0 0 0 / .24), 0 58px 130px rgb(0 0 0 / .14) !important",
+  background: "#FBFCFF !important",
+  boxShadow: "0 2px 7px rgba(31,48,75,.08), 0 26px 72px rgba(31,48,75,.17) !important",
   animation: `${composerEnter} ${duration.route} ${easing.standard} both !important`,
   isolation: "isolate",
   "@media": {
@@ -30,7 +31,7 @@ export const composer = style({
   display: "flex",
   flexDirection: "column",
   minInlineSize: 0,
-  color: "#111111",
+  color: vars.color.textPrimary,
 });
 
 export const composerHeader = style({
@@ -39,9 +40,9 @@ export const composerHeader = style({
   justifyContent: "space-between",
   gap: 24,
   padding: "24px 28px 23px",
-  background: "#111111",
-  color: "#FFFFFF",
-  boxShadow: "inset 0 -1px 0 rgb(255 255 255 / .12)",
+  background: "linear-gradient(180deg, #FBFCFF, #F4F8FD)",
+  color: vars.color.textPrimary,
+  borderBlockEnd: `1px solid ${vars.color.borderHairline}`,
   "@media": {
     "(forced-colors: active)": {
       borderBlockEnd: "1px solid CanvasText",
@@ -51,7 +52,7 @@ export const composerHeader = style({
   },
 });
 export const composerHeadingCopy = style({ display: "grid", gap: 4, minInlineSize: 0 });
-globalStyle(`${composerHeadingCopy} h2`, { margin: 0, color: "#FFFFFF", fontSize: 26, lineHeight: "31px", fontWeight: 750, letterSpacing: "-.035em" });
+globalStyle(`${composerHeadingCopy} h2`, { margin: 0, color: vars.color.textPrimary, fontSize: 26, lineHeight: "31px", fontWeight: 750, letterSpacing: "-.035em" });
 
 export const closeButton = style({
   inlineSize: 36,
@@ -60,16 +61,16 @@ export const closeButton = style({
   placeItems: "center",
   flex: "0 0 36px",
   padding: 0,
-  border: "1px solid #3B3B3B",
+  border: `1px solid ${vars.color.borderHairline}`,
   borderRadius: 10,
-  background: "#1B1B1B",
-  color: "#D7D7D7",
+  background: "#FFFFFF",
+  color: vars.color.textSecondary,
   cursor: "pointer",
   transition: `background-color ${duration.state} ${easing.standard}, border-color ${duration.state} ${easing.standard}, transform ${duration.press} ${easing.standard}`,
   selectors: {
-    "&:hover": { borderColor: "#6A6A6A", background: "#2B2B2B", color: "#FFFFFF" },
+    "&:hover": { borderColor: vars.color.borderStrong, background: vars.color.surfaceHover, color: vars.color.textPrimary },
     "&:active": { transform: "scale(.94)" },
-    "&:focus-visible": { outline: "2px solid #FFFFFF", outlineOffset: 3 },
+    "&:focus-visible": { outline: `2px solid ${vars.color.focusRing}`, outlineOffset: 3 },
   },
   "@media": { "(forced-colors: active)": { borderColor: "ButtonText", background: "ButtonFace", color: "ButtonText" } },
 });
@@ -94,10 +95,10 @@ globalStyle(`${closeButton} > span::after`, { transform: "rotate(-45deg)" });
 export const composerError = style({
   margin: "18px 28px 0",
   padding: "10px 12px",
-  border: "1px solid #111111",
+  border: `1px solid ${vars.color.danger}`,
   borderRadius: 10,
-  background: "#F3F3F1",
-  color: "#1E1E1E",
+  background: vars.color.dangerSoft,
+  color: vars.color.danger,
   fontSize: 11,
   lineHeight: "16px",
 });
@@ -261,8 +262,8 @@ export const choiceButton = style({
   selectors: {
     "&:hover": { background: "#FFFFFF", color: "#222222" },
     "&:active": { transform: "scale(.97)" },
-    "&:focus-visible": { outline: "2px solid #111111", outlineOffset: 1 },
-    "&[aria-pressed=true]": { borderColor: "#111111", background: "#111111", color: "#FFFFFF", boxShadow: "0 2px 6px rgb(0 0 0 / .16)" },
+    "&:focus-visible": { outline: `2px solid ${vars.color.focusRing}`, outlineOffset: 1 },
+    "&[aria-pressed=true]": { borderColor: vars.color.accent, background: vars.color.accentSoft, color: vars.color.accentMuted, boxShadow: "inset 0 0 0 1px rgba(52,117,219,.12)" },
   },
   "@media": { "(prefers-reduced-motion: reduce)": { transition: "none" } },
 });
@@ -286,7 +287,7 @@ globalStyle(`${detailsPanel} input, ${detailsPanel} select, ${detailsPanel} text
   transition: `border-color ${duration.state} ${easing.standard}, background-color ${duration.state} ${easing.standard}, box-shadow ${duration.state} ${easing.standard}`,
 });
 globalStyle(`${composerSection} textarea, ${composerIntro} textarea`, { minBlockSize: 144, resize: "vertical", lineHeight: 1.58 });
-globalStyle(`${detailsPanel} input:focus, ${detailsPanel} select:focus, ${detailsPanel} textarea:focus, ${composerSection} textarea:focus, ${composerIntro} textarea:focus`, { borderColor: "#111111", background: "#FFFFFF", boxShadow: "0 0 0 3px rgb(17 17 17 / .07)" });
+globalStyle(`${detailsPanel} input:focus, ${detailsPanel} select:focus, ${detailsPanel} textarea:focus, ${composerSection} textarea:focus, ${composerIntro} textarea:focus`, { borderColor: vars.color.accent, background: "#FFFFFF", boxShadow: "0 0 0 3px rgba(52,117,219,.11)" });
 
 export const composerFooter = style({
   position: "sticky",
@@ -313,7 +314,7 @@ const footerButton = {
   selectors: {
     "&:active:not(:disabled)": { transform: "scale(.97)" },
     "&:disabled": { opacity: .42, cursor: "not-allowed" },
-    "&:focus-visible": { outline: "2px solid #111111", outlineOffset: 2 },
+    "&:focus-visible": { outline: `2px solid ${vars.color.focusRing}`, outlineOffset: 2 },
   },
 } as const;
 
@@ -326,11 +327,11 @@ export const cancelButton = style({
 });
 export const saveButton = style({
   ...footerButton,
-  border: "1px solid #111111",
-  background: "#111111",
+  border: `1px solid ${vars.color.accent}`,
+  background: vars.color.accent,
   color: "#FFFFFF",
   minInlineSize: 116,
-  selectors: { ...footerButton.selectors, "&:hover:not(:disabled)": { background: "#2A2A2A" } },
+  selectors: { ...footerButton.selectors, "&:hover:not(:disabled)": { background: vars.color.accentMuted, boxShadow: vars.elevation.floating } },
 });
 export const deleteButton = style({
   ...footerButton,

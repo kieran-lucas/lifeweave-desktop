@@ -1,5 +1,6 @@
 import { style } from "@vanilla-extract/css";
 import { duration, easing } from "../../design-system/visual/motion.css";
+import { vars } from "../../design-system/visual/contract.css";
 
 export const root = style({
   display: "grid",
@@ -7,7 +8,7 @@ export const root = style({
   alignItems: "center",
   gap: 5,
   paddingBlock: 5,
-  borderBlock: "1px solid #E2E2E2",
+  borderBlock: `1px solid ${vars.color.borderHairline}`,
 });
 
 export const days = style({
@@ -25,13 +26,13 @@ export const move = style({
   border: 0,
   borderRadius: 8,
   background: "transparent",
-  color: "#858585",
+  color: vars.color.textTertiary,
   cursor: "pointer",
   transition: `background-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}, transform ${duration.press} ${easing.standard}`,
   selectors: {
-    "&:hover": { background: "#F1F1F1", color: "#111111" },
+    "&:hover": { background: vars.color.surfaceHover, color: vars.color.textPrimary },
     "&:active": { transform: "scale(.95)" },
-    "&:focus-visible": { outline: "2px solid #111111", outlineOffset: 2 },
+    "&:focus-visible": { outline: `2px solid ${vars.color.focusRing}`, outlineOffset: 2 },
   },
 });
 export const nextIcon = style({ transform: "rotate(180deg)" });
@@ -47,15 +48,15 @@ export const day = style({
   border: 0,
   borderRadius: 9,
   background: "transparent",
-  color: "#8A8A8A",
+  color: vars.color.textTertiary,
   cursor: "pointer",
   transition: `background-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}, transform ${duration.press} ${easing.standard}`,
   selectors: {
-    "&:hover": { background: "#F3F3F3", color: "#333333" },
+    "&:hover": { background: vars.color.surfaceHover, color: vars.color.textPrimary },
     "&:active": { transform: "scale(.97)" },
-    "&[aria-current=date]": { color: "#111111" },
-    "&[aria-pressed=true]": { background: "#111111", color: "#FFFFFF" },
-    "&:focus-visible": { outline: "2px solid #111111", outlineOffset: 2 },
+    "&[aria-current=date]": { color: vars.color.accentMuted, fontWeight: 760 },
+    "&[aria-pressed=true]": { background: vars.color.surfaceSelected, color: vars.color.accentMuted, boxShadow: `inset 0 0 0 1px ${vars.color.selectionEdge}` },
+    "&:focus-visible": { outline: `2px solid ${vars.color.focusRing}`, outlineOffset: 2 },
   },
 });
 

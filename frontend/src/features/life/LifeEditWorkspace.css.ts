@@ -22,10 +22,11 @@ export const canvasViewport = style({
   blockSize: "100%",
   overflow: "hidden",
   overscrollBehavior: "contain",
-  border: "1px solid #D8D8D8",
-  borderRadius: 14,
-  backgroundColor: "#FAFAF8",
-  backgroundImage: "var(--paint-grain-fine)",
+  border: `1px solid ${vars.color.borderHairline}`,
+  borderRadius: vars.radius.surface,
+  backgroundColor: "#F7FAFE",
+  backgroundImage: "radial-gradient(ellipse 90% 75% at 8% 100%, rgba(209,229,255,.18), transparent 75%), radial-gradient(ellipse 95% 65% at 100% 0%, rgba(215,230,252,.18), transparent 78%)",
+  boxShadow: "0 7px 28px rgba(31,48,75,.045), inset 0 1px rgba(255,255,255,.9)",
   cursor: "grab",
   touchAction: "none",
   selectors: {
@@ -35,6 +36,24 @@ export const canvasViewport = style({
 });
 
 export const canvas = style({ position: "relative", minInlineSize: "100%", minBlockSize: 480 });
+export const zoomControls = style({
+  position: "absolute",
+  zIndex: 4,
+  insetInlineEnd: 14,
+  insetBlockEnd: 46,
+  display: "flex",
+  alignItems: "center",
+  gap: 3,
+  padding: 4,
+  border: `1px solid ${vars.color.borderHairline}`,
+  borderRadius: vars.radius.control,
+  background: "rgba(255,255,255,.96)",
+  boxShadow: vars.elevation.floating,
+});
+globalStyle(`${zoomControls} button`, { minInlineSize: 31, minBlockSize: 31, padding: "3px 7px", border: 0, borderRadius: vars.radius.small, background: "transparent", color: vars.color.textSecondary, fontSize: 11, fontWeight: 700 });
+globalStyle(`${zoomControls} button:hover:not(:disabled)`, { background: vars.color.accentSoft, color: vars.color.accentMuted });
+globalStyle(`${zoomControls} button:focus-visible`, { outline: `2px solid ${vars.color.focusRing}`, outlineOffset: -2 });
+globalStyle(`${zoomControls} > span`, { minInlineSize: 38, textAlign: "center", color: vars.color.textSecondary, fontSize: 11, fontWeight: 700, fontVariantNumeric: "tabular-nums" });
 export const links = style({ position: "absolute", inset: 0, pointerEvents: "none", overflow: "visible" });
 export const positioner = style({ position: "absolute", zIndex: 1, inlineSize: "var(--life-node-width, 196px)", transform: "translate(var(--life-x),var(--life-y))", selectors: { '&[data-menu-open="true"]': { zIndex: 10 } } });
 export const nodeShell = style({ position: "relative" });
@@ -129,17 +148,17 @@ export const nodeCard = style([
     alignItems: "center",
     gap: 8,
     padding: "8px 9px",
-    border: "1px solid #D1D1CF",
-    borderRadius: 10,
-    backgroundColor: "#FFFFFF",
-    backgroundImage: "var(--paint-grain-fine)",
-    color: "#222222",
+    border: `1px solid ${vars.color.borderHairline}`,
+    borderRadius: vars.radius.control,
+    backgroundColor: vars.color.surfaceRaised,
+    color: vars.color.textPrimary,
+    boxShadow: "0 4px 14px rgba(31,48,75,.075), 0 1px 2px rgba(31,48,75,.04)",
     textAlign: "left",
     cursor: "pointer",
     transition: "background-color 130ms ease, color 130ms ease, border-color 130ms ease, transform 100ms ease",
     selectors: {
-      "&[aria-pressed=true]": { borderColor: vars.color.accent, backgroundColor: vars.color.accentSoft, color: vars.color.textPrimary },
-      "&:hover:not([aria-pressed=true])": { borderColor: "#A9A9A6", backgroundColor: "#F4F4F1" },
+      "&[aria-pressed=true]": { borderColor: vars.color.accent, backgroundColor: vars.color.accentSoft, color: vars.color.textPrimary, boxShadow: "0 8px 22px rgba(45,93,164,.13), 0 0 0 2px rgba(52,117,219,.09)" },
+      "&:hover:not([aria-pressed=true])": { borderColor: vars.color.borderStrong, backgroundColor: vars.color.surfaceHover, boxShadow: vars.elevation.floating },
       "&:active": { transform: "scale(.985)" },
     },
     "@media": {
@@ -157,6 +176,9 @@ export const nodeIcon = style({
   placeItems: "center",
   fontSize: 18,
   lineHeight: 1,
+  borderRadius: 8,
+  background: vars.color.accentSoft,
+  color: vars.color.accentMuted,
 });
 export const nodeContent = style({ minInlineSize: 0, display: "grid", gap: 3 });
 /**
@@ -371,7 +393,7 @@ export const closeInspector = style([
 
 export const destructive = style([
   button,
-  { color: "#555555", selectors: { "&:hover:not(:disabled)": { borderColor: "#111111", background: "#111111", color: "#FFFFFF" } } },
+  { color: vars.color.danger, selectors: { "&:hover:not(:disabled)": { borderColor: vars.color.danger, background: vars.color.dangerSoft, color: vars.color.danger } } },
 ]);
 
 export const disclosure = style({ borderBlockStart: "1px solid #E8E8E6" });
@@ -389,5 +411,5 @@ export const archivedRow = style({ display: "flex", alignItems: "center", justif
 export const status = style({ gridColumn: "1 / -1", minBlockSize: 20, color: "#777777", fontSize: 9 });
 export { srOnly };
 
-globalStyle(`${links} path`, { stroke: "#B6B6B4", strokeWidth: 1.15, fill: "none" });
+globalStyle(`${links} path`, { stroke: "#9DB5D4", strokeWidth: 1.25, fill: "none" });
 globalStyle(`${workspace} textarea`, { resize: "vertical" });

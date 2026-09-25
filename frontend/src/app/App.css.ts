@@ -15,7 +15,7 @@ export const appRoot = style({
   overflow: "hidden",
   position: "relative",
   isolation: "isolate",
-  background: "var(--app-background)",
+  background: "radial-gradient(ellipse 90% 65% at 90% 4%, rgba(190, 218, 255, .20), transparent 72%), radial-gradient(ellipse 75% 65% at 4% 100%, rgba(215, 232, 255, .14), transparent 72%), var(--app-background)",
   selectors: { "&[data-sidebar-mode=collapsed]": { gridTemplateColumns: "68px minmax(0, 1fr)" } },
 });
 
@@ -27,9 +27,9 @@ export const sidebar = style({
   padding: "24px 14px 17px",
   position: "relative",
   zIndex: 2,
-  borderRight: "1px solid rgba(178, 198, 228, 0.72)",
-  background: "#FFFFFF",
-  boxShadow: "none",
+  borderRight: "1px solid var(--border-subtle)",
+  background: "linear-gradient(180deg, #F7F9FD, #F0F5FB)",
+  boxShadow: "inset -1px 0 rgba(255,255,255,.7)",
   "@media": { "(forced-colors: active)": { background: "Canvas", borderRight: "1px solid CanvasText", boxShadow: "none" } },
 });
 
@@ -55,7 +55,7 @@ export const brandMark = style({
   color: "#FFFFFF",
   background: "var(--accent)",
   border: "1px solid var(--accent)",
-  boxShadow: "none",
+  boxShadow: "0 3px 9px rgba(42, 82, 145, .13), inset 0 1px rgba(255,255,255,.24)",
 });
 
 export const brandGlyph = style({
@@ -80,6 +80,8 @@ export const navButton = style([
     border: "1px solid transparent",
     borderRadius: "12px",
     background: "transparent",
+    backgroundImage: "none",
+    boxShadow: "none",
     color: "var(--text-muted)",
     ...text.navigation,
     textAlign: "left",
@@ -89,14 +91,14 @@ export const navButton = style([
       "&[aria-current=page]": {
         color: "var(--accent-muted)",
         fontWeight: 700,
-        borderColor: "rgba(132, 158, 230, 0.34)",
+        borderColor: "#C7DCF8",
         background: "var(--accent-soft)",
-        boxShadow: "none",
+        boxShadow: "inset 0 1px rgba(255,255,255,.75)",
       },
       "&:hover:not([aria-current=page])": {
         color: "var(--text-primary)",
-        borderColor: "rgba(193, 208, 230, 0.65)",
-        backgroundColor: "rgba(255, 255, 255, 0.66)",
+        borderColor: "rgba(190, 207, 230, 0.55)",
+        backgroundColor: "rgba(255, 255, 255, 0.72)",
       },
       "&:active": { transform: "translateY(1px) scale(0.995)" },
     },
@@ -132,6 +134,8 @@ export const collapseButton = style([
     border: "1px solid transparent",
     borderRadius: "12px",
     background: "transparent",
+    backgroundImage: "none",
+    boxShadow: "none",
     color: "var(--text-muted)",
     ...text.navigation,
     cursor: "pointer",
@@ -171,13 +175,13 @@ export const viewport = style({
   minBlockSize: 0,
   overflow: "auto",
   padding: gutter,
-  background: "transparent",
+  background: "radial-gradient(ellipse 85% 60% at 95% 0%, rgba(211,230,255,.24), transparent 74%), transparent",
   selectors: {
     '&[data-destination="today"]': {
-      background: "#FBFCFD",
+      background: "transparent",
     },
     '&[data-destination="settings"]': {
-      background: "#FBFCFD",
+      background: "transparent",
     },
     '&[data-destination="life"]': {
       overflow: "hidden",
@@ -235,7 +239,7 @@ export const settingsRail = style({
   gap: space.x2,
   minInlineSize: 0,
   paddingBlock: space.x3,
-  background: "#FBFCFD",
+  background: "transparent",
   selectors: {
     "&::after": {
       content: '""',
@@ -345,15 +349,15 @@ export const settingsToolButton = style([
     padding: "12px 14px",
     border: "1px solid var(--paint-edge)",
     borderRadius: "var(--radius-surface)",
-    backgroundColor: "#FCFCFD",
+    backgroundColor: "#FCFDFF",
     backgroundImage: "none",
     color: "var(--text-primary)",
     textAlign: "left",
     cursor: "pointer",
-    boxShadow: "none",
+    boxShadow: "0 2px 8px rgba(31, 48, 75, .045)",
     transition: `background-color ${duration.state} ${easing.standard}, border-color ${duration.state} ${easing.standard}, transform ${duration.press} ${easing.standard}`,
     selectors: {
-      "&:hover": { borderColor: "var(--paint-edge-strong)", backgroundColor: "#F6F8FA", transform: "translateY(-1px)" },
+      "&:hover": { borderColor: "var(--paint-edge-strong)", backgroundColor: "var(--surface-hover)", transform: "translateY(-1px)", boxShadow: "var(--elevation-floating)" },
       "&:active": { transform: "translateY(1px)" },
     },
     "@media": {

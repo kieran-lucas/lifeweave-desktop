@@ -14,7 +14,7 @@ globalStyle("body", {
   color: "var(--text-primary)",
 });
 
-/* Matte Anime Painted Atlas: title character comes from type and composition, not glow. */
+/* Display type stays confident without borrowing the reference's browser typography. */
 globalStyle("h1", {
   ...text.display,
   margin: 0,

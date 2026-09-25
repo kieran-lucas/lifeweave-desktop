@@ -53,8 +53,8 @@ export const trigger = style({
   selectors: {
     "&:hover:not(:disabled)": { borderColor: "#8D8D89", background: "#FFFFFF" },
     "&:active:not(:disabled)": { transform: "translateY(1px)" },
-    "&:focus-visible": { outline: "2px solid #111111", outlineOffset: 2 },
-    "&[aria-expanded=true]": { borderColor: "#111111", background: "#FFFFFF", boxShadow: "0 0 0 3px rgb(17 17 17 / .07)" },
+    "&:focus-visible": { outline: `2px solid ${vars.color.focusRing}`, outlineOffset: 2 },
+    "&[aria-expanded=true]": { borderColor: vars.color.accentMuted, background: vars.color.surfaceRaised, boxShadow: `0 0 0 3px ${vars.color.accentSoft}` },
     "&:disabled": { cursor: "not-allowed", opacity: .48 },
   },
 });
@@ -87,11 +87,11 @@ export const datePopover = style({
   inlineSize: 308,
   boxSizing: "border-box",
   padding: 10,
-  border: "1px solid #171717",
+  border: `1px solid ${vars.color.borderStrong}`,
   borderRadius: 13,
   background: "#FFFFFF",
   color: "#171717",
-  boxShadow: "0 18px 48px rgb(0 0 0 / .18), 0 3px 10px rgb(0 0 0 / .07)",
+  boxShadow: vars.elevation.modal,
   animation: `${enter} ${duration.popover} ${easing.standard} both`,
   transformOrigin: "top left",
   "@media": { "(prefers-reduced-motion: reduce)": { animation: "none" } },
@@ -100,24 +100,24 @@ globalStyle(`${detailDateField} > ${datePopover}`, { insetBlockStart: "auto", in
 export const calendarHeader = style({ display: "grid", gridTemplateColumns: "32px 1fr 32px", alignItems: "center", gap: 7, paddingBlockEnd: 9 });
 globalStyle(`${calendarHeader} strong`, { textAlign: "center", fontSize: 13, lineHeight: "18px", fontWeight: 780, letterSpacing: "-.01em" });
 globalStyle(`${calendarHeader} button`, { inlineSize: 32, blockSize: 32, display: "grid", placeItems: "center", padding: 0, border: "1px solid #D5D7DA", borderRadius: 9, background: "#F7F8FA", color: "#171717", fontSize: 21, lineHeight: 1, cursor: "pointer" });
-globalStyle(`${calendarHeader} button:hover`, { borderColor: "#111111", background: "#111111", color: "#FFFFFF" });
-globalStyle(`${calendarHeader} button:focus-visible`, { outline: "2px solid #111111", outlineOffset: 2 });
+globalStyle(`${calendarHeader} button:hover`, { borderColor: vars.color.accentMuted, background: vars.color.accentSoft, color: vars.color.accent });
+globalStyle(`${calendarHeader} button:focus-visible`, { outline: `2px solid ${vars.color.focusRing}`, outlineOffset: 2 });
 export const weekdayRow = style({ display: "grid", gridTemplateColumns: "repeat(7,1fr)", paddingBlock: "4px 6px", color: "#7C7C7C", fontSize: 9, lineHeight: "12px", fontWeight: 760, textAlign: "center", textTransform: "uppercase" });
 export const dayGrid = style({ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 3, padding: 4, border: "1px solid #DDDFE2", borderRadius: 10, background: "#F7F8FA" });
 globalStyle(`${dayGrid} > [role="row"]`, { display: "contents" });
 globalStyle(`${dayGrid} button`, { position: "relative", inlineSize: "100%", aspectRatio: "1", display: "grid", placeItems: "center", padding: 0, border: "1px solid transparent", borderRadius: 8, background: "transparent", color: "#202020", fontSize: 11, lineHeight: 1, fontWeight: 650, fontVariantNumeric: "tabular-nums", cursor: "pointer" });
 globalStyle(`${dayGrid} button:hover`, { borderColor: "#AAAAA6", background: "#FFFFFF", color: "#111111" });
-globalStyle(`${dayGrid} button:focus-visible`, { outline: "2px solid #111111", outlineOffset: 1 });
+globalStyle(`${dayGrid} button:focus-visible`, { outline: `2px solid ${vars.color.focusRing}`, outlineOffset: 1 });
 globalStyle(`${dayGrid} button[data-outside]`, { color: "#8D8D8D", opacity: .48 });
-globalStyle(`${dayGrid} button[data-today]::after`, { content: "", position: "absolute", insetBlockEnd: 4, insetInlineStart: "calc(50% - 2px)", inlineSize: 4, blockSize: 4, borderRadius: vars.radius.full, background: "#111111" });
-globalStyle(`${dayGrid} button[aria-selected="true"]`, { borderColor: "#111111", background: "#111111", color: "#FFFFFF", fontWeight: 820, boxShadow: "0 2px 7px rgb(0 0 0 / .20)" });
-globalStyle(`${dayGrid} button[aria-selected="true"]::after`, { background: "#FFFFFF" });
+globalStyle(`${dayGrid} button[data-today]::after`, { content: "", position: "absolute", insetBlockEnd: 4, insetInlineStart: "calc(50% - 2px)", inlineSize: 4, blockSize: 4, borderRadius: vars.radius.full, background: vars.color.accent });
+globalStyle(`${dayGrid} button[aria-selected="true"]`, { borderColor: vars.color.accentMuted, background: vars.color.accentSoft, color: vars.color.textPrimary, fontWeight: 820 });
+globalStyle(`${dayGrid} button[aria-selected="true"]::after`, { background: vars.color.accent });
 export const calendarFooter = style({ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "9px 2px 0" });
 globalStyle(`${calendarFooter} > span`, { overflow: "hidden", color: "#777777", fontSize: 9, lineHeight: "13px", fontWeight: 620, textOverflow: "ellipsis", whiteSpace: "nowrap" });
 export const calendarFooterActions = style({ display: "flex", alignItems: "center", gap: 5 });
-globalStyle(`${calendarFooterActions} > button`, { minBlockSize: 30, paddingInline: 11, border: "1px solid #111111", borderRadius: 9, background: "#FFFFFF", color: "#111111", fontSize: 10, fontWeight: 780, cursor: "pointer" });
-globalStyle(`${calendarFooterActions} > button:hover`, { background: "#111111", color: "#FFFFFF" });
-globalStyle(`${calendarFooterActions} > button:focus-visible`, { outline: "2px solid #111111", outlineOffset: 2 });
+globalStyle(`${calendarFooterActions} > button`, { minBlockSize: 30, paddingInline: 11, border: `1px solid ${vars.color.borderStrong}`, borderRadius: 9, background: vars.color.surfaceRaised, color: vars.color.textPrimary, fontSize: 10, fontWeight: 780, cursor: "pointer" });
+globalStyle(`${calendarFooterActions} > button:hover`, { borderColor: vars.color.accentMuted, background: vars.color.accentSoft, color: vars.color.accent });
+globalStyle(`${calendarFooterActions} > button:focus-visible`, { outline: `2px solid ${vars.color.focusRing}`, outlineOffset: 2 });
 
 export const timePopover = style({
   position: "absolute",
@@ -126,11 +126,11 @@ export const timePopover = style({
   insetInlineStart: 0,
   inlineSize: 272,
   padding: 13,
-  border: "1px solid #171717",
+  border: `1px solid ${vars.color.borderStrong}`,
   borderRadius: 16,
   background: "#FFFFFF",
   color: "#171717",
-  boxShadow: "0 2px 5px rgb(0 0 0 / .09), 0 18px 46px rgb(0 0 0 / .18), 0 42px 88px rgb(0 0 0 / .10)",
+  boxShadow: vars.elevation.modal,
   animation: `${enter} ${duration.inspector} ${easing.standard} both`,
   transformOrigin: "top left",
   "@media": { "(prefers-reduced-motion: reduce)": { animation: "none" } },
@@ -172,8 +172,8 @@ export const lockSlot = style({
   insetBlockStart: 80,
   blockSize: 40,
   borderRadius: 9,
-  background: "#111111",
-  boxShadow: "inset 0 1px 0 rgb(255 255 255 / .10), 0 3px 9px rgb(0 0 0 / .18)",
+  background: vars.color.accent,
+  boxShadow: vars.elevation.floating,
   pointerEvents: "none",
 });
 export const wheel = style({
@@ -189,7 +189,7 @@ export const wheel = style({
   paddingBlock: 80,
   scrollPaddingBlock: 80,
   selectors: {
-    "&:focus-visible": { outline: "2px solid #111111", outlineOffset: -3 },
+    "&:focus-visible": { outline: `2px solid ${vars.color.focusRing}`, outlineOffset: -3 },
   },
 });
 export const wheelOption = style({
@@ -229,15 +229,15 @@ globalStyle(`${timeFooter} > span`, { marginInlineEnd: "auto", color: "#777777",
 globalStyle(`${timeFooter} > button`, {
   minBlockSize: 32,
   paddingInline: 13,
-  border: "1px solid #111111",
+  border: `1px solid ${vars.color.accent}`,
   borderRadius: vars.radius.control,
-  background: "#111111",
+  background: vars.color.accent,
   color: "#FFFFFF",
   fontSize: 11,
   fontWeight: 780,
   cursor: "pointer",
   transition: `background-color ${duration.state} ${easing.standard}, transform ${duration.press} ${easing.standard}`,
 });
-globalStyle(`${timeFooter} > button:hover`, { background: "#2A2A2A" });
+globalStyle(`${timeFooter} > button:hover`, { background: vars.color.accentMuted });
 globalStyle(`${timeFooter} > button:active`, { transform: "scale(.96)" });
-globalStyle(`${timeFooter} > button:focus-visible`, { outline: "2px solid #111111", outlineOffset: 2 });
+globalStyle(`${timeFooter} > button:focus-visible`, { outline: `2px solid ${vars.color.focusRing}`, outlineOffset: 2 });
