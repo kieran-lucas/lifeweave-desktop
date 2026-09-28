@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useModalFocusTrap } from "../../../app/useModalFocusTrap";
 import { DialogBackdrop, DialogSurface } from "../../../app/layout/DialogSurface";
 import { LoadingRow } from "../../../design-system/primitives/States";
-import { Icon, iconCalendar, iconOptions } from "../../../design-system/visual/icons";
+import { Icon, iconTaskContext, iconTaskSchedule } from "../../../design-system/visual/icons";
 import { createRecurringTask, createTask, deleteTask, listTaskCategories, updateRecurringOccurrence, updateTask } from "../../../ipc/commands";
 import type { TagSummaryView } from "../../../ipc/generated/TagSummaryView";
 import { TagChipList } from "../../tag/TagChipList";
@@ -282,7 +282,7 @@ export default function TaskComposer({ date, today, editing, onClose }: {
                 </div>
               </section>
 
-              <ComposerSection id="task-schedule-heading" title="Schedule" icon={iconCalendar}>
+              <ComposerSection id="task-schedule-heading" title="Schedule" icon={iconTaskSchedule}>
                   <div className={styles.scheduleBar} data-form-grid="six-column">
                     <Suspense fallback={null}>
                       <TaskDatePicker value={draft.local_date} today={today} onChange={(local_date) => { if (local_date) setDraft((current) => ({ ...current, local_date })); }} />
@@ -292,7 +292,7 @@ export default function TaskComposer({ date, today, editing, onClose }: {
                   </div>
               </ComposerSection>
 
-              <ComposerSection id="task-context-heading" title="Context" icon={iconOptions}>
+              <ComposerSection id="task-context-heading" title="Context" icon={iconTaskContext}>
                   <div className={styles.detailsPanel} data-form-grid="six-column">
 
                   <Suspense fallback={<LoadingRow label="Loading categories…" />}>

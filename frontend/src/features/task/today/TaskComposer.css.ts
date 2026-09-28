@@ -1,6 +1,7 @@
 import { globalStyle, keyframes, style } from "@vanilla-extract/css";
 import { duration, easing } from "../../../design-system/visual/motion.css";
 import { vars } from "../../../design-system/visual/contract.css";
+import { text } from "../../../design-system/visual/typography.css";
 
 const composerEnter = keyframes({
   from: { opacity: 0, transform: "translateY(14px) scale(.982)" },
@@ -137,7 +138,7 @@ export const sectionHeading = style({
   minBlockSize: 20,
   minInlineSize: 0,
 });
-globalStyle(`${sectionHeading} h3`, { margin: 0, color: "#2C2C2B", fontSize: 12, lineHeight: "16px", fontWeight: 740, letterSpacing: 0 });
+globalStyle(`${sectionHeading} h3`, { ...text.cardTitle, margin: 0, color: "#2C2C2B" });
 export const sectionIcon = style({
   inlineSize: 28,
   blockSize: 28,
@@ -155,7 +156,7 @@ export const titleFieldWrap = style({
   gap: 7,
   minInlineSize: 0,
 });
-globalStyle(`${titleFieldWrap} > span`, { color: "#70706D", fontSize: 11, lineHeight: "14px", fontWeight: 650 });
+globalStyle(`${titleFieldWrap} > span`, { ...text.label, color: "#70706D" });
 export const titleField = style({
   inlineSize: "100%",
   minInlineSize: 0,
@@ -206,21 +207,19 @@ globalStyle(`${detailsPanel} [data-task-combobox-popover]`, {
 });
 
 export const detailField = style({
+  ...text.label,
   display: "grid",
   alignContent: "start",
   gap: 8,
   minInlineSize: 0,
   color: "#70706D",
-  fontSize: 11,
-  lineHeight: "14px",
-  fontWeight: 650,
 });
 export const detailFieldWide = style([detailField, { gridColumn: "1 / -1" }]);
 globalStyle(`${detailsPanel} > ${detailFieldWide}`, { gridColumn: "1 / -1" });
-export const fieldLabel = style({ color: "#70706D", fontSize: 11, lineHeight: "14px", fontWeight: 650 });
+export const fieldLabel = style({ ...text.label, color: "#70706D" });
 export const choiceField = style({
   display: "grid",
-  gridTemplateRows: "14px 52px",
+  gridTemplateRows: "17px 52px",
   alignContent: "start",
   gap: 8,
   minInlineSize: 0,
@@ -235,9 +234,9 @@ export const choiceGrid = style({
   blockSize: 52,
   boxSizing: "border-box",
   padding: 3,
-  border: "1px solid #D2D4D7",
+  border: `1px solid ${vars.color.borderStrong}`,
   borderRadius: 11,
-  background: "#F5F6F8",
+  background: vars.color.surfaceSubtle,
   boxShadow: "inset 0 1px 2px rgb(0 0 0 / .045)",
   selectors: {
     '&[data-columns="3"]': { gridTemplateColumns: "repeat(3,minmax(0,1fr))" },
@@ -245,6 +244,7 @@ export const choiceGrid = style({
   },
 });
 export const choiceButton = style({
+  ...text.button,
   minInlineSize: 0,
   minBlockSize: 44,
   display: "inline-flex",
@@ -254,20 +254,22 @@ export const choiceButton = style({
   border: "1px solid transparent",
   borderRadius: 8,
   background: "transparent",
-  color: "#696969",
-  fontSize: 11,
-  lineHeight: "14px",
+  color: vars.color.textSecondary,
   cursor: "pointer",
-  transition: `background-color ${duration.state} ${easing.standard}, border-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}, transform ${duration.press} ${easing.standard}`,
+  transition: `background-color ${duration.state} ${easing.standard}, border-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}, box-shadow ${duration.state} ${easing.standard}, transform ${duration.press} ${easing.standard}`,
   selectors: {
-    "&:hover": { background: "#FFFFFF", color: "#222222" },
-    "&:active": { transform: "scale(.97)" },
+    "&:hover:not([aria-pressed=true])": { background: vars.color.surfaceRaised, color: vars.color.textPrimary },
+    "&:active": { transform: "translateY(1px) scale(.98)" },
     "&:focus-visible": { outline: `2px solid ${vars.color.focusRing}`, outlineOffset: 1 },
-    "&[aria-pressed=true]": { borderColor: vars.color.accent, background: vars.color.accentSoft, color: vars.color.accentMuted, boxShadow: "inset 0 0 0 1px rgba(52,117,219,.12)" },
+    "&[aria-pressed=true]": { borderColor: vars.color.accent, background: vars.color.accent, color: vars.color.textOnAccent, boxShadow: "0 2px 5px rgb(31 72 140 / .16), inset 0 1px rgb(255 255 255 / .18)" },
+    "&[aria-pressed=true]:hover": { background: vars.color.accentMuted },
   },
-  "@media": { "(prefers-reduced-motion: reduce)": { transition: "none" } },
+  "@media": {
+    "(prefers-reduced-motion: reduce)": { transition: "none", selectors: { "&:active": { transform: "none" } } },
+    "(forced-colors: active)": { selectors: { "&[aria-pressed=true]": { borderColor: "Highlight", background: "Highlight", color: "HighlightText", boxShadow: "none" } } },
+  },
 });
-globalStyle(`${choiceButton} > strong`, { minInlineSize: 0, fontSize: "inherit", fontWeight: 700, whiteSpace: "nowrap" });
+globalStyle(`${choiceButton} > strong`, { minInlineSize: 0, fontSize: "inherit", fontWeight: 740, whiteSpace: "nowrap" });
 globalStyle(`${detailsPanel} input, ${detailsPanel} select, ${detailsPanel} textarea, ${composerSection} textarea, ${composerIntro} textarea`, {
   inlineSize: "100%",
   minInlineSize: 0,
@@ -304,11 +306,10 @@ export const composerFooter = style({
 export const footerSpacer = style({ flex: 1 });
 
 const footerButton = {
+  ...text.button,
   minBlockSize: 40,
   paddingInline: 15,
   borderRadius: 10,
-  fontSize: 11,
-  fontWeight: 760,
   cursor: "pointer",
   transition: `background-color ${duration.state} ${easing.standard}, transform ${duration.press} ${easing.standard}`,
   selectors: {

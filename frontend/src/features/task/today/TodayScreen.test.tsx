@@ -193,6 +193,19 @@ describe("Today task interactions", () => {
     expect(within(row!).getByText("Write the report")).toBeInTheDocument();
   });
 
+  it("keeps a saved 24:00 end attached to its scheduled date", async () => {
+    api.listTodayItems.mockResolvedValue([{ ...task, start_minute: 1380, end_minute: 1440 }]);
+    const view = mount();
+    const title = await screen.findByText("Write the report");
+    const row = title.closest<HTMLElement>('[data-agenda-id="task-1"]')!;
+    expect(row.parentElement?.querySelector('[aria-hidden="true"]')).toHaveTextContent("23:0024:00");
+    fireEvent.doubleClick(title);
+    const editor = await screen.findByRole("dialog", { name: "Edit task" });
+    expect(await within(editor).findByRole("button", { name: "End time, 24:00" })).toBeInTheDocument();
+    expect(within(editor).getByRole("button", { name: /Task date, Tuesday, August 11, 2026/ })).toBeInTheDocument();
+    view.unmount();
+  });
+
   it("shows every priority as fitted text plus a redundant three-step signal meter", async () => {
     api.listTodayItems.mockResolvedValue([
       { ...task, id: "task-low", title: "Low priority task", priority: "low" },

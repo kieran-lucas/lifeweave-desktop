@@ -1,6 +1,7 @@
 import { globalStyle, style } from "@vanilla-extract/css";
 import { duration, easing } from "../../../design-system/visual/motion.css";
 import { vars } from "../../../design-system/visual/contract.css";
+import { text } from "../../../design-system/visual/typography.css";
 
 export const dayShell = style({
   inlineSize: "100%",
@@ -10,7 +11,7 @@ export const dayShell = style({
 });
 
 export const masthead = style({
-  minBlockSize: 88,
+  minBlockSize: 74,
   display: "flex",
   alignItems: "flex-end",
   justifyContent: "space-between",
@@ -20,38 +21,29 @@ export const masthead = style({
 
 export const headingBlock = style({ display: "grid", gap: 2, minInlineSize: 0 });
 export const kicker = style({
+  ...text.eyebrow,
   color: vars.color.textTertiary,
-  fontSize: 9,
-  lineHeight: "13px",
-  fontWeight: 760,
-  letterSpacing: ".12em",
-  textTransform: "uppercase",
 });
 export const dayTitle = style({
+  ...text.display,
   margin: 0,
   color: vars.color.textPrimary,
-  fontSize: "clamp(38px, 5vw, 58px)",
-  lineHeight: .98,
-  fontWeight: 700,
-  letterSpacing: "-.058em",
 });
 export const daySummary = style({
+  ...text.metadata,
   margin: "6px 0 0",
   color: vars.color.textTertiary,
-  fontSize: 11,
-  lineHeight: "15px",
   fontVariantNumeric: "tabular-nums",
 });
 
 export const planButton = style({
+  ...text.button,
   minBlockSize: 38,
   paddingInline: 15,
   border: `1px solid ${vars.color.accent}`,
   borderRadius: 10,
   background: vars.color.accent,
   color: "#FFFFFF",
-  fontSize: 12,
-  fontWeight: 720,
   cursor: "pointer",
   transition: `background-color ${duration.state} ${easing.standard}, transform ${duration.press} ${easing.standard}`,
   boxShadow: "0 5px 14px rgba(40, 96, 185, .14)",
@@ -96,7 +88,7 @@ export const agendaItem = style({
 
 export const timeRail = style({
   display: "grid",
-  gridTemplateRows: "15px 15px",
+  gridTemplateRows: "17px 17px",
   justifyItems: "end",
   alignContent: "start",
   gap: 2,
@@ -114,8 +106,8 @@ globalStyle(`${timeValue}`, {
   inlineSize: "5ch",
   textAlign: "center",
   color: "#555555",
-  fontSize: 11,
-  lineHeight: "15px",
+  fontSize: 12.5,
+  lineHeight: "17px",
   fontWeight: 600,
   fontKerning: "none",
 });
@@ -158,8 +150,8 @@ globalStyle(`${taskTitleLine} > strong`, {
   minInlineSize: 0,
   flex: "0 1 auto",
   color: vars.color.textPrimary,
-  fontSize: 13,
-  lineHeight: "17px",
+  fontSize: 14.5,
+  lineHeight: "21px",
   fontWeight: 670,
   letterSpacing: "-.012em",
   overflowWrap: "anywhere",
@@ -186,8 +178,8 @@ export const taskMeta = style({
   minInlineSize: 0,
   overflow: "hidden",
   color: vars.color.textTertiary,
-  fontSize: 9,
-  lineHeight: "12px",
+  fontSize: 11.5,
+  lineHeight: "16px",
   whiteSpace: "nowrap",
 });
 globalStyle(`${taskMeta}:empty`, { display: "none" });
@@ -209,7 +201,7 @@ globalStyle(`${taskMeta} > button:focus-visible`, { outline: "1.5px solid #11111
 
 export const priorityBadge = style({
   inlineSize: "fit-content",
-  blockSize: 18,
+  blockSize: 20,
   minInlineSize: 0,
   display: "inline-flex",
   alignItems: "center",
@@ -223,8 +215,8 @@ export const priorityBadge = style({
   borderRadius: vars.radius.full,
   background: vars.color.surfaceSubtle,
   color: vars.color.textPrimary,
-  fontSize: 9.5,
-  lineHeight: "12px",
+  fontSize: 11,
+  lineHeight: "15px",
   fontWeight: 760,
   letterSpacing: ".025em",
   whiteSpace: "nowrap",
@@ -284,12 +276,12 @@ export const timerStrip = style({
   borderRadius: 11,
   background: "#FAFAFA",
 });
-export const timerRunning = style({ padding: "3px 6px", borderRadius: 6, background: vars.color.accentSoft, color: vars.color.accentMuted, fontSize: 8, fontWeight: 760, letterSpacing: ".07em", textTransform: "uppercase" });
-export const timerTitle = style({ color: "#222222", fontSize: 11, fontWeight: 680 });
-export const timerDate = style({ color: "#888888", fontSize: 9 });
+export const timerRunning = style({ padding: "3px 6px", borderRadius: 6, background: vars.color.accentSoft, color: vars.color.accentMuted, fontSize: 11, fontWeight: 760, letterSpacing: ".07em", textTransform: "uppercase" });
+export const timerTitle = style({ color: "#222222", fontSize: 13.5, fontWeight: 680 });
+export const timerDate = style({ color: "#888888", fontSize: 11.5 });
 export const timerCounter = style({ marginInlineStart: "auto", color: "#222222", fontSize: 15, fontWeight: 700, fontVariantNumeric: "tabular-nums" });
-export const timerTotal = style({ color: "#888888", fontSize: 9, fontVariantNumeric: "tabular-nums" });
-export const timerStop = style({ minBlockSize: 30, paddingInline: 9, border: `1px solid ${vars.color.accent}`, borderRadius: 8, background: vars.color.accent, color: "#FFFFFF", fontSize: 9, fontWeight: 700, cursor: "pointer" });
-export const timerDiscard = style({ minBlockSize: 30, paddingInline: 9, border: "1px solid #D0D0D0", borderRadius: 8, background: "#FFFFFF", color: "#666666", fontSize: 9, fontWeight: 650, cursor: "pointer" });
+export const timerTotal = style({ color: "#888888", fontSize: 11.5, fontVariantNumeric: "tabular-nums" });
+export const timerStop = style({ minBlockSize: 34, paddingInline: 10, border: `1px solid ${vars.color.accent}`, borderRadius: 8, background: vars.color.accent, color: "#FFFFFF", fontSize: 13.5, fontWeight: 700, cursor: "pointer" });
+export const timerDiscard = style({ minBlockSize: 34, paddingInline: 10, border: "1px solid #D0D0D0", borderRadius: 8, background: "#FFFFFF", color: "#666666", fontSize: 13.5, fontWeight: 650, cursor: "pointer" });
 
 export { srOnly } from "../../../design-system/primitives/utilities.css";

@@ -1,7 +1,7 @@
 import axe from "axe-core";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { useState } from "react";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import { TaskDatePicker, TaskTimeWheelPicker } from "./TaskSchedulePickers";
 
@@ -22,71 +22,124 @@ function DateHarness() {
 }
 
 describe("Task schedule pickers", () => {
-  it("locks exact hour and minute values through the scroll-wheel controls", () => {
+  it("opens with the exact controlled hour and minute, and keeps Done and reopen state", async () => {
     const view = render(<Harness />);
     expect(view.container.querySelector('input[type="time"]')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Start time, 08:00" }));
     const dialog = screen.getByRole("dialog", { name: "Choose start time" });
-    fireEvent.click(within(within(dialog).getByRole("listbox", { name: "Hours" })).getByRole("option", { name: "09" }));
-    fireEvent.click(within(within(dialog).getByRole("listbox", { name: "Minutes" })).getByRole("option", { name: "15" }));
-    expect(screen.getByRole("button", { name: "Start time, 09:15" })).toBeInTheDocument();
-  });
-
-  it("supports holding and dragging the hour wheel by one locked step", () => {
-    render(<Harness />);
-    fireEvent.click(screen.getByRole("button", { name: "Start time, 08:00" }));
-    const hours = screen.getByRole("listbox", { name: "Hours" });
-    const initialTop = hours.scrollTop;
-    hours.setPointerCapture = () => undefined;
-    fireEvent.pointerDown(hours, { pointerId: 1, clientY: 100 });
-    fireEvent.pointerMove(hours, { pointerId: 1, clientY: 80 });
-    expect(hours.scrollTop).toBe(initialTop + 20);
-    fireEvent.pointerUp(hours, { pointerId: 1, clientY: 80 });
-    expect(screen.getByRole("button", { name: "Start time, 09:00" })).toBeInTheDocument();
-  });
-
-  it("limits one large wheel gesture to one time step", () => {
-    render(<Harness />);
-    fireEvent.click(screen.getByRole("button", { name: "Start time, 08:00" }));
-    const hours = screen.getByRole("listbox", { name: "Hours" });
-
-    fireEvent.wheel(hours, { deltaY: 900 });
-
-    expect(screen.getByRole("button", { name: "Start time, 09:00" })).toBeInTheDocument();
-  });
-
-  it("settles wheel and keyboard steps through one smooth fixed-row movement", () => {
-    render(<Harness />);
-    fireEvent.click(screen.getByRole("button", { name: "Start time, 08:00" }));
-    const hours = screen.getByRole("listbox", { name: "Hours" });
-    const scrollTo = vi.fn(({ top }: ScrollToOptions) => { hours.scrollTop = Number(top); });
-    Object.defineProperty(hours, "scrollTo", { configurable: true, value: scrollTo });
-
-    fireEvent.wheel(hours, { deltaY: 120 });
-
-    expect(scrollTo).toHaveBeenCalledWith({ top: 200, behavior: "smooth" });
-    expect(screen.getByRole("button", { name: "Start time, 09:00" })).toBeInTheDocument();
-    expect(within(hours).getByRole("option", { name: "09" })).toHaveAttribute("aria-selected", "true");
-  });
-
-  it("supports keyboard stepping without tabbing through every option", () => {
-    render(<Harness />);
-    fireEvent.click(screen.getByRole("button", { name: "Start time, 08:00" }));
-    const hours = screen.getByRole("listbox", { name: "Hours" });
+    const hours = within(dialog).getByRole("spinbutton", { name: "Hours" });
+    const minutes = within(dialog).getByRole("spinbutton", { name: "Minutes" });
+    expect(hours).toHaveAttribute("aria-valuenow", "8");
+    expect(minutes).toHaveAttribute("aria-valuenow", "0");
     fireEvent.keyDown(hours, { key: "ArrowDown" });
-    expect(screen.getByRole("button", { name: "Start time, 09:00" })).toBeInTheDocument();
-    const selectedHour = within(hours).getByRole("option", { name: "09" });
-    expect(selectedHour).toHaveAttribute("tabindex", "-1");
-    expect(selectedHour).toHaveAttribute("aria-selected", "true");
+    await waitFor(() => expect(screen.getByRole("button", { name: "Start time, 09:00" })).toBeInTheDocument());
+    fireEvent.click(within(dialog).getByRole("button", { name: "Done" }));
+    expect(dialog).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Start time, 09:00" }));
+    expect(screen.getByRole("spinbutton", { name: "Hours" })).toHaveAttribute("aria-valuenow", "9");
   });
 
-  it("exposes 24:00 only for an end time", () => {
+  it("drags the hour wheel and snaps to one valid value", async () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByRole("button", { name: "Start time, 08:00" }));
+    const hours = screen.getByRole("spinbutton", { name: "Hours" });
+    fireEvent.mouseDown(hours, { clientY: 100 });
+    fireEvent.mouseMove(document, { clientY: 60 });
+    fireEvent.mouseUp(document, { clientY: 60 });
+    await waitFor(() => expect(screen.getByRole("button", { name: "Start time, 09:00" })).toBeInTheDocument());
+    expect(hours).toHaveAttribute("aria-valuenow", "9");
+  });
+
+  it("drags the minute wheel independently of hours", async () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByRole("button", { name: "Start time, 08:00" }));
+    const minutes = screen.getByRole("spinbutton", { name: "Minutes" });
+    fireEvent.mouseDown(minutes, { clientY: 100 });
+    fireEvent.mouseMove(document, { clientY: 60 });
+    fireEvent.mouseUp(document, { clientY: 60 });
+    await waitFor(() => expect(screen.getByRole("button", { name: "Start time, 08:01" })).toBeInTheDocument());
+    expect(screen.getByRole("spinbutton", { name: "Hours" })).toHaveAttribute("aria-valuenow", "8");
+  });
+
+  it("limits one large mouse wheel gesture to one time step without page scrolling", async () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByRole("button", { name: "Start time, 08:00" }));
+    const hours = screen.getByRole("spinbutton", { name: "Hours" });
+
+    const gesture = new WheelEvent("wheel", { bubbles: true, cancelable: true, deltaY: 900 });
+    fireEvent(hours, gesture);
+
+    expect(gesture.defaultPrevented).toBe(true);
+    await waitFor(() => expect(screen.getByRole("button", { name: "Start time, 09:00" })).toBeInTheDocument());
+  });
+
+  it("coalesces a precision touchpad delta stream into one step", async () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByRole("button", { name: "Start time, 08:00" }));
+    const hours = screen.getByRole("spinbutton", { name: "Hours" });
+    for (let index = 0; index < 24; index++) {
+      const delta = new WheelEvent("wheel", { bubbles: true, cancelable: true, deltaY: 7, deltaMode: 0 });
+      fireEvent(hours, delta);
+      expect(delta.defaultPrevented).toBe(true);
+    }
+    await waitFor(() => expect(hours).toHaveAttribute("aria-valuenow", "9"));
+  });
+
+  it("keeps a fast precision gesture to one step and accepts a conventional 100-pixel notch", async () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByRole("button", { name: "Start time, 08:00" }));
+    const hours = screen.getByRole("spinbutton", { name: "Hours" });
+    for (const deltaY of [121, 50, 18, 7, 3]) {
+      fireEvent.wheel(hours, { deltaY, deltaMode: 0 });
+    }
+    await waitFor(() => expect(hours).toHaveAttribute("aria-valuenow", "9"));
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    fireEvent.wheel(hours, { deltaY: 100, deltaMode: 0 });
+    await waitFor(() => expect(hours).toHaveAttribute("aria-valuenow", "10"));
+  });
+
+  it("steps minutes by one and exposes the selected two-digit value", async () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByRole("button", { name: "Start time, 08:00" }));
+    const minutes = screen.getByRole("spinbutton", { name: "Minutes" });
+    fireEvent.wheel(minutes, { deltaY: 120 });
+    await waitFor(() => expect(screen.getByRole("button", { name: "Start time, 08:01" })).toBeInTheDocument());
+    expect(minutes).toHaveAttribute("aria-valuetext", "01");
+  });
+
+  it("supports keyboard stepping without tabbing through every option", async () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByRole("button", { name: "Start time, 08:00" }));
+    const hours = screen.getByRole("spinbutton", { name: "Hours" });
+    fireEvent.keyDown(hours, { key: "ArrowDown" });
+    await waitFor(() => expect(hours).toHaveAttribute("aria-valuenow", "9"));
+    expect(hours).toHaveAttribute("tabindex", "0");
+  });
+
+  it("exposes 24:00 only for an end time and restricts its minute to 00", async () => {
     render(<Harness />);
     fireEvent.click(screen.getByRole("button", { name: "End time, 09:00" }));
     const dialog = screen.getByRole("dialog", { name: "Choose end time" });
-    fireEvent.click(within(within(dialog).getByRole("listbox", { name: "Hours" })).getByRole("option", { name: "24" }));
-    expect(screen.getByRole("button", { name: "End time, 24:00" })).toBeInTheDocument();
-    expect(within(within(dialog).getByRole("listbox", { name: "Minutes" })).getAllByRole("option")).toHaveLength(1);
+    const hours = within(dialog).getByRole("spinbutton", { name: "Hours" });
+    expect(hours).toHaveAttribute("aria-valuemax", "24");
+    fireEvent.keyDown(hours, { key: "End" });
+    await waitFor(() => expect(screen.getByRole("button", { name: "End time, 24:00" })).toBeInTheDocument(), { timeout: 3000 });
+    expect(within(dialog).getByRole("spinbutton", { name: "Minutes" })).toHaveAttribute("aria-valuemax", "0");
+  });
+
+  it("accepts external value updates and preserves 04:00, 23:59, and 24:00 boundaries", () => {
+    const onChange = () => undefined;
+    const view = render(<TaskTimeWheelPicker label="Start" value={240} onChange={onChange} />);
+    fireEvent.click(screen.getByRole("button", { name: "Start time, 04:00" }));
+    expect(screen.getByRole("spinbutton", { name: "Hours" })).toHaveAttribute("aria-valuenow", "4");
+    view.rerender(<TaskTimeWheelPicker label="Start" value={1439} onChange={onChange} />);
+    expect(screen.getByRole("spinbutton", { name: "Hours" })).toHaveAttribute("aria-valuenow", "23");
+    expect(screen.getByRole("spinbutton", { name: "Minutes" })).toHaveAttribute("aria-valuenow", "59");
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+    view.rerender(<TaskTimeWheelPicker label="End" value={1440} onChange={onChange} />);
+    fireEvent.click(screen.getByRole("button", { name: "End time, 24:00" }));
+    expect(screen.getByRole("spinbutton", { name: "Hours" })).toHaveAttribute("aria-valuemax", "24");
+    expect(screen.getByRole("spinbutton", { name: "Minutes" })).toHaveAttribute("aria-valuemax", "0");
   });
 
   it("uses a stable six-week date grid with precise keyboard selection", async () => {
@@ -112,6 +165,14 @@ describe("Task schedule pickers", () => {
     fireEvent.keyDown(document, { key: "Escape" });
     expect(screen.queryByRole("dialog", { name: "Choose start time" })).not.toBeInTheDocument();
     expect(trigger).toHaveFocus();
+  });
+
+  it("dismisses on an outside pointer press without changing the selected time", () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByRole("button", { name: "Start time, 08:00" }));
+    fireEvent.pointerDown(document.body);
+    expect(screen.queryByRole("dialog", { name: "Choose start time" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Start time, 08:00" })).toBeInTheDocument();
   });
 
   it("keeps the open wheel free of automated accessibility violations", async () => {
