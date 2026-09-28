@@ -185,7 +185,7 @@ export const nodeContent = style({ minInlineSize: 0, display: "grid", gap: 3 });
  * The extra leading separates state from identity without loosening the rest of the card.
  */
 export const nodeMetaRow = style({ display: "flex", alignItems: "center", gap: 6, marginBlockStart: 4, minInlineSize: 0 });
-export const compactTitle = style({ display: "block", whiteSpace: "normal", overflowWrap: "anywhere", fontSize: 11, lineHeight: "15px", fontWeight: 680 });
+export const compactTitle = style({ display: "block", whiteSpace: "normal", overflowWrap: "anywhere", fontSize: 12.5, lineHeight: "17px", fontWeight: 680 });
 
 /**
  * Direction confidence reads as an ordinal ramp: unresolved gray, a cool lean, a settled green, then
@@ -200,14 +200,14 @@ export const confidenceBadge = style({
   gridAutoColumns: "max-content",
   alignItems: "center",
   gap: 4,
-  blockSize: 16,
+  blockSize: 18,
   paddingInline: 5,
   border: "1px solid #E0E0DD",
   borderRadius: vars.radius.full,
   background: "#F4F4F3",
   color: "#63635F",
-  fontSize: 8,
-  lineHeight: "8px",
+  fontSize: 10,
+  lineHeight: "12px",
   fontWeight: 720,
   letterSpacing: ".01em",
   whiteSpace: "nowrap",

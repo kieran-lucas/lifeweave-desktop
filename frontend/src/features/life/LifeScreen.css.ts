@@ -1,6 +1,7 @@
 import { globalStyle, keyframes, style } from "@vanilla-extract/css";
 import { duration, easing, reduced } from "../../design-system/visual/motion.css";
 import { vars } from "../../design-system/visual/contract.css";
+import { text } from "../../design-system/visual/typography.css";
 
 export const lifeFrame = style({
   blockSize: "100%",
@@ -49,6 +50,10 @@ export const navigatorHeader = style({
   gap: 7,
   padding: "8px 10px",
   borderBottom: `1px solid ${vars.color.borderHairline}`,
+  "@media": { "(max-width: 1100px)": { gridTemplateColumns: "32px minmax(0, 1fr)" } },
+});
+globalStyle(`${navigatorHeader} > button:last-child`, {
+  "@media": { "(max-width: 1100px)": { gridColumn: "1 / -1", justifySelf: "stretch" } },
 });
 
 const quietControl = {
@@ -130,7 +135,7 @@ export const branchIdentity = style({
   borderBottom: `1px solid ${vars.color.borderHairline}`,
 });
 globalStyle(`${branchIdentity} > div`, { display: "grid", gap: 1, minInlineSize: 0 });
-globalStyle(`${branchIdentity} > div > span`, { color: "#999999", fontSize: 10, fontWeight: 720, letterSpacing: ".07em", textTransform: "uppercase" });
+globalStyle(`${branchIdentity} > div > span`, { color: "#999999", fontSize: 11, fontWeight: 720, letterSpacing: ".07em", textTransform: "uppercase" });
 globalStyle(`${branchIdentity} > div > strong`, { color: "#222222", fontSize: 14, lineHeight: "19px", fontWeight: 680, overflowWrap: "anywhere", whiteSpace: "normal" });
 
 export const icon = style({
@@ -186,7 +191,7 @@ export const childHeader = style({
   justifyContent: "space-between",
   padding: "8px 12px 4px",
   color: "#8A8A8A",
-  fontSize: 10,
+  fontSize: 11,
   fontWeight: 720,
   letterSpacing: ".08em",
   textTransform: "uppercase",
@@ -228,8 +233,8 @@ export const nodeRow = style({
 });
 
 export const nodeRowCopy = style({ display: "grid", gap: 1, minInlineSize: 0 });
-globalStyle(`${nodeRowCopy} > strong`, { color: "#282828", fontSize: 13, lineHeight: "18px", fontWeight: 650, overflowWrap: "break-word", wordBreak: "normal", whiteSpace: "normal" });
-globalStyle(`${nodeRowCopy} > small`, { overflow: "hidden", color: "#929292", fontSize: 11, lineHeight: "15px", textOverflow: "ellipsis", whiteSpace: "nowrap" });
+globalStyle(`${nodeRowCopy} > strong`, { color: "#282828", fontSize: 14.5, lineHeight: "21px", fontWeight: 650, overflowWrap: "break-word", wordBreak: "normal", whiteSpace: "normal", "@media": { "(max-width: 1100px)": { fontSize: 13.5, lineHeight: "19px" } } });
+globalStyle(`${nodeRowCopy} > small`, { overflow: "hidden", color: "#929292", fontSize: 12.5, lineHeight: "18px", textOverflow: "ellipsis", whiteSpace: "nowrap" });
 
 export const rowArrow = style({ display: "none" });
 
@@ -244,10 +249,10 @@ export const paging = style({
   padding: "5px 8px",
   borderTop: `1px solid ${vars.color.borderHairline}`,
   color: "#8A8A8A",
-  fontSize: 9,
+  fontSize: 11,
   fontVariantNumeric: "tabular-nums",
 });
-globalStyle(`${paging} > button`, { minBlockSize: 28, border: 0, borderRadius: 7, background: "transparent", color: "#666666", fontSize: 9, fontWeight: 680, cursor: "pointer" });
+globalStyle(`${paging} > button`, { minBlockSize: 28, border: 0, borderRadius: 7, background: "transparent", color: "#666666", fontSize: 11, fontWeight: 680, cursor: "pointer" });
 globalStyle(`${paging} > button:last-child`, { justifySelf: "end" });
 globalStyle(`${paging} > button:hover:not(:disabled)`, { background: "#EAEAE7", color: "#111111" });
 globalStyle(`${paging} > button:disabled`, { opacity: .28, cursor: "default" });
@@ -330,18 +335,15 @@ globalStyle(`${treeHeader} > div`, { minInlineSize: 0 });
 globalStyle(`${treeHeader} > p`, {
   margin: "0 0 2px",
   color: "#8A8A8A",
-  fontSize: 9,
-  lineHeight: "13px",
+  fontSize: 11.5,
+  lineHeight: "16px",
   whiteSpace: "nowrap",
 });
 
 export const treeTitle = style({
+  ...text.pageTitle,
   margin: 0,
   color: vars.color.textPrimary,
-  fontSize: "clamp(24px, 3vw, 32px)",
-  lineHeight: 1,
-  fontWeight: 700,
-  letterSpacing: "-.045em",
 });
 
 export const readerCanvas = style({
@@ -354,13 +356,9 @@ export const readerCanvas = style({
 });
 
 export const canvasEyebrow = style({
+  ...text.eyebrow,
   marginBlockEnd: 8,
   color: "#8C8C8C",
-  fontSize: 9,
-  lineHeight: "12px",
-  fontWeight: 760,
-  letterSpacing: ".12em",
-  textTransform: "uppercase",
 });
 globalStyle(`${treeHeader} ${canvasEyebrow}`, { marginBlockEnd: 4 });
 
@@ -369,13 +367,10 @@ export const branchHeroIcon = style({ marginBlockEnd: 18 });
 globalStyle(`${branchHeroIcon} ${icon}`, { inlineSize: 48, blockSize: 48, borderRadius: 13 });
 
 export const canvasTitle = style({
+  ...text.display,
   maxInlineSize: "17ch",
   margin: 0,
   color: vars.color.textPrimary,
-  fontSize: "clamp(34px, 4.6vw, 52px)",
-  lineHeight: .99,
-  fontWeight: 700,
-  letterSpacing: "-.055em",
   overflowWrap: "anywhere",
 });
 
@@ -398,8 +393,8 @@ export const branchFacts = style({
 });
 globalStyle(`${branchFacts} > div`, { display: "grid", gap: 3, padding: "14px 14px 14px 0" });
 globalStyle(`${branchFacts} > div + div`, { paddingInlineStart: 14, borderInlineStart: "1px solid #E5E5E5" });
-globalStyle(`${branchFacts} span`, { color: "#969696", fontSize: 9, fontWeight: 720, letterSpacing: ".07em", textTransform: "uppercase" });
-globalStyle(`${branchFacts} strong`, { color: "#333333", fontSize: 12, fontWeight: 660 });
+globalStyle(`${branchFacts} span`, { color: "#969696", fontSize: 11, fontWeight: 720, letterSpacing: ".07em", textTransform: "uppercase" });
+globalStyle(`${branchFacts} strong`, { color: "#333333", fontSize: 13.5, fontWeight: 660 });
 
 export const documentBody = style({
   inlineSize: "100%",
@@ -421,7 +416,7 @@ globalStyle(`${contextDisclosure} > summary`, {
   alignItems: "center",
   paddingInline: 2,
   color: vars.color.textTertiary,
-  fontSize: 10,
+  fontSize: 11.5,
   fontWeight: 700,
   cursor: "pointer",
   listStyle: "none",
