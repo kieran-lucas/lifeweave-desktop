@@ -1,6 +1,7 @@
 import { style } from "@vanilla-extract/css";
 import { duration, easing } from "../../design-system/visual/motion.css";
 import { vars } from "../../design-system/visual/contract.css";
+import { text } from "../../design-system/visual/typography.css";
 
 export const calendarShell = style({
   inlineSize: "100%",
@@ -27,21 +28,15 @@ export const headingBlock = style({
 });
 
 export const kicker = style({
+  ...text.eyebrow,
   color: vars.color.textTertiary,
-  fontSize: 11,
-  lineHeight: "16px",
-  fontWeight: 700,
-  letterSpacing: ".12em",
-  textTransform: "uppercase",
 });
 
 export const monthTitle = style({
+  ...text.display,
   margin: 0,
   color: vars.color.textPrimary,
-  fontSize: "clamp(28px, 3.2vw, 42px)",
-  lineHeight: 1.04,
-  fontWeight: 720,
-  letterSpacing: "-.045em",
+  "@media": { "(max-width: 700px)": { fontSize: 30, lineHeight: "38px" } },
 });
 
 export const commandBar = style({
@@ -81,7 +76,7 @@ export const iconAction = style({
 export const todayAction = style({
   ...command,
   paddingInline: 11,
-  fontSize: 12,
+  fontSize: 13.5,
   fontWeight: 700,
 });
 
@@ -213,8 +208,8 @@ export const attentionDot = style({
 export const openCue = style({
   alignSelf: "end",
   color: vars.color.accentMuted,
-  fontSize: 9,
-  lineHeight: "12px",
+  fontSize: 11,
+  lineHeight: "15px",
   fontWeight: 700,
   letterSpacing: ".04em",
   textTransform: "uppercase",

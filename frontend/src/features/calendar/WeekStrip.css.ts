@@ -41,7 +41,7 @@ export const day = style({
   minInlineSize: 0,
   minBlockSize: 48,
   display: "grid",
-  gridTemplateRows: "12px 20px 10px",
+  gridTemplateRows: "12px 20px 12px",
   placeItems: "center",
   gap: 0,
   padding: "3px 2px",
@@ -61,10 +61,10 @@ export const day = style({
 });
 
 export const todayLabel = style({
-  minBlockSize: 10,
+  minBlockSize: 12,
   color: "inherit",
-  fontSize: 7,
-  lineHeight: "9px",
+  fontSize: 10,
+  lineHeight: "12px",
   fontWeight: 760,
   letterSpacing: ".06em",
   textTransform: "uppercase",
