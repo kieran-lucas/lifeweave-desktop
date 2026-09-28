@@ -1,6 +1,7 @@
 import { globalStyle, keyframes, style } from "@vanilla-extract/css";
 import { duration, easing } from "../../design-system/visual/motion.css";
 import { vars } from "../../design-system/visual/contract.css";
+import { text } from "../../design-system/visual/typography.css";
 
 const editInstrumentEnter = keyframes({
   from: { opacity: .82, transform: "translateY(7px) scale(.992)" },
@@ -22,23 +23,19 @@ export const libraryHeader = style({
 });
 
 export const libraryTitle = style({
+  ...text.pageTitle,
   margin: 0,
   color: vars.color.textPrimary,
-  fontSize: "clamp(28px, 3vw, 34px)",
-  lineHeight: 1,
-  fontWeight: 700,
-  letterSpacing: "-.035em",
 });
 
 export const primaryAction = style({
+  ...text.button,
   minBlockSize: 36,
   paddingInline: 14,
   border: `1px solid ${vars.color.accent}`,
   borderRadius: vars.radius.control,
   background: vars.color.accent,
   color: "#FFFFFF",
-  fontSize: 12,
-  fontWeight: 720,
   cursor: "pointer",
   selectors: {
     "&:hover:not(:disabled)": { background: vars.color.accentMuted, boxShadow: vars.elevation.floating },
@@ -655,7 +652,7 @@ export const planEditorSectionHeading = style({
   gap: 10,
   minInlineSize: 0,
 });
-globalStyle(`${planEditorSectionHeading} > h2`, { margin: 0, color: "#181818", fontSize: 12, lineHeight: "17px", fontWeight: 760 });
+globalStyle(`${planEditorSectionHeading} > h2`, { ...text.cardTitle, margin: 0, color: "#181818" });
 globalStyle(`${planEditorSectionHeading} > span`, {
   inlineSize: 28,
   blockSize: 28,
@@ -670,7 +667,7 @@ globalStyle(`${planEditorSectionHeading} > span`, {
 globalStyle(`${planEditorSectionHeading} > span > svg`, { display: "block" });
 
 export const planEditorBody = style({ display: "grid", gap: 16, minInlineSize: 0 });
-export const planTitleField = style({ display: "grid", gap: 7, minInlineSize: 0, color: "#70706D", fontSize: 11, lineHeight: "14px", fontWeight: 650 });
+export const planTitleField = style({ ...text.label, display: "grid", gap: 7, minInlineSize: 0, color: "#70706D" });
 globalStyle(`${planTitleField} > input`, {
   inlineSize: "100%",
   minInlineSize: 0,
@@ -690,7 +687,7 @@ globalStyle(`${planTitleField} > input`, {
 });
 globalStyle(`${planTitleField} > input:focus, ${planTitleField} > input:focus-visible`, { borderBlockEndColor: "#111111 !important", outline: "none !important", boxShadow: "none !important" });
 
-export const planOutcomeField = style({ display: "grid", gap: 8, minInlineSize: 0, color: "#70706D", fontSize: 11, lineHeight: "14px", fontWeight: 650 });
+export const planOutcomeField = style({ ...text.label, display: "grid", gap: 8, minInlineSize: 0, color: "#70706D" });
 
 export const planEditorGrid = style({
   display: "grid",
@@ -702,9 +699,9 @@ export const planEditorGrid = style({
   "@media": { "(max-width: 620px)": { gridTemplateColumns: "1fr" } },
 });
 
-export const planStatusField = style({ display: "grid", gridTemplateRows: "14px 52px", alignContent: "start", gap: 8, minInlineSize: 0, color: "#70706D", fontSize: 11, lineHeight: "14px", fontWeight: 650 });
+export const planStatusField = style({ ...text.label, display: "grid", gridTemplateRows: "17px 52px", alignContent: "start", gap: 8, minInlineSize: 0, color: "#70706D" });
 globalStyle(`${planStatusField} > span`, { display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 });
-globalStyle(`${planStatusField} > span > small`, { color: "#92928E", fontSize: 9, lineHeight: "12px", fontWeight: 620 });
+globalStyle(`${planStatusField} > span > small`, { color: "#92928E", fontSize: 11.5, lineHeight: "16px", fontWeight: 620 });
 export const planStatusControl = style({
   inlineSize: "100%",
   minInlineSize: 0,
@@ -714,9 +711,10 @@ export const planStatusControl = style({
   boxSizing: "border-box",
   padding: 3,
   gap: 2,
-  border: "1px solid #CBCBC8",
+  border: `1px solid ${vars.color.borderStrong}`,
   borderRadius: 11,
-  background: "#FAFAF8",
+  background: vars.color.surfaceSubtle,
+  boxShadow: "inset 0 1px 2px rgb(0 0 0 / .045)",
 });
 globalStyle(`${planStatusControl} > label`, { position: "relative", minInlineSize: 0, display: "grid", cursor: "pointer" });
 globalStyle(`${planStatusControl} input`, { position: "absolute", inlineSize: 1, blockSize: 1, margin: 0, opacity: 0, pointerEvents: "none" });
@@ -728,18 +726,24 @@ globalStyle(`${planStatusControl} label > span`, {
   overflow: "hidden",
   border: "1px solid transparent",
   borderRadius: 8,
-  color: "#6A6A67",
-  fontSize: 10,
-  lineHeight: "16px",
-  fontWeight: 690,
+  color: vars.color.textSecondary,
+  fontSize: 12.5,
+  lineHeight: "17px",
+  fontWeight: 740,
   textOverflow: "ellipsis",
   whiteSpace: "nowrap",
-  transition: `background-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}, box-shadow ${duration.state} ${easing.standard}`,
+  transition: `background-color ${duration.state} ${easing.standard}, border-color ${duration.state} ${easing.standard}, color ${duration.state} ${easing.standard}, box-shadow ${duration.state} ${easing.standard}, transform ${duration.press} ${easing.standard}`,
 });
-globalStyle(`${planStatusControl} label:hover > span`, { background: "#ECECE8", color: "#222222" });
-globalStyle(`${planStatusControl} input:checked + span`, { background: vars.color.accentSoft, color: vars.color.accentMuted, boxShadow: `inset 0 0 0 1px ${vars.color.selectionEdge}` });
+globalStyle(`${planStatusControl} label:hover > span`, { background: vars.color.surfaceRaised, color: vars.color.textPrimary });
+globalStyle(`${planStatusControl} label:active > span`, { transform: "translateY(1px) scale(.98)" });
+globalStyle(`${planStatusControl} input:checked + span`, { borderColor: vars.color.accent, background: vars.color.accent, color: vars.color.textOnAccent, boxShadow: "0 2px 5px rgb(31 72 140 / .16), inset 0 1px rgb(255 255 255 / .18)" });
+globalStyle(`${planStatusControl} label:hover input:checked + span`, { background: vars.color.accentMuted });
 globalStyle(`${planStatusControl} input:focus-visible + span`, { outline: `2px solid ${vars.color.focusRing}`, outlineOffset: 2 });
 globalStyle(`${planStatusControl} input:disabled + span`, { cursor: "not-allowed", opacity: .56 });
+globalStyle(`${planStatusControl} label:has(input:disabled)`, { cursor: "not-allowed" });
+globalStyle(`${planStatusControl} label > span`, { "@media": { "(prefers-reduced-motion: reduce)": { transition: "none" } } });
+globalStyle(`${planStatusControl} label:active > span`, { "@media": { "(prefers-reduced-motion: reduce)": { transform: "none" } } });
+globalStyle(`${planStatusControl} input:checked + span`, { "@media": { "(forced-colors: active)": { borderColor: "Highlight", background: "Highlight", color: "HighlightText", boxShadow: "none" } } });
 
 export const planEditorFooter = style({
   position: "relative",

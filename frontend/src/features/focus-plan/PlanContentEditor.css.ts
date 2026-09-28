@@ -15,6 +15,7 @@ globalStyle(`${shell} [role="toolbar"]`, {
   alignItems: "center",
   gap: 7,
   padding: "8px 10px",
+  "@media": { "(max-width: 1100px)": { flexWrap: "wrap", overflowX: "visible" } },
 });
 globalStyle(`${shell} [role="toolbar"] > div`, {
   minBlockSize: 32,
