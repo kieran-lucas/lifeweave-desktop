@@ -60,7 +60,16 @@ def main() -> None:
     listed = re.findall(r'"([a-z][a-z0-9_]*)"', build)
     if commands != listed:
         fail("build manifest command inventory differs from generate_handler")
-    expected = {"allow-" + command.replace("_", "-") for command in commands}
+    window_chrome_permissions = {
+        "core:event:allow-listen",
+        "core:event:allow-unlisten",
+        "core:window:allow-is-maximized",
+        "core:window:allow-minimize",
+        "core:window:allow-toggle-maximize",
+        "core:window:allow-close",
+        "core:window:allow-start-dragging",
+    }
+    expected = {"allow-" + command.replace("_", "-") for command in commands} | window_chrome_permissions
     if set(permissions) != expected:
         fail("capability permissions do not exactly match registered commands")
 

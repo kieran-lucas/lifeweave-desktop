@@ -9,6 +9,13 @@
     "windows"
   ],
   "permissions": [
+    "core:event:allow-listen",
+    "core:event:allow-unlisten",
+    "core:window:allow-is-maximized",
+    "core:window:allow-minimize",
+    "core:window:allow-toggle-maximize",
+    "core:window:allow-close",
+    "core:window:allow-start-dragging",
     "allow-health-check",
     "allow-create-foundation-record",
     "allow-list-foundation-records",

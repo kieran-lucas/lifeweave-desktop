@@ -16,7 +16,10 @@ export const appRoot = style({
   position: "relative",
   isolation: "isolate",
   background: "var(--app-background)",
-  selectors: { "&[data-sidebar-mode=collapsed]": { gridTemplateColumns: "68px minmax(0, 1fr)" } },
+  selectors: {
+    "&[data-sidebar-mode=collapsed]": { gridTemplateColumns: "68px minmax(0, 1fr)" },
+    "&[data-window-chrome=custom]": { gridTemplateRows: "38px minmax(0, 1fr)" },
+  },
 });
 
 /** The navigation rail uses an opaque surface so its boundary stays visually explicit. */
@@ -41,8 +44,9 @@ export const brand = style({
   padding: "0 7px",
   marginBottom: 30,
   ...text.objectTitle,
+  fontWeight: 700,
   color: "var(--text-primary)",
-  letterSpacing: "-0.024em",
+  letterSpacing: "-0.032em",
 });
 
 export const brandMark = style({
@@ -115,6 +119,7 @@ export const navIcon = style({ flexShrink: 0, width: 20, height: 20, color: "cur
 export const navLabel = style({ overflow: "hidden", whiteSpace: "nowrap" });
 globalStyle(`${appRoot}[data-sidebar-mode=collapsed] .${navLabel}`, { display: "none" });
 globalStyle(`${appRoot}[data-sidebar-mode=collapsed] .${brand}`, { fontSize: 0, paddingInline: 1, justifyContent: "center" });
+globalStyle(`${appRoot}[data-window-chrome=custom] > .${sidebar}`, { gridColumn: 1, gridRow: 2, paddingTop: 14 });
 
 export const divider = style({
   height: 1,
@@ -189,6 +194,7 @@ export const viewport = style({
     },
   },
 });
+globalStyle(`${appRoot}[data-window-chrome=custom] > .${viewport}`, { gridColumn: 2, gridRow: 2 });
 
 globalStyle(`${viewport}[data-navigation-motion="forward"] > :not(p)`, {
   animation: `${routeForward} ${duration.route} ${easing.standard} both`,

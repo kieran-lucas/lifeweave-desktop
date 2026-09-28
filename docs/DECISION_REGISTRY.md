@@ -5,6 +5,9 @@ The immutable source is authoritative. This registry makes operational status vi
 ## LOCKED — Product
 
 - Windows local-first/offline application.
+- The Windows main window uses compact in-app minimize, maximize/restore, and close controls with a
+  draggable title strip, accessible button labels and keyboard focus (ADR 0055). This supersedes
+  ADR 0045's original native-titlebar choice.
 - No account, server, collaboration, hidden telemetry, or default cloud dependency.
 - Task-first navigation; Today default. Activating the Today destination always returns the viewed
   date to the current local day.

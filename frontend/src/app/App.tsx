@@ -8,9 +8,11 @@ import {
   useState,
 } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { isTauri } from "@tauri-apps/api/core";
 
 import { healthCheck } from "../ipc/commands";
 import { TodayScreen } from "../features/task/today/TodayScreen";
+import { WindowChrome } from "./WindowChrome";
 import type { FocusPlansViewState } from "../features/focus-plan/FocusPlansScreen";
 const loadFoundationScreen = () =>
   import("../features/foundation/FoundationScreen").then((module) => ({
@@ -224,6 +226,7 @@ export function scrollSettingsSection(id: string, attemptsRemaining = 60) {
 }
 
 export function App() {
+  const nativeWindow = isTauri();
   const queryClient = useQueryClient();
   const CalendarRoute = resolvedCalendarScreen ?? CalendarScreen;
   const FocusPlansRoute = resolvedFocusPlansScreen ?? FocusPlansScreen;
@@ -574,7 +577,9 @@ export function App() {
     <div
       className={styles.appRoot}
       data-sidebar-mode={collapsed ? "collapsed" : "expanded"}
+      data-window-chrome={nativeWindow ? "custom" : undefined}
     >
+      {nativeWindow && <WindowChrome />}
       <nav className={styles.sidebar} aria-label="Primary navigation">
         <div className={styles.brand}>
           <span className={styles.brandMark} aria-hidden="true">
