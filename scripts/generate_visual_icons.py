@@ -25,7 +25,8 @@ TARGET = ROOT / "frontend/src/design-system/visual/icons.tsx"
 BRAND_SOURCE = ROOT / "assets/brand/lifeweave-mark.svg"
 
 # name in Lifeweave -> Fluent file stem.
-# Regular 20px throughout, except filled counterparts that carry genuine state semantics.
+# Filled 20px silhouettes give the primary icon vocabulary a consistent visual weight.
+# Directional, dismiss, and unselected-state glyphs retain their open outlines.
 # The set is intentionally broad enough that feature/category semantics do not collapse into one
 # generic symbol, but each entry still needs a real production consumer before further expansion.
 ICONS: dict[str, str] = {
@@ -57,6 +58,18 @@ ICONS: dict[str, str] = {
     "link": "link_20_regular",
     "more": "more_horizontal_20_regular",
     "dismiss": "dismiss_20_regular",
+    "taskSchedule": "calendar_agenda_20_filled",
+    "taskContext": "shapes_20_filled",
+    "taskDate": "calendar_day_20_filled",
+    "taskDeadline": "flag_clock_20_filled",
+    "taskStart": "play_circle_20_filled",
+    "taskEnd": "stop_20_filled",
+}
+
+DENSE_ICONS = {
+    "today", "calendar", "clock", "arrowEnter", "arrowExit", "apps", "options",
+    "analytics", "plans", "life", "reader", "search", "settings", "moon",
+    "panelLeft", "note", "details", "edit", "subtasks", "link",
 }
 
 HEADER = '''/*
@@ -76,8 +89,8 @@ HEADER = '''/*
  * Each path is a separate named export so the bundler can drop unused glyphs. The vocabulary may be
  * semantically diverse, but production only pays for the names a screen imports.
  *
- * Icons render through `currentColor`, so the complete vocabulary remains black/white/gray under the
- * Monochrome Matte authority. Filled variants appear only where state semantics benefit.
+ * Icons render through `currentColor`. Primary semantic glyphs use the filled Fluent weight;
+ * directional and unselected-state glyphs retain outlines.
  *
  * Every icon is `aria-hidden` and focusable={{false}}: an icon is never the accessible name. An
  * icon-only control must carry its own `aria-label`.
@@ -126,6 +139,8 @@ def main() -> int:
 
     entries: list[str] = []
     for name, stem in ICONS.items():
+        if name in DENSE_ICONS:
+            stem = stem.replace("_20_regular", "_20_filled")
         path = SOURCE / f"{stem}.svg"
         if not path.is_file():
             print(f"missing icon: {stem}.svg", file=sys.stderr)
