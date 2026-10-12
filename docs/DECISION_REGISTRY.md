@@ -28,7 +28,10 @@ The immutable source is authoritative. This registry makes operational status vi
   text, checkmark, calendar, leaf, remote asset or third-party brand geometry is used. See ADR 0045
   Override 7.
 - Task is not a card.
-- Continuous Task timeline 04:00–24:00 with required exact-minute start/end.
+- Continuous Task timeline with 00:00–24:00 scheduling and required exact-minute start/end; 24:00 is end-only.
+  The Product Owner's full-day selection request supersedes the original 04:00 lower limit for
+  Plan Task, Edit Task, recurring series, and occurrence edits. Calendar load bands remain
+  unchanged. See ADR 0056.
 - Ordinary overlaps rejected; exact-slot groups allowed.
 - Retrospective completion selection through a compact, anchored status menu. The task row exposes
   the current assessment label directly; progress is never encoded by colour alone.

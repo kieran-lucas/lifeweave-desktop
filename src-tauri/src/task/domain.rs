@@ -87,7 +87,7 @@ pub fn scheduled_after_deadline(scheduled_local_date: &str, deadline: &str) -> b
 }
 
 pub fn validate_range(start: i32, end: i32) -> bool {
-    (240..=1439).contains(&start) && (241..=1440).contains(&end) && start < end
+    (0..=1439).contains(&start) && (1..=1440).contains(&end) && start < end
 }
 pub fn validate_title(value: &str) -> bool {
     let v = value.trim();
@@ -102,8 +102,15 @@ mod tests {
     use super::*;
     #[test]
     fn task_boundaries_and_dates() {
-        assert!(validate_range(240, 1440));
-        assert!(!validate_range(239, 300));
+        assert!(validate_range(0, 1440));
+        assert!(validate_range(0, 1));
+        assert!(validate_range(239, 300));
+        assert!(validate_range(1439, 1440));
+        assert!(!validate_range(-1, 60));
+        assert!(!validate_range(0, 0));
+        assert!(!validate_range(1440, 1440));
+        assert!(!validate_range(1380, 1441));
+        assert!(!validate_range(1380, 60));
         assert!(!validate_range(600, 600));
         assert!(validate_date("2026-08-02"));
         assert!(!validate_date("2026-02-30"));

@@ -69,8 +69,11 @@ never the sole proof of anything.
   Deadline, Life Area, and Focus Plan controls, subject only to existing recurrence-scope rules;
 - the date/deadline calendar has six stable weeks, month and Today actions, Arrow/Home/End/Page
   navigation, Enter/Space selection, outside/Escape dismissal, and focus restoration;
-- the exact time wheel retains 04:00–24:00 bounds, one-minute precision, controlled wheel steps,
-  keyboard selection, outside/Escape dismissal, and focus restoration;
+- the exact time wheel covers 00:00–24:00 under ADR 0056, with 24:00 end-only, one-minute precision,
+  controlled wheel steps, keyboard selection, outside/Escape dismissal, and focus restoration;
+- one-off and recurring Tasks can be created, read back, and edited before 04:00; midnight and
+  23:59–24:00 boundaries persist on the selected date, while invalid/reversed ranges and ordinary
+  overlaps remain rejected and exact-slot grouping remains allowed;
 - a fresh schema 31 database exposes General plus the ten approved workstreams; schema 30 upgrades
   once, runs idempotently, and never overwrites a colliding existing Category row or its goals;
 - Category is available and editable in both new and existing one-off Task composers;

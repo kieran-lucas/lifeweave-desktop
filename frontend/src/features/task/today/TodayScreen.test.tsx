@@ -206,6 +206,52 @@ describe("Today task interactions", () => {
     view.unmount();
   });
 
+  it("shows and edits a saved task before 04:00 without changing its date", async () => {
+    api.listTodayItems.mockResolvedValue([{ ...task, start_minute: 0, end_minute: 239 }]);
+    api.updateTask.mockResolvedValue(undefined);
+    mount();
+    const title = await screen.findByText("Write the report");
+    const row = title.closest<HTMLElement>('[data-agenda-id="task-1"]')!;
+    expect(row.parentElement?.querySelector('[aria-hidden="true"]')).toHaveTextContent("00:0003:59");
+    fireEvent.doubleClick(title);
+    const editor = await screen.findByRole("dialog", { name: "Edit task" });
+    expect(await within(editor).findByRole("button", { name: "Start time, 00:00" })).toBeInTheDocument();
+    expect(within(editor).getByRole("button", { name: "End time, 03:59" })).toBeInTheDocument();
+    fireEvent.click(within(editor).getByRole("button", { name: "Save changes" }));
+    await waitFor(() => expect(api.updateTask).toHaveBeenCalledWith(expect.objectContaining({
+      id: "task-1", local_date: "2026-08-11", start_minute: 0, end_minute: 239,
+    })));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Edit task" })).not.toBeInTheDocument());
+  });
+
+  it.each([false, true])("plans a task at midnight with repeat=%s", async (repeat) => {
+    api.createTask.mockResolvedValue(undefined);
+    api.createRecurringTask.mockResolvedValue(undefined);
+    mount();
+    fireEvent.click(await screen.findByRole("button", { name: "Plan task" }));
+    const dialog = await screen.findByRole("dialog", { name: "Plan task" });
+    fireEvent.change(within(dialog).getByRole("textbox", { name: "Title" }), { target: { value: "Early task" } });
+    for (const label of ["Start", "End"]) {
+      fireEvent.click(await within(dialog).findByRole("button", { name: new RegExp(`^${label} time,`) }));
+      const picker = within(dialog).getByRole("dialog", { name: `Choose ${label.toLowerCase()} time` });
+      const hours = within(picker).getByRole("spinbutton", { name: "Hours" });
+      fireEvent.keyDown(hours, { key: "Home" });
+      await waitFor(() => expect(hours).toHaveAttribute("aria-valuenow", "0"));
+      if (label === "End") {
+        const minutes = within(picker).getByRole("spinbutton", { name: "Minutes" });
+        fireEvent.keyDown(minutes, { key: "ArrowDown" });
+        await waitFor(() => expect(minutes).toHaveAttribute("aria-valuenow", "1"));
+      }
+      fireEvent.click(within(picker).getByRole("button", { name: "Done" }));
+    }
+    if (repeat) fireEvent.click(within(dialog).getByRole("button", { name: "Daily" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Add to day" }));
+    await waitFor(() => expect(repeat ? api.createRecurringTask : api.createTask).toHaveBeenCalledWith(expect.objectContaining({
+      title: "Early task", local_date: "2026-08-11", start_minute: 0, end_minute: 1,
+    })));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Plan task" })).not.toBeInTheDocument());
+  });
+
   it("shows every priority as fitted text plus a redundant three-step signal meter", async () => {
     api.listTodayItems.mockResolvedValue([
       { ...task, id: "task-low", title: "Low priority task", priority: "low" },

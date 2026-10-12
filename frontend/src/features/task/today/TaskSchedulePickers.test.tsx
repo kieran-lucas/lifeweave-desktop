@@ -116,6 +116,22 @@ describe("Task schedule pickers", () => {
     expect(hours).toHaveAttribute("tabindex", "0");
   });
 
+  it.each(["Start", "End"] as const)("allows %s times before 04:00 with keyboard selection down to midnight", async (label) => {
+    render(<Harness />);
+    fireEvent.click(screen.getByRole("button", { name: `${label} time, ${label === "Start" ? "08:00" : "09:00"}` }));
+    const hours = screen.getByRole("spinbutton", { name: "Hours" });
+    expect(hours).toHaveAttribute("aria-valuemin", "0");
+    fireEvent.keyDown(hours, { key: "Home" });
+    await waitFor(() => expect(hours).toHaveAttribute("aria-valuenow", "0"));
+    expect(screen.getByRole("button", { name: `${label} time, 00:00` })).toBeInTheDocument();
+    fireEvent.keyDown(screen.getByRole("spinbutton", { name: "Minutes" }), { key: "ArrowDown" });
+    await waitFor(() => expect(screen.getByRole("button", { name: `${label} time, 00:01` })).toBeInTheDocument());
+    for (let hour = 1; hour <= 3; hour++) {
+      fireEvent.keyDown(hours, { key: "ArrowDown" });
+      await waitFor(() => expect(screen.getByRole("button", { name: `${label} time, 0${hour}:01` })).toBeInTheDocument());
+    }
+  });
+
   it("exposes 24:00 only for an end time and restricts its minute to 00", async () => {
     render(<Harness />);
     fireEvent.click(screen.getByRole("button", { name: "End time, 09:00" }));
@@ -127,11 +143,13 @@ describe("Task schedule pickers", () => {
     expect(within(dialog).getByRole("spinbutton", { name: "Minutes" })).toHaveAttribute("aria-valuemax", "0");
   });
 
-  it("accepts external value updates and preserves 04:00, 23:59, and 24:00 boundaries", () => {
+  it("accepts external value updates and preserves 00:00, 23:59, and 24:00 boundaries", () => {
     const onChange = () => undefined;
-    const view = render(<TaskTimeWheelPicker label="Start" value={240} onChange={onChange} />);
-    fireEvent.click(screen.getByRole("button", { name: "Start time, 04:00" }));
-    expect(screen.getByRole("spinbutton", { name: "Hours" })).toHaveAttribute("aria-valuenow", "4");
+    const view = render(<TaskTimeWheelPicker label="Start" value={0} onChange={onChange} />);
+    fireEvent.click(screen.getByRole("button", { name: "Start time, 00:00" }));
+    expect(screen.getByRole("spinbutton", { name: "Hours" })).toHaveAttribute("aria-valuenow", "0");
+    expect(screen.getByRole("spinbutton", { name: "Hours" })).toHaveAttribute("aria-valuemin", "0");
+    expect(screen.getByRole("spinbutton", { name: "Hours" })).toHaveAttribute("aria-valuemax", "23");
     view.rerender(<TaskTimeWheelPicker label="Start" value={1439} onChange={onChange} />);
     expect(screen.getByRole("spinbutton", { name: "Hours" })).toHaveAttribute("aria-valuenow", "23");
     expect(screen.getByRole("spinbutton", { name: "Minutes" })).toHaveAttribute("aria-valuenow", "59");

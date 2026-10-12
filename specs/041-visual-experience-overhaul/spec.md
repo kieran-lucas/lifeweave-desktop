@@ -14,7 +14,7 @@ every dialog, popover and menu. Plus: the visual token authority, typography, ic
 surface and depth system, dark theme, motion system, restrained ambient art, visual regression
 testing, and interaction-performance instrumentation.
 
-Out of scope: product semantics of any kind except the explicit §§1.2–1.4 Product Owner amendments, and
+Out of scope: product semantics of any kind except the explicit §§1.2–1.5 Product Owner amendments, and
 every remaining item in the Task 51 hard-exclusion list (§11).
 
 ### 1.1 Product Owner usability amendment (2026-08-11)
@@ -85,8 +85,8 @@ The authorized behavior is deliberately manual and bounded:
 - Plan Task and Edit Task use one coherent component set for schedule, Category, Priority,
   Deadline, Life Area, and Focus Plan; recurrence-scope restrictions remain unchanged.
 - Schedule date and optional Deadline use the same styled local calendar; Start and End retain
-  exact one-minute 04:00–24:00 wheel selection. All popovers support keyboard operation, outside
-  dismissal, Escape, visible focus, and focus restoration.
+  exact one-minute 00:00–24:00 wheel selection under ADR 0056. All popovers support keyboard
+  operation, outside dismissal, Escape, visible focus, and focus restoration.
 - Category remains a first-class Task field in both create and edit. Schema 31 adds the approved
   small workstream catalog to fresh and upgraded databases with `INSERT OR IGNORE`, preserving all
   existing category identity and goal metadata.
@@ -118,6 +118,14 @@ The authorized behavior is deliberately manual and bounded:
 - Life Area and Focus Plan values remain single-line and truncate safely. Their clear affordance is
   compact and internal to the control; Focus Plan rows show lifecycle as secondary metadata without
   changing the canonical target projection.
+
+### 1.5 Product Owner full-day Task scheduling amendment (2026-10-13)
+
+ADR 0056 supersedes the original 04:00 lower scheduling limit. Plan Task and Edit Task allow
+00:00–23:59 starts and end times through 24:00 at one-minute precision. Rust applies the same
+`0 <= start < end <= 1440` invariant to one-off Tasks, recurring series, and occurrence edits.
+24:00 remains an end-only boundary on the scheduled local date. Existing conflicts, date ownership,
+Calendar load bands, storage schema, and recurrence rules remain unchanged.
 
 ## 2. Visual authority
 

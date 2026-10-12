@@ -44,7 +44,7 @@ fn validate(input: &CreateTaskInput) -> Result<Priority, TaskError> {
     }
     if !validate_range(input.start_minute, input.end_minute) {
         return Err(TaskError::Validation(
-            "Tasks must be scheduled between 04:00 and 24:00.",
+            "Tasks must be scheduled between 00:00 and 24:00.",
         ));
     }
     if !validate_title(&input.title) {
@@ -2429,6 +2429,54 @@ mod recurrence_tests {
             deadline_local_date: None,
             tag_ids: vec![],
         }
+    }
+
+    #[test]
+    fn full_day_one_off_times_round_trip_and_keep_conflict_rules() {
+        let c = db();
+        let midnight = create(&c, one_off("Midnight", 0, None)).unwrap();
+        let mut edit = update_of(&midnight, None, None);
+        edit.start_minute = 1;
+        edit.end_minute = 239;
+        update(&c, edit).unwrap();
+        create(&c, one_off("Boundary touch", 239, None)).unwrap();
+        create(&c, one_off("Same slot", 239, None)).unwrap();
+        assert!(matches!(
+            create(&c, one_off("Overlap", 200, None)),
+            Err(TaskError::Conflict)
+        ));
+        let mut last_minute = one_off("End of day", 1439, None);
+        last_minute.end_minute = 1440;
+        create(&c, last_minute).unwrap();
+        let items = list(&c, "2026-08-04", "2026-08-04").unwrap();
+        assert_eq!(items.len(), 4);
+        assert_eq!((items[0].start_minute, items[0].end_minute), (1, 239));
+        assert_eq!((items[3].start_minute, items[3].end_minute), (1439, 1440));
+    }
+
+    #[test]
+    fn full_day_recurring_times_and_early_overrides_round_trip() {
+        let mut c = db();
+        let mut input = recurring("2026-08-01");
+        input.start_minute = 0;
+        input.end_minute = 1;
+        let sid = create_recurring(&mut c, input).unwrap();
+        let mut edit = mutation(
+            &sid,
+            "2026-08-02",
+            OccurrenceEditScope::OnlyThisOccurrence,
+            false,
+        );
+        edit.start_minute = Some(180);
+        edit.end_minute = Some(239);
+        update_recurring(&mut c, edit).unwrap();
+        let original = recurring_for_date(&c, "2026-08-01").unwrap();
+        assert_eq!((original[0].start_minute, original[0].end_minute), (0, 1));
+        let overridden = recurring_for_date(&c, "2026-08-02").unwrap();
+        assert_eq!(
+            (overridden[0].start_minute, overridden[0].end_minute),
+            (180, 239)
+        );
     }
 
     #[test]

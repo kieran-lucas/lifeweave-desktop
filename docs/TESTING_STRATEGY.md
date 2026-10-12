@@ -49,7 +49,7 @@ Use synthetic fixtures:
 
 ### Time
 - start < end;
-- valid 04:00–24:00;
+- valid 00:00–24:00, with 24:00 end-only (ADR 0056);
 - boundary touch accepted;
 - ordinary overlap rejected;
 - exact slot grouping deterministic;

@@ -14,7 +14,7 @@ import { calendarDateToDate } from "../../calendar/date";
 import { Icon, iconChevronLeft, iconChevronRight, iconTaskDate, iconTaskDeadline, iconTaskEnd, iconTaskStart } from "../../../design-system/visual/icons";
 import * as styles from "./TaskSchedulePickers.css";
 
-const HOURS = Array.from({ length: 20 }, (_, index) => index + 4);
+const HOURS = Array.from({ length: 24 }, (_, index) => index);
 const MINUTES = Array.from({ length: 60 }, (_, index) => index);
 const pad = (value: number) => String(value).padStart(2, "0");
 const HOUR_OPTIONS: WheelPickerOption<number>[] = HOURS.map((value) => ({ value, label: pad(value) }));
