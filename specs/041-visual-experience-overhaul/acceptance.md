@@ -154,11 +154,15 @@ never the sole proof of anything.
 
 ## Product behaviour preserved
 
-- ADR 0057: the entire unassessed Task row turns red (background, time and task copy), without a
+- ADR 0057: an ended Task with visible None (unassessed or explicitly selected None) turns red across
+  its entire row (background, time and task copy), without a
   bottom rule underneath its fill,
   retaining its tint on hover and an explicit boundary in forced colors, with a text label at the
   scheduled end, including while Today
-  remains open; existing assessments suppress emphasis and undo restores it. The fifth `+ / Note`
+  remains open; Low, Done and Great suppress emphasis. Selecting None restores red and undo derives
+  the colour from the restored assessment. The right-hand None label, value and appearance remain
+  manual; elapsed time never invokes an evaluation mutation. Tasks before their scheduled end
+  remain unhighlighted even with None. The fifth `+ / Note`
   menu entry has keyboard parity and opens an accessible multiline editor. Absent notes start
   empty without example/placeholder text. Notes save, reopen, edit, clear and survive database
   reopen/backup; failure retains input. Recurring notes remain

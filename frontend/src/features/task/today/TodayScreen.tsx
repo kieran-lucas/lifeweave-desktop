@@ -350,6 +350,7 @@ export function TodayScreen({
 
   const clockMinute = clock.getHours() * 60 + clock.getMinutes();
   const hasEnded = (item: TodayItem) => item.local_date < today || (item.local_date === today && item.end_minute <= clockMinute);
+  const isOverdue = (item: TodayItem) => hasEnded(item) && (item.evaluation?.visual_token ?? "none") === "none";
 
   return (
     <>
@@ -407,7 +408,7 @@ export function TodayScreen({
                   key={item.id}
                   className={styles.agendaItem}
                   data-completed={(item.evaluation && item.evaluation.visual_token !== "none") || undefined}
-                  data-overdue={(hasEnded(item) && !item.evaluation) || undefined}
+                  data-overdue={isOverdue(item) || undefined}
                 >
                   <div className={styles.timeRail} aria-hidden="true">
                     <strong className={styles.timeValue}>{formatMinute(item.start_minute)}</strong>
@@ -456,7 +457,7 @@ export function TodayScreen({
                           <span className={styles.priorityText}>{priorityLabel(item.priority)}</span>
                         </span>
                       </div>
-                      {hasEnded(item) && !item.evaluation && <span className={styles.overdueLabel}>Overdue</span>}
+                      {isOverdue(item) && <span className={styles.overdueLabel}>Overdue</span>}
                       {item.description.trim() && (
                         <p className={styles.taskDescription}>{item.description}</p>
                       )}

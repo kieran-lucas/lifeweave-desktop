@@ -35,9 +35,11 @@ The immutable source is authoritative. This registry makes operational status vi
 - Ordinary overlaps rejected; exact-slot groups allowed.
 - Retrospective completion selection through a compact, anchored status menu. The task row exposes
   the current assessment label directly; progress is never encoded by colour alone.
-- Tasks whose scheduled end has passed without a current assessment show red emphasis across the
+- Tasks whose scheduled end has passed and whose visible assessment is None (unassessed or explicitly
+  selected None) show red emphasis across the
   entire timeline row (background, time and task copy), with no bottom rule beneath the fill, plus
-  an Overdue label. The assessment menu adds a fifth `+ / Note` action for one optional plain-text
+  an Overdue label. The right-hand None assessment control retains its manual state and appearance.
+  Low, Done and Great clear this visual emphasis. The assessment menu adds a fifth `+ / Note` action for one optional plain-text
   progress note below the Task, independent of its four assessment values. Schema 34 and one narrow
   mutation persist one-off and occurrence notes locally. See ADR 0057.
 - Reminder, Windows notification, sound, snooze, and app-open streak removed.

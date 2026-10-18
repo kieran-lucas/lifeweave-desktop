@@ -195,23 +195,41 @@ describe("Today task interactions", () => {
     expect(within(row!).getByText("Write the report")).toBeInTheDocument();
   });
 
-  it("shows overdue text only for ended unassessed tasks, including assessed None", async () => {
-    api.listTodayItems.mockResolvedValue([
-      task,
-      { ...task, id: "assessed", title: "Already assessed", evaluation: {
-        state_id: "state-none", label: "None", visual_token: "none", evaluated_at: "now", operation_id: "op",
-      } },
-      { ...task, id: "future", title: "Future", local_date: "2099-01-01" },
-    ]);
+  it.each([
+    [null, "2026-08-11", true, "None"],
+    ["none", "2026-08-11", true, "None"],
+    ["below", "2026-08-11", false, "Low"],
+    ["met", "2026-08-11", false, "Done"],
+    ["excellent", "2026-08-11", false, "Great"],
+    [null, "2099-01-01", false, "None"],
+    ["none", "2099-01-01", false, "None"],
+    ["none", "2026-08-12", false, "None"],
+  ] as const)("derives red emphasis for state=%s date=%s without changing the assessment control", async (token, localDate, overdue, label) => {
+    api.listTodayItems.mockResolvedValue([{ ...task, local_date: localDate,
+      end_minute: localDate === "2026-08-12" ? 1440 : task.end_minute,
+      evaluation: token === null ? null : {
+        state_id: `state-${token}`, label: "Stored assessment", visual_token: token, evaluated_at: "now", operation_id: "op",
+      },
+    }]);
     mount();
     const title = await screen.findByText(task.title);
-    expect(title.closest("li")).toHaveAttribute("data-overdue", "true");
-    expect(screen.getByText("Already assessed").closest("li")).not.toHaveAttribute("data-overdue");
-    expect(screen.getByText("Future").closest("li")).not.toHaveAttribute("data-overdue");
-    expect(screen.getAllByText("Overdue")).toHaveLength(1);
+    const row = title.closest<HTMLElement>("[data-agenda-id]")!;
+    if (overdue) {
+      expect(row.closest("li")).toHaveAttribute("data-overdue", "true");
+      expect(within(row).getByText("Overdue")).toBeInTheDocument();
+    } else {
+      expect(row.closest("li")).not.toHaveAttribute("data-overdue");
+      expect(within(row).queryByText("Overdue")).not.toBeInTheDocument();
+    }
+    expect(within(row).getByRole("button")).toHaveTextContent(label);
+    if (token === "none") expect(within(row).getByRole("button")).toHaveAttribute("data-state", "none");
+    expect(api.evaluateTask).not.toHaveBeenCalled();
   });
 
-  it("updates overdue emphasis and assessment eligibility at the end minute without navigation", async () => {
+  it.each([false, true])("updates red emphasis at the end minute with an explicit None assessment=%s", async (explicitNone) => {
+    if (explicitNone) api.listTodayItems.mockResolvedValue([{ ...task, evaluation: {
+      state_id: "state-none", label: "None", visual_token: "none", evaluated_at: "now", operation_id: "old-none",
+    } }]);
     vi.useFakeTimers({ toFake: ["Date", "setTimeout", "clearTimeout"], shouldAdvanceTime: true });
     vi.setSystemTime(new Date(2026, 7, 11, 8, 59, 50));
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -223,7 +241,38 @@ describe("Today task interactions", () => {
       await act(async () => { await vi.advanceTimersByTimeAsync(10_000); });
       expect(screen.getByText("Overdue")).toBeInTheDocument();
       expect(screen.getByRole("button", { name: /Assess task/ })).toBeEnabled();
+      expect(screen.getByRole("button", { name: /Assess task/ })).toHaveTextContent("None");
+      expect(api.evaluateTask).not.toHaveBeenCalled();
     } finally { view.unmount(); vi.useRealTimers(); }
+  });
+
+  it("turns an ended Done task red when None is selected and restores Done on undo", async () => {
+    const done = { state_id: "state-met", label: "Done", visual_token: "met", evaluated_at: "now", operation_id: "old-done" };
+    api.listTodayItems.mockResolvedValue([{ ...task, evaluation: done }]);
+    api.evaluateTask.mockImplementation(async (input) => ({ state_id: input.state_id, label: "None", visual_token: "none", evaluated_at: "now", operation_id: input.operation_id }));
+    api.undoTaskEvaluation.mockResolvedValue(done);
+    mount();
+    fireEvent.click(await screen.findByRole("button", { name: "Assess task. Current state: Done" }));
+    fireEvent.click(screen.getByRole("option", { name: "None" }));
+    const none = await screen.findByRole("button", { name: "Assess task. Current state: None" });
+    expect(none).toHaveAttribute("data-state", "none");
+    expect(none.closest("li")).toHaveAttribute("data-overdue", "true");
+    await waitFor(() => expect(api.evaluateTask).toHaveBeenCalledTimes(1));
+    await act(async () => {});
+    fireEvent.keyDown(window, { key: "z", ctrlKey: true });
+    await waitFor(() => expect(screen.getByRole("button", { name: "Assess task. Current state: Done" }).closest("li")).not.toHaveAttribute("data-overdue"));
+  });
+
+  it("restores Done and removes the red projection if saving None fails", async () => {
+    api.listTodayItems.mockResolvedValue([{ ...task, evaluation: {
+      state_id: "state-met", label: "Done", visual_token: "met", evaluated_at: "now", operation_id: "old-done",
+    } }]);
+    api.evaluateTask.mockRejectedValue(new Error("Storage busy"));
+    mount();
+    fireEvent.click(await screen.findByRole("button", { name: "Assess task. Current state: Done" }));
+    fireEvent.click(screen.getByRole("option", { name: "None" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Storage busy");
+    expect(screen.getByRole("button", { name: "Assess task. Current state: Done" }).closest("li")).not.toHaveAttribute("data-overdue");
   });
 
   it("removes overdue emphasis after assessment and restores it after undo", async () => {

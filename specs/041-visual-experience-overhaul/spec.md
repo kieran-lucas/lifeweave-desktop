@@ -130,8 +130,10 @@ Calendar load bands, storage schema, and recurrence rules remain unchanged.
 ### 1.6 Product Owner overdue and progress-note amendment (2026-10-18)
 
 ADR 0057 authorizes red emphasis across the entire Task timeline row (background, time
-and task copy) and an explicit Overdue label after its scheduled end while no
-current assessment exists. The red fill has no bottom rule. Update at minute boundaries, local
+and task copy) and an explicit Overdue label after its scheduled end while the visible assessment
+is None, whether unassessed or explicitly selected. The right-hand None control retains its manual
+state and appearance. Low, Done and Great clear the visual emphasis. Elapsed time never writes an
+assessment. The red fill has no bottom rule. Update at minute boundaries, local
 midnight and window resume. Add a
 fifth `+ / Note` action beside the existing four assessment choices. Its optional multiline plain
 text appears below the Task; editing/clearing persists in SQLite, independently of assessment.

@@ -4,10 +4,11 @@ Authority: Product Owner request, ADR 0057, Slice 041 §1.6.
 
 ## Implemented behavior
 
-Ended, unassessed Task rows show a red background, time and task copy, plus explicit
+Ended Tasks with visible None (unassessed or explicitly selected) show a red background, time and task copy, plus explicit
 Overdue text. A clock scheduled at minute
 boundaries refreshes eligibility and emphasis without navigation; focus/visibility changes refresh
-after suspension. Choosing an assessment removes the emphasis and undo restores it.
+after suspension. Low, Done and Great remove the emphasis; None retains or restores it. Undo derives
+the colour from its restored assessment. The right-hand None control keeps its manual state.
 
 The existing anchored assessment rail has a fifth `+ / Note` action. Its accessible multiline
 editor saves one optional progress note, renders it immediately below the corresponding Task, and
@@ -135,3 +136,31 @@ The Product Owner requests removing the bottom line below the red fill. The over
 
 Only CSS and governing documentation change. The earlier Rust, persistence, migration and backup
 evidence applies; native Narrator/physical-DPI verification and the existing bundle debt remain open.
+
+## Follow-up — overdue colouring follows visible None
+
+The Product Owner requests a stricter presentation rule: after the scheduled end, both an absent
+evaluation and an explicitly chosen None evaluation produce the red Task row. The same predicate
+owns the row attribute and its Overdue label. Low, Done and Great clear red; choosing None restores
+it. The right-hand None label, visual token, neutral text and circle colours keep their existing
+assessment presentation. Elapsed time performs no evaluation mutation. Planning membership,
+Analytics, stored assessments and notes use their existing authorities.
+
+- `pnpm --dir frontend test src/features/task/today/TodayScreen.test.tsx src/features/task/today/TodayScreen.performance.test.tsx --maxWorkers=1`:
+  PASS, 30 tests across 2 files. Coverage includes missing/explicit None; all other assessment
+  levels; future date and unended-day None; minute-boundary refresh for both None forms without
+  writes; Done → None → undo; failed None save rollback; and 200-row composer isolation.
+- `pnpm verify`: PASS.
+- `node target/overdue-explicit-none-visual.mjs`: PASS against the production frontend preview in
+  headless Edge at 1280×720 and 960×640 / DPR 1.25. An existing explicit None projects as red with no
+  bottom rule. Done removes red; selecting None restores it. The control reads `None` / `none`
+  before and after, with identical text `rgb(101, 113, 132)` and circle `rgb(91, 100, 114)` colours.
+  Initial red projection sends zero evaluation writes; the two manual selections send exactly two.
+  Hover, forced colors and document overflow checks pass. Screenshots in
+  `target/overdue-explicit-none-visual/` were inspected.
+- `pnpm tauri build --no-bundle`: PASS; optimized Windows executable built in 8m05s.
+  Desktop deployment is reported in the follow-up response.
+
+This changes the frontend projection and its regression/specification evidence. No Rust, schema,
+binding, permission, dependency, workflow or seal change is required. Earlier persistence/backup
+evidence and the recorded bundle/native-accessibility verification debt continue to apply.

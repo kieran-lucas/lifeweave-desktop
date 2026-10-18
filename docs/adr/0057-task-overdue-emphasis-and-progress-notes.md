@@ -12,13 +12,19 @@ continues to govern the four assessment values; `+` is an authoring action, with
 
 ## Decision
 
-- A past scheduled end and absence of any current assessment produce red emphasis across the
+- A past scheduled end and a visible None assessment (unassessed or explicitly selected None)
+  produce red emphasis across the
   entire timeline row (background, time and task copy), and an
-  explicit Overdue label. Choosing any assessment resolves this unassessed state; undo restores it.
+  explicit Overdue label. Low, Done and Great clear the visual emphasis; None retains or restores
+  it. Undo projects the restored assessment through the same rule. The right-hand None control
+  retains its manual label, value and visual token; elapsed time never writes an assessment.
   Eligibility and emphasis refresh at minute boundaries and after window focus/visibility changes.
   The Product Owner's follow-up clarifies that red applies to the whole Task, rather than its
   title alone. The tint persists on hover and an explicit boundary remains in forced colors.
   A subsequent Product Owner correction removes the bottom rule underneath the red fill.
+  The later stricter None rule explicitly supersedes the original absence-only colour condition.
+  This is timeline presentation; planning queue membership and Analytics keep their existing
+  evaluation authorities.
 - The anchored assessment menu contains its four existing choices and `+ / Note` as the fifth
   entry, available after the scheduled end under the same UI availability rules.
 - Notes are optional plain text, at most 2,000 Unicode characters, rendered as escaped React text
