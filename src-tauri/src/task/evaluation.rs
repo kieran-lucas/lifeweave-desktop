@@ -6,7 +6,7 @@ use uuid::{NoContext, Timestamp, Uuid};
 
 use super::{
     domain::validate_date,
-    dto::{CompletionStateView, EvaluateTaskInput, TaskEvaluationView},
+    dto::{CompletionStateView, EvaluateTaskInput, SaveTaskProgressNoteInput, TaskEvaluationView},
     repository::{self, TaskError},
 };
 
@@ -39,6 +39,92 @@ fn timestamp() -> String {
         .unwrap_or_default()
         .as_secs()
         .to_string()
+}
+
+pub fn save_progress_note(
+    conn: &mut Connection,
+    input: SaveTaskProgressNoteInput,
+) -> Result<Option<String>, TaskError> {
+    let now = Local::now();
+    save_progress_note_at(
+        conn,
+        input,
+        ObservedLocalTime {
+            date: now.format("%Y-%m-%d").to_string(),
+            minute: (now.hour() * 60 + now.minute()) as i32,
+        },
+    )
+}
+
+fn save_progress_note_at(
+    conn: &mut Connection,
+    input: SaveTaskProgressNoteInput,
+    now: ObservedLocalTime,
+) -> Result<Option<String>, TaskError> {
+    if input.note.chars().count() > 2000 || input.note.contains('\0') {
+        return Err(TaskError::Validation(
+            "Use a progress note of at most 2000 characters without null characters.",
+        ));
+    }
+    let subject = subject_from_parts(
+        &input.subject_kind,
+        input.task_id,
+        input.series_id,
+        input.original_local_date,
+    )?;
+    let tx = conn.transaction()?;
+    let (_, date, end) = resolve_subject(&tx, &subject)?;
+    if date > now.date || (date == now.date && end > now.minute) {
+        return Err(TaskError::Validation(
+            "Progress can only be noted after the task ends.",
+        ));
+    }
+    let key = progress_note_key(
+        subject.task_id.as_deref(),
+        subject.series_id.as_deref(),
+        subject.original_local_date.as_deref(),
+    );
+    let note = input.note.trim();
+    if note.is_empty() {
+        tx.execute(
+            "DELETE FROM task_progress_notes WHERE subject_key=?1",
+            params![key],
+        )?;
+    } else {
+        tx.execute("INSERT INTO task_progress_notes(subject_key,task_id,series_id,original_local_date,note) VALUES(?1,?2,?3,?4,?5) ON CONFLICT(subject_key) DO UPDATE SET note=excluded.note", params![key, subject.task_id, subject.series_id, subject.original_local_date, note])?;
+    }
+    tx.commit()?;
+    Ok(if note.is_empty() {
+        None
+    } else {
+        Some(note.to_string())
+    })
+}
+
+pub(crate) fn progress_note_key(
+    task_id: Option<&str>,
+    series_id: Option<&str>,
+    original: Option<&str>,
+) -> String {
+    if let Some(id) = task_id {
+        format!("one_off:{id}")
+    } else {
+        format!(
+            "recurring:{}:{}",
+            series_id.unwrap_or_default(),
+            original.unwrap_or_default()
+        )
+    }
+}
+
+pub(crate) fn progress_notes_for_date(
+    conn: &Connection,
+    date: &str,
+) -> Result<HashMap<String, String>, TaskError> {
+    let mut statement = conn.prepare("SELECT p.subject_key,p.note FROM task_progress_notes p LEFT JOIN tasks t ON t.id=p.task_id LEFT JOIN task_occurrence_overrides o ON o.series_id=p.series_id AND o.original_local_date=p.original_local_date WHERE t.local_date=?1 OR (p.series_id IS NOT NULL AND COALESCE(o.replacement_local_date,p.original_local_date)=?1)")?;
+    Ok(statement
+        .query_map(params![date], |row| Ok((row.get(0)?, row.get(1)?)))?
+        .collect::<Result<_, _>>()?)
 }
 
 pub fn list_states(conn: &Connection) -> Result<Vec<CompletionStateView>, TaskError> {
@@ -439,7 +525,7 @@ mod tests {
     use crate::{
         infrastructure::sqlite::{
             connection::open_memory_connection,
-            task39_migration::run_all_migrations as run_migrations,
+            task57_migration::run_all_migrations as run_migrations,
         },
         task::dto::{
             CreateRecurringTaskInput, CreateTaskInput, OccurrenceEditScope,
@@ -489,6 +575,98 @@ mod tests {
             date: "2026-08-02".into(),
             minute: 720,
         }
+    }
+
+    fn note_input(id: &str, note: &str) -> SaveTaskProgressNoteInput {
+        SaveTaskProgressNoteInput {
+            subject_kind: "one_off".into(),
+            task_id: Some(id.into()),
+            series_id: None,
+            original_local_date: None,
+            note: note.into(),
+        }
+    }
+
+    #[test]
+    fn progress_note_round_trip_update_clear_and_assessment_independence() {
+        let mut conn = db();
+        let id = task(&conn, "2026-08-01", 600);
+        save_progress_note_at(
+            &mut conn,
+            note_input(&id, "  Hoàn thành 20/50 bài\nÔn lại ngày mai.  "),
+            clock(),
+        )
+        .unwrap();
+        let row = repository::today_items(&conn, "2026-08-01", "2026-08-02")
+            .unwrap()
+            .remove(0);
+        assert_eq!(
+            row.progress_note.as_deref(),
+            Some("Hoàn thành 20/50 bài\nÔn lại ngày mai.")
+        );
+        assert!(row.evaluation.is_none());
+        evaluate_at(
+            &mut conn,
+            input(&id, "completion-below", "note-assessment"),
+            clock(),
+        )
+        .unwrap();
+        save_progress_note_at(&mut conn, note_input(&id, "Đã làm 25 bài"), clock()).unwrap();
+        assert_eq!(
+            current_for_one_off(&conn, &id).unwrap().unwrap().state_id,
+            "completion-below"
+        );
+        undo(&mut conn, "note-assessment").unwrap();
+        assert_eq!(
+            repository::today_items(&conn, "2026-08-01", "2026-08-02").unwrap()[0]
+                .progress_note
+                .as_deref(),
+            Some("Đã làm 25 bài")
+        );
+        save_progress_note_at(&mut conn, note_input(&id, " \n "), clock()).unwrap();
+        assert!(
+            repository::today_items(&conn, "2026-08-01", "2026-08-02").unwrap()[0]
+                .progress_note
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn progress_note_rejects_invalid_subject_future_time_and_invalid_text_atomically() {
+        let mut conn = db();
+        let future = task(&conn, "2026-08-02", 721);
+        assert!(
+            save_progress_note_at(&mut conn, note_input(&future, "too soon"), clock()).is_err()
+        );
+        let id = task(&conn, "2026-08-01", 600);
+        save_progress_note_at(&mut conn, note_input(&id, "previous"), clock()).unwrap();
+        for text in ["x".repeat(2001), "invalid\0text".into()] {
+            assert!(save_progress_note_at(&mut conn, note_input(&id, &text), clock()).is_err());
+        }
+        assert!(save_progress_note_at(&mut conn, note_input("missing", "bad"), clock()).is_err());
+        let mut invalid = note_input(&id, "bad");
+        invalid.series_id = Some("series".into());
+        assert!(save_progress_note_at(&mut conn, invalid, clock()).is_err());
+        assert_eq!(
+            repository::today_items(&conn, "2026-08-01", "2026-08-02").unwrap()[0]
+                .progress_note
+                .as_deref(),
+            Some("previous")
+        );
+        assert!(
+            save_progress_note_at(&mut conn, note_input(&id, &"ế".repeat(2000)), clock()).is_ok()
+        );
+        assert!(
+            save_progress_note_at(
+                &mut conn,
+                note_input(&future, "boundary"),
+                ObservedLocalTime {
+                    date: "2026-08-02".into(),
+                    minute: 721
+                }
+            )
+            .is_ok()
+        );
     }
 
     #[test]
@@ -671,6 +849,35 @@ mod tests {
             series_tag_ids: None,
         };
         repository::update_recurring(&mut connection, moved).unwrap();
+        save_progress_note_at(
+            &mut connection,
+            SaveTaskProgressNoteInput {
+                subject_kind: "recurring".into(),
+                task_id: None,
+                series_id: Some(series.clone()),
+                original_local_date: Some("2026-08-01".into()),
+                note: "20/50".into(),
+            },
+            clock(),
+        )
+        .unwrap();
+        let projected = repository::today_items(&connection, "2026-08-02", "2026-08-02").unwrap();
+        assert_eq!(
+            projected
+                .iter()
+                .filter(|item| item.progress_note.is_some())
+                .count(),
+            1
+        );
+        assert_eq!(
+            projected
+                .iter()
+                .find(|item| item.progress_note.is_some())
+                .unwrap()
+                .original_local_date
+                .as_deref(),
+            Some("2026-08-01")
+        );
         let recurring = EvaluateTaskInput {
             subject_kind: "recurring".into(),
             task_id: None,
@@ -788,6 +995,12 @@ mod tests {
             let mut connection = open_file_connection(&database).unwrap();
             run_migrations(&mut connection).unwrap();
             task_id = task(&connection, "2026-08-01", 600);
+            save_progress_note_at(
+                &mut connection,
+                note_input(&task_id, "20/50 — đã lưu"),
+                clock(),
+            )
+            .unwrap();
             evaluate_at(
                 &mut connection,
                 input(&task_id, "completion-excellent", "reopen-operation"),
@@ -798,6 +1011,12 @@ mod tests {
         {
             let connection = open_file_connection(&database).unwrap();
             let current = current_for_one_off(&connection, &task_id).unwrap().unwrap();
+            assert_eq!(
+                repository::today_items(&connection, "2026-08-01", "2026-08-02").unwrap()[0]
+                    .progress_note
+                    .as_deref(),
+                Some("20/50 — đã lưu")
+            );
             assert_eq!(current.label, "Very good");
             let operations: i64 = connection
                 .query_row("SELECT COUNT(*) FROM evaluation_operations", [], |row| {

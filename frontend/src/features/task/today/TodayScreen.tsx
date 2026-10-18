@@ -8,6 +8,7 @@ import {
   getActiveTaskActualTime,
   listCompletionStates,
   listTodayItems,
+  saveTaskProgressNote,
   stopTaskActualTime,
   undoTaskEvaluation,
 } from "../../../ipc/commands";
@@ -28,6 +29,7 @@ import { DeferredTaskComposer } from "./DeferredTaskComposer";
 const ActiveTimerStrip = lazy(() =>
   import("./ActiveTimerStrip").then((module) => ({ default: module.ActiveTimerStrip })),
 );
+const ProgressNoteDialog = lazy(() => import("../../completion/ProgressNoteDialog").then((module) => ({ default: module.ProgressNoteDialog })));
 type CommonItem = Omit<
   TodayItemView,
   "kind" | "series_id" | "occurrence_id" | "original_local_date"
@@ -136,6 +138,23 @@ export function TodayScreen({
   onFocusPlanNavigate?: (planId: string) => void;
   anchorLocalDate?: string;
 } = {}) {
+  const [clock, setClock] = useState(() => new Date());
+  useEffect(() => {
+    let timeout: ReturnType<typeof setTimeout>;
+    const tick = () => {
+      clearTimeout(timeout);
+      setClock(new Date());
+      timeout = setTimeout(tick, 60_000 - Date.now() % 60_000);
+    };
+    tick();
+    window.addEventListener("focus", tick);
+    document.addEventListener("visibilitychange", tick);
+    return () => {
+      clearTimeout(timeout);
+      window.removeEventListener("focus", tick);
+      document.removeEventListener("visibilitychange", tick);
+    };
+  }, []);
   const today = anchorLocalDate ?? localToday();
   const [standaloneDate, setStandaloneDate] = useState(today);
   const date = selectedDate ?? standaloneDate;
@@ -150,6 +169,7 @@ export function TodayScreen({
   const [editing, setEditing] = useState<TodayItem | null>(null);
   const [openAssessment, setOpenAssessment] = useState<string | null>(null);
   const [assessmentError, setAssessmentError] = useState("");
+  const [noteEditor, setNoteEditor] = useState<{ item: TodayItem; returnFocus: HTMLElement | null } | null>(null);
   const [lastOperation, setLastOperation] = useState<{
     itemId: string;
     localDate: string;
@@ -328,8 +348,8 @@ export function TodayScreen({
     queueMicrotask(() => returnFocus.current?.focus());
   }
 
-  const clock = new Date();
   const clockMinute = clock.getHours() * 60 + clock.getMinutes();
+  const hasEnded = (item: TodayItem) => item.local_date < today || (item.local_date === today && item.end_minute <= clockMinute);
 
   return (
     <>
@@ -387,6 +407,7 @@ export function TodayScreen({
                   key={item.id}
                   className={styles.agendaItem}
                   data-completed={(item.evaluation && item.evaluation.visual_token !== "none") || undefined}
+                  data-overdue={(hasEnded(item) && !item.evaluation) || undefined}
                 >
                   <div className={styles.timeRail} aria-hidden="true">
                     <strong className={styles.timeValue}>{formatMinute(item.start_minute)}</strong>
@@ -435,9 +456,11 @@ export function TodayScreen({
                           <span className={styles.priorityText}>{priorityLabel(item.priority)}</span>
                         </span>
                       </div>
+                      {hasEnded(item) && !item.evaluation && <span className={styles.overdueLabel}>Overdue</span>}
                       {item.description.trim() && (
                         <p className={styles.taskDescription}>{item.description}</p>
                       )}
+                      {item.progress_note && <p className={styles.progressNote}><strong>Progress: </strong>{item.progress_note}</p>}
                       <div className={styles.taskMeta}>
                         {item.life_area && (
                           <button
@@ -471,10 +494,7 @@ export function TodayScreen({
                         itemId={item.id}
                         states={completionStates.data ?? []}
                         evaluation={item.evaluation}
-                        eligible={
-                          item.local_date < today ||
-                          (item.local_date === today && item.end_minute <= clockMinute)
-                        }
+                        eligible={hasEnded(item)}
                         unavailableReason={
                           item.kind === "one_off" && item.actual_time?.active_session_id
                             ? "Resolve the earlier running session before assessing this task"
@@ -486,6 +506,7 @@ export function TodayScreen({
                         onSelect={(state) =>
                           assessment.mutate({ item, state, operationId: newOperationId() })
                         }
+                        onNote={(returnFocus) => setNoteEditor({ item, returnFocus })}
                       />
                     </div>
 
@@ -498,6 +519,21 @@ export function TodayScreen({
       </div>
 
       </PageFrame>
+
+      {noteEditor && <Suspense fallback={<LoadingRow label="Loading progress note…" />}>
+        <ProgressNoteDialog title={noteEditor.item.title} note={noteEditor.item.progress_note}
+          returnFocus={noteEditor.returnFocus} onClose={() => setNoteEditor(null)}
+          onSave={async (note) => {
+            const item = noteEditor.item;
+            const saved = await saveTaskProgressNote({
+              subject_kind: item.kind, task_id: item.kind === "one_off" ? item.id : null,
+              series_id: item.series_id, original_local_date: item.original_local_date, note,
+            });
+            client.setQueryData<TodayItem[]>(todayItemsKey(item.local_date, today), (current) =>
+              current?.map((entry) => entry.id === item.id ? { ...entry, progress_note: saved } : entry));
+            await client.invalidateQueries({ queryKey: ["today-items"], refetchType: "none" });
+          }} />
+      </Suspense>}
 
       {open && (
         <DeferredTaskComposer date={date} today={today} editing={editing} onClose={closeComposer} />

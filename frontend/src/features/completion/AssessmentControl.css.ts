@@ -132,6 +132,7 @@ export const rail = style({
   boxShadow: "var(--elevation-floating)",
   transformOrigin: "bottom right",
   animation: `${railEnter} ${duration.popover} ${easing.standard} both`,
+  selectors: { '&[data-has-note=true]': { gridTemplateColumns: "repeat(5, minmax(0, 1fr))" } },
   "@media": {
     "(prefers-reduced-motion: reduce)": { animation: "none" },
   },
@@ -188,3 +189,5 @@ export const optionMark = style({
     },
   },
 });
+
+export const noteMark = style({ inlineSize: 16, blockSize: 16, fontSize: 20, lineHeight: "16px", fontWeight: 500 });

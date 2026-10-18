@@ -41,6 +41,7 @@ fn main() {
             "stop_task_actual_time",
             "discard_task_actual_time",
             "evaluate_task",
+            "save_task_progress_note",
             "undo_task_evaluation",
             "update_category_goals",
             "get_analytics_projection",

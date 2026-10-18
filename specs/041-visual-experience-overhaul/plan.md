@@ -2,6 +2,15 @@
 
 Status: ACTIVE — Stage A and Stage B complete, Stage C in progress.
 
+## 2026-10-18 Task amendment — ADR 0057
+
+Add minute-aware overdue emphasis and a fifth note action to the existing assessment control.
+Persist independent one-off/occurrence notes with append-only schema 34; update startup and backup
+schema authorities together. Generate DTOs through the Rust exporter. Verify scheduled-end
+boundaries, keyboard/focus/error paths, persistence, migration and backup restore, then inspect
+browser geometry and record the exact gate results in the dated audit. Existing cursor changes in
+the worktree are outside this amendment.
+
 Two hard stops divide this plan. Nothing in Stage F or later may begin before
 `VISUAL LOCK APPROVED`, and nothing in Stage H or later before `MOTION LOCK APPROVED`.
 

@@ -1,5 +1,14 @@
 # Task 51 Work Items
 
+## 2026-10-18 Task amendment — ADR 0057
+
+- [x] Record Product Owner authority for overdue emphasis and the fifth `+ / Note` entry.
+- [x] Persist bounded plain-text notes separately from assessment, by original occurrence identity.
+- [x] Add minute/focus clock refresh, red title and explicit Overdue text.
+- [x] Add keyboard-reachable note editing with focus restoration and failure retention.
+- [x] Cover one-off/recurring notes, text limits, migration, reopen and backup restore.
+- [x] Record final production build, governance, regression tests and visual evidence in the audit.
+
 ## Stage A — Baseline
 
 - [x] Confirm clean parity at `43d0d1e822336c97527f85e1ab154fc74a61f058` before any edit.

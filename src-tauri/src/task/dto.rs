@@ -326,6 +326,7 @@ pub struct TodayItemView {
     /// One-off rows only. Recurring occurrences own no actual time.
     pub actual_time: Option<TaskActualTimeView>,
     pub tags: Vec<TagSummaryView>,
+    pub progress_note: Option<String>,
 }
 
 /// Recorded actual time for one one-off Task. `total_completed_seconds` covers only closed
@@ -460,6 +461,17 @@ pub struct EvaluateTaskInput {
     pub operation_id: String,
     pub observed_local_date: String,
     pub observed_local_minute: i32,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct SaveTaskProgressNoteInput {
+    pub subject_kind: String,
+    pub task_id: Option<String>,
+    pub series_id: Option<String>,
+    pub original_local_date: Option<String>,
+    pub note: String,
 }
 
 #[derive(Debug, Clone, Deserialize)]

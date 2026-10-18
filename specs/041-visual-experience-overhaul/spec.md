@@ -14,7 +14,7 @@ every dialog, popover and menu. Plus: the visual token authority, typography, ic
 surface and depth system, dark theme, motion system, restrained ambient art, visual regression
 testing, and interaction-performance instrumentation.
 
-Out of scope: product semantics of any kind except the explicit §§1.2–1.5 Product Owner amendments, and
+Out of scope: product semantics of any kind except the explicit §§1.2–1.6 Product Owner amendments, and
 every remaining item in the Task 51 hard-exclusion list (§11).
 
 ### 1.1 Product Owner usability amendment (2026-08-11)
@@ -126,6 +126,16 @@ ADR 0056 supersedes the original 04:00 lower scheduling limit. Plan Task and Edi
 `0 <= start < end <= 1440` invariant to one-off Tasks, recurring series, and occurrence edits.
 24:00 remains an end-only boundary on the scheduled local date. Existing conflicts, date ownership,
 Calendar load bands, storage schema, and recurrence rules remain unchanged.
+
+### 1.6 Product Owner overdue and progress-note amendment (2026-10-18)
+
+ADR 0057 authorizes a red Task title and explicit Overdue label after its scheduled end while no
+current assessment exists. Update at minute boundaries, local midnight and window resume. Add a
+fifth `+ / Note` action beside the existing four assessment choices. Its optional multiline plain
+text appears below the Task; editing/clearing persists in SQLite, independently of assessment.
+Notes are limited to 2,000 Unicode characters and belong to one Task or one original recurring
+occurrence. Schema 34, one typed Rust-validated mutation, and its narrow capability are authorized.
+All other product-semantic exclusions remain binding.
 
 ## 2. Visual authority
 

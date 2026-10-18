@@ -96,6 +96,7 @@ mod tests {
         crate::task::dto::CompletionStateView::export_all_to(&out).unwrap();
         crate::task::dto::TaskEvaluationView::export_all_to(&out).unwrap();
         crate::task::dto::EvaluateTaskInput::export_all_to(&out).unwrap();
+        crate::task::dto::SaveTaskProgressNoteInput::export_all_to(&out).unwrap();
         crate::task::dto::UndoTaskEvaluationInput::export_all_to(&out).unwrap();
         crate::task::dto::UpdateCategoryGoalsInput::export_all_to(&out).unwrap();
         crate::task::dto::AnalyticsPeriodKind::export_all_to(&out).unwrap();

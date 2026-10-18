@@ -413,6 +413,18 @@ pub fn evaluate_task(
 
 #[tauri::command]
 #[tracing::instrument(skip(state, input))]
+pub fn save_task_progress_note(
+    state: State<'_, DatabaseRuntime>,
+    input: crate::task::dto::SaveTaskProgressNoteInput,
+) -> Result<Option<String>, IpcError> {
+    state
+        .execute(move |conn| Ok(evaluation::save_progress_note(conn, input)))
+        .map_err(map_db)?
+        .map_err(map_task)
+}
+
+#[tauri::command]
+#[tracing::instrument(skip(state, input))]
 pub fn undo_task_evaluation(
     state: State<'_, DatabaseRuntime>,
     input: UndoTaskEvaluationInput,

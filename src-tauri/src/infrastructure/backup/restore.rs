@@ -18,7 +18,7 @@ use crate::infrastructure::sqlite::{
     DbError,
     connection::{open_existing_file_connection, open_file_connection, open_readonly_connection},
     runtime::DatabaseRuntime,
-    task56_migration::{current_schema_version, max_supported_schema_version, run_all_migrations},
+    task57_migration::{current_schema_version, max_supported_schema_version, run_all_migrations},
     worker::DbWorkerHandle,
 };
 
@@ -864,7 +864,7 @@ mod tests {
             connection::{open_existing_file_connection, open_file_connection},
             foundation_record_repo as repo,
             runtime::DatabaseRuntime,
-            task56_migration::run_all_migrations as run_migrations,
+            task57_migration::run_all_migrations as run_migrations,
             worker::DbWorkerHandle,
         },
     };
@@ -1035,12 +1035,12 @@ mod tests {
         let result = restore_db(&runtime, package).unwrap();
         assert_eq!(
             result.schema_version,
-            crate::infrastructure::sqlite::task56_migration::TASK56_SCHEMA_VERSION
+            crate::infrastructure::sqlite::task57_migration::TASK57_SCHEMA_VERSION
         );
         let reopened = open_existing_file_connection(&db).unwrap();
         assert_eq!(
             current_schema_version(&reopened).unwrap(),
-            crate::infrastructure::sqlite::task56_migration::TASK56_SCHEMA_VERSION
+            crate::infrastructure::sqlite::task57_migration::TASK57_SCHEMA_VERSION
         );
         assert_eq!(
             reopened
@@ -1180,6 +1180,63 @@ mod tests {
     // ── Core round-trip ───────────────────────────────────────────────────────
 
     #[test]
+    fn progress_note_backup_restore_preserves_unicode_and_subject_identity() {
+        let (rt, _db) = make_file_runtime();
+        let backups = temp_backups_dir();
+        let id = rt
+            .execute(|conn| {
+                let task = task_repository::create(
+                    conn,
+                    CreateTaskInput {
+                        title: "Exercises".into(),
+                        description: "50 exercises".into(),
+                        local_date: "2026-01-01".into(),
+                        start_minute: 480,
+                        end_minute: 540,
+                        category_id: "general".into(),
+                        priority: "medium".into(),
+                        life_node_id: None,
+                        focus_plan_id: None,
+                        deadline_local_date: None,
+                        tag_ids: vec![],
+                    },
+                )
+                .unwrap();
+                evaluation::save_progress_note(
+                    conn,
+                    crate::task::dto::SaveTaskProgressNoteInput {
+                        subject_kind: "one_off".into(),
+                        task_id: Some(task.id.clone()),
+                        series_id: None,
+                        original_local_date: None,
+                        note: "Hoàn thành 20/50 bài\nÔn lại.".into(),
+                    },
+                )
+                .unwrap();
+                Ok(task.id)
+            })
+            .unwrap();
+        let package = backup_db(&rt, &backups).unwrap();
+        rt.execute(|conn| {
+            conn.execute("DELETE FROM task_progress_notes", [])?;
+            Ok(())
+        })
+        .unwrap();
+        restore_db(&rt, &PathBuf::from(package.backup_dir)).unwrap();
+        let rows = rt
+            .execute(|conn| {
+                Ok(task_repository::today_items(conn, "2026-01-01", "2026-01-02").unwrap())
+            })
+            .unwrap();
+        assert_eq!(rows[0].id, id);
+        assert_eq!(
+            rows[0].progress_note.as_deref(),
+            Some("Hoàn thành 20/50 bài\nÔn lại.")
+        );
+        assert!(rows[0].evaluation.is_none());
+    }
+
+    #[test]
     fn round_trip_restore_recovers_exact_data() {
         let (rt, _db) = make_file_runtime();
         let backups = temp_backups_dir();
@@ -1212,7 +1269,7 @@ mod tests {
         let restore_result = restore_db(&rt, &backup_dir).unwrap();
         assert_eq!(
             restore_result.schema_version,
-            crate::infrastructure::sqlite::task56_migration::TASK56_SCHEMA_VERSION
+            crate::infrastructure::sqlite::task57_migration::TASK57_SCHEMA_VERSION
         );
 
         let active = rt.execute(|conn| repo::list_active(conn)).unwrap();
@@ -1908,9 +1965,9 @@ mod tests {
             "restore must preserve all imported document and link rows exactly"
         );
         assert_eq!(
-            crate::infrastructure::sqlite::task56_migration::current_schema_version(&reopened)
+            crate::infrastructure::sqlite::task57_migration::current_schema_version(&reopened)
                 .unwrap(),
-            crate::infrastructure::sqlite::task56_migration::TASK56_SCHEMA_VERSION
+            crate::infrastructure::sqlite::task57_migration::TASK57_SCHEMA_VERSION
         );
         assert_eq!(
             reopened
@@ -1952,12 +2009,12 @@ mod tests {
         let result = restore_db(&rt, &package).unwrap();
         assert_eq!(
             result.schema_version,
-            crate::infrastructure::sqlite::task56_migration::TASK56_SCHEMA_VERSION
+            crate::infrastructure::sqlite::task57_migration::TASK57_SCHEMA_VERSION
         );
         let reopened = open_existing_file_connection(&db_path).unwrap();
         assert_eq!(
             current_schema_version(&reopened).unwrap(),
-            crate::infrastructure::sqlite::task56_migration::TASK56_SCHEMA_VERSION
+            crate::infrastructure::sqlite::task57_migration::TASK57_SCHEMA_VERSION
         );
         assert_eq!(reopened.query_row("SELECT operation_kind||'|'||after_payload FROM life_operations WHERE operation_id='schema26-branch'", [], |row| row.get::<_, String>(0)).unwrap(), "import_branch|{\"fingerprint\":\"preserved\"}");
         assert_eq!(
@@ -4323,7 +4380,7 @@ mod tests {
         use crate::infrastructure::backup::lifecycle::{
             preflight_startup_check, recover_if_interrupted,
         };
-        use crate::infrastructure::sqlite::task56_migration::run_all_migrations as run_migrations;
+        use crate::infrastructure::sqlite::task57_migration::run_all_migrations as run_migrations;
         use crate::infrastructure::sqlite::{
             connection::open_existing_file_connection, runtime::DatabaseRuntime,
             worker::DbWorkerHandle,
@@ -4389,7 +4446,7 @@ mod tests {
         use crate::infrastructure::backup::lifecycle::{
             preflight_startup_check, recover_if_interrupted,
         };
-        use crate::infrastructure::sqlite::task56_migration::run_all_migrations as run_migrations;
+        use crate::infrastructure::sqlite::task57_migration::run_all_migrations as run_migrations;
         use crate::infrastructure::sqlite::{
             connection::open_existing_file_connection, runtime::DatabaseRuntime,
             worker::DbWorkerHandle,

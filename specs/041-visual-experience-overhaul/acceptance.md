@@ -154,8 +154,14 @@ never the sole proof of anything.
 
 ## Product behaviour preserved
 
+- ADR 0057: unassessed Tasks turn red with a text label at the scheduled end, including while Today
+  remains open; existing assessments suppress emphasis and undo restores it. The fifth `+ / Note`
+  menu entry has keyboard parity and opens an accessible multiline editor. Notes save, reopen,
+  edit, clear and survive database reopen/backup; failure retains input. Recurring notes remain
+  isolated by original occurrence date. Notes never change assessment or Analytics.
+
 - every existing flow still works; no business semantics changed beyond the explicit manual Plan
-  score and scored-Plan completion amendments;
+  score, scored-Plan completion, and ADR 0057 Task overdue/progress-note amendments;
 - the eight global keyboard shortcuts and their chords are unchanged;
 - Task rows remain non-card; Today remains task-first, startup and default;
 - semantic periods keep their boundaries; Life Browse still shows the selected node and direct
@@ -166,6 +172,9 @@ never the sole proof of anything.
 - schema is 31 solely for the manual Plan score, canonical Life correction, scored-Plan
   convergence, and the non-overwriting Task workstream seed; there is no second Plan IPC command, new capability,
   broadened permission, network service or backup-format change.
+
+  Later ADRs 0050/0053 advance the schema through 33. ADR 0057 explicitly advances it to 34 for
+  the Task progress-note table, adds one narrow mutation/capability, and preserves backup format.
 
 ## Geometry
 

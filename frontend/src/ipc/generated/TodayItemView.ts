@@ -11,4 +11,4 @@ export type TodayItemView = { kind: TodayItemKind, id: string, occurrence_id: st
 /**
  * One-off rows only. Recurring occurrences own no actual time.
  */
-actual_time: TaskActualTimeView | null, tags: Array<TagSummaryView>, };
+actual_time: TaskActualTimeView | null, tags: Array<TagSummaryView>, progress_note: string | null, };

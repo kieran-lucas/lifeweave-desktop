@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import axe from "axe-core";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { TodayItemView } from "../../../ipc/generated/TodayItemView";
@@ -12,6 +12,7 @@ const api = vi.hoisted(() => ({
   deleteTask: vi.fn(),
   discardTaskActualTime: vi.fn(),
   evaluateTask: vi.fn(),
+  saveTaskProgressNote: vi.fn(),
   getActiveTaskActualTime: vi.fn(),
   listCompletionStates: vi.fn(),
   listTaskCategories: vi.fn(),
@@ -28,6 +29,7 @@ vi.mock("../FocusPlanCombobox", () => ({ FocusPlanCombobox: () => <div>Focus Pla
 vi.mock("../../tag/TagPicker", () => ({ TagPicker: () => <div>Tag field</div> }));
 
 const task: TodayItemView = {
+  progress_note: null,
   kind: "one_off",
   id: "task-1",
   occurrence_id: null,
@@ -191,6 +193,113 @@ describe("Today task interactions", () => {
     const row = description.closest<HTMLElement>('[data-agenda-id="task-1"]');
     expect(row).not.toBeNull();
     expect(within(row!).getByText("Write the report")).toBeInTheDocument();
+  });
+
+  it("shows overdue text only for ended unassessed tasks, including assessed None", async () => {
+    api.listTodayItems.mockResolvedValue([
+      task,
+      { ...task, id: "assessed", title: "Already assessed", evaluation: {
+        state_id: "state-none", label: "None", visual_token: "none", evaluated_at: "now", operation_id: "op",
+      } },
+      { ...task, id: "future", title: "Future", local_date: "2099-01-01" },
+    ]);
+    mount();
+    const title = await screen.findByText(task.title);
+    expect(title.closest("li")).toHaveAttribute("data-overdue", "true");
+    expect(screen.getByText("Already assessed").closest("li")).not.toHaveAttribute("data-overdue");
+    expect(screen.getByText("Future").closest("li")).not.toHaveAttribute("data-overdue");
+    expect(screen.getAllByText("Overdue")).toHaveLength(1);
+  });
+
+  it("updates overdue emphasis and assessment eligibility at the end minute without navigation", async () => {
+    vi.useFakeTimers({ toFake: ["Date", "setTimeout", "clearTimeout"], shouldAdvanceTime: true });
+    vi.setSystemTime(new Date(2026, 7, 11, 8, 59, 50));
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const view = render(<QueryClientProvider client={client}><TodayScreen selectedDate="2026-08-11" /></QueryClientProvider>);
+    try {
+      await screen.findByText(task.title);
+      expect(screen.queryByText("Overdue")).not.toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Assessment unavailable/ })).toBeDisabled();
+      await act(async () => { await vi.advanceTimersByTimeAsync(10_000); });
+      expect(screen.getByText("Overdue")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Assess task/ })).toBeEnabled();
+    } finally { view.unmount(); vi.useRealTimers(); }
+  });
+
+  it("removes overdue emphasis after assessment and restores it after undo", async () => {
+    api.evaluateTask.mockImplementation(async (input) => ({ state_id: input.state_id, label: "Done", visual_token: "met", evaluated_at: "now", operation_id: input.operation_id }));
+    api.undoTaskEvaluation.mockResolvedValue(null);
+    mount();
+    const trigger = await screen.findByRole("button", { name: /Assess task/ });
+    expect(screen.getByText("Overdue")).toBeInTheDocument();
+    fireEvent.click(trigger);
+    fireEvent.click(screen.getByRole("option", { name: "Done" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Assess task. Current state: Done" })).toBeEnabled());
+    expect(screen.queryByText("Overdue")).not.toBeInTheDocument();
+    await waitFor(() => expect(api.evaluateTask).toHaveBeenCalledTimes(1));
+    await act(async () => {});
+    fireEvent.keyDown(window, { key: "z", ctrlKey: true });
+    await waitFor(() => expect(screen.getByText("Overdue")).toBeInTheDocument());
+    expect(api.undoTaskEvaluation).toHaveBeenCalledTimes(1);
+  });
+
+  it("opens the fifth plus option with the keyboard, saves a note below the correct task and restores focus", async () => {
+    api.saveTaskProgressNote.mockResolvedValue("Hoàn thành 20/50 bài\nÔn lại ngày mai.");
+    mount();
+    const trigger = await screen.findByRole("button", { name: /Assess task/ });
+    fireEvent.click(trigger);
+    expect(screen.getAllByRole("option")).toHaveLength(5);
+    fireEvent.keyDown(screen.getByRole("option", { name: "None" }), { key: "End" });
+    const noteOption = screen.getByRole("option", { name: "Progress note" });
+    expect(noteOption).toHaveTextContent("+");
+    await waitFor(() => expect(noteOption).toHaveFocus());
+    fireEvent.keyDown(noteOption, { key: "Enter" });
+    const dialog = await screen.findByRole("dialog", { name: "Progress note" });
+    const input = within(dialog).getByRole("textbox", { name: "What did you complete?" });
+    await waitFor(() => expect(input).toHaveFocus());
+    expect((await axe.run(dialog)).violations).toEqual([]);
+    fireEvent.change(input, { target: { value: "Hoàn thành 20/50 bài\nÔn lại ngày mai." } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save note" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(api.saveTaskProgressNote).toHaveBeenCalledWith({ subject_kind: "one_off", task_id: task.id, series_id: null, original_local_date: null, note: "Hoàn thành 20/50 bài\nÔn lại ngày mai." });
+    expect(screen.getByText(/Hoàn thành 20\/50/).closest("[data-agenda-id]")).toHaveAttribute("data-agenda-id", task.id);
+    expect(api.evaluateTask).not.toHaveBeenCalled();
+    expect(screen.getByText("Overdue")).toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+    fireEvent.click(trigger);
+    fireEvent.click(screen.getByRole("option", { name: "Progress note" }));
+    expect(await screen.findByRole("textbox", { name: "What did you complete?" })).toHaveValue("Hoàn thành 20/50 bài\nÔn lại ngày mai.");
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("keeps note text after a save failure and cancels without changing saved content", async () => {
+    api.listTodayItems.mockResolvedValue([{ ...task, progress_note: "20/50" }]);
+    api.saveTaskProgressNote.mockRejectedValue(new Error("Storage busy"));
+    mount();
+    fireEvent.click(await screen.findByRole("button", { name: /Assess task/ }));
+    fireEvent.click(screen.getByRole("option", { name: "Progress note" }));
+    const input = await screen.findByRole("textbox", { name: "What did you complete?" });
+    fireEvent.change(input, { target: { value: "30/50" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save note" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Storage busy");
+    expect(input).toHaveValue("30/50");
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.getByText("20/50", { exact: false })).toBeInTheDocument();
+  });
+
+  it("clears a recurring occurrence note using its original date without changing its assessment", async () => {
+    api.listTodayItems.mockResolvedValue([{ ...task, kind: "recurring", series_id: "series", occurrence_id: "occ", original_local_date: "2026-08-10", progress_note: "20/50" }]);
+    api.saveTaskProgressNote.mockResolvedValue(null);
+    mount();
+    fireEvent.click(await screen.findByRole("button", { name: /Assess task/ }));
+    fireEvent.click(screen.getByRole("option", { name: "Progress note" }));
+    fireEvent.change(await screen.findByRole("textbox", { name: "What did you complete?" }), { target: { value: "" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save note" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(screen.queryByText("20/50", { exact: false })).not.toBeInTheDocument();
+    expect(api.saveTaskProgressNote).toHaveBeenCalledWith({ subject_kind: "recurring", task_id: null, series_id: "series", original_local_date: "2026-08-10", note: "" });
+    expect(api.evaluateTask).not.toHaveBeenCalled();
   });
 
   it("keeps a saved 24:00 end attached to its scheduled date", async () => {

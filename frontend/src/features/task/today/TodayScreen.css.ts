@@ -116,7 +116,7 @@ export const taskRow = style({
   minBlockSize: 52,
   minInlineSize: 0,
   display: "grid",
-  gridTemplateColumns: "minmax(0, 1fr) 20px",
+  gridTemplateColumns: "minmax(0, 1fr) 72px",
   alignItems: "start",
   alignSelf: "stretch",
   gap: 8,
@@ -133,7 +133,7 @@ export const taskRow = style({
     "&:focus-visible": { outline: `2px solid ${vars.color.focusRing}`, outlineOffset: -2 },
   },
   "@media": {
-    "(max-width: 680px)": { gridTemplateColumns: "minmax(0,1fr) 18px" },
+    "(max-width: 680px)": { gridTemplateColumns: "minmax(0,1fr) 72px" },
   },
 });
 
@@ -170,6 +170,12 @@ export const taskDescription = style({
   overflowWrap: "anywhere",
   whiteSpace: "pre-wrap",
 });
+
+globalStyle(`${agendaItem}[data-overdue=true] ${taskTitleLine} > strong`, { color: vars.color.danger });
+export const overdueLabel = style({ color: vars.color.danger, fontSize: 11.5, fontWeight: 650,
+  "@media": { "(forced-colors: active)": { color: "CanvasText", textDecoration: "underline" } } });
+export const progressNote = style({ margin: "3px 0 0", color: vars.color.textSecondary, fontSize: 12,
+  lineHeight: "18px", whiteSpace: "pre-wrap", overflowWrap: "anywhere" });
 
 export const taskMeta = style({
   display: "flex",

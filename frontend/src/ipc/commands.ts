@@ -29,6 +29,7 @@ import type { CreateRecurringTaskInput } from "./generated/CreateRecurringTaskIn
 import type { RecurringOccurrenceView } from "./generated/RecurringOccurrenceView";
 import type { UpdateRecurringOccurrenceInput } from "./generated/UpdateRecurringOccurrenceInput";
 import type { TodayItemView } from "./generated/TodayItemView";
+import type { SaveTaskProgressNoteInput } from "./generated/SaveTaskProgressNoteInput";
 import type { GetTaskPlanningProjectionInput } from "./generated/GetTaskPlanningProjectionInput";
 import type { TaskPlanningProjection } from "./generated/TaskPlanningProjection";
 import type { CreateTaskSavedViewInput } from "./generated/CreateTaskSavedViewInput";
@@ -246,6 +247,7 @@ export const stopTaskActualTime = (input: TaskActualTimeSessionInput) =>
 export const discardTaskActualTime = (input: TaskActualTimeSessionInput) =>
   invoke<TaskActualTimeView>("discard_task_actual_time", { input });
 export const evaluateTask = (input: EvaluateTaskInput) => invoke<TaskEvaluationView>("evaluate_task", { input });
+export const saveTaskProgressNote = (input: SaveTaskProgressNoteInput) => invoke<string | null>("save_task_progress_note", { input });
 export const undoTaskEvaluation = (input: UndoTaskEvaluationInput) => invoke<TaskEvaluationView|null>("undo_task_evaluation", { input });
 export const getAnalyticsProjection = (input: AnalyticsProjectionInput) => invoke<AnalyticsProjection>("get_analytics_projection", { input });
 export const updateCategoryGoals = (input: UpdateCategoryGoalsInput) => invoke<TaskCategoryView>("update_category_goals", { input });

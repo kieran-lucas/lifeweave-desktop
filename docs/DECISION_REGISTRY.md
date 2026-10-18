@@ -35,6 +35,10 @@ The immutable source is authoritative. This registry makes operational status vi
 - Ordinary overlaps rejected; exact-slot groups allowed.
 - Retrospective completion selection through a compact, anchored status menu. The task row exposes
   the current assessment label directly; progress is never encoded by colour alone.
+- Tasks whose scheduled end has passed without a current assessment show red title emphasis plus
+  an Overdue label. The assessment menu adds a fifth `+ / Note` action for one optional plain-text
+  progress note below the Task, independent of its four assessment values. Schema 34 and one narrow
+  mutation persist one-off and occurrence notes locally. See ADR 0057.
 - Reminder, Windows notification, sound, snooze, and app-open streak removed.
 - Analytics is a separate destination.
 - Life Browse shows selected + direct children; the full hierarchy belongs to the separate **Tree**

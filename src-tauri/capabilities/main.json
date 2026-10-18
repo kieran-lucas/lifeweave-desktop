@@ -56,6 +56,7 @@
     "allow-stop-task-actual-time",
     "allow-discard-task-actual-time",
     "allow-evaluate-task",
+    "allow-save-task-progress-note",
     "allow-undo-task-evaluation",
     "allow-update-category-goals",
     "allow-get-analytics-projection",

@@ -1010,6 +1010,7 @@ pub fn today_items(
     let mut out = Vec::new();
     let (one_off_evaluations, recurring_evaluations) =
         crate::task::evaluation::current_for_date(conn, date)?;
+    let notes = crate::task::evaluation::progress_notes_for_date(conn, date)?;
     let areas = life_area_map(conn)?;
     let plans = focus_plan_map(conn)?;
     let categories = crate::task::planning::load_categories(conn)?;
@@ -1019,6 +1020,7 @@ pub fn today_items(
     for row in stmt.query_map(params![date], |r| {
         Ok((
             crate::task::dto::TodayItemView {
+                progress_note: None,
                 kind: crate::task::dto::TodayItemKind::OneOff,
                 id: r.get(0)?,
                 occurrence_id: None,
@@ -1049,6 +1051,13 @@ pub fn today_items(
     })? {
         let (mut item, life_node_id, focus_plan_id, deadline) = row?;
         item.evaluation = one_off_evaluations.get(&item.id).cloned();
+        item.progress_note = notes
+            .get(&crate::task::evaluation::progress_note_key(
+                Some(&item.id),
+                None,
+                None,
+            ))
+            .cloned();
         item.life_area = life_node_id.and_then(|id| areas.get(&id).cloned());
         item.focus_plan = focus_plan_id.and_then(|id| plans.get(&id).cloned());
         item.deadline = deadline_view(deadline, &item.local_date, observed_local_date);
@@ -1075,6 +1084,13 @@ pub fn today_items(
             ))
             .cloned();
         out.push(crate::task::dto::TodayItemView {
+            progress_note: notes
+                .get(&crate::task::evaluation::progress_note_key(
+                    None,
+                    Some(&occurrence.series_id),
+                    Some(&occurrence.original_local_date),
+                ))
+                .cloned(),
             kind: crate::task::dto::TodayItemKind::Recurring,
             id: occurrence.occurrence_id.clone(),
             occurrence_id: Some(occurrence.occurrence_id),
@@ -1414,7 +1430,7 @@ fn ymd(s: &str) -> (i32, i32, i32) {
 mod recurrence_tests {
     use super::*;
     use crate::infrastructure::sqlite::{
-        connection::open_memory_connection, task39_migration::run_all_migrations as run_migrations,
+        connection::open_memory_connection, task57_migration::run_all_migrations as run_migrations,
     };
     use crate::task::dto::{
         CreateRecurringTaskInput, OccurrenceEditScope, UpdateRecurringOccurrenceInput,
@@ -2300,7 +2316,10 @@ mod recurrence_tests {
             .unwrap();
         assert_eq!(occurrence_plan_columns, 0);
         assert_eq!(occurrence_deadline_columns, 0);
-        assert_eq!(schema, 23);
+        assert_eq!(
+            schema,
+            crate::infrastructure::sqlite::task57_migration::TASK57_SCHEMA_VERSION
+        );
     }
 
     #[test]

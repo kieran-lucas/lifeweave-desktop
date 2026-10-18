@@ -15,6 +15,7 @@ type Props = {
   onOpen: () => void;
   onClose: () => void;
   onSelect: (state: CompletionStateView) => void;
+  onNote?: (returnFocus: HTMLButtonElement | null) => void;
 };
 
 const progressLabels: Readonly<Record<string, string>> = {
@@ -38,14 +39,18 @@ export function AssessmentControl({
   onOpen,
   onClose,
   onSelect,
+  onNote,
 }: Props) {
   const trigger = useRef<HTMLButtonElement>(null);
   const rail = useRef<HTMLDivElement>(null);
+  const closeHandler = useRef(onClose);
+  closeHandler.current = onClose;
   const [active, setActive] = useState(0);
   const label = evaluation
     ? progressLabel(evaluation.visual_token, evaluation.label)
     : progressLabels.none!;
   const available = eligible && states.length > 0 && !unavailableReason;
+  const optionCount = states.length + (onNote ? 1 : 0);
 
   const position = () => {
     if (!trigger.current || !rail.current) return;
@@ -53,7 +58,7 @@ export function AssessmentControl({
     const node = rail.current;
     const padding = 10;
     const compact = window.innerWidth < 340;
-    const width = Math.min(292, Math.max(1, window.innerWidth - padding * 2));
+    const width = Math.min(onNote ? 352 : 292, Math.max(1, window.innerWidth - padding * 2));
     const height = 58;
     const canShowAbove = rect.top >= height + padding;
     const left = Math.min(
@@ -78,20 +83,21 @@ export function AssessmentControl({
     const onViewport = () => position();
     const outside = (event: PointerEvent) => {
       const target = event.target as Node;
-      if (!rail.current?.contains(target) && !trigger.current?.contains(target)) onClose();
+      if (!rail.current?.contains(target) && !trigger.current?.contains(target)) closeHandler.current();
     };
     window.addEventListener("resize", onViewport);
     window.addEventListener("scroll", onViewport, true);
     document.addEventListener("pointerdown", outside);
-    requestAnimationFrame(() =>
+    const frame = requestAnimationFrame(() =>
       rail.current?.querySelector<HTMLButtonElement>("button[tabindex='0']")?.focus(),
     );
     return () => {
+      cancelAnimationFrame(frame);
       window.removeEventListener("resize", onViewport);
       window.removeEventListener("scroll", onViewport, true);
       document.removeEventListener("pointerdown", outside);
     };
-  }, [open, onClose, evaluation?.state_id, states]);
+  }, [open, evaluation?.state_id, states]);
 
   const close = () => {
     onClose();
@@ -106,11 +112,11 @@ export function AssessmentControl({
   const key = (event: React.KeyboardEvent, index: number) => {
     let next = index;
     if (event.key === "ArrowLeft" || event.key === "ArrowUp")
-      next = (index - 1 + states.length) % states.length;
+      next = (index - 1 + optionCount) % optionCount;
     if (event.key === "ArrowRight" || event.key === "ArrowDown")
-      next = (index + 1) % states.length;
+      next = (index + 1) % optionCount;
     if (event.key === "Home") next = 0;
-    if (event.key === "End") next = states.length - 1;
+    if (event.key === "End") next = optionCount - 1;
     if (event.key === "Escape") {
       event.preventDefault();
       close();
@@ -118,7 +124,8 @@ export function AssessmentControl({
     }
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
-      choose(states[index]!);
+      if (index === states.length) { onClose(); onNote?.(trigger.current); }
+      else choose(states[index]!);
       return;
     }
     if (next !== index) {
@@ -164,6 +171,7 @@ export function AssessmentControl({
             role="listbox"
             aria-label="Completion assessment"
             data-item={itemId}
+            data-has-note={Boolean(onNote)}
           >
             {states.map((state, index) => (
               <button
@@ -184,6 +192,15 @@ export function AssessmentControl({
                 <span>{progressLabel(state.visual_token, state.label)}</span>
               </button>
             ))}
+            {onNote && (
+              <button type="button" role="option" aria-selected={false}
+                aria-label="Progress note" title="Add or edit progress note"
+                tabIndex={active === states.length ? 0 : -1}
+                className={styles.option} data-active={active === states.length}
+                onKeyDown={(event) => key(event, states.length)}
+                onClick={() => { onClose(); onNote(trigger.current); }}
+              ><span className={styles.noteMark} aria-hidden="true">+</span><span>Note</span></button>
+            )}
           </div>,
           document.body,
         )}
