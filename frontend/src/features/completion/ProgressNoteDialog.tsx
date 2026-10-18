@@ -39,7 +39,7 @@ export function ProgressNoteDialog({ title, note, returnFocus, onSave, onClose }
         <DialogBody>
           <label className={styles.field} htmlFor={`${id}-note`}>What did you complete?</label>
           <textarea ref={input} id={`${id}-note`} className={styles.input} rows={4} maxLength={2000}
-            placeholder="Planned 50 exercises; completed 20." value={value} readOnly={saving}
+            value={value} readOnly={saving}
             onChange={(event) => setValue(event.target.value)} aria-invalid={Boolean(error)}
             aria-describedby={error ? `${id}-error` : undefined} />
           <p className={styles.hint}>Leave blank to remove the note.</p>

@@ -3,7 +3,7 @@
 ## Task 51/60 — Visual Experience Overhaul, "Quiet Luminous Atlas" (active)
 
 - **2026-10-18 Task amendment (ADR 0057):** scheduled Tasks without a current assessment gain red
-  title emphasis plus an Overdue label at their end time. The assessment rail adds `+ / Note` for
+  emphasis across their entire timeline row plus an Overdue label at their end time. The assessment rail adds `+ / Note` for
   an independent multiline progress note displayed under its Task. Append-only schema 34 stores
   one-off and original-occurrence notes with transactional Rust validation; startup, full backup
   and restore share the new schema authority. The immutable source and sealed workflow are intact.

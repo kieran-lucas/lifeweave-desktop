@@ -154,10 +154,13 @@ never the sole proof of anything.
 
 ## Product behaviour preserved
 
-- ADR 0057: unassessed Tasks turn red with a text label at the scheduled end, including while Today
+- ADR 0057: the entire unassessed Task row turns red (background, boundary, time and task copy),
+  retaining its tint on hover and an explicit boundary in forced colors, with a text label at the
+  scheduled end, including while Today
   remains open; existing assessments suppress emphasis and undo restores it. The fifth `+ / Note`
-  menu entry has keyboard parity and opens an accessible multiline editor. Notes save, reopen,
-  edit, clear and survive database reopen/backup; failure retains input. Recurring notes remain
+  menu entry has keyboard parity and opens an accessible multiline editor. Absent notes start
+  empty without example/placeholder text. Notes save, reopen, edit, clear and survive database
+  reopen/backup; failure retains input. Recurring notes remain
   isolated by original occurrence date. Notes never change assessment or Analytics.
 
 - every existing flow still works; no business semantics changed beyond the explicit manual Plan

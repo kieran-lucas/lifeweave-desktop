@@ -12,14 +12,18 @@ continues to govern the four assessment values; `+` is an authoring action, with
 
 ## Decision
 
-- A past scheduled end and absence of any current assessment produce red title emphasis and an
+- A past scheduled end and absence of any current assessment produce red emphasis across the
+  entire timeline row (background, boundary, time and task copy), and an
   explicit Overdue label. Choosing any assessment resolves this unassessed state; undo restores it.
   Eligibility and emphasis refresh at minute boundaries and after window focus/visibility changes.
+  The Product Owner's follow-up clarifies that red applies to the whole Task, rather than its
+  title alone. The tint persists on hover and an explicit boundary remains in forced colors.
 - The anchored assessment menu contains its four existing choices and `+ / Note` as the fifth
   entry, available after the scheduled end under the same UI availability rules.
 - Notes are optional plain text, at most 2,000 Unicode characters, rendered as escaped React text
   below the corresponding Task. The editor supports multiline text, Save, Cancel, Escape, focus
-  trapping/restoration, and error retry. Saving blank text removes the current note.
+  trapping/restoration, and error retry. A new note starts empty, without sample text or a placeholder.
+  Saving blank text removes the current note.
 - A note neither creates nor changes an assessment. Existing assessment labels, Analytics,
   missed/Overdue queues, actual time, and undo authority keep their current meaning.
 - One-off note identity is Task ID; recurring note identity is series ID plus original local date,

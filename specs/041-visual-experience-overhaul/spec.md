@@ -129,10 +129,12 @@ Calendar load bands, storage schema, and recurrence rules remain unchanged.
 
 ### 1.6 Product Owner overdue and progress-note amendment (2026-10-18)
 
-ADR 0057 authorizes a red Task title and explicit Overdue label after its scheduled end while no
+ADR 0057 authorizes red emphasis across the entire Task timeline row (background, boundary, time
+and task copy) and an explicit Overdue label after its scheduled end while no
 current assessment exists. Update at minute boundaries, local midnight and window resume. Add a
 fifth `+ / Note` action beside the existing four assessment choices. Its optional multiline plain
 text appears below the Task; editing/clearing persists in SQLite, independently of assessment.
+New note inputs start empty without sample or placeholder text.
 Notes are limited to 2,000 Unicode characters and belong to one Task or one original recurring
 occurrence. Schema 34, one typed Rust-validated mutation, and its narrow capability are authorized.
 All other product-semantic exclusions remain binding.

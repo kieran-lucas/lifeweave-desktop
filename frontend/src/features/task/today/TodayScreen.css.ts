@@ -83,6 +83,13 @@ export const agendaItem = style({
   gridTemplateColumns: "74px minmax(0, 1fr)",
   minInlineSize: 0,
   borderBlockEnd: `1px solid ${vars.color.borderHairline}`,
+  selectors: {
+    "&[data-overdue=true]": {
+      background: vars.color.dangerSoft,
+      borderBlockEndColor: vars.color.danger,
+      color: vars.color.danger,
+    },
+  },
   "@media": { "(max-width: 620px)": { gridTemplateColumns: "58px minmax(0,1fr)" } },
 });
 
@@ -267,6 +274,27 @@ export const assessmentSlot = style({
 globalStyle(`${agendaItem}[data-completed=true] ${taskTitleLine} > strong`, {
   textDecoration: "line-through",
   textDecorationThickness: "1.5px",
+});
+
+// Carry the overdue treatment across the complete timeline row, including its time rail.
+const overdueItem = `${agendaItem}[data-overdue=true]`;
+globalStyle(`${overdueItem} ${taskRow}, ${overdueItem} ${taskRow}:hover`, {
+  background: "transparent",
+});
+globalStyle(`${overdueItem} ${timeValue}, ${overdueItem} ${taskDescription}, ${overdueItem} ${progressNote}, ${overdueItem} ${taskMeta}, ${overdueItem} ${taskMeta} > button`, {
+  color: vars.color.danger,
+  "@media": { "(forced-colors: active)": { color: "CanvasText" } },
+});
+globalStyle(`${overdueItem} ${taskDescription}`, { borderInlineStartColor: vars.color.danger });
+globalStyle(overdueItem, {
+  "@media": {
+    "(forced-colors: active)": {
+      background: "Canvas",
+      borderBlockEndColor: "CanvasText",
+      outline: "1px dashed CanvasText",
+      outlineOffset: -1,
+    },
+  },
 });
 
 /* Progressive task composer ------------------------------------------------ */

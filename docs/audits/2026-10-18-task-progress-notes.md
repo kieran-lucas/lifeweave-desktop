@@ -4,7 +4,8 @@ Authority: Product Owner request, ADR 0057, Slice 041 §1.6.
 
 ## Implemented behavior
 
-Ended, unassessed Task rows show a red title and explicit Overdue text. A clock scheduled at minute
+Ended, unassessed Task rows show a red background, boundary, time and task copy, plus explicit
+Overdue text. A clock scheduled at minute
 boundaries refreshes eligibility and emphasis without navigation; focus/visibility changes refresh
 after suspension. Choosing an assessment removes the emphasis and undo restores it.
 
@@ -87,3 +88,31 @@ original dirty worktree and were preserved. No dependency, released migration, i
 workflow, workflow seal, real user database or personal asset was changed. The Product Owner's
 follow-up explicitly authorizes committing/pushing this amendment and updating the Desktop app.
 The pre-existing cursor edits are excluded from that feature commit.
+
+## Follow-up — apply red to the entire Task row
+
+The Product Owner clarifies that red must cover the whole Task, rather than only its title.
+`TodayScreen.css.ts` now applies the existing `dangerSoft` fill and `danger` boundary to the complete
+timeline row, including its time rail. Time, Description, progress note and relationship metadata
+use the same danger text role. Hover retains the full-row tint; forced colors adds a dashed row
+boundary while preserving the explicit Overdue label. Assessment values and eligibility are intact.
+The next Product Owner follow-up removes the example placeholder from the note textarea: a new
+note is blank by default, while reopening an existing note retains its authored value.
+
+- `pnpm verify`: PASS.
+- `pnpm --dir frontend test src/features/task/today/TodayScreen.test.tsx --maxWorkers=1`: PASS,
+  19 tests, including assessment/undo restoring the overdue state.
+- `node target/overdue-row-visual.mjs`: PASS on the actual frontend in headless Edge with synthetic
+  IPC. At 1280×720 and 960×640 / DPR 1.25, full-row fill is `rgb(255, 240, 241)`, boundary/time are
+  `rgb(179, 75, 85)`, hover preserves the tint, there is no horizontal document overflow, and forced
+  colors retains a dashed boundary plus text. Selecting Done removes the fill and restores normal
+  time/boundary colors. Screenshots in `target/overdue-row-visual/` were inspected.
+- `node target/empty-note-visual.mjs`: PASS; the absent-note editor reports `value: ""` and
+  `placeholder: null`. Its 960×640 / DPR 1.25 screenshot was inspected.
+- `pnpm tauri build --no-bundle`: PASS; the final optimized Windows build including both corrections
+  completed in 7m06s. Desktop deployment is reported in the follow-up response.
+
+This correction changes CSS, the note textarea placeholder and their governing documentation only.
+No Rust, data, schema, binding,
+dependency, workflow or seal change is needed. Existing Rust/migration/backup evidence above still
+applies; physical DPI/Narrator checks and the existing bundle-budget debt remain as recorded.

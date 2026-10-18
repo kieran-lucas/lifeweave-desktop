@@ -4,7 +4,7 @@
 
 - [x] Record Product Owner authority for overdue emphasis and the fifth `+ / Note` entry.
 - [x] Persist bounded plain-text notes separately from assessment, by original occurrence identity.
-- [x] Add minute/focus clock refresh, red title and explicit Overdue text.
+- [x] Add minute/focus clock refresh, red emphasis across the entire Task row and explicit Overdue text.
 - [x] Add keyboard-reachable note editing with focus restoration and failure retention.
 - [x] Cover one-off/recurring notes, text limits, migration, reopen and backup restore.
 - [x] Record final production build, governance, regression tests and visual evidence in the audit.
