@@ -13,11 +13,12 @@ continues to govern the four assessment values; `+` is an authoring action, with
 ## Decision
 
 - A past scheduled end and absence of any current assessment produce red emphasis across the
-  entire timeline row (background, boundary, time and task copy), and an
+  entire timeline row (background, time and task copy), and an
   explicit Overdue label. Choosing any assessment resolves this unassessed state; undo restores it.
   Eligibility and emphasis refresh at minute boundaries and after window focus/visibility changes.
   The Product Owner's follow-up clarifies that red applies to the whole Task, rather than its
   title alone. The tint persists on hover and an explicit boundary remains in forced colors.
+  A subsequent Product Owner correction removes the bottom rule underneath the red fill.
 - The anchored assessment menu contains its four existing choices and `+ / Note` as the fifth
   entry, available after the scheduled end under the same UI availability rules.
 - Notes are optional plain text, at most 2,000 Unicode characters, rendered as escaped React text

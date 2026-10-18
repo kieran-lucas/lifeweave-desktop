@@ -4,7 +4,7 @@ Authority: Product Owner request, ADR 0057, Slice 041 §1.6.
 
 ## Implemented behavior
 
-Ended, unassessed Task rows show a red background, boundary, time and task copy, plus explicit
+Ended, unassessed Task rows show a red background, time and task copy, plus explicit
 Overdue text. A clock scheduled at minute
 boundaries refreshes eligibility and emphasis without navigation; focus/visibility changes refresh
 after suspension. Choosing an assessment removes the emphasis and undo restores it.
@@ -116,3 +116,22 @@ This correction changes CSS, the note textarea placeholder and their governing d
 No Rust, data, schema, binding,
 dependency, workflow or seal change is needed. Existing Rust/migration/backup evidence above still
 applies; physical DPI/Narrator checks and the existing bundle-budget debt remain as recorded.
+
+## Follow-up — remove the line below overdue rows
+
+The Product Owner requests removing the bottom line below the red fill. The overdue row now uses
+`border-block-end: none`; forced colors keeps its dashed outline and the explicit Overdue label.
+
+- `pnpm verify`: PASS.
+- `pnpm --dir frontend test src/features/task/today/TodayScreen.test.tsx --maxWorkers=1`: PASS,
+  19 tests.
+- `node target/overdue-no-bottom-rule-visual.mjs`: PASS against the production frontend preview in
+  headless Edge. Computed bottom border is `none` / `0px` at 1280×720 and 960×640 / DPR 1.25, including
+  hover. Red fill/time text, absence of horizontal overflow, forced-color outline, and assessment
+  clearing the overdue treatment are verified. Screenshots in `target/overdue-no-bottom-rule-visual/`
+  were inspected.
+- `pnpm tauri build --no-bundle`: PASS; optimized Windows executable built in 8m04s.
+  Desktop deployment is reported in the follow-up response.
+
+Only CSS and governing documentation change. The earlier Rust, persistence, migration and backup
+evidence applies; native Narrator/physical-DPI verification and the existing bundle debt remain open.

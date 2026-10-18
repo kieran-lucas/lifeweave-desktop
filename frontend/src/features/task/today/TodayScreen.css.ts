@@ -86,7 +86,7 @@ export const agendaItem = style({
   selectors: {
     "&[data-overdue=true]": {
       background: vars.color.dangerSoft,
-      borderBlockEndColor: vars.color.danger,
+      borderBlockEnd: "none",
       color: vars.color.danger,
     },
   },
@@ -290,7 +290,6 @@ globalStyle(overdueItem, {
   "@media": {
     "(forced-colors: active)": {
       background: "Canvas",
-      borderBlockEndColor: "CanvasText",
       outline: "1px dashed CanvasText",
       outlineOffset: -1,
     },

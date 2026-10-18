@@ -154,7 +154,8 @@ never the sole proof of anything.
 
 ## Product behaviour preserved
 
-- ADR 0057: the entire unassessed Task row turns red (background, boundary, time and task copy),
+- ADR 0057: the entire unassessed Task row turns red (background, time and task copy), without a
+  bottom rule underneath its fill,
   retaining its tint on hover and an explicit boundary in forced colors, with a text label at the
   scheduled end, including while Today
   remains open; existing assessments suppress emphasis and undo restores it. The fifth `+ / Note`
