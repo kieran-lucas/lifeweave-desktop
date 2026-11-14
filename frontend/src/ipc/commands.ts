@@ -1,4 +1,11 @@
 import { invoke } from "@tauri-apps/api/core";
+import type { MilestoneView } from "./generated/MilestoneView";
+import type { SaveMilestoneInput } from "./generated/SaveMilestoneInput";
+import type { MutateMilestoneInput } from "./generated/MutateMilestoneInput";
+
+export const listMilestones = () => invoke<MilestoneView[]>("list_milestones");
+export const saveMilestone = (input: SaveMilestoneInput) => invoke<MilestoneView>("save_milestone", { input });
+export const mutateMilestone = (input: MutateMilestoneInput) => invoke<MilestoneView>("mutate_milestone", { input });
 
 import type { BackupSummary } from "./generated/BackupSummary";
 import type { BackupCreateResult } from "./generated/BackupCreateResult";

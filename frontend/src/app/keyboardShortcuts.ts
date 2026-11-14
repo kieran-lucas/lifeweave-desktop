@@ -10,6 +10,7 @@
 
 export type Destination =
   | "today"
+  | "milestones"
   | "calendar"
   | "plans"
   | "life"

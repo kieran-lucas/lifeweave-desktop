@@ -3,6 +3,24 @@
 Task 51 closes only when all of the following are evidenced. Screenshots are review evidence and are
 never the sole proof of anything.
 
+## Product Owner Milestones amendment — ADR 0058
+
+- Milestones follows Today in the existing navigation; route/history/reload work and global chords
+  retain their assignments. The masthead and controls match Today and the shared design system.
+- The responsive twelve-month viewport, exact day scale, leap/year/DST edges, local Today/countdown rollover
+  and non-recentering behavior are covered. Explicit month/date/Today navigation reaches dates
+  beyond the initial window and preserves the anchor before a prepend.
+- Native horizontal wheel, X-only vertical/diagonal wheel, empty-space mouse drag, emulated touch and keyboard are
+  exercised in the real browser; geometry and labels move together without scroll-driven DOM writes.
+- Duplicate/dense labels have at most three nonintersecting lanes and selectable overflow groups;
+  long content stays inside the conditional detail region. The closed page has no unnecessary
+  instructions, Find or Trash sections; unpinned/deleted dates remain reachable through All milestones.
+  All authoring/pin/delete/restore flows work. Resize preserves the visible calendar-day fraction.
+- Rust validation, stale-write safety, schema-34 upgrade/failure rollback/idempotence, Unicode file
+  reopen, exact backup/restore and actual Windows process restart preserve data.
+- Command-level evidence, build/tests, axe, measured frame sample, reviewed captures and distinct
+  physical-device/reviewer verification debt are in `docs/audits/2026-11-14-milestones.md`.
+
 ## Product Owner Life usability amendment
 
 - Life Tree geometry proves root x < child x < grandchild x while siblings occupy distinct rows;

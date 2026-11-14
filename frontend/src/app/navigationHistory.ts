@@ -45,6 +45,7 @@ export type AppHistoryEntry = {
 
 const destinations = new Set<Destination>([
   "today",
+  "milestones",
   "calendar",
   "plans",
   "life",

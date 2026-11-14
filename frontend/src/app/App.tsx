@@ -19,6 +19,8 @@ const loadFoundationScreen = () =>
     default: module.FoundationScreen,
   }));
 const FoundationScreen = lazy(loadFoundationScreen);
+const loadMilestonesScreen = () => import("../features/milestones/MilestonesScreen").then(module => ({ default: module.MilestonesScreen }));
+const MilestonesScreen = lazy(loadMilestonesScreen);
 let calendarScreenPromise: Promise<{ default: typeof import("../features/calendar/CalendarScreen").CalendarScreen }> | undefined;
 let resolvedCalendarScreen: typeof import("../features/calendar/CalendarScreen").CalendarScreen | undefined;
 const loadCalendarScreen = () => calendarScreenPromise ??=
@@ -74,6 +76,7 @@ import {
   iconSearch,
   iconSettings,
   iconToday,
+  iconFlag,
 } from "../design-system/visual/icons";
 import { LoadingRow } from "../design-system/primitives/States";
 import * as styles from "./App.css";
@@ -96,7 +99,6 @@ import {
   searchShortcut,
   shortcutHelpShortcut,
   type Destination,
-  type DestinationShortcutCommand,
 } from "./keyboardShortcuts";
 import {
   appHistoryScreenKey,
@@ -118,6 +120,7 @@ const GlobalSearchDialog = lazy(
 /** Primary navigation is deliberately compact; Search and Analytics now live under Settings. */
 const destinationIcons: Record<Destination, string> = {
   today: iconToday,
+  milestones: iconFlag,
   calendar: iconCalendar,
   plans: iconPlans,
   life: iconLife,
@@ -143,7 +146,8 @@ type TodayFocusRequest = {
 const preferenceKey = "lifeweave.task-sidebar-mode.v1";
 
 function prefetchDestination(destination: Destination) {
-  if (destination === "calendar") void loadCalendarScreen();
+  if (destination === "milestones") void loadMilestonesScreen();
+  else if (destination === "calendar") void loadCalendarScreen();
   else if (destination === "plans") void loadFocusPlansScreen();
   else if (destination === "life") void loadLifeScreen();
 }
@@ -543,7 +547,7 @@ export function App() {
     lifeAutoCollapsed,
     taskSidebarMode,
   });
-  const renderDestination = (command: DestinationShortcutCommand) => (
+  const renderDestination = (command: { id: string; label: string; destination: Destination; ariaKeyShortcuts?: string }) => (
     <button
       key={command.id}
       type="button"
@@ -588,7 +592,9 @@ export function App() {
           <span className={styles.navLabel}>Lifeweave</span>
         </div>
         <div className={styles.navGroup}>
-          {destinationShortcuts.slice(0, 4).map(renderDestination)}
+          {renderDestination(destinationShortcuts[0]!)}
+          {renderDestination({ id: "open-milestones", label: "Milestones", destination: "milestones" })}
+          {destinationShortcuts.slice(1, 4).map(renderDestination)}
           <div className={styles.divider} />
           {destinationShortcuts.slice(4).map(renderDestination)}
         </div>
@@ -786,6 +792,11 @@ export function App() {
                   focusRequest={todayFocusRequest}
                   onFocusRequestSettled={settleNavigationRequest}
                 />
+              </div>
+            )}
+            {destination === "milestones" && (
+              <div ref={node => { headingRef.current = node; }}>
+                <Suspense fallback={<LoadingRow label="Loading milestones…" />}><MilestonesScreen /></Suspense>
               </div>
             )}
             {destination === "calendar" && (

@@ -4,6 +4,15 @@ The immutable source is authoritative. This registry makes operational status vi
 
 ## LOCKED — Product
 
+- Milestones is a standalone, local-first timeline of meaningful calendar dates, placed directly
+  after Today. Schema 35 and three scoped IPC commands persist revisioned, recoverably deleted
+  milestones; there is no automatic Task, Plan, Calendar or completion behavior. Existing global
+  shortcuts keep their chords. ADR 0058 records the Product Owner's 2026-11-14 authorization and
+  narrowly supersedes Slice 041's presentation-only/navigation/schema exclusions for this feature.
+  The later refinement in ADR 0058 fits twelve months across the viewport, keeps lower-page
+  controls/details conditional, constrains timeline wheel input to X, and retains dense milestones
+  in selectable groups rather than vertical timeline lanes. Schema and existing shortcuts stay unchanged.
+
 - Windows local-first/offline application.
 - The Windows main window uses compact in-app minimize, maximize/restore, and close controls with a
   draggable title strip, accessible button labels and keyboard focus (ADR 0055). This supersedes

@@ -2,6 +2,14 @@
 
 Status: ACTIVE — Stage A and Stage B complete, Stage C in progress.
 
+## 2026-11-14 amendment — Milestones / ADR 0058
+
+Implement the Product Owner's standalone milestone timeline using existing SQLite/Rust/typed IPC,
+append-only schema 35, native scroll geometry, Today styles, local-date rollover and shared
+accessible dialogs. Preserve existing shortcuts and unrelated cursor work. Verify domain/date
+edges, migration/reopen/backup, UI flows, actual browser geometry and production builds; record
+command evidence and residual physical-device verification in the dated audit.
+
 ## 2026-10-18 Task amendment — ADR 0057
 
 Add minute-aware overdue emphasis and a fifth note action to the existing assessment control.

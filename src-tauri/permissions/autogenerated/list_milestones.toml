@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-list-milestones"
+description = "Enables the list_milestones command without any pre-configured scope."
+commands.allow = ["list_milestones"]
+
+[[permission]]
+identifier = "deny-list-milestones"
+description = "Denies the list_milestones command without any pre-configured scope."
+commands.deny = ["list_milestones"]

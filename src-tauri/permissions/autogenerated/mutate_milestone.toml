@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-mutate-milestone"
+description = "Enables the mutate_milestone command without any pre-configured scope."
+commands.allow = ["mutate_milestone"]
+
+[[permission]]
+identifier = "deny-mutate-milestone"
+description = "Denies the mutate_milestone command without any pre-configured scope."
+commands.deny = ["mutate_milestone"]

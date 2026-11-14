@@ -2,6 +2,7 @@ pub mod backup;
 pub mod dispatch;
 pub mod error;
 pub mod foundation_record;
+pub mod milestone;
 pub mod search;
 pub mod tag;
 pub mod task;
@@ -37,6 +38,7 @@ mod tests {
 
     #[test]
     fn export_ipc_bindings() {
+        use crate::milestone::dto::*;
         use foundation_record::{
             CreateFoundationRecordInput, FoundationRecordView, MutateFoundationRecordInput,
             UpdateFoundationRecordInput,
@@ -46,6 +48,10 @@ mod tests {
             .parent()
             .expect("CARGO_MANIFEST_DIR has no parent")
             .join("frontend/src/ipc/generated/");
+        MilestoneView::export_all_to(&out).unwrap();
+        SaveMilestoneInput::export_all_to(&out).unwrap();
+        MutateMilestoneInput::export_all_to(&out).unwrap();
+        MilestoneAction::export_all_to(&out).unwrap();
         HealthCheck::export_all_to(&out).expect("ts binding export failed for HealthCheck");
         error::IpcError::export_all_to(&out).expect("ts binding export failed for IpcError");
         FoundationRecordView::export_all_to(&out)

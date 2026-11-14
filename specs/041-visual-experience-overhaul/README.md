@@ -9,7 +9,7 @@ activation baseline: 43d0d1e822336c97527f85e1ab154fc74a61f058
 local branch: task-51-visual-experience (not pushed)
 Task 49 feature checkpoint: 7622db3d8b2b42d69c8f497b6899c5be82e9f9a9 (unchanged)
 starting schema: 27
-target schema: 34 (later Product Owner amendments, including ADR 0057 Task progress notes)
+target schema: 35 (later Product Owner amendments, including ADR 0058 Milestones)
 VISUAL LOCK: not requested — reference image not yet supplied
 MOTION LOCK: blocked on VISUAL LOCK
 ```
@@ -43,9 +43,9 @@ binding and are re-proven rather than re-argued.
 
 ## Not in this slice
 
-Except for the bounded Product Owner amendments in spec §§1.2–1.6, product
-semantics of any kind. No schema beyond 34, second Plan IPC command, Tauri capability beyond the
-explicit ADR 0057 note mutation, network service,
+Except for the bounded Product Owner amendments in spec §§1.2–1.6 and the ADR 0058 Milestones
+amendment, product semantics of any kind. No schema beyond 35, second Plan IPC command, Tauri
+capability beyond the explicit ADR 0057 note mutation and ADR 0058 Milestones commands, network service,
 backup-format change, or workflow/seal change. No framework, editor,
 drag, query, graph or layout-engine replacement. No glass, Mica, Acrylic or transparent window. No
 WebGL or animation-engine art. No new Task facet — in particular no subtasks and no task-to-task

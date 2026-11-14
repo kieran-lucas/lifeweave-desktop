@@ -2,6 +2,21 @@
 
 ## Task 51/60 — Visual Experience Overhaul, "Quiet Luminous Atlas" (active)
 
+- **2026-11-14 Milestones refinement:** the Product Owner requests a quiet page, twelve months
+  visible together, app-consistent motion and horizontal-only timeline wheel input. Responsive day
+  geometry, a compact management dialog and three-lane overflow groups replace persistent helpers
+  and vertical timeline scrolling. Schema 35 and all existing records remain unchanged. The new
+  Desktop build and verification are recorded in the
+  [refinement audit](audits/2026-11-14-milestones-refinement.md).
+
+- **2026-11-14 Milestones amendment (ADR 0058):** standalone timeline directly after Today,
+  with precise calendar-day geometry, native scrolling, collision lanes, details and complete
+  create/edit/pin/unpin/recoverable-delete flows. Append-only schema 35 uses the existing Rust
+  worker and backup/restore authority. Frontend/Rust suites, real-browser input/geometry/axe,
+  native IPC/restart and the optimized Windows build pass. Existing bundle-budget failures and
+  unobserved physical-device/Narrator checks remain disclosed in
+  [the Milestones audit](audits/2026-11-14-milestones.md). The overall visual slice remains active.
+
 - **2026-10-18 Task amendment (ADR 0057):** ended Tasks with visible None (unassessed or explicitly
   selected None) gain red
   emphasis across their entire timeline row plus an Overdue label at their end time. The assessment rail adds `+ / Note` for

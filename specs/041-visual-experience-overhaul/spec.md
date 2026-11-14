@@ -7,6 +7,14 @@ invariants remain binding throughout.
 
 ## 1. Scope
 
+### Product Owner Milestones amendment — 2026-11-14
+
+ADR 0058 activates the standalone Milestones feature requested by the Product Owner. Its scoped
+requirements and acceptance checks live in `milestones.md` in this package. Schema 35, three
+Milestones IPC commands and the Milestones sidebar destination are explicitly authorized.
+This later amendment supersedes conflicting presentation-only/schema/navigation exclusions
+below only for that feature. Existing product behavior, global shortcuts and visual authority remain.
+
 In scope: the presentation of every existing surface — application shell, sidebar, Today, the new
 context inspector, Calendar, Analytics, Focus Plans, Life Browse/Edit/Pinned/Graph, Basic Leaf
 Reader and Editor, Narrative Reader/Studio/Visual Worlds, Search, Settings, Backup settings, and

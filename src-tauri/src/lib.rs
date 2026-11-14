@@ -8,6 +8,7 @@ pub mod life;
 pub mod life_branch;
 pub mod life_link;
 pub mod life_tree;
+pub mod milestone;
 pub mod narrative;
 pub mod platform;
 pub mod portable;
@@ -33,7 +34,7 @@ use infrastructure::backup::lifecycle::{
 use infrastructure::sqlite::{
     connection::{open_existing_file_connection, open_file_connection},
     runtime::DatabaseRuntime,
-    task57_migration::run_all_migrations,
+    task58_migration::run_all_migrations,
     worker::DbWorkerHandle,
 };
 use ipc::backup::{backup_database, list_backups, restore_database};
@@ -41,6 +42,7 @@ use ipc::foundation_record::{
     archive_foundation_record, create_foundation_record, list_archived_foundation_records,
     list_foundation_records, restore_foundation_record, update_foundation_record,
 };
+use ipc::milestone::{list_milestones, mutate_milestone, save_milestone};
 use ipc::search::search_global;
 use ipc::tag::{
     archive_tag, create_tag, list_tags, merge_tags, rename_tag, restore_tag, set_life_node_tags,
@@ -223,6 +225,9 @@ pub fn run() {
             discard_task_actual_time,
             evaluate_task,
             save_task_progress_note,
+            list_milestones,
+            save_milestone,
+            mutate_milestone,
             undo_task_evaluation,
             update_category_goals,
             get_analytics_projection,

@@ -20,6 +20,7 @@ pub mod task54_migration;
 pub mod task55_migration;
 pub mod task56_migration;
 pub mod task57_migration;
+pub mod task58_migration;
 pub mod worker;
 
 pub use runtime::DatabaseRuntime;

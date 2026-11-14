@@ -175,14 +175,17 @@ export const lockSlot = style({
   background: vars.color.accent,
   pointerEvents: "none",
 });
+// A naturally sized SVG lets WebView rasterize the hand at the display's DPI.
+const grabCursor = 'url("/cursors/grab-cursor.svg") 12 12, grab';
+const grabbingCursor = 'url("/cursors/grabbing-cursor.svg") 12 12, grabbing';
 export const wheel = style({
   blockSize: "100%",
-  cursor: 'url("/cursors/grab-cursor.cur"), grab',
+  cursor: grabCursor,
   touchAction: "none",
   overscrollBehavior: "contain",
 });
-globalStyle(`${wheel} [data-rwp]`, { cursor: 'url("/cursors/grab-cursor.cur"), grab', touchAction: "none" });
-globalStyle(`${wheel} [data-rwp]:active`, { cursor: 'url("/cursors/grabbing-cursor.cur"), grabbing' });
+globalStyle(`${wheel} [data-rwp]`, { cursor: grabCursor, touchAction: "none" });
+globalStyle(`${wheel} [data-rwp]:active`, { cursor: grabbingCursor });
 globalStyle(`${wheel} [data-rwp]:focus-visible`, { outline: `2px solid ${vars.color.focusRing}`, outlineOffset: -3 });
 globalStyle(`${wheel} [data-rwp-highlight-wrapper]`, { insetInlineStart: 4, inlineSize: "calc(100% - 8px)" });
 globalStyle(`${wheel} [data-rwp-option]`, { fontSize: 15 });
